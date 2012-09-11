@@ -1,84 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2IKRkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:40:35 -0400
-Received: from shutemov.name ([176.9.204.213]:58651 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756712Ab2IKRkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:40:31 -0400
-Date: Tue, 11 Sep 2012 20:41:05 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
-        Steve Capper <steve.capper@arm.com>
-Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
-Message-ID: <20120911174105.GB29805@shutemov.name>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
- <1347382036-18455-4-git-send-email-will.deacon@arm.com>
+	id S1755801Ab2IKRj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:39:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33206 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab2IKRjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 13:39:52 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
+        <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v3 02/17] ARM: add self test for runtime patch mechanism
+Date: Tue, 11 Sep 2012 13:39:00 -0400
+Message-ID: <1347385155-11643-3-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
+References: <1347385155-11643-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347382036-18455-4-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 05:47:16PM +0100, Will Deacon wrote:
-> From: Steve Capper <steve.capper@arm.com>
-> 
-> Different architectures have slightly different pre-requisites for supporting
-> Transparent Huge Pages. To simplify the layout of mm/Kconfig, a new option
-> HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each architecture's
-> Kconfig file (at the moment x86, with ARM being set in a future patch).
-> 
-> Signed-off-by: Steve Capper <steve.capper@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+This patch adds basic sanity tests to ensure that the instruction patching
+results in valid instruction encodings.  This is done by verifying the output
+of the patch process against a vector of assembler generated instructions at
+init time.
 
-Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+---
+ arch/arm/Kconfig                |   12 +++++++
+ arch/arm/kernel/runtime-patch.c |   75 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+)
 
-> ---
->  arch/x86/Kconfig |    4 ++++
->  mm/Kconfig       |    2 +-
->  2 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 8ec3a1a..7decdcf 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1297,6 +1297,10 @@ config ILLEGAL_POINTER_VALUE
->         default 0 if X86_32
->         default 0xdead000000000000 if X86_64
->  
-> +config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-> +       def_bool y
-> +       depends on MMU
-> +
->  source "mm/Kconfig"
->  
->  config HIGHPTE
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index d5c8019..3322342 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
->  
->  config TRANSPARENT_HUGEPAGE
->  	bool "Transparent Hugepage Support"
-> -	depends on X86 && MMU
-> +	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
->  	select COMPACTION
->  	help
->  	  Transparent Hugepages allows the kernel to use huge pages and
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 36de4ea..bfcd29d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -207,6 +207,18 @@ config ARM_PATCH_PHYS_VIRT
+ 	  this feature (eg, building a kernel for a single machine) and
+ 	  you need to shrink the kernel to the minimal size.
+ 
++config ARM_RUNTIME_PATCH_TEST
++	bool "Self test runtime patching mechanism" if ARM_RUNTIME_PATCH
++	default y
++	help
++	  Select this to enable init time self checking for the runtime kernel
++	  patching mechanism.  This enables an ISA specific set of tests that
++	  ensure that the instructions generated by the patch process are
++	  consistent with those generated by the assembler at compile time.
++
++	  Only disable this option if you need to shrink the kernel to the
++	  minimal size.
++
+ config NEED_MACH_IO_H
+ 	bool
+ 	help
+diff --git a/arch/arm/kernel/runtime-patch.c b/arch/arm/kernel/runtime-patch.c
+index 28a6367..0be9ef3 100644
+--- a/arch/arm/kernel/runtime-patch.c
++++ b/arch/arm/kernel/runtime-patch.c
+@@ -168,6 +168,78 @@ static int apply_patch_imm8(const struct patch_info *p)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ARM_RUNTIME_PATCH_TEST
++
++struct patch_test_imm8 {
++	u16	imm;
++	u16	shift;
++	u32	insn;
++};
++
++static void __init __used __naked __patch_test_code_imm8(void)
++{
++	__asm__ __volatile__ (
++
++		/* a single test case */
++		"	.macro		test_one, imm, sft\n"
++		"	.hword		\\imm\n"
++		"	.hword		\\sft\n"
++		"	add		r1, r2, #(\\imm << \\sft)\n"
++		"	.endm\n"
++
++		/* a sequence of tests at 'inc' increments of shift */
++		"	.macro		test_seq, imm, sft, max, inc\n"
++		"	test_one	\\imm, \\sft\n"
++		"	.if		\\sft < \\max\n"
++		"	test_seq	\\imm, (\\sft + \\inc), \\max, \\inc\n"
++		"	.endif\n"
++		"	.endm\n"
++
++		/* an empty record to mark the end */
++		"	.macro		test_end\n"
++		"	.hword		0, 0\n"
++		"	.word		0\n"
++		"	.endm\n"
++
++		/* finally generate the test sequences */
++		"	test_seq	0x41, 0, 24, 1\n"
++		"	test_seq	0x81, 0, 24, 2\n"
++		"	test_end\n"
++		: : : "r1", "r2", "cc");
++}
++
++static void __init test_patch_imm8(void)
++{
++	u32 test_code_addr = (u32)(&__patch_test_code_imm8);
++	struct patch_test_imm8 *test = (void *)(test_code_addr & ~1);
++	u32 ninsn, insn, patched_insn;
++	int i, err;
++
++	insn = test[0].insn;
++	for (i = 0; test[i].insn; i++) {
++		err = do_patch_imm8(insn, test[i].imm << test[i].shift, &ninsn);
++		__patch_text(&patched_insn, ninsn);
++
++		if (err) {
++			pr_err("rtpatch imm8: failed at imm %x, shift %d\n",
++			       test[i].imm, test[i].shift);
++		} else if (patched_insn != test[i].insn) {
++			pr_err("rtpatch imm8: failed, need %x got %x\n",
++			       test[i].insn, patched_insn);
++		} else {
++			pr_debug("rtpatch imm8: imm %x, shift %d, %x -> %x\n",
++				 test[i].imm, test[i].shift, insn,
++				 patched_insn);
++		}
++	}
++}
++
++static void __init runtime_patch_test(void)
++{
++	test_patch_imm8();
++}
++#endif
++
+ int runtime_patch(const void *table, unsigned size)
+ {
+ 	const struct patch_info *p = table, *end = (table + size);
+@@ -189,5 +261,8 @@ void __init runtime_patch_kernel(void)
+ 	const void *start = &__runtime_patch_table_begin;
+ 	const void *end   = &__runtime_patch_table_end;
+ 
++#ifdef CONFIG_ARM_RUNTIME_PATCH_TEST
++	runtime_patch_test();
++#endif
+ 	BUG_ON(runtime_patch(start, end - start));
+ }
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
