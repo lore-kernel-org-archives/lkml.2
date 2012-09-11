@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2IKRjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:39:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50721 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab2IKRjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754687Ab2IKRju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:39:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33201 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab2IKRjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 13:39:45 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v3 04/17] ARM: LPAE: use phys_addr_t on virt <--> phys conversion
-Date: Tue, 11 Sep 2012 13:39:02 -0400
-Message-ID: <1347385155-11643-5-git-send-email-cyril@ti.com>
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v3 09/17] ARM: LPAE: use phys_addr_t for initrd location and size
+Date: Tue, 11 Sep 2012 13:39:07 -0400
+Message-ID: <1347385155-11643-10-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
 References: <1347385155-11643-1-git-send-email-cyril@ti.com>
@@ -23,76 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes up the types used when converting back and forth between
-physical and virtual addresses.
+From: Vitaly Andrianov <vitalya@ti.com>
+
+This patch fixes the initrd setup code to use phys_addr_t instead of assuming
+32-bit addressing.  Without this we cannot boot on systems where initrd is
+located above the 4G physical address limit.
 
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/include/asm/memory.h |   26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+ arch/arm/mm/init.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 512d234..a4fc01e 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -157,22 +157,32 @@ extern unsigned long	__pv_offset;
- extern unsigned long	__pv_phys_offset;
- #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 1c5151a..87ee0ec 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -36,12 +36,13 @@
  
--static inline unsigned long __virt_to_phys(unsigned long x)
-+static inline phys_addr_t __virt_to_phys(unsigned long x)
+ #include "mm.h"
+ 
+-static unsigned long phys_initrd_start __initdata = 0;
++static phys_addr_t phys_initrd_start __initdata = 0;
+ static unsigned long phys_initrd_size __initdata = 0;
+ 
+ static int __init early_initrd(char *p)
  {
- 	unsigned long t;
- 	early_patch_imm8("add", t, x, __pv_offset, 0);
- 	return t;
- }
+-	unsigned long start, size;
++	phys_addr_t start;
++	unsigned long size;
+ 	char *endp;
  
--static inline unsigned long __phys_to_virt(unsigned long x)
-+static inline unsigned long __phys_to_virt(phys_addr_t x)
- {
--	unsigned long t;
--	early_patch_imm8("sub", t, x, __pv_offset, 0);
-+	unsigned long t, xlo = x;
-+	early_patch_imm8("sub", t, xlo, __pv_offset, 0);
- 	return t;
- }
-+
- #else
--#define __virt_to_phys(x)	((x) - PAGE_OFFSET + PHYS_OFFSET)
--#define __phys_to_virt(x)	((x) - PHYS_OFFSET + PAGE_OFFSET)
-+
-+static inline phys_addr_t __virt_to_phys(unsigned long x)
-+{
-+	return (phys_addr_t)x - PAGE_OFFSET + PHYS_OFFSET;
-+}
-+
-+static inline unsigned long __phys_to_virt(phys_addr_t x)
-+{
-+	return x - PHYS_OFFSET + PAGE_OFFSET;
-+}
-+
- #endif
- #endif
- #endif /* __ASSEMBLY__ */
-@@ -210,14 +220,14 @@ static inline phys_addr_t virt_to_phys(const volatile void *x)
- 
- static inline void *phys_to_virt(phys_addr_t x)
- {
--	return (void *)(__phys_to_virt((unsigned long)(x)));
-+	return (void *)__phys_to_virt(x);
- }
- 
- /*
-  * Drivers should NOT use these either.
-  */
- #define __pa(x)			__virt_to_phys((unsigned long)(x))
--#define __va(x)			((void *)__phys_to_virt((unsigned long)(x)))
-+#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
- #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
- 
- /*
+ 	start = memparse(p, &endp);
+@@ -347,14 +348,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	if (phys_initrd_size &&
+ 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx is not a memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size &&
+ 	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx overlaps in-use memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size) {
 -- 
 1.7.9.5
 
