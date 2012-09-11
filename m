@@ -1,116 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2IKWEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:04:48 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55407 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2IKWEq (ORCPT
+	id S1753509Ab2IKWH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:07:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65472 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab2IKWHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:04:46 -0400
+	Tue, 11 Sep 2012 18:07:54 -0400
+Date: Tue, 11 Sep 2012 15:07:50 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, tj@kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [dm-devel] [PATCH v2 01/26] block: Convert integrity to
+ bvec_alloc_bs(), and a bugfix
+Message-ID: <20120911220750.GM19739@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-2-git-send-email-koverstreet@google.com>
+ <20120911203643.GC17113@redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXh1Vh=ojJKd34Cnm+sO+U1OqrcSk=5-EwXd22oB5Jw9Q@mail.gmail.com>
-References: <CA+icZUUj1u6YwpkzXOsUVJ4p5t-qrCWVDoaFoDbAbMT2EbEwWw@mail.gmail.com>
-	<CA+icZUXh1Vh=ojJKd34Cnm+sO+U1OqrcSk=5-EwXd22oB5Jw9Q@mail.gmail.com>
-Date: Wed, 12 Sep 2012 00:04:45 +0200
-Message-ID: <CA+icZUVSWBLrRu_vOcGurp=x-Bb1dBv1Tfdf8P8LiPNM1SuR8Q@mail.gmail.com>
-Subject: Re: linux-next: Tree for Sept 11 (drm related: boot problems on amd64)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120911203643.GC17113@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 8:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Sep 11, 2012 at 8:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Tue, Sep 11, 2012 at 8:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Changes since 201209010:
->>>
->>> New tree: ixp4xx
->>>
->>> The pci tree gained a build failure so I used the version from
->>> next-20120910.
->>>
->>> The regulator tree lost its build failure.
->>>
->>> The staging tree lost its build failure.
->>>
->>> The akpm tree lost a few patches that turned up elsewhere.
->>>
->>> ----------------------------------------------------------------------------
->>>
->>
->> Hi,
->>
->> today's and yesterday's Linux-Next is broken for me again.
->> I tried with systemd and upstart on Ubuntu/precise, with nomodeset and
->> rescue boot-option.
->>
->> With rescue boot-option I see this in my logs (Intel sandy-bridge
->> ultrabook here):
->>
->> Sep 11 18:43:36 fambox kernel: [    9.654972] [drm:drm_pci_agp_init]
->> *ERROR* Cannot initialize the agpgart module.
->> Sep 11 18:43:36 fambox kernel: [    9.654980] DRM: Fill_in_dev failed.
->>
->> I have not checked any MLs... coming from hospital right now.
->>
->
-> More ERRORs:
->
-> # grep -A1 "ERROR" /var/log/kern.log
-> Sep 10 17:51:29 fambox kernel: [   10.205818]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 10 17:51:29 fambox kernel: [   10.206055] i915: probe of
-> 0000:00:02.0 failed with error -5
-> --
-> Sep 10 15:53:00 fambox kernel: [   10.500387]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 10 15:53:00 fambox kernel: [   10.500602] i915: probe of
-> 0000:00:02.0 failed with error -5
-> --
-> Sep 11 20:41:01 fambox kernel: [    9.636010]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 11 20:41:01 fambox kernel: [    9.636202] i915: probe of
-> 0000:00:02.0 failed with error -5
-> --
-> Sep 11 18:42:18 fambox kernel: [   10.132229]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 11 18:42:18 fambox kernel: [   10.132433] i915: probe of
-> 0000:00:02.0 failed with error -5
-> --
-> Sep 11 18:43:36 fambox kernel: [    9.654972] [drm:drm_pci_agp_init]
-> *ERROR* Cannot initialize the agpgart module.
-> Sep 11 18:43:36 fambox kernel: [    9.654980] DRM: Fill_in_dev failed.
-> --
-> Sep 11 19:52:10 fambox kernel: [    9.545562]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 11 19:52:10 fambox kernel: [    9.545798] i915: probe of
-> 0000:00:02.0 failed with error -5
-> --
-> Sep 11 20:04:09 fambox kernel: [    9.798233]
-> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
-> Sep 11 20:04:09 fambox kernel: [    9.798557] i915: probe of
-> 0000:00:02.0 failed with error -5
->
+On Tue, Sep 11, 2012 at 04:36:43PM -0400, Vivek Goyal wrote:
+> Also there seems to be too much happening in this patch. Please break
+> it down in 2. First fix the bio integrity bug you mentioned then
+> introduce your changes on top.
 
-[ CC Bjorn (pci maintainer) ]
+Oh, I forgot - the reason I squashed them into one patch is fixing the
+bug came for free with the rest of the refactoring, and combining them
+touches less code.
 
-I pulled in pci.git#next up to commit
-9c33332178e6ba49fe48c468edc08ad94b53e1b1 ("Merge branch
-'pci/gavin-window-alignment' into next") on top of next-20120911.
-This lets my machine boot, but freezes somewhere else.
-
-- Sedat -
-
-> - Sedat -
->
->> Regards,
->> - Sedat -
+To fix the bug first, I'd have to reorder struct bio_pair and then just
+delete two lines of code from bio_integrity_split(). But the reordering
+is unnecessary with the refactoring.
