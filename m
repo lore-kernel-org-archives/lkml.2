@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab2IKQLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 12:11:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41171 "EHLO arroyo.ext.ti.com"
+	id S1758423Ab2IKQMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 12:12:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45004 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755189Ab2IKQLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 12:11:44 -0400
+	id S1757549Ab2IKQLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 12:11:40 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <j-keerthy@ti.com>, <b-cousson@ti.com>, <devel@driverdev.osuosl.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 4/4] staging: omap-thermal: improve conf data handling and initialization
-Date: Tue, 11 Sep 2012 19:06:55 +0300
-Message-ID: <1347379615-6881-5-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 3/4] staging: omap-thermal: fix polling period settings
+Date: Tue, 11 Sep 2012 19:06:54 +0300
+Message-ID: <1347379615-6881-4-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
 References: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
@@ -23,129 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While registering the thermal zone, it is required to have the cooling
-devices already setup, so that the .bind callback can succeed.
+While registering the omap thermal zones we need to
+properly specify TC1 and TC2, as long as the proper
+passive polling period and monitor period.
 
-Due to that, the driver code needs to be reorganized so that we first
-setup the cooling devices then the zones. This way we cope with the
-right thermal framework initialization sequence.
-
-This patch changes the order of the thermal zone initialization,
-so that we create it only when the cooling devices are available.
-It also adds some defensive checks for the config data, so that
-the callbacks are ready for calls when the data is still not
-initialized.
+This patch fixes the parameters passed while registering
+the thermal zone.
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/omap-thermal/omap-bandgap.c        |    6 ++--
- drivers/staging/omap-thermal/omap-thermal-common.c |   38 +++++++++++++++++---
- 2 files changed, 36 insertions(+), 8 deletions(-)
+ drivers/staging/omap-thermal/omap-thermal-common.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
-index 9ef44ea..ff93c15 100644
---- a/drivers/staging/omap-thermal/omap-bandgap.c
-+++ b/drivers/staging/omap-thermal/omap-bandgap.c
-@@ -953,12 +953,12 @@ int __devinit omap_bandgap_probe(struct platform_device *pdev)
- 	for (i = 0; i < bg_ptr->conf->sensor_count; i++) {
- 		char *domain;
- 
-+		if (bg_ptr->conf->sensors[i].register_cooling)
-+			bg_ptr->conf->sensors[i].register_cooling(bg_ptr, i);
-+
- 		domain = bg_ptr->conf->sensors[i].domain;
- 		if (bg_ptr->conf->expose_sensor)
- 			bg_ptr->conf->expose_sensor(bg_ptr, i, domain);
--
--		if (bg_ptr->conf->sensors[i].register_cooling)
--			bg_ptr->conf->sensors[i].register_cooling(bg_ptr, i);
- 	}
- 
- 	/*
 diff --git a/drivers/staging/omap-thermal/omap-thermal-common.c b/drivers/staging/omap-thermal/omap-thermal-common.c
-index d156424..46ee0a9 100644
+index 0675a5e..d156424 100644
 --- a/drivers/staging/omap-thermal/omap-thermal-common.c
 +++ b/drivers/staging/omap-thermal/omap-thermal-common.c
-@@ -77,10 +77,16 @@ static inline int omap_thermal_get_temp(struct thermal_zone_device *thermal,
- 					 unsigned long *temp)
- {
- 	struct omap_thermal_data *data = thermal->devdata;
--	struct omap_bandgap *bg_ptr = data->bg_ptr;
--	struct omap_temp_sensor *s = &bg_ptr->conf->sensors[data->sensor_id];
-+	struct omap_bandgap *bg_ptr;
-+	struct omap_temp_sensor *s;
- 	int ret, tmp, pcb_temp, slope, constant;
- 
-+	if (!data)
-+		return 0;
-+
-+	bg_ptr = data->bg_ptr;
-+	s = &bg_ptr->conf->sensors[data->sensor_id];
-+
- 	ret = omap_bandgap_read_temperature(bg_ptr, data->sensor_id, &tmp);
- 	if (ret)
- 		return ret;
-@@ -227,21 +233,37 @@ static struct thermal_zone_device_ops omap_thermal_ops = {
- 	.get_crit_temp = omap_thermal_get_crit_temp,
- };
- 
--int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
--			       char *domain)
-+static struct omap_thermal_data
-+*omap_thermal_build_data(struct omap_bandgap *bg_ptr, int id)
- {
- 	struct omap_thermal_data *data;
- 
- 	data = devm_kzalloc(bg_ptr->dev, sizeof(*data), GFP_KERNEL);
- 	if (!data) {
- 		dev_err(bg_ptr->dev, "kzalloc fail\n");
--		return -ENOMEM;
-+		return NULL;
- 	}
- 	data->sensor_id = id;
- 	data->bg_ptr = bg_ptr;
- 	data->mode = THERMAL_DEVICE_ENABLED;
- 	INIT_WORK(&data->thermal_wq, omap_thermal_work);
- 
-+	return data;
-+}
-+
-+int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
-+			       char *domain)
-+{
-+	struct omap_thermal_pdata pdata;
-+
-+	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+
-+	if (!data)
-+		data = omap_thermal_build_pdata(bg_ptr, id);
-+
-+	if (!data)
-+		return -EINVAL;
-+
- 	/* TODO: remove TC1 TC2 */
+@@ -246,7 +246,9 @@ int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
  	/* Create thermal zone */
  	data->omap_thermal = thermal_zone_device_register(domain,
-@@ -335,6 +357,11 @@ int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
- 	int tab_size, ret;
- 
- 	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+	if (!data)
-+		data = omap_thermal_build_pdata(bg_ptr, id);
-+
-+	if (!data)
-+		return -EINVAL;
- 
- 	ret = omap_thermal_build_cpufreq_clip(bg_ptr, &tab_ptr, &tab_size);
- 	if (ret < 0) {
-@@ -351,6 +378,7 @@ int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
- 		return PTR_ERR(data->cool_dev);
- 	}
- 	bg_ptr->conf->sensors[id].cooling_data.freq_clip_count = tab_size;
-+	omap_bandgap_set_sensor_data(bg_ptr, id, data);
- 
- 	return 0;
- }
+ 				OMAP_TRIP_NUMBER, 0, data, &omap_thermal_ops,
+-				0, FAST_TEMP_MONITORING_RATE, 0, 0);
++				1, 2, /*TODO: remove this when FW allows */
++				FAST_TEMP_MONITORING_RATE,
++				FAST_TEMP_MONITORING_RATE);
+ 	if (IS_ERR_OR_NULL(data->omap_thermal)) {
+ 		dev_err(bg_ptr->dev, "thermal zone device is NULL\n");
+ 		return PTR_ERR(data->omap_thermal);
 -- 
 1.7.7.1.488.ge8e1c
 
