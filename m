@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab2IKFfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 01:35:01 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56858 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab2IKFe7 (ORCPT
+	id S1752684Ab2IKFmW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 01:42:22 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:11679 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab2IKFmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 01:34:59 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-5c-504ecd811029
-Date: Tue, 11 Sep 2012 14:36:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 0/3 v2] mm: Batch page reclamation under shink_page_list
-Message-ID: <20120911053657.GC14494@bbox>
-References: <1347293960.9977.70.camel@schen9-DESK>
+	Tue, 11 Sep 2012 01:42:21 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzDuK6Zxxw=
+X-RZG-CLASS-ID: mo00
+Message-ID: <504ECF3B.1090709@hartkopp.net>
+Date: Tue, 11 Sep 2012 07:42:19 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347293960.9977.70.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Kurt Van Dijck <kurt.van.dijck@eia.be>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org
+Subject: Re: [PATCH v3] can: rename LED trigger name on netdev renames
+References: <20120907071934.GB37685@macbook.local> <1347207464-2002-1-git-send-email-fabio.baltieri@gmail.com> <20120910142827.GB11000@vandijck-laurijssen.be> <504E30AE.50201@hartkopp.net> <20120910184049.GD2006@gmail.com> <504E3901.10901@hartkopp.net> <20120910200844.GC546@vandijck-laurijssen.be>
+In-Reply-To: <20120910200844.GC546@vandijck-laurijssen.be>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
+On 10.09.2012 22:08, Kurt Van Dijck wrote:
 
-On Mon, Sep 10, 2012 at 09:19:20AM -0700, Tim Chen wrote:
-> This is the second version of the patch series. Thanks to Matthew Wilcox 
-> for many valuable suggestions on improving the patches.
+> On Mon, Sep 10, 2012 at 09:01:21PM +0200, Oliver Hartkopp wrote:
+
+>>>>> +	if (msg == NETDEV_CHANGENAME) {
+>>
+>>
+>> I do have a second remark.
+>>
+>> What about always using the notifiers to name the LED triggers?
+>>
+>> Looking into
+>>
+>> http://lxr.linux.no/#linux+v3.5.3/include/linux/netdevice.h#L1526
+>>
+>> we have NETDEV_CHANGENAME but what about
+>>
+>> 	NETDEV_REGISTER
+>>
+>> ???
+>>
+>> When changing and updating the LED trigger name always inside the notifier, we
+>> should never run into any locking or race conditions ...
+>>
+>> What do you think about this idea?
+>>
+> But the initial name must have been set properly already in that case...
 > 
-> To do page reclamation in shrink_page_list function, there are two
-> locks taken on a page by page basis.  One is the tree lock protecting
-> the radix tree of the page mapping and the other is the
-> mapping->i_mmap_mutex protecting the mapped
-> pages.  I try to batch the operations on pages sharing the same lock
-> to reduce lock contentions.  The first patch batch the operations protected by
-> tree lock while the second and third patch batch the operations protected by 
-> the i_mmap_mutex.
-> 
-> I managed to get 14% throughput improvement when with a workload putting
-> heavy pressure of page cache by reading many large mmaped files
-> simultaneously on a 8 socket Westmere server.
-> 
-> Tim
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-If you send next versions, please use git-format-patch --thread style.
-Quote from man
-"       If given --thread, git-format-patch will generate In-Reply-To and References
-       headers to make the second and subsequent patch mails appear as replies to the
-       first mail; this also generates a Message-Id header to reference.
-"
 
-It helps making your all patches in this series thread type in mailbox
-so reviewers can find all patches related to a subject easily.
+Yes it is.
 
-Thanks.
+See register_netdevice()
 
--- 
-Kind regards,
-Minchan Kim
+http://lxr.linux.no/#linux+v3.5.3/net/core/dev.c#L5453
+
+
+at the end NETDEV_REGISTER is notified:
+
+http://lxr.linux.no/#linux+v3.5.3/net/core/dev.c#L5552
+
+So it would be pretty elegant to create the LED trigger name in the notifier.
+This would allow to remove that code at the current init function too.
+
+Regards,
+Oliver
