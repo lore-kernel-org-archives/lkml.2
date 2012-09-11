@@ -1,103 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816Ab2IKWEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:04:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53998 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab2IKWEM (ORCPT
+	id S1754540Ab2IKWEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:04:48 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55407 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab2IKWEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:04:12 -0400
+	Tue, 11 Sep 2012 18:04:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344355862-2726-4-git-send-email-jiang.liu@huawei.com>
-References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-4-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Sep 2012 16:03:50 -0600
-Message-ID: <CAErSpo7C_-Yp6pNu0J9L3gMds9fuO2ZLRFvo28gVEGL0iM1JuQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 03/22] PCI: change PCI device management code to
- better follow device model
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXh1Vh=ojJKd34Cnm+sO+U1OqrcSk=5-EwXd22oB5Jw9Q@mail.gmail.com>
+References: <CA+icZUUj1u6YwpkzXOsUVJ4p5t-qrCWVDoaFoDbAbMT2EbEwWw@mail.gmail.com>
+	<CA+icZUXh1Vh=ojJKd34Cnm+sO+U1OqrcSk=5-EwXd22oB5Jw9Q@mail.gmail.com>
+Date: Wed, 12 Sep 2012 00:04:45 +0200
+Message-ID: <CA+icZUVSWBLrRu_vOcGurp=x-Bb1dBv1Tfdf8P8LiPNM1SuR8Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Sept 11 (drm related: boot problems on amd64)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> According to device model documentation, the way to add/remove device
-> object should be symmetric.
+On Tue, Sep 11, 2012 at 8:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Sep 11, 2012 at 8:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Tue, Sep 11, 2012 at 8:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi all,
+>>>
+>>> Changes since 201209010:
+>>>
+>>> New tree: ixp4xx
+>>>
+>>> The pci tree gained a build failure so I used the version from
+>>> next-20120910.
+>>>
+>>> The regulator tree lost its build failure.
+>>>
+>>> The staging tree lost its build failure.
+>>>
+>>> The akpm tree lost a few patches that turned up elsewhere.
+>>>
+>>> ----------------------------------------------------------------------------
+>>>
+>>
+>> Hi,
+>>
+>> today's and yesterday's Linux-Next is broken for me again.
+>> I tried with systemd and upstart on Ubuntu/precise, with nomodeset and
+>> rescue boot-option.
+>>
+>> With rescue boot-option I see this in my logs (Intel sandy-bridge
+>> ultrabook here):
+>>
+>> Sep 11 18:43:36 fambox kernel: [    9.654972] [drm:drm_pci_agp_init]
+>> *ERROR* Cannot initialize the agpgart module.
+>> Sep 11 18:43:36 fambox kernel: [    9.654980] DRM: Fill_in_dev failed.
+>>
+>> I have not checked any MLs... coming from hospital right now.
+>>
 >
-> /**
->  * device_del - delete device from system.
->  * @dev: device.
->  *
->  * This is the first part of the device unregistration
->  * sequence. This removes the device from the lists we control
->  * from here, has it removed from the other driver model
->  * subsystems it was added to in device_add(), and removes it
->  * from the kobject hierarchy.
->  *
->  * NOTE: this should be called manually _iff_ device_add() was
->  * also called manually.
->  */
+> More ERRORs:
 >
-> The rule here is to either use
-> 1) device_register()/device_unregister()
-> or
-> 2) device_initialize()/device_add()/device_del()/put_device().
->
-> So change PCI core to follow the rule and get rid of the redundant
-> pci_dev_get()/pci_dev_put() pair.
-
-Seems OK to me.
-
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  drivers/pci/probe.c  |    1 -
->  drivers/pci/remove.c |    4 ++--
->  2 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 0840409..dacca26 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
->         device_initialize(&dev->dev);
->         dev->dev.release = pci_release_dev;
-> -       pci_dev_get(dev);
->
->         dev->dev.dma_mask = &dev->dma_mask;
->         dev->dev.dma_parms = &dev->dma_parms;
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 33b6318..b9ac765 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
->         if (dev->is_added) {
->                 pci_proc_detach_device(dev);
->                 pci_remove_sysfs_dev_files(dev);
-> -               device_unregister(&dev->dev);
-> +               device_del(&dev->dev);
->                 dev->is_added = 0;
->         }
->
-> @@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
->         up_write(&pci_bus_sem);
->
->         pci_free_resources(dev);
-> -       pci_dev_put(dev);
-> +       put_device(&dev->dev);
->  }
->
->  /**
+> # grep -A1 "ERROR" /var/log/kern.log
+> Sep 10 17:51:29 fambox kernel: [   10.205818]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 10 17:51:29 fambox kernel: [   10.206055] i915: probe of
+> 0000:00:02.0 failed with error -5
 > --
-> 1.7.9.5
+> Sep 10 15:53:00 fambox kernel: [   10.500387]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 10 15:53:00 fambox kernel: [   10.500602] i915: probe of
+> 0000:00:02.0 failed with error -5
+> --
+> Sep 11 20:41:01 fambox kernel: [    9.636010]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 11 20:41:01 fambox kernel: [    9.636202] i915: probe of
+> 0000:00:02.0 failed with error -5
+> --
+> Sep 11 18:42:18 fambox kernel: [   10.132229]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 11 18:42:18 fambox kernel: [   10.132433] i915: probe of
+> 0000:00:02.0 failed with error -5
+> --
+> Sep 11 18:43:36 fambox kernel: [    9.654972] [drm:drm_pci_agp_init]
+> *ERROR* Cannot initialize the agpgart module.
+> Sep 11 18:43:36 fambox kernel: [    9.654980] DRM: Fill_in_dev failed.
+> --
+> Sep 11 19:52:10 fambox kernel: [    9.545562]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 11 19:52:10 fambox kernel: [    9.545798] i915: probe of
+> 0000:00:02.0 failed with error -5
+> --
+> Sep 11 20:04:09 fambox kernel: [    9.798233]
+> [drm:i915_get_bridge_dev] *ERROR* bridge device not found
+> Sep 11 20:04:09 fambox kernel: [    9.798557] i915: probe of
+> 0000:00:02.0 failed with error -5
 >
+
+[ CC Bjorn (pci maintainer) ]
+
+I pulled in pci.git#next up to commit
+9c33332178e6ba49fe48c468edc08ad94b53e1b1 ("Merge branch
+'pci/gavin-window-alignment' into next") on top of next-20120911.
+This lets my machine boot, but freezes somewhere else.
+
+- Sedat -
+
+> - Sedat -
+>
+>> Regards,
+>> - Sedat -
