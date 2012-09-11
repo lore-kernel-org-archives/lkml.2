@@ -1,130 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab2IKKEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 06:04:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56431 "EHLO mx2.suse.de"
+	id S1758231Ab2IKKF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 06:05:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52557 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab2IKKEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 06:04:40 -0400
-Date: Tue, 11 Sep 2012 12:04:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911100433.GC8058@dhcp22.suse.cz>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
+	id S1752915Ab2IKKFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 06:05:25 -0400
+Message-ID: <504F0CD7.1090302@ti.com>
+Date: Tue, 11 Sep 2012 12:05:11 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910223355.GD7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: <balbi@ti.com>, <linux@arm.linux.org.uk>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <tony@atomide.com>, <rnayak@ti.com>,
+        <hvaibhav@ti.com>, <peter.ujfalusi@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] arm/dts: Add twl6030-usb data
+References: <1347345381-4390-1-git-send-email-kishon@ti.com> <1347345381-4390-2-git-send-email-kishon@ti.com> <504F03D4.5080800@ti.com> <CAAe_U6KQX6LPT3p108stdBVkj_KnK0Q1Gxumy4Jn4ah38q0LwQ@mail.gmail.com>
+In-Reply-To: <CAAe_U6KQX6LPT3p108stdBVkj_KnK0Q1Gxumy4Jn4ah38q0LwQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I like the approach in general but see the comments bellow:
+On 09/11/2012 11:39 AM, ABRAHAM, KISHON VIJAY wrote:
+> Hi,
+> 
+> On Tue, Sep 11, 2012 at 2:56 PM, Benoit Cousson <b-cousson@ti.com> wrote:
+>> On 09/11/2012 08:36 AM, Kishon Vijay Abraham I wrote:
+>>> Add twl6030-usb data node in twl6030 device tree file
+>>>
+>>> Acked-by: Felipe Balbi <balbi@ti.com>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>>  arch/arm/boot/dts/omap4-panda.dts |    4 ++++
+>>>  arch/arm/boot/dts/omap4-sdp.dts   |    4 ++++
+>>>  arch/arm/boot/dts/twl6030.dtsi    |    5 +++++
+>>>  3 files changed, 13 insertions(+)
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+>>> index 9880c12..2999eba 100644
+>>> --- a/arch/arm/boot/dts/omap4-panda.dts
+>>> +++ b/arch/arm/boot/dts/omap4-panda.dts
+>>> @@ -126,3 +126,7 @@
+>>>       ti,non-removable;
+>>>       bus-width = <4>;
+>>>  };
+>>> +
+>>> +&twlusb {
+>>> +     usb-supply = <&vusb>;
+>>> +};
+>>> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+>>> index 72216e9..d8290c0 100644
+>>> --- a/arch/arm/boot/dts/omap4-sdp.dts
+>>> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+>>> @@ -226,3 +226,7 @@
+>>>       bus-width = <4>;
+>>>       ti,non-removable;
+>>>  };
+>>> +
+>>> +&twlusb {
+>>> +     usb-supply = <&vusb>;
+>>> +};
+>>> diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+>>> index 3b2f351..8e3aac9 100644
+>>> --- a/arch/arm/boot/dts/twl6030.dtsi
+>>> +++ b/arch/arm/boot/dts/twl6030.dtsi
+>>> @@ -83,4 +83,9 @@
+>>>       clk32kg: regulator@12 {
+>>>               compatible = "ti,twl6030-clk32kg";
+>>>       };
+>>> +
+>>> +     twlusb: twl6030-usb {
+>>
+>> That name should be a generic device class name is possible.
+>> What is twl6030-usb exactly? an USB PHY?
+> 
+> Of late we are calling it the comparator as it's used only to detect
+> VBUS/ID events.
+> Should it be like usb-comparator? What should be the label?
 
-On Mon 10-09-12 15:33:55, Tejun Heo wrote:
-[...]
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3855,12 +3855,17 @@ static int mem_cgroup_hierarchy_write(st
->  	 */
->  	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
->  				(val == 1 || val == 0)) {
-> -		if (list_empty(&cont->children))
-> +		if (list_empty(&cont->children)) {
->  			memcg->use_hierarchy = val;
-> -		else
-> +			/* we're fully hierarchical iff root uses hierarchy */
-> +			if (mem_cgroup_is_root(memcg))
-> +				mem_cgroup_subsys.broken_hierarchy = !val;
-> +		} else {
->  			retval = -EBUSY;
-> -	} else
-> +		}
-> +	} else {
->  		retval = -EINVAL;
-> +	}
->  
->  out:
->  	cgroup_unlock();
-> @@ -4953,6 +4958,7 @@ mem_cgroup_create(struct cgroup *cont)
->  						&per_cpu(memcg_stock, cpu);
->  			INIT_WORK(&stock->work, drain_local_stock);
->  		}
-> +		mem_cgroup_subsys.broken_hierarchy = !memcg->use_hierarchy;
+usb-comparator looks good and generic enough.
 
-Hmmm, this will warn even if we have
-root (default use_hierarchy=0)
- \
-  A (use_hierarchy=1)
-   \
-    B <- here
+The label is useless until you reference it somewhere else. But in the
+case of the label, it can be more specific.
+But you can just use "twl-usb-comparator" for example.
 
-which is unfortunate because it will add a noise to a reasonable
-configuration.
-I think this is fixable if you move the warning after 
-cgroup_subsys_state::create and broken_hierarchy would be set only if
-parent is not root and use_hierarchy==0 in mem_cgroup_create. Something
-like:
+>>
+>>> +             compatible = "ti,twl6030-usb";
+>>> +             interrupts = < 4 10 >;
+>>
+>> If this is for two interrupts, you'd better split them to avoid
+>> confusion with irq specifiers that requires several attributes like for
+>> the GIC.
+> 
+> yeah. Thats for 2 interrupts.
+>>
+>> +               interrupts = <4>, <10>; /* IRQ1 blabla, IRQ2 blabla*/
+>>
+>> The comments are not mandatory assuming the binding is documented.
+> 
+> It's documented *usb: twl6030: Add dt support for twl6030 usb*
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 795e525..d5c93ab 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4973,6 +4973,13 @@ mem_cgroup_create(struct cgroup *cont)
- 	} else {
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
-+		/*
-+		 * Deeper hierachy with use_hierarchy == false doesn't make
-+		 * much sense so let cgroup subsystem know about this unfortunate
-+		 * state in our controller.
-+		 */
-+		if (parent && parent != root_mem_cgroup)
-+			mem_cgroup_subsys.broken_hierarchy = true;
- 	}
- 	memcg->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&memcg->oom_notify);
+Yeah, sorry for that, but it is indeed very confusing to review the DTS
+without having the binding documentation already merged :-(
 
-What do you think?
+Regards,
+Benoit
 
->  		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
->  	} else {
->  		parent = mem_cgroup_from_cont(cont->parent);
-> --- a/net/core/netprio_cgroup.c
-> +++ b/net/core/netprio_cgroup.c
-> @@ -330,7 +330,17 @@ struct cgroup_subsys net_prio_subsys = {
->  	.subsys_id	= net_prio_subsys_id,
->  #endif
->  	.base_cftypes	= ss_files,
-> -	.module		= THIS_MODULE
-> +	.module		= THIS_MODULE,
-> +
-> +	/*
-> +	 * net_prio has artificial limit on the number of cgroups and
-> +	 * disallows nesting making it impossible to co-mount it with other
-> +	 * hierarchical subsystems.  Remove the artificially low PRIOIDX_SZ
-> +	 * limit and properly nest configuration such that children follow
-> +	 * their parents' configurations by default and are allowed to
-> +	 * override and remove the following.
-> +	 */
-> +	.broken_hierarchy = trye,
 
-typo
-
--- 
-Michal Hocko
-SUSE Labs
