@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab2IKVHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 17:07:31 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11779 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab2IKVHa (ORCPT
+	id S1758381Ab2IKVJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 17:09:53 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:38576 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758118Ab2IKVJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 17:07:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="235486651"
-Date: Tue, 11 Sep 2012 14:07:26 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, Chris Ball <cjb@laptop.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 05/16] ARM: msm: move platform_data definitions
-Message-ID: <20120911210726.GA17002@codeaurora.org>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-5-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
+	Tue, 11 Sep 2012 17:09:51 -0400
+Date: Tue, 11 Sep 2012 23:09:49 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH] wdt:clk: preparation for switch to common clock framework
+Message-ID: <20120911210949.GI27604@spo001.leaseweb.com>
+References: <1346351350-28807-1-git-send-email-m-karicheri2@ti.com> <3E54258959B69E4282D79E01AB1F32B7041B6EB8@DFLE12.ent.ti.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347368390-31252-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041B6EB8@DFLE12.ent.ti.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 02:59:39PM +0200, Arnd Bergmann wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
-> 
-> This moves such data out of the msm include directories
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: Daniel Walker <dwalker@fifo99.com>
-> Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: linux-arm-msm@vger.kernel.org
-> ---
->  arch/arm/mach-msm/board-qsd8x50.c                                    |    2 +-
->  arch/arm/mach-msm/board-trout-mmc.c                                  |    2 +-
->  arch/arm/mach-msm/board-trout-panel.c                                |    2 +-
->  arch/arm/mach-msm/devices-msm7x00.c                                  |    2 +-
->  arch/arm/mach-msm/devices-msm7x30.c                                  |    2 +-
->  arch/arm/mach-msm/devices-qsd8x50.c                                  |    2 +-
->  arch/arm/mach-msm/include/mach/board.h                               |    2 +-
->  drivers/mmc/host/msm_sdcc.c                                          |    2 +-
->  drivers/video/msm/mddi.c                                             |    2 +-
->  drivers/video/msm/mddi_client_dummy.c                                |    2 +-
->  drivers/video/msm/mddi_client_nt35399.c                              |    2 +-
->  drivers/video/msm/mddi_client_toshiba.c                              |    2 +-
->  drivers/video/msm/mdp.c                                              |    2 +-
->  drivers/video/msm/mdp_hw.h                                           |    2 +-
->  drivers/video/msm/mdp_ppp.c                                          |    2 +-
->  drivers/video/msm/msm_fb.c                                           |    2 +-
->  .../include/mach/mmc.h => include/linux/platform_data/mmc-msm_sdcc.h |    0
->  .../mach/msm_fb.h => include/linux/platform_data/video-msm_fb.h      |    0
->  18 files changed, 16 insertions(+), 16 deletions(-)
->  rename arch/arm/mach-msm/include/mach/mmc.h => include/linux/platform_data/mmc-msm_sdcc.h (100%)
->  rename arch/arm/mach-msm/include/mach/msm_fb.h => include/linux/platform_data/video-msm_fb.h (100%)
+Hi Karicheri,
 
-Acked-by: David Brown <davidb@codeaurora.org>
+> >> -----Original Message-----
+> >> From: Karicheri, Muralidharan
+> >> Sent: Thursday, August 30, 2012 2:29 PM
+> >> To: linux-kernel@vger.kernel.org; mturquette@linaro.org; linux-
+> >> watchdog@vger.kernel.org; wim@iguana.be
+> >> Cc: Karicheri, Muralidharan
+> >> Subject: [PATCH] wdt:clk: preparation for switch to common clock framework
+> >> 
+> >> As a first step towards migrating davinci platforms to use common clock
+> >> framework, replace all instances of clk_enable() with clk_prepare_enable()
+> >> and clk_disable() with clk_disable_unprepare(). Until the platform is
+> >> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
+> >> adds a might_sleep() call and would work without any issues.
+> >> 
+> >> This will make it easy later to switch to common clk based implementation
+> >> of clk driver from DaVinci specific driver.
+> >> 
+> >> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Could you resent the original e-mail because I didn't seem to have received it...
+And I can't even find it in the linux-watchdog mailing list archives...
+
+Thanks,
+Wim.
+
