@@ -1,125 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab2IKVuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 17:50:46 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59707 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2IKVuo (ORCPT
+	id S1755380Ab2IKWBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:01:04 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34538 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752382Ab2IKWBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 17:50:44 -0400
-Message-ID: <504FB22E.4090707@redhat.com>
-Date: Tue, 11 Sep 2012 23:50:38 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Sep 2012 18:01:00 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <20120911182904.GS7677@google.com> <504F88CB.6030105@redhat.com> <20120911191325.GU7677@google.com> <504F8FF0.3000408@redhat.com> <20120911200150.GV7677@google.com>
-In-Reply-To: <20120911200150.GV7677@google.com>
+In-Reply-To: <1344355862-2726-2-git-send-email-jiang.liu@huawei.com>
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-2-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 11 Sep 2012 16:00:38 -0600
+Message-ID: <CAErSpo5nOJBCags9=e1y9ZcSDK9y69mZy=_+x0m_9bK78yVUJg@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 01/22] PCI: use pci_get_domain_bus_and_slot() to
+ avoid race conditions
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Al: you can jump down to "One problem:"]
+On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> There's a typical usage pattern to search a PCI device under a specific
+> PCI bus (domian, busno) as below:
+> struct pci_bus *pci_bus = pci_find_bus(domain, busno);
+> struct pci_dev *pci_dev = pci_get_slot(pci_bus, devfn);
+>
+> The above code has a race window between pci_find_bus() and pci_get_slot()
+> if PCI hotplug operations happen between them which removes the pci_bus.
+> So use PCI hotplug safe interface pci_get_domain_bus_and_slot() instead,
+> which also reduces code complexity.
 
-Il 11/09/2012 22:01, Tejun Heo ha scritto:
-> Hello, Paolo.
-> 
-> On Tue, Sep 11, 2012 at 09:24:32PM +0200, Paolo Bonzini wrote:
->>> Couldn't it intercept some of them - e.g. RWs and discards?
->>> What's the benifit / use case of doing pure bypass?
->>
->> Basically, using the same storage technology for bare metal and
->> virtualized systems.  IMHO losing sense data is a no-no, but the above
->> solution could be feasible too.
-> 
-> Either way, with or without virtualization, making detailed error
-> information to userland is a valid goal.  I *think* we're finally
-> getting there after years of talking via structured printk.  I don't
-> know much about the details but heard about exposing sense data via
-> printk.
+This makes sense to me.  If we support hotplug, it's fundamentally
+unsafe to keep a struct pci_bus * without having a reference or some
+way to make sure it doesn't go away.  I think we should try to
+eradicate all uses of pci_find_bus() and pci_find_next_bus().
 
-Wait wait, there is already a perfectly 1:1 solution for this, and it's
-SG_IO.
-
-I think error processing falls roughly in two categories: "I need each
-command's precise state" and "I need to know if/when something bad
-happens".  Luckily, I/O also falls roughly in the same two categories:
-"I need precise control of each commands" and "I just care of getting
-this to disk".  The former can use SG_IO, the latter can use logs.
-
-So, let's not complicate the problem further.  We have a perfectly sane
-API that (with different names) is even provided by almost every
-operating system in existence.  There's just this little detail of
-filtering that is done for unprivileged processes; I hoped to fix 50% of
-the problem with this 3-line patch but it's not the end of the world if
-it's rejected constructively.
-
-The solution I outlined in my previous email:
-
->> Enabling/disabling the filters from a privileged
->> program and passing the unfiltered fd via SCM_RIGHTS would be enough.
-
-would entail some userland coding, but nothing paramount at all (and
-closer to my usual territory :)).  And we would have to do it anyway for
-the reservations case.
-
-Basically it would be a ioctl(fd, SG_SET_FILTER_ENABLED, arg) where arg
-can be:
-
--1 for "enable/disable based on CAP_SYS_RAWIO" (default)
-0 for always enable filter
-1 for always disable filter
-
-And also a dual ioctl(fd, SG_GET_FILTER_ENABLED, arg).
-
-One problem: to do this, I need to access some "struct file" member in
-SG_IO, and thus change the ioctl member from block_device/fmode to
-block_device/file.   This would partially undo the 2007 switch from
-inode/file by Al Viro.  He was already asked about it in
-https://lkml.org/lkml/2012/6/12/414, let's try again here.
-
->>> Can't you make use of the existing disk events mechanism for that?
->>> Block layer already knows how to watch readiness of a device and tell
->>> the userland about it via uevent.
->>
->> How?  But anyway i don't want to divert the discussion from the actual
->> topic...
-> 
-> Disk events mechanism is there to watch (either via async notification
-> or polling) media change and device readiness and generates the usual
-> uevents when it detects them.  For sd devices, it basically issues TUR
-> periodically, so it's already doing pretty much what you need.
-
-Ah, no, we can't do that because the device should be opened with
-O_EXCL.  It is not right now, but it's a bug.  It's not very different
-from burning a CD (in fact, it's absolutely the same if you burn a CD
-inside a guest :)).
-
-> I guess the repeating question is whether to solve the problem within
-> the framework the underlying OS is providing or having direct access
-> to the raw hardware.  I don't know the answer.
-> 
-> Accessing the "raw" hardware does have its advantages but managing
-> multiple users
-
-In this case, the constraints pretty much guarantee that you have only
-one user.  To stick with everyday hardware, if you pass your CD drive to
-a guest you can well expect that the host will not be able to use it.
-
-Or, if you have more than one user, that they know what they are doing
-(reservations, etc.).
-
-> I personally hope "raw" to be strictly confined to specific areas
-> where performance impact of having kernel inbetween is prohibitive but
-> that's just me hoping.
-
-Well, it's not just about performance but also about precision sometimes.
-
-Paolo
-
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/ia64/sn/kernel/io_common.c      |    4 +---
+>  drivers/gpu/vga/vgaarb.c             |   15 +++------------
+>  drivers/pci/hotplug/cpcihp_generic.c |    8 ++------
+>  drivers/pci/iov.c                    |    8 ++------
+>  drivers/pci/xen-pcifront.c           |   10 ++--------
+>  5 files changed, 10 insertions(+), 35 deletions(-)
+>
+> diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
+> index fbb5f2f..8630875 100644
+> --- a/arch/ia64/sn/kernel/io_common.c
+> +++ b/arch/ia64/sn/kernel/io_common.c
+> @@ -229,7 +229,6 @@ void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *pcidev_info,
+>  {
+>         int segment = pci_domain_nr(dev->bus);
+>         struct pcibus_bussoft *bs;
+> -       struct pci_bus *host_pci_bus;
+>         struct pci_dev *host_pci_dev;
+>         unsigned int bus_no, devfn;
+>
+> @@ -245,8 +244,7 @@ void sn_pci_fixup_slot(struct pci_dev *dev, struct pcidev_info *pcidev_info,
+>
+>         bus_no = (pcidev_info->pdi_slot_host_handle >> 32) & 0xff;
+>         devfn = pcidev_info->pdi_slot_host_handle & 0xffffffff;
+> -       host_pci_bus = pci_find_bus(segment, bus_no);
+> -       host_pci_dev = pci_get_slot(host_pci_bus, devfn);
+> +       host_pci_dev = pci_get_domain_bus_and_slot(segment, bus_no, devfn);
+>
+>         pcidev_info->host_pci_dev = host_pci_dev;
+>         pcidev_info->pdi_linux_pcidev = dev;
+> diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+> index 3df8fc0..b6852b7 100644
+> --- a/drivers/gpu/vga/vgaarb.c
+> +++ b/drivers/gpu/vga/vgaarb.c
+> @@ -1066,7 +1066,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
+>                 }
+>
+>         } else if (strncmp(curr_pos, "target ", 7) == 0) {
+> -               struct pci_bus *pbus;
+>                 unsigned int domain, bus, devfn;
+>                 struct vga_device *vgadev;
+>
+> @@ -1085,19 +1084,11 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
+>                         pr_debug("vgaarb: %s ==> %x:%x:%x.%x\n", curr_pos,
+>                                 domain, bus, PCI_SLOT(devfn), PCI_FUNC(devfn));
+>
+> -                       pbus = pci_find_bus(domain, bus);
+> -                       pr_debug("vgaarb: pbus %p\n", pbus);
+> -                       if (pbus == NULL) {
+> -                               pr_err("vgaarb: invalid PCI domain and/or bus address %x:%x\n",
+> -                                       domain, bus);
+> -                               ret_val = -ENODEV;
+> -                               goto done;
+> -                       }
+> -                       pdev = pci_get_slot(pbus, devfn);
+> +                       pdev = pci_get_domain_bus_and_slot(domain, bus, devfn);
+>                         pr_debug("vgaarb: pdev %p\n", pdev);
+>                         if (!pdev) {
+> -                               pr_err("vgaarb: invalid PCI address %x:%x\n",
+> -                                       bus, devfn);
+> +                               pr_err("vgaarb: invalid PCI address %x:%x:%x\n",
+> +                                       domain, bus, devfn);
+>                                 ret_val = -ENODEV;
+>                                 goto done;
+>                         }
+> diff --git a/drivers/pci/hotplug/cpcihp_generic.c b/drivers/pci/hotplug/cpcihp_generic.c
+> index 81af764..a6a71c4 100644
+> --- a/drivers/pci/hotplug/cpcihp_generic.c
+> +++ b/drivers/pci/hotplug/cpcihp_generic.c
+> @@ -154,12 +154,8 @@ static int __init cpcihp_generic_init(void)
+>         if(!r)
+>                 return -EBUSY;
+>
+> -       bus = pci_find_bus(0, bridge_busnr);
+> -       if (!bus) {
+> -               err("Invalid bus number %d", bridge_busnr);
+> -               return -EINVAL;
+> -       }
+> -       dev = pci_get_slot(bus, PCI_DEVFN(bridge_slot, 0));
+> +       dev = pci_get_domain_bus_and_slot(0, bridge_busnr,
+> +                                         PCI_DEVFN(bridge_slot, 0));
+>         if(!dev || dev->hdr_type != PCI_HEADER_TYPE_BRIDGE) {
+>                 err("Invalid bridge device %s", bridge);
+>                 pci_dev_put(dev);
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index 74bbaf8..c7d2969 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -152,15 +152,11 @@ failed1:
+>  static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+>  {
+>         char buf[VIRTFN_ID_LEN];
+> -       struct pci_bus *bus;
+>         struct pci_dev *virtfn;
+>         struct pci_sriov *iov = dev->sriov;
+>
+> -       bus = pci_find_bus(pci_domain_nr(dev->bus), virtfn_bus(dev, id));
+> -       if (!bus)
+> -               return;
+> -
+> -       virtfn = pci_get_slot(bus, virtfn_devfn(dev, id));
+> +       virtfn = pci_get_domain_bus_and_slot(pci_domain_nr(dev->bus),
+> +                       virtfn_bus(dev, id), virtfn_devfn(dev, id));
+>         if (!virtfn)
+>                 return;
+>
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index d6cc62c..def8d0b 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -982,7 +982,6 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+>         int err = 0;
+>         int i, num_devs;
+>         unsigned int domain, bus, slot, func;
+> -       struct pci_bus *pci_bus;
+>         struct pci_dev *pci_dev;
+>         char str[64];
+>
+> @@ -1032,13 +1031,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+>                         goto out;
+>                 }
+>
+> -               pci_bus = pci_find_bus(domain, bus);
+> -               if (!pci_bus) {
+> -                       dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
+> -                               domain, bus);
+> -                       continue;
+> -               }
+> -               pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
+> +               pci_dev = pci_get_domain_bus_and_slot(domain, bus,
+> +                               PCI_DEVFN(slot, func));
+>                 if (!pci_dev) {
+>                         dev_dbg(&pdev->xdev->dev,
+>                                 "Cannot get PCI device %04x:%02x:%02x.%d\n",
+> --
+> 1.7.9.5
+>
