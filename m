@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab2IKLih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:38:37 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:43407 "EHLO
+	id S1759373Ab2IKLjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:39:11 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:26724 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759212Ab2IKLem (ORCPT
+	with ESMTP id S1759177Ab2IKLek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:34:42 -0400
+	Tue, 11 Sep 2012 07:34:40 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsgCAIAhT1BbdWObgWdsb2JhbABFhge1SSIBARYmJ4IgAQEFIwQLAUYQIAUCJgICVwYTiBSoaJM3gSGPA4ESA5VdkwU
+X-IronPort-Anti-Spam-Result: AscCAIAhT1BbdWObgWdsb2JhbABFhge1SSIBARYmJ4JKDwE0EjUCJgJfCogdqGiTN4EhjwOBEgOVXZMF
 X-IronPort-AV: E=Sophos;i="4.80,404,1344204000"; 
-   d="scan'208";a="564505353"
+   d="scan'208";a="564505277"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH v2 09/20] Staging: ipack: reset previous timeouts during device registration.
-Date: Tue, 11 Sep 2012 13:35:02 +0200
-Message-Id: <1347363313-17094-10-git-send-email-siglesias@igalia.com>
+Subject: [PATCH v2 00/20] ipack: added callbacks and some cleanup
+Date: Tue, 11 Sep 2012 13:34:53 +0200
+Message-Id: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
-References: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -32,31 +29,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Taprogge <jens.taprogge@taprogge.org>
+Hello,
 
-Resetting the previous timeout we avoid to read the timeout status register
-and see timeout errors that don't correspond to the present state of the
-device.
+This second version adds Dan Carpenter's suggestions and it has been rebased
+from gregkh's staging-next repository.
 
-Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
----
- drivers/staging/ipack/ipack.c |    2 ++
- 1 file changed, 2 insertions(+)
+Dan, if you want, you can add the Reviewed-by for all the patches again.
 
-diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
-index e2f819c..08b122d 100644
---- a/drivers/staging/ipack/ipack.c
-+++ b/drivers/staging/ipack/ipack.c
-@@ -379,6 +379,8 @@ struct ipack_device *ipack_device_register(struct ipack_bus_device *bus,
- 
- 	if (bus->ops->set_clockrate(dev, 8))
- 		dev_warn(&dev->dev, "failed to switch to 8 MHz operation for reading of device ID.\n");
-+	if (bus->ops->reset_timeout(dev))
-+		dev_warn(&dev->dev, "failed to reset potential timeout.");
- 
- 	ret = ipack_device_read_id(dev);
- 	if (ret < 0) {
+Hopefully, this time the MTA will not change the Content-Transfer-Encoding from
+8bit to base64.
+
+Thanks,
+
+Sam
+
+Jens Taprogge (10):
+  Staging: ipack/bridges/tpci200: Put the TPCI200 control registers
+    into a struct.
+  Staging: ipack: Provide several carrier callbacks.
+  Staging: ipack/bridges/tpci200: provide new callbacks to tpci200
+  Staging: ipack: Obtain supported speeds from ID ROM.
+  Staging: ipack: Choose the optimum bus speed by default.
+  Staging: ipack: remove field driver from struct ipack_device.
+  Staging: ipack: Switch to 8MHz operation before reading ID.
+  Staging: ipack: reset previous timeouts during device registration.
+  Staging: ipack: check the device ID space CRC.
+  Staging: ipack/bridges/tpci200: Store the irq holder in slot_irq.
+
+Samuel Iglesias Gonsálvez (10):
+  Staging: ipack/bridges/tpci200: remove struct list_head
+  Staging: ipack/bridges/tpci200: reorder the iounmap and
+    pci_release_region
+  Staging: ipack/bridges/tpci200: increment the reference counter of
+    the pci_dev
+  Staging: ipack/bridges/tpci200: fix the uninstall the ipack device
+  Staging: ipack/devices/ipoctal: change exiting procedure
+  Staging: ipack/devices/ipoctal: free the IRQ.
+  Staging: ipack: unregister devices when uninstall the carrier device.
+  Staging: ipack/bridges/tpci200: delete ipack_device_unregister calls
+    when     exiting
+  Staging: ipack/bridges/tpci200: remove tpci200_slot_unregister
+  Staging: ipack: delete .remove_device() callback
+
+ drivers/staging/ipack/bridges/tpci200.c |  189 +++++++++++++++++++++----------
+ drivers/staging/ipack/bridges/tpci200.h |   24 ++--
+ drivers/staging/ipack/devices/ipoctal.c |    7 +-
+ drivers/staging/ipack/ipack.c           |  104 +++++++++++++++--
+ drivers/staging/ipack/ipack.h           |   21 +++-
+ 5 files changed, 256 insertions(+), 89 deletions(-)
+
 -- 
 1.7.10.4
 
