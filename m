@@ -1,120 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2IKIwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 04:52:08 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:54589 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753932Ab2IKIwD (ORCPT
+	id S1754226Ab2IKIx7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 04:53:59 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:45754 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752410Ab2IKIx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 04:52:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120910164323.GK7464@arwen.pp.htv.fi>
-References: <1346943331-18120-1-git-send-email-kishon@ti.com>
-	<1346943331-18120-2-git-send-email-kishon@ti.com>
-	<5048C2A2.2020104@ti.com>
-	<20120906171301.GC17754@arwen.pp.htv.fi>
-	<20120906171803.GA30717@arwen.pp.htv.fi>
-	<20120906195607.GB1303@atomide.com>
-	<20120910155855.GE7464@arwen.pp.htv.fi>
-	<504E127F.6020406@ti.com>
-	<20120910164323.GK7464@arwen.pp.htv.fi>
-Date: Tue, 11 Sep 2012 14:22:01 +0530
-Message-ID: <CAAe_U6KgX7TcT9FSsJRHP62mMJ0hcg2cYJ8bX15wdpjCNzLukQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] arm: omap: hwmod: add a new addr space in otg for
- writing to control module
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: balbi@ti.com
-Cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Vaibhav Hiremath <hvaibhav@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
-        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Sep 2012 04:53:56 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] pinctrl: pinctrl-single: Add pinctrl-single,bits type of mux
+Date: Tue, 11 Sep 2012 11:54:24 +0300
+Message-Id: <1347353664-15906-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+With pinctrl-single,bits it is possible to update just part of the register
+within the pinctrl-single,function-mask area.
+This is useful when one register configures mmore than one pin's mux.
 
-On Mon, Sep 10, 2012 at 10:13 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Mon, Sep 10, 2012 at 06:17:03PM +0200, Benoit Cousson wrote:
->> >>>>> On 9/6/2012 8:25 PM, Kishon Vijay Abraham I wrote:
->> >>>>>> The mailbox register for usb otg in omap is present in control module.
->> >>>>>> On detection of any events VBUS or ID, this register should be written
->> >>>>>> to send the notification to musb core.
->> >>>>>>
->> >>>>>> Till we have a separate control module driver to write to control module,
->> >>>>>> omap2430 will handle the register writes to control module by itself. So
->> >>>>>> a new address space to represent this control module register is added
->> >>>>>> to usb_otg_hs.
->> >>>>>>
->> >>>>>> Cc: Benoit Cousson <b-cousson@ti.com>
->> >>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> >>>>>> ---
->> >>>>>>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
->> >>>>>>  1 file changed, 5 insertions(+)
->> >>>>>>
->> >>>>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
->> >>>>>> index 242aee4..02341bc 100644
->> >>>>>> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
->> >>>>>> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
->> >>>>>> @@ -5890,6 +5890,11 @@ static struct omap_hwmod_addr_space omap44xx_usb_otg_hs_addrs[] = {
->> >>>>>>                .pa_end         = 0x4a0ab003,
->> >>>>>>                .flags          = ADDR_TYPE_RT
->> >>>>>>        },
->> >>>>>> +      {
->> >>>>>> +              .pa_start       = 0x4a00233c,
->> >>>>>> +              .pa_end         = 0x4a00233f,
->> >>>>>> +              .flags          = ADDR_TYPE_RT
->> >>>>>> +      },
->> >>>>>
->> >>>>> I do not have any objection/comment here, but I believe this is control
->> >>>>> module address space required for USB module, right?
->> >>>>> I am not sure this is right way of accessing control module space.
->> >>>>> Actually Control Module Access required for drivers is one of the
->> >>>>> blocking issue we have currently.
->> >>>>>
->> >>>>> Also there was some effort put up by 'Konstantine' to convert Control
->> >>>>> module to MFD driver, I haven't seen any further update on it. But it
->> >>>>> would be good to check with him.
->> >>>>
->> >>>> this was an agreement with Benoit since we already lost a couple merge
->> >>>> windows for this patchset. We agreed to wait until -rc4 for SCM driver
->> >>>> and if it wasn't ready, we'd go ahead with this and SCM author would fix
->> >>>> it up on a patch converting users to new SCM driver.
->> >>>
->> >>> Tony, can I get your Acked-by to this patch so I can take it together
->> >>> with the rest of the series ? Thanks
->> >>>
->> >>> ps: I'll apply this to my 'musb' branch which is immutable, so it's safe
->> >>> to merge it into your tree once I apply.
->> >>
->> >> It would be best if this got acked by Benoit and Paul as they may
->> >> have some other patches queued up. I'll ack if they ack ;)
->> >
->> > Benoit, care to ack this patch ???
->>
->> Gosh, that's hard to ack something like that :-)
->
-> btw, that's not different than what's already in tree, the only
-> difference is that now hwmod knows about it...
->
->> But considering that the control module driver is not there yet, I have
->> no choice but accepting that one if we want to have the functionality
->> we've been waiting for years.
->>
->> Could you just update the patch with a big disclaimer on top of the
->> address range to explain that this should not belong here and will be
->> removed ASAP, when the proper driver will be done.
->
-> sure, that's doable... Kishon, can you do this ASAP ? I want to send my
-> pull requests tomorrow at the latest.
+pinctrl-single,bits takes three parameters:
+<reg offset, value, sub-mask>
 
-Sure. Will send now.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+Hello Tony, Linus,
 
-Thanks
-Kishon
+Changes since v1:
+- Added boolean for the pinctrl-single: pinctrl-single,bit-per-mux
+  When this is set the it indicates that the area contains registers which
+  changes mux for multible pins.
+- Documentation updated reflecting this change (with example for this type)
+
+Regards,
+Peter
+
+ .../devicetree/bindings/pinctrl/pinctrl-single.txt | 41 +++++++++++++++++--
+ drivers/pinctrl/pinctrl-single.c                   | 46 +++++++++++++++++-----
+ 2 files changed, 74 insertions(+), 13 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
+index 5187f0d..2c81e45 100644
+--- a/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
+@@ -14,10 +14,12 @@ Optional properties:
+ - pinctrl-single,function-off : function off mode for disabled state if
+   available and same for all registers; if not specified, disabling of
+   pin functions is ignored
++- pinctrl-single,bit-per-mux : boolean to indicate that one register controls
++  more than one pin
+ 
+-This driver assumes that there is only one register for each pin,
+-and uses the common pinctrl bindings as specified in the pinctrl-bindings.txt
+-document in this directory.
++This driver assumes that there is only one register for each pin (unless the
++pinctrl-single,bit-per-mux is set), and uses the common pinctrl bindings as
++specified in the pinctrl-bindings.txt document in this directory.
+ 
+ The pin configuration nodes for pinctrl-single are specified as pinctrl
+ register offset and value pairs using pinctrl-single,pins. Only the bits
+@@ -31,6 +33,15 @@ device pinctrl register, and 0x118 contains the desired value of the
+ pinctrl register. See the device example and static board pins example
+ below for more information.
+ 
++In case when one register changes more than one pin's mux the
++pinctrl-single,bits need to be used which takes three parameters:
++
++	pinctrl-single,bits = <0xdc 0x18, 0xff>;
++
++Where 0xdc is the offset from the pinctrl register base address for the
++device pinctrl register, 0x18 is the desired value, and 0xff is the sub mask to
++be used when applying this change to the register.
++
+ Example:
+ 
+ /* SoC common file */
+@@ -55,6 +66,15 @@ pmx_wkup: pinmux@4a31e040 {
+ 	pinctrl-single,function-mask = <0xffff>;
+ };
+ 
++control_devconf0: pinmux@48002274 {
++	compatible = "pinctrl-single";
++	reg = <0x48002274 4>;	/* Single register */
++	#address-cells = <1>;
++	#size-cells = <0>;
++	pinctrl-single,bit-per-mux;
++	pinctrl-single,register-width = <32>;
++	pinctrl-single,function-mask = <0x5F>;
++};
+ 
+ /* board specific .dts file */
+ 
+@@ -87,6 +107,21 @@ pmx_wkup: pinmux@4a31e040 {
+ 	};
+ };
+ 
++&control_devconf0 {
++	mcbsp1_pins: pinmux_mcbsp1_pins {
++		pinctrl-single,bits = <
++			0x00 0x18 0x18 /* FSR/CLKR signal from FSX/CLKX pin */
++		>;
++	};
++
++	mcbsp2_clks_pins: pinmux_mcbsp2_clks_pins {
++		pinctrl-single,bits = <
++			0x00 0x40 0x40 /* McBSP2 CLKS from McBSP_CLKS pin */
++		>;
++	};
++
++};
++
+ &uart2 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart2_pins>;
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 3508631..759b5a6 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -26,7 +26,8 @@
+ #include "core.h"
+ 
+ #define DRIVER_NAME			"pinctrl-single"
+-#define PCS_MUX_NAME			"pinctrl-single,pins"
++#define PCS_MUX_PINS_NAME		"pinctrl-single,pins"
++#define PCS_MUX_BITS_NAME		"pinctrl-single,bits"
+ #define PCS_REG_NAME_LEN		((sizeof(unsigned long) * 2) + 1)
+ #define PCS_OFF_DISABLED		~0U
+ 
+@@ -54,6 +55,7 @@ struct pcs_pingroup {
+ struct pcs_func_vals {
+ 	void __iomem *reg;
+ 	unsigned val;
++	unsigned mask;
+ };
+ 
+ /**
+@@ -139,6 +141,7 @@ struct pcs_device {
+ 	unsigned fshift;
+ 	unsigned foff;
+ 	unsigned fmax;
++	bool bits_per_mux;
+ 	struct pcs_name *names;
+ 	struct pcs_data pins;
+ 	struct radix_tree_root pgtree;
+@@ -332,12 +335,17 @@ static int pcs_enable(struct pinctrl_dev *pctldev, unsigned fselector,
+ 
+ 	for (i = 0; i < func->nvals; i++) {
+ 		struct pcs_func_vals *vals;
+-		unsigned val;
++		unsigned val, mask;
+ 
+ 		vals = &func->vals[i];
+ 		val = pcs->read(vals->reg);
+-		val &= ~pcs->fmask;
+-		val |= (vals->val & pcs->fmask);
++		if (!vals->mask)
++			mask = pcs->fmask;
++		else
++			mask = pcs->fmask & vals->mask;
++
++		val &= ~mask;
++		val |= (vals->val & mask);
+ 		pcs->write(val, vals->reg);
+ 	}
+ 
+@@ -657,18 +665,29 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
+ {
+ 	struct pcs_func_vals *vals;
+ 	const __be32 *mux;
+-	int size, rows, *pins, index = 0, found = 0, res = -ENOMEM;
++	int size, params, rows, *pins, index = 0, found = 0, res = -ENOMEM;
+ 	struct pcs_function *function;
+ 
+-	mux = of_get_property(np, PCS_MUX_NAME, &size);
+-	if ((!mux) || (size < sizeof(*mux) * 2)) {
+-		dev_err(pcs->dev, "bad data for mux %s\n",
+-			np->name);
++	if (pcs->bits_per_mux) {
++		params = 3;
++		mux = of_get_property(np, PCS_MUX_BITS_NAME, &size);
++	} else {
++		params = 2;
++		mux = of_get_property(np, PCS_MUX_PINS_NAME, &size);
++	}
++
++	if (!mux) {
++		dev_err(pcs->dev, "no valid property for %s\n", np->name);
++		return -EINVAL;
++	}
++
++	if (size < (sizeof(*mux) * params)) {
++		dev_err(pcs->dev, "bad data for %s\n", np->name);
+ 		return -EINVAL;
+ 	}
+ 
+ 	size /= sizeof(*mux);	/* Number of elements in array */
+-	rows = size / 2;	/* Each row is a key value pair */
++	rows = size / params;	/* Each row is a key value pair */
+ 
+ 	vals = devm_kzalloc(pcs->dev, sizeof(*vals) * rows, GFP_KERNEL);
+ 	if (!vals)
+@@ -686,6 +705,10 @@ static int pcs_parse_one_pinctrl_entry(struct pcs_device *pcs,
+ 		val = be32_to_cpup(mux + index++);
+ 		vals[found].reg = pcs->base + offset;
+ 		vals[found].val = val;
++		if (params == 3) {
++			val = be32_to_cpup(mux + index++);
++			vals[found].mask = val;
++		}
+ 
+ 		pin = pcs_get_pin_by_offset(pcs, offset);
+ 		if (pin < 0) {
+@@ -883,6 +906,9 @@ static int __devinit pcs_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		pcs->foff = PCS_OFF_DISABLED;
+ 
++	pcs->bits_per_mux = of_property_read_bool(np,
++						  "pinctrl-single,bit-per-mux");
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(pcs->dev, "could not get resource\n");
+-- 
+1.7.12
+
