@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab2IKKZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 06:25:38 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57640 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab2IKKZh (ORCPT
+	id S1757948Ab2IKK2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 06:28:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11857 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab2IKK2H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 06:25:37 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-58-504f119d7bb9
-From: Namhyung Kim <namhyung@kernel.org>
-To: Hyeoncheol Lee <hyc.lee@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH -tip/perf/core ] perf probe: Allow of casting an array of char to string
-References: <CANFS6bbt841hyETtTorA6N6weBg+7viBVxwr8Xk0+RJbWXGjXw@mail.gmail.com>
-	<CANFS6bb75e8a_UtyAD9yF73hfXDy0N8tSjDz=a+Vna=Y8ORMHg@mail.gmail.com>
-Date: Tue, 11 Sep 2012 19:18:38 +0900
-In-Reply-To: <CANFS6bb75e8a_UtyAD9yF73hfXDy0N8tSjDz=a+Vna=Y8ORMHg@mail.gmail.com>
-	(Hyeoncheol Lee's message of "Tue, 11 Sep 2012 17:00:54 +0900")
-Message-ID: <87a9wwc16p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 11 Sep 2012 06:28:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 11 Sep 2012 03:20:17 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: Bill Huang <bilhuang@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Xin Xie <xxie@nvidia.com>, "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "jhovold@gmail.com" <jhovold@gmail.com>,
+        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Sep 2012 18:25:14 +0800
+Subject: RE: [PATCH v2 0/2] mfd: dt: add power off support for
+ Tegra20/Tegra30
+Thread-Topic: [PATCH v2 0/2] mfd: dt: add power off support for
+ Tegra20/Tegra30
+Thread-Index: Ac1+cEgJeSvXrRFZTD+yGiMaCzJ5mQRly+2Q
+Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BBE83B1A@HKMAIL02.nvidia.com>
+References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+Accept-Language: zh-TW, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hyeoncheol,
+Hi all, 
 
-Please CC the perf maintainers - at least Arnaldo for perf tools - next time.
+Could somebody review this?
 
 Thanks,
-Namhyung
+Bill
 
-
-On Tue, 11 Sep 2012 17:00:54 +0900, Hyeoncheol Lee wrote:
-> Before casting a type of a variable to string,
-> convert_variable_type() confirms that the type is a pointer or
-> an array. then if it is a pointer to char, it is casted to string.
-> but in case of an array of char, it isn't
->
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: H.C. Lee <hyc.lee@gmail.com>
-> ---
->  tools/perf/util/probe-finder.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index d448984..94a00de 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -413,12 +413,12 @@ static int convert_variable_type(Dwarf_Die *vr_die,
->                                    dwarf_diename(vr_die), dwarf_diename(&type));
->                         return -EINVAL;
->                 }
-> +               if (die_get_real_type(&type, &type) == NULL) {
-> +                       pr_warning("Failed to get a type"
-> +                                  " information.\n");
-> +                       return -ENOENT;
-> +               }
->                 if (ret == DW_TAG_pointer_type) {
-> -                       if (die_get_real_type(&type, &type) == NULL) {
-> -                               pr_warning("Failed to get a type"
-> -                                          " information.\n");
-> -                               return -ENOENT;
-> -                       }
->                         while (*ref_ptr)
->                                 ref_ptr = &(*ref_ptr)->next;
->                         /* Add new reference with offset +0 */
+> 
+> This patch series add new property into regulator DT for telling whether or not to hook pmic's power off routine to system call
+> "pm_power_off".
+> 
+> Patch 1 add power off support for Tegra20 boards using TPS6586x Patch 2 add power off support for Tegra30 boards using TPS65910
+> 
+> Verified on Seaboard (Tegra20) and Cardhu (Tegra30)
+> 
+> V2:
+> * Take multiple pmic instances into consideration while assigning global variables
+>   as per suggestion from Thierry Reding <thierry.reding@avionic-design.de>
+> 
+> V1:
+> * Based on master branch of sameo/mfd-2.6.git
+> 
+> Bill Huang (2):
+>   mfd: dt: tps6586x: Add power off control
+>   mfd: dt: tps65910: add power off control
+> 
+>  Documentation/devicetree/bindings/mfd/tps65910.txt |    4 +++
+>  .../devicetree/bindings/regulator/tps6586x.txt     |    6 +++++
+>  drivers/mfd/tps6586x.c                             |   19 +++++++++++++++++
+>  drivers/mfd/tps65910.c                             |   22 ++++++++++++++++++++
+>  include/linux/mfd/tps6586x.h                       |    1 +
+>  include/linux/mfd/tps65910.h                       |    3 ++
+>  6 files changed, 55 insertions(+), 0 deletions(-)
+> 
 > --
-> 1.7.1
+> 1.7.4.1
+nvpublic
