@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab2IKGTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 02:19:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55381 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab2IKGTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 02:19:34 -0400
-Date: Tue, 11 Sep 2012 16:19:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the final tree (slab tree
- related)
-Message-Id: <20120911161923.10299045655dd4c84f96f4b3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1756343Ab2IKGV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 02:21:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39769 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755047Ab2IKGV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 02:21:28 -0400
+Date: Tue, 11 Sep 2012 16:21:20 +1000
+From: NeilBrown <neilb@suse.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/3] raid: replace	list_for_each_continue_rcu with new
+ interface
+Message-ID: <20120911162120.5d5b5fe5@notabene.brown>
+In-Reply-To: <504DA513.2060004@linux.vnet.ibm.com>
+References: <502CB924.10200@linux.vnet.ibm.com>
+	<502DC999.1040407@linux.vnet.ibm.com>
+	<5036D00F.2040009@linux.vnet.ibm.com>
+	<504DA513.2060004@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Sep_2012_16_19_23_+1000_5FL/aH.V5069RRMU"
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/TRmX6W.G3B=JNyVdahCCN3/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Sep_2012_16_19_23_+1000_5FL/aH.V5069RRMU
+--Sig_/TRmX6W.G3B=JNyVdahCCN3/
 Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Mon, 10 Sep 2012 16:30:11 +0800 Michael Wang <wangyun@linux.vnet.ibm.com>
+wrote:
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-produced this warning:
+> On 08/24/2012 08:51 AM, Michael Wang wrote:
+> > On 08/17/2012 12:33 PM, Michael Wang wrote:
+> >> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+> >>
+> >> This patch replaces list_for_each_continue_rcu() with
+> >> list_for_each_entry_continue_rcu() to save a few lines
+> >> of code and allow removing list_for_each_continue_rcu().
+> >>
+> >=20
+> > Hi, Neil
+> >=20
+> > Could I get some comments on this patch?
+>=20
+> Hi, Neil
+>=20
+> Could I get some comments?
+>=20
+> And please forgive and warn me if this patch has came to the wrong
+> place...I get the address from get_maintainer.
 
-mm/slab.c:808:13: warning: '__slab_error' defined but not used [-Wunused-fu=
-nction]
+Sorry, August was a bad month.
 
-Introduced by commit 945cf2b6199b ("mm/sl[aou]b: Extract a common function =
-for kmem_cache_destroy").  All uses of slab_error() are now guarded by DEBU=
-G.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Yes, patch looks good.  Shall I include it in my tree, do you want to submit
+them altogether through some rcu tree?
+Either way is fine by me.  If you want to submit it through some other tree=
+,=20
+   Acked-by: NeilBrown <neilb@suse.de>
 
---Signature=_Tue__11_Sep_2012_16_19_23_+1000_5FL/aH.V5069RRMU
-Content-Type: application/pgp-signature
+If not, it'll probably appear in my -next soonish.
+
+Thanks,
+NeilBrown
+
+
+>=20
+> Regards,
+> Michael Wang
+>=20
+> >=20
+> > Regards,
+> > Michael Wang
+> >=20
+> >> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> >> ---
+> >>  drivers/md/bitmap.c |    9 +++------
+> >>  1 files changed, 3 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+> >> index 15dbe03..b160828 100644
+> >> --- a/drivers/md/bitmap.c
+> >> +++ b/drivers/md/bitmap.c
+> >> @@ -163,20 +163,17 @@ static struct md_rdev *next_active_rdev(struct m=
+d_rdev *rdev, struct mddev *mdde
+> >>  	 * As devices are only added or removed when raid_disk is < 0 and
+> >>  	 * nr_pending is 0 and In_sync is clear, the entries we return will
+> >>  	 * still be in the same position on the list when we re-enter
+> >> -	 * list_for_each_continue_rcu.
+> >> +	 * list_for_each_entry_continue_rcu.
+> >>  	 */
+> >> -	struct list_head *pos;
+> >>  	rcu_read_lock();
+> >>  	if (rdev =3D=3D NULL)
+> >>  		/* start at the beginning */
+> >> -		pos =3D &mddev->disks;
+> >> +		rdev =3D list_entry_rcu(&mddev->disks, struct md_rdev, same_set);
+> >>  	else {
+> >>  		/* release the previous rdev and start from there. */
+> >>  		rdev_dec_pending(rdev, mddev);
+> >> -		pos =3D &rdev->same_set;
+> >>  	}
+> >> -	list_for_each_continue_rcu(pos, &mddev->disks) {
+> >> -		rdev =3D list_entry(pos, struct md_rdev, same_set);
+> >> +	list_for_each_entry_continue_rcu(rdev, &mddev->disks, same_set) {
+> >>  		if (rdev->raid_disk >=3D 0 &&
+> >>  		    !test_bit(Faulty, &rdev->flags)) {
+> >>  			/* this is a usable devices */
+> >>
+> >=20
+
+
+--Sig_/TRmX6W.G3B=JNyVdahCCN3/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQTtfrAAoJEECxmPOUX5FEl+IP/0EHZETnbzQO1tjv6QXMKStC
-o4gZJUP8/ifZbczsGSTfrZN2MQ6AbH8g+4gRorTv/PVjq0S3xtys78Uzt9FgkI9b
-km+/oGiSkpxVfnPN4pFTfQUg6zy/RG5ITksZQEfW1D9MA5bj+e+KRl0KId4Gfgyo
-Y1hfYhhuACc6K1+pMtPXniJs2REFGOYa8NpmrIrE02PSYqipIclg4azU1wWWrPFM
-cUBB0ue0eE57X49LiXyKthaOFlFIPtAaMRNDbbYx2SH9gOCBQE/I044hrFrBxxG/
-/kpXvyMl7JC15Ih/e87ec4UyV6cF3v/Bx5zbq7ttS5RHdW9j/MLVDpuFBywYqngl
-kIvBLh0We4VykqeHV1EX/IalISmvvOUP+EnyMJhtXCEBlOkvENRQwhr625WWPlE8
-EJfirss09+NKagiuH8BDvuvs8GNizy9zM2nkqp3t+/jRXZC6wmIKu0Cb4UMa6Kva
-8sAAN90rZyjY081uewQf6RFJDSZUGSkFxtiTaQqxDGj27pjN4YRtITr8a9+8p6Wn
-Jtfu0EAK3QeBON6600+NLiqPQChCCHSvfwcuBEXHpRKpPStSKw2B0hVEx8wSeRQi
-2eEhJ674BfM0oQndY70oFkCbSe06MMAKGFFIDy4mUN1T47xeD1BrAeFwKKJCo+RJ
-lpgNtKqnK6RMSRcHcsp1
-=nFUJ
+iQIVAwUBUE7YYDnsnt1WYoG5AQKumw//TuOKOjHzBQnZ/+YWNP3Yv4/Zmtzn5GZx
+y+8xfkER5uAe/A9+F0Vsej8t9LOmiZXdaAwedqtbng/yrgjVze0fwF1uA3sJEHMh
+5rpLleHlYcpLjqPHURPaa1GplEbfqENHQ9HRpUwnJ2WULJymri4r9ZFJp0bxYyhS
+KnfRBVAQ6Hx3m6/La7HSSihg661NE0sYP5ELzddo/oZMK4MEQZv+xRjZk3vXm20L
+F7TFUmebFg7e7Y0F4oiC6zMLhK9r2JttzzSXF3RD98ezDsMHeLNiRJUiDoGyP6wT
+767s0KcCb+3uf/STVpgJaNr6tgfVVG8rDJqak/wbTXH+Tam8O7/xWiGDtl5TpQm8
+1dHsNEayd9mDfiDKfaZKtDjvpXD0oy+i2SsO2svyfIb4lu4V2uDB1jK8WWOyQMS6
+iiPN8Z7yCYqdPRdq3pYAQEC6K42O7GXRl1tq1KzpTZM1k17nSrKlRhOIwtbgAtqL
+gEpCY2fKb39FxN8gf+wizYXctxqsLTBKbPDFmSab8hhJYNRp4MPtt6NS6vr5acVA
+L8RiyTL0IPCTDTODwUUtia2v6vrpkCRs7bQ9zsIGtH4onaBaA4Z3UfKNrh7qTHnY
+0Wq2FJX2Unk2590sfe5SQHmtPszv61m57fO5o+A4/3l5juYoPZsJNYp/cfQNC4gw
+RupwgjqJoSU=
+=5B5h
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__11_Sep_2012_16_19_23_+1000_5FL/aH.V5069RRMU--
+--Sig_/TRmX6W.G3B=JNyVdahCCN3/--
