@@ -1,198 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab2IKOlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:41:39 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42723 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab2IKOld (ORCPT
+	id S1759224Ab2IKOlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:41:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53507 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759423Ab2IKOln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:41:33 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
-        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC 08/11] vfs: enable hot data tracking
-Date: Tue, 11 Sep 2012 22:40:42 +0800
-Message-Id: <1347374445-3018-3-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1347374445-3018-1-git-send-email-zwu.kernel@gmail.com>
-References: <1347374445-3018-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091114-5518-0000-0000-0000079219B7
+	Tue, 11 Sep 2012 10:41:43 -0400
+Date: Tue, 11 Sep 2012 16:40:43 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org,
+        =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH 5/7] pwm: i.MX: add devicetree support
+Message-ID: <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
+References: <1347267577-3296-1-git-send-email-s.hauer@pengutronix.de>
+ <1347267577-3296-6-git-send-email-s.hauer@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Disposition: inline
+In-Reply-To: <1347267577-3296-6-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:ZOVIU/AqD8NUJ3eDGqtoShZ08OuCpGwsl4/tbCGb96H
+ SccBxPPR2HNLCg4to160XTYxHJzwpHLnazncNJZjCUbPfgfnxu
+ poxX1rBSjCzOWyM/PY8SkxP/HGhJygZ4gaPdqF4vNBgOA/t1vk
+ E588dAiZiGZ1xlwJG28neYD2nuoNt+XEvIfcu/Fmy55bMGSyRA
+ Q796W8cSlTuXYOzqcdmc55SIe/6GxN31gv/D/AeqcaLI/8Kvqq
+ jM/zBSustpqTDm1xyWNp+E5p//wZ2GS9ptWY1CSwLPpQPz1dR5
+ 2qfx7YV8x0J1lar0NRwfPMKfazg6acBjvK2LUnhKMwqtIlKhMh
+ drCjniPk77nz8t1SEXo4qLZ1MX9PTUvP5gmHuxqCazdNTf+I2M
+ HToto0k4QW6FcKefWYqe45CUgrZiVSLFy3d8oOQaml2xx9SCIf
+ VA5tC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Miscellaneous features that implement hot data tracking
-and generally make the hot data functions a bit more friendly.
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/direct-io.c            |   10 ++++++++++
- include/linux/hot_track.h |   11 +++++++++++
- mm/filemap.c              |    8 ++++++++
- mm/page-writeback.c       |   21 +++++++++++++++++++++
- mm/readahead.c            |    9 +++++++++
- 5 files changed, 59 insertions(+), 0 deletions(-)
+On Mon, Sep 10, 2012 at 10:59:35AM +0200, Sascha Hauer wrote:
+> From: Philipp Zabel <p.zabel@pengutronix.de>
+>=20
+> At the same time remove platform based support. No user for
+> this driver has made it into mainline so far, so all we break
+> is out of tree stuff.
+>=20
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> Reviewed-by: Beno=C3=AEt Th=C3=A9baudeau <benoit.thebaudeau@advansee.com>
+[...]
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..74068e2 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -37,6 +37,7 @@
- #include <linux/uio.h>
- #include <linux/atomic.h>
- #include <linux/prefetch.h>
-+#include <linux/hot_track.h>
- 
- /*
-  * How many user pages to map in one call to get_user_pages().  This determines
-@@ -1297,6 +1298,15 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	prefetch(bdev->bd_queue);
- 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
- 
-+	/* Hot data tracking */
-+	if (TRACK_THIS_INODE(iocb->ki_filp->f_mapping->host)
-+			&& iov_length(iov, nr_segs) > 0) {
-+		hot_rb_update_freqs(iocb->ki_filp->f_mapping->host,
-+				(u64)offset,
-+				(u64)iov_length(iov, nr_segs),
-+				rw & WRITE);
-+	}
-+
- 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
- 				     nr_segs, get_block, end_io,
- 				     submit_io, flags);
-diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
-index bde61de..8bb9028 100644
---- a/include/linux/hot_track.h
-+++ b/include/linux/hot_track.h
-@@ -28,6 +28,14 @@
-  */
- #define HOT_MOUNT_HOT_TRACK		(1 << 0)
- 
-+/* Hot data tracking -- guard macros */
-+#define TRACKING_HOT_TRACK(root) \
-+		(root->s_hotinfo.mount_opt & HOT_MOUNT_HOT_TRACK)
-+
-+#define TRACK_THIS_INODE(inode) \
-+		((TRACKING_HOT_TRACK(inode->i_sb)) && \
-+		!(inode->i_flags & S_NOHOTDATATRACK))
-+
- /* kmem_cache pointers for slab caches */
- extern struct kmem_cache *hot_hash_node_cache;
- 
-@@ -138,4 +146,7 @@ struct hot_info {
- 	struct hot_hash_head heat_range_hl[HEAT_HASH_SIZE];
- };
- 
-+extern void hot_rb_update_freqs(struct inode *inode,
-+				u64 start, u64 len, int rw);
-+
- #endif  /* _LINUX_HOTTRACK_H */
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 3843445..784d027 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
- #include <linux/cleancache.h>
-+#include <linux/hot_track.h>
- #include "internal.h"
- 
- /*
-@@ -1224,6 +1225,13 @@ readpage:
- 		 * PG_error will be set again if readpage fails.
- 		 */
- 		ClearPageError(page);
-+
-+		/* Hot data tracking */
-+		if (TRACK_THIS_INODE(filp->f_mapping->host))
-+			hot_rb_update_freqs(filp->f_mapping->host,
-+				(u64)page->index << PAGE_CACHE_SHIFT,
-+				PAGE_CACHE_SIZE, 0);
-+
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 5ad5ce2..4e83e68 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -35,6 +35,7 @@
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
- #include <linux/timer.h>
-+#include <linux/hot_track.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -1895,13 +1896,33 @@ EXPORT_SYMBOL(generic_writepages);
- int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
- {
- 	int ret;
-+	pgoff_t start = 0;
-+	u64 prev_count = 0, count = 0;
- 
- 	if (wbc->nr_to_write <= 0)
- 		return 0;
-+
-+	/* Hot data tracking */
-+	if (TRACK_THIS_INODE(mapping->host)
-+		&& wbc->range_cyclic) {
-+		start = mapping->writeback_index << PAGE_CACHE_SHIFT;
-+		prev_count = (u64)wbc->nr_to_write;
-+	}
-+
- 	if (mapping->a_ops->writepages)
- 		ret = mapping->a_ops->writepages(mapping, wbc);
- 	else
- 		ret = generic_writepages(mapping, wbc);
-+
-+	/* Hot data tracking */
-+	if (TRACK_THIS_INODE(mapping->host)
-+		&& wbc->range_cyclic) {
-+		count = prev_count - (u64)wbc->nr_to_write;
-+		if (count)
-+			hot_rb_update_freqs(mapping->host, (u64)start,
-+					count * PAGE_CACHE_SIZE, 1);
-+	}
-+
- 	return ret;
- }
- 
-diff --git a/mm/readahead.c b/mm/readahead.c
-index ea8f8fa..c204f2b 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -19,6 +19,7 @@
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
- #include <linux/file.h>
-+#include <linux/hot_track.h>
- 
- /*
-  * Initialise a struct file's readahead state.  Assumes that the caller has
-@@ -138,6 +139,14 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- out:
- 	blk_finish_plug(&plug);
- 
-+	/* Hot data tracking */
-+	if (TRACK_THIS_INODE(mapping->host) && nr_pages > 0) {
-+		u64 start = (u64)(list_entry(pages->prev,
-+				struct page, lru)->index) << PAGE_CACHE_SHIFT;
-+		hot_rb_update_freqs(mapping->host, start,
-+				(u64)nr_pages * PAGE_CACHE_SIZE, 0);
-+	}
-+
- 	return ret;
- }
- 
--- 
-1.7.6.5
+I was just doing some build tests on the series and noticed that it
+fails with this:
 
+	  CC [M]  drivers/pwm/pwm-imx.o
+	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c: In fu=
+nction 'imx_pwm_config_v2':
+	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c:140:2:=
+ error: implicit declaration of function 'cpu_is_mx25' [-Werror=3Dimplicit-=
+function-declaration]
+
+This breaks bisection in the middle of the series. It seems to be
+related to this change.
+
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index a1e799e..b4e0ad3 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -16,8 +16,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+>  #include <linux/pwm.h>
+> -#include <mach/hardware.h>
+
+This probably needs to be postponed to the next patch, until the final
+reference to cpu_is_mx25() is removed.
+
+Thierry
+
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQT01rAAoJEN0jrNd/PrOhfXEQAMI62kxsWcO90a2VKH/mn3nl
+jqNvLMe4jL+dlmqZqrL4vkATU1FNuuglF5Tu+aay1nXpDvSAJ/SEg2+tPLWDVomO
+p09fXMllaMCr8ol8LouE10yYPWW+uM66ZAoXbnLrkDhjLd4g/fdV9mRnhnojalpe
+U5YPrEpRh3axUo8SwE+hptJ/AJE1i/wopIDt7SvYurDxKNN9UaVex9mmZ1ZBspa+
+cRckUuT+NRf/+YnwCtOL9BNvIVGqjKscbP2dzWGOsfEHzTgmQ2BPaMBM407xU7kz
+geJvGNkJ4MBEz0fEOHREWInfrrB017FQSfUSdcXwsZL5xq6QbOpBG6LqDlGuhEhN
+M+yuua4eXaKT+EPXGS8u4ruhzMv/9fcECSBKcsDgFPbMbHKqAZ51rxTW/X6Pna3w
+6jCq1iRoD3wwUOr+iRSnm8qsubckqhqY1KSPodt2mt0Bh11Etq9ANvSkHy3AYmL3
+i19eoEaSIPbENRJ+PmsiaIDfv2o0naItVeDL+ZzeYmRBTz1gDX6Rk8UpCtfhS4vp
+7ImQthwUynB7KY90oBfpXD56q6jI5GHKgrkJfDoDSpQyGOHdNxb/DnvKzhvRKJsu
+y8SjAFI2Gk+geet035cgEKEO9fsEwx7wVqOafSZcq0wuFR1U3gGqlJefW+OhaOTX
+srmCNpG1P5DhPL2pb4g1
+=qS+n
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
