@@ -1,96 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab2IKO3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:29:25 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50320 "EHLO e9.ny.us.ibm.com"
+	id S932157Ab2IKO35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:29:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070Ab2IKO3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:29:22 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
-        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC 01/11] vfs: introduce one structure hot_info
-Date: Tue, 11 Sep 2012 22:27:15 +0800
-Message-Id: <1347373645-2119-2-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
-References: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091114-7182-0000-0000-00000292B6C0
+	id S1755148Ab2IKO3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 10:29:55 -0400
+Date: Tue, 11 Sep 2012 16:27:17 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] perf tool: Allow wildcard in PMU name
+Message-ID: <20120911142717.GD3800@krava.brq.redhat.com>
+References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
+ <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, Sep 10, 2012 at 03:53:51PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-   One root structure hot_info is defined, is hooked
-up in super_block, and will be used to hold rb trees
-root, hash list root and some other information, etc.
+SNIP
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> +{
+> +	struct perf_evsel *evsel;
+>  
+> +	while (!list_empty(list)) {
+> +		evsel = list_entry(list->next, struct perf_evsel, node);
+> +		list_del(&evsel->node);
+> +		perf_evsel__delete(evsel);
+> +	}
+> +	free(list);
+> +}
+>  
+> -static int __add_event(struct list_head **_list, int *idx,
+> -		       struct perf_event_attr *attr,
+> -		       char *name, struct cpu_map *cpus)
+> +static struct perf_evsel *__add_event(int *idx, struct perf_event_attr *attr,
+> +				      char *name, struct cpu_map *cpus)
+>  {
+>  	struct perf_evsel *evsel;
+> +
+> +	event_attr_init(attr);
+> +
+> +	evsel = perf_evsel__new(attr, (*idx)++);
+> +	if (!evsel)
+> +		return NULL;
+> +
+> +	evsel->cpus = cpus;
+> +	if (name)
+> +		evsel->name = strdup(name);
+> +	return evsel;
+> +}
+> +
+> +static int add_event(struct list_head **_list, int *idx,
+> +		     struct perf_event_attr *attr, char *name)
+> +{
+>  	struct list_head *list = *_list;
+> +	struct perf_evsel *evsel;
+>  
+>  	if (!list) {
+>  		list = malloc(sizeof(*list));
+> @@ -255,28 +281,17 @@ static int __add_event(struct list_head **_list, int *idx,
+>  		INIT_LIST_HEAD(list);
+>  	}
+>  
+> -	event_attr_init(attr);
+> -
+> -	evsel = perf_evsel__new(attr, (*idx)++);
+> +	evsel = __add_event(idx, attr, name, NULL);
+>  	if (!evsel) {
+>  		free(list);
+>  		return -ENOMEM;
+>  	}
+>  
+> -	evsel->cpus = cpus;
+> -	if (name)
+> -		evsel->name = strdup(name);
+>  	list_add_tail(&evsel->node, list);
+>  	*_list = list;
+>  	return 0;
+>  }
+>  
+> -static int add_event(struct list_head **_list, int *idx,
+> -		     struct perf_event_attr *attr, char *name)
+> -{
+> -	return __add_event(_list, idx, attr, name, NULL);
+> -}
+> -
+
+Would it be possible to have all '*add_event' more obvious for usage.
+Also following code is duplicated after each call of __add_event:
+
+      evsel = __add_event(idx, &attr, pmu_event_name(head_config),
+                          pmu->cpus);
+      if (!evsel) {
+              *idx = orig_idx;
+              free_event_list(list);
+              return -ENOMEM;
+      }
+      list_add_tail(&evsel->node, list);
+
+I tried some changes over your patch.. just compiled, not tested ;)
+It should also solve the issue from my other comment.
+
+thanks,
+jirka
+
+
 ---
- include/linux/fs.h        |    4 ++++
- include/linux/hot_track.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/hot_track.h
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aa11047..6229895 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -415,6 +415,7 @@ struct inodes_stat_t {
- #include <linux/migrate_mode.h>
- #include <linux/uidgid.h>
- #include <linux/lockdep.h>
-+#include <linux/hot_track.h>
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1b0a46f..f6bbd7a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -268,8 +268,10 @@ static struct perf_evsel *__add_event(int *idx, struct perf_event_attr *attr,
+ 	return evsel;
+ }
  
- #include <asm/byteorder.h>
+-static int add_event(struct list_head **_list, int *idx,
+-		     struct perf_event_attr *attr, char *name)
++static struct perf_evsel*
++add_event_list(struct list_head **_list, int *idx,
++	       struct perf_event_attr *attr, char *name,
++	       struct cpu_map *cpus)
+ {
+ 	struct list_head *list = *_list;
+ 	struct perf_evsel *evsel;
+@@ -277,19 +279,27 @@ static int add_event(struct list_head **_list, int *idx,
+ 	if (!list) {
+ 		list = malloc(sizeof(*list));
+ 		if (!list)
+-			return -ENOMEM;
++			return NULL;
+ 		INIT_LIST_HEAD(list);
+ 	}
  
-@@ -1578,6 +1579,9 @@ struct super_block {
+-	evsel = __add_event(idx, attr, name, NULL);
++	evsel = __add_event(idx, attr, name, cpus);
+ 	if (!evsel) {
+-		free(list);
+-		return -ENOMEM;
++		free_event_list(list);
++		return NULL;
+ 	}
  
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
+ 	list_add_tail(&evsel->node, list);
+-	*_list = list;
+-	return 0;
++	if (!*_list)
++		*_list = list;
 +
-+	/* Hot data tracking info*/
-+	struct hot_info s_hotinfo;
- };
++	return evsel;
++}
++
++static int add_event(struct list_head **_list, int *idx,
++		     struct perf_event_attr *attr, char *name)
++{
++	return add_event_list(_list, idx, attr, name, NULL) ? 0 : -ENOMEM;
+ }
  
- /* superblock cache pruning functions */
-diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
-new file mode 100644
-index 0000000..5716b93
---- /dev/null
-+++ b/include/linux/hot_track.h
-@@ -0,0 +1,26 @@
-+/*
-+ *  include/linux/hot_track.h
-+ *
-+ * This file has definitions for VFS hot data tracking
-+ * structures etc.
-+ *
-+ * Copyright (C) 2012 IBM Corp. All rights reserved.
-+ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-+ *            Ben Chociej <bchociej@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ */
-+
-+#ifndef _LINUX_HOTTRACK_H
-+#define _LINUX_HOTTRACK_H
-+
-+#include <linux/types.h>
-+#include <linux/rbtree.h>
-+#include <linux/kref.h>
-+
-+struct hot_info {
-+};
-+
-+#endif  /* _LINUX_HOTTRACK_H */
--- 
-1.7.6.5
-
+ static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
+@@ -635,16 +645,10 @@ int parse_events_add_pmu(struct list_head **_list, int *idx,
+ 			 char *name, struct list_head *head_config)
+ {
+ 	struct perf_event_attr attr;
+-	struct list_head *list;
+ 	struct perf_pmu *pmu = NULL;
+ 	struct perf_evsel *evsel, *first = NULL;
+ 	int orig_idx = *idx;
+ 
+-	list = malloc(sizeof(*list));
+-	if (!list)
+-		return -ENOMEM;
+-	INIT_LIST_HEAD(list);
+-
+ 	while ((pmu = perf_pmu__scan(pmu))) {
+ 		if (pmu_name_match(pmu->name, name))
+ 			continue;
+@@ -663,14 +667,12 @@ int parse_events_add_pmu(struct list_head **_list, int *idx,
+ 		if (perf_pmu__config(pmu, &attr, head_config))
+ 			return -EINVAL;
+ 
+-		evsel = __add_event(idx, &attr, pmu_event_name(head_config),
+-				    pmu->cpus);
++		evsel = add_event_list(_list, idx, &attr, pmu_event_name(head_config),
++				       pmu->cpus);
+ 		if (!evsel) {
+ 			*idx = orig_idx;
+-			free_event_list(list);
+ 			return -ENOMEM;
+ 		}
+-		list_add_tail(&evsel->node, list);
+ 		if (first) {
+ 			list_add_tail(&evsel->sibling, &first->sibling);
+ 			evsel->aggr_slave = true;
+@@ -679,7 +681,6 @@ int parse_events_add_pmu(struct list_head **_list, int *idx,
+ 		}
+ 	}
+ 
+-	*_list = list;
+ 	return 0;
+ }
+ 
