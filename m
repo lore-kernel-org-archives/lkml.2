@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759072Ab2IKRAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:00:00 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45492 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758597Ab2IKQ76 (ORCPT
+	id S1759583Ab2IKREs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:04:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53233 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759201Ab2IKREr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 12:59:58 -0400
-Date: Tue, 11 Sep 2012 09:59:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-Message-ID: <20120911165953.GK7677@google.com>
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
+	Tue, 11 Sep 2012 13:04:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
+Date: Tue, 11 Sep 2012 17:04:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        "Ohad Ben-Cohen" <ohad@wizery.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        J Keerthy <j-keerthy@ti.com>, David Woodhouse <dwmw2@infradead.org>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <CAMQu2gz8F2FcgRuok3x1uJ4pP8=0E2-9jhYGchzU9AUtUHjYhg@mail.gmail.com> <504F6249.2090501@ti.com>
+In-Reply-To: <504F6249.2090501@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209111704.16708.arnd@arndb.de>
+X-Provags-ID: V02:K0:yfDPwckUHaBcK76AuhOvF9KBo2TnkRizvJHaoY9/Qio
+ 5S2tt1t6QsdVSqPtnssJz2eTygmCNHc9s74ildzderXs+Ym0jv
+ 8iKJVigxTVqwX52H3hjrCrmBTyYjkNviNhyTvsO2oase9rDv84
+ rhcAm72AnECxCIYGMZeYlARNR7jfizE3UnhQeHitzo0cTO+ATf
+ FMYs4w5ASA4QVnOhhj20+L2hUpbQMLxeN2dOHGzzWCGHkt9+Rk
+ LR2I9kZhVTkcXAlYLU5KqUjmMG2ixtpLcjLxga9kJRSQ3mM4hg
+ q4DYF3ye/gIBkLiazs3Hf9YgrpQwRF6uiNgA2xvUalewbjlE04
+ W50XjJ/vNL5Io+NndjIU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Jul 20, 2012 at 06:30:01PM +0200, Paolo Bonzini wrote:
-> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
-> the process who wishes to send them.  These commands can be useful also to
-> non-privileged programs who have access to the block devices.  For example
-> a virtual machine monitor needs them to forward trim/discard to host disks.
+On Tuesday 11 September 2012, Vaibhav Hiremath wrote:
+> On 9/11/2012 7:54 PM, Shilimkar, Santosh wrote:
+> > On Tue, Sep 11, 2012 at 7:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> On Tuesday 11 September 2012, Shilimkar, Santosh wrote:
+> >>> Just curious to know how you came with some of the above header names ?
+> >>>
+> >>> plat/mcbsp ---> dsp-mcbsp.h
+> >>> There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
+> >>> better name.
+> >>
+> >> This one was a mistake on my side, as Tony and  Peter already pointed out.
+> >> How about asoc-mcbsp.h or asoc-omap-mcbsp.h?
+> >>
+> > After re-reading the cover-letter and your below response,
+> > 'asoc-omap-mcbsp.h' seems to be fine.
+> > 
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  block/scsi_ioctl.c |    3 ++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-> index 260fa80..dd71f18 100644
-> --- a/block/scsi_ioctl.c
-> +++ b/block/scsi_ioctl.c
-> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
->  	/* Basic writing commands */
->  	__set_bit(WRITE_6, filter->write_ok);
->  	__set_bit(WRITE_10, filter->write_ok);
-> +	__set_bit(WRITE_SAME, filter->write_ok);
->  	__set_bit(WRITE_VERIFY, filter->write_ok);
->  	__set_bit(WRITE_12, filter->write_ok);
->  	__set_bit(WRITE_VERIFY_12, filter->write_ok);
->  	__set_bit(WRITE_16, filter->write_ok);
-> +	__set_bit(WRITE_SAME_16, filter->write_ok);
->  	__set_bit(WRITE_LONG, filter->write_ok);
->  	__set_bit(WRITE_LONG_2, filter->write_ok);
->  	__set_bit(ERASE, filter->write_ok);
-> +	__set_bit(UNMAP, filter->write_ok);
+> Note that mcbsp is also applicable to Davinci family of devices.
 
-FWIW, I don't think this is the right way to expose functionality
-which needs management in terms of access control, interpretation
-(stacking drivers) and serving concurrent users.  SG_IO filtering was
-mostly for cd/dvd burning and other removeable devices.  Especially
-for the former, the possibility of having a properly encapsulated
-interface was long lost and I think significant part of that is how
-the underlying technology and its hardware interface developed.  We
-basically just gave up.  Fortunately, they're going the way of
-floppies.
+asoc-ti-mcbsp.h then?
 
-So, it wouldn't be a good idea to abuse SG_IO filtering for exposing
-trim/discard.  It's something which should be retired or at least
-severely restricted in time.  I don't think we want to be developing
-new uses of it.
-
-I think trim/discards are fairly easy to abstract and common enough to
-justify having properly abstracted interface.  In fact, we already
-have block layer interface for it - BLKDISCARD.  If it's lacking,
-let's improve that.
-
-Thanks.
-
--- 
-tejun
+	Arnd
