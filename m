@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab2IKREs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:04:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53233 "EHLO
+	id S1759632Ab2IKRFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:05:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60564 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759201Ab2IKREr (ORCPT
+	with ESMTP id S1759004Ab2IKRFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:04:47 -0400
+	Tue, 11 Sep 2012 13:05:47 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
-Date: Tue, 11 Sep 2012 17:04:16 +0000
+To: Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 09/16] ARM: tegra: move platform_data definitions
+Date: Tue, 11 Sep 2012 17:05:37 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King <linux@arm.linux.org.uk>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        "Ohad Ben-Cohen" <ohad@wizery.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        J Keerthy <j-keerthy@ti.com>, David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <CAMQu2gz8F2FcgRuok3x1uJ4pP8=0E2-9jhYGchzU9AUtUHjYhg@mail.gmail.com> <504F6249.2090501@ti.com>
-In-Reply-To: <504F6249.2090501@ti.com>
+        linux-tegra@vger.kernel.org
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368390-31252-9-git-send-email-arnd@arndb.de> <871ui8y3at.fsf@octavius.laptop.org>
+In-Reply-To: <871ui8y3at.fsf@octavius.laptop.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209111704.16708.arnd@arndb.de>
-X-Provags-ID: V02:K0:yfDPwckUHaBcK76AuhOvF9KBo2TnkRizvJHaoY9/Qio
- 5S2tt1t6QsdVSqPtnssJz2eTygmCNHc9s74ildzderXs+Ym0jv
- 8iKJVigxTVqwX52H3hjrCrmBTyYjkNviNhyTvsO2oase9rDv84
- rhcAm72AnECxCIYGMZeYlARNR7jfizE3UnhQeHitzo0cTO+ATf
- FMYs4w5ASA4QVnOhhj20+L2hUpbQMLxeN2dOHGzzWCGHkt9+Rk
- LR2I9kZhVTkcXAlYLU5KqUjmMG2ixtpLcjLxga9kJRSQ3mM4hg
- q4DYF3ye/gIBkLiazs3Hf9YgrpQwRF6uiNgA2xvUalewbjlE04
- W50XjJ/vNL5Io+NndjIU=
+Message-Id: <201209111705.37490.arnd@arndb.de>
+X-Provags-ID: V02:K0:gjjTlguWLfmCKUg5DIhptCTVVeLVHmXmIz0ChN3LC1k
+ zVRIDwI/PPnI/IRxJFdUqkVDWXn17kmpn/5l1S3niEpR5JIlAM
+ DAsYPEmJOYpE3FYYS61g3co7tGqykqD8eO7TcIWBj2Kq1IVVry
+ Q1WMNQXRyvDUbW8tVWXqm/2vdYRuxeBPaWZu5HlnmPU0D0kwmF
+ v6qdBc/SYFYOixF92Eu4+LRBv5JPWFUDI4e2xDJ7/CQPtuVgRh
+ R53Y5anNRUoosQsbEYrLFCdmE8JTePOaDndUA+HupFqwMvM1YZ
+ UiKoqXRYyJLH1uOwbm8eLtzB+8Uahr0m+MnH3fdIMRM01wlzKO
+ 0uRoIa9diAAMDo3jE3RI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 September 2012, Vaibhav Hiremath wrote:
-> On 9/11/2012 7:54 PM, Shilimkar, Santosh wrote:
-> > On Tue, Sep 11, 2012 at 7:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> On Tuesday 11 September 2012, Shilimkar, Santosh wrote:
-> >>> Just curious to know how you came with some of the above header names ?
-> >>>
-> >>> plat/mcbsp ---> dsp-mcbsp.h
-> >>> There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
-> >>> better name.
-> >>
-> >> This one was a mistake on my side, as Tony and  Peter already pointed out.
-> >> How about asoc-mcbsp.h or asoc-omap-mcbsp.h?
-> >>
-> > After re-reading the cover-letter and your below response,
-> > 'asoc-omap-mcbsp.h' seems to be fine.
-> > 
+On Tuesday 11 September 2012, Chris Ball wrote:
+> On Tue, Sep 11 2012, Arnd Bergmann wrote:
+> > diff --git a/arch/arm/mach-tegra/include/mach/sdhci.h
+> > b/include/linux/platform_data/mmc-sdhci-tegra.h
+> > similarity index 100%
+> > rename from arch/arm/mach-tegra/include/mach/sdhci.h
+> > rename to include/linux/platform_data/mmc-sdhci-tegra.h
 > 
-> Note that mcbsp is also applicable to Davinci family of devices.
+> Looks like you aren't renaming the idempotency guards, so e.g.
+> include/linux/platform_data/mmc-sdhci-tegra.h will contain:
+> 
+> #ifndef __ASM_ARM_ARCH_TEGRA_SDHCI_H
+> #define __ASM_ARM_ARCH_TEGRA_SDHCI_H
+> 
+> Is that intentional?  Thanks,
+> 
 
-asoc-ti-mcbsp.h then?
+No, it's not intentional. We actually have a lot of instances that
+are already wrong. Do we care enough to change the ones I'm moving here?
 
 	Arnd
