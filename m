@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab2IKWYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:24:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60776 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab2IKWYV (ORCPT
+	id S1752316Ab2IKW2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:28:24 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:38387 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2IKW2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:24:21 -0400
-Date: Tue, 11 Sep 2012 15:24:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [GIT PULL] workqueue fixes for 3.6-rc5
-Message-ID: <20120911222416.GI7677@google.com>
+	Tue, 11 Sep 2012 18:28:23 -0400
+Date: Tue, 11 Sep 2012 22:28:22 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>, b-cousson@ti.com
+cc: balbi@ti.com, tony@atomide.com, linux@arm.linux.org.uk, arnd@arndb.de,
+        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] arm: omap: hwmod: make *phy_48m* as the main_clk of
+ ocp2scp
+In-Reply-To: <1347008955-21310-1-git-send-email-kishon@ti.com>
+Message-ID: <alpine.DEB.2.00.1209112218440.9444@utopia.booyaka.com>
+References: <1347008955-21310-1-git-send-email-kishon@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-1248234203-1347402309=:9444"
+Content-ID: <alpine.DEB.2.00.1209112225130.9444@utopia.booyaka.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Please consider pulling from the following branch to receive workqueue
-fixes.  It's later than I'd like but well the timing just didn't work
-out this time.
+--843723315-1248234203-1347402309=:9444
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.00.1209112225131.9444@utopia.booyaka.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.6-fixes
+Hi Kishon, Beno=EEt,
 
-There are three bug fixes.  One from before 3.6-rc1 and two from the
-new CPU hotplug code.  Kudos to Lai for discovering all of them and
-providing fixes.
+On Fri, 7 Sep 2012, Kishon Vijay Abraham I wrote:
 
-* Atomicity bug when clearing a flag and setting another.  The two
-  operation should have been atomic but wasn't.  This bug has existed
-  for a long time but is unlikely to have actually happened.  Fix is
-  safe.  Marked for -stable.
+> Made *ocp2scp_usb_phy_phy_48m* as the main_clk for ocp2scp. Since this=20
+> ocp2scp module does not have any fck but does have a single opt_clock,=20
+> it is added as the main_clk for ocp2scp. Also removed phy_48m as the=20
+> optional clock since it is now made as the main clock. By this the=20
+> driver need not enable/disable phy_48m clk separately and=20
+> runtime_get/runtime_put will take care of that.
 
-* If CPU hotplug cycles happen back-to-back before workers finish the
-  previous cycle, the states could get out of sync and it could get
-  stuck.  Fixed by waiting for workers to complete before finishing
-  hotplug cycle.
+Looking at this patch, it doesn't seem to make sense from a hardware point=
+=20
+of view.  If you look at the OMAP4430 TRM Rev. AE, Table 23-1166 "Clocks=20
+and Resets", the 48MHz clock input is listed as an "Optional functional=20
+clock".  The main functional clock is listed as "INIT_960M_FCLK", which=20
+according to the same TRM, Section 3.6.3.9.1 "Overview", is an alias for=20
+the clock we call "dpll_usb_clkdcoldo_ck".
 
-* While CPU hotplug is in progress, idle workers could be depleted
-  which can then lead to deadlock.  I think both happening together is
-  highly unlikely but still better to fix it and the fix isn't too
-  scary.
+So if any clock should be the main functional clock in the hwmod data,=20
+shouldn't it be dpll_usb_clkdcoldo_ck?  The goal with the hwmod data=20
+is/was to have it match the hardware.
 
-Lai Jiangshan (3):
-      workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
-      workqueue: restore POOL_MANAGING_WORKERS
-      workqueue: fix possible idle worker depletion across CPU hotplug
+=2E..
 
-Tejun Heo (2):
-      workqueue: move WORKER_REBIND clearing in rebind_workers() to the end of the function
-      workqueue: fix possible deadlock in idle worker rebinding
+More to the point, I guess I don't see what the problem is with=20
+adding a few lines to the ocp2scp driver to control the "phy_48m" optional=
+=20
+clock via the clock framework.  Is there some reason why you=20
+couldn't prepare & enable it after the pm_runtime_get_*(),=20
+and disable and unprepare it before the pm_runtime_put_*() ?
 
- kernel/workqueue.c |  110 ++++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 89 insertions(+), 21 deletions(-)
 
-Thanks.
-
---
-tejun
+- Paul
+--843723315-1248234203-1347402309=:9444--
