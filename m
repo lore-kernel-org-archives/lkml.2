@@ -1,283 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab2IKSYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:24:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37142 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2IKSYB (ORCPT
+	id S1758165Ab2IKSYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:24:18 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:46806 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757980Ab2IKSYN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:24:01 -0400
-Date: Tue, 11 Sep 2012 11:23:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH UPDATED RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911182356.GR7677@google.com>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
+	Tue, 11 Sep 2012 14:24:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910223355.GD7677@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1347386432-12954-1-git-send-email-peter.senna@gmail.com>
+References: <1347386432-12954-1-git-send-email-peter.senna@gmail.com>
+Date: Tue, 11 Sep 2012 15:24:11 -0300
+Message-ID: <CAH0vN5Jd9LY6dx0qeA0irP+Z6gaPcouZuVYtd35YO-smnYgThg@mail.gmail.com>
+Subject: Re: [PATCH] drivers/media: Removes useless kfree()
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cgroup hierarchy support is a mess.  cpu related subsystems
-behave correctly - configuration, accounting and control on a parent
-properly cover its children.  blkio and freezer completely ignore
-hierarchy and treat all cgroups as if they're directly under the root
-cgroup.  Others show yet different behaviors.
+2012/9/11 Peter Senna Tschudin <peter.senna@gmail.com>:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> The semantic patch that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @r exists@
+> position p1,p2;
+> expression x;
+> @@
+>
+> if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
+>
+> @unchanged exists@
+> position r.p1,r.p2;
+> expression e <= r.x,x,e1;
+> iterator I;
+> statement S;
+> @@
+>
+> if (x@p1 == NULL) { ... when != I(x,...) S
+>                         when != e = e1
+>                         when != e += e1
+>                         when != e -= e1
+>                         when != ++e
+>                         when != --e
+>                         when != e++
+>                         when != e--
+>                         when != &e
+>    kfree@p2(x); ... return ...; }
+>
+> @ok depends on unchanged exists@
+> position any r.p1;
+> position r.p2;
+> expression x;
+> @@
+>
+> ... when != true x@p1 == NULL
+> kfree@p2(x);
+>
+> @depends on !ok && unchanged@
+> position r.p2;
+> expression x;
+> @@
+>
+> *kfree@p2(x);
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/dvb-frontends/dvb_dummy_fe.c |   21 ++++++---------------
+>  drivers/media/dvb-frontends/lg2160.c       |    1 -
+>  drivers/media/dvb-frontends/s5h1432.c      |    6 +-----
+>  drivers/media/dvb-frontends/s921.c         |    7 +------
+>  drivers/media/dvb-frontends/stb6100.c      |    6 +-----
+>  drivers/media/dvb-frontends/tda665x.c      |    6 +-----
+>  drivers/media/platform/davinci/vpbe.c      |    1 -
+>  drivers/media/tuners/mt2063.c              |    6 +-----
+>  8 files changed, 11 insertions(+), 43 deletions(-)
+>
+> diff --git a/drivers/media/dvb-frontends/dvb_dummy_fe.c b/drivers/media/dvb-frontends/dvb_dummy_fe.c
+> index dcfc902..465068f 100644
+> --- a/drivers/media/dvb-frontends/dvb_dummy_fe.c
+> +++ b/drivers/media/dvb-frontends/dvb_dummy_fe.c
+> @@ -121,16 +121,13 @@ struct dvb_frontend* dvb_dummy_fe_ofdm_attach(void)
+>
+>         /* allocate memory for the internal state */
+>         state = kzalloc(sizeof(struct dvb_dummy_fe_state), GFP_KERNEL);
+> -       if (state == NULL) goto error;
+> +       if (state == NULL)
+> +               return NULL;
 
-These differing interpretations of cgroup hierarchy make using cgroup
-confusing and it impossible to co-mount controllers into the same
-hierarchy and obtain sane behavior.
+I know that is not the scope here but, what do you think to change
 
-Eventually, we want full hierarchy support from all subsystems and
-probably a unified hierarchy.  Users using separate hierarchies
-expecting completely different behaviors depending on the mounted
-subsystem is deterimental to making any progress on this front.
+if (state == NULL)
 
-This patch adds cgroup_subsys.broken_hierarchy and sets it to %true
-for controllers which are lacking in hierarchy support.  The goal of
-this patch is two-fold.
+for
 
-* Move users away from using hierarchy on currently non-hierarchical
-  subsystems, so that implementing proper hierarchy support on those
-  doesn't surprise them.
+if (!state)
 
-* Keep track of which controllers are broken how and nudge the
-  subsystems to implement proper hierarchy support.
+?
 
-For now, start with a single warning message.  We can whine louder
-later on.
+maybe you can send another patch for simplify these.
 
-(I tried to document what's broken and how it should be fixed.  If I
- got something wrong, please let me know.)
+Just my 2 cents :)
 
-v2: Fixed a typo spotted by Michal.  Warning message updated.
+>         /* create dvb_frontend */
+>         memcpy(&state->frontend.ops, &dvb_dummy_fe_ofdm_ops, sizeof(struct dvb_frontend_ops));
+>         state->frontend.demodulator_priv = state;
+>         return &state->frontend;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>
+>  static struct dvb_frontend_ops dvb_dummy_fe_qpsk_ops;
+> @@ -141,16 +138,13 @@ struct dvb_frontend *dvb_dummy_fe_qpsk_attach(void)
+>
+>         /* allocate memory for the internal state */
+>         state = kzalloc(sizeof(struct dvb_dummy_fe_state), GFP_KERNEL);
+> -       if (state == NULL) goto error;
+> +       if (state == NULL)
+> +               return NULL;
+>
+>         /* create dvb_frontend */
+>         memcpy(&state->frontend.ops, &dvb_dummy_fe_qpsk_ops, sizeof(struct dvb_frontend_ops));
+>         state->frontend.demodulator_priv = state;
+>         return &state->frontend;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>
+>  static struct dvb_frontend_ops dvb_dummy_fe_qam_ops;
+> @@ -161,16 +155,13 @@ struct dvb_frontend *dvb_dummy_fe_qam_attach(void)
+>
+>         /* allocate memory for the internal state */
+>         state = kzalloc(sizeof(struct dvb_dummy_fe_state), GFP_KERNEL);
+> -       if (state == NULL) goto error;
+> +       if (state == NULL)
+> +               return NULL;
+>
+>         /* create dvb_frontend */
+>         memcpy(&state->frontend.ops, &dvb_dummy_fe_qam_ops, sizeof(struct dvb_frontend_ops));
+>         state->frontend.demodulator_priv = state;
+>         return &state->frontend;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>
+>  static struct dvb_frontend_ops dvb_dummy_fe_ofdm_ops = {
+> diff --git a/drivers/media/dvb-frontends/lg2160.c b/drivers/media/dvb-frontends/lg2160.c
+> index cc11260..748da5d 100644
+> --- a/drivers/media/dvb-frontends/lg2160.c
+> +++ b/drivers/media/dvb-frontends/lg2160.c
+> @@ -1451,7 +1451,6 @@ struct dvb_frontend *lg2160_attach(const struct lg2160_config *config,
+>         return &state->frontend;
+>  fail:
+>         lg_warn("unable to detect LG216x hardware\n");
+> -       kfree(state);
+>         return NULL;
+>  }
+>  EXPORT_SYMBOL(lg2160_attach);
+> diff --git a/drivers/media/dvb-frontends/s5h1432.c b/drivers/media/dvb-frontends/s5h1432.c
+> index 8352ce1..24a8c75 100644
+> --- a/drivers/media/dvb-frontends/s5h1432.c
+> +++ b/drivers/media/dvb-frontends/s5h1432.c
+> @@ -352,7 +352,7 @@ struct dvb_frontend *s5h1432_attach(const struct s5h1432_config *config,
+>         /* allocate memory for the internal state */
+>         state = kmalloc(sizeof(struct s5h1432_state), GFP_KERNEL);
+>         if (state == NULL)
+> -               goto error;
+> +               return NULL;
+>
+>         /* setup the state */
+>         state->config = config;
+> @@ -367,10 +367,6 @@ struct dvb_frontend *s5h1432_attach(const struct s5h1432_config *config,
+>         state->frontend.demodulator_priv = state;
+>
+>         return &state->frontend;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>  EXPORT_SYMBOL(s5h1432_attach);
+>
+> diff --git a/drivers/media/dvb-frontends/s921.c b/drivers/media/dvb-frontends/s921.c
+> index cd2288c..5766512 100644
+> --- a/drivers/media/dvb-frontends/s921.c
+> +++ b/drivers/media/dvb-frontends/s921.c
+> @@ -489,7 +489,7 @@ struct dvb_frontend *s921_attach(const struct s921_config *config,
+>         dprintk("\n");
+>         if (state == NULL) {
+>                 rc("Unable to kzalloc\n");
+> -               goto rcor;
+> +               return NULL;
+>         }
+>
+>         /* setup the state */
+> @@ -502,11 +502,6 @@ struct dvb_frontend *s921_attach(const struct s921_config *config,
+>         state->frontend.demodulator_priv = state;
+>
+>         return &state->frontend;
+> -
+> -rcor:
+> -       kfree(state);
+> -
+> -       return NULL;
+>  }
+>  EXPORT_SYMBOL(s921_attach);
+>
+> diff --git a/drivers/media/dvb-frontends/stb6100.c b/drivers/media/dvb-frontends/stb6100.c
+> index 2e93e65..1147e61 100644
+> --- a/drivers/media/dvb-frontends/stb6100.c
+> +++ b/drivers/media/dvb-frontends/stb6100.c
+> @@ -576,7 +576,7 @@ struct dvb_frontend *stb6100_attach(struct dvb_frontend *fe,
+>
+>         state = kzalloc(sizeof (struct stb6100_state), GFP_KERNEL);
+>         if (state == NULL)
+> -               goto error;
+> +               return NULL;
+>
+>         state->config           = config;
+>         state->i2c              = i2c;
+> @@ -587,10 +587,6 @@ struct dvb_frontend *stb6100_attach(struct dvb_frontend *fe,
+>
+>         printk("%s: Attaching STB6100 \n", __func__);
+>         return fe;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>
+>  static int stb6100_release(struct dvb_frontend *fe)
+> diff --git a/drivers/media/dvb-frontends/tda665x.c b/drivers/media/dvb-frontends/tda665x.c
+> index 2c1c759..58ba534 100644
+> --- a/drivers/media/dvb-frontends/tda665x.c
+> +++ b/drivers/media/dvb-frontends/tda665x.c
+> @@ -229,7 +229,7 @@ struct dvb_frontend *tda665x_attach(struct dvb_frontend *fe,
+>
+>         state = kzalloc(sizeof(struct tda665x_state), GFP_KERNEL);
+>         if (state == NULL)
+> -               goto exit;
+> +               return NULL;
+>
+>         state->config           = config;
+>         state->i2c              = i2c;
+> @@ -246,10 +246,6 @@ struct dvb_frontend *tda665x_attach(struct dvb_frontend *fe,
+>         printk(KERN_DEBUG "%s: Attaching TDA665x (%s) tuner\n", __func__, info->name);
+>
+>         return fe;
+> -
+> -exit:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>  EXPORT_SYMBOL(tda665x_attach);
+>
+> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
+> index c4a82a1..1125a87 100644
+> --- a/drivers/media/platform/davinci/vpbe.c
+> +++ b/drivers/media/platform/davinci/vpbe.c
+> @@ -771,7 +771,6 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>         return 0;
+>
+>  vpbe_fail_amp_register:
+> -       kfree(vpbe_dev->amp);
+>  vpbe_fail_sd_register:
+>         kfree(vpbe_dev->encoders);
+>  vpbe_fail_v4l2_device:
+> diff --git a/drivers/media/tuners/mt2063.c b/drivers/media/tuners/mt2063.c
+> index 0ed9091..1a91215 100644
+> --- a/drivers/media/tuners/mt2063.c
+> +++ b/drivers/media/tuners/mt2063.c
+> @@ -2250,7 +2250,7 @@ struct dvb_frontend *mt2063_attach(struct dvb_frontend *fe,
+>
+>         state = kzalloc(sizeof(struct mt2063_state), GFP_KERNEL);
+>         if (state == NULL)
+> -               goto error;
+> +               return NULL;
+>
+>         state->config = config;
+>         state->i2c = i2c;
+> @@ -2261,10 +2261,6 @@ struct dvb_frontend *mt2063_attach(struct dvb_frontend *fe,
+>
+>         printk(KERN_INFO "%s: Attaching MT2063\n", __func__);
+>         return fe;
+> -
+> -error:
+> -       kfree(state);
+> -       return NULL;
+>  }
+>  EXPORT_SYMBOL_GPL(mt2063_attach);
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Serge E. Hallyn <serue@us.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
-Here's a slightly updated version w/ updated warning message and typo
-fixed.
 
-Thanks.
 
- block/blk-cgroup.c        |    8 ++++++++
- include/linux/cgroup.h    |   15 +++++++++++++++
- kernel/cgroup.c           |   12 +++++++++++-
- kernel/cgroup_freezer.c   |    8 ++++++++
- kernel/events/core.c      |    7 +++++++
- mm/memcontrol.c           |   12 +++++++++---
- net/core/netprio_cgroup.c |   12 +++++++++++-
- net/sched/cls_cgroup.c    |    9 +++++++++
- security/device_cgroup.c  |    9 +++++++++
- 9 files changed, 87 insertions(+), 5 deletions(-)
+-- 
+Att,
 
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -737,6 +737,14 @@ struct cgroup_subsys blkio_subsys = {
- 	.subsys_id = blkio_subsys_id,
- 	.base_cftypes = blkcg_files,
- 	.module = THIS_MODULE,
-+
-+	/*
-+	 * blkio subsystem is utterly broken in terms of hierarchy support.
-+	 * It treats all cgroups equally regardless of where they're
-+	 * located in the hierarchy - all cgroups are treated as if they're
-+	 * right below the root.  Fix it and remove the following.
-+	 */
-+	.broken_hierarchy = true,
- };
- EXPORT_SYMBOL_GPL(blkio_subsys);
- 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -503,6 +503,21 @@ struct cgroup_subsys {
- 	 */
- 	bool __DEPRECATED_clear_css_refs;
- 
-+	/*
-+	 * If %false, this subsystem is properly hierarchical -
-+	 * configuration, resource accounting and restriction on a parent
-+	 * cgroup cover those of its children.  If %true, hierarchy support
-+	 * is broken in some ways - some subsystems ignore hierarchy
-+	 * completely while others are only implemented half-way.
-+	 *
-+	 * It's now diallowed to create nested cgroups if the subsystem is
-+	 * broken and cgroup core will emit a warning message on such
-+	 * cases.  Eventually, all subsystems will be made properly
-+	 * hierarchical and this will go away.
-+	 */
-+	bool broken_hierarchy;
-+	bool warned_broken_hierarchy;
-+
- #define MAX_CGROUP_TYPE_NAMELEN 32
- 	const char *name;
- 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4075,8 +4075,18 @@ static long cgroup_create(struct cgroup 
- 		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
- 
- 	for_each_subsys(root, ss) {
--		struct cgroup_subsys_state *css = ss->create(cgrp);
-+		struct cgroup_subsys_state *css;
-+
-+		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
-+		    parent->parent) {
-+			pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-+				   current->comm, current->pid, ss->name);
-+			if (!strcmp(ss->name, "memory"))
-+				pr_warning("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
-+			ss->warned_broken_hierarchy = true;
-+		}
- 
-+		css = ss->create(cgrp);
- 		if (IS_ERR(css)) {
- 			err = PTR_ERR(css);
- 			goto err_destroy;
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -373,4 +373,12 @@ struct cgroup_subsys freezer_subsys = {
- 	.can_attach	= freezer_can_attach,
- 	.fork		= freezer_fork,
- 	.base_cftypes	= files,
-+
-+	/*
-+	 * freezer subsys doesn't handle hierarchy at all.  Frozen state
-+	 * should be inherited through the hierarchy - if a parent is
-+	 * frozen, all its children should be frozen.  Fix it and remove
-+	 * the following.
-+	 */
-+	.broken_hierarchy = true,
- };
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7285,5 +7285,12 @@ struct cgroup_subsys perf_subsys = {
- 	.destroy	= perf_cgroup_destroy,
- 	.exit		= perf_cgroup_exit,
- 	.attach		= perf_cgroup_attach,
-+
-+	/*
-+	 * perf_event cgroup doesn't handle nesting correctly.
-+	 * ctx->nr_cgroups adjustments should be propagated through the
-+	 * cgroup hierarchy.  Fix it and remove the following.
-+	 */
-+	.broken_hierarchy = true,
- };
- #endif /* CONFIG_CGROUP_PERF */
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3855,12 +3855,17 @@ static int mem_cgroup_hierarchy_write(st
- 	 */
- 	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
- 				(val == 1 || val == 0)) {
--		if (list_empty(&cont->children))
-+		if (list_empty(&cont->children)) {
- 			memcg->use_hierarchy = val;
--		else
-+			/* we're fully hierarchical iff root uses hierarchy */
-+			if (mem_cgroup_is_root(memcg))
-+				mem_cgroup_subsys.broken_hierarchy = !val;
-+		} else {
- 			retval = -EBUSY;
--	} else
-+		}
-+	} else {
- 		retval = -EINVAL;
-+	}
- 
- out:
- 	cgroup_unlock();
-@@ -4953,6 +4958,7 @@ mem_cgroup_create(struct cgroup *cont)
- 						&per_cpu(memcg_stock, cpu);
- 			INIT_WORK(&stock->work, drain_local_stock);
- 		}
-+		mem_cgroup_subsys.broken_hierarchy = !memcg->use_hierarchy;
- 		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
- 	} else {
- 		parent = mem_cgroup_from_cont(cont->parent);
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -330,7 +330,17 @@ struct cgroup_subsys net_prio_subsys = {
- 	.subsys_id	= net_prio_subsys_id,
- #endif
- 	.base_cftypes	= ss_files,
--	.module		= THIS_MODULE
-+	.module		= THIS_MODULE,
-+
-+	/*
-+	 * net_prio has artificial limit on the number of cgroups and
-+	 * disallows nesting making it impossible to co-mount it with other
-+	 * hierarchical subsystems.  Remove the artificially low PRIOIDX_SZ
-+	 * limit and properly nest configuration such that children follow
-+	 * their parents' configurations by default and are allowed to
-+	 * override and remove the following.
-+	 */
-+	.broken_hierarchy = true,
- };
- 
- static int netprio_device_event(struct notifier_block *unused,
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -82,6 +82,15 @@ struct cgroup_subsys net_cls_subsys = {
- #endif
- 	.base_cftypes	= ss_files,
- 	.module		= THIS_MODULE,
-+
-+	/*
-+	 * While net_cls cgroup has the rudimentary hierarchy support of
-+	 * inheriting the parent's classid on cgroup creation, it doesn't
-+	 * properly propagates config changes in ancestors to their
-+	 * descendents.  A child should follow the parent's configuration
-+	 * but be allowed to override it.  Fix it and remove the following.
-+	 */
-+	.broken_hierarchy = true,
- };
- 
- struct cls_cgroup_head {
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -457,6 +457,15 @@ struct cgroup_subsys devices_subsys = {
- 	.destroy = devcgroup_destroy,
- 	.subsys_id = devices_subsys_id,
- 	.base_cftypes = dev_cgroup_files,
-+
-+	/*
-+	 * While devices cgroup has the rudimentary hierarchy support which
-+	 * checks the parent's restriction, it doesn't properly propagates
-+	 * config changes in ancestors to their descendents.  A child
-+	 * should only be allowed to add more restrictions to the parent's
-+	 * configuration.  Fix it and remove the following.
-+	 */
-+	.broken_hierarchy = true,
- };
- 
- int __devcgroup_inode_permission(struct inode *inode, int mask)
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
