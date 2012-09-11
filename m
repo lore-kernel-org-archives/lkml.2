@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab2IKNAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 09:00:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61383 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab2IKNAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 09:00:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 06/16] ARM: netx: move platform_data definitions
-Date: Tue, 11 Sep 2012 14:59:40 +0200
-Message-Id: <1347368390-31252-6-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1347368390-31252-1-git-send-email-arnd@arndb.de>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ybdJljPcM7kEsUq5Dd1DcpCUoBiUMwoK0PSS3dxdQjL
- WbulacZdMj/6ZJdvql+nMZcBcbPEXp6C+K1RqQihUWU/pOXPcd
- 7+fmmQbysSLDxvbaHMg21aTny4msoI0qn1Oatz15Rj9YsOUZ3D
- eYjZ9BlQMBXQEOy3BPQTs/3bF7nBu9+jvVk7KRda5aPXWcg8R5
- iXo4xHDJF1XR0kHCnJ4+peQQggJD3xRde5QcJCrg02/s/bPdVP
- 3MHE+Zd9XYxvJd2XYRb6Oar0xL634BsBrubVgnM+xB7hv3oYj4
- z11BBz0JPINYlP+0bICQwqQk5rK2gUE3JqM6IbPlZJpXmL6JEM
- ARrppXpoZAsU1U3dU3hq3KqHxnpZesvWcRAA2H67AS0cj2pAcS
- f3kkjwtx3O7jBDSSFtCAIiOfXpcR6QAhRs=
+	id S1756413Ab2IKNAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 09:00:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33695 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756037Ab2IKNAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 09:00:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,404,1344236400"; 
+   d="scan'208";a="201497197"
+Date: Tue, 11 Sep 2012 15:00:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH] mfd: ab8500: Make ab8500_irq_get_virq() static
+Message-ID: <20120911130041.GS3647@sortiz-mobl>
+References: <1345460017-404-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345460017-404-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform data for device drivers should be defined in
-include/linux/platform_data/*.h, not in the architecture
-and platform specific directories.
+Hi Lee,
 
-This moves such data out of the netx include directories
+On Mon, Aug 20, 2012 at 11:53:36AM +0100, Lee Jones wrote:
+> MFD core now takes care of  HWIRQ <-> VIRQ mapping, so the helper
+> ab8500_irq_get_virq() is no longer used by ab8500 subordinate devices
+> to obtain a Linux wide Virtual IRQ. The AB8500 IRQ controller still
+> uses it internally though, so we'll just hide it from the rest of the
+> world by making it static instead.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/ab8500-core.c         |   33 ++++++++++++++++-----------------
+>  include/linux/mfd/abx500/ab8500.h |    2 --
+>  2 files changed, 16 insertions(+), 19 deletions(-)
+Patch applied, thanks.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
----
- arch/arm/mach-netx/nxdb500.c                                         |    2 +-
- arch/arm/mach-netx/nxdkn.c                                           |    2 +-
- arch/arm/mach-netx/nxeb500hmi.c                                      |    2 +-
- drivers/net/ethernet/netx-eth.c                                      |    2 +-
- .../include/mach/eth.h => include/linux/platform_data/eth-netx.h     |    0
- 5 files changed, 4 insertions(+), 4 deletions(-)
- rename arch/arm/mach-netx/include/mach/eth.h => include/linux/platform_data/eth-netx.h (100%)
+Cheers,
+Samuel.
 
-diff --git a/arch/arm/mach-netx/nxdb500.c b/arch/arm/mach-netx/nxdb500.c
-index 180ea89..8b781ff 100644
---- a/arch/arm/mach-netx/nxdb500.c
-+++ b/arch/arm/mach-netx/nxdb500.c
-@@ -30,7 +30,7 @@
- #include <asm/mach/arch.h>
- #include <asm/hardware/vic.h>
- #include <mach/netx-regs.h>
--#include <mach/eth.h>
-+#include <linux/platform_data/eth-netx.h>
- 
- #include "generic.h"
- #include "fb.h"
-diff --git a/arch/arm/mach-netx/nxdkn.c b/arch/arm/mach-netx/nxdkn.c
-index 58009e2..b26dbce 100644
---- a/arch/arm/mach-netx/nxdkn.c
-+++ b/arch/arm/mach-netx/nxdkn.c
-@@ -30,7 +30,7 @@
- #include <asm/mach/arch.h>
- #include <asm/hardware/vic.h>
- #include <mach/netx-regs.h>
--#include <mach/eth.h>
-+#include <linux/platform_data/eth-netx.h>
- 
- #include "generic.h"
- 
-diff --git a/arch/arm/mach-netx/nxeb500hmi.c b/arch/arm/mach-netx/nxeb500hmi.c
-index 122e998..257382e 100644
---- a/arch/arm/mach-netx/nxeb500hmi.c
-+++ b/arch/arm/mach-netx/nxeb500hmi.c
-@@ -30,7 +30,7 @@
- #include <asm/mach/arch.h>
- #include <asm/hardware/vic.h>
- #include <mach/netx-regs.h>
--#include <mach/eth.h>
-+#include <linux/platform_data/eth-netx.h>
- 
- #include "generic.h"
- #include "fb.h"
-diff --git a/drivers/net/ethernet/netx-eth.c b/drivers/net/ethernet/netx-eth.c
-index 9d11ab7..63e7af4 100644
---- a/drivers/net/ethernet/netx-eth.c
-+++ b/drivers/net/ethernet/netx-eth.c
-@@ -34,7 +34,7 @@
- #include <mach/netx-regs.h>
- #include <mach/pfifo.h>
- #include <mach/xc.h>
--#include <mach/eth.h>
-+#include <linux/platform_data/eth-netx.h>
- 
- /* XC Fifo Offsets */
- #define EMPTY_PTR_FIFO(xcno)    (0 + ((xcno) << 3))	/* Index of the empty pointer FIFO */
-diff --git a/arch/arm/mach-netx/include/mach/eth.h b/include/linux/platform_data/eth-netx.h
-similarity index 100%
-rename from arch/arm/mach-netx/include/mach/eth.h
-rename to include/linux/platform_data/eth-netx.h
 -- 
-1.7.10
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
