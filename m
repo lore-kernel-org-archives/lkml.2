@@ -1,111 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab2IKTNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:13:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62657 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab2IKTNb (ORCPT
+	id S1759937Ab2IKTTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:19:53 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39871 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2IKTTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:13:31 -0400
-Date: Tue, 11 Sep 2012 12:13:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-Message-ID: <20120911191325.GU7677@google.com>
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
- <20120911165953.GK7677@google.com>
- <504F7B65.9090603@redhat.com>
- <20120911182904.GS7677@google.com>
- <504F88CB.6030105@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504F88CB.6030105@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 Sep 2012 15:19:51 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
+        bilhuang@nvidia.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] mfd: max8907: add power off control
+Date: Tue, 11 Sep 2012 13:19:41 -0600
+Message-Id: <1347391181-31005-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paolo.
+From: Stephen Warren <swarren@nvidia.com>
 
-On Tue, Sep 11, 2012 at 08:54:03PM +0200, Paolo Bonzini wrote:
-> > On Tue, Sep 11, 2012 at 07:56:53PM +0200, Paolo Bonzini wrote:
-> >> Understood; unfortunately, there is another major user of it
-> >> (virtualization).  If you are passing "raw" LUNs down to a virtual
-> >> machine, there's no possibility at all to use a properly encapsulated
-> > 
-> > Is there still command filtering issue when you're passing "raw" LUNs
-> > down?
-> 
-> Yes, the passing down is just a userland program that gets SCSI
-> commands from the guest, sends them via SG_IO, and passes back the
-> result.  If the userland program is unprivileged (it usually is), then
-> you go through the filter.
+Add DT property "maxim,system-power-controller" to indicate whether the
+PMIC is in charge of controlling the system power. If this is set, the
+driver will provide the pm_power_off() function.
 
-Could being able to bypass the filters for this "you own this LUN" be
-a solution?  Or is it that we still need command filtering for
-whatever reason?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+Note: This is based on my patch "mfd: add MAX8907 core driver", which I don't
+believe is applied yet.
 
-> This is the userland for virtio-scsi (the kernel part of virtio-scsi is just
-> a driver running in the guest).  It can run in two mode: it can do its own
-> SCSI emulation, or it can just relay CDBs and their results.
-> 
-> It can (and does) use higher-level services if SCSI emulation is done in
-> userland.  In that case, trim/discard can become a BLKDISCARD or a fallocate
-> for example.  However, in this case userland doesn't do any emulation and in
-> fact doesn't even need to know that this CDB is a discard.
+ .../devicetree/bindings/regulator/max8907.txt      |    6 ++++++
+ drivers/mfd/max8907.c                              |   20 ++++++++++++++++++++
+ include/linux/mfd/max8907.h                        |    2 ++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
 
-Couldn't it intercept some of them - e.g. RWs and discards?  What's
-the benifit / use case of doing pure bypass?  Would the benefits be
-strong enough to justify whole bpf cdb filtering?
-
-> Also, if it fails, there's no way to reconstruct the NAS's sense data to
-> pass it back to the guest.  We do a limited amount of "making up" sense
-> data (for example if a command is filtered, all we get is an errno value;
-> and we say it was not recognized), but it should really be as simple
-> and limited as possible.
-
-Yeah, I agree losing sense data could suck but that alone doesn't seem
-to be a very strong justification for the whole deal and there could
-be different / smaller ways to solve the sense data problem.
-
-> >> A generic filter (see
-> >> http://article.gmane.org/gmane.linux.kernel/1312326 for a proposal)
-> >> would be satisfactory for everyone, but it's also a major undertaking
-> >> and so far I've not received a single comment about it.
-> > 
-> > Maybe I'm just not familiar with the problem space but I really hope
-> > things don't come to that.
-> 
-> Why not? :)  (BTW it was suggested by Alan Cox, that's just my proposal for
-> how to do it).  I think that it's a good idea, but it's a big bazooka for
-> the smaller issue of supporting trim/discard.
-
-I guess I mostly wanna know for sure that there's big / strong enough
-targets for the big bazooka.  :)
-
-> > Hmmm?  This was about discard, no?
-> 
-> One example of block layer interfaces that I want to add is BLKPING, so
-> that you can see if the NAS is reachable.  Then SCSI emulation can map
-> the "test unit ready" command to BLKPING.  There's a handful of such
-> ioctls that would be useful, such as BLKDISCARD itself.
-
-Can't you make use of the existing disk events mechanism for that?
-Block layer already knows how to watch readiness of a device and tell
-the userland about it via uevent.  Hooking to that shouldn't be too
-difficult and I think probably is the right approach given that all
-hotplug userland hotplug operations go through the same channel.
-
-If you absoluately has to test it from userland, READ on the first
-sector?  That essentially is what libata does for START_STOP although
-it uses VERIFY instead of READ.  Given how partition code behaves, any
-device which fails on READ on block0 isn't gonna work well with linux
-anyway.
-
-Thanks.
-
+diff --git a/Documentation/devicetree/bindings/regulator/max8907.txt b/Documentation/devicetree/bindings/regulator/max8907.txt
+index 4fd847f..51e683b 100644
+--- a/Documentation/devicetree/bindings/regulator/max8907.txt
++++ b/Documentation/devicetree/bindings/regulator/max8907.txt
+@@ -16,6 +16,10 @@ Required properties:
+   property, with valid values listed below. The content of each sub-node
+   is defined by the standard binding for regulators; see regulator.txt.
+ 
++Optional properties:
++- maxim,system-power-controller: Boolean property indicating that the PMIC
++  controls the overall system power.
++
+ Valid regulator-compatible values are:
+ 
+   sd1, sd2, sd3, ldo1, ldo2, ldo3, ldo4, ldo5, ldo6, ldo7, ldo8, ldo9, ldo10,
+@@ -29,6 +33,8 @@ Example:
+ 			reg = <0x3c>;
+ 			interrupts = <0 86 0x4>;
+ 
++			maxim,system-power-controller;
++
+ 			mbatt-supply = <&some_reg>;
+ 			in-v1-supply = <&mbatt_reg>;
+ 			...
+diff --git a/drivers/mfd/max8907.c b/drivers/mfd/max8907.c
+index 5295276..3cc6b04 100644
+--- a/drivers/mfd/max8907.c
++++ b/drivers/mfd/max8907.c
+@@ -176,11 +176,26 @@ static const struct regmap_irq_chip max8907_rtc_irq_chip = {
+ 	.num_irqs = ARRAY_SIZE(max8907_rtc_irqs),
+ };
+ 
++struct max8907 *max8907_pm_off;
++static void max8907_power_off(void)
++{
++	regmap_update_bits(max8907_pm_off->regmap_gen, MAX8907_REG_RESET_CNFG,
++			MAX8907_MASK_POWER_OFF, MAX8907_MASK_POWER_OFF);
++}
++
+ static __devinit int max8907_i2c_probe(struct i2c_client *i2c,
+ 				       const struct i2c_device_id *id)
+ {
+ 	struct max8907 *max8907;
+ 	int ret;
++	struct max8907_platform_data *pdata = dev_get_platdata(&i2c->dev);
++	bool pm_off = false;
++
++	if (pdata)
++		pm_off = pdata->pm_off;
++	else if (i2c->dev.of_node)
++		pm_off = of_property_read_bool(i2c->dev.of_node,
++					"maxim,system-power-controller");
+ 
+ 	max8907 = devm_kzalloc(&i2c->dev, sizeof(struct max8907), GFP_KERNEL);
+ 	if (!max8907) {
+@@ -251,6 +266,11 @@ static __devinit int max8907_i2c_probe(struct i2c_client *i2c,
+ 		goto err_add_devices;
+ 	}
+ 
++	if (pm_off && !pm_power_off) {
++		max8907_pm_off = max8907;
++		pm_power_off = max8907_power_off;
++	}
++
+ 	return 0;
+ 
+ err_add_devices:
+diff --git a/include/linux/mfd/max8907.h b/include/linux/mfd/max8907.h
+index 283531f..b06f7a6 100644
+--- a/include/linux/mfd/max8907.h
++++ b/include/linux/mfd/max8907.h
+@@ -167,6 +167,7 @@
+ #define MAX8907_MASK_OUT5V_VINEN	0x10
+ #define MAX8907_MASK_OUT5V_ENSRC	0x0E
+ #define MAX8907_MASK_OUT5V_EN		0x01
++#define MAX8907_MASK_POWER_OFF		0x40
+ 
+ /* Regulator IDs */
+ #define MAX8907_MBATT	0
+@@ -231,6 +232,7 @@ enum {
+ 
+ struct max8907_platform_data {
+ 	struct regulator_init_data *init_data[MAX8907_NUM_REGULATORS];
++	bool pm_off;
+ };
+ 
+ struct regmap_irq_chips_data;
 -- 
-tejun
+1.7.0.4
+
