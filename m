@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab2IKSRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:17:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753831Ab2IKSRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:17:40 -0400
-Date: Tue, 11 Sep 2012 14:16:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1758327Ab2IKSWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:22:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39390 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab2IKSWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 14:22:15 -0400
+Date: Tue, 11 Sep 2012 11:22:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
         Li Zefan <lizf@cn.fujitsu.com>, Glauber Costa <glommer@parallels.com>,
         Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
@@ -20,91 +21,57 @@ Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
  hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911181600.GK12039@redhat.com>
+Message-ID: <20120911182210.GQ7677@google.com>
 References: <20120910223125.GC7677@google.com>
  <20120911145106.GG12039@redhat.com>
  <20120911171601.GN7677@google.com>
  <20120911173524.GJ12039@redhat.com>
  <20120911175515.GP7677@google.com>
+ <20120911181600.GK12039@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120911175515.GP7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120911181600.GK12039@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 10:55:15AM -0700, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Tue, Sep 11, 2012 at 01:35:25PM -0400, Vivek Goyal wrote:
-> > It is kind of strange. First kernel allows creation of hiearchy for
-> > non-hierarchical controllers and it also gives warning for user space to
-> > not do that.
-> > 
-> > If creating hiearchy for flat controllers is wrong then kernel should
-> > not allow it in first place and enforce it, instead of just giving a
-> > warning to user space to not create the hierarchy.
-> > 
-> > Initially I had blocked the creation of hierarchy deeper than 1 level
-> > but later had to remove it as people wanted libvirt to use blkio
-> > controller and seemed to be fine with flat support. In fact there
-> > were people who insisted on flat support as they thought that made
-> > more sense.
-> 
-> Yes, it is an ugly situation and we'll have to drag ourselves out of
-> this mess gradually.  I hope it hadn't happened like this but what
-> happened already happened and I can't see a better way out.  If you
-> can, please share.
-> 
-> > Sure. Just that CFQ code now has become really complicated and messy
-> > (especially with that 3 service trees per group) so making it hierarchical
-> > is significant amount of effort.
-> 
-> I think the wording for the warning wasn't entirely accurate.  The
-> thing that we wanna warn about is that the hierarchy behavior isn't
-> complete yet and it may change in the future.  If we can absolutely
-> declare that cfq is and will stay broken in terms of hierarchy
-> support, that could work too but I don't really think that's a good
-> idea.  It's something we need to do one way or the other.
-> 
-> > And regarding change of behavior, we can always intoduce a .hierarchy
-> > file like cgroup which needs to be explicitly set to make controller
-> > truly hiearchical. That way behavior does not change in a subtle manner
-> > in future kernel releases. (Not that I am a fan of hierarchy file, just
-> > that it is cost we pay for not implementing hierarchical controller to
-> > begin with).
-> 
-> I think that way of thinking is what led to this horrible mess in the
-> first place.  More flexibility doesn't equal better.  We can't keep
-> piling things on top.  I'd like to at least have an exit strategy.
-> use_hierarchy drives us further away from where we wanna be.
+Hello, Vivek.
 
-Ok, so whole point of warning seems to be so that we can change the
-behavior in future and say to user space they few kernel releases back we
-had started printing a warning that creating hierarchy is wrong and 
-move to a flat setup. So don't complain to us now.?
+On Tue, Sep 11, 2012 at 02:16:00PM -0400, Vivek Goyal wrote:
+> Ok, so whole point of warning seems to be so that we can change the
+> behavior in future and say to user space they few kernel releases back we
+> had started printing a warning that creating hierarchy is wrong and 
+> move to a flat setup. So don't complain to us now.?
 
-Are you planning to get rid of .user_hierarchy file from memory cgroup
-too? If you are planning not to put such a file in blkio controller,
-then it will make sense to remove it from mem_cgorup too.
+Yes, pretty much.  At the moment, it's simply broken.
 
-.use_hierarchy was not set by default in memory controller and I think one
-of the reasons was increased overhead of accounting in deep hierarchies.
-Has that been sorted out?
+> Are you planning to get rid of .user_hierarchy file from memory cgroup
+> too? If you are planning not to put such a file in blkio controller,
+> then it will make sense to remove it from mem_cgorup too.
 
-The point I am trying to make is that deep hierarchies (5-6 levels) are
-/going to be a reality and if accounting overhead is not manageable then
-enabling hierarchy by default might not be a practical solution even
-if you implement hierarchy support (like memory cgroup), and in that
-case retaining .use_hierarchy will make sense.
+Yes, or at least make it RO 1 eventually.
 
-IIUC, are you saying that now none of the controller will have flat
-hiearchy support because there is no way to be able to create flat 
-hierarchy. (Any new group is child of root group). So are we moving
-towards a model where every controller is hierarhical and there is
-no concept of flat hierarchy.
+> The point I am trying to make is that deep hierarchies (5-6 levels) are
+> /going to be a reality and if accounting overhead is not manageable then
+> enabling hierarchy by default might not be a practical solution even
+> if you implement hierarchy support (like memory cgroup), and in that
+> case retaining .use_hierarchy will make sense.
 
-Thanks
-Vivek
+That doesn't make any sense to me.  If you don't want feature and
+overhead of hierarchy, you just need to not create a hierarchy.  If
+hierarchical behavior isn't needed, why create hierarchy at all?
+
+> IIUC, are you saying that now none of the controller will have flat
+> hiearchy support because there is no way to be able to create flat 
+> hierarchy. (Any new group is child of root group). So are we moving
+> towards a model where every controller is hierarhical and there is
+> no concept of flat hierarchy.
+
+Yeap.
+
+Thanks.
+
+-- 
+tejun
