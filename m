@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab2IKHAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 03:00:42 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:35961 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab2IKHAj (ORCPT
+	id S1757766Ab2IKHD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 03:03:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51822 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab2IKHDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 03:00:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4FAHHgTlBbdWObgWdsb2JhbABFhgetJyKIACIBARYmJ4IgAQEEASNWBQsLEQMBAgEqAgJGCQgGCgmICgqoc5MiiwyFJIESA6higWE
-X-IronPort-AV: E=Sophos;i="4.80,403,1344204000"; 
-   d="asc'?scan'208";a="949652613"
-Message-ID: <1347346908.4539.70.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH 01/20] Staging: ipack/bridges/tpci200: Put the TPCI200
- control registers into a struct.
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
-        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
-Date: Tue, 11 Sep 2012 09:01:48 +0200
-In-Reply-To: <20120910182941.GA25400@kroah.com>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
-	 <20120910182941.GA25400@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-R2R0u1CdwpNzIi65eWSn"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Tue, 11 Sep 2012 03:03:25 -0400
+X-AuditID: cbfee61a-b7fba6d000007d5f-97-504ee22481a8
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Ryan Mallon'" <rmallon@gmail.com>, balbi@ti.com
+Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
+ <20120911063048.GA18072@arwen.pp.htv.fi>
+ <002201cd8fe8$2aafa070$800ee150$%han@samsung.com> <504EDEA1.1050108@gmail.com>
+In-reply-to: <504EDEA1.1050108@gmail.com>
+Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
+Date: Tue, 11 Sep 2012 16:02:59 +0900
+Message-id: <002601cd8feb$7aa51c60$6fef5520$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2P6WgV1wDzi+5dSgqLswR4eQveswAAaQ4Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAV2VR34BBq/Pillc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mvu/TWQoO8lfMbprH1MDYz9PFyMkhIWAi0T6xiw3CFpO4cG89
+	kM3FISSwiFFiSu8XFpCEkMBsJok5T1RBbDYBNYkvXw6zdzFycIgIGEvMnR8PUs8ssIBR4uTs
+	F+wQzTsZJQ419oNN5RTQlOjbeYEVxBYWsJNYsqkPrJlFQFXi/h9/kDCvgK3Ek++32SFsQYkf
+	k++B7WUW0JJYv/M4E4QtL7F5zVtmkFYJAXWJR391QcIiAkYSDa9WMUOUiEjse/GOcQKj0Cwk
+	k2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgO42dSOxhXNlgcYhTg
+	YFTi4c1w8QsQYk0sK67MPcQowcGsJMLrNwsoxJuSWFmVWpQfX1Sak1p8iFGag0VJnNfpnF2A
+	kEB6YklqdmpqQWoRTJaJg1OqgbHc98PuSTrVP+9wLf7be2pJwLKtc7uusD5on2aWEMMuf3KR
+	4bf3lw4Gn3rvuXu3s3T5/t2rDioc5A/KE0ubIhzBs+PR1LefFtd8ZP/mPzc4qW/Xg+vqh19+
+	fN16TZCxWmcyU9O7jPurM7u6Jx6sPubm+G2G81cPU4fAjFDh16XXvt8t6+HlTryuxFKckWio
+	xVxUnAgAW0KQAF8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, September 11, 2012 3:48 PM Ryan Mallon wrote
+> 
+> On 11/09/12 16:39, Jingoo Han wrote:
+> > On Tuesday, September 11, 2012 3:31 PM Felipe Balbi wrote
+> >
+> >>
+> >> Hi,
+> >>
+> >> On Mon, Sep 10, 2012 at 08:59:11PM +0900, Jingoo Han wrote:
+> >>> This patch uses pr_* instead of printk.
+> >>>
+> >>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> >>> ---
+> >>>  drivers/gpio/gpio-samsung.c |    6 +++---
+> >>>  1 files changed, 3 insertions(+), 3 deletions(-)
+> >>>
+> >>> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+> >>> index ba126cc..e38d990 100644
+> >>> --- a/drivers/gpio/gpio-samsung.c
+> >>> +++ b/drivers/gpio/gpio-samsung.c
+> >>> @@ -45,7 +45,7 @@
+> >>>  #ifndef DEBUG_GPIO
+> >>>  #define gpio_dbg(x...) do { } while (0)
+> >>>  #else
+> >>> -#define gpio_dbg(x...) printk(KERN_DEBUG x)
+> >>> +#define gpio_dbg(x...) pr_debug(x)
+> >>>  #endif
+> >>>
+> >>>  int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
+> >>> @@ -926,10 +926,10 @@ static void __init samsung_gpiolib_add(struct samsung_gpio_chip *chip)
+> >>>  #ifdef CONFIG_PM
+> >>>  	if (chip->pm != NULL) {
+> >>>  		if (!chip->pm->save || !chip->pm->resume)
+> >>> -			printk(KERN_ERR "gpio: %s has missing PM functions\n",
+> >>> +			pr_err("gpio: %s has missing PM functions\n",
+> >>>  			       gc->label);
+> >>
+> >> I would rather see dev_* conversion instead.
+> >>
+> >> my 2 cents
+> >
+> > Hi Felipe Balbi,
+> >
+> > OK, I will replace printk(KERN_ERR...) with dev_err.
+> > Thank you.
+> 
+> I was going to suggest that also, but I don't think that there is a dev
+> pointer to use. The gpio_chip structure has an optional one, but from my
+> quick glance it didn't look like the Samsung driver was using it. I
+> could be wrong though. If I am, go with dev_err (and dev_dbg for
+> replacing the gpio_dbg statements).
 
---=-R2R0u1CdwpNzIi65eWSn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Also, I cannot find dev point to use.
+I will use pr_dbg, pr_err.
 
-On Mon, 2012-09-10 at 11:29 -0700, Greg Kroah-Hartman wrote:
-> On Mon, Sep 10, 2012 at 10:51:39AM +0200, Samuel Iglesias Gons=C3=A1lvez =
-wrote:
-> > From: Jens Taprogge <jens.taprogge@taprogge.org>
-> >=20
-> > This saves us from a little pointer arithmetic and cleans up the code a=
- bit.
-> >=20
-> > Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-> > Signed-off-by: Samuel Iglesias Gons=C3=A1lvez <siglesias@igalia.com>
-> > ---
-> >  drivers/staging/ipack/bridges/tpci200.c |   28 +++++++----------------=
------
-> >  drivers/staging/ipack/bridges/tpci200.h |   21 +++++++++++++--------
-> >  2 files changed, 20 insertions(+), 29 deletions(-)
->=20
-> This patch doesn't apply to my tree for some reason.
->=20
+Thanks.
 
-OK, I will rebase my repo and send them again.
+> 
+> ~Ryan
+> 
+> 
+> 
 
-> Also, all of your patches are in base64 mode, which makes it impossible
-> for me to fix them up by hand for issues like this.
->=20
-> Care to redo your series, and fix your email client, and resend them?
-
-It's quite strange... Looking at the headers of my local copy of the
-patches I see the following:
-
---------------------------------
-[...]
-Subject: [PATCH 01/20] Staging: ipack/bridges/tpci200: Put the TPCI200
-control registers into a struct.
-Date: Mon, 10 Sep 2012 10:51:39 +0200
-Message-id: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
-X-mailer: git-send-email 1.7.10.4
-Mime-version: 1.0
-Content-type: text/plain; charset=3DUTF-8
-Content-transfer-encoding: 8bit
---------------------------------
-
-I don't see the base64. However, I will try to figure out how can I fix
-this issue in git-send-email.
-
-Thanks,
-
-Sam
-
---=-R2R0u1CdwpNzIi65eWSn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlBO4dwACgkQWrfbyfmd9eIheQCgm4X3KKh7izPr7T+D9NhWhr8J
-pSQAn2EYi9IRAYJnE2mJcQLp30TU+68w
-=zYw9
------END PGP SIGNATURE-----
-
---=-R2R0u1CdwpNzIi65eWSn--
 
