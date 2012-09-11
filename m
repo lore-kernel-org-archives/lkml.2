@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab2IKUtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 16:49:12 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:48174 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756233Ab2IKUsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 16:48:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Airlie <airlied@gmail.com>
-Subject: Re: runtime PM and special power switches
-Date: Tue, 11 Sep 2012 22:55:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "dri-devel" <dri-devel@lists.freedesktop.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-pci@vger.kernel.org
-References: <CAPM=9tzq2+LO2BzEmmByeozKzX6nswi1EwvEEM_bgo9kFv1hhA@mail.gmail.com>
-In-Reply-To: <CAPM=9tzq2+LO2BzEmmByeozKzX6nswi1EwvEEM_bgo9kFv1hhA@mail.gmail.com>
+	id S1756383Ab2IKUve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 16:51:34 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52941 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751925Ab2IKUvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 16:51:32 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209112255.10486.rjw@sisk.pl>
+In-Reply-To: <20120911205027.GA25837@redhat.com>
+References: <20120910223125.GC7677@google.com>
+	<20120910223355.GD7677@google.com>
+	<20120911182356.GR7677@google.com>
+	<20120911205027.GA25837@redhat.com>
+Date: Tue, 11 Sep 2012 13:51:30 -0700
+X-Google-Sender-Auth: p8ouM7aVXXdn8mt2L2GUz6ncFfo
+Message-ID: <CAOS58YPmrCrgdunsck78GTeGUCf9CBrS75BRt3wpQUfwMUGpsg@mail.gmail.com>
+Subject: Re: [PATCH UPDATED RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Tuesday, September 11, 2012, Dave Airlie wrote:
-> Hi Rafael,
-> 
-> I've been investigating runtime PM support for some use-cases on GPUs.
-> 
-> In some laptops we have a secondary GPU (optimus) that can be powered
-> up for certain 3D tasks and then turned off when finished with. Now I
-> did an initial pass on supporting it without using the kernel runtime
-> PM stuff, but Alan said I should take a look so here I am.
+On Tue, Sep 11, 2012 at 1:50 PM, Aristeu Rozanski <aris@redhat.com> wrote:
+> Hi Tejun,
+> On Tue, Sep 11, 2012 at 11:23:56AM -0700, Tejun Heo wrote:
+>> +                     /* we're fully hierarchical iff root uses hierarchy */
+>
+> minor nit: s/iff/if/
 
-Alan Stern or Alan Cox? :-)
+That was intentional iff == if and only if. :)
 
-> While I've started to get a handle on things, we have a bit of an
-> extra that I'm not sure we cater for.
-> 
-> Currently we get called from the PCI layer which after we are finished
-> with our runtime suspend callback, will go put the device into the
-> correct state etc, however on these optimus/powerxpress laptops we
-> have a separate ACPI or platform driver controlled power switch that
-> we need to call once the PCI layer is finished the job. This switch
-> effectively turns the power to the card completely off leaving it
-> drawing no power.
-> 
-> No we can't hit the switch from the driver callback as the PCI layer
-> will get lost, so I'm wondering how you'd envisage we could plug this
-> in.
+Thanks.
 
-Hmm.  In principle we might modify pci_pm_runtime_suspend() so that it
-doesn't call pci_finish_runtime_suspend() if pci_dev->state_saved is
-set.  That would actually make it work in analogy with pci_pm_suspend_noirq(),
-so perhaps it's not even too dangerous.
-
-Thanks,
-Rafael
+-- 
+tejun
