@@ -1,53 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759178Ab2IKLsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:48:39 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:48879 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759047Ab2IKLsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:48:38 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH 2/2] netprio_cgroup: Optimize the priomap copy loop slightly
-Date: Tue, 11 Sep 2012 12:42:23 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FE9@saturn3.aculab.com>
-In-Reply-To: <20120911112237.13852.1095.stgit@srivatsabhat.in.ibm.com>
+	id S1759235Ab2IKLws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:52:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33215 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759153Ab2IKLwq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 07:52:46 -0400
+From: "Kaneshige, Kenji" <kaneshige.kenji@jp.fujitsu.com>
+To: "Indoh, Takao" <indou.takao@jp.fujitsu.com>
+CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "hbabu@us.ibm.com" <hbabu@us.ibm.com>,
+        "Ishii, Hironobu" <ishii.hironobu@jp.fujitsu.com>,
+        "martin.wilck@ts.fujitsu.com" <martin.wilck@ts.fujitsu.com>
+Subject: RE: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+Thread-Topic: [RFC][PATCH] Reset PCIe devices to address DMA problem on
+ kdump with iommu
+Thread-Index: AQHNcWshux+i/ugmYU6XzbvpSogZp5dHYZeAgAQ9MoCAAQ6HAIAuhvIAgAHu0rCABaAbAIAAr0JA
+Date: Tue, 11 Sep 2012 11:52:42 +0000
+Message-ID: <4A338DB2991D2A44B9A44B8718AECF650A4AC9A5@G01JPEXMBYT03>
+References: <501BB4EF.7080909@jp.fujitsu.com>
+ <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com>
+ <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com>
+ <4A338DB2991D2A44B9A44B8718AECF650A4AA6BF@G01JPEXMBYT03>
+ <504D8A28.9090105@jp.fujitsu.com>
+In-Reply-To: <504D8A28.9090105@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: ja-JP
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 2/2] netprio_cgroup: Optimize the priomap copy loop slightly
-thread-index: Ac2QD9dFZ+mfmLSrSi6ywm2vEK2SwQAAnJjw
-References: <20120911112231.13852.61794.stgit@srivatsabhat.in.ibm.com> <20120911112237.13852.1095.stgit@srivatsabhat.in.ibm.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        <davem@davemloft.net>, <nhorman@tuxdriver.com>
-Cc: <john.r.fastabend@intel.com>, <gaofeng@cn.fujitsu.com>,
-        <eric.dumazet@gmail.com>, <mark.d.rustad@intel.com>,
-        <lizefan@huawei.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
+x-securitypolicycheck: OK by SHieldMailChecker v1.7.4
+x-originating-ip: [10.124.134.168]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8BBmjCh023520
 
-> -	for (i = 0;
-> -	     old_priomap && (i < old_priomap->priomap_len);
-> -	     i++)
-> -		new_priomap->priomap[i] = old_priomap->priomap[i];
-> +	if (old_priomap) {
-> +		old_len = old_priomap->priomap_len;
-> +
-> +		for (i = 0; i < old_len; i++)
-> +			new_priomap->priomap[i] = old_priomap->priomap[i];
-> +	}
+> -----Original Message-----
+> From: Takao Indoh [mailto:indou.takao@jp.fujitsu.com]
+> Sent: Monday, September 10, 2012 3:35 PM
+> To: Kaneshige, Kenji/$B6b=E(B $B7{<#(B
+> Cc: vgoyal@redhat.com; kexec@lists.infradead.org;
+> linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org;
+> bhelgaas@google.com; hbabu@us.ibm.com; Ishii, Hironobu/$B@P0f(B $B9(1d(B;
+> martin.wilck@ts.fujitsu.com
+> Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+> with iommu
+> 
+> (2012/09/10 11:34), Kaneshige, Kenji wrote:
+> >> -----Original Message-----
+> >> From: linux-pci-owner@vger.kernel.org
+> >> [mailto:linux-pci-owner@vger.kernel.org] On Behalf Of Takao Indoh
+> >> Sent: Wednesday, September 05, 2012 8:10 PM
+> >> To: vgoyal@redhat.com
+> >> Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org;
+> >> linux-pci@vger.kernel.org; bhelgaas@google.com; hbabu@us.ibm.com;
+> Ishii,
+> >> Hironobu/$B@P0f(B $B9(1d(B; martin.wilck@ts.fujitsu.com
+> >> Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on
+> kdump
+> >> with iommu
+> >>
+> >> (2012/08/07 5:39), Vivek Goyal wrote:
+> >>> On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
+> >>>> Hi Vivek,
+> >>>>
+> >>>> (2012/08/03 20:46), Vivek Goyal wrote:
+> >>>>> On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
+> >>>>>> Hi all,
+> >>>>>>
+> >>>>>> This patch adds kernel parameter "reset_pcie_devices" which resets
+> >> PCIe
+> >>>>>> devices at boot time to address DMA problem on kdump with iommu.
+> When
+> >>>>>> this parameter is specified, a hot reset is triggered on each PCIe
+> >> root
+> >>>>>> port and downstream port to reset its downstream endpoint.
+> >>>>>
+> >>>>> Hi Takao,
+> >>>>>
+> >>>>> Why not use existing "reset_devices" parameter instead of introducing
+> >>>>> a new one?
+> >>>>
+> >>>> "reset_devices" is used for each driver to reset their own device,
+> and
+> >>>> this patch resets all devices forcibly, so I thought they were different
+> >>>> things.
+> >>>
+> >>> Yes reset_devices currently is used for driver to reset its device.
+> I
+> >>> thought one could very well extend its reach to reset pci express devices
+> >>> at bus level.
+> >>>
+> >>> Having them separate is not going to be much useful from kdump
+> >>> perspective. We will end up passing both reset_devices and
+> >>> reset_pcie_devices to second kernel whill lead to bus level reset as
+> well
+> >>> as device level reset.
+> >>>
+> >>> Ideal situation would be that somehow detect that bus level reset has
+> >> been
+> >>> done and skip device level reset (assuming bus level reset obviates
+> the
+> >>> need of device level reset, please correct me if that's not the case).
+> >>>
+> >>> After pcie reset, can we store the state in a variable and drivers can
+> >>> use that variable to check if PCIe level reset was done or not. If yes,
+> >>> skip device level reset (Assuming driver knows that device is on a
+> >>> PCIe slot).
+> >>>
+> >>> In that case we will not have to introduce new kernel command line,
+> and
+> >>> also avoid double reset?
+> >>
+> >> I found a problem when testing my patch on some machines.
+> >>
+> >> Originally there are two problems in kdump kernel when iommu is enabled;
+> >> DMAR error and PCI SERR. I thought they are fixed by my patch, but I
+> >> noticed that PCI SERR is still detected after applying the patch. It
+> >> seems that something happens when Interrupt Remapping is initialized
+> in
+> >> kdump kernel.
+> >
+> > I'm not sure, but I guess the PCI SERR might be caused as follows.
+> >
+> > - The 1st kernel enables interrupt remapping. The MSI(-X) address and
+> >    data registers of PCI devices are programmed in remappable format.
+> >
+> > - At the beginning of 2nd kernel, interrupt remapping is still active.
+> >    And then it is disabled by enable_IR() function for initialization.
+> >
+> > - PCI device generate an interrupt. At this moment, interrupt remapping
+> >    is not enabled yet. On the other hand, MSI(-X) address and data of
+> this
+> >    interrupt is in remappable format because those are programmed by 1st
+> >    kernel. I guess this might be a cause of PCI SERR.
+> >
+> > I guess clearing command register or disabling MSI before interrupt
+> > remapping initialization in 2nd kernel might solve the PCI SERR problem.
+> 
+> Thank you for your comment. That makes sense.
+> 
+> Though I think clearing bus master bit is enough, do you think I need to
+> clear
+> all command register bit not only bus master?
 
-Or:
-	memcpy(new_priomap->priomap, old_priomap->priomap,
-		old_priomap->priomap_len * sizeof old_priomap->priomap[0]);
+I thought clearing bus master bit. But we might also need to set the
+disable INTx bit.
 
-	David
+It would not be needed if we can reset devices before interrupt remapping
+initialization. I guess resetting devices before interrupt remapping
+initialization would need complex code change and be difficult to implement.
+If so, clearing bus master bit would be one of the alternative solution
+against PCI SERR issue.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+Kenji Kaneshige
+
+
+
+> 
+> Thanks,
+> Takao Indoh
+> 
+> 
+> > Regards,
+> > Kenji Kaneshige
+> >
+> >
+> >>
+> >> Therefore resetting devices has to be done before enable_IR() is
+> >> called. I have three ideas for it.
+> >>
+> >>    (i) Resetting devices in 1st kernel(panic kernel)
+> >>    We can reset devices before jumping into 2nd kernel. Of course it
+> may
+> >>    be dangerous to scan pci device tree and call PCI functions in panic'd
+> >>    kernel. Beforehand we need to collect device information so that only
+> >>    minimal code could run on panic.
+> >>
+> >>    (ii) Resetting devices in purgatory
+> >>    It seems to be be appropriate place to do this, but I'm not sure
+> >>    where I can save/restore PCI config when resetting devices in
+> >>    purgatory.
+> >>
+> >>    (iii) Resetting devices in 2nd kernel(kdump kernel)
+> >>    Important point is to do reset before enable_IR() is called as I wrote
+> >>    above. I think I should add new function to do reset into
+> >>    arch/x86/pci/early.c and call it in setup_arch like
+> >>    early_dump_pci_devices() or early_quirks().
+> >>
+> >> Any comments?
+> >>
+> >> Thanks,
+> >> Takao Indoh
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-pci"
+> in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> >
+
