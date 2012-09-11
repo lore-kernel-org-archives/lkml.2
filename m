@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab2IKRiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:38:06 -0400
-Received: from shutemov.name ([176.9.204.213]:58646 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab2IKRiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:38:05 -0400
-Date: Tue, 11 Sep 2012 20:38:34 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Steve Capper <steve.capper@arm.com>
-Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
- passing in mm/huge_memory.c
-Message-ID: <20120911173833.GA29805@shutemov.name>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
- <1347382036-18455-3-git-send-email-will.deacon@arm.com>
+	id S1753143Ab2IKRi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:38:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48639 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab2IKRi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 13:38:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347382036-18455-3-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <504DF63A020000780009A30B@nat28.tlf.novell.com>
+References: <504DF63A020000780009A30B@nat28.tlf.novell.com>
+Date: Tue, 11 Sep 2012 19:38:24 +0200
+Message-ID: <CACRpkdbCmou3wTXJjPhSaCH0kH1VrU5n-9t7NTJOjFQs1xH+cA@mail.gmail.com>
+Subject: Re: [PATCH] allow gpiolib to be a module
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jan Beulich <JBeulich@suse.com>, Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 05:47:15PM +0100, Will Deacon wrote:
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> 
-> The update_mmu_cache() takes a pointer (to pte_t by default) as the last
-> argument but the huge_memory.c passes a pmd_t value. The patch changes
-> the argument to the pmd_t * pointer.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Steve Capper <steve.capper@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+On Mon, Sep 10, 2012 at 2:16 PM, Jan Beulich <JBeulich@suse.com> wrote:
 
-Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Without ARCH_REQUIRE_GPIOLIB there's no reason to force this code, when
+> enabled, to always be built into the kernel, which requires only minor
+> Makefile and source code adjustments.
+>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> ---
->  mm/huge_memory.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 57c4b93..4aa6d02 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -934,7 +934,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		entry = pmd_mkyoung(orig_pmd);
->  		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
->  		if (pmdp_set_access_flags(vma, haddr, pmd, entry,  1))
-> -			update_mmu_cache(vma, address, entry);
-> +			update_mmu_cache(vma, address, pmd);
->  		ret |= VM_FAULT_WRITE;
->  		goto out_unlock;
->  	}
-> @@ -986,7 +986,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		pmdp_clear_flush_notify(vma, haddr, pmd);
->  		page_add_new_anon_rmap(new_page, vma, haddr);
->  		set_pmd_at(mm, haddr, pmd, entry);
-> -		update_mmu_cache(vma, address, entry);
-> +		update_mmu_cache(vma, address, pmd);
->  		page_remove_rmap(page);
->  		put_page(page);
->  		ret |= VM_FAULT_WRITE;
-> @@ -1989,7 +1989,7 @@ static void collapse_huge_page(struct mm_struct *mm,
->  	BUG_ON(!pmd_none(*pmd));
->  	page_add_new_anon_rmap(new_page, vma, address);
->  	set_pmd_at(mm, address, pmd, _pmd);
-> -	update_mmu_cache(vma, address, _pmd);
-> +	update_mmu_cache(vma, address, pmd);
->  	prepare_pmd_huge_pte(pgtable, mm);
->  	spin_unlock(&mm->page_table_lock);
->  
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+I *really* want Grant's opinion on this patch before merging
+it...
 
--- 
- Kirill A. Shutemov
+> +++ 3.6-rc5-gpiolib-module/drivers/gpio/gpiolib.c
+> @@ -1003,7 +1003,9 @@ static int __init gpiolib_sysfs_init(voi
+>
+>         return status;
+>  }
+> +#ifndef MODULE
+>  postcore_initcall(gpiolib_sysfs_init);
+> +#endif
+
+#ifdefs are ugly but allright I don't know if there are any better
+ways to do this.
+
+(...)
+
+> +#ifndef MODULE
+>  subsys_initcall(gpiolib_debugfs_init);
+> +#endif
+>
+>  #endif /* DEBUG_FS */
+> +
+> +#ifdef MODULE
+> +int __init gpiolib_init(void)
+> +{
+> +       return gpiolib_sysfs_init() ?: gpiolib_debugfs_init();
+
+I can't parse this, sorry the gpio subsystem maintainer is too bad coder.
+What about something more readable?
+
+int ret;
+
+ret = gpiolib_sysfs_init();
+if (ret)
+   return ret;
+return gpiolib_debugfs_init();
+
+I know it doesn't look as cool but it's easier for me to understand.
+
+There is a bug too: I don't think this compiles if you compile as
+a module but disable debugfs. Try it out.
+
+> +}
+> +module_init(gpiolib_init);
+> +
+> +MODULE_DESCRIPTION("GPIO library");
+> +MODULE_LICENSE("GPL");
+
+These two things don't really need to be inside an #ifdef
+right?
+
+> +#endif
+
+Yours,
+Linus Walleij
