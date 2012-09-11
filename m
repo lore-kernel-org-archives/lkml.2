@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2IKRzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:55:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36060 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab2IKRzU (ORCPT
+	id S1756548Ab2IKR4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:56:04 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63115 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab2IKR4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:55:20 -0400
-Date: Tue, 11 Sep 2012 10:55:15 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizf@cn.fujitsu.com>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
- hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911175515.GP7677@google.com>
-References: <20120910223125.GC7677@google.com>
- <20120911145106.GG12039@redhat.com>
- <20120911171601.GN7677@google.com>
- <20120911173524.GJ12039@redhat.com>
+	Tue, 11 Sep 2012 13:56:02 -0400
+Date: Tue, 11 Sep 2012 10:55:58 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: linux-kernel@vger.kernel.org
+cc: mm-commits@vger.kernel.org, hughd@google.com, bhalevy@tonian.com,
+        dhillf@gmail.com
+Subject: Re: + mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
+ added to -mm tree
+In-Reply-To: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1209111054510.30962@chino.kir.corp.google.com>
+References: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911173524.GJ12039@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+On Thu, 16 Aug 2012, akpm@linux-foundation.org wrote:
 
-On Tue, Sep 11, 2012 at 01:35:25PM -0400, Vivek Goyal wrote:
-> It is kind of strange. First kernel allows creation of hiearchy for
-> non-hierarchical controllers and it also gives warning for user space to
-> not do that.
 > 
-> If creating hiearchy for flat controllers is wrong then kernel should
-> not allow it in first place and enforce it, instead of just giving a
-> warning to user space to not create the hierarchy.
+> The patch titled
+>      Subject: mm/mmap.c: replace find_vma_prepare() with clearer find_vma_links()
+> has been added to the -mm tree.  Its filename is
+>      mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
 > 
-> Initially I had blocked the creation of hierarchy deeper than 1 level
-> but later had to remove it as people wanted libvirt to use blkio
-> controller and seemed to be fine with flat support. In fact there
-> were people who insisted on flat support as they thought that made
-> more sense.
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+> 
+> ------------------------------------------------------
+> From: Hugh Dickins <hughd@google.com>
+> Subject: mm/mmap.c: replace find_vma_prepare() with clearer find_vma_links()
+> 
+> People get confused by find_vma_prepare(), because it doesn't care about
+> what it returns in its output args, when its callers won't be interested.
+> 
+> Clarify by passing in end-of-range address too, and returning failure if
+> any existing vma overlaps the new range: instead of returning an ambiguous
+> vma which most callers then must check.  find_vma_links() is a clearer
+> name.
+> 
+> This does revert 2.6.27's dfe195fb79e88 ("mm: fix uninitialized variables
+> for find_vma_prepare callers"), but it looks like gcc 4.3.0 was one of
+> those releases too eager to shout about uninitialized variables: only
+> copy_vma() warns with 4.5.1 and 4.7.1, which a BUG on error silences.
+> 
 
-Yes, it is an ugly situation and we'll have to drag ourselves out of
-this mess gradually.  I hope it hadn't happened like this but what
-happened already happened and I can't see a better way out.  If you
-can, please share.
+That trick doesn't work if CONFIG_BUG=n.
 
-> Sure. Just that CFQ code now has become really complicated and messy
-> (especially with that 3 service trees per group) so making it hierarchical
-> is significant amount of effort.
-
-I think the wording for the warning wasn't entirely accurate.  The
-thing that we wanna warn about is that the hierarchy behavior isn't
-complete yet and it may change in the future.  If we can absolutely
-declare that cfq is and will stay broken in terms of hierarchy
-support, that could work too but I don't really think that's a good
-idea.  It's something we need to do one way or the other.
-
-> And regarding change of behavior, we can always intoduce a .hierarchy
-> file like cgroup which needs to be explicitly set to make controller
-> truly hiearchical. That way behavior does not change in a subtle manner
-> in future kernel releases. (Not that I am a fan of hierarchy file, just
-> that it is cost we pay for not implementing hierarchical controller to
-> begin with).
-
-I think that way of thinking is what led to this horrible mess in the
-first place.  More flexibility doesn't equal better.  We can't keep
-piling things on top.  I'd like to at least have an exit strategy.
-use_hierarchy drives us further away from where we wanna be.
-
-Thanks.
-
--- 
-tejun
+mm/mmap.c: In function 'copy_vma':
+mm/mmap.c:2344: warning: 'prev' may be used uninitialized in this function
+mm/mmap.c:2345: warning: 'rb_link' may be used uninitialized in this function
+mm/mmap.c:2345: warning: 'rb_parent' may be used uninitialized in this function
