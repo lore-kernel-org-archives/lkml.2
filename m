@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab2IKWYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:24:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52689 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab2IKWXd (ORCPT
+	id S1754080Ab2IKWYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:24:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60776 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab2IKWYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:23:33 -0400
+	Tue, 11 Sep 2012 18:24:21 -0400
+Date: Tue, 11 Sep 2012 15:24:16 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [GIT PULL] workqueue fixes for 3.6-rc5
+Message-ID: <20120911222416.GI7677@google.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1209111730340.22718-100000@netrider.rowland.org>
-References: <201209112255.10486.rjw@sisk.pl>
-	<Pine.LNX.4.44L0.1209111730340.22718-100000@netrider.rowland.org>
-Date: Wed, 12 Sep 2012 08:23:32 +1000
-Message-ID: <CAPM=9tzp8MnoGttxB=WrOZ8nMAESJn_0GAHT84PdmSgri==aCA@mail.gmail.com>
-Subject: Re: runtime PM and special power switches
-From: Dave Airlie <airlied@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 7:32 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 11 Sep 2012, Rafael J. Wysocki wrote:
->
->> Hi,
->>
->> On Tuesday, September 11, 2012, Dave Airlie wrote:
->> > Hi Rafael,
->> >
->> > I've been investigating runtime PM support for some use-cases on GPUs.
->> >
->> > In some laptops we have a secondary GPU (optimus) that can be powered
->> > up for certain 3D tasks and then turned off when finished with. Now I
->> > did an initial pass on supporting it without using the kernel runtime
->> > PM stuff, but Alan said I should take a look so here I am.
->>
->> Alan Stern or Alan Cox? :-)
->>
->> > While I've started to get a handle on things, we have a bit of an
->> > extra that I'm not sure we cater for.
->> >
->> > Currently we get called from the PCI layer which after we are finished
->> > with our runtime suspend callback, will go put the device into the
->> > correct state etc, however on these optimus/powerxpress laptops we
->> > have a separate ACPI or platform driver controlled power switch that
->> > we need to call once the PCI layer is finished the job. This switch
->> > effectively turns the power to the card completely off leaving it
->> > drawing no power.
->> >
->> > No we can't hit the switch from the driver callback as the PCI layer
->> > will get lost, so I'm wondering how you'd envisage we could plug this
->> > in.
->>
->> Hmm.  In principle we might modify pci_pm_runtime_suspend() so that it
->> doesn't call pci_finish_runtime_suspend() if pci_dev->state_saved is
->> set.  That would actually make it work in analogy with pci_pm_suspend_noirq(),
->> so perhaps it's not even too dangerous.
->
-> This sounds more like a job for a power domain.  Unless the power
-> switch is already in the device hierarchy as a parent to the PCI
-> device.
+Hello, Linus.
 
-I'll have to investigate power domains then,
+Please consider pulling from the following branch to receive workqueue
+fixes.  It's later than I'd like but well the timing just didn't work
+out this time.
 
-The switch is hidden in many different places, one some laptops its in
-a ACPI _DSM on one GPU, on others its in an ACPI _DSM on the other
-one, in some its in a different ACPI _DSM, then we have it in the ACPI
-ATPX method on others, and finally Apple have it in a piece of hw that
-isn't just on the LPC bus or somewhere like that.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.6-fixes
 
-Currently we just hide it all inside vga_switcheroo and I'd just need
-an interface to call that once the layers have stopped poking
-registers in PCI config space, if we could fix PCI runtime suspend so
-the driver was the last to get called then that would also not suck.
+There are three bug fixes.  One from before 3.6-rc1 and two from the
+new CPU hotplug code.  Kudos to Lai for discovering all of them and
+providing fixes.
 
-Dave.
+* Atomicity bug when clearing a flag and setting another.  The two
+  operation should have been atomic but wasn't.  This bug has existed
+  for a long time but is unlikely to have actually happened.  Fix is
+  safe.  Marked for -stable.
+
+* If CPU hotplug cycles happen back-to-back before workers finish the
+  previous cycle, the states could get out of sync and it could get
+  stuck.  Fixed by waiting for workers to complete before finishing
+  hotplug cycle.
+
+* While CPU hotplug is in progress, idle workers could be depleted
+  which can then lead to deadlock.  I think both happening together is
+  highly unlikely but still better to fix it and the fix isn't too
+  scary.
+
+Lai Jiangshan (3):
+      workqueue: UNBOUND -> REBIND morphing in rebind_workers() should be atomic
+      workqueue: restore POOL_MANAGING_WORKERS
+      workqueue: fix possible idle worker depletion across CPU hotplug
+
+Tejun Heo (2):
+      workqueue: move WORKER_REBIND clearing in rebind_workers() to the end of the function
+      workqueue: fix possible deadlock in idle worker rebinding
+
+ kernel/workqueue.c |  110 ++++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 89 insertions(+), 21 deletions(-)
+
+Thanks.
+
+--
+tejun
