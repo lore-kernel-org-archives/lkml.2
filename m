@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2IKJiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:38:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41808 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab2IKJiB (ORCPT
+	id S1758197Ab2IKJiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:38:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60311 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758140Ab2IKJiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:38:01 -0400
+	Tue, 11 Sep 2012 05:38:09 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -19,9 +19,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 01/12] kernel/debug: Mask KGDB NMI upon entry
-Date: Tue, 11 Sep 2012 02:34:55 -0700
-Message-Id: <1347356106-25368-1-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 04/12] tty/serial/core: Introduce poll_init callback
+Date: Tue, 11 Sep 2012 02:34:58 -0700
+Message-Id: <1347356106-25368-4-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120911093042.GA12471@lizard>
 References: <20120911093042.GA12471@lizard>
@@ -29,117 +29,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new arch callback should manage NMIs that usually cause KGDB to
-enter. That is, not all NMIs should be enabled/disabled, but only
-those that issue kgdb_handle_exception().
+It was noticed that polling drivers (like KGDB) are not able to use
+serial ports if the ports were not previously initialized via console.
+I.e.  when booting with console=ttyAMA0 kgdboc=ttyAMA0, everything works
+fine, but with console=ttyFOO kgdboc=ttyAMA0, the kgdboc doesn't work.
 
-We must mask it as serial-line interrupt can be used as an NMI, so
-if the original KGDB-entry cause was say a breakpoint, then every
-input to KDB console will cause KGDB to reenter, which we don't want.
+This is because we don't initialize the hardware. Calling ->startup() is
+not an option, because drivers request interrupts there, and drivers
+fail to handle situations when tty isn't opened with interrupts enabled.
+
+So, we have to implement a new callback (actually, tty_ops already have
+a similar callback), which does everything needed to initialize just the
+hardware.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/kgdb.h      | 23 +++++++++++++++++++++++
- kernel/debug/debug_core.c | 36 +++++++++++++++++++++++++++++++++---
- 2 files changed, 56 insertions(+), 3 deletions(-)
+ drivers/tty/serial/serial_core.c | 17 +++++++++++++++++
+ include/linux/serial_core.h      |  1 +
+ 2 files changed, 18 insertions(+)
 
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index c4d2fc1..3b111a6 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -221,6 +221,29 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
-  */
- extern void kgdb_arch_late(void);
- 
-+/**
-+ *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
-+ *	@on: Flag to either enable or disable an NMI
-+ *
-+ *	This is an architecture-specific "back-end" for kgdb_enable_nmi(). The
-+ *	call does not count disable/enable requests, do not use it directly.
-+ */
-+extern void kgdb_arch_enable_nmi(bool on);
-+
-+/**
-+ *	kgdb_enable_nmi - Enable or disable KGDB-entry NMI
-+ *	@on: Flag to either enable or disable an NMI
-+ *
-+ *	This function manages NMIs that usually cause KGDB to enter. That is,
-+ *	not all NMIs should be enabled or disabled, but only those that issue
-+ *	kgdb_handle_exception().
-+ *
-+ *	The call counts disable requests, and thus allows to nest disables.
-+ *	But trying to enable already enabled NMI is an error. The call returns
-+ *	1 if NMI has been actually enabled after the call, and a value <= 0 if
-+ *	it is still disabled.
-+ */
-+extern int kgdb_enable_nmi(bool on);
- 
- /**
-  * struct kgdb_arch - Describe architecture specific values.
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 0557f24..b621d1e 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -214,6 +214,30 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
- 	return 0;
- }
- 
-+void __weak kgdb_arch_enable_nmi(bool on)
-+{
-+}
-+
-+int kgdb_enable_nmi(bool on)
-+{
-+	static atomic_t cnt;
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 046279c..dcb2d5a 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2129,6 +2129,7 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
+ 	int bits = 8;
+ 	int parity = 'n';
+ 	int flow = 'n';
 +	int ret;
+ 
+ 	if (!state || !state->uart_port)
+ 		return -1;
+@@ -2137,6 +2138,22 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
+ 	if (!(port->ops->poll_get_char && port->ops->poll_put_char))
+ 		return -1;
+ 
++	if (port->ops->poll_init) {
++		struct tty_port *tport = &state->port;
 +
-+	ret = atomic_add_return(on ? 1 : -1, &cnt);
-+	if (ret > 1 && on) {
++		ret = 0;
++		mutex_lock(&tport->mutex);
 +		/*
-+		 * There should be only one instance that calls this function
-+		 * in "enable, disable" order. All other users must call
-+		 * disable first, then enable. If not, something is wrong.
++		 * We don't set ASYNCB_INITIALIZED as we only initialized the
++		 * hw, e.g. state->xmit is still uninitialized.
 +		 */
-+		WARN_ON(1);
-+		return 1;
++		if (!test_bit(ASYNCB_INITIALIZED, &tport->flags))
++			ret = port->ops->poll_init(port);
++		mutex_unlock(&tport->mutex);
++		if (ret)
++			return ret;
 +	}
 +
-+	kgdb_arch_enable_nmi(ret > 0);
-+	return ret;
-+}
-+
- /*
-  * Some architectures need cache flushes when we set/clear a
-  * breakpoint:
-@@ -672,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- {
- 	struct kgdb_state kgdb_var;
- 	struct kgdb_state *ks = &kgdb_var;
-+	int ret = 0;
-+
-+	kgdb_enable_nmi(0);
- 
- 	ks->cpu			= raw_smp_processor_id();
- 	ks->ex_vector		= evector;
-@@ -681,11 +708,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- 	ks->linux_regs		= regs;
- 
- 	if (kgdb_reenter_check(ks))
--		return 0; /* Ouch, double exception ! */
-+		goto out; /* Ouch, double exception ! */
- 	if (kgdb_info[ks->cpu].enter_kgdb != 0)
--		return 0;
-+		goto out;
- 
--	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+out:
-+	kgdb_enable_nmi(1);
-+	return ret;
- }
- 
- int kgdb_nmicallback(int cpu, void *regs)
+ 	if (options) {
+ 		uart_parse_options(options, &baud, &parity, &bits, &flow);
+ 		return uart_set_options(port, NULL, baud, parity, bits, flow);
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 7cf0b68..822c887 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -274,6 +274,7 @@ struct uart_ops {
+ 	int		(*verify_port)(struct uart_port *, struct serial_struct *);
+ 	int		(*ioctl)(struct uart_port *, unsigned int, unsigned long);
+ #ifdef CONFIG_CONSOLE_POLL
++	int		(*poll_init)(struct uart_port *);
+ 	void	(*poll_put_char)(struct uart_port *, unsigned char);
+ 	int		(*poll_get_char)(struct uart_port *);
+ #endif
 -- 
 1.7.11.5
 
