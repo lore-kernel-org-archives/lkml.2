@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab2IKJdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:33:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49036 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab2IKJdS (ORCPT
+	id S1758022Ab2IKJiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:38:01 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58498 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756781Ab2IKJh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:33:18 -0400
-Date: Tue, 11 Sep 2012 02:30:43 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH v6 0/12] KGDB/KDB FIQ (NMI) debugger
-Message-ID: <20120911093042.GA12471@lizard>
+	Tue, 11 Sep 2012 05:37:59 -0400
+Message-ID: <504EFE6D.3090901@stericsson.com>
+Date: Tue, 11 Sep 2012 11:03:41 +0200
+From: Ola Lilja <ola.o.lilja@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 05/17] ASoC: Ux500: Minor coding layout changes
+References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org> <1345816913-4113-6-git-send-email-lee.jones@linaro.org> <20120910164448.GD24506@gmail.com>
+In-Reply-To: <20120910164448.GD24506@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 09/10/2012 06:44 PM, Lee Jones wrote:
 
-Here is a new revision, mostly tty reworks. The new tty_port stuff is a
-bliss: no more per-driver mutex, no more counting for open(),
-well-separated initialization callbacks (I hope I got them right :-).
+> Ola poke.
+> 
+> On Fri, Aug 24, 2012 at 03:01:41PM +0100, Lee Jones wrote:
+>> Includes removal of duplicate debug print affirming entry into
+>> the probe function, an unnecessary line break of a coding line
+>> <80 chars and a white space change (unintentional tab).
+>> 
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>  sound/soc/ux500/mop500.c |    7 ++-----
+>>  1 file changed, 2 insertions(+), 5 deletions(-)
+>> 
+>> diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
+>> index 6840df7..356611d 100644
+>> --- a/sound/soc/ux500/mop500.c
+>> +++ b/sound/soc/ux500/mop500.c
+>> @@ -88,8 +88,6 @@ static int __devinit mop500_probe(struct platform_device *pdev)
+>>  	struct device_node *np = pdev->dev.of_node;
+>>  	int ret;
+>>  
+>> -	pr_debug("%s: Enter.\n", __func__);
+>> -
+>>  	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
+>>  
+>>  	mop500_card.dev = &pdev->dev;
+>> @@ -117,8 +115,7 @@ static int __devinit mop500_probe(struct platform_device *pdev)
+>>  	ret = snd_soc_register_card(&mop500_card);
+>>  	if (ret)
+>>  		dev_err(&pdev->dev,
+>> -			"Error: snd_soc_register_card failed (%d)!\n",
+>> -			ret);
+>> +			"Error: snd_soc_register_card failed (%d)!\n", ret);
+>>  
+>>  	return ret;
+>>  }
+>> @@ -131,7 +128,7 @@ static int __devexit mop500_remove(struct platform_device *pdev)
+>>  
+>>  	snd_soc_unregister_card(mop500_card);
+>>  	mop500_ab8500_remove(mop500_card);
+>> -	
+>> +
+>>  	return 0;
+>>  }
+>>  
+>> -- 
+>> 1.7.9.5
+>> 
+> 
 
-But since I now use a lot of new tty_port stuff, I had to rebase the
-patch set on top of tty-next, so there's no point in cherry-picking
-anymore.
 
-So, in v6:
+Nothing to say about this one. Looks OK.
 
-- Converted the NMI tty driver to use tty_port helpers, per Alan Cox's
-  suggestions;
-
-- In uart's poll_init callback fixed a race, spotted by Alan;
-
-- Use test_bit instead of touching port->flags directly;
-
-These patches can be found in the following repo (based on tty-next):
-
-	git://git.infradead.org/users/cbou/linux-nmi-kdb.git master
-
-Old changelogs and rationale for these patches can be found here:
-
-	v1-v5: http://lkml.org/lkml/2012/9/10/2
-
-Thanks,
-
---
- arch/arm/Kconfig                    |  19 ++
- arch/arm/common/vic.c               |  28 +++
- arch/arm/include/asm/hardware/vic.h |   2 +
- arch/arm/include/asm/kgdb.h         |   8 +
- arch/arm/kernel/Makefile            |   1 +
- arch/arm/kernel/entry-armv.S        | 167 +------------
- arch/arm/kernel/entry-header.S      | 170 +++++++++++++
- arch/arm/kernel/kgdb_fiq.c          |  99 ++++++++
- arch/arm/kernel/kgdb_fiq_entry.S    |  87 +++++++
- arch/arm/mach-versatile/Makefile    |   1 +
- arch/arm/mach-versatile/kgdb_fiq.c  |  31 +++
- drivers/tty/serial/Kconfig          |  19 ++
- drivers/tty/serial/Makefile         |   1 +
- drivers/tty/serial/amba-pl011.c     |  66 ++++-
- drivers/tty/serial/kgdb_nmi.c       | 391 ++++++++++++++++++++++++++++++
- drivers/tty/serial/kgdboc.c         |  16 ++
- drivers/tty/serial/serial_core.c    |  32 +++
- include/linux/kdb.h                 |  29 ++-
- include/linux/kgdb.h                |  34 +++
- include/linux/serial_core.h         |   2 +
- include/linux/tty_driver.h          |   1 +
- kernel/debug/debug_core.c           |  36 ++-
- kernel/debug/kdb/kdb_main.c         |  29 +++
- 23 files changed, 1076 insertions(+), 193 deletions(-)
