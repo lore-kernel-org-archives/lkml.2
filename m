@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759303Ab2IKLew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:34:52 -0400
+	id S1759284Ab2IKLet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:34:49 -0400
 Received: from smtp4.mundo-r.com ([212.51.32.151]:43407 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759270Ab2IKLet (ORCPT
+	with ESMTP id S1759238Ab2IKLeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:34:49 -0400
+	Tue, 11 Sep 2012 07:34:44 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscCAIAhT1BbdWObgWdsb2JhbABFhge1SSIBARYmJ4IhAQUjDwE0EhAlAiYCAlcGE4gUqGiTN4EhjwOBEgOVXYkziVI
+X-IronPort-Anti-Spam-Result: Au8CAIAhT1BbdWObgWdsb2JhbABFhUBHtUkiAQEWJieCIQEFIwQLAUYQJQImAgJXBhOIFKhokzeBIY8DgRIDlV2TBQ
 X-IronPort-AV: E=Sophos;i="4.80,404,1344204000"; 
-   d="scan'208";a="564505392"
+   d="scan'208";a="564505383"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -18,9 +18,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH v2 19/20] Staging: ipack: delete .remove_device() callback
-Date: Tue, 11 Sep 2012 13:35:12 +0200
-Message-Id: <1347363313-17094-20-git-send-email-siglesias@igalia.com>
+Subject: [PATCH v2 14/20] Staging: ipack/devices/ipoctal: change exiting procedure
+Date: Tue, 11 Sep 2012 13:35:07 +0200
+Message-Id: <1347363313-17094-15-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
 References: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
@@ -31,47 +31,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the IP module driver takes care of freeing its resources.
+The ipoctal devices can be uninstalled from the ipack_driver_unregister()
+call as the device model calles the bus's .remove() function for each device
+registered by the driver and it will execute the .remove() function of the
+ipoctal driver.
 
 Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/bridges/tpci200.c |    1 -
- drivers/staging/ipack/ipack.h           |    3 ---
- 2 files changed, 4 deletions(-)
+ drivers/staging/ipack/devices/ipoctal.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 0823cdb..5aff0d0 100644
---- a/drivers/staging/ipack/bridges/tpci200.c
-+++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -595,7 +595,6 @@ static const struct ipack_bus_ops tpci200_bus_ops = {
- 	.unmap_space = tpci200_slot_unmap_space,
- 	.request_irq = tpci200_request_irq,
- 	.free_irq = tpci200_free_irq,
--	.remove_device = NULL,
- 	.get_clockrate = tpci200_get_clockrate,
- 	.set_clockrate = tpci200_set_clockrate,
- 	.get_error     = tpci200_get_error,
-diff --git a/drivers/staging/ipack/ipack.h b/drivers/staging/ipack/ipack.h
-index 77d8075..0ea9d84 100644
---- a/drivers/staging/ipack/ipack.h
-+++ b/drivers/staging/ipack/ipack.h
-@@ -113,7 +113,6 @@ struct ipack_driver {
-  *	@unmap_space: unmap IP address space
-  *	@request_irq: request IRQ
-  *	@free_irq: free IRQ
-- *	@remove_device: tell the bridge module that the device has been removed
-  *	@get_clockrate: Returns the clockrate the carrier is currently
-  *		communicating with the device at.
-  *	@set_clockrate: Sets the clock-rate for carrier / module communication.
-@@ -129,8 +128,6 @@ struct ipack_bus_ops {
- 	int (*unmap_space) (struct ipack_device *dev, int space);
- 	int (*request_irq) (struct ipack_device *dev, int vector, int (*handler)(void *), void *arg);
- 	int (*free_irq) (struct ipack_device *dev);
--	int (*remove_device) (struct ipack_device *dev);
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index c94a9df..272832f 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -853,11 +853,6 @@ static int __init ipoctal_init(void)
+ 
+ static void __exit ipoctal_exit(void)
+ {
+-	struct ipoctal *p, *next;
 -
- 	int (*get_clockrate) (struct ipack_device *dev);
- 	int (*set_clockrate) (struct ipack_device *dev, int mherz);
- 	int (*get_error) (struct ipack_device *dev);
+-	list_for_each_entry_safe(p, next, &ipoctal_list, list)
+-		p->dev->bus->ops->remove_device(p->dev);
+-
+ 	ipack_driver_unregister(&driver);
+ }
+ 
 -- 
 1.7.10.4
 
