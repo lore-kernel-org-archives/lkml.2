@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2IKJI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:08:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58135 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab2IKJIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:08:55 -0400
-Date: Tue, 11 Sep 2012 17:08:42 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ola Lilja <ola.o.lilja@stericsson.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 06/17] Documentation: Define the MOP500 Audio Machine
- Driver Device Tree bindings
-Message-ID: <20120911090840.GA9381@opensource.wolfsonmicro.com>
-References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
- <1345816913-4113-7-git-send-email-lee.jones@linaro.org>
- <20120910164413.GC24506@gmail.com>
- <504EFEF8.6020707@stericsson.com>
+	id S1757017Ab2IKJKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:10:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48799 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755074Ab2IKJKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 05:10:11 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <kishon@ti.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH v2 0/3] omap: musb: Add device tree support
+Date: Tue, 11 Sep 2012 14:39:37 +0530
+Message-ID: <1347354580-5895-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504EFEF8.6020707@stericsson.com>
-X-Cookie: It's all in the mind, ya know.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:06:00AM +0200, Ola Lilja wrote:
-> On 09/10/2012 06:44 PM, Lee Jones wrote:
+This patch series adds device tree support for MUSB.
 
-> >> +	msp1: msp@80124000 {
-> >> +		compatible = "stericsson,ux500-msp-i2s";
-> >> +		reg = <0x80124000 0x1000>;
-> >> +		interrupts = <0 62 0x4>;
-> >> +		v-ape-supply = <&db8500_vape_reg>;
+The glue layer is now made to write to mailbox register (present in
+control module) instead of calling phy layer to write to mailbox
+register. Writing to mailbox register notifies the core of events like
+device connect/disconnect.
 
-> I'm no DT-expert, but why are you adding MSP-stuff in the machine-driver? They
-> are also added in the next patch.
+Changes from v1:
+* Added a comment in hwmod data to remove the control module data from
+otg_hs once control driver is in place.
+* Fixed the omap-usb Documentation to the correct compatible value
+(Should be "ti,omap4-musb" or "ti,omap3-musb")
 
-This is context for the example - the example is just informative and
-tends to include other things so they can be referenced by the main bit
-of the example, it's the documentation at the top that's the bindings
-themselves.
+Previously these patches were part of
+[PATCH v7 0/7] omap: musb: Add device tree support
+
+This patch series was created to contain only the *musb* part and it
+also has one hwmod patch.
+
+This patch series was created on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git musb
+
+Kishon Vijay Abraham I (3):
+  arm: omap: hwmod: add a new addr space in otg for writing to control
+    module
+  usb: musb: omap: write directly to mailbox instead of using phy
+  usb: musb: omap: Add device tree support for omap musb glue
+
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   33 ++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    6 ++
+ drivers/usb/musb/omap2430.c                        |  106 ++++++++++++++++++--
+ drivers/usb/musb/omap2430.h                        |    9 ++
+ 4 files changed, 147 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
+
+-- 
+1.7.9.5
+
