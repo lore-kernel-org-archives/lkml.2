@@ -1,150 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab2IKGKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 02:10:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62026 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab2IKGKi (ORCPT
+	id S1756206Ab2IKGL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 02:11:59 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:37926 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab2IKGL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 02:10:38 -0400
-From: Hideki EIRAKU <hdk@igel.co.jp>
-To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
-        Hideki EIRAKU <hdk@igel.co.jp>
-Subject: [PATCH v3 2/2] ARM: mach-shmobile: sh7372: Add IPMMU device
-Date: Tue, 11 Sep 2012 15:10:14 +0900
-Message-Id: <1347343814-32299-3-git-send-email-hdk@igel.co.jp>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1347343814-32299-1-git-send-email-hdk@igel.co.jp>
-References: <1347343814-32299-1-git-send-email-hdk@igel.co.jp>
+	Tue, 11 Sep 2012 02:11:57 -0400
+Message-ID: <504ED54E.6040608@linux.vnet.ibm.com>
+Date: Tue, 11 Sep 2012 11:38:14 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: habanero@linux.vnet.ibm.com
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com> <500D2162.8010209@redhat.com> <1347023509.10325.53.camel@oc6622382223.ibm.com> <504A37B0.7020605@linux.vnet.ibm.com> <1347046931.7332.51.camel@oc2024037011.ibm.com> <20120908084345.GU30238@linux.vnet.ibm.com> <1347283005.10325.55.camel@oc6622382223.ibm.com> <1347293035.2124.22.camel@twins>	 <20120910165653.GA28033@linux.vnet.ibm.com> <1347297124.2124.42.camel@twins> <1347307972.7332.78.camel@oc2024037011.ibm.com>
+In-Reply-To: <1347307972.7332.78.camel@oc2024037011.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091106-6102-0000-0000-00000236828A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an IPMMU device and notifies the IPMMU driver which
-devices are connected via the IPMMU module.  All devices connected to the main
-memory bus via the IPMMU module MUST be registered when SHMOBILE_IPMMU and
-SHMOBILE_IOMMU are enabled because physical address cannot be used
-while the IPMMU module's MMU function is enabled.
+On 09/11/2012 01:42 AM, Andrew Theurer wrote:
+> On Mon, 2012-09-10 at 19:12 +0200, Peter Zijlstra wrote:
+>> On Mon, 2012-09-10 at 22:26 +0530, Srikar Dronamraju wrote:
+>>>> +static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
+>>>> +{
+>>>> +     if (!curr->sched_class->yield_to_task)
+>>>> +             return false;
+>>>> +
+>>>> +     if (curr->sched_class != p->sched_class)
+>>>> +             return false;
+>>>
+>>>
+>>> Peter,
+>>>
+>>> Should we also add a check if the runq has a skip buddy (as pointed out
+>>> by Raghu) and return if the skip buddy is already set.
+>>
+>> Oh right, I missed that suggestion.. the performance improvement went
+>> from 81% to 139% using this, right?
+>>
+>> It might make more sense to keep that separate, outside of this
+>> function, since its not a strict prerequisite.
+>>
+>>>>
+>>>> +     if (task_running(p_rq, p) || p->state)
+>>>> +             return false;
+>>>> +
+>>>> +     return true;
+>>>> +}
+>>
+>>
+>>>> @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p,
+>>> bool preempt)
+>>>>        rq = this_rq();
+>>>>
+>>>>   again:
+>>>> +     /* optimistic test to avoid taking locks */
+>>>> +     if (!__yield_to_candidate(curr, p))
+>>>> +             goto out_irq;
+>>>> +
+>>
+>> So add something like:
+>>
+>> 	/* Optimistic, if we 'raced' with another yield_to(), don't bother */
+>> 	if (p_rq->cfs_rq->skip)
+>> 		goto out_irq;
+>>>
+>>>
+>>>>        p_rq = task_rq(p);
+>>>>        double_rq_lock(rq, p_rq);
+>>>
+>>>
+>> But I do have a question on this optimization though,.. Why do we check
+>> p_rq->cfs_rq->skip and not rq->cfs_rq->skip ?
+>>
+>> That is, I'd like to see this thing explained a little better.
+>>
+>> Does it go something like: p_rq is the runqueue of the task we'd like to
+>> yield to, rq is our own, they might be the same. If we have a ->skip,
+>> there's nothing we can do about it, OTOH p_rq having a ->skip and
+>> failing the yield_to() simply means us picking the next VCPU thread,
+>> which might be running on an entirely different cpu (rq) and could
+>> succeed?
+>
+> Here's two new versions, both include a __yield_to_candidate(): "v3"
+> uses the check for p_rq->curr in guest mode, and "v4" uses the cfs_rq
+> skip check.  Raghu, I am not sure if this is exactly what you want
+> implemented in v4.
+>
 
-Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
-Tested-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
----
- arch/arm/mach-shmobile/board-ap4evb.c   |    5 +++++
- arch/arm/mach-shmobile/board-mackerel.c |    5 +++++
- arch/arm/mach-shmobile/setup-sh7372.c   |   26 ++++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-shmobile/board-ap4evb.c b/arch/arm/mach-shmobile/board-ap4evb.c
-index f172ca8..ce6d796 100644
---- a/arch/arm/mach-shmobile/board-ap4evb.c
-+++ b/arch/arm/mach-shmobile/board-ap4evb.c
-@@ -61,6 +61,7 @@
- #include <mach/common.h>
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
-+#include <mach/ipmmu.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -1448,6 +1449,10 @@ static void __init ap4evb_init(void)
- 
- 	sh7372_add_standard_devices();
- 
-+	ipmmu_add_device(&lcdc_device.dev);
-+	ipmmu_add_device(&lcdc1_device.dev);
-+	ipmmu_add_device(&ceu_device.dev);
-+
- 	/* HDMI */
- 	gpio_request(GPIO_FN_HDMI_HPD, NULL);
- 	gpio_request(GPIO_FN_HDMI_CEC, NULL);
-diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
-index c129542..8bc4faf 100644
---- a/arch/arm/mach-shmobile/board-mackerel.c
-+++ b/arch/arm/mach-shmobile/board-mackerel.c
-@@ -60,6 +60,7 @@
- #include <mach/common.h>
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
-+#include <mach/ipmmu.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -1622,6 +1623,10 @@ static void __init mackerel_init(void)
- 
- 	sh7372_add_standard_devices();
- 
-+	ipmmu_add_device(&lcdc_device.dev);
-+	ipmmu_add_device(&hdmi_lcdc_device.dev);
-+	ipmmu_add_device(&ceu_device.dev);
-+
- 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
- 
- 	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &lcdc_device);
-diff --git a/arch/arm/mach-shmobile/setup-sh7372.c b/arch/arm/mach-shmobile/setup-sh7372.c
-index 838a87b..399d26d 100644
---- a/arch/arm/mach-shmobile/setup-sh7372.c
-+++ b/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -38,6 +38,7 @@
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
- #include <mach/common.h>
-+#include <mach/ipmmu.h>
- #include <asm/mach/map.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -968,6 +969,23 @@ static struct platform_device spu1_device = {
- 	.num_resources	= ARRAY_SIZE(spu1_resources),
- };
- 
-+/* IPMMUI (an IPMMU module for ICB/LMB) */
-+static struct resource ipmmu_resources[] = {
-+	[0] = {
-+		.name	= "IPMMUI",
-+		.start	= 0xfe951000,
-+		.end	= 0xfe9510ff,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device ipmmu_device = {
-+	.name           = "ipmmu",
-+	.id             = -1,
-+	.resource       = ipmmu_resources,
-+	.num_resources  = ARRAY_SIZE(ipmmu_resources),
-+};
-+
- static struct platform_device *sh7372_early_devices[] __initdata = {
- 	&scif0_device,
- 	&scif1_device,
-@@ -979,6 +997,7 @@ static struct platform_device *sh7372_early_devices[] __initdata = {
- 	&cmt2_device,
- 	&tmu00_device,
- 	&tmu01_device,
-+	&ipmmu_device,
- };
- 
- static struct platform_device *sh7372_late_devices[] __initdata = {
-@@ -1020,6 +1039,13 @@ void __init sh7372_add_standard_devices(void)
- 	platform_add_devices(sh7372_early_devices,
- 			    ARRAY_SIZE(sh7372_early_devices));
- 
-+	ipmmu_add_device(&vpu_device.dev);
-+	ipmmu_add_device(&jpu_device.dev);
-+	ipmmu_add_device(&veu0_device.dev);
-+	ipmmu_add_device(&veu1_device.dev);
-+	ipmmu_add_device(&veu2_device.dev);
-+	ipmmu_add_device(&veu3_device.dev);
-+
- 	platform_add_devices(sh7372_late_devices,
- 			    ARRAY_SIZE(sh7372_late_devices));
- 
--- 
-1.7.0.4
+Andrew, Yes that is what I had. I think there was a mis-understanding. 
+My intention was to if there is a directed_yield happened in runqueue 
+(say rqA), do not bother to directed yield to that. But unfortunately as 
+PeterZ pointed that would have resulted in setting next buddy of a 
+different run queue than rqA.
+So we can drop this "skip" idea. Pondering more over what to do? can we 
+use next buddy itself ... thinking..
 
