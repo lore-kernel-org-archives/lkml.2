@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab2IKLjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:39:09 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:43407 "EHLO
+	id S1759212Ab2IKLjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:39:07 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:55378 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759137Ab2IKLek (ORCPT
+	with ESMTP id S1759202Ab2IKLek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 07:34:40 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsgCAIAhT1BbdWObgWdsb2JhbABFhge1SSIBARYmJ4IgAQEFIwQLATQSECAFAiYCAlcGE4gUqGiTN4EhjwOBEgOVXYkziVI
+X-IronPort-Anti-Spam-Result: AsgCAIAhT1BbdWObgWdsb2JhbABFhge1SSIBARYmJ4IgAQEFIwQLAUYQIAUCJgICVwYTiBSoaJM3gSGPA4ESA5VdkwU
 X-IronPort-AV: E=Sophos;i="4.80,404,1344204000"; 
-   d="scan'208";a="564505338"
+   d="scan'208";a="564505329"
 From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -19,9 +19,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Jens Taprogge <jens.taprogge@taprogge.org>,
         =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
 	<siglesias@igalia.com>
-Subject: [PATCH v2 06/20] Staging: ipack: remove field driver from struct ipack_device.
-Date: Tue, 11 Sep 2012 13:34:59 +0200
-Message-Id: <1347363313-17094-7-git-send-email-siglesias@igalia.com>
+Subject: [PATCH v2 04/20] Staging: ipack: Obtain supported speeds from ID ROM.
+Date: Tue, 11 Sep 2012 13:34:57 +0200
+Message-Id: <1347363313-17094-5-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
 References: <1347363313-17094-1-git-send-email-siglesias@igalia.com>
@@ -34,80 +34,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jens Taprogge <jens.taprogge@taprogge.org>
 
-After a successful match is found the driver field in struct device is
-set by the core device code. We can use this field.
-
 Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
 Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/ipack.c |   17 +++++++----------
- drivers/staging/ipack/ipack.h |    2 --
- 2 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/staging/ipack/ipack.c |    6 ++++++
+ drivers/staging/ipack/ipack.h |    2 ++
+ 2 files changed, 8 insertions(+)
 
 diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
-index 1ad73e5..6895426 100644
+index af47772..c36ba9e 100644
 --- a/drivers/staging/ipack/ipack.c
 +++ b/drivers/staging/ipack/ipack.c
-@@ -59,32 +59,29 @@ static int ipack_bus_match(struct device *dev, struct device_driver *drv)
- 	const struct ipack_device_id *found_id;
+@@ -262,15 +262,21 @@ static void ipack_parse_id1(struct ipack_device *dev)
  
- 	found_id = ipack_match_id(idrv->id_table, idev);
--	if (found_id) {
--		idev->driver = idrv;
--		return 1;
--	}
--
--	return 0;
-+	return found_id ? 1 : 0;
+ 	dev->id_vendor = id[4];
+ 	dev->id_device = id[5];
++	dev->speed_8mhz = 1;
++	dev->speed_32mhz = (id[7] == 'H');
  }
  
- static int ipack_bus_probe(struct device *device)
+ static void ipack_parse_id2(struct ipack_device *dev)
  {
- 	struct ipack_device *dev = to_ipack_dev(device);
-+	struct ipack_driver *drv = to_ipack_driver(device->driver);
+ 	__be16 *id = (__be16 *) dev->id;
++	u16 flags;
  
--	if (!dev->driver->ops->probe)
-+	if (!drv->ops->probe)
- 		return -EINVAL;
- 
--	return dev->driver->ops->probe(dev);
-+	return drv->ops->probe(dev);
+ 	dev->id_vendor = ((be16_to_cpu(id[3]) & 0xff) << 16)
+ 			 + be16_to_cpu(id[4]);
+ 	dev->id_device = be16_to_cpu(id[5]);
++	flags = be16_to_cpu(id[10]);
++	dev->speed_8mhz = !!(flags & 2);
++	dev->speed_32mhz = !!(flags & 4);
  }
  
- static int ipack_bus_remove(struct device *device)
- {
- 	struct ipack_device *dev = to_ipack_dev(device);
-+	struct ipack_driver *drv = to_ipack_driver(device->driver);
- 
--	if (!dev->driver->ops->remove)
-+	if (!drv->ops->remove)
- 		return -EINVAL;
- 
--	dev->driver->ops->remove(dev);
-+	drv->ops->remove(dev);
- 	return 0;
- }
- 
+ static int ipack_device_read_id(struct ipack_device *dev)
 diff --git a/drivers/staging/ipack/ipack.h b/drivers/staging/ipack/ipack.h
-index 89af9e4..ad4c3bf 100644
+index a133304..89af9e4 100644
 --- a/drivers/staging/ipack/ipack.h
 +++ b/drivers/staging/ipack/ipack.h
-@@ -53,7 +53,6 @@ struct ipack_addr_space {
-  *	@bus_nr: IP bus number where the device is plugged
-  *	@slot: Slot where the device is plugged in the carrier board
-  *	@irq: IRQ vector
-- *	@driver: Pointer to the ipack_driver that manages the device
-  *	@bus: ipack_bus_device where the device is plugged to.
-  *	@id_space: Virtual address to ID space.
-  *	@io_space: Virtual address to IO space.
-@@ -68,7 +67,6 @@ struct ipack_device {
- 	unsigned int bus_nr;
- 	unsigned int slot;
- 	unsigned int irq;
--	struct ipack_driver *driver;
- 	struct ipack_bus_device *bus;
- 	struct ipack_addr_space id_space;
- 	struct ipack_addr_space io_space;
+@@ -79,6 +79,8 @@ struct ipack_device {
+ 	u32			 id_vendor;
+ 	u32			 id_device;
+ 	u8			 id_format;
++	unsigned int		 speed_8mhz:1;
++	unsigned int		 speed_32mhz:1;
+ };
+ 
+ /**
 -- 
 1.7.10.4
 
