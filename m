@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390Ab2IKSyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:54:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53819 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab2IKSyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:54:08 -0400
-Message-ID: <504F88CB.6030105@redhat.com>
-Date: Tue, 11 Sep 2012 20:54:03 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1759498Ab2IKS40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:56:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31814 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759171Ab2IKS4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 14:56:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,406,1344236400"; 
+   d="scan'208";a="201691214"
+Date: Tue, 11 Sep 2012 20:56:18 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Bill Huang <bilhuang@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Xin Xie <xxie@nvidia.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "jhovold@gmail.com" <jhovold@gmail.com>,
+        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] mfd: dt: add power off support for Tegra20/Tegra30
+Message-ID: <20120911185618.GX3647@sortiz-mobl>
+References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BBE83B1A@HKMAIL02.nvidia.com>
+ <20120911104635.GB28904@avionic-0098.mockup.avionic-design.de>
+ <504F557B.9020600@wwwdotorg.org>
+ <20120911160811.GU3647@sortiz-mobl>
+ <504F664F.8040803@wwwdotorg.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <20120911182904.GS7677@google.com>
-In-Reply-To: <20120911182904.GS7677@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504F664F.8040803@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2012 20:29, Tejun Heo ha scritto:> Hello, Paolo.
+On Tue, Sep 11, 2012 at 10:26:55AM -0600, Stephen Warren wrote:
+> On 09/11/2012 10:08 AM, Samuel Ortiz wrote:
+> > Hi Stephen,
+> > 
+> > On Tue, Sep 11, 2012 at 09:15:07AM -0600, Stephen Warren wrote:
+> >> On 09/11/2012 04:46 AM, Thierry Reding wrote:
+> >>> On Tue, Sep 11, 2012 at 06:25:14PM +0800, Bill Huang wrote:
+> >>>> Hi all,
+> >>>>
+> >>>> Could somebody review this?
+> >>>
+> >>> Given that I haven't been able to test yet (due to time
+> >>> constraints) with PM_SLEEP_SMP enabled, I don't want to give you a
+> >>> Tested-by, but the code looks okay to me, so for both patches:
+> >>>
+> >>> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+> >>
+> >> I have tested this with PM_SLEEP_SMP enabled, and it solved the
+> >> problem. I think I already gave my Tested-by, but if not:
+> >>
+> >> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+> >>
+> >> I hope that this gets applied to the MFD tree early enough (i.e.
+> >> within the next 2-3 days or so) that I can rely on the binding be
+> >> accepted, and hence apply patches to Tegra's device tree to enable
+> >> this functionality for 3.7.
+> >>
+> >> Bill, given this was posted about 3 weeks ago, perhaps repost the
+> >> series in case Samuel doesn't have it any more, and hence can't apply it.
+> >
+> > No need for that. Sorry for the delay, I just applied and pushed those 2
+> > patches.
 > 
-> On Tue, Sep 11, 2012 at 07:56:53PM +0200, Paolo Bonzini wrote:
->> Understood; unfortunately, there is another major user of it
->> (virtualization).  If you are passing "raw" LUNs down to a virtual
->> machine, there's no possibility at all to use a properly encapsulated
+> Great! Thanks.
 > 
-> Is there still command filtering issue when you're passing "raw" LUNs
-> down?
+> Do you have "[PATCH V4 REPOST] mfd: add MAX8907 core driver" on your
+> list too?
+Yes, I'll be chewing my MFD pending patches list in the next days, and this
+one is on the list.
 
-Yes, the passing down is just a userland program that gets SCSI
-commands from the guest, sends them via SG_IO, and passes back the
-result.  If the userland program is unprivileged (it usually is), then
-you go through the filter.
+Cheers,
+Samuel.
 
->> The set of use cases is so variable that no single filter can accomodate
->> all of them: high availability people want persistent reservations, NAS
->> people want trim/discard, but these are just two groups.  Someone is
->> using a Windows VM to run vendor tools and wants to have access to
->> vendor-specific commands.
->>
->> You can tell this last group to use root, but not everyone else who is
->> already relying on Unix permissions, SELinux and/or device cgroups to
->> confine their virtual machines.
-> 
-> You listed three - HA w/ persistent reservation, NAS w/ trim/discard
-> and the third which you said that using root would be fine.  Dunno
-> much about persistent reservation but I don't see why trim/discard
-> can't use existing block layer facilities whether from userland or
-> virtio-scsi?
-
-This is the userland for virtio-scsi (the kernel part of virtio-scsi is just
-a driver running in the guest).  It can run in two mode: it can do its own
-SCSI emulation, or it can just relay CDBs and their results.
-
-It can (and does) use higher-level services if SCSI emulation is done in
-userland.  In that case, trim/discard can become a BLKDISCARD or a fallocate
-for example.  However, in this case userland doesn't do any emulation and in
-fact doesn't even need to know that this CDB is a discard.
-
-Also, if it fails, there's no way to reconstruct the NAS's sense data to
-pass it back to the guest.  We do a limited amount of "making up" sense
-data (for example if a command is filtered, all we get is an errno value;
-and we say it was not recognized), but it should really be as simple
-and limited as possible.
-
->> A generic filter (see
->> http://article.gmane.org/gmane.linux.kernel/1312326 for a proposal)
->> would be satisfactory for everyone, but it's also a major undertaking
->> and so far I've not received a single comment about it.
-> 
-> Maybe I'm just not familiar with the problem space but I really hope
-> things don't come to that.
-
-Why not? :)  (BTW it was suggested by Alan Cox, that's just my proposal for
-how to do it).  I think that it's a good idea, but it's a big bazooka for
-the smaller issue of supporting trim/discard.
-
->>> So, it wouldn't be a good idea to abuse SG_IO filtering for exposing
->>> trim/discard.  It's something which should be retired or at least
->>> severely restricted in time.  I don't think we want to be developing
->>> new uses of it.
->>>
->>> I think trim/discards are fairly easy to abstract and common enough to
->>> justify having properly abstracted interface.  In fact, we already
->>> have block layer interface for it - BLKDISCARD.  If it's lacking,
->>> let's improve that.
->>
->> I do want to improve the block layer interfaces to avoid that people use
->> SG_IO.  But unfortunately this is for a completely different use case.
-> 
-> Hmmm?  This was about discard, no?
-
-One example of block layer interfaces that I want to add is BLKPING, so
-that you can see if the NAS is reachable.  Then SCSI emulation can map
-the "test unit ready" command to BLKPING.  There's a handful of such
-ioctls that would be useful, such as BLKDISCARD itself.
-
-But this is for the other direction, where ioctls are not enough accurate.
-
-Paolo
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
