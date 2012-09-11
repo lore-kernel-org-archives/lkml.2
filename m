@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2IKPPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 11:15:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46367 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab2IKPPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 11:15:14 -0400
-Message-ID: <504F557B.9020600@wwwdotorg.org>
-Date: Tue, 11 Sep 2012 09:15:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Bill Huang <bilhuang@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Xin Xie <xxie@nvidia.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "jhovold@gmail.com" <jhovold@gmail.com>,
-        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] mfd: dt: add power off support for Tegra20/Tegra30
-References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com> <A7051F87A141B744BCAF487D48E5B3BDF5BBE83B1A@HKMAIL02.nvidia.com> <20120911104635.GB28904@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120911104635.GB28904@avionic-0098.mockup.avionic-design.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759606Ab2IKPT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 11:19:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41585 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759157Ab2IKPT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 11:19:28 -0400
+Message-ID: <1347376767.3985.7.camel@joe2Laptop>
+Subject: [PATCH] checkpatch: Update suggested printk conversions
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Date: Tue, 11 Sep 2012 08:19:27 -0700
+In-Reply-To: <20120911025252.GA28112@kroah.com>
+References: <1347331815-7278-1-git-send-email-brucehum@gmail.com>
+	 <20120911025252.GA28112@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2012 04:46 AM, Thierry Reding wrote:
-> On Tue, Sep 11, 2012 at 06:25:14PM +0800, Bill Huang wrote:
->> Hi all,
->> 
->> Could somebody review this?
-> 
-> Given that I haven't been able to test yet (due to time
-> constraints) with PM_SLEEP_SMP enabled, I don't want to give you a
-> Tested-by, but the code looks okay to me, so for both patches:
-> 
-> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+Direct conversion of printk(KERN_<LEVEL>... to pr_<level> isn't
+the preferred conversion when a struct net_device or struct device
+is available.
 
-I have tested this with PM_SLEEP_SMP enabled, and it solved the
-problem. I think I already gave my Tested-by, but if not:
+Hint that using netdev_<level> or dev_<level> is preferred to using
+pr_<level>.  Add netdev_dbg and dev_dbg variants too.
 
-Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+Miscellaneous whitespace neatening of a misplaced close brace.
 
-I hope that this gets applied to the MFD tree early enough (i.e.
-within the next 2-3 days or so) that I can rely on the binding be
-accepted, and hence apply patches to Tegra's device tree to enable
-this functionality for 3.7.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-Bill, given this was posted about 3 weeks ago, perhaps repost the
-series in case Samuel doesn't have it any more, and hence can't apply it.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index ca05ba2..e1f4390 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -421,7 +421,7 @@ sub top_of_kernel_tree {
+ 		}
+ 	}
+ 	return 1;
+-    }
++}
+ 
+ sub parse_email {
+ 	my ($formatted_email) = @_;
+@@ -2390,8 +2390,10 @@ sub process {
+ 			my $orig = $1;
+ 			my $level = lc($orig);
+ 			$level = "warn" if ($level eq "warning");
++			my $level2 = $level;
++			$level2 = "dbg" if ($level eq "debug");
+ 			WARN("PREFER_PR_LEVEL",
+-			     "Prefer pr_$level(... to printk(KERN_$1, ...\n" . $herecurr);
++			     "Prefer netdev_$level2(netdev, ... then dev_$level2(dev, ... then pr_$level(...  to printk(KERN_$orig ...\n" . $herecurr);
+ 		}
+ 
+ 		if ($line =~ /\bpr_warning\s*\(/) {
+
+
