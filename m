@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab2IKSgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:36:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39254 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758262Ab2IKSga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:36:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120910215633.GA19739@google.com>
-References: <1347055973-11581-1-git-send-email-koverstreet@google.com>
-	<1347055973-11581-3-git-send-email-koverstreet@google.com>
-	<20120908193641.GB12773@dhcp-172-17-108-109.mtv.corp.google.com>
-	<20120910002810.GA23241@moria.home.lan>
-	<20120910172210.GC14103@google.com>
-	<20120910202435.GG16360@google.com>
-	<20120910204010.GA32310@google.com>
-	<20120910213349.GH16360@google.com>
-	<20120910213710.GA7677@google.com>
-	<20120910215633.GA19739@google.com>
-Date: Tue, 11 Sep 2012 11:36:28 -0700
-Message-ID: <CAFR8ued=Le4B4i_Rf4eECXsVgKvce9J7bO9sDSS91PFzBZ6j5w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] block: Avoid deadlocks with bio allocation by
- stacking drivers
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
-        Vivek Goyal <vgoyal@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        bharrosh@panasas.com, david@fromorbit.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759010Ab2IKShD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:37:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58899 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758337Ab2IKShA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 14:37:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,406,1344236400"; 
+   d="scan'208";a="201681597"
+Subject: Re: [PATCH 2/2] sched: trigger_load_balance clean up
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, venki@google.com
+Date: Tue, 11 Sep 2012 11:36:12 -0700
+In-Reply-To: <1347261059-24747-2-git-send-email-alex.shi@intel.com>
+References: <1347261059-24747-1-git-send-email-alex.shi@intel.com>
+	 <1347261059-24747-2-git-send-email-alex.shi@intel.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1347388574.26695.135.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent,
+On Mon, 2012-09-10 at 15:10 +0800, Alex Shi wrote:
+> Remove a redundant check for on_null_domain(cpu), and rerange the code
+> that make it more readable.
 
-On Mon, Sep 10, 2012 at 2:56 PM, Kent Overstreet <koverstreet@google.com> wrote:
-..
-<snip>
-..
+hmm, but we are now doing the on_null_domain() check always,
+irrespective of whether we need the load balance or not.
 
->
-> +static void bio_alloc_rescue(struct work_struct *work)
-> +{
-> +       struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-> +       struct bio *bio;
+do we really need the on_null_domain() check there? What happens if we
+just remove it?
+
+thanks,
+suresh
+
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 5bbc4bf..529092d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4934,11 +4934,13 @@ static inline int on_null_domain(int cpu)
+>  void trigger_load_balance(struct rq *rq, int cpu)
+>  {
+>  	/* Don't need to rebalance while attached to NULL domain */
+> -	if (time_after_eq(jiffies, rq->next_balance) &&
+> -	    likely(!on_null_domain(cpu)))
+> +	if (unlikely(on_null_domain(cpu)))
+> +		return;
 > +
-> +       while (1) {
-> +               spin_lock(&bs->rescue_lock);
-> +               bio = bio_list_pop(&bs->rescue_list);
-> +               spin_unlock(&bs->rescue_lock);
-> +
-> +               if (!bio)
-> +                       break;
-> +
-> +               generic_make_request(bio);
-> +       }
-> +}
-> +
-> +static void punt_bios_to_rescuer(struct bio_set *bs)
-> +{
-> +       struct bio_list punt, nopunt;
-> +       struct bio *bio;
-> +
-> +       /*
-> +        * In order to guarantee forward progress we must punt only bios that
-> +        * were allocated from this bio_set; otherwise, if there was a bio on
-> +        * there for a stacking driver higher up in the stack, processing it
-> +        * could require allocating bios from this bio_set, and doing that from
-> +        * our own rescuer would be bad.
-> +        *
-> +        * Since bio lists are singly linked, pop them all instead of trying to
-> +        * remove from the middle of the list:
-> +        */
-> +
-> +       bio_list_init(&punt);
-> +       bio_list_init(&nopunt);
-> +
-> +       while ((bio = bio_list_pop(current->bio_list)))
-> +               bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-> +
-> +       *current->bio_list = nopunt;
-> +
-> +       spin_lock(&bs->rescue_lock);
-> +       bio_list_merge(&bs->rescue_list, &punt);
-> +       spin_unlock(&bs->rescue_lock);
-> +
-> +       queue_work(bs->rescue_workqueue, &bs->rescue_work);
-> +}
+> +	if (time_after_eq(jiffies, rq->next_balance))
+>  		raise_softirq(SCHED_SOFTIRQ);
+>  #ifdef CONFIG_NO_HZ
+> -	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
+> +	if (nohz_kick_needed(rq, cpu))
+>  		nohz_balancer_kick(cpu);
+>  #endif
+>  }
 
 
-Does this preserve the CPU from which the bio was submitted
-originally. Not familiar with cmwq, may be Tejun can clarify.
-
-Tejun - the question is, do we honor the rq_affinity with the above
-rescue worker implementation?
-
-Regards,
-Muthu
