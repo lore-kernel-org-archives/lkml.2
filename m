@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627Ab2IKPr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 11:47:28 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:37581 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab2IKPr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 11:47:27 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	<87harc34d9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
-	<87y5knz6l5.fsf@devron.myhome.or.jp>
-	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
-	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
-	<1347020137.2223.13.camel@iscandar.digidescorp.com>
-	<87oblfpmnb.fsf@devron.myhome.or.jp>
-	<87k3w3ph8d.fsf@devron.myhome.or.jp>
-	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
-	<87har6kmfx.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-	<87oblc4u6f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
-Date: Wed, 12 Sep 2012 00:47:22 +0900
-In-Reply-To: <CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
-	(Namjae Jeon's message of "Wed, 12 Sep 2012 00:13:29 +0900")
-Message-ID: <871ui84l4l.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1757869Ab2IKP5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 11:57:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754141Ab2IKP5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 11:57:39 -0400
+Date: Tue, 11 Sep 2012 17:59:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [PATCH] fs: prevent double-free on an error path in core dumper
+Message-ID: <20120911155950.GA7431@redhat.com>
+References: <1347380162-2359-1-git-send-email-vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347380162-2359-1-git-send-email-vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+Denys, let's not discuss this offlist... add lkml/cc's
 
->>> I think that it is unfixable because we can not know i_pos of inode
->>> changed by rename.
->>> And even though we know it, there is no rebuild inode routine in -mm.
->>> And It even can not fix in our patches.
->>
->>>> And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
->>>> like to improve performance by enabling lookupcache.
->>> We checked this patches when facing estale issue in -mm.
->>> But It is no use, these patches just retry system call one more when
->>> estale error.
->>
->> What happens if client retried from lookup() after -ESTALE? (client NFS
->> doesn't have the name of entry anymore?)
-> Need to rebuild inode routine because inode cache is already evicted on Server.
->>
->> I'm assuming the retry means - it restarts from building the NFS file
->> handle. I might be just wrong here though.
-> As I remember, just retry in VFS of NFS client..I heard this patch is
-> needed for
-> a very specific set of circumstances where an entry goes stale once
-> between the lookup and the actual operation(s).
-> It is not related with current issues(inode cache eviction on server).
+On 09/11, Denys Vlasenko wrote:
+>
+> If elf_note_info_init fails to allocate memory for info->fields,
+> it frees already alloceted stuff and returns error to its caller,
+> fill_note_info. Which in turn returns error to its caller,
+> elf_core_dump. Which jumps to cleanup label and calls free_note_info,
+> which will happily try to free all info->fields again. BOOM.
 
-Supposing, the server/client state is after cold boot, and client try to
-rename at first without any cache on client/server.
+This is !CORE_DUMP_USE_REGSET case, please mention this in the
+changelog. And s/fs:/coredump:/ in the subject ;)
 
-Even if this state, does the server return ESTALE? If it doesn't return
-ESTALE, I can't understand why it is really unfixable.
+OK, I think you are right, but unless I missed something there
+is a better fix.
 
-If it returns ESTALE, why does it return? I'm assuming the previous code
-path is the cached FH path.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> This is the fix.
+>
+> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+> ---
+>  fs/binfmt_elf.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index 760d7f5..b2b7034 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -1617,7 +1617,7 @@ static void free_note_info(struct elf_note_info *info)
+>  	kfree(info->psinfo.data);
+>  }
+>
+> -#else
+> +#else /* !CORE_DUMP_USE_REGSET */
+>
+>  /* Here is the structure in which status of each thread is captured. */
+>  struct elf_thread_status
+> @@ -1718,6 +1718,8 @@ static int elf_note_info_init(struct elf_note_info *info)
+>  	kfree(info->psinfo);
+>   notes_free:
+>  	kfree(info->notes);
+> +	/* The caller will try to clean us up again, must set ptrs to NULL */
+
+Exactly. The caller will do free_note_info() and info was zeroed at the
+start. See below
+
+> +	memset(info, 0, sizeof(*info));
+
+Yes, this will fix the problem.
+
+But, again, the caller does free_note_info(), so why elf_note_info_init()
+tries to handle the kmalloc failures? Afaics, we can simplify the code
+and fix the bug.
+
+What do you think about the patch below?
+
+Oleg.
+
+--- x/fs/binfmt_elf.c
++++ x/fs/binfmt_elf.c
+@@ -1696,30 +1696,19 @@ static int elf_note_info_init(struct elf
+ 		return 0;
+ 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
+ 	if (!info->psinfo)
+-		goto notes_free;
++		return 0;
+ 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
+ 	if (!info->prstatus)
+-		goto psinfo_free;
++		return 0;
+ 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
+ 	if (!info->fpu)
+-		goto prstatus_free;
++		return 0;
+ #ifdef ELF_CORE_COPY_XFPREGS
+ 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
+ 	if (!info->xfpu)
+-		goto fpu_free;
++		return 0;
+ #endif
+ 	return 1;
+-#ifdef ELF_CORE_COPY_XFPREGS
+- fpu_free:
+-	kfree(info->fpu);
+-#endif
+- prstatus_free:
+-	kfree(info->prstatus);
+- psinfo_free:
+-	kfree(info->psinfo);
+- notes_free:
+-	kfree(info->notes);
+-	return 0;
+ }
+ 
+ static int fill_note_info(struct elfhdr *elf, int phdrs,
+
