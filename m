@@ -1,45 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab2IJXCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:02:49 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40417 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757562Ab2IJXCs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:02:48 -0400
-Date: Mon, 10 Sep 2012 16:00:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org
-Subject: Re: [PATCH] serial: mxs-auart: put the device when exit or error
-Message-ID: <20120910230005.GA15782@kroah.com>
-References: <20120907024349.GH26709@S2101-09.ap.freescale.net>
- <1346985187-30459-1-git-send-email-b32955@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346985187-30459-1-git-send-email-b32955@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758044Ab2IJXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 19:03:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39969 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755120Ab2IJXDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 19:03:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,400,1344236400"; 
+   d="scan'208";a="191103131"
+Subject: [PATCH RESEND] USB/host: Cleanup unneccessary irq disable code
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Sep 2012 16:00:30 +0800
+Message-ID: <1347350430.29767.9.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 10:33:07AM +0800, Huang Shijie wrote:
-> We call the get_device() in the mxs_auart_probe().
-> For the balance of the reference count, we should put the
-> device in the mxs_auart_remove() or in the error path of
-> probe.
-> 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  drivers/tty/serial/mxs-auart.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
 
-I already applied the previous version, so can you make up a patch
-against the tty-next tree that fixes it up properly based on this patch?
+Because the IRQF_DISABLED as the flag is now a NOOP and has been
+deprecated and in hardirq context the interrupt is disabled.
 
-thanks,
+so in usb/host code:
+Removing the usage of flag IRQF_DISABLED;
+Removing the calling local_irq save/restore actions in irq
+handler usb_hcd_irq();
 
-greg k-h
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/core/hcd.c       |   16 ----------------
+ drivers/usb/host/ehci-ls1x.c |    2 +-
+ drivers/usb/host/ohci-xls.c  |    2 +-
+ 3 files changed, 2 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index bc84106..d456c10 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2153,15 +2153,8 @@ EXPORT_SYMBOL_GPL(usb_bus_start_enum);
+ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
+ {
+ 	struct usb_hcd		*hcd = __hcd;
+-	unsigned long		flags;
+ 	irqreturn_t		rc;
+ 
+-	/* IRQF_DISABLED doesn't work correctly with shared IRQs
+-	 * when the first handler doesn't use it.  So let's just
+-	 * assume it's never used.
+-	 */
+-	local_irq_save(flags);
+-
+ 	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
+ 		rc = IRQ_NONE;
+ 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
+@@ -2169,7 +2162,6 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
+ 	else
+ 		rc = IRQ_HANDLED;
+ 
+-	local_irq_restore(flags);
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(usb_hcd_irq);
+@@ -2357,14 +2349,6 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
+ 	int retval;
+ 
+ 	if (hcd->driver->irq) {
+-
+-		/* IRQF_DISABLED doesn't work as advertised when used together
+-		 * with IRQF_SHARED. As usb_hcd_irq() will always disable
+-		 * interrupts we can remove it here.
+-		 */
+-		if (irqflags & IRQF_SHARED)
+-			irqflags &= ~IRQF_DISABLED;
+-
+ 		snprintf(hcd->irq_descr, sizeof(hcd->irq_descr), "%s:usb%d",
+ 				hcd->driver->description, hcd->self.busnum);
+ 		retval = request_irq(irqnum, &usb_hcd_irq, irqflags,
+diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
+index a283e59..425cb4a 100644
+--- a/drivers/usb/host/ehci-ls1x.c
++++ b/drivers/usb/host/ehci-ls1x.c
+@@ -119,7 +119,7 @@ static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
+ 		goto err_release_region;
+ 	}
+ 
+-	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
++	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (ret)
+ 		goto err_iounmap;
+ 
+diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
+index 41e378f..84201cd 100644
+--- a/drivers/usb/host/ohci-xls.c
++++ b/drivers/usb/host/ohci-xls.c
+@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
+ 		goto err3;
+ 	}
+ 
+-	retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (retval != 0)
+ 		goto err4;
+ 	return retval;
+-- 
+1.7.0.4
+
+
+
