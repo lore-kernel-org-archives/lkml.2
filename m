@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758830Ab2IKSf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:35:28 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:25481 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752299Ab2IKSfZ (ORCPT
+	id S1758800Ab2IKSgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:36:32 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39254 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758262Ab2IKSga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:35:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/abyh8+0WVS7HL5XpM19NS
-Date: Tue, 11 Sep 2012 11:35:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, AnilKumar <anilkumar@ti.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: OMAP2+: Enable pinctrl dummy states
-Message-ID: <20120911183522.GL23092@atomide.com>
-References: <1347385599-27558-1-git-send-email-mporter@ti.com>
- <1347385599-27558-3-git-send-email-mporter@ti.com>
- <20120911180306.GI23092@atomide.com>
- <20120911181540.GO27758@beef>
+	Tue, 11 Sep 2012 14:36:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911181540.GO27758@beef>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120910215633.GA19739@google.com>
+References: <1347055973-11581-1-git-send-email-koverstreet@google.com>
+	<1347055973-11581-3-git-send-email-koverstreet@google.com>
+	<20120908193641.GB12773@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120910002810.GA23241@moria.home.lan>
+	<20120910172210.GC14103@google.com>
+	<20120910202435.GG16360@google.com>
+	<20120910204010.GA32310@google.com>
+	<20120910213349.GH16360@google.com>
+	<20120910213710.GA7677@google.com>
+	<20120910215633.GA19739@google.com>
+Date: Tue, 11 Sep 2012 11:36:28 -0700
+Message-ID: <CAFR8ued=Le4B4i_Rf4eECXsVgKvce9J7bO9sDSS91PFzBZ6j5w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
+        Vivek Goyal <vgoyal@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        bharrosh@panasas.com, david@fromorbit.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Linus Walleij to Cc as well.
+Kent,
 
-* Matt Porter <mporter@ti.com> [120911 11:24]:
-> On Tue, Sep 11, 2012 at 11:03:06AM -0700, Tony Lindgren wrote:
-> > * Matt Porter <mporter@ti.com> [120911 10:46]:
-> > > Enable pinctrl dummy states for all OMAP platforms. This allows
-> > > drivers to be converted to pinctrl while still running on
-> > > platforms that do not provide pinctrl data.
-> > > 
-> > > Signed-off-by: Matt Porter <mporter@ti.com>
-> > > ---
-> > >  arch/arm/mach-omap2/devices.c |    4 ++++
-> > >  1 file changed, 4 insertions(+)
-> > > 
-> > > diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-> > > index c00c689..577cd04 100644
-> > > --- a/arch/arm/mach-omap2/devices.c
-> > > +++ b/arch/arm/mach-omap2/devices.c
-> > > @@ -17,6 +17,7 @@
-> > >  #include <linux/err.h>
-> > >  #include <linux/slab.h>
-> > >  #include <linux/of.h>
-> > > +#include <linux/pinctrl/machine.h>
-> > >  #include <linux/platform_data/omap4-keypad.h>
-> > >  
-> > >  #include <mach/hardware.h>
-> > > @@ -631,6 +632,9 @@ static inline void omap_init_vout(void) {}
-> > >  
-> > >  static int __init omap2_init_devices(void)
-> > >  {
-> > > +	/* Enable dummy states for those platforms without pinctrl support */
-> > > +	pinctrl_provide_dummies();
-> > > +
-> > >  	/*
-> > >  	 * please keep these calls, and their implementations above,
-> > >  	 * in alphabetical order so they're easier to sort through.
-> > 
-> > Hmm I think this may need to be board specific. And may need to
-> > be board specific and depend on unpopulated device tree?
-> 
-> If I run this on AM33xx with dummy states enabled, I'm able to override
-> that dummy state just fine with an appropriate pinctl/pinmux entry in my
-> DT data for spi.
+On Mon, Sep 10, 2012 at 2:56 PM, Kent Overstreet <koverstreet@google.com> wrote:
+..
+<snip>
+..
 
-But do you get an error then if the desired pins are not found?
-If you do get an error, then sounds like it's OK to do.
- 
-> Meanwhile on xM booting from board-omap3evm.c/!DT and debug enabled I
-> get the following:
-> 
-> [    1.837829] omap2_mcspi omap2_mcspi.1: no of_node; not parsing
-> pinctrl DT
-> [    1.845214] omap2_mcspi omap2_mcspi.1: using pinctrl dummy state
-> (default)
-> [    1.854278] omap2_mcspi omap2_mcspi.2: no of_node; not parsing
-> pinctrl DT
-> [    1.861572] omap2_mcspi omap2_mcspi.2: using pinctrl dummy state
-> (default)
-> [    1.870025] omap2_mcspi omap2_mcspi.3: no of_node; not parsing
-> pinctrl DT
-> [    1.877288] omap2_mcspi omap2_mcspi.3: using pinctrl dummy state
-> (default)
-> [    1.885681] omap2_mcspi omap2_mcspi.4: no of_node; not parsing
-> pinctrl DT
-> [    1.892913] omap2_mcspi omap2_mcspi.4: using pinctrl dummy state
-> (default)
-> 
-> which seems to cover things being informative enough about what is
-> going on. Are you wanting to see an explicit warning that the pinctrl
-> dummy state is in use when pinctrl data is not available?
+>
+> +static void bio_alloc_rescue(struct work_struct *work)
+> +{
+> +       struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
+> +       struct bio *bio;
+> +
+> +       while (1) {
+> +               spin_lock(&bs->rescue_lock);
+> +               bio = bio_list_pop(&bs->rescue_list);
+> +               spin_unlock(&bs->rescue_lock);
+> +
+> +               if (!bio)
+> +                       break;
+> +
+> +               generic_make_request(bio);
+> +       }
+> +}
+> +
+> +static void punt_bios_to_rescuer(struct bio_set *bs)
+> +{
+> +       struct bio_list punt, nopunt;
+> +       struct bio *bio;
+> +
+> +       /*
+> +        * In order to guarantee forward progress we must punt only bios that
+> +        * were allocated from this bio_set; otherwise, if there was a bio on
+> +        * there for a stacking driver higher up in the stack, processing it
+> +        * could require allocating bios from this bio_set, and doing that from
+> +        * our own rescuer would be bad.
+> +        *
+> +        * Since bio lists are singly linked, pop them all instead of trying to
+> +        * remove from the middle of the list:
+> +        */
+> +
+> +       bio_list_init(&punt);
+> +       bio_list_init(&nopunt);
+> +
+> +       while ((bio = bio_list_pop(current->bio_list)))
+> +               bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
+> +
+> +       *current->bio_list = nopunt;
+> +
+> +       spin_lock(&bs->rescue_lock);
+> +       bio_list_merge(&bs->rescue_list, &punt);
+> +       spin_unlock(&bs->rescue_lock);
+> +
+> +       queue_work(bs->rescue_workqueue, &bs->rescue_work);
+> +}
 
-Well I think we should consider at least the following:
 
-1. Always see warnings when device tree is populated with board-generic.
-   If somebody wants to use bootloader only muxing with DT, they can patch
-   in pinctrl_provide_dummies() somewhere. But let's assume we always
-   want to see the warnings with board-generic.c and DT.
+Does this preserve the CPU from which the bio was submitted
+originally. Not familiar with cmwq, may be Tejun can clarify.
 
-2. For legacy booting without DT, we should not see any warnings
-   from pinctrl-single.c as it's DT based.
-
-3. There may be other non-pinctrl drivers too that are not DT
-   based, and in those cases we should see the warnings as well
-   for in the non-DT case.
- 
-> > For board-generic.c we always want to see the warnings. And some boards
-> > insist on doing all the muxing only in the bootloader.
-> 
-> Which warnings are you saying we should see in the board-generic.c
-> case?  Sure, there's plenty of cases where this will be unused due to
-> somebody setting all the muxes in the bootloader and then not using
-> pinctrl data. I'll have to doublecheck but I believe that case is also
-> fine as the -single driver can't override the dummy state if the DT has
-> no pinctrl data for the spi driver.
-
-Yeah I guess it's the case #1 above for board-generic.c.
+Tejun - the question is, do we honor the rq_affinity with the above
+rescue worker implementation?
 
 Regards,
-
-Tony
+Muthu
