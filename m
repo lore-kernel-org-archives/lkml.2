@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2IKXnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 19:43:07 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46272 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab2IKXnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 19:43:05 -0400
+	id S1752109Ab2IKXuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 19:50:40 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47052 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab2IKXuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 19:50:39 -0400
+Message-ID: <504FCE48.1050409@linaro.org>
+Date: Tue, 11 Sep 2012 16:50:32 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20120911232537.GA13210@localhost>
-References: <1346083274-3510-1-git-send-email-linkinjeon@gmail.com>
-	<20120911014025.GA22077@localhost>
-	<CAKYAXd_VucTrf=TeezrU28+Ja+41TAFCY3zfuBGvoMO9FXNB1A@mail.gmail.com>
-	<CAKYAXd_Zdb_3rqwgf03To+DPw-wFXUGW-5km7KVaiJSymEuGMg@mail.gmail.com>
-	<20120911232537.GA13210@localhost>
-Date: Wed, 12 Sep 2012 08:43:04 +0900
-Message-ID: <CAKYAXd9pa9sXOLv+2vwb3pprp0B=dvPcG5JZsmDNm-hFT1DMUw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] writeback: add dirty_background_time per bdi variable
-From: Namjae Jeon <linkinjeon@gmail.com>
 To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup - CPU#1 stuck for 1024s!
+References: <20120909075927.GA13058@localhost> <504E1E19.9050106@linaro.org> <20120911234130.GA13382@localhost>
+In-Reply-To: <20120911234130.GA13382@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091123-5806-0000-0000-0000197FDD92
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/12, Fengguang Wu <fengguang.wu@intel.com>:
-> On Wed, Sep 12, 2012 at 08:12:40AM +0900, Namjae Jeon wrote:
->> >>
->> >> To be frank, no realistic NFS servers will use USB disk as backing
->> >> storage. So that rational for reducing "initial" delays is weak.
->> >> Continuous write performance to HDD is much more important. Do you
->> >> have numbers for that?
->> >
->> > Actually, we use USB HDD and USB Flash devices at NFS server.
->> > There can be other similar users as well. So it might be useful to
->> > provide this tuning feature other.
->> > As default value is zero, it is disabled by default and it should not
->> > impact normal writeback.
->> >
->> > I will share large file writes test result on NFS client on USB HDD
->> > with/without tuning with patch.
->> Hi. Wu.
->> I share 1GB continous write test result.
+On 09/11/2012 04:41 PM, Fengguang Wu wrote:
+> On Mon, Sep 10, 2012 at 10:06:33AM -0700, John Stultz wrote:
+>> On 09/09/2012 12:59 AM, Fengguang Wu wrote:
+>>> Hi John,
+>>>
+>>> The below lockup warning pops up very occasionally in kvm guest
+>>> kernels and it's bisected down to
+>>>
+>>>          commit 2a8c0883c3cfffcc148ea606e2a4e7453cd75e73
+>>>          Author: John Stultz <john.stultz@linaro.org>
+>>>          Date:   Fri Jul 13 01:21:56 2012 -0400
+>>>
+>>>              time: Move xtime_nsec adjustment underflow handling timekeeping_adjust
+>>>
+>>> [    8.340327] Freeing unused kernel memory: 460k freed
+>>> [ 1107.515496] [sched_delayed] sched: RT throttling activated
+>>> [ 1107.516439] BUG: soft lockup - CPU#1 stuck for 1024s! [swapper/1:0]
 >>
->> -> create a 1000 MB file
->> For continuous write - create 1 GB file
+>> Thanks so much for sending this. One detail I'm curious about is
+>> that these kernels from the Bug messages seem to be v3.6-rc1 or
+>> earlier.
 >>
->>  RecSize   WriteSpeed
->> 10485760   10.47MB/sec
->>  1048576   10.35MB/sec
->>   524288   10.48MB/sec
->>   262144   10.48MB/sec
->>   131072   10.52MB/sec
->>    65536   10.56MB/sec
->>    32768   10.64MB/sec
->>    16384   10.31MB/sec
->>     8192   10.52MB/sec
->>     4096   10.45MB/sec
+>> Ingo had a fix 1d17d17484d40f2d5b35c79518597a2b25296996 ("time: Fix
+>> adjustment cleanup bug in timekeeping_adjust") that landed in
+>> 3.6-rc2
 >>
->> I will update changelog in patch.
->
-> Thanks! What's the server side setting
-I missed server side setting.. I set dirty_background_centisecs to 1 sec.
-> and can you give a comparison of different background writeback thresholds?
-Okay, I will measure peformance per setting value of
-dirty_background_centisecs in nfs server.
+>> Has this issue actually been seen on a 3.6-rc2+ kernel?
+> Nope. I tested -rc5 for 10000+ boots and it's obviously free from the bug.
+> Sorry for the noise!
 
-This is this patch's
-> target use cases, after all.
-Sure.
-Thanks.
->
-> Thanks,
-> Fengguang
->
+No worries. Thanks so much for following up on this, and your continued 
+testing!
+-john
+
