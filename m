@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab2IKRp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:45:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64113 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab2IKRpf (ORCPT
+	id S1753771Ab2IKRtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:49:33 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49036 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab2IKRtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:45:35 -0400
-From: Matt Porter <mporter@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        AnilKumar <anilkumar@ti.com>
-Subject: [PATCH 1/2] spi: omap2-mcspi: add pinctrl support
-Date: Tue, 11 Sep 2012 13:46:38 -0400
-Message-Id: <1347385599-27558-2-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347385599-27558-1-git-send-email-mporter@ti.com>
-References: <1347385599-27558-1-git-send-email-mporter@ti.com>
+	Tue, 11 Sep 2012 13:49:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <002b01cd8fee$2195b460$64c11d20$%han@samsung.com>
+References: <002b01cd8fee$2195b460$64c11d20$%han@samsung.com>
+Date: Tue, 11 Sep 2012 19:49:30 +0200
+Message-ID: <CACRpkdZ_zac1KPX8qJ-hGS=A9WFS8ZO=db9YiLxhpQ3AxBwyaA@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: samsung: use pr_* instead of printk
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Ryan Mallon <rmallon@gmail.com>, Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds pinctrl support to support OMAP platforms that boot from DT
-and rely on pinctrl support to set pinmuxes.
+On Tue, Sep 11, 2012 at 9:21 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+> This patch uses pr_* instead of printk. Also, gpio_dbg
+> is replaced with pr_debug.
+>
+> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index b2fb141..6c67cdb 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -38,6 +38,8 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/err.h>
- 
- #include <linux/spi/spi.h>
- 
-@@ -1124,6 +1126,7 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- 	static int		bus_num = 1;
- 	struct device_node	*node = pdev->dev.of_node;
- 	const struct of_device_id *match;
-+	struct pinctrl *pinctrl;
- 
- 	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
- 	if (master == NULL) {
-@@ -1219,6 +1222,12 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
- 	if (status < 0)
- 		goto dma_chnl_free;
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl)) {
-+		status = PTR_ERR(pinctrl);
-+		goto dma_chnl_free;
-+	}
-+
- 	pm_runtime_use_autosuspend(&pdev->dev);
- 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
- 	pm_runtime_enable(&pdev->dev);
--- 
-1.7.9.5
+This looks good to me,
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
+Kukjin/Ben can I have an ACK on this patch, or do you prefer to merge
+it into the Samsung tree?
+
+Yours,
+Linus Walleij
