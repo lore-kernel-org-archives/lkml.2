@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2IKGfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 02:35:23 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:50347 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750914Ab2IKGfW (ORCPT
+	id S1756248Ab2IKGf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 02:35:29 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55518 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2IKGf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 02:35:22 -0400
-Date: Tue, 11 Sep 2012 09:30:50 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Jingoo Han <jg1.han@samsung.com>
+	Tue, 11 Sep 2012 02:35:27 -0400
+X-AuditID: cbfee61b-b7f586d000007adc-99-504edbad9163
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Ryan Mallon'" <rmallon@gmail.com>
 Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
         "'Linus Walleij'" <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
-Message-ID: <20120911063048.GA18072@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
+        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-In-Reply-To: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ <504ED55F.9060701@gmail.com>
+In-reply-to: <504ED55F.9060701@gmail.com>
+Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
+Date: Tue, 11 Sep 2012 15:35:25 +0900
+Message-id: <001401cd8fe7$a06c6c90$e14545b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2P4+LbDJdt4CdhQBaGWu2fJARDywAA4FxA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd21t/0CDH6+0LO4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZG27vZizYyFGxZNU0lgbGu2xdjJwcEgImEjNev2WBsMUkLtxb
+	DxTn4hASmM4o8e35K2YIZzaTxONrS1hBqtgE1CS+fDnMDmKLCKhK7Oz/zwpSxCywgFHi5OwX
+	YAkhgRiJBz8eMYHYnAKaEp9OXAWLCwvYSSzZ1AdmswA1P9owA6iZg4NXwFbi6HWwMK+AoMSP
+	yffALmIW0JJYv/M4E4QtL7F5zVtmkHIJAXWJR391IU4wkrg16Q4bRImIxL4X7xgnMArNQjJp
+	FpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4EB+Jr2DcVWDxSFGAQ5G
+	JR7eG9F+AUKsiWXFlbmHGCU4mJVEeP1mAYV4UxIrq1KL8uOLSnNSiw8xSnOwKInzOp2zCxAS
+	SE8sSc1OTS1ILYLJMnFwSjUw1mjWJ3O4MFUd/L8v85PctVVG4T8nXbuyMnnJ2m9bHx/aH3pF
+	Zh8X542DJy78cmfvZFlq29ryN7eky1NN01UqrsaySNTewCFdo/KC4p+Gkq9ztd0YFszcz/Lo
+	5R+rCXWhz2obFgRdPG3Wbtmf5eqvy5mwbOVWr7eNAiYLdFuDrx0sEmCacYtNiaU4I9FQi7mo
+	OBEAR0ZGo2ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, September 11, 2012 3:09 PM Ryan Mallon wrote
+> 
+> On 10/09/12 21:59, Jingoo Han wrote:
+> > This patch uses pr_* instead of printk.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com> ---
+> > drivers/gpio/gpio-samsung.c |    6 +++--- 1 files changed, 3
+> > insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/gpio/gpio-samsung.c
+> > b/drivers/gpio/gpio-samsung.c index ba126cc..e38d990 100644 ---
+> > a/drivers/gpio/gpio-samsung.c +++ b/drivers/gpio/gpio-samsung.c @@
+> > -45,7 +45,7 @@ #ifndef DEBUG_GPIO #define gpio_dbg(x...) do { } while
+> > (0) #else -#define gpio_dbg(x...) printk(KERN_DEBUG x) +#define
+> > gpio_dbg(x...) pr_debug(x)
+> 
+> This is a functional change since pr_debug compiles away to nothing
+> unless DEBUG is defined, so now you need to define both DEBUG and
+> DEBUG_GPIO for this to print.
+> 
+> A better fix would be to just replace calls to gpio_dbg with pr_debug.
+> 
+> ~Ryan
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Ryan Mallon,
 
-Hi,
+OK, I will replace gpio_dbg with pr_debug as you mentioned.
+Thank you.
 
-On Mon, Sep 10, 2012 at 08:59:11PM +0900, Jingoo Han wrote:
-> This patch uses pr_* instead of printk.
->=20
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/gpio/gpio-samsung.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-> index ba126cc..e38d990 100644
-> --- a/drivers/gpio/gpio-samsung.c
-> +++ b/drivers/gpio/gpio-samsung.c
-> @@ -45,7 +45,7 @@
->  #ifndef DEBUG_GPIO
->  #define gpio_dbg(x...) do { } while (0)
->  #else
-> -#define gpio_dbg(x...) printk(KERN_DEBUG x)
-> +#define gpio_dbg(x...) pr_debug(x)
->  #endif
-> =20
->  int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
-> @@ -926,10 +926,10 @@ static void __init samsung_gpiolib_add(struct samsu=
-ng_gpio_chip *chip)
->  #ifdef CONFIG_PM
->  	if (chip->pm !=3D NULL) {
->  		if (!chip->pm->save || !chip->pm->resume)
-> -			printk(KERN_ERR "gpio: %s has missing PM functions\n",
-> +			pr_err("gpio: %s has missing PM functions\n",
->  			       gc->label);
+Best regards,
+Jingoo Han
 
-I would rather see dev_* conversion instead.
 
-my 2 cents
-
---=20
-balbi
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQTtqYAAoJEIaOsuA1yqRETKYP/jkNWTtdkSKTi74OEsVNvbUZ
-8S76SHeRsgJYWzqX8rm/jhP3fwAi4NTTX5aNewwZONh8zUQzWzZkEByYt0nPWBlh
-WPnFuaVhw3eVVb2kVGrqL4KTGhFwkq3g4lSJXQq6RBtq7lrZ9apErUx+YGgkUH7u
-IrqwHK3Zwxza8ATPjkyBZHNMCVktrDrXoo0BNyq4zuarpJLRk4G381o+gr91hhUQ
-eE0MOdkqKmR9NmR87iH0FM18iztMciWzQOgmjHvA4vfLh4vNAhvO2GtPgQI9FGJT
-RWXsINs2K5GcjYBY6XFqAg7FNYdejqi+zwIK11DDiFxAoONo1twuDi/h4lkNCwBd
-oV+4Gl/pZZFzxid7ajjYNIOHn4iyg6ja7xyeiVZZWfMr1tz6w+lQKkNVxtRa0AAO
-82fN+j+YG9o9IYyf7XfJqHgHRzwFMVfdNvJACrW7+s6i00ZoI57lEf+UKsYMWVbk
-4xfojOmknzPCm4pYiry4tQ10KqQcdF0Ufk788VKvBqNy/F6ow0ipKazwEEs0zgEy
-L6Ym32ZczKgjsuzxxtbttxen+WeKwZFrBJDZ6sIRf3Qru3eT87VIs9hBexpW9Uyw
-X42pIzPmWGCwuKLiOM216r4RLxUsc88ibqSWeqdHp1lQuN2o6EIrqkxmh4wrHynR
-r72wasJSw+8UIDn5Ux3D
-=Dkk6
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
