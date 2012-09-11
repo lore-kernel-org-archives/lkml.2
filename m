@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab2IKDsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 23:48:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46793 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751748Ab2IKDso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 23:48:44 -0400
-Message-ID: <1347335323.2881.1.camel@joe2Laptop>
-Subject: Re: [PATCH] Staging: comedi: drivers: fl512: change
- printk(KERN_INFO ... for the prefered pr_info(...
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Bruce Humphrey <brucehum@gmail.com>, abbotti@mev.co.uk,
-        fmhess@users.sourceforge.net, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Sep 2012 20:48:43 -0700
-In-Reply-To: <20120911034457.GA3317@kroah.com>
-References: <1347331815-7278-1-git-send-email-brucehum@gmail.com>
-	 <20120911025252.GA28112@kroah.com> <1347334811.2073.2.camel@joe2Laptop>
-	 <20120911034457.GA3317@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752049Ab2IKEKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 00:10:34 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:38243 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751111Ab2IKEKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 00:10:21 -0400
+Date: Mon, 10 Sep 2012 21:10:13 -0700
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 3.6
+Message-ID: <20120911041013.GA20157@gondor.apana.org.au>
+References: <20100716022648.GA28219@gondor.apana.org.au>
+ <20100722055043.GA25689@gondor.apana.org.au>
+ <20100903060055.GA28915@gondor.apana.org.au>
+ <20100903110722.GA31826@gondor.apana.org.au>
+ <20101215115035.GA25248@gondor.apana.org.au>
+ <20110216053911.GA10999@gondor.apana.org.au>
+ <20110328071322.GA6569@gondor.apana.org.au>
+ <20110629235153.GA16559@gondor.apana.org.au>
+ <20120126024342.GA12492@gondor.apana.org.au>
+ <20120823083242.GA23102@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823083242.GA23102@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 20:44 -0700, Greg KH wrote:
-> On Mon, Sep 10, 2012 at 08:40:11PM -0700, Joe Perches wrote:
-> > On Mon, 2012-09-10 at 19:52 -0700, Greg KH wrote:
-> > > On Tue, Sep 11, 2012 at 04:50:15AM +0200, Bruce Humphrey wrote:
-> > > > Change 5 instances of printk(KERN_INFO, KERN_WARN and KERN_ERROR for the prefered pr_info, pr_warn and pr_error
-> > []
-> > > > diff --git a/drivers/staging/comedi/drivers/fl512.c b/drivers/staging/comedi/drivers/fl512.c
-> > []
-> > > > @@ -118,9 +118,9 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-> > []
-> > > > -	printk(KERN_INFO "comedi:%d fl512: 0x%04lx", dev->minor, iobase);
-> > > > +	pr_info("comedi:%d fl512: 0x%04lx", dev->minor, iobase);
-> > > 
-> > > Why can't you use dev_info() here, and in other places?  You should use
-> > > the dev_* functions instead of pr_* wherever possible.
-> > 
-> > Checkpatch instigates these conversions.
-> 
-> I know.
-> 
-> > Perhaps something like:
-> 
-> That looks like a good start, until someone tries to use netdev_* in a
-> random non-network driver :)
+Hi Linus:
 
-Hence the "netdev_<level>(netdev, ...) then dev_<level>(dev, ..., etc...
+This push fixes the authenc self-test crash as well as a missing
+export of a symbol used by a module.
 
-You can only make people read not understand.
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
 
+Ben Collins (1):
+      crypto/caam: Export gen_split_key symbol for other modules
+
+Herbert Xu (1):
+      crypto: authenc - Fix crash with zero-length assoc data
+   
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
