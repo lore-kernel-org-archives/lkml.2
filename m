@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab2IKJlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:41:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60311 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758065Ab2IKJiG (ORCPT
+	id S1758582Ab2IKJlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:41:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41808 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758052Ab2IKJiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:38:06 -0400
+	Tue, 11 Sep 2012 05:38:04 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -19,9 +19,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 03/12] kdb: Turn KGDB_KDB=n stubs into static inlines
-Date: Tue, 11 Sep 2012 02:34:57 -0700
-Message-Id: <1347356106-25368-3-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 02/12] kdb: Implement disable_nmi command
+Date: Tue, 11 Sep 2012 02:34:56 -0700
+Message-Id: <1347356106-25368-2-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120911093042.GA12471@lizard>
 References: <20120911093042.GA12471@lizard>
@@ -29,69 +29,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the stubs actually usable, since e.g. 'foo = kdb_register();'
-leads to build errors in !KGDB_KDB case. Plus, with static inlines we
-do type checking.
+This command disables NMI-entry. If NMI source has been previously shared
+with a serial console ("debug port"), this effectively releases the port
+from KDB exclusive use, and makes the console available for normal use.
+
+Of course, NMI can be reenabled, enable_nmi modparam is used for that:
+
+	echo 1 > /sys/module/kdb/parameters/enable_nmi
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/kdb.h | 29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ kernel/debug/kdb/kdb_main.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 42d9e86..7f6fe6e 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -13,6 +13,14 @@
-  * Copyright (C) 2009 Jason Wessel <jason.wessel@windriver.com>
-  */
- 
-+typedef enum {
-+	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
-+	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
-+	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
-+} kdb_repeat_t;
-+
-+typedef int (*kdb_func_t)(int, const char **);
-+
- #ifdef	CONFIG_KGDB_KDB
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 31df170..9fadff1 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -21,6 +21,7 @@
+ #include <linux/smp.h>
+ #include <linux/utsname.h>
+ #include <linux/vmalloc.h>
++#include <linux/atomic.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
  #include <linux/init.h>
- #include <linux/sched.h>
-@@ -32,14 +40,6 @@ extern atomic_t kdb_event;
- 
- #define KDB_MAXARGS    16 /* Maximum number of arguments to a function  */
- 
--typedef enum {
--	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
--	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
--	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
--} kdb_repeat_t;
--
--typedef int (*kdb_func_t)(int, const char **);
--
- /* KDB return codes from a command or internal kdb function */
- #define KDB_NOTFOUND	(-1)
- #define KDB_ARGCOUNT	(-2)
-@@ -149,11 +149,14 @@ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
- 			       short, kdb_repeat_t);
- extern int kdb_unregister(char *);
- #else /* ! CONFIG_KGDB_KDB */
--#define kdb_printf(...)
--#define kdb_init(x)
--#define kdb_register(...)
--#define kdb_register_repeat(...)
--#define kdb_uregister(x)
-+static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
-+static inline void kdb_init(int level) {}
-+static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
-+			       char *help, short minlen) { return 0; }
-+static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
-+				      char *help, short minlen,
-+				      kdb_repeat_t repeat) { return 0; }
-+static inline int kdb_unregister(char *cmd) { return 0; }
- #endif	/* CONFIG_KGDB_KDB */
- enum {
- 	KDB_NOT_INITIALIZED,
+@@ -2107,6 +2108,32 @@ static int kdb_dmesg(int argc, const char **argv)
+ 	return 0;
+ }
+ #endif /* CONFIG_PRINTK */
++
++/* Make sure we balance enable/disable calls, must disable first. */
++static atomic_t kdb_nmi_disabled;
++
++static int kdb_disable_nmi(int argc, const char *argv[])
++{
++	if (atomic_read(&kdb_nmi_disabled))
++		return 0;
++	atomic_set(&kdb_nmi_disabled, 1);
++	kgdb_enable_nmi(0);
++	return 0;
++}
++
++static int kdb_param_enable_nmi(const char *val, const struct kernel_param *kp)
++{
++	if (!atomic_add_unless(&kdb_nmi_disabled, -1, 0))
++		return -EINVAL;
++	kgdb_enable_nmi(1);
++	return 0;
++}
++
++static const struct kernel_param_ops kdb_param_ops_enable_nmi = {
++	.set = kdb_param_enable_nmi,
++};
++module_param_cb(enable_nmi, &kdb_param_ops_enable_nmi, NULL, 0600);
++
+ /*
+  * kdb_cpu - This function implements the 'cpu' command.
+  *	cpu	[<cpunum>]
+@@ -2851,6 +2878,8 @@ static void __init kdb_inittab(void)
+ 	kdb_register_repeat("dmesg", kdb_dmesg, "[lines]",
+ 	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
+ #endif
++	kdb_register_repeat("disable_nmi", kdb_disable_nmi, "",
++	  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
+ 	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("kill", kdb_kill, "<-signal> <pid>",
 -- 
 1.7.11.5
 
