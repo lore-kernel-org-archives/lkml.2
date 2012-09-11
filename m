@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab2IKFTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 01:19:20 -0400
-Received: from smtp209.alice.it ([82.57.200.105]:51193 "EHLO smtp209.alice.it"
+	id S1753924Ab2IKFXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 01:23:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34995 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab2IKFTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 01:19:19 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Sep 2012 01:19:18 EDT
-Message-ID: <504EC8BA.7010706@libero.it>
-Date: Tue, 11 Sep 2012 07:14:34 +0200
-From: Goffredo Baroncelli <kreijack@libero.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
-MIME-Version: 1.0
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cwillu <cwillu@cwillu.com>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: Re: [PATCH] btrfs: fix disk-io.c/btrfs_read_dev_super with BTRFS_SUPER_MIRROR_MAX
- to control the loops
-References: <504D8AEB.9090401@gmail.com>
-In-Reply-To: <504D8AEB.9090401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751213Ab2IKFXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 01:23:06 -0400
+Date: Tue, 11 Sep 2012 15:22:56 +1000
+From: NeilBrown <neilb@suse.de>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, tj@kernel.org
+Subject: Re: [PATCH v2 00/26] Prep work for immutable bio vecs
+Message-ID: <20120911152256.74cb184f@notabene.brown>
+In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/6vrj0jrTvFhDGbTB1jVmyqi"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/6vrj0jrTvFhDGbTB1jVmyqi
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 09/10/2012 08:38 AM, Wang Sheng-Hui wrote:
-> To check the duplicated super blocks, use BTRFS_SUPER_MIRROR_MAX
-> as the loops limit.
->
-> Signed-off-by: Wang Sheng-Hui<shhuiw@gmail.com>
-> ---
->   fs/btrfs/disk-io.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-> index 22e98e0..a431144 100644
-> --- a/fs/btrfs/disk-io.c
-> +++ b/fs/btrfs/disk-io.c
-> @@ -2723,7 +2723,7 @@ struct buffer_head *btrfs_read_dev_super(struct block_device *bdev)
->   	 * So, we need to add a special mount option to scan for
->   	 * later supers, using BTRFS_SUPER_MIRROR_MAX instead
->   	 */
-> -	for (i = 0; i<  1; i++) {
-> +	for (i = 0; i<  BTRFS_SUPER_MIRROR_MAX; i++) {
->   		bytenr = btrfs_sb_offset(i);
->   		if (bytenr + 4096>= i_size_read(bdev->bd_inode))
->   			break;
+On Mon, 10 Sep 2012 17:22:11 -0700 Kent Overstreet <koverstreet@google.com>
+wrote:
+
+> Random assortment of refactoring and trivial cleanups;
+>=20
+> Immutable bio vecs and efficient bio splitting require auditing and
+> removing pretty much all bi_idx uses, among other things.
+>=20
+> The reason is that with immutable bio vecs we can't use the bvec array
+> directly; if we have a partially completed bvec, that'll be indicated
+> with a field in struct bvec_iter (which gets embedded in struct bio) -
+> bi_bvec_done.
+>=20
+> bio_for_each_segments() will handle this transparently, so code needs to
+> be converted to use it or some other generic accessor.
+>=20
+> Also, bio splitting means that when a driver gets a bio, bi_idx and
+> bi_bvec_done may both be nonzero. Again, just need to use generic
+> accessors.
+>=20
+> v2: Patch series now has all the prep work to be done before abstracting
+> out the bio iterator, I think.
+
+Hi Kent,
+ this looks pretty good to me.  I've only really looked closely at the md
+ bits, but they all seem to make sense (with the minor issues that I report=
+ed
+ separately).
+
+ If/when there is another posting I'll try to allocate some time to testing
+ them and looking more closely.
+
+thanks!
+
+NeilBrown
 
 
-Pay attention that when a device is removed from a filesystem by the 
-command "btrfs device delete", *only* the 1st superblock btrfs signature 
-is zeroed [1]. This means that the other (backup) superblocks will be 
-considered valid with your change.
+--Sig_/6vrj0jrTvFhDGbTB1jVmyqi
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
+iQIVAwUBUE7KsDnsnt1WYoG5AQLWtw//Z7btOAU20pywaejQ5GY7uxagQKVyIXYd
+3fnU399mkuAtqTcUyKkh6sZVyAoactue/9YtDLTSeNm+oJMLDpltH8+yaoT9cCsi
+TkGs72jtlJZs8Doh2Yl0esRWPEan6fb3VqPJAcwLUI0QU0PAive4sxneNiB5h5hp
+L9fbJvzyvV71AaasKT1f4S5MSXkBv8XNcEjrmYF9sx98UmOeCYo/PTfxNiR1y5YV
+6+zxEA8sMpLmgdr8uezV1OWn54/+5cW4qrsQVr5J00fDrhb3L/A98nYAhEfcWv63
+ayXnsv+InMliQkG6LQMOIiKVVNk6hdFnYzeYKQpdCRKvcJihIWIp81gT9ETdqbDS
+6aEZptdQ3naYeMUlEMQquEo3HekD/bO43MNRrMDyntn22kahzHwJDqgp0d1eFhSk
+fRcRUK/JD1+QZMP6ZlOoDY8gsGm6GmIAOc4/DdrxmPXI4I408p0whqPfPq2KcN/U
+QYMxRQMCrwGFrwetPVr6SLDzafYbtx/5owWnM3c+teuLgi/hhbF1goNYPVPD1ZQN
+gUjSGgpPJJwDT99jQxOFKa7u3rLq0NnzONYxOi2OH/h3AP2pBXnIN0vMjpPsLOyU
+kQ7MELW13JZcs1dEdPzFtatmPebJ674q+RtbXwUQYgcNhjURMxqvpt7K9AIZkgft
+npQP1Eh2T24=
+=TsPP
+-----END PGP SIGNATURE-----
 
-[1] See the function btrfs_rm_device() in volume.c
-
-
-
-
+--Sig_/6vrj0jrTvFhDGbTB1jVmyqi--
