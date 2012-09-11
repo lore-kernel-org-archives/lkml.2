@@ -1,205 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab2IKFdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 01:33:36 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39279 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113Ab2IKFdd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 01:33:33 -0400
-Subject: [PATCH v2] x86/mce: Honour bios-set CMCI threshold
-To: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: gong.chen@linux.intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, lcm@us.ibm.com,
-        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, gregkh@suse.de,
-        linux-edac@vger.kernel.org
-Date: Tue, 11 Sep 2012 11:01:29 +0530
-Message-ID: <20120911053128.3291.98346.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1755881Ab2IKFeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 01:34:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49174 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab2IKFeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 01:34:04 -0400
+X-IronPort-AV: E=Sophos;i="4.80,402,1344182400"; 
+   d="scan'208";a="5819026"
+Message-ID: <504ECEA2.4010805@cn.fujitsu.com>
+Date: Tue, 11 Sep 2012 13:39:46 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jerry <uulinux@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<20120831134956.fec0f681.akpm@linux-foundation.org>	<504D467D.2080201@jp.fujitsu.com>	<504D4A08.7090602@cn.fujitsu.com>	<20120910135213.GA1550@dhcp-192-168-178-175.profitbricks.localdomain>	<CAAV+Mu7YWRWnxt78F4ZDMrrUsWB=n-_qkYOcQT7WQ2HwP89Obw@mail.gmail.com>	<20120911012345.GD14205@bbox> <CAAV+Mu4hb0qbW2Ry6w5FAGUM06puDH0v_H-jr584-G9CzJqSGw@mail.gmail.com>
+In-Reply-To: <CAAV+Mu4hb0qbW2Ry6w5FAGUM06puDH0v_H-jr584-G9CzJqSGw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/11 13:33:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/11 13:33:29,
+	Serialize complete at 2012/09/11 13:33:29
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091105-8878-0000-0000-000003F5C51E
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI spec doesn't provide for a way for the bios to pass down
-recommended thresholds to the OS on a _per-bank_ basis. This patch adds
-a new boot option, which if passed, allows bios to initialize the CMCI
-threshold. In such a case, we simply skip programming any threshold
-value.
+At 09/11/2012 01:18 PM, Jerry Wrote:
+> Hi Kim,
+> 
+> Thank you for your kindness. Let me clarify this:
+> 
+> On ARM architecture, there are 32 bits physical addresses space. However,
+> the addresses space is divided into 8 banks normally. Each bank
+> disabled/enabled by a chip selector signal. In my platform, bank0 connects
+> a DDR chip, and bank1 also connects another DDR chip. And each DDR chip
+> whose capability is 512MB is integrated into the main board. So, it could
+> not be removed by hand. We can disable/enable each bank by peripheral
+> device controller registers.
+> 
+> When system enter suspend state, if all the pages allocated could be
+> migrated to one bank, there are no valid data in the another bank. In this
+> time, I could disable the free bank. It isn't necessary to provided power
+> to this chip in the suspend state. When system resume, I just need to
+> enable it again.
+> 
+> Hi Wen,
+> 
+> I am sorry for that I doesn't know the "_PSx support" means. Maybe I
+> needn't it.
 
-As fail-safe, we initialize threshold to 1 if some banks have not been
-initialized by the bios and warn the user.
+Hmm, arm doesn't support ACPI, so please ignore it.
 
-v2: Just separating out the patch. I will send a separate patch for
-consolidating the MCE boot flags.
+Thanks
+Wen Congyang
 
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- Documentation/x86/x86_64/boot-options.txt |    5 ++++
- arch/x86/include/asm/mce.h                |    1 +
- arch/x86/kernel/cpu/mcheck/mce.c          |   10 +++++++
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |   39 +++++++++++++++++++++++++++--
- 4 files changed, 52 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-index c54b4f5..ec92540 100644
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -50,6 +50,11 @@ Machine check
- 		monarchtimeout:
- 		Sets the time in us to wait for other CPUs on machine checks. 0
- 		to disable.
-+   mce=bios_cmci_threshold
-+		Don't overwrite the bios-set CMCI threshold. This boot option
-+		prevents Linux from overwriting the CMCI threshold set by the
-+		bios. Without this option, Linux always sets the CMCI
-+		threshold to 1.
- 
-    nomce (for compatibility with i386): same as mce=off
- 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a3ac52b..8ad5078 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -171,6 +171,7 @@ DECLARE_PER_CPU(struct device *, mce_device);
- #ifdef CONFIG_X86_MCE_INTEL
- extern int mce_cmci_disabled;
- extern int mce_ignore_ce;
-+extern int mce_bios_cmci_threshold;
- void mce_intel_feature_init(struct cpuinfo_x86 *c);
- void cmci_clear(void);
- void cmci_reenable(void);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c311122..29e87d3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -83,6 +83,7 @@ static int			mce_dont_log_ce		__read_mostly;
- int				mce_cmci_disabled	__read_mostly;
- int				mce_ignore_ce		__read_mostly;
- int				mce_ser			__read_mostly;
-+int				mce_bios_cmci_threshold	__read_mostly;
- 
- struct mce_bank                *mce_banks		__read_mostly;
- 
-@@ -1946,6 +1947,7 @@ static struct miscdevice mce_chrdev_device = {
-  *	check, or 0 to not wait
-  * mce=bootlog Log MCEs from before booting. Disabled by default on AMD.
-  * mce=nobootlog Don't log MCEs from before booting.
-+ * mce=bios_cmci_threshold Don't program the CMCI threshold
-  */
- static int __init mcheck_enable(char *str)
- {
-@@ -1965,6 +1967,8 @@ static int __init mcheck_enable(char *str)
- 		mce_ignore_ce = 1;
- 	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
- 		mce_bootlog = (str[0] == 'b');
-+	else if (!strcmp(str, "bios_cmci_threshold"))
-+		mce_bios_cmci_threshold = 1;
- 	else if (isdigit(str[0])) {
- 		get_option(&str, &tolerant);
- 		if (*str == ',') {
-@@ -2205,6 +2209,11 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
- 	&mce_cmci_disabled
- };
- 
-+static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
-+	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
-+	&mce_bios_cmci_threshold
-+};
-+
- static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_tolerant.attr,
- 	&dev_attr_check_interval.attr,
-@@ -2213,6 +2222,7 @@ static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_dont_log_ce.attr,
- 	&dev_attr_ignore_ce.attr,
- 	&dev_attr_cmci_disabled.attr,
-+	&dev_attr_bios_cmci_threshold.attr,
- 	NULL
- };
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 098386f..d036032 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -181,10 +181,16 @@ static void cmci_discover(int banks)
- 	unsigned long *owned = (void *)&__get_cpu_var(mce_banks_owned);
- 	unsigned long flags;
- 	int i;
-+	int bios_wrong_thresh = 0;
-+
-+	if (mce_bios_cmci_threshold)
-+		printk_once(KERN_INFO
-+			"bios_cmci_threshold: Using bios-set threshold values for CMCI");
- 
- 	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++) {
- 		u64 val;
-+		int bios_zero_thresh = 0;
- 
- 		if (test_bit(i, owned))
- 			continue;
-@@ -198,8 +204,20 @@ static void cmci_discover(int banks)
- 			continue;
- 		}
- 
--		val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
--		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
-+		if (!mce_bios_cmci_threshold) {
-+			val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
-+			val |= CMCI_THRESHOLD;
-+		} else if (!(val & MCI_CTL2_CMCI_THRESHOLD_MASK)) {
-+			/*
-+			 * If bios_cmci_threshold boot option was specified
-+			 * but the threshold is zero, we'll try to initialize
-+			 * it to 1.
-+			 */
-+			bios_zero_thresh = 1;
-+			val |= CMCI_THRESHOLD;
-+		}
-+
-+		val |= MCI_CTL2_CMCI_EN;
- 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
- 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
- 
-@@ -207,11 +225,26 @@ static void cmci_discover(int banks)
- 		if (val & MCI_CTL2_CMCI_EN) {
- 			set_bit(i, owned);
- 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
-+			/*
-+			 * We are able to set thresholds for some banks that
-+			 * had a threshold of 0. This means the BIOS has not
-+			 * set the thresholds properly or does not work with
-+			 * this boot option. Note down now and report later.
-+			 */
-+			if (mce_bios_cmci_threshold && bios_zero_thresh &&
-+					(val & MCI_CTL2_CMCI_THRESHOLD_MASK))
-+				bios_wrong_thresh = 1;
- 		} else {
- 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
- 		}
- 	}
- 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	if (mce_bios_cmci_threshold && bios_wrong_thresh) {
-+		printk_once(KERN_INFO
-+			"bios_cmci_threshold: Some banks do not have valid thresholds set");
-+		printk_once(KERN_INFO
-+			"bios_cmci_threshold: Make sure your BIOS supports this boot option");
-+	}
- }
- 
- /*
-@@ -249,7 +282,7 @@ void cmci_clear(void)
- 			continue;
- 		/* Disable CMCI */
- 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
--		val &= ~(MCI_CTL2_CMCI_EN|MCI_CTL2_CMCI_THRESHOLD_MASK);
-+		val &= ~MCI_CTL2_CMCI_EN;
- 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
- 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
- 	}
+> 
+> Thanks,
+> Jerry
+> 
+> 2012/9/11 Minchan Kim <minchan@kernel.org>
+> 
+>> Hi Jerry,
+>>
+>> On Tue, Sep 11, 2012 at 08:27:40AM +0800, Jerry wrote:
+>>> Hi Wen,
+>>>
+>>> I have been arranged a job related memory hotplug on ARM architecture.
+>>> Maybe I know some new issues about memory hotplug on ARM architecture. I
+>>> just enabled it on ARM, and it works well in my Android tablet now.
+>>> However, I have not send out my patches. The real reason is that I don't
+>>> know how to do it. Maybe I need to read
+>> "Documentation/SubmittingPatches".
+>>>
+>>> Hi Andrew,
+>>> This is my first time to send you a e-mail. I am so nervous about if I
+>> have
+>>> some mistakes or not.
+>>
+>> Don't be afraid.
+>> If you might make a mistake, it's very natural to newbie.
+>> I am sure anyone doesn't blame you. :)
+>> If you have a good patch, please send out.
+>>
+>>>
+>>> Some peoples maybe think memory hotplug need to be supported by special
+>>> hardware. Maybe it means memory physical hotplug. Some times, we just
+>> need
+>>> to use memory logical hotplug, doesn't remove the memory in physical. It
+>> is
+>>> also usefully for power saving in my platform. Because I doesn't want
+>>> the offline memory is in *self-refresh* state.
+>>
+>> Just out of curiosity.
+>> What's the your scenario and gain?
+>> AFAIK, there were some effort about it in embedded side but gain isn't
+>> rather big
+>> IIRC.
+>>
+>>>
+>>> Any comments are appreciated.
+>>>
+>>> Thanks,
+>>> Jerry
+>>>
+>>> 2012/9/10 Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+>>>
+>>>> Hi,
+>>>>
+>>>> On Mon, Sep 10, 2012 at 10:01:44AM +0800, Wen Congyang wrote:
+>>>>> At 09/10/2012 09:46 AM, Yasuaki Ishimatsu Wrote:
+>>>>>> Hi Wen,
+>>>>>>
+>>>>>> 2012/09/01 5:49, Andrew Morton wrote:
+>>>>>>> On Tue, 28 Aug 2012 18:00:07 +0800
+>>>>>>> wency@cn.fujitsu.com wrote:
+>>>>>>>
+>>>>>>>> This patch series aims to support physical memory hot-remove.
+>>>>>>>
+>>>>>>> I doubt if many people have hardware which permits physical memory
+>>>>>>> removal?  How would you suggest that people with regular hardware
+>> can
+>>>>>>> test these chagnes?
+>>>>>>
+>>>>>> How do you test the patch? As Andrew says, for hot-removing memory,
+>>>>>> we need a particular hardware. I think so too. So many people may
+>> want
+>>>>>> to know how to test the patch.
+>>>>>> If we apply following patch to kvm guest, can we hot-remove memory
+>> on
+>>>>>> kvm guest?
+>>>>>>
+>>>>>> http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
+>>>>>
+>>>>> Yes, if we apply this patchset, we can test hot-remove memory on kvm
+>>>> guest.
+>>>>> But that patchset doesn't implement _PS3, so there is some
+>> restriction.
+>>>>
+>>>> the following repos contain the patchset above, plus 2 more patches
+>> that
+>>>> add
+>>>> PS3 support to the dimm devices in qemu/seabios:
+>>>>
+>>>> https://github.com/vliaskov/seabios/commits/memhp-v2
+>>>> https://github.com/vliaskov/qemu-kvm/commits/memhp-v2
+>>>>
+>>>> I have not posted the PS3 patches yet in the qemu list, but will post
+>> them
+>>>> soon for v3 of the memory hotplug series. If you have issues testing,
+>> let
+>>>> me
+>>>> know.
+>>>>
+>>>> thanks,
+>>>>
+>>>> - Vasilis
+>>>>
+>>>> --
+>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>>> see: http://www.linux-mm.org/ .
+>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> I love linux!!!
+>>
+>> --
+>> Kind regards,
+>> Minchan Kim
+>>
+> 
+> 
+> 
 
