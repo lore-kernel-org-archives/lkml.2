@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2IKIuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 04:50:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47749 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2IKIuE (ORCPT
+	id S1754147Ab2IKIuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 04:50:17 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:38802 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752544Ab2IKIuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 04:50:04 -0400
-Date: Tue, 11 Sep 2012 11:49:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net
-Subject: Re: [PATCH 11/20] Staging: ipack/bridges/tpci200: reorder the
- iounmap and pci_release_region
-Message-ID: <20120911084929.GR19396@mwanda>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
- <1347267118-9580-11-git-send-email-siglesias@igalia.com>
+	Tue, 11 Sep 2012 04:50:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1347267118-9580-11-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <504EF4FD.2080001@ti.com>
+References: <1347343932-3656-1-git-send-email-kishon@ti.com>
+	<504EF4FD.2080001@ti.com>
+Date: Tue, 11 Sep 2012 14:20:11 +0530
+Message-ID: <CAAe_U6+8MAUAZgLZq8+Yc6SxOCJ0xQ4NFO-R4p2kgiSOXHZL2w@mail.gmail.com>
+Subject: Re: [PATCH] arm/dts: omap: Add omap-usb2 dt data
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: balbi@ti.com, arnd@arndb.de, akpm@linux-foundation.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rnayak@ti.com,
+        tony@atomide.com, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, rob@landley.net,
+        linux@arm.linux.org.uk, ohad@wizery.com, linus.walleij@linaro.org,
+        myungjoo.ham@samsung.com, rusty@rustcorp.com.au, swarren@nvidia.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 10:51:49AM +0200, Samuel Iglesias Gonsálvez wrote:
-> Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
+Hi,
 
-The change log says what you are doing (although it's not 100%
-accurate), but it doesn't say why.  I assume this is a bugfix as
-well?  Please describe the user visible effects of this change in
-the changelog.
+On Tue, Sep 11, 2012 at 1:53 PM, Benoit Cousson <b-cousson@ti.com> wrote:
+> Hi Kishon,
+>
+> On 09/11/2012 08:12 AM, Kishon Vijay Abraham I wrote:
+>> Add omap-usb2 data node in omap4 device tree file. Since omap-usb2 is
+>> connected to ocp2scp, omap-usb2 dt data is added as a child node
+>> of ocp2scp.
+>
+> Could you add more details about the omap-usb2?
+I think information about omap-usb2 driver is added in
+ *usb: phy: add a new driver for omap usb2 phy.*.
+Do you want the same thing to be added here?
+>
+> You must update the Documentation binding with that compatible name.
+Yes. It's part of *usb: phy: add a new driver for omap usb2 phy.*
+> Is it already part of the driver serie? The MUSB driver is referring to
+> "ti,musb-omap2430" only.
 
-regards,
-dan carpenter
+Will correct the Documentation for MUSB.
 
-
+Thanks
+Kishon
