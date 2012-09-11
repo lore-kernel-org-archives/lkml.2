@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2IKA0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:26:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48873 "EHLO
+	id S932396Ab2IKA0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:26:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758743Ab2IKAW7 (ORCPT
+	with ESMTP id S1758730Ab2IKAW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:22:59 -0400
+	Mon, 10 Sep 2012 20:22:58 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
         neilb@suse.de
-Subject: [PATCH v2 14/26] raid1: Refactor narrow_write_error() to not use bi_idx
-Date: Mon, 10 Sep 2012 17:22:25 -0700
-Message-Id: <1347322957-25260-15-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 13/26] raid5: use bio_reset()
+Date: Mon, 10 Sep 2012 17:22:24 -0700
+Message-Id: <1347322957-25260-14-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
@@ -22,79 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More bi_idx removal. This code was just open coding bio_clone(). This
-could probably be further improved by using bio_advance() instead of
-skipping over null pages, but that'd be a larger rework.
+Had to shuffle the code around a bit (where bi_rw and bi_end_io were
+set), but shouldn't really be anything tricky here
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
 CC: NeilBrown <neilb@suse.de>
 ---
- drivers/md/raid1.c | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/md/raid5.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index bd3e3b9..b1072da 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2052,8 +2052,6 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
- 	struct mddev *mddev = r1_bio->mddev;
- 	struct r1conf *conf = mddev->private;
- 	struct md_rdev *rdev = conf->mirrors[i].rdev;
--	int vcnt, idx;
--	struct bio_vec *vec;
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 7c19dbe..ebe43f7 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -561,14 +561,6 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 		bi = &sh->dev[i].req;
+ 		rbi = &sh->dev[i].rreq; /* For writing to replacement */
  
- 	/* bio has the data to be written to device 'i' where
- 	 * we just recently had a write error.
-@@ -2081,30 +2079,32 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
- 		   & ~(sector_t)(block_sectors - 1))
- 		- sector;
+-		bi->bi_rw = rw;
+-		rbi->bi_rw = rw;
+-		if (rw & WRITE) {
+-			bi->bi_end_io = raid5_end_write_request;
+-			rbi->bi_end_io = raid5_end_write_request;
+-		} else
+-			bi->bi_end_io = raid5_end_read_request;
+-
+ 		rcu_read_lock();
+ 		rrdev = rcu_dereference(conf->disks[i].replacement);
+ 		smp_mb(); /* Ensure that if rrdev is NULL, rdev won't be */
+@@ -643,7 +635,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
  
--	if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
--		vcnt = r1_bio->behind_page_count;
--		vec = r1_bio->behind_bvecs;
--		idx = 0;
--		while (vec[idx].bv_page == NULL)
--			idx++;
--	} else {
--		vcnt = r1_bio->master_bio->bi_vcnt;
--		vec = r1_bio->master_bio->bi_io_vec;
--		idx = r1_bio->master_bio->bi_idx;
--	}
- 	while (sect_to_write) {
- 		struct bio *wbio;
- 		if (sectors > sect_to_write)
- 			sectors = sect_to_write;
- 		/* Write at 'sector' for 'sectors'*/
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
  
--		wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
--		memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
--		wbio->bi_sector = r1_bio->sector;
-+		if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
-+			unsigned vcnt = r1_bio->behind_page_count;
-+			struct bio_vec *vec = r1_bio->behind_bvecs;
++			bio_reset(bi);
+ 			bi->bi_bdev = rdev->bdev;
++			bi->bi_rw = rw;
++			bi->bi_end_io = (rw & WRITE)
++				? raid5_end_write_request
++				: raid5_end_read_request;
++			bi->bi_private = sh;
 +
-+			while (!vec->bv_page) {
-+				vec++;
-+				vcnt--;
-+			}
-+
-+			wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
-+			memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
-+
-+			wbio->bi_vcnt = vcnt;
-+		} else {
-+			wbio = bio_clone_mddev(r1_bio->master_bio, GFP_NOIO, mddev);
-+		}
-+
- 		wbio->bi_rw = WRITE;
--		wbio->bi_vcnt = vcnt;
-+		wbio->bi_sector = r1_bio->sector;
- 		wbio->bi_size = r1_bio->sectors << 9;
--		wbio->bi_idx = idx;
+ 			pr_debug("%s: for %llu schedule op %ld on disc %d\n",
+ 				__func__, (unsigned long long)sh->sector,
+ 				bi->bi_rw, i);
+@@ -657,12 +656,9 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+ 				bi->bi_rw |= REQ_FLUSH;
  
- 		md_trim_bio(wbio, sector - r1_bio->sector, sectors);
- 		wbio->bi_sector += rdev->data_offset;
+-			bi->bi_flags = 1 << BIO_UPTODATE;
+-			bi->bi_idx = 0;
+ 			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			bi->bi_io_vec[0].bv_offset = 0;
+ 			bi->bi_size = STRIPE_SIZE;
+-			bi->bi_next = NULL;
+ 			if (rrdev)
+ 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
+ 			generic_make_request(bi);
+@@ -674,7 +670,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
+ 
++			bio_reset(rbi);
+ 			rbi->bi_bdev = rrdev->bdev;
++			rbi->bi_rw = rw;
++			rbi->bi_end_io = (rw & WRITE)
++				? raid5_end_write_request
++				: raid5_end_read_request;
++			rbi->bi_private = sh;
++
+ 			pr_debug("%s: for %llu schedule op %ld on "
+ 				 "replacement disc %d\n",
+ 				__func__, (unsigned long long)sh->sector,
+@@ -686,12 +689,9 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			else
+ 				rbi->bi_sector = (sh->sector
+ 						  + rrdev->data_offset);
+-			rbi->bi_flags = 1 << BIO_UPTODATE;
+-			rbi->bi_idx = 0;
+ 			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			rbi->bi_io_vec[0].bv_offset = 0;
+ 			rbi->bi_size = STRIPE_SIZE;
+-			rbi->bi_next = NULL;
+ 			generic_make_request(rbi);
+ 		}
+ 		if (!rdev && !rrdev) {
 -- 
 1.7.12
 
