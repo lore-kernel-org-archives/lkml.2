@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab2IJXpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 19:45:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758333Ab2IJXps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 19:45:48 -0400
-Date: Tue, 11 Sep 2012 00:45:34 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        device-mapper development <dm-devel@redhat.com>, david@fromorbit.com,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, bharrosh@panasas.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2/2] block: Avoid deadlocks with bio
-	allocation by stacking drivers
-Message-ID: <20120910234534.GD10477@agk-dp.fab.redhat.com>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-	device-mapper development <dm-devel@redhat.com>,
-	david@fromorbit.com, linux-kernel@vger.kernel.org,
-	linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-	bharrosh@panasas.com, Vivek Goyal <vgoyal@redhat.com>
-References: <20120910202435.GG16360@google.com> <20120910204010.GA32310@google.com> <20120910213349.GH16360@google.com> <20120910213710.GA7677@google.com> <20120910215633.GA19739@google.com> <20120910220910.GB7677@google.com> <20120910225057.GA10477@agk-dp.fab.redhat.com> <CAOS58YO5puV2iPhwe0vbyEydPnR=eWPStNRm=xEpMeo-TMHCaw@mail.gmail.com> <20120910230917.GB10477@agk-dp.fab.redhat.com> <20120910233502.GH7677@google.com>
+	id S1758570Ab2IKADL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:03:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55717 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab2IKADI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 20:03:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910233502.GH7677@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120910225504.GA18038@localhost>
+References: <1347305801-7712-1-git-send-email-jslaby@suse.cz>
+ <CAErSpo4+zvG-MmQ2V2QNKjx=mX+nLpqZNj5niJkG4f22XqYZNg@mail.gmail.com> <20120910225504.GA18038@localhost>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 10 Sep 2012 18:02:45 -0600
+Message-ID: <CAErSpo7c+ttzzLJYqA=MNkMnoTu2V29BXc=ohD4uVSMQeCShkQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] PCI: fix on-stack pci_device_id's
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Feng Tang <feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:35:02PM -0700, Tejun Heo wrote:
-> debug.  Would it be difficult to convert dm drivers to collect size
-> requirements and use front-pad for all per-bio data?
- 
-I can't give a quick answer because a single bio may require a variable
-number (depending on the bio content) of (sequential) mempool_allocs from the
-same mempool to complete its processing, so we do have to audit all this very
-carefully to see what can/can't be pulled out.
+On Mon, Sep 10, 2012 at 4:55 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Mon, Sep 10, 2012 at 02:44:32PM -0600, Bjorn Helgaas wrote:
+>> On Mon, Sep 10, 2012 at 1:36 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> > Commit "PCI: Use pci_device_id on stack for pci_get_subsys/class() to
+>> > avoid kmalloc" changed heap allocations to on-stack variables, but it
+>> > did not add initialization of other than set members. This causes
+>> > random failures during bootup wherever pci device is needed to be
+>> > found. Hence the boot just hangs or panics.
+>> >
+>> > This patches fixes it by setting the content of pci_device_id directly
+>> > in the initializer.
+>>
+>> Nice!  I fixed this already by adding a memset(), but I like your way
+>> better.  I knew we could initialize members of a structure on the
+>> stack, but I didn't know C guaranteed that uninitialized members would
+>> be implicitly initialized also.  But apparently it does:
+>>
+>> http://stackoverflow.com/questions/10828294/c-and-c-partial-initialization-of-automatic-structure
+>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+>
+> For the record, I proposed the same initializer-style fix in the very
+> beginning that you didn't realize its beauty until now ;-)
 
-Alasdair
-
+Yep, I credited you :)  Sorry I didn't look closely enough to begin with.
