@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab2IKR4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:56:04 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:63115 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab2IKR4C (ORCPT
+	id S1757143Ab2IKR4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:56:21 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38038 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753300Ab2IKR4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:56:02 -0400
-Date: Tue, 11 Sep 2012 10:55:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: linux-kernel@vger.kernel.org
-cc: mm-commits@vger.kernel.org, hughd@google.com, bhalevy@tonian.com,
-        dhillf@gmail.com
-Subject: Re: + mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
- added to -mm tree
-In-Reply-To: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1209111054510.30962@chino.kir.corp.google.com>
-References: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 11 Sep 2012 13:56:19 -0400
+Message-ID: <504F7B4D.3030602@metafoo.de>
+Date: Tue, 11 Sep 2012 19:56:29 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Antony Pavlov <antonynpavlov@gmail.com>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: Re: [PATCH v2 0/3] MIPS: JZ4740: Move PWM driver to PWM framework
+References: <1347278719-15276-1-git-send-email-thierry.reding@avionic-design.de> <504E0542.8020309@metafoo.de> <20120910173056.GA31611@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120910173056.GA31611@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, akpm@linux-foundation.org wrote:
+On 09/10/2012 07:30 PM, Thierry Reding wrote:
+> On Mon, Sep 10, 2012 at 05:20:34PM +0200, Lars-Peter Clausen wrote:
+>> On 09/10/2012 02:05 PM, Thierry Reding wrote:
+>>> Hi,
+>>>
+>>
+>> [...]
+> 
+>> Patch 1 should go through the MIPS tree, but I still can't see why the issue
+>> should occur nor does it happen for anybody else except for you. Instead of
+>> moving the content over to the public irq.h I'd rather like to see the
+>> private irq.h being renamed.
+> 
+> If we can solve this some other way I'm all for it. Maybe you can share
+> the defconfig or .config that you use so I can test under the same
+> conditions.
+> 
+> Thierry
 
-> 
-> The patch titled
->      Subject: mm/mmap.c: replace find_vma_prepare() with clearer find_vma_links()
-> has been added to the -mm tree.  Its filename is
->      mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
-> 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
-> 
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
-> 
-> ------------------------------------------------------
-> From: Hugh Dickins <hughd@google.com>
-> Subject: mm/mmap.c: replace find_vma_prepare() with clearer find_vma_links()
-> 
-> People get confused by find_vma_prepare(), because it doesn't care about
-> what it returns in its output args, when its callers won't be interested.
-> 
-> Clarify by passing in end-of-range address too, and returning failure if
-> any existing vma overlaps the new range: instead of returning an ambiguous
-> vma which most callers then must check.  find_vma_links() is a clearer
-> name.
-> 
-> This does revert 2.6.27's dfe195fb79e88 ("mm: fix uninitialized variables
-> for find_vma_prepare callers"), but it looks like gcc 4.3.0 was one of
-> those releases too eager to shout about uninitialized variables: only
-> copy_vma() warns with 4.5.1 and 4.7.1, which a BUG on error silences.
-> 
+This is the config I'm using:
+http://projects.qi-hardware.com/index.php/p/qi-kernel/source/tree/jz-3.4/arch/mips/configs/qi_lb60_defconfig
 
-That trick doesn't work if CONFIG_BUG=n.
+- Lars
 
-mm/mmap.c: In function 'copy_vma':
-mm/mmap.c:2344: warning: 'prev' may be used uninitialized in this function
-mm/mmap.c:2345: warning: 'rb_link' may be used uninitialized in this function
-mm/mmap.c:2345: warning: 'rb_parent' may be used uninitialized in this function
