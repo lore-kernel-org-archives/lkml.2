@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab2IKRoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:44:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33189 "EHLO
+	id S1756445Ab2IKRoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:44:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33196 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab2IKRji (ORCPT
+	with ESMTP id S1752516Ab2IKRji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 13:39:38 -0400
 From: Cyril Chemparathy <cyril@ti.com>
@@ -12,9 +12,9 @@ To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v3 06/17] ARM: LPAE: use signed arithmetic for mask definitions
-Date: Tue, 11 Sep 2012 13:39:04 -0400
-Message-ID: <1347385155-11643-7-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 17/17] ARM: mm: clean up membank size limit checks
+Date: Tue, 11 Sep 2012 13:39:15 -0400
+Message-ID: <1347385155-11643-18-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
 References: <1347385155-11643-1-git-send-email-cyril@ti.com>
@@ -24,58 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
-unsigned long math truncates the mask at the 32-bits.  This clearly does bad
-things on PAE systems.
+This patch cleans up the highmem sanity check code by simplifying the range
+checks with a pre-calculated size_limit.  This patch should otherwise have no
+functional impact on behavior.
 
-This patch fixes this problem by defining these masks as signed quantities.
-We then rely on sign extension to do the right thing.
+This patch also removes a redundant (bank->start < vmalloc_limit) check, since
+this is already covered by the !highmem condition.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/include/asm/page.h           |    2 +-
- arch/arm/include/asm/pgtable-3level.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mm/mmu.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
-index ecf9019..1e0fe08 100644
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -13,7 +13,7 @@
- /* PAGE_SHIFT determines the page size */
- #define PAGE_SHIFT		12
- #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
--#define PAGE_MASK		(~(PAGE_SIZE-1))
-+#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 6c35483..50d9df5 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -917,10 +917,15 @@ void __init sanity_check_meminfo(void)
  
- #ifndef __ASSEMBLY__
+ 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
+ 		struct membank *bank = &meminfo.bank[j];
++		phys_addr_t size_limit;
++
+ 		*bank = meminfo.bank[i];
++		size_limit = bank->size;
  
-diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-index b249035..ae39d11 100644
---- a/arch/arm/include/asm/pgtable-3level.h
-+++ b/arch/arm/include/asm/pgtable-3level.h
-@@ -48,16 +48,16 @@
- #define PMD_SHIFT		21
+ 		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
++		else
++			size_limit = vmalloc_limit - bank->start;
  
- #define PMD_SIZE		(1UL << PMD_SHIFT)
--#define PMD_MASK		(~(PMD_SIZE-1))
-+#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
- #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
--#define PGDIR_MASK		(~(PGDIR_SIZE-1))
-+#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
+ 		bank->highmem = highmem;
  
- /*
-  * section address mask and size definitions.
-  */
- #define SECTION_SHIFT		21
- #define SECTION_SIZE		(1UL << SECTION_SHIFT)
--#define SECTION_MASK		(~(SECTION_SIZE-1))
-+#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
- 
- #define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
- 
+@@ -929,8 +934,7 @@ void __init sanity_check_meminfo(void)
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+ 		 */
+-		if (!highmem && bank->start < vmalloc_limit &&
+-		    bank->size > vmalloc_limit - bank->start) {
++		if (!highmem && bank->size > size_limit) {
+ 			if (meminfo.nr_banks >= NR_BANKS) {
+ 				printk(KERN_CRIT "NR_BANKS too low, "
+ 						 "ignoring high memory\n");
+@@ -939,12 +943,12 @@ void __init sanity_check_meminfo(void)
+ 					(meminfo.nr_banks - i) * sizeof(*bank));
+ 				meminfo.nr_banks++;
+ 				i++;
+-				bank[1].size -= vmalloc_limit - bank->start;
++				bank[1].size -= size_limit;
+ 				bank[1].start = vmalloc_limit;
+ 				bank[1].highmem = highmem = 1;
+ 				j++;
+ 			}
+-			bank->size = vmalloc_limit - bank->start;
++			bank->size = size_limit;
+ 		}
+ #else
+ 		/*
+@@ -962,14 +966,13 @@ void __init sanity_check_meminfo(void)
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
+-		if (bank->start + bank->size > vmalloc_limit)
+-			unsigned long newsize = vmalloc_limit - bank->start;
++		if (bank->size > size_limit) {
+ 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
+ 			       "to -%.8llx (vmalloc region overlap).\n",
+ 			       (unsigned long long)bank->start,
+ 			       (unsigned long long)bank->start + bank->size - 1,
+-			       (unsigned long long)bank->start + newsize - 1);
+-			bank->size = newsize;
++			       (unsigned long long)bank->start + size_limit - 1);
++			bank->size = size_limit;
+ 		}
+ #endif
+ 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
 -- 
 1.7.9.5
 
