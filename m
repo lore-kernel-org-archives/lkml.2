@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab2IKTYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:24:40 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63869 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab2IKTYi (ORCPT
+	id S1759999Ab2IKT0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:26:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59294 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756726Ab2IKT0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:24:38 -0400
-Message-ID: <504F8FF0.3000408@redhat.com>
-Date: Tue, 11 Sep 2012 21:24:32 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Sep 2012 15:26:45 -0400
+Date: Tue, 11 Sep 2012 12:26:41 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, tj@kernel.org
+Subject: Re: [PATCH v2 13/26] raid5: use bio_reset()
+Message-ID: <20120911192641.GH19739@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-14-git-send-email-koverstreet@google.com>
+ <20120911150326.79f066c0@notabene.brown>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <20120911182904.GS7677@google.com> <504F88CB.6030105@redhat.com> <20120911191325.GU7677@google.com>
-In-Reply-To: <20120911191325.GU7677@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120911150326.79f066c0@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2012 21:13, Tejun Heo ha scritto:
-> Hello, Paolo.
+On Tue, Sep 11, 2012 at 03:03:26PM +1000, NeilBrown wrote:
+> On Mon, 10 Sep 2012 17:22:24 -0700 Kent Overstreet <koverstreet@google.com>
+> wrote:
 > 
-> On Tue, Sep 11, 2012 at 08:54:03PM +0200, Paolo Bonzini wrote:
->>> On Tue, Sep 11, 2012 at 07:56:53PM +0200, Paolo Bonzini wrote:
->>>> Understood; unfortunately, there is another major user of it
->>>> (virtualization).  If you are passing "raw" LUNs down to a virtual
->>>> machine, there's no possibility at all to use a properly encapsulated
->>>
->>> Is there still command filtering issue when you're passing "raw" LUNs
->>> down?
->>
->> Yes, the passing down is just a userland program that gets SCSI
->> commands from the guest, sends them via SG_IO, and passes back the
->> result.  If the userland program is unprivileged (it usually is), then
->> you go through the filter.
+> > Had to shuffle the code around a bit (where bi_rw and bi_end_io were
+> > set), but shouldn't really be anything tricky here
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > CC: Jens Axboe <axboe@kernel.dk>
+> > CC: NeilBrown <neilb@suse.de>
+> > ---
+> >  drivers/md/raid5.c | 28 ++++++++++++++--------------
+> >  1 file changed, 14 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> > index 7c19dbe..ebe43f7 100644
+> > --- a/drivers/md/raid5.c
+> > +++ b/drivers/md/raid5.c
+> > @@ -561,14 +561,6 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  		bi = &sh->dev[i].req;
+> >  		rbi = &sh->dev[i].rreq; /* For writing to replacement */
+> >  
+> > -		bi->bi_rw = rw;
+> > -		rbi->bi_rw = rw;
+> > -		if (rw & WRITE) {
+> > -			bi->bi_end_io = raid5_end_write_request;
+> > -			rbi->bi_end_io = raid5_end_write_request;
+> > -		} else
+> > -			bi->bi_end_io = raid5_end_read_request;
+> > -
+> >  		rcu_read_lock();
+> >  		rrdev = rcu_dereference(conf->disks[i].replacement);
+> >  		smp_mb(); /* Ensure that if rrdev is NULL, rdev won't be */
+> > @@ -643,7 +635,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  
+> >  			set_bit(STRIPE_IO_STARTED, &sh->state);
+> >  
+> > +			bio_reset(bi);
+> >  			bi->bi_bdev = rdev->bdev;
+> > +			bi->bi_rw = rw;
+> > +			bi->bi_end_io = (rw & WRITE)
+> > +				? raid5_end_write_request
+> > +				: raid5_end_read_request;
+> > +			bi->bi_private = sh;
+> > +
+> >  			pr_debug("%s: for %llu schedule op %ld on disc %d\n",
+> >  				__func__, (unsigned long long)sh->sector,
+> >  				bi->bi_rw, i);
+> > @@ -657,12 +656,9 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+> >  				bi->bi_rw |= REQ_FLUSH;
+> >  
+> > -			bi->bi_flags = 1 << BIO_UPTODATE;
+> > -			bi->bi_idx = 0;
+> >  			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+> >  			bi->bi_io_vec[0].bv_offset = 0;
+> >  			bi->bi_size = STRIPE_SIZE;
+> > -			bi->bi_next = NULL;
+> >  			if (rrdev)
+> >  				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
+> >  			generic_make_request(bi);
+> > @@ -674,7 +670,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+> >  
+> >  			set_bit(STRIPE_IO_STARTED, &sh->state);
+> >  
+> > +			bio_reset(rbi);
+> >  			rbi->bi_bdev = rrdev->bdev;
+> > +			rbi->bi_rw = rw;
+> > +			rbi->bi_end_io = (rw & WRITE)
+> > +				? raid5_end_write_request
+> > +				: raid5_end_read_request;
 > 
-> Could being able to bypass the filters for this "you own this LUN" be
-> a solution?  Or is it that we still need command filtering for
-> whatever reason?
+> 'rbi->bi_end_io' can only ever be raid5_end_write_request.  We only get here
+> on a write.
+> I'd be OK with 
+>     BUG_ON(!(rw & WRITE));
+> but I don't want the condition in the assignment.
 
-Yes, it could be.  Enabling/disabling the filters from a privileged
-program and passing the unfiltered fd via SCM_RIGHTS would be enough.
+I was thinking to myself that if I was doing a bit more with that code,
+I'd factor out all the code in the if (rdev) {} into a separate function
+that was called twice there. But, I didn't do that here so you're right
+- I'll change it and stick a BUG_ON() there.
 
->> This is the userland for virtio-scsi (the kernel part of virtio-scsi is just
->> a driver running in the guest).  It can run in two mode: it can do its own
->> SCSI emulation, or it can just relay CDBs and their results.
->>
->> It can (and does) use higher-level services if SCSI emulation is done in
->> userland.  In that case, trim/discard can become a BLKDISCARD or a fallocate
->> for example.  However, in this case userland doesn't do any emulation and in
->> fact doesn't even need to know that this CDB is a discard.
-> 
-> Couldn't it intercept some of them - e.g. RWs and discards?
-> What's the benifit / use case of doing pure bypass?
+> The rest looks quite sane.
 
-Basically, using the same storage technology for bare metal and
-virtualized systems.  IMHO losing sense data is a no-no, but the above
-solution could be feasible too.
-
-> Would the benefits be strong enough to justify whole bpf cdb filtering?
-
-If we can get a simpler solution that is okay with kernel maintainers,
-I'm all for it.
-
->>> Hmmm?  This was about discard, no?
->>
->> One example of block layer interfaces that I want to add is BLKPING, so
->> that you can see if the NAS is reachable.  Then SCSI emulation can map
->> the "test unit ready" command to BLKPING.  There's a handful of such
->> ioctls that would be useful, such as BLKDISCARD itself.
-> 
-> Can't you make use of the existing disk events mechanism for that?
-> Block layer already knows how to watch readiness of a device and tell
-> the userland about it via uevent.
-
-How?  But anyway i don't want to divert the discussion from the actual
-topic...
-
-Paolo
+Thanks!
