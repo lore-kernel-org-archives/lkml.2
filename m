@@ -1,107 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab2IKHD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 03:03:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51822 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2IKHDZ (ORCPT
+	id S1757802Ab2IKHIl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 03:08:41 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:45260 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab2IKHIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 03:03:25 -0400
-X-AuditID: cbfee61a-b7fba6d000007d5f-97-504ee22481a8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Ryan Mallon'" <rmallon@gmail.com>, balbi@ti.com
-Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
- <20120911063048.GA18072@arwen.pp.htv.fi>
- <002201cd8fe8$2aafa070$800ee150$%han@samsung.com> <504EDEA1.1050108@gmail.com>
-In-reply-to: <504EDEA1.1050108@gmail.com>
-Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
-Date: Tue, 11 Sep 2012 16:02:59 +0900
-Message-id: <002601cd8feb$7aa51c60$6fef5520$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2P6WgV1wDzi+5dSgqLswR4eQveswAAaQ4Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAV2VR34BBq/Pillc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mvu/TWQoO8lfMbprH1MDYz9PFyMkhIWAi0T6xiw3CFpO4cG89
-	kM3FISSwiFFiSu8XFpCEkMBsJok5T1RBbDYBNYkvXw6zdzFycIgIGEvMnR8PUs8ssIBR4uTs
-	F+wQzTsZJQ419oNN5RTQlOjbeYEVxBYWsJNYsqkPrJlFQFXi/h9/kDCvgK3Ek++32SFsQYkf
-	k++B7WUW0JJYv/M4E4QtL7F5zVtmkFYJAXWJR391QcIiAkYSDa9WMUOUiEjse/GOcQKj0Cwk
-	k2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgO42dSOxhXNlgcYhTg
-	YFTi4c1w8QsQYk0sK67MPcQowcGsJMLrNwsoxJuSWFmVWpQfX1Sak1p8iFGag0VJnNfpnF2A
-	kEB6YklqdmpqQWoRTJaJg1OqgbHc98PuSTrVP+9wLf7be2pJwLKtc7uusD5on2aWEMMuf3KR
-	4bf3lw4Gn3rvuXu3s3T5/t2rDioc5A/KE0ubIhzBs+PR1LefFtd8ZP/mPzc4qW/Xg+vqh19+
-	fN16TZCxWmcyU9O7jPurM7u6Jx6sPubm+G2G81cPU4fAjFDh16XXvt8t6+HlTryuxFKckWio
-	xVxUnAgAW0KQAF8CAAA=
+	Tue, 11 Sep 2012 03:08:39 -0400
+Date: Tue, 11 Sep 2012 12:34:48 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: habanero@linux.vnet.ibm.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+Message-ID: <20120911070448.GB28033@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
+ <500D2162.8010209@redhat.com>
+ <1347023509.10325.53.camel@oc6622382223.ibm.com>
+ <504A37B0.7020605@linux.vnet.ibm.com>
+ <1347046931.7332.51.camel@oc2024037011.ibm.com>
+ <20120908084345.GU30238@linux.vnet.ibm.com>
+ <1347283005.10325.55.camel@oc6622382223.ibm.com>
+ <1347293035.2124.22.camel@twins>
+ <20120910165653.GA28033@linux.vnet.ibm.com>
+ <1347297124.2124.42.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1347297124.2124.42.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12091107-5816-0000-0000-00000466E340
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 11, 2012 3:48 PM Ryan Mallon wrote
+> > > @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p,
+> > bool preempt)
+> > >       rq = this_rq();
+> > >  
+> > >  again:
+> > > +     /* optimistic test to avoid taking locks */
+> > > +     if (!__yield_to_candidate(curr, p))
+> > > +             goto out_irq;
+> > > +
 > 
-> On 11/09/12 16:39, Jingoo Han wrote:
-> > On Tuesday, September 11, 2012 3:31 PM Felipe Balbi wrote
-> >
-> >>
-> >> Hi,
-> >>
-> >> On Mon, Sep 10, 2012 at 08:59:11PM +0900, Jingoo Han wrote:
-> >>> This patch uses pr_* instead of printk.
-> >>>
-> >>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> >>> ---
-> >>>  drivers/gpio/gpio-samsung.c |    6 +++---
-> >>>  1 files changed, 3 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-> >>> index ba126cc..e38d990 100644
-> >>> --- a/drivers/gpio/gpio-samsung.c
-> >>> +++ b/drivers/gpio/gpio-samsung.c
-> >>> @@ -45,7 +45,7 @@
-> >>>  #ifndef DEBUG_GPIO
-> >>>  #define gpio_dbg(x...) do { } while (0)
-> >>>  #else
-> >>> -#define gpio_dbg(x...) printk(KERN_DEBUG x)
-> >>> +#define gpio_dbg(x...) pr_debug(x)
-> >>>  #endif
-> >>>
-> >>>  int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
-> >>> @@ -926,10 +926,10 @@ static void __init samsung_gpiolib_add(struct samsung_gpio_chip *chip)
-> >>>  #ifdef CONFIG_PM
-> >>>  	if (chip->pm != NULL) {
-> >>>  		if (!chip->pm->save || !chip->pm->resume)
-> >>> -			printk(KERN_ERR "gpio: %s has missing PM functions\n",
-> >>> +			pr_err("gpio: %s has missing PM functions\n",
-> >>>  			       gc->label);
-> >>
-> >> I would rather see dev_* conversion instead.
-> >>
-> >> my 2 cents
-> >
-> > Hi Felipe Balbi,
-> >
-> > OK, I will replace printk(KERN_ERR...) with dev_err.
-> > Thank you.
+> So add something like:
 > 
-> I was going to suggest that also, but I don't think that there is a dev
-> pointer to use. The gpio_chip structure has an optional one, but from my
-> quick glance it didn't look like the Samsung driver was using it. I
-> could be wrong though. If I am, go with dev_err (and dev_dbg for
-> replacing the gpio_dbg statements).
+> 	/* Optimistic, if we 'raced' with another yield_to(), don't bother */
+> 	if (p_rq->cfs_rq->skip)
+> 		goto out_irq;
+> > 
+> > 
+> > >       p_rq = task_rq(p);
+> > >       double_rq_lock(rq, p_rq);
+> > 
+> > 
+> But I do have a question on this optimization though,.. Why do we check
+> p_rq->cfs_rq->skip and not rq->cfs_rq->skip ?
+> 
+> That is, I'd like to see this thing explained a little better.
+> 
+> Does it go something like: p_rq is the runqueue of the task we'd like to
+> yield to, rq is our own, they might be the same. If we have a ->skip,
+> there's nothing we can do about it, OTOH p_rq having a ->skip and
+> failing the yield_to() simply means us picking the next VCPU thread,
+> which might be running on an entirely different cpu (rq) and could
+> succeed?
+> 
 
-Also, I cannot find dev point to use.
-I will use pr_dbg, pr_err.
+Oh this made me look back at yield_to() again.  I had misread the
+yield_to_task_fair() code. I had wrongly thought that both ->skip and
+->next buddies for the p_rq would be set. But it looks like only ->next
+for the p_rq is set and ->skip is set for rq.
 
-Thanks.
+This should also explains why Andrew saw a regression when checking for
+->skip flag instead of PF_VCPU.
 
-> 
-> ~Ryan
-> 
-> 
-> 
+Can we check for p_rq->cfs.next and bail out if 
+
+
+@@ -4820,6 +4820,23 @@ void __sched yield(void)
+ }
+ EXPORT_SYMBOL(yield);
+
++/*
++ * Tests preconditions required for sched_class::yield_to().
++ */
++static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p, struct rq *p_rq)
++{
++	if (!curr->sched_class->yield_to_task)
++		return false;
++
++	if (curr->sched_class != p->sched_class)
++		return false;
++
++	if (task_running(p_rq, p) || p->state)
++		return false;
++
++	return true;
++}
++
+ /**
+  * yield_to - yield the current processor to another thread in
+  * your thread group, or accelerate that thread toward the
+@@ -4844,20 +4861,24 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+
+ again:
+ 	p_rq = task_rq(p);
++
++	/* optimistic test to avoid taking locks */
++	if (!__yield_to_candidate(curr, p, p_rq))
++		goto out_irq;
++
++	/* if next buddy is set, assume yield is in progress */
++	if (p_rq->cfs.next)
++		goto out_irq;
++
+ 	double_rq_lock(rq, p_rq);
+ 	while (task_rq(p) != p_rq) {
+ 		double_rq_unlock(rq, p_rq);
+ 		goto again;
+ 	}
+
+-	if (!curr->sched_class->yield_to_task)
+-		goto out;
+-
+-	if (curr->sched_class != p->sched_class)
+-		goto out;
+-
+-	if (task_running(p_rq, p) || p->state)
+-		goto out;
++	/* validate state, holding p_rq ensures p's state cannot change */
++	if (!__yield_to_candidate(curr, p, p_rq))
++		goto out_unlock;
+
+ 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+ 	if (yielded) {
+@@ -4877,8 +4898,9 @@ again:
+ 		rq->skip_clock_update = 0;
+ 	}
+
+-out:
++out_unlock:
+ 	double_rq_unlock(rq, p_rq);
++out_irq:
+ 	local_irq_restore(flags);
+
+ 	if (yielded)
 
 
