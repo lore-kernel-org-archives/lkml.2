@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab2IKL16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:27:58 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33195 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759001Ab2IKL14 (ORCPT
+	id S1759114Ab2IKLaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:30:04 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:29789 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758936Ab2IKLaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:27:56 -0400
-Date: Tue, 11 Sep 2012 07:29:05 -0400
-From: Matt Porter <mporter@ti.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-Subject: Re: [PATCH] ARM: dts: AM33XX: fix gpio node numbering to match
- hardware
-Message-ID: <20120911112905.GM27758@beef>
-References: <1347294020-22661-1-git-send-email-mporter@ti.com>
- <79CD15C6BA57404B839C016229A409A83EAB03D3@DBDE01.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <79CD15C6BA57404B839C016229A409A83EAB03D3@DBDE01.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Sep 2012 07:30:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqsDAFcgT1BbdWObgWdsb2JhbABFhgetJ4giIgEBFiYngiABAQUjBEASEAsVAyoCAlcGE4gUqGOTOIsQhRSBEgOoYg
+X-IronPort-AV: E=Sophos;i="4.80,404,1344204000"; 
+   d="asc'?scan'208";a="564501308"
+Message-ID: <1347363066.4539.112.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH 08/20] Staging: ipack: Switch to 8MHz operation before
+ reading ID.
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
+        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
+Date: Tue, 11 Sep 2012 13:31:06 +0200
+In-Reply-To: <20120911084818.GP19396@mwanda>
+References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
+	 <1347267118-9580-8-git-send-email-siglesias@igalia.com>
+	 <20120911084818.GP19396@mwanda>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-qDTWk/qddxeIAKnSneq2"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 04:57:08AM +0000, Hiremath, Vaibhav wrote:
-> On Mon, Sep 10, 2012 at 21:50:20, Porter, Matt wrote:
-> > On AM33xx, the datasheet and TRM refer to four GPIO instances that
-> > are 0-based, GPIO0-3.
-> > 
-> 
-> Thanks Matt,
-> I think Anil labeled it as gpio1-4 due to hwmod naming convention, as you 
-> can not have gpioo id = 0 (refer to arch/arm/mach-omap2/gpio.c).
 
-Right, and that convention originally came from the assumption that
-everything would be 1-based like OMAP3/4.
- 
-> But in case of DT we should simply follow TRM/Spec, as naming convention is 
-> based on base-addr and not id, so your patch looks good me.
+--=-qDTWk/qddxeIAKnSneq2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes, my biggest concern here was the coming frustration that the end
-"user" or system integrator would have with these labels not matching
-the docs that have been around for a year. It would be !sane to have
-somebody look at a schematic and then write their dts with a value that
-doesn't match the h/w. That would run counter to the fundamental
-requirement that DT is a description of the hardware. The user led patch
-was already the first example of that where the comments mentioned gpio1
-in the pinmux data but the data referenced the gpio2 label.
-
--Matt
-
-> > Signed-off-by: Matt Porter <mporter@ti.com>
+On Tue, 2012-09-11 at 11:48 +0300, Dan Carpenter wrote:
+> On Mon, Sep 10, 2012 at 10:51:46AM +0200, Samuel Iglesias Gons=C3=A1lvez =
+wrote:
+> > From: Jens Taprogge <jens.taprogge@taprogge.org>
+> >=20
+> > Reading the ID space at 8 MHz is always supported.  Most carriers will
+> > boot up in 8MHz mode.  Still, play it safe and ensure we are operating =
+at
+> > 8Mhz.
+> >=20
+> > Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
+> > Signed-off-by: Samuel Iglesias Gons=C3=A1lvez <siglesias@igalia.com>
 > > ---
-> >  arch/arm/boot/dts/am33xx.dtsi |    8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> > index bb31bff..1369bfc 100644
-> > --- a/arch/arm/boot/dts/am33xx.dtsi
-> > +++ b/arch/arm/boot/dts/am33xx.dtsi
-> > @@ -62,7 +62,7 @@
-> >  			reg = <0x48200000 0x1000>;
-> >  		};
-> >  
-> > -		gpio1: gpio@44e07000 {
-> > +		gpio0: gpio@44e07000 {
-> >  			compatible = "ti,omap4-gpio";
-> >  			ti,hwmods = "gpio1";
-> >  			gpio-controller;
-> > @@ -74,7 +74,7 @@
-> >  			interrupts = <96>;
-> >  		};
-> >  
-> > -		gpio2: gpio@4804c000 {
-> > +		gpio1: gpio@4804c000 {
-> >  			compatible = "ti,omap4-gpio";
-> >  			ti,hwmods = "gpio2";
-> >  			gpio-controller;
-> > @@ -86,7 +86,7 @@
-> >  			interrupts = <98>;
-> >  		};
-> >  
-> > -		gpio3: gpio@481ac000 {
-> > +		gpio2: gpio@481ac000 {
-> >  			compatible = "ti,omap4-gpio";
-> >  			ti,hwmods = "gpio3";
-> >  			gpio-controller;
-> > @@ -98,7 +98,7 @@
-> >  			interrupts = <32>;
-> >  		};
-> >  
-> > -		gpio4: gpio@481ae000 {
-> > +		gpio3: gpio@481ae000 {
-> >  			compatible = "ti,omap4-gpio";
-> >  			ti,hwmods = "gpio4";
-> >  			gpio-controller;
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> >  drivers/staging/ipack/ipack.c |   11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> >=20
+> > diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipac=
+k.c
+> > index 4f3c945..95f56b8 100644
+> > --- a/drivers/staging/ipack/ipack.c
+> > +++ b/drivers/staging/ipack/ipack.c
+> > @@ -376,6 +376,9 @@ struct ipack_device *ipack_device_register(struct i=
+pack_bus_device *bus,
+> >  	dev_set_name(&dev->dev,
+> >  		     "ipack-dev.%u.%u", dev->bus_nr, dev->slot);
+> > =20
+> > +	if (bus->ops->set_clockrate(dev, 8))
+> > +		dev_warn(&dev->dev, "failed to switch to 8 MHz operation for reading=
+ of device ID.\n");
+> > +
+> >  	ret =3D ipack_device_read_id(dev);
+> >  	if (ret < 0) {
+> >  		dev_err(&dev->dev, "error reading device id section.\n");
+> > @@ -384,9 +387,11 @@ struct ipack_device *ipack_device_register(struct =
+ipack_bus_device *bus,
+> >  	}
+> > =20
+> >  	/* if the device supports 32 MHz operation, use it. */
+> > -	ret =3D bus->ops->set_clockrate(dev, dev->speed_32mhz ? 32 : 8);
+> > -	if (ret < 0)
+> > -		dev_err(&dev->dev, "failed to switch to 32 MHz operation.\n");
+> > +	if (dev->speed_32mhz) {
+> > +		ret =3D bus->ops->set_clockrate(dev, 32);
+> > +		if (ret < 0)
+> > +			dev_err(&dev->dev, "failed to switch to 32 MHz operation.\n");
+> > +	}
+>=20
+> Ah.  Well done.  That's what I suggested earlier.  I think you
+> should get rid of the ->speed_8mhz all together.
+
+I will do it in a follow-up patch. The rest of suggestions have been
+integrated in the patches. I will submit the patches very soon.
+
+Thanks,
+
+Sam=20
+
+
+--=-qDTWk/qddxeIAKnSneq2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAlBPIPoACgkQWrfbyfmd9eJjpQCgrtG7im6FIJPVmpNaWRUZF8dW
+9uAAn1efGBX3GjUkINtEjMwCdWIhYPB5
+=cG4n
+-----END PGP SIGNATURE-----
+
+--=-qDTWk/qddxeIAKnSneq2--
+
