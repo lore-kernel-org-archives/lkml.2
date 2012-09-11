@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2IKMcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 08:32:18 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:37527 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab2IKMcI convert rfc822-to-8bit (ORCPT
+	id S1754900Ab2IKMfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 08:35:55 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40791 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2IKMfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 08:32:08 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	<87harc34d9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
-	<87y5knz6l5.fsf@devron.myhome.or.jp>
-	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
-	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
-	<1347020137.2223.13.camel@iscandar.digidescorp.com>
-	<87oblfpmnb.fsf@devron.myhome.or.jp>
-	<87k3w3ph8d.fsf@devron.myhome.or.jp>
-	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
-	<87har6kmfx.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-Date: Tue, 11 Sep 2012 21:31:52 +0900
-In-Reply-To: <CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 11 Sep 2012 21:00:07 +0900")
-Message-ID: <87oblc4u6f.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 11 Sep 2012 08:35:52 -0400
+Date: Tue, 11 Sep 2012 14:35:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@vger.kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>
+Subject: Re: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
+Message-ID: <20120911123528.GG21277@somewhere.redhat.com>
+References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
+ <20120824212647.GU2472@linux.vnet.ibm.com>
+ <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
+ <20120910215541.GE21277@somewhere.redhat.com>
+ <20120910225845.GC4257@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910225845.GC4257@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Mon, Sep 10, 2012 at 03:58:45PM -0700, Paul E. McKenney wrote:
+> > Anyway, should I resend the patchset with this thing fixed?
+> 
+> Please feel free to do so.  ;-)
+> 
+> 							Thanx, Paul
+> 
 
->> Since rename() will be disabled on stable ino patches, this will be
->> unfixable, so rather maybe it is worse.
-> Currently with our patchset : only rename issue (could not find any
-> correct approach to ignore this. If we do not update this immediately
-> at i_pos change – it is just delaying the problem). And we can return
-> EBUSY when rename is called while process is opening file with rename
-> limitation. Without our patchset also - the rename issue can occur
-> over NFS file access - when the inode is evicted from the SERVER
-> cache.
+So here it is.
 
-Important difference is whether rename issue is unfixable or not.
+On the menu for the updated branch:
 
-> I think that it is unfixable because we can not know i_pos of inode
-> changed by rename.
-> And even though we know it, there is no rebuild inode routine in -mm.
-> And It even can not fix in our patches.
+- fixed stable tags (use # 3.3+)
+- not sure what to do with "alpha: Fix preemption handling in idle loop",
+  tag as stable or not?
+- added tested-by Michael Cree <mcree@orcon.net.nz> for alpha patches
+- propagate rename to rcu_user_*_after_irq() in the commit changelog
+- remove trailing #endif in "rcu: New rcu_user_enter_after_irq() and rcu_user_exit_after_irq() APIs"
+  and early rcu_user_hooks_switch() header as well (reported by WU Fenguang).
+- add rcu_user_hooks_switch() header in "rcu: Switch task's syscall hooks on context switch"
 
->> And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
->> like to improve performance by enabling lookupcache.
-> We checked this patches when facing estale issue in -mm.
-> But It is no use, these patches just retry system call one more when
-> estale error.
+I believe this all should also fix what WU Fenguang reported:
 
-What happens if client retried from lookup() after -ESTALE? (client NFS
-doesn't have the name of entry anymore?)
+	[rcu:rcu:next 54/82] include/linux/rcupdate.h:202:20: error: redefinition of 'rcu_user_exit'
+	[rcu:rcu:next 54/82] include/linux/rcupdate.h:401:19: error: redefinition of 'rcu_read_lock_bh_held'
+	[rcu:rcu:idle 2/27] include/linux/rcupdate.h:969:2: error: #endif without #if
 
-I'm assuming the retry means - it restarts from building the NFS file
-handle. I might be just wrong here though.
+I'm not reposting the patches because few things have actually changed, except a few neats and some stuff
+that have been moved from a patch to another to unbreak bisection. But the end result is about the same.
+You can check the difference with a git diff between our branches.
 
->> I'd like to be knowing the critical reason we have to replace it.
-> I arrange to help your decision as the following.
->
-> 1. lookup cache is enable at default in NFS. So estale error can be
-> easily occurred in -mm.
-> 2. If lookup cache is disable, there is rename issue and file lookup
-> performance is dropped in -mm.
-> 4. If we use our patches, there is rename issue. but we can use VFAT
-> over NFS with lookup cache enable.
-> 5. If we use read-only with our patches, there is no issue.
+If you want to, though, I can repost the patches.
 
-Again, I'm care about whether rename issue is unfixable or not. In
-stable ino patches, it will never be fixable.
+This is pullable from:
 
+git://github.com/fweisbec/linux-dynticks.git
+	rcu/idle-for-v3.7
 
-What do you think about this rename issue, Steven?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Thanks.
