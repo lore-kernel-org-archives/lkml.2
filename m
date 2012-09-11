@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759699Ab2IKRQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:16:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60800 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759282Ab2IKRQx (ORCPT
+	id S1758532Ab2IKR1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:27:39 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:47330 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2IKR1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:16:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH 03/16] ARM: ep93xx: move platform_data definitions
-Date: Tue, 11 Sep 2012 17:16:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ryan Mallon <rmallon@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Axel Lin <axel.lin@gmail.com>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368390-31252-3-git-send-email-arnd@arndb.de> <ADE657CA350FB648AAC2C43247A983F00206B1EB884D@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206B1EB884D@AUSP01VMBX24.collaborationhost.net>
+	Tue, 11 Sep 2012 13:27:37 -0400
+Message-ID: <504F742D.6000701@linaro.org>
+Date: Tue, 11 Sep 2012 10:26:05 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: prarit@redhat.com, xen-devel@lists.xensource.com,
+        linaro-dev@lists.linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-pm@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        richardcochran@gmail.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@kernel.org,
+        lenb@kernel.org
+Subject: Re: CONFIG_NO_HZ + CONFIG_CPU_IDLE freeze the system (Was Re: [PATCH]
+ acpi : remove power from acpi_processor_cx structure)
+References: <1343164349-28550-1-git-send-email-daniel.lezcano@linaro.org> <201209062204.11288.rjw@sisk.pl> <50490920.9070204@linaro.org> <201209062318.42874.rjw@sisk.pl> <504A02BD.4000805@linaro.org> <504A2D73.3010702@linaro.org> <504A68A0.7010907@linaro.org> <504E1FE5.6090502@linaro.org> <504E4343.5070004@linaro.org> <504E8372.20904@linaro.org> <504EE124.3010401@linaro.org>
+In-Reply-To: <504EE124.3010401@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209111716.27848.arnd@arndb.de>
-X-Provags-ID: V02:K0:NKA6FH5F+UOL0PXJpvjFfcGhfeg0eGX3tmaXJlt3vhs
- RW17e20Oatfz2TtOUNpi8klsCIVEMr08u20IkokIKoesN6436o
- AWHs7TVczCd64JRUKk6nf14c/Va1FAiv3/4y278RjTQAwXFQaK
- X1LI9tGFnnxMWLXdo7woEL7Y3/JgHJ+sWlphEZklBzexkmVgqa
- EfSlnY5tA0dxBSSt6Av/KJIpkkZ0IcPEUv69Tsx1fG4HDGO+Dr
- OD7T7oz9g1Qlg+s6Q/1BqO/6JvEZyrcJv0w13FMb5hDuIbO5Wh
- SHc+Wx/tTQoHAiiXuQfXgkpXlGc5FDmMgF3FuSwnK1LFsY3FdY
- FXlcFyEArv+SYaa9k7dw=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091117-7282-0000-0000-00000CE7E00F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 September 2012, H Hartley Sweeten wrote:
-> Arnd,
-> 
-> What about gpio-ep93xx.h? It does not have any platform_data in
-> it but the gpio driver (driver/gpio/gpio-ep93xx.c) does include it
-> from the mach-* directory.
+On 09/10/2012 11:58 PM, Daniel Lezcano wrote:
+>> Would you mind testing the following patch? It seems to resolve the
+>> issue, but I've not yet run it through my test suite to make sure it
+>> didn't break anything else.
+> No problem, I will try it this evening.
+>
+> Is this problem related to all 32bits arch ?
+I believe so. Although it didn't appear in my 32bit testing w/ kvm, but 
+I suspect that is due to my distro userland setting lots of timers so 
+that we don't hit those multi-second idle times, which could overflow 
+32bit nanoseconds, or maybe some other kvm quirk.
 
-There are actually four such headers for ep93xx:
+Anyway, let me know if your testing goes well.
 
-* mach/ep93xx-regs.h
-  sound/soc/ep93xx/ep93xx-i2s.c
-  sound/soc/ep93xx/ep93xx-pcm.c
+Thanks so much again for noticing and bisecting this down.
+-john
 
-* mach/gpio-ep93xx.h
-  drivers/gpio/gpio-ep93xx.c
-
-* mach/hardware.h
-  drivers/gpio/gpio-ep93xx.c
-  drivers/input/keyboard/ep93xx_keypad.c
-  drivers/net/ethernet/cirrus/ep93xx_eth.c
-  sound/soc/ep93xx/edb93xx.c
-  sound/soc/ep93xx/ep93xx-i2s.c
-  sound/soc/ep93xx/ep93xx-pcm.c
-  sound/soc/ep93xx/simone.c
-  sound/soc/ep93xx/snappercl15.c
-
-* mach/platform.h
-  drivers/ata/pata_ep93xx.c
-  drivers/misc/ep93xx_pwm.c
-
-If you are planning to allow building a combined kernel for ep93xx and
-another ARMv4/v5 platform, all of these inclusions need to be removed
-and done differently, plus you also need to start using the common clock
-subsystem and sparse-irq. 
-
-Any of those things would be greatly appreciated as a cleanup, but we're
-not going to require them any time soon.
-
-	Arnd
