@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2IKXx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 19:53:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42271 "EHLO
+	id S1755479Ab2IKXxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 19:53:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42284 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2IKXxX (ORCPT
+	with ESMTP id S1754676Ab2IKXx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 19:53:23 -0400
+	Tue, 11 Sep 2012 19:53:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 17/18] perf sched: Use perf_evsel__{int,str}val
-Date: Tue, 11 Sep 2012 20:53:09 -0300
-Message-Id: <1347407590-30960-18-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/18] perf tools: fix ALIGN redefinition in system headers
+Date: Tue, 11 Sep 2012 20:53:00 -0300
+Message-Id: <1347407590-30960-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1347407590-30960-1-git-send-email-acme@infradead.org>
 References: <1347407590-30960-1-git-send-email-acme@infradead.org>
@@ -29,528 +29,240 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Irina Tirdea <irina.tirdea@gmail.com>
 
-This patch also stops reading the common fields, as they were not being used except
-for one ->common_pid case that was replaced by sample->tid, i.e. the info is already
-in the perf_sample struct.
+On some systems (e.g. Android), ALIGN is defined in system headers as
+ALIGN(p).  The definition of ALIGN used in perf takes 2 parameters:
+ALIGN(x,a).  This leads to redefinition conflicts.
 
-Also it only fills the _event structures when there is a handler.
+Redefinition error on Android:
+In file included from util/include/linux/list.h:1:0,
+from util/callchain.h:5,
+from util/hist.h:6,
+from util/session.h:4,
+from util/build-id.h:4,
+from util/annotate.c:11:
+util/include/linux/kernel.h:11:0: error: "ALIGN" redefined [-Werror]
+bionic/libc/include/sys/param.h:38:0: note: this is the location of
+the previous definition
 
-  [root@sandy ~]# perf sched record sleep 30s
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 8.585 MB perf.data (~375063 samples) ]
+Conflics with system defined ALIGN in Android:
+util/event.c: In function 'perf_event__synthesize_comm':
+util/event.c:115:32: error: macro "ALIGN" passed 2 arguments, but takes just 1
+util/event.c:115:9: error: 'ALIGN' undeclared (first use in this function)
+util/event.c:115:9: note: each undeclared identifier is reported only once for
+each function it appears in
 
-Before:
+In order to avoid this redefinition, ALIGN is renamed to PERF_ALIGN.
 
-  [root@sandy ~]# perf stat -r 10 perf sched lat > /dev/null
-
-   Performance counter stats for 'perf sched lat' (10 runs):
-
-          129.117838 task-clock                #    0.994 CPUs utilized            ( +-  0.28% )
-                  14 context-switches          #    0.111 K/sec                    ( +-  2.10% )
-                   0 cpu-migrations            #    0.002 K/sec                    ( +- 66.67% )
-               7,654 page-faults               #    0.059 M/sec                    ( +-  0.67% )
-         438,121,661 cycles                    #    3.393 GHz                      ( +-  0.06% ) [83.06%]
-         150,808,605 stalled-cycles-frontend   #   34.42% frontend cycles idle     ( +-  0.14% ) [83.10%]
-          80,748,941 stalled-cycles-backend    #   18.43% backend  cycles idle     ( +-  0.64% ) [66.73%]
-         758,605,879 instructions              #    1.73  insns per cycle
-                                               #    0.20  stalled cycles per insn  ( +-  0.08% ) [83.54%]
-         162,164,321 branches                  # 1255.940 M/sec                    ( +-  0.10% ) [83.70%]
-           1,609,903 branch-misses             #    0.99% of all branches          ( +-  0.08% ) [83.62%]
-
-         0.129949153 seconds time elapsed                                          ( +-  0.28% )
-
-After:
-
-  [root@sandy ~]# perf stat -r 10 perf sched lat > /dev/null
-
-   Performance counter stats for 'perf sched lat' (10 runs):
-
-          103.592215 task-clock                #    0.993 CPUs utilized            ( +-  0.33% )
-                  12 context-switches          #    0.114 K/sec                    ( +-  3.29% )
-                   0 cpu-migrations            #    0.000 K/sec
-               7,605 page-faults               #    0.073 M/sec                    ( +-  0.00% )
-         345,796,112 cycles                    #    3.338 GHz                      ( +-  0.07% ) [82.90%]
-         106,876,796 stalled-cycles-frontend   #   30.91% frontend cycles idle     ( +-  0.38% ) [83.23%]
-          62,060,877 stalled-cycles-backend    #   17.95% backend  cycles idle     ( +-  0.80% ) [67.14%]
-         628,246,586 instructions              #    1.82  insns per cycle
-                                               #    0.17  stalled cycles per insn  ( +-  0.04% ) [83.64%]
-         134,962,057 branches                  # 1302.820 M/sec                    ( +-  0.10% ) [83.64%]
-           1,233,037 branch-misses             #    0.91% of all branches          ( +-  0.29% ) [83.41%]
-
-         0.104333272 seconds time elapsed                                          ( +-  0.33% )
-
-  [root@sandy ~]#
-
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-weu9t63zkrfrazkn0gxj48xy@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1347315303-29906-5-git-send-email-irina.tirdea@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c |  249 ++++++++++++++++----------------------------
- 1 file changed, 90 insertions(+), 159 deletions(-)
+ tools/perf/util/event.c                |   10 +++++-----
+ tools/perf/util/event.h                |    2 +-
+ tools/perf/util/header.c               |   16 ++++++++--------
+ tools/perf/util/include/linux/kernel.h |    4 ++--
+ tools/perf/util/session.c              |    4 ++--
+ tools/perf/util/symbol.c               |    2 +-
+ 6 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 79f88fa..0df5e7a 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -98,82 +98,40 @@ struct work_atoms {
- typedef int (*sort_fn_t)(struct work_atoms *, struct work_atoms *);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 84ff6f16..f7f4805 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -112,7 +112,7 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 	event->comm.header.type = PERF_RECORD_COMM;
  
- struct trace_switch_event {
--	u32  size;
--
--	u16  common_type;
--	u8   common_flags;
--	u8   common_preempt_count;
--	u32  common_pid;
--	u32  common_tgid;
--
--	char prev_comm[16];
-+	char *prev_comm;
- 	u32  prev_pid;
- 	u32  prev_prio;
- 	u64  prev_state;
--	char next_comm[16];
-+	char *next_comm;
- 	u32  next_pid;
- 	u32  next_prio;
+ 	size = strlen(event->comm.comm) + 1;
+-	size = ALIGN(size, sizeof(u64));
++	size = PERF_ALIGN(size, sizeof(u64));
+ 	memset(event->comm.comm + size, 0, machine->id_hdr_size);
+ 	event->comm.header.size = (sizeof(event->comm) -
+ 				(sizeof(event->comm.comm) - size) +
+@@ -145,7 +145,7 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 					 sizeof(event->comm.comm));
+ 
+ 		size = strlen(event->comm.comm) + 1;
+-		size = ALIGN(size, sizeof(u64));
++		size = PERF_ALIGN(size, sizeof(u64));
+ 		memset(event->comm.comm + size, 0, machine->id_hdr_size);
+ 		event->comm.header.size = (sizeof(event->comm) -
+ 					  (sizeof(event->comm.comm) - size) +
+@@ -228,7 +228,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			size = strlen(execname);
+ 			execname[size - 1] = '\0'; /* Remove \n */
+ 			memcpy(event->mmap.filename, execname, size);
+-			size = ALIGN(size, sizeof(u64));
++			size = PERF_ALIGN(size, sizeof(u64));
+ 			event->mmap.len -= event->mmap.start;
+ 			event->mmap.header.size = (sizeof(event->mmap) -
+ 					        (sizeof(event->mmap.filename) - size));
+@@ -282,7 +282,7 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 		if (pos->dso->kernel)
+ 			continue;
+ 
+-		size = ALIGN(pos->dso->long_name_len + 1, sizeof(u64));
++		size = PERF_ALIGN(pos->dso->long_name_len + 1, sizeof(u64));
+ 		event->mmap.header.type = PERF_RECORD_MMAP;
+ 		event->mmap.header.size = (sizeof(event->mmap) -
+ 				        (sizeof(event->mmap.filename) - size));
+@@ -494,7 +494,7 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 	map = machine->vmlinux_maps[MAP__FUNCTION];
+ 	size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
+ 			"%s%s", mmap_name, symbol_name) + 1;
+-	size = ALIGN(size, sizeof(u64));
++	size = PERF_ALIGN(size, sizeof(u64));
+ 	event->mmap.header.type = PERF_RECORD_MMAP;
+ 	event->mmap.header.size = (sizeof(event->mmap) -
+ 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 0e088d0..21b99e7 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -101,7 +101,7 @@ struct perf_sample {
+ struct build_id_event {
+ 	struct perf_event_header header;
+ 	pid_t			 pid;
+-	u8			 build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
++	u8			 build_id[PERF_ALIGN(BUILD_ID_SIZE, sizeof(u64))];
+ 	char			 filename[];
  };
  
- struct trace_runtime_event {
--	u32  size;
--
--	u16  common_type;
--	u8   common_flags;
--	u8   common_preempt_count;
--	u32  common_pid;
--	u32  common_tgid;
--
--	char comm[16];
-+	char *comm;
- 	u32  pid;
- 	u64  runtime;
- 	u64  vruntime;
- };
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index d07bc13..974e758 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -129,7 +129,7 @@ static int do_write_string(int fd, const char *str)
+ 	int ret;
  
- struct trace_wakeup_event {
--	u32  size;
--
--	u16  common_type;
--	u8   common_flags;
--	u8   common_preempt_count;
--	u32  common_pid;
--	u32  common_tgid;
--
--	char comm[16];
-+	char *comm;
- 	u32  pid;
--
- 	u32  prio;
- 	u32  success;
- 	u32  cpu;
- };
+ 	olen = strlen(str) + 1;
+-	len = ALIGN(olen, NAME_ALIGN);
++	len = PERF_ALIGN(olen, NAME_ALIGN);
  
- struct trace_fork_event {
--	u32  size;
--
--	u16  common_type;
--	u8   common_flags;
--	u8   common_preempt_count;
--	u32  common_pid;
--	u32  common_tgid;
--
--	char parent_comm[16];
-+	char *parent_comm;
- 	u32  parent_pid;
--	char child_comm[16];
-+	char *child_comm;
- 	u32   child_pid;
- };
+ 	/* write len, incl. \0 */
+ 	ret = do_write(fd, &len, sizeof(len));
+@@ -220,7 +220,7 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+ 		if (!pos->hit)
+ 			continue;
+ 		len = pos->long_name_len + 1;
+-		len = ALIGN(len, NAME_ALIGN);
++		len = PERF_ALIGN(len, NAME_ALIGN);
+ 		memset(&b, 0, sizeof(b));
+ 		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
+ 		b.pid = pid;
+@@ -1532,7 +1532,7 @@ static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
+ 	struct perf_session *session = container_of(header, struct perf_session, header);
+ 	struct {
+ 		struct perf_event_header   header;
+-		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
++		u8			   build_id[PERF_ALIGN(BUILD_ID_SIZE, sizeof(u64))];
+ 		char			   filename[0];
+ 	} old_bev;
+ 	struct build_id_event bev;
+@@ -2439,7 +2439,7 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
+ 	int err;
  
- struct trace_migrate_task_event {
--	u32  size;
--
--	u16  common_type;
--	u8   common_flags;
--	u8   common_preempt_count;
--	u32  common_pid;
--	u32  common_tgid;
--
--	char comm[16];
-+	char *comm;
- 	u32  pid;
--
- 	u32  prio;
- 	u32  cpu;
- };
-@@ -184,7 +142,7 @@ struct trace_sched_handler {
- 	int (*switch_event)(struct perf_sched *sched,
- 			    struct trace_switch_event *event,
- 			    struct machine *machine,
--			    struct event_format *tp_format,
-+			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample);
+ 	size = sizeof(struct perf_event_attr);
+-	size = ALIGN(size, sizeof(u64));
++	size = PERF_ALIGN(size, sizeof(u64));
+ 	size += sizeof(struct perf_event_header);
+ 	size += ids * sizeof(u64);
  
- 	int (*runtime_event)(struct perf_sched *sched,
-@@ -195,12 +153,12 @@ struct trace_sched_handler {
- 	int (*wakeup_event)(struct perf_sched *sched,
- 			    struct trace_wakeup_event *event,
- 			    struct machine *machine,
--			    struct event_format *tp_format,
-+			    struct perf_evsel *evsel,
- 			    struct perf_sample *sample);
+@@ -2537,7 +2537,7 @@ int perf_event__synthesize_event_type(struct perf_tool *tool,
  
- 	int (*fork_event)(struct perf_sched *sched,
- 			  struct trace_fork_event *event,
--			  struct event_format *tp_format);
-+			  struct perf_evsel *evsel);
+ 	ev.event_type.header.type = PERF_RECORD_HEADER_EVENT_TYPE;
+ 	size = strlen(ev.event_type.event_type.name);
+-	size = ALIGN(size, sizeof(u64));
++	size = PERF_ALIGN(size, sizeof(u64));
+ 	ev.event_type.header.size = sizeof(ev.event_type) -
+ 		(sizeof(ev.event_type.event_type.name) - size);
  
- 	int (*migrate_task_event)(struct perf_sched *sched,
- 				  struct trace_migrate_task_event *event,
-@@ -740,40 +698,22 @@ static void test_calibrations(struct perf_sched *sched)
- 	printf("the sleep test took %" PRIu64 " nsecs\n", T1 - T0);
- }
+@@ -2606,7 +2606,7 @@ int perf_event__synthesize_tracing_data(struct perf_tool *tool, int fd,
  
--#define FILL_FIELD(ptr, field, event, data)	\
--	ptr.field = (typeof(ptr.field)) raw_field_value(event, #field, data)
--
--#define FILL_ARRAY(ptr, array, event, data)			\
--do {								\
--	void *__array = raw_field_ptr(event, #array, data);	\
--	memcpy(ptr.array, __array, sizeof(ptr.array));	\
--} while(0)
--
--#define FILL_COMMON_FIELDS(ptr, event, data)			\
--do {								\
--	FILL_FIELD(ptr, common_type, event, data);		\
--	FILL_FIELD(ptr, common_flags, event, data);		\
--	FILL_FIELD(ptr, common_preempt_count, event, data);	\
--	FILL_FIELD(ptr, common_pid, event, data);		\
--	FILL_FIELD(ptr, common_tgid, event, data);		\
--} while (0)
--
- static int
- replay_wakeup_event(struct perf_sched *sched,
- 		    struct trace_wakeup_event *wakeup_event,
- 		    struct machine *machine __maybe_unused,
--		    struct event_format *event, struct perf_sample *sample)
-+		    struct perf_evsel *evsel, struct perf_sample *sample)
- {
- 	struct task_desc *waker, *wakee;
+ 	ev.tracing_data.header.type = PERF_RECORD_HEADER_TRACING_DATA;
+ 	size = tdata->size;
+-	aligned_size = ALIGN(size, sizeof(u64));
++	aligned_size = PERF_ALIGN(size, sizeof(u64));
+ 	padding = aligned_size - size;
+ 	ev.tracing_data.header.size = sizeof(ev.tracing_data);
+ 	ev.tracing_data.size = aligned_size;
+@@ -2637,7 +2637,7 @@ int perf_event__process_tracing_data(union perf_event *event,
  
- 	if (verbose) {
--		printf("sched_wakeup event %p\n", event);
-+		printf("sched_wakeup event %p\n", evsel);
+ 	size_read = trace_report(session->fd, &session->pevent,
+ 				 session->repipe);
+-	padding = ALIGN(size_read, sizeof(u64)) - size_read;
++	padding = PERF_ALIGN(size_read, sizeof(u64)) - size_read;
  
- 		printf(" ... pid %d woke up %s/%d\n",
--		       wakeup_event->common_pid, wakeup_event->comm, wakeup_event->pid);
-+		       sample->tid, wakeup_event->comm, wakeup_event->pid);
+ 	if (read(session->fd, buf, padding) < 0)
+ 		die("reading input file");
+@@ -2671,7 +2671,7 @@ int perf_event__synthesize_build_id(struct perf_tool *tool,
+ 	memset(&ev, 0, sizeof(ev));
+ 
+ 	len = pos->long_name_len + 1;
+-	len = ALIGN(len, NAME_ALIGN);
++	len = PERF_ALIGN(len, NAME_ALIGN);
+ 	memcpy(&ev.build_id.build_id, pos->build_id, sizeof(pos->build_id));
+ 	ev.build_id.header.type = PERF_RECORD_HEADER_BUILD_ID;
+ 	ev.build_id.header.misc = misc;
+diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
+index a978f26..d8c927c 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -8,8 +8,8 @@
+ 
+ #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+ 
+-#define ALIGN(x,a)		__ALIGN_MASK(x,(typeof(x))(a)-1)
+-#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
++#define PERF_ALIGN(x, a)	__PERF_ALIGN_MASK(x, (typeof(x))(a)-1)
++#define __PERF_ALIGN_MASK(x, mask)	(((x)+(mask))&~(mask))
+ 
+ #ifndef offsetof
+ #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9453758..3806ea4 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -527,7 +527,7 @@ static void perf_event__comm_swap(union perf_event *event, bool sample_id_all)
+ 	if (sample_id_all) {
+ 		void *data = &event->comm.comm;
+ 
+-		data += ALIGN(strlen(data) + 1, sizeof(u64));
++		data += PERF_ALIGN(strlen(data) + 1, sizeof(u64));
+ 		swap_sample_id_all(event, data);
  	}
+ }
+@@ -544,7 +544,7 @@ static void perf_event__mmap_swap(union perf_event *event,
+ 	if (sample_id_all) {
+ 		void *data = &event->mmap.filename;
  
--	waker = register_pid(sched, wakeup_event->common_pid, "<unknown>");
-+	waker = register_pid(sched, sample->tid, "<unknown>");
- 	wakee = register_pid(sched, wakeup_event->pid, wakeup_event->comm);
- 
- 	add_sched_event_wakeup(sched, waker, sample->time, wakee);
-@@ -784,7 +724,7 @@ static int
- replay_switch_event(struct perf_sched *sched,
- 		    struct trace_switch_event *switch_event,
- 		    struct machine *machine __maybe_unused,
--		    struct event_format *event,
-+		    struct perf_evsel *evsel,
- 		    struct perf_sample *sample)
- {
- 	struct task_desc *prev, __maybe_unused *next;
-@@ -793,7 +733,7 @@ replay_switch_event(struct perf_sched *sched,
- 	s64 delta;
- 
- 	if (verbose)
--		printf("sched_switch event %p\n", event);
-+		printf("sched_switch event %p\n", evsel);
- 
- 	if (cpu >= MAX_CPUS || cpu < 0)
+-		data += ALIGN(strlen(data) + 1, sizeof(u64));
++		data += PERF_ALIGN(strlen(data) + 1, sizeof(u64));
+ 		swap_sample_id_all(event, data);
+ 	}
+ }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 753699a..ba85d4f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1991,7 +1991,7 @@ int symbol__init(void)
+ 	if (symbol_conf.initialized)
  		return 0;
-@@ -829,10 +769,10 @@ replay_switch_event(struct perf_sched *sched,
  
- static int
- replay_fork_event(struct perf_sched *sched, struct trace_fork_event *fork_event,
--		  struct event_format *event)
-+		  struct perf_evsel *evsel)
- {
- 	if (verbose) {
--		printf("sched_fork event %p\n", event);
-+		printf("sched_fork event %p\n", evsel);
- 		printf("... parent: %s/%d\n", fork_event->parent_comm, fork_event->parent_pid);
- 		printf("...  child: %s/%d\n", fork_event->child_comm, fork_event->child_pid);
- 	}
-@@ -931,7 +871,7 @@ static int thread_atoms_insert(struct perf_sched *sched, struct thread *thread)
+-	symbol_conf.priv_size = ALIGN(symbol_conf.priv_size, sizeof(u64));
++	symbol_conf.priv_size = PERF_ALIGN(symbol_conf.priv_size, sizeof(u64));
  
- static int latency_fork_event(struct perf_sched *sched __maybe_unused,
- 			      struct trace_fork_event *fork_event __maybe_unused,
--			      struct event_format *event __maybe_unused)
-+			      struct perf_evsel *evsel __maybe_unused)
- {
- 	/* should insert the newcomer */
- 	return 0;
-@@ -1015,7 +955,7 @@ static int
- latency_switch_event(struct perf_sched *sched,
- 		     struct trace_switch_event *switch_event,
- 		     struct machine *machine,
--		     struct event_format *event __maybe_unused,
-+		     struct perf_evsel *evsel __maybe_unused,
- 		     struct perf_sample *sample)
- {
- 	struct work_atoms *out_events, *in_events;
-@@ -1106,7 +1046,7 @@ static int
- latency_wakeup_event(struct perf_sched *sched,
- 		     struct trace_wakeup_event *wakeup_event,
- 		     struct machine *machine,
--		     struct event_format *event __maybe_unused,
-+		     struct perf_evsel *evsel __maybe_unused,
- 		     struct perf_sample *sample)
- {
- 	struct work_atoms *atoms;
-@@ -1350,34 +1290,32 @@ static void perf_sched__sort_lat(struct perf_sched *sched)
- }
+ 	symbol__elf_init();
  
- static int process_sched_wakeup_event(struct perf_tool *tool,
--				      struct event_format *event,
-+				      struct perf_evsel *evsel,
- 				      struct perf_sample *sample,
- 				      struct machine *machine)
- {
- 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
--	void *data = sample->raw_data;
--	struct trace_wakeup_event wakeup_event;
--	int err = 0;
--
--	FILL_COMMON_FIELDS(wakeup_event, event, data);
- 
--	FILL_ARRAY(wakeup_event, comm, event, data);
--	FILL_FIELD(wakeup_event, pid, event, data);
--	FILL_FIELD(wakeup_event, prio, event, data);
--	FILL_FIELD(wakeup_event, success, event, data);
--	FILL_FIELD(wakeup_event, cpu, event, data);
-+	if (sched->tp_handler->wakeup_event) {
-+		struct trace_wakeup_event event = {
-+			.comm	 = perf_evsel__strval(evsel, sample, "comm"),
-+			.pid	 = perf_evsel__intval(evsel, sample, "pid"),
-+			.prio	 = perf_evsel__intval(evsel, sample, "prio"),
-+			.success = perf_evsel__intval(evsel, sample, "success"),
-+			.cpu	 = perf_evsel__intval(evsel, sample, "cpu"),
-+		};
- 
--	if (sched->tp_handler->wakeup_event)
--		err = sched->tp_handler->wakeup_event(sched, &wakeup_event, machine, event, sample);
-+		return sched->tp_handler->wakeup_event(sched, &event, machine, evsel, sample);
-+	}
- 
--	return err;
-+	return 0;
- }
- 
- static int
- map_switch_event(struct perf_sched *sched,
- 		 struct trace_switch_event *switch_event,
- 		 struct machine *machine,
--		 struct event_format *event __maybe_unused,
-+		 struct perf_evsel *evsel __maybe_unused,
- 		 struct perf_sample *sample)
- {
- 	struct thread *sched_out __maybe_unused, *sched_in;
-@@ -1455,120 +1393,113 @@ map_switch_event(struct perf_sched *sched,
- }
- 
- static int process_sched_switch_event(struct perf_tool *tool,
--				      struct event_format *event,
-+				      struct perf_evsel *evsel,
- 				      struct perf_sample *sample,
- 				      struct machine *machine)
- {
- 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
- 	int this_cpu = sample->cpu, err = 0;
--	void *data = sample->raw_data;
--	struct trace_switch_event switch_event;
--
--	FILL_COMMON_FIELDS(switch_event, event, data);
--
--	FILL_ARRAY(switch_event, prev_comm, event, data);
--	FILL_FIELD(switch_event, prev_pid, event, data);
--	FILL_FIELD(switch_event, prev_prio, event, data);
--	FILL_FIELD(switch_event, prev_state, event, data);
--	FILL_ARRAY(switch_event, next_comm, event, data);
--	FILL_FIELD(switch_event, next_pid, event, data);
--	FILL_FIELD(switch_event, next_prio, event, data);
-+	u32 prev_pid = perf_evsel__intval(evsel, sample, "prev_pid"),
-+	    next_pid = perf_evsel__intval(evsel, sample, "next_pid");
- 
- 	if (sched->curr_pid[this_cpu] != (u32)-1) {
- 		/*
- 		 * Are we trying to switch away a PID that is
- 		 * not current?
- 		 */
--		if (sched->curr_pid[this_cpu] != switch_event.prev_pid)
-+		if (sched->curr_pid[this_cpu] != prev_pid)
- 			sched->nr_context_switch_bugs++;
- 	}
--	if (sched->tp_handler->switch_event)
--		err = sched->tp_handler->switch_event(sched, &switch_event, machine, event, sample);
- 
--	sched->curr_pid[this_cpu] = switch_event.next_pid;
-+	if (sched->tp_handler->switch_event) {
-+		struct trace_switch_event event = {
-+			.prev_comm  = perf_evsel__strval(evsel, sample, "prev_comm"),
-+			.prev_pid   = prev_pid,
-+			.prev_prio  = perf_evsel__intval(evsel, sample, "prev_prio"),
-+			.prev_state = perf_evsel__intval(evsel, sample, "prev_state"),
-+			.next_comm  = perf_evsel__strval(evsel, sample, "next_comm"),
-+			.next_pid   = next_pid,
-+			.next_prio  = perf_evsel__intval(evsel, sample, "next_prio"),
-+		};
-+
-+		err = sched->tp_handler->switch_event(sched, &event, machine, evsel, sample);
-+	}
-+
-+	sched->curr_pid[this_cpu] = next_pid;
- 	return err;
- }
- 
- static int process_sched_runtime_event(struct perf_tool *tool,
--				       struct event_format *event,
-+				       struct perf_evsel *evsel,
- 				       struct perf_sample *sample,
- 				       struct machine *machine)
- {
- 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
--	void *data = sample->raw_data;
--	struct trace_runtime_event runtime_event;
--	int err = 0;
- 
--	FILL_ARRAY(runtime_event, comm, event, data);
--	FILL_FIELD(runtime_event, pid, event, data);
--	FILL_FIELD(runtime_event, runtime, event, data);
--	FILL_FIELD(runtime_event, vruntime, event, data);
--
--	if (sched->tp_handler->runtime_event)
--		err = sched->tp_handler->runtime_event(sched, &runtime_event, machine, sample);
-+	if (sched->tp_handler->runtime_event) {
-+		struct trace_runtime_event event = {
-+			.comm	  = perf_evsel__strval(evsel, sample, "comm"),
-+			.pid	  = perf_evsel__intval(evsel, sample, "pid"),
-+			.runtime  = perf_evsel__intval(evsel, sample, "runtime"),
-+			.vruntime = perf_evsel__intval(evsel, sample, "vruntime"),
-+		};
-+		return sched->tp_handler->runtime_event(sched, &event, machine, sample);
-+	}
- 
--	return err;
-+	return 0;
- }
- 
- static int process_sched_fork_event(struct perf_tool *tool,
--				    struct event_format *event,
-+				    struct perf_evsel *evsel,
- 				    struct perf_sample *sample,
- 				    struct machine *machine __maybe_unused)
- {
- 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
--	void *data = sample->raw_data;
--	struct trace_fork_event fork_event;
--	int err = 0;
--
--	FILL_COMMON_FIELDS(fork_event, event, data);
- 
--	FILL_ARRAY(fork_event, parent_comm, event, data);
--	FILL_FIELD(fork_event, parent_pid, event, data);
--	FILL_ARRAY(fork_event, child_comm, event, data);
--	FILL_FIELD(fork_event, child_pid, event, data);
--
--	if (sched->tp_handler->fork_event)
--		err = sched->tp_handler->fork_event(sched, &fork_event, event);
-+	if (sched->tp_handler->fork_event) {
-+		struct trace_fork_event event = {
-+			.parent_comm = perf_evsel__strval(evsel, sample, "parent_comm"),
-+			.child_comm  = perf_evsel__strval(evsel, sample, "child_comm"),
-+			.parent_pid  = perf_evsel__intval(evsel, sample, "parent_pid"),
-+			.child_pid  = perf_evsel__intval(evsel, sample, "child_pid"),
-+		};
-+		return sched->tp_handler->fork_event(sched, &event, evsel);
-+	}
- 
--	return err;
-+	return 0;
- }
- 
- static int process_sched_exit_event(struct perf_tool *tool __maybe_unused,
--				    struct event_format *event,
-+				    struct perf_evsel *evsel,
- 				    struct perf_sample *sample __maybe_unused,
- 				    struct machine *machine __maybe_unused)
- {
--	if (verbose)
--		printf("sched_exit event %p\n", event);
--
-+	pr_debug("sched_exit event %p\n", evsel);
- 	return 0;
- }
- 
- static int process_sched_migrate_task_event(struct perf_tool *tool,
--					    struct event_format *event,
-+					    struct perf_evsel *evsel,
- 					    struct perf_sample *sample,
- 					    struct machine *machine)
- {
- 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
--	void *data = sample->raw_data;
--	struct trace_migrate_task_event migrate_task_event;
--	int err = 0;
- 
--	FILL_COMMON_FIELDS(migrate_task_event, event, data);
--
--	FILL_ARRAY(migrate_task_event, comm, event, data);
--	FILL_FIELD(migrate_task_event, pid, event, data);
--	FILL_FIELD(migrate_task_event, prio, event, data);
--	FILL_FIELD(migrate_task_event, cpu, event, data);
--
--	if (sched->tp_handler->migrate_task_event)
--		err = sched->tp_handler->migrate_task_event(sched, &migrate_task_event, machine, sample);
-+	if (sched->tp_handler->migrate_task_event) {
-+		struct trace_migrate_task_event event = {
-+			.comm = perf_evsel__strval(evsel, sample, "comm"),
-+			.pid  = perf_evsel__intval(evsel, sample, "pid"),
-+			.prio = perf_evsel__intval(evsel, sample, "prio"),
-+			.cpu  = perf_evsel__intval(evsel, sample, "cpu"),
-+		};
-+		return sched->tp_handler->migrate_task_event(sched, &event, machine, sample);
-+	}
- 
--	return err;
-+	return 0;
- }
- 
- typedef int (*tracepoint_handler)(struct perf_tool *tool,
--				  struct event_format *tp_format,
-+				  struct perf_evsel *evsel,
- 				  struct perf_sample *sample,
- 				  struct machine *machine);
- 
-@@ -1592,7 +1523,7 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __maybe_
- 
- 	if (evsel->handler.func != NULL) {
- 		tracepoint_handler f = evsel->handler.func;
--		err = f(tool, evsel->tp_format, sample, machine);
-+		err = f(tool, evsel, sample, machine);
- 	}
- 
- 	return err;
 -- 
 1.7.9.2.358.g22243
 
