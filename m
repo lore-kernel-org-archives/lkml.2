@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758336Ab2IKOG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:06:56 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:35047 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755208Ab2IKOGz (ORCPT
+	id S1758632Ab2IKOKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:10:33 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53426 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab2IKOKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:06:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347368559-31329-1-git-send-email-arnd@arndb.de>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368559-31329-1-git-send-email-arnd@arndb.de>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 11 Sep 2012 19:36:30 +0530
-Message-ID: <CAMQu2gwLoccyjGwjjgndiW2aR--_S=UhCCTdcav6LicvYWe5SQ@mail.gmail.com>
-Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	Tue, 11 Sep 2012 10:10:31 -0400
+Date: Tue, 11 Sep 2012 15:14:20 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Jean Pihet <j-pihet@ti.com>, J Keerthy <j-keerthy@ti.com>,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 08/12] tty/serial: Add kgdb_nmi driver
+Message-ID: <20120911151420.14a29485@pyramind.ukuu.org.uk>
+In-Reply-To: <1347356106-25368-8-git-send-email-anton.vorontsov@linaro.org>
+References: <20120911093042.GA12471@lizard>
+	<1347356106-25368-8-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+> +struct kgdb_nmi_tty_priv {
+> +	struct tty_port port;
+> +	int opened;
+> +	struct tasklet_struct tlet;
+> +	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
 
-On Tue, Sep 11, 2012 at 6:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
->
-> This moves such data out of the omap include directories
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+I don't see where "opened" is used.
 
-[...]
 
->  81 files changed, 87 insertions(+), 87 deletions(-)
->  rename arch/arm/plat-omap/include/plat/mcbsp.h => include/linux/platform_data/dsp-mcbsp.h (100%)
->  rename arch/arm/plat-omap/include/plat/dsp.h => include/linux/platform_data/dsp-omap.h (100%)
->  rename arch/arm/plat-omap/include/plat/keypad.h => include/linux/platform_data/keypad-omap.h (100%)
->  rename arch/arm/plat-omap/include/plat/lcd_mipid.h => include/linux/platform_data/lcd-mipid.h (100%)
->  rename arch/arm/plat-omap/include/plat/nand.h => include/linux/platform_data/mtd-nand-omap2.h (100%)
->  rename arch/arm/plat-omap/include/plat/onenand.h => include/linux/platform_data/mtd-onenand-omap2.h (100%)
->  rename arch/arm/plat-omap/include/plat/remoteproc.h => include/linux/platform_data/remoteproc-omap.h (100%)
->  rename arch/arm/plat-omap/include/plat/voltage.h => include/linux/platform_data/smartreflex-omap.h (100%)
->  rename arch/arm/plat-omap/include/plat/mcspi.h => include/linux/platform_data/spi-omap2-mcspi.h (100%)
->
-Just curious to know how you came with some of the above header names ?
+> +static const struct tty_operations kgdb_nmi_tty_ops = {
+> +	.open		= kgdb_nmi_tty_open,
+> +	.close		= kgdb_nmi_tty_close,
+> +	.install	= kgdb_nmi_tty_install,
+> +	.cleanup	= kgdb_nmi_tty_cleanup,
+> +	.write_room	= kgdb_nmi_tty_write_room,
+> +	.write		= kgdb_nmi_tty_write,
 
-plat/mcbsp ---> dsp-mcbsp.h
-There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
-better name.
+And a hangup method (just using tty_port helpers will do the job - it's
+needed so vhangup() works as expected on a port)
 
-plat/nand.h --> /mtd-nand-omap2.h
-plat/onenand.h --> /mtd-onenand-omap2.h
-May be "omap-nand.h" and "omap-onenand.h"
 
-plat/mcspi.h-->spi-omap2-mcspi.h
-May be "omap-spi.h"
-
-Regards,
-Santosh
+Alan
