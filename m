@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab2IKAZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:25:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57873 "EHLO
+	id S1758914Ab2IKAZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:25:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48873 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758511Ab2IKAXC (ORCPT
+	with ESMTP id S1758782Ab2IKAXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:23:02 -0400
+	Mon, 10 Sep 2012 20:23:04 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
-        neilb@suse.de, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH v2 17/26] pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
-Date: Mon, 10 Sep 2012 17:22:28 -0700
-Message-Id: <1347322957-25260-18-git-send-email-koverstreet@google.com>
+        neilb@suse.de
+Subject: [PATCH v2 18/26] raid1: use bio_copy_data()
+Date: Mon, 10 Sep 2012 17:22:29 -0700
+Message-Id: <1347322957-25260-19-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
@@ -22,44 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the short term this'll help with code auditing, and if this code ever
-gets used now it's converted :)
+This doesn't really delete any code _yet_, but once immutable bvecs are
+done we can just delete the rest of the code in that loop.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jiri Kosina <jkosina@suse.cz>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: NeilBrown <neilb@suse.de>
 ---
- drivers/block/pktcdvd.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/md/raid1.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 1079a77..5318ad39 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -1156,16 +1156,15 @@ static int pkt_start_recovery(struct packet_data *pkt)
- 	new_sector = new_block * (CD_FRAMESIZE >> 9);
- 	pkt->sector = new_sector;
- 
-+	bio_reset(pkt->bio);
-+	pkt->bio->bi_bdev = pd->bdev;
-+	pkt->bio->bi_rw = REQ_WRITE;
- 	pkt->bio->bi_sector = new_sector;
--	pkt->bio->bi_next = NULL;
--	pkt->bio->bi_flags = 1 << BIO_UPTODATE;
--	pkt->bio->bi_idx = 0;
--
--	BUG_ON(pkt->bio->bi_rw != REQ_WRITE);
--	BUG_ON(pkt->bio->bi_vcnt != pkt->frames);
--	BUG_ON(pkt->bio->bi_size != pkt->frames * CD_FRAMESIZE);
--	BUG_ON(pkt->bio->bi_end_io != pkt_end_io_packet_write);
--	BUG_ON(pkt->bio->bi_private != pkt);
-+	pkt->bio->bi_size = pkt->frames * CD_FRAMESIZE;
-+	pkt->bio->bi_vcnt = pkt->frames;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index b1072da..6cd1fb2 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1895,10 +1895,9 @@ static int process_checks(struct r1bio *r1_bio)
+ 			else
+ 				bi->bv_len = size;
+ 			size -= PAGE_SIZE;
+-			memcpy(page_address(bi->bv_page),
+-			       page_address(pbio->bi_io_vec[j].bv_page),
+-			       PAGE_SIZE);
+ 		}
 +
-+	pkt->bio->bi_end_io = pkt_end_io_packet_write;
-+	pkt->bio->bi_private = pkt;
- 
- 	drop_super(sb);
- 	return 1;
++		bio_copy_data(sbio, pbio);
+ 	}
+ 	return 0;
+ }
 -- 
 1.7.12
 
