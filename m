@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab2IKA1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:27:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56899 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758719Ab2IKAW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758728Ab2IKAW5 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Sep 2012 20:22:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47085 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab2IKAWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 20:22:50 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
         neilb@suse.de
-Subject: [PATCH v2 12/26] raid1: use bio_reset()
-Date: Mon, 10 Sep 2012 17:22:23 -0700
-Message-Id: <1347322957-25260-13-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 07/26] block: Don't use bi_idx in bio_split() or require it to be 0
+Date: Mon, 10 Sep 2012 17:22:18 -0700
+Message-Id: <1347322957-25260-8-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
@@ -22,65 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I couldn't figure out what sbio->bi_end_io in process_checks() was
-supposed to be, so I took the easy way out.
+Prep work for immutable bio_vecs/efficient bio splitting: they require
+auditing and removing most uses of bi_idx.
+
+So here we convert bio_split() to respect the current value of bi_idx
+and use the bio_iovec() macro, instead of assuming bi_idx will be 0.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
 ---
- drivers/md/raid1.c | 22 +++++-----------------
- 1 file changed, 5 insertions(+), 17 deletions(-)
+ drivers/block/drbd/drbd_req.c | 6 +++---
+ drivers/md/raid0.c            | 3 +--
+ drivers/md/raid10.c           | 3 +--
+ fs/bio-integrity.c            | 4 ++--
+ fs/bio.c                      | 7 +++----
+ 5 files changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index ee85154..bd3e3b9 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1835,6 +1835,7 @@ static int process_checks(struct r1bio *r1_bio)
- 	int primary;
- 	int i;
- 	int vcnt;
-+	bio_end_io_t *bi_end_io;
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index af69a96..57eb253 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1155,11 +1155,11 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
  
- 	for (primary = 0; primary < conf->raid_disks * 2; primary++)
- 		if (r1_bio->bios[primary]->bi_end_io == end_sync_read &&
-@@ -1876,13 +1877,11 @@ static int process_checks(struct r1bio *r1_bio)
- 			continue;
- 		}
- 		/* fixup the bio for reuse */
-+		bi_end_io = sbio->bi_end_io;
-+		bio_reset(sbio);
-+
- 		sbio->bi_vcnt = vcnt;
- 		sbio->bi_size = r1_bio->sectors << 9;
--		sbio->bi_idx = 0;
--		sbio->bi_phys_segments = 0;
--		sbio->bi_flags &= ~(BIO_POOL_MASK - 1);
--		sbio->bi_flags |= 1 << BIO_UPTODATE;
--		sbio->bi_next = NULL;
- 		sbio->bi_sector = r1_bio->sector +
- 			conf->mirrors[i].rdev->data_offset;
- 		sbio->bi_bdev = conf->mirrors[i].rdev->bdev;
-@@ -2426,18 +2425,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr, int *skipp
- 	for (i = 0; i < conf->raid_disks * 2; i++) {
- 		struct md_rdev *rdev;
- 		bio = r1_bio->bios[i];
--
--		/* take from bio_init */
--		bio->bi_next = NULL;
--		bio->bi_flags &= ~(BIO_POOL_MASK-1);
--		bio->bi_flags |= 1 << BIO_UPTODATE;
--		bio->bi_rw = READ;
--		bio->bi_vcnt = 0;
--		bio->bi_idx = 0;
--		bio->bi_phys_segments = 0;
--		bio->bi_size = 0;
--		bio->bi_end_io = NULL;
--		bio->bi_private = NULL;
-+		bio_reset(bio);
+ 	/* can this bio be split generically?
+ 	 * Maybe add our own split-arbitrary-bios function. */
+-	if (bio->bi_vcnt != 1 || bio->bi_idx != 0 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
++	if (bio_segments(bio) != 1 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
+ 		/* rather error out here than BUG in bio_split */
+ 		dev_err(DEV, "bio would need to, but cannot, be split: "
+-		    "(vcnt=%u,idx=%u,size=%u,sector=%llu)\n",
+-		    bio->bi_vcnt, bio->bi_idx, bio->bi_size,
++		    "(segments=%u,size=%u,sector=%llu)\n",
++		    bio_segments(bio), bio->bi_size,
+ 		    (unsigned long long)bio->bi_sector);
+ 		bio_endio(bio, -EINVAL);
+ 	} else {
+diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
+index 387cb89..0587450 100644
+--- a/drivers/md/raid0.c
++++ b/drivers/md/raid0.c
+@@ -509,8 +509,7 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
+ 		sector_t sector = bio->bi_sector;
+ 		struct bio_pair *bp;
+ 		/* Sanity check -- queue functions should prevent this happening */
+-		if (bio->bi_vcnt != 1 ||
+-		    bio->bi_idx != 0)
++		if (bio_segments(bio) != 1)
+ 			goto bad_map;
+ 		/* This is a one page bio that upper layers
+ 		 * refuse to split for us, so we need to split it.
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 9715aaf..bbd08f5 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1081,8 +1081,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
+ 			 || conf->prev.near_copies < conf->prev.raid_disks))) {
+ 		struct bio_pair *bp;
+ 		/* Sanity check -- queue functions should prevent this happening */
+-		if (bio->bi_vcnt != 1 ||
+-		    bio->bi_idx != 0)
++		if (bio_segments(bio) != 1)
+ 			goto bad_map;
+ 		/* This is a one page bio that upper layers
+ 		 * refuse to split for us, so we need to split it.
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 1d64f7f..e8555a5 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -657,8 +657,8 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+ 	bp->bio1.bi_integrity = &bp->bip1;
+ 	bp->bio2.bi_integrity = &bp->bip2;
  
- 		rdev = rcu_dereference(conf->mirrors[i].rdev);
- 		if (rdev == NULL ||
+-	bp->iv1 = bip->bip_vec[0];
+-	bp->iv2 = bip->bip_vec[0];
++	bp->iv1 = bip->bip_vec[bip->bip_idx];
++	bp->iv2 = bip->bip_vec[bip->bip_idx];
+ 
+ 	bp->bip1.bip_vec = &bp->iv1;
+ 	bp->bip2.bip_vec = &bp->iv2;
+diff --git a/fs/bio.c b/fs/bio.c
+index 07587c0..addeac2 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1616,8 +1616,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
+ 	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
+ 				bi->bi_sector + first_sectors);
+ 
+-	BUG_ON(bi->bi_vcnt != 1);
+-	BUG_ON(bi->bi_idx != 0);
++	BUG_ON(bio_segments(bi) != 1);
+ 	atomic_set(&bp->cnt, 3);
+ 	bp->error = 0;
+ 	bp->bio1 = *bi;
+@@ -1626,8 +1625,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
+ 	bp->bio2.bi_size -= first_sectors << 9;
+ 	bp->bio1.bi_size = first_sectors << 9;
+ 
+-	bp->bv1 = bi->bi_io_vec[0];
+-	bp->bv2 = bi->bi_io_vec[0];
++	bp->bv1 = *bio_iovec(bi);
++	bp->bv2 = *bio_iovec(bi);
+ 	bp->bv2.bv_offset += first_sectors << 9;
+ 	bp->bv2.bv_len -= first_sectors << 9;
+ 	bp->bv1.bv_len = first_sectors << 9;
 -- 
 1.7.12
 
