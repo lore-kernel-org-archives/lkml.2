@@ -1,40 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab2IKA16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:27:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41845 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932467Ab2IKA1y (ORCPT
+	id S932407Ab2IKA1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:27:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52818 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758692Ab2IKAWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:27:54 -0400
-Date: Tue, 11 Sep 2012 08:27:45 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, ola.o.lilja@stericsson.com,
-        roger.xr.nilsson@stericsson.com, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 05/17] ASoC: Ux500: Minor coding layout changes
-Message-ID: <20120911002744.GI30699@opensource.wolfsonmicro.com>
-References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
- <1345816913-4113-6-git-send-email-lee.jones@linaro.org>
- <20120910164448.GD24506@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910164448.GD24506@gmail.com>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Sep 2012 20:22:53 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
+        neilb@suse.de
+Subject: [PATCH v2 09/26] block: Remove some unnecessary bi_vcnt usage
+Date: Mon, 10 Sep 2012 17:22:20 -0700
+Message-Id: <1347322957-25260-10-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 05:44:49PM +0100, Lee Jones wrote:
-> Ola poke.
+More prep work for immutable bvecs/effecient bio splitting - usage of
+bi_vcnt has to be auditing, so getting rid of all the unnecessary usage
+makes that easier.
 
-Please don't send contentless top-posted pings - if you think things
-have been forgotten you should generally resend them, there's a good
-chance that if things have been lost people don't have the original any
-more.  Replying means the patch is quoted so is painful to apply if
-anyone wants to test (or otherwise apply the patch) and top posting is
-generally frowned upon.
+Plus, bio_segments() is really what this code wanted, as it respects the
+current value of bi_idx.
+
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+CC: Jens Axboe <axboe@kernel.dk>
+---
+ drivers/message/fusion/mptsas.c          |  6 +++---
+ drivers/scsi/libsas/sas_expander.c       |  6 +++---
+ drivers/scsi/mpt2sas/mpt2sas_transport.c | 10 +++++-----
+ 3 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 551262e..5406a9f 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -2235,10 +2235,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	}
+ 
+ 	/* do we need to support multiple segments? */
+-	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
++	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
+ 		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u %u, rsp %u %u\n",
+-		    ioc->name, __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
+-		    rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
++		    ioc->name, __func__, bio_segments(req->bio), blk_rq_bytes(req),
++		    bio_segments(rsp->bio), blk_rq_bytes(rsp));
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index efc6e72..ee331a7 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -2151,10 +2151,10 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	}
+ 
+ 	/* do we need to support multiple segments? */
+-	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
++	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
+ 		printk("%s: multiple segments req %u %u, rsp %u %u\n",
+-		       __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
+-		       rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
++		       __func__, bio_segments(req->bio), blk_rq_bytes(req),
++		       bio_segments(rsp->bio), blk_rq_bytes(rsp));
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index c6cf20f..403a57b 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -1939,7 +1939,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	ioc->transport_cmds.status = MPT2_CMD_PENDING;
+ 
+ 	/* Check if the request is split across multiple segments */
+-	if (req->bio->bi_vcnt > 1) {
++	if (bio_segments(req->bio) > 1) {
+ 		u32 offset = 0;
+ 
+ 		/* Allocate memory and copy the request */
+@@ -1971,7 +1971,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 
+ 	/* Check if the response needs to be populated across
+ 	 * multiple segments */
+-	if (rsp->bio->bi_vcnt > 1) {
++	if (bio_segments(rsp->bio) > 1) {
+ 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
+ 		    &pci_dma_in);
+ 		if (!pci_addr_in) {
+@@ -2038,7 +2038,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	sgl_flags = (MPI2_SGE_FLAGS_SIMPLE_ELEMENT |
+ 	    MPI2_SGE_FLAGS_END_OF_BUFFER | MPI2_SGE_FLAGS_HOST_TO_IOC);
+ 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
+-	if (req->bio->bi_vcnt > 1) {
++	if (bio_segments(req->bio) > 1) {
+ 		ioc->base_add_sg_single(psge, sgl_flags |
+ 		    (blk_rq_bytes(req) - 4), pci_dma_out);
+ 	} else {
+@@ -2054,7 +2054,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	    MPI2_SGE_FLAGS_LAST_ELEMENT | MPI2_SGE_FLAGS_END_OF_BUFFER |
+ 	    MPI2_SGE_FLAGS_END_OF_LIST);
+ 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
+-	if (rsp->bio->bi_vcnt > 1) {
++	if (bio_segments(rsp->bio) > 1) {
+ 		ioc->base_add_sg_single(psge, sgl_flags |
+ 		    (blk_rq_bytes(rsp) + 4), pci_dma_in);
+ 	} else {
+@@ -2099,7 +2099,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 		    le16_to_cpu(mpi_reply->ResponseDataLength);
+ 		/* check if the resp needs to be copied from the allocated
+ 		 * pci mem */
+-		if (rsp->bio->bi_vcnt > 1) {
++		if (bio_segments(rsp->bio) > 1) {
+ 			u32 offset = 0;
+ 			u32 bytes_to_copy =
+ 			    le16_to_cpu(mpi_reply->ResponseDataLength);
+-- 
+1.7.12
+
