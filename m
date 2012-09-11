@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab2IKQ1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 12:27:11 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:37000 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040Ab2IKQ1G convert rfc822-to-8bit (ORCPT
+	id S1758194Ab2IKQ36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 12:29:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45125 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab2IKQ3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 12:27:06 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-127.messagelabs.com!1347380825!7433225!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.3; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ryan Mallon <rmallon@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Axel Lin <axel.lin@gmail.com>
-Date: Tue, 11 Sep 2012 11:26:55 -0500
-Subject: RE: [PATCH 03/16] ARM: ep93xx: move platform_data definitions
-Thread-Topic: [PATCH 03/16] ARM: ep93xx: move platform_data definitions
-Thread-Index: Ac2QHWDWQ0uA0PxuSN6WoAjCza1e+wAHD7OA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206B1EB884D@AUSP01VMBX24.collaborationhost.net>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-3-git-send-email-arnd@arndb.de>
-In-Reply-To: <1347368390-31252-3-git-send-email-arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Sep 2012 12:29:54 -0400
 MIME-Version: 1.0
+In-Reply-To: <504EA6FE.7070405@linux.vnet.ibm.com>
+References: <5044692D.7080608@linux.vnet.ibm.com>
+	<5046B9EE.7000804@linux.vnet.ibm.com>
+	<0000013996b6f21d-d45be653-3111-4aef-b079-31dc673e6fd8-000000@email.amazonses.com>
+	<504812E7.3000700@linux.vnet.ibm.com>
+	<20120906222933.GR2448@linux.vnet.ibm.com>
+	<CAOJsxLFA1sk4KZkRuPL_giktSkFK_g7w-mGi_OEQ9fVXF2UVzw@mail.gmail.com>
+	<504EA6FE.7070405@linux.vnet.ibm.com>
+Date: Tue, 11 Sep 2012 19:29:53 +0300
+X-Google-Sender-Auth: tjW_c72Jz7PE5KfGloVFk4gBGVo
+Message-ID: <CAOJsxLE4TEOJwAnB6M1SKqB1=M9vttHjw5XjNwfgO_ZiaUHyBQ@mail.gmail.com>
+Subject: Re: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
+From: Pekka Enberg <penberg@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 11, 2012 6:00 AM, Arnd Bergmann wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
+On Tue, Sep 11, 2012 at 5:50 AM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> On 09/08/2012 04:39 PM, Pekka Enberg wrote:
+>> On Fri, Sep 7, 2012 at 1:29 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>>> On Thu, Sep 06, 2012 at 11:05:11AM +0800, Michael Wang wrote:
+>>>> On 09/05/2012 09:55 PM, Christoph Lameter wrote:
+>>>>> On Wed, 5 Sep 2012, Michael Wang wrote:
+>>>>>
+>>>>>> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+>>>>>> fake report generated.
+>>>>>
+>>>>> Ahh... That is a key insight into why this occurs.
+>>>>>
+>>>>>> This should not happen since we already have init_lock_keys() which will
+>>>>>> reassign the lock class for both l3 list and l3 alien.
+>>>>>
+>>>>> Right. I was wondering why we still get intermitted reports on this.
+>>>>>
+>>>>>> This patch will invoke init_lock_keys() after we done enable_cpucache()
+>>>>>> instead of before to avoid the fake DEADLOCK report.
+>>>>>
+>>>>> Acked-by: Christoph Lameter <cl@linux.com>
+>>>>
+>>>> Thanks for your review.
+>>>>
+>>>> And add Paul to the cc list(my skills on mailing is really poor...).
+>>>
+>>> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>
+>> I'd also like to tag this for the stable tree to avoid bogus lockdep
+>> reports. How far back in release history should we queue this?
+> Hi, Pekka
 >
-> This moves such data out of the ep93xx include directories
+> Sorry for the delayed reply, I try to find out the reason for commit
+> 30765b92 but not get it yet, so I add Peter to the cc list.
 >
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ryan Mallon <rmallon@gmail.com>
-> Cc: Jeff Garzik <jgarzik@pobox.com> (supporter:SERIAL ATA
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Jaroslav Kysela <perex@perex.cz>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Cc: Mika Westerberg <mika.westerberg@iki.fi>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> ---
->  Documentation/spi/ep93xx_spi                                     |    2 +-
->  arch/arm/mach-ep93xx/core.c                                      |    6 +++---
->  arch/arm/mach-ep93xx/dma.c                                       |    2 +-
->  arch/arm/mach-ep93xx/edb93xx.c                                   |    4 ++--
->  arch/arm/mach-ep93xx/simone.c                                    |    2 +-
->  arch/arm/mach-ep93xx/snappercl15.c                               |    2 +-
->  arch/arm/mach-ep93xx/vision_ep9307.c                             |    4 ++--
->  drivers/ata/pata_ep93xx.c                                        |    2 +-
->  drivers/dma/ep93xx_dma.c                                         |    2 +-
->  drivers/input/keyboard/ep93xx_keypad.c                           |    2 +-
->  drivers/spi/spi-ep93xx.c                                         |    4 ++--
->  drivers/video/ep93xx-fb.c                                        |    2 +-
->  .../mach/dma.h => include/linux/platform_data/dma-ep93xx.h       |    0
->  .../linux/platform_data/keypad-ep93xx.h                          |    0
->  .../ep93xx_spi.h => include/linux/platform_data/spi-ep93xx.h     |    0
->  .../mach/fb.h => include/linux/platform_data/video-ep93xx.h      |    0
->  sound/soc/ep93xx/ep93xx-ac97.c                                   |    2 +-
->  sound/soc/ep93xx/ep93xx-i2s.c                                    |    2 +-
->  sound/soc/ep93xx/ep93xx-pcm.c                                    |    2 +-
->  19 files changed, 20 insertions(+), 20 deletions(-)
->  rename arch/arm/mach-ep93xx/include/mach/dma.h => include/linux/platform_data/dma-ep93xx.h (100%)
->  rename arch/arm/mach-ep93xx/include/mach/ep93xx_keypad.h => include/linux/platform_data/keypad-ep93xx.h (100%)
->  rename arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h => include/linux/platform_data/spi-ep93xx.h (100%)
->  rename arch/arm/mach-ep93xx/include/mach/fb.h => include/linux/platform_data/video-ep93xx.h (100%)
+> The below patch for release 3.0.0 is the one to cause the bogus report.
+>
+> commit 30765b92ada267c5395fc788623cb15233276f5c
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Thu Jul 28 23:22:56 2011 +0200
+>
+>     slab, lockdep: Annotate the locks before using them
+>
+>     Fernando found we hit the regular OFF_SLAB 'recursion' before we
+>     annotate the locks, cure this.
+>
+>     The relevant portion of the stack-trace:
+>
+>     > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
+>     > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
+>     > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
+>     > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
+>     > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
+>     > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
+>     > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
+>     > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
+>     > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
+>     > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
+>
+>     Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+>     Acked-by: Pekka Enberg <penberg@kernel.org>
+>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>
+> It moved init_lock_keys() before we build up the alien, so we failed to
+> reclass it.
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
-Arnd,
-
-What about gpio-ep93xx.h? It does not have any platform_data in
-it but the gpio driver (driver/gpio/gpio-ep93xx.c) does include it
-from the mach-* directory.
-
-Regards,
-Hartley
-
+I've queued the patch for v3.7. Thanks!
