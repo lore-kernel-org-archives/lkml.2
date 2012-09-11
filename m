@@ -1,140 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab2IKFDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 01:03:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34644 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab2IKFDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 01:03:34 -0400
-Date: Tue, 11 Sep 2012 15:03:26 +1000
-From: NeilBrown <neilb@suse.de>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, tj@kernel.org
-Subject: Re: [PATCH v2 13/26] raid5: use bio_reset()
-Message-ID: <20120911150326.79f066c0@notabene.brown>
-In-Reply-To: <1347322957-25260-14-git-send-email-koverstreet@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
-	<1347322957-25260-14-git-send-email-koverstreet@google.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/GuKwZFHvt3YJqbNxrq9M8j+"; protocol="application/pgp-signature"
+	id S1753663Ab2IKFEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 01:04:48 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37492 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab2IKFEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 01:04:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120911021051.GB22077@localhost>
+References: <1346083301-3545-1-git-send-email-linkinjeon@gmail.com>
+	<20120911021051.GB22077@localhost>
+Date: Tue, 11 Sep 2012 14:04:46 +0900
+Message-ID: <CAKYAXd8M+V5v2ZuU-cV8CYPa4VyOTqOeNuWg7ufMVsSqwNBdsw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Documentation: add description of dirty_background_time
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GuKwZFHvt3YJqbNxrq9M8j+
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi. Wu.
 
-On Mon, 10 Sep 2012 17:22:24 -0700 Kent Overstreet <koverstreet@google.com>
-wrote:
+I will update documentation as per your suggestion.
+Thank you.
 
-> Had to shuffle the code around a bit (where bi_rw and bi_end_io were
-> set), but shouldn't really be anything tricky here
->=20
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: NeilBrown <neilb@suse.de>
-> ---
->  drivers/md/raid5.c | 28 ++++++++++++++--------------
->  1 file changed, 14 insertions(+), 14 deletions(-)
->=20
-> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> index 7c19dbe..ebe43f7 100644
-> --- a/drivers/md/raid5.c
-> +++ b/drivers/md/raid5.c
-> @@ -561,14 +561,6 @@ static void ops_run_io(struct stripe_head *sh, struc=
-t stripe_head_state *s)
->  		bi =3D &sh->dev[i].req;
->  		rbi =3D &sh->dev[i].rreq; /* For writing to replacement */
-> =20
-> -		bi->bi_rw =3D rw;
-> -		rbi->bi_rw =3D rw;
-> -		if (rw & WRITE) {
-> -			bi->bi_end_io =3D raid5_end_write_request;
-> -			rbi->bi_end_io =3D raid5_end_write_request;
-> -		} else
-> -			bi->bi_end_io =3D raid5_end_read_request;
-> -
->  		rcu_read_lock();
->  		rrdev =3D rcu_dereference(conf->disks[i].replacement);
->  		smp_mb(); /* Ensure that if rrdev is NULL, rdev won't be */
-> @@ -643,7 +635,14 @@ static void ops_run_io(struct stripe_head *sh, struc=
-t stripe_head_state *s)
-> =20
->  			set_bit(STRIPE_IO_STARTED, &sh->state);
-> =20
-> +			bio_reset(bi);
->  			bi->bi_bdev =3D rdev->bdev;
-> +			bi->bi_rw =3D rw;
-> +			bi->bi_end_io =3D (rw & WRITE)
-> +				? raid5_end_write_request
-> +				: raid5_end_read_request;
-> +			bi->bi_private =3D sh;
-> +
->  			pr_debug("%s: for %llu schedule op %ld on disc %d\n",
->  				__func__, (unsigned long long)sh->sector,
->  				bi->bi_rw, i);
-> @@ -657,12 +656,9 @@ static void ops_run_io(struct stripe_head *sh, struc=
-t stripe_head_state *s)
->  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
->  				bi->bi_rw |=3D REQ_FLUSH;
-> =20
-> -			bi->bi_flags =3D 1 << BIO_UPTODATE;
-> -			bi->bi_idx =3D 0;
->  			bi->bi_io_vec[0].bv_len =3D STRIPE_SIZE;
->  			bi->bi_io_vec[0].bv_offset =3D 0;
->  			bi->bi_size =3D STRIPE_SIZE;
-> -			bi->bi_next =3D NULL;
->  			if (rrdev)
->  				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
->  			generic_make_request(bi);
-> @@ -674,7 +670,14 @@ static void ops_run_io(struct stripe_head *sh, struc=
-t stripe_head_state *s)
-> =20
->  			set_bit(STRIPE_IO_STARTED, &sh->state);
-> =20
-> +			bio_reset(rbi);
->  			rbi->bi_bdev =3D rrdev->bdev;
-> +			rbi->bi_rw =3D rw;
-> +			rbi->bi_end_io =3D (rw & WRITE)
-> +				? raid5_end_write_request
-> +				: raid5_end_read_request;
-
-'rbi->bi_end_io' can only ever be raid5_end_write_request.  We only get here
-on a write.
-I'd be OK with=20
-    BUG_ON(!(rw & WRITE));
-but I don't want the condition in the assignment.
-
-The rest looks quite sane.
-
-Thanks
-NeilBrown
-
-
---Sig_/GuKwZFHvt3YJqbNxrq9M8j+
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUE7GHjnsnt1WYoG5AQL6kBAAmgyeYyjUqOlRvWLVaXtHo9arv6VWhlsf
-rfEj057kWkSCOAoIrg8VCXnlzAxJtb5SDDS8QGHlx1Y1m9uLBPNN0osUgnhTWAO7
-AqH4LypQ/uqwk4JcSd5p+dnGyXizr7oRlPNp1DrIlbnlpqBa0yBdLO+qljfcMVID
-Dn5vwK/1XwIPfuPhpsjtse/GgFPUTmVcBSQcrP03uaiYqgpO4EJgLTmAju1WYnMS
-LcO4Vsd+TfqKz3IjoBPPuom0cm2tX116TWIkI7M4TR4iircph+LkBjqpysXm4VVO
-WrDY0vyqSFyo0jQJtd3jrfV8l83m5/D6Y59wvbjbovCcnwJucNzjsI6BeVjgg9PB
-xmsSIYlsxnQuxXAjPkfR9bADnat40clp/hY8ZIrmEugS3fcTa9qmqKF9a28RhNut
-4ft6pt0q+wLOjAJ9JhHgbKwgRumxQ/4jORlieDO2LVYHk9oQ+JonqDCnF3q1ZAo1
-c/HxFAy5ARu9Fz28O+bPQGJ14fvsG8NhQ+KKqmIKGBJa0DyScwCreLZdMeO4uO0E
-8gmaRImIkKvr3V7H1AucTYdW4n96ZPPC1Tzqx6Bu+sUv2k5ipDCiuTfstCfLWWo5
-obLM03El8IjYSNcrB3j1+oiGXPz6AuCKaJqx9GpznhmnyHu5dOW8sHSyTEpSuuNn
-5SwE7qRS/Q0=
-=vViI
------END PGP SIGNATURE-----
-
---Sig_/GuKwZFHvt3YJqbNxrq9M8j+--
+2012/9/11, Fengguang Wu <fengguang.wu@intel.com>:
+> On Mon, Aug 27, 2012 at 12:01:41PM -0400, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> This commit adds dirty_background_time description in bdi sysfs
+>> documentation.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
+>> ---
+>>  Documentation/ABI/testing/sysfs-class-bdi |   13 +++++++++++++
+>>  1 file changed, 13 insertions(+)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-class-bdi
+>> b/Documentation/ABI/testing/sysfs-class-bdi
+>> index 5f50097..018e26a 100644
+>> --- a/Documentation/ABI/testing/sysfs-class-bdi
+>> +++ b/Documentation/ABI/testing/sysfs-class-bdi
+>> @@ -48,3 +48,16 @@ max_ratio (read-write)
+>>  	most of the write-back cache.  For example in case of an NFS
+>>  	mount that is prone to get stuck, or a FUSE mount which cannot
+>>  	be trusted to play fair.
+>> +
+>> +dirty_background_time (read-write)
+>> +
+>> +	It is used to start early writeback of given bdi once bdi dirty
+>> +	data exceeds product of average write bandwidth and
+>> +	dirty_background_time.
+>
+> It may be worth to note that it works _in parallel with_ the global
+> background writeback threshold rather than replacing it.
+>
+>> It is mainly useful for tuning writeback
+>> +	speed at 'NFS Server' so that NFS client could see better write speed.
+>
+> Hopefully more clear:
+>
+> A good use case is setting it to around 100 (1 second) in the NFS
+> server for improving NFS write performance. Note that it's not
+> recommended to set it to a too small value, which might lead to
+> small IO size. Setting it to 0 disables the feature.
+>
+>> +	However, sometimes it may not match user expectations as it is based
+>> +	on bdi write bandwidth estimation.
+>
+> The users should not expect this threshold to work accurately.
+>
+>> Write bandwidth estimation is a
+>> +	best effort to estimate bdi write speed bandwidth. But it can be
+>> +	wildly wrong in certain situations.
+>
+> such as sudden change of workload (including the workload startup stage),
+> or if there are no heavy writes since boot, in which case there is no
+> reasonable estimation yet.
+>
+>> +	dirty_background_time is expressed in msec.
+>
+> That can be eliminated if changing to dirty_background_centisecs.
+>
+> Thanks,
+> Fengguang
+>
