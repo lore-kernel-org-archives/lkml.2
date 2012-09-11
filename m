@@ -1,88 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab2IKJiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:38:01 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58498 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756781Ab2IKJh7 (ORCPT
+	id S1758134Ab2IKJiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:38:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41808 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756781Ab2IKJiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:37:59 -0400
-Message-ID: <504EFE6D.3090901@stericsson.com>
-Date: Tue, 11 Sep 2012 11:03:41 +0200
-From: Ola Lilja <ola.o.lilja@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 05/17] ASoC: Ux500: Minor coding layout changes
-References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org> <1345816913-4113-6-git-send-email-lee.jones@linaro.org> <20120910164448.GD24506@gmail.com>
-In-Reply-To: <20120910164448.GD24506@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Sep 2012 05:38:01 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: [PATCH 01/12] kernel/debug: Mask KGDB NMI upon entry
+Date: Tue, 11 Sep 2012 02:34:55 -0700
+Message-Id: <1347356106-25368-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.11.5
+In-Reply-To: <20120911093042.GA12471@lizard>
+References: <20120911093042.GA12471@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 06:44 PM, Lee Jones wrote:
+The new arch callback should manage NMIs that usually cause KGDB to
+enter. That is, not all NMIs should be enabled/disabled, but only
+those that issue kgdb_handle_exception().
 
-> Ola poke.
-> 
-> On Fri, Aug 24, 2012 at 03:01:41PM +0100, Lee Jones wrote:
->> Includes removal of duplicate debug print affirming entry into
->> the probe function, an unnecessary line break of a coding line
->> <80 chars and a white space change (unintentional tab).
->> 
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->> ---
->>  sound/soc/ux500/mop500.c |    7 ++-----
->>  1 file changed, 2 insertions(+), 5 deletions(-)
->> 
->> diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
->> index 6840df7..356611d 100644
->> --- a/sound/soc/ux500/mop500.c
->> +++ b/sound/soc/ux500/mop500.c
->> @@ -88,8 +88,6 @@ static int __devinit mop500_probe(struct platform_device *pdev)
->>  	struct device_node *np = pdev->dev.of_node;
->>  	int ret;
->>  
->> -	pr_debug("%s: Enter.\n", __func__);
->> -
->>  	dev_dbg(&pdev->dev, "%s: Enter.\n", __func__);
->>  
->>  	mop500_card.dev = &pdev->dev;
->> @@ -117,8 +115,7 @@ static int __devinit mop500_probe(struct platform_device *pdev)
->>  	ret = snd_soc_register_card(&mop500_card);
->>  	if (ret)
->>  		dev_err(&pdev->dev,
->> -			"Error: snd_soc_register_card failed (%d)!\n",
->> -			ret);
->> +			"Error: snd_soc_register_card failed (%d)!\n", ret);
->>  
->>  	return ret;
->>  }
->> @@ -131,7 +128,7 @@ static int __devexit mop500_remove(struct platform_device *pdev)
->>  
->>  	snd_soc_unregister_card(mop500_card);
->>  	mop500_ab8500_remove(mop500_card);
->> -	
->> +
->>  	return 0;
->>  }
->>  
->> -- 
->> 1.7.9.5
->> 
-> 
+We must mask it as serial-line interrupt can be used as an NMI, so
+if the original KGDB-entry cause was say a breakpoint, then every
+input to KDB console will cause KGDB to reenter, which we don't want.
 
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ include/linux/kgdb.h      | 23 +++++++++++++++++++++++
+ kernel/debug/debug_core.c | 36 +++++++++++++++++++++++++++++++++---
+ 2 files changed, 56 insertions(+), 3 deletions(-)
 
-Nothing to say about this one. Looks OK.
+diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+index c4d2fc1..3b111a6 100644
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -221,6 +221,29 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+  */
+ extern void kgdb_arch_late(void);
+ 
++/**
++ *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
++ *	@on: Flag to either enable or disable an NMI
++ *
++ *	This is an architecture-specific "back-end" for kgdb_enable_nmi(). The
++ *	call does not count disable/enable requests, do not use it directly.
++ */
++extern void kgdb_arch_enable_nmi(bool on);
++
++/**
++ *	kgdb_enable_nmi - Enable or disable KGDB-entry NMI
++ *	@on: Flag to either enable or disable an NMI
++ *
++ *	This function manages NMIs that usually cause KGDB to enter. That is,
++ *	not all NMIs should be enabled or disabled, but only those that issue
++ *	kgdb_handle_exception().
++ *
++ *	The call counts disable requests, and thus allows to nest disables.
++ *	But trying to enable already enabled NMI is an error. The call returns
++ *	1 if NMI has been actually enabled after the call, and a value <= 0 if
++ *	it is still disabled.
++ */
++extern int kgdb_enable_nmi(bool on);
+ 
+ /**
+  * struct kgdb_arch - Describe architecture specific values.
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 0557f24..b621d1e 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -214,6 +214,30 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++void __weak kgdb_arch_enable_nmi(bool on)
++{
++}
++
++int kgdb_enable_nmi(bool on)
++{
++	static atomic_t cnt;
++	int ret;
++
++	ret = atomic_add_return(on ? 1 : -1, &cnt);
++	if (ret > 1 && on) {
++		/*
++		 * There should be only one instance that calls this function
++		 * in "enable, disable" order. All other users must call
++		 * disable first, then enable. If not, something is wrong.
++		 */
++		WARN_ON(1);
++		return 1;
++	}
++
++	kgdb_arch_enable_nmi(ret > 0);
++	return ret;
++}
++
+ /*
+  * Some architectures need cache flushes when we set/clear a
+  * breakpoint:
+@@ -672,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ {
+ 	struct kgdb_state kgdb_var;
+ 	struct kgdb_state *ks = &kgdb_var;
++	int ret = 0;
++
++	kgdb_enable_nmi(0);
+ 
+ 	ks->cpu			= raw_smp_processor_id();
+ 	ks->ex_vector		= evector;
+@@ -681,11 +708,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ 	ks->linux_regs		= regs;
+ 
+ 	if (kgdb_reenter_check(ks))
+-		return 0; /* Ouch, double exception ! */
++		goto out; /* Ouch, double exception ! */
+ 	if (kgdb_info[ks->cpu].enter_kgdb != 0)
+-		return 0;
++		goto out;
+ 
+-	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++out:
++	kgdb_enable_nmi(1);
++	return ret;
+ }
+ 
+ int kgdb_nmicallback(int cpu, void *regs)
+-- 
+1.7.11.5
 
