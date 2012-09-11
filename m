@@ -1,153 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2IKBSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 21:18:16 -0400
-Received: from smtp-fw-31001.amazon.com ([207.171.178.25]:41739 "EHLO
-	smtp-fw-31001.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2IKBSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 21:18:14 -0400
-X-IronPort-AV: E=Sophos;i="4.80,401,1344211200"; 
-   d="scan'208";a="292710405"
-Date: Mon, 10 Sep 2012 18:17:52 -0700
-From: Matt Wilson <msw@amazon.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefan Bader <stefan.bader@canonical.com>, <xen-devel@lists.xen.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC] Fix xsave bug on older Xen hypervisors
-Message-ID: <20120911011752.GD22357@u002268147cd4502c336d.ant.amazon.com>
-References: <1347018043-21252-1-git-send-email-stefan.bader@canonical.com>
- <20120907134701.GF2870@phenom.dumpdata.com>
+	id S1755549Ab2IKBT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 21:19:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54517 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010Ab2IKBTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 21:19:23 -0400
+X-IronPort-AV: E=Sophos;i="4.80,400,1344182400"; 
+   d="scan'208";a="5816862"
+Message-ID: <504E92EF.3050303@cn.fujitsu.com>
+Date: Tue, 11 Sep 2012 09:25:03 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120907134701.GF2870@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jerry <uulinux@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com>	<20120831134956.fec0f681.akpm@linux-foundation.org>	<504D467D.2080201@jp.fujitsu.com>	<504D4A08.7090602@cn.fujitsu.com>	<20120910135213.GA1550@dhcp-192-168-178-175.profitbricks.localdomain> <CAAV+Mu7YWRWnxt78F4ZDMrrUsWB=n-_qkYOcQT7WQ2HwP89Obw@mail.gmail.com>
+In-Reply-To: <CAAV+Mu7YWRWnxt78F4ZDMrrUsWB=n-_qkYOcQT7WQ2HwP89Obw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/11 09:18:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/11 09:18:46,
+	Serialize complete at 2012/09/11 09:18:46
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 09:47:01AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 07, 2012 at 01:40:43PM +0200, Stefan Bader wrote:
-> > When writing unsupported flags into CR4 (for some time the
-> > xen_write_cr4 function would refuse to do anything at all)
-> > older Xen hypervisors (and patch can potentially be improved
-> > by finding out what older means in version numbers) would
-> > crash the guest.
-> > 
-> > Since Amazon EC2 would at least in the past be affected by that,
-> > Fedora and Ubuntu were carrying a hack that would filter out
-> > X86_CR4_OSXSAVE before writing to CR4. This would affect any
-> > PV guest, even those running on a newer HV.
-> > 
-> > And this recently caused trouble because some user-space was
-> > only partially checking (or maybe only looking at the cpuid
-> > bits) and then trying to use xsave even though the OS support
-> > was not set.
-> > 
-> > So I came up with a patch that would
-> > - limit the work-around to certain Xen versions
-> > - prevent the write to CR4 by unsetting xsave and osxsave in
-> >   the cpuid bits
-> > 
-> > Doing things that way may actually allow this to be acceptable
-> > upstream, so I am sending it around, now.
-> > It probably could be improved when knowing the exact version
-> > to test for but otherwise should allow to work around the guest
-> > crash while not preventing xsave on Xen 4.x and newer hosts.
+At 09/11/2012 08:27 AM, Jerry Wrote:
+> Hi Wen,
 > 
-> Perhaps Matt can give us some hints here.. but otherwise this
-> "quirk" should fix this. It should also allow one to run a virgin
-> kernel on Amazon EC2 - and we can ask the distros to ditch their
-> existing work-arounds for this..
+> I have been arranged a job related memory hotplug on ARM architecture.
+> Maybe I know some new issues about memory hotplug on ARM architecture. I
+> just enabled it on ARM, and it works well in my Android tablet now.
+> However, I have not send out my patches. The real reason is that I don't
+> know how to do it. Maybe I need to read "Documentation/SubmittingPatches".
+> 
+> Hi Andrew,
+> This is my first time to send you a e-mail. I am so nervous about if I have
+> some mistakes or not.
+> 
+> Some peoples maybe think memory hotplug need to be supported by special
+> hardware. Maybe it means memory physical hotplug. Some times, we just need
+> to use memory logical hotplug, doesn't remove the memory in physical. It is
+> also usefully for power saving in my platform. Because I doesn't want
+> the offline memory is in *self-refresh* state.
 
-Xen 3.4.0 rc1 contained changeset 19288:9ed53e602119, so checking for
-major version < 4 is a bit restrictive. That being said, I don't think
-that full PV support of xsave landed until 4.0.2.
+Power saving? Do you need _PSx support?
 
-Anyway, given that Xen advertises support for XSAVE via setting
-OSXSAVE, I'm not happy with a version number check.
+Thanks
+Wen Congyang
 
-> > >From dff8885934d4e1274a69c4cedd28a4d18a1255e8 Mon Sep 17 00:00:00 2001
-> > From: Stefan Bader <stefan.bader@canonical.com>
-> > Date: Fri, 15 Jun 2012 11:54:59 +0200
-> > Subject: [PATCH] xen: Mask xsave cpu capability on Xen host < 4
-> >
-> > Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-[...]
-> > +/*
-> > + * Older (with no clear statement about what old means) Xen hypervisors
-> > + * will crash a PV guest that tries to store OSXSAVE into CR4.
-> > + * To prevent this, we force the feature bits related to this off in the
-> > + * xen cpuid call. This inline function serves as a centralized test
-> > + * on whether the quirk should be done.
-> > + */
-> > +static inline needs_xsave_quirk(unsigned version)
-> > +{
-> > +	return (xen_pv_domain() && ((version >> 16) < 4)) ? 1 : 0;
+> 
+> Any comments are appreciated.
+> 
+> Thanks,
+> Jerry
+> 
+> 2012/9/10 Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+> 
+>> Hi,
+>>
+>> On Mon, Sep 10, 2012 at 10:01:44AM +0800, Wen Congyang wrote:
+>>> At 09/10/2012 09:46 AM, Yasuaki Ishimatsu Wrote:
+>>>> Hi Wen,
+>>>>
+>>>> 2012/09/01 5:49, Andrew Morton wrote:
+>>>>> On Tue, 28 Aug 2012 18:00:07 +0800
+>>>>> wency@cn.fujitsu.com wrote:
+>>>>>
+>>>>>> This patch series aims to support physical memory hot-remove.
+>>>>>
+>>>>> I doubt if many people have hardware which permits physical memory
+>>>>> removal?  How would you suggest that people with regular hardware can
+>>>>> test these chagnes?
+>>>>
+>>>> How do you test the patch? As Andrew says, for hot-removing memory,
+>>>> we need a particular hardware. I think so too. So many people may want
+>>>> to know how to test the patch.
+>>>> If we apply following patch to kvm guest, can we hot-remove memory on
+>>>> kvm guest?
+>>>>
+>>>> http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
+>>>
+>>> Yes, if we apply this patchset, we can test hot-remove memory on kvm
+>> guest.
+>>> But that patchset doesn't implement _PS3, so there is some restriction.
+>>
+>> the following repos contain the patchset above, plus 2 more patches that
+>> add
+>> PS3 support to the dimm devices in qemu/seabios:
+>>
+>> https://github.com/vliaskov/seabios/commits/memhp-v2
+>> https://github.com/vliaskov/qemu-kvm/commits/memhp-v2
+>>
+>> I have not posted the PS3 patches yet in the qemu list, but will post them
+>> soon for v3 of the memory hotplug series. If you have issues testing, let
+>> me
+>> know.
+>>
+>> thanks,
+>>
+>> - Vasilis
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+> 
+> 
+> 
 
-What has me really a bit confused is this: it seems that Xen should be
-setting OSXSAVE for the guest if XSAVE is supported. Going back to the
-changeset that Konrad point out:
-
-commit 947ccf9c3c30307b774af3666ee74fcd9f47f646
-Author: Shan Haitao <haitao.shan@intel.com>
-Date:   Tue Nov 9 11:43:36 2010 -0800
-
-    xen: Allow PV-OPS kernel to detect whether XSAVE is supported
-    
-    Xen fails to mask XSAVE from the cpuid feature, despite not historically
-    supporting guest use of XSAVE.  However, now that XSAVE support has been
-    added to Xen, we need to reliably detect its presence.
-    
-    The most reliable way to do this is to look at the OSXSAVE feature in
-    cpuid which is set iff the OS (Xen, in this case), has set
-    CR4.OSXSAVE.
-[...]
-+       xsave_mask =
-+               (1 << (X86_FEATURE_XSAVE % 32)) |
-+               (1 << (X86_FEATURE_OSXSAVE % 32));
-+
-+       /* Xen will set CR4.OSXSAVE if supported and not disabled by force */
-+       if ((cx & xsave_mask) != xsave_mask)
-+               cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
-
-Since this proposed change is basically in the same codepath as the
-existing check to see if OSXSAVE is set, I doubt that it will prevent
-xsave_init() from writing the killer bits into cr4.
-
-Let me do a bit of testing.
-
-Matt
-
-> > +}
-> > +
-> >  static void __init xen_banner(void)
-> >  {
-> >  	unsigned version = HYPERVISOR_xen_version(XENVER_version, NULL);
-> > @@ -221,6 +233,8 @@ static void __init xen_banner(void)
-> >  	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
-> >  	       version >> 16, version & 0xffff, extra.extraversion,
-> >  	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
-> > +	if (needs_xsave_quirk(version))
-> > +		printk(KERN_INFO "Forcing xsave off due to Xen version.\n");
-> >  }
-> >  
-> >  #define CPUID_THERM_POWER_LEAF 6
-> > @@ -351,6 +365,7 @@ static bool __init xen_check_mwait(void)
-> >  }
-> >  static void __init xen_init_cpuid_mask(void)
-> >  {
-> > +	unsigned version = HYPERVISOR_xen_version(XENVER_version, NULL);
-> >  	unsigned int ax, bx, cx, dx;
-> >  	unsigned int xsave_mask;
-> >  
-> > @@ -371,7 +386,7 @@ static void __init xen_init_cpuid_mask(void)
-> >  		(1 << (X86_FEATURE_OSXSAVE % 32));
-> >  
-> >  	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
-> > -	if ((cx & xsave_mask) != xsave_mask)
-> > +	if (((cx & xsave_mask) != xsave_mask) || needs_xsave_quirk(version))
-> >  		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
-> >  	if (xen_check_mwait())
-> >  		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
