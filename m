@@ -1,105 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2IKQ36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 12:29:58 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45125 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2IKQ3y (ORCPT
+	id S1757252Ab2IKQ35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 12:29:57 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44564 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2IKQ3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 12:29:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <504EA6FE.7070405@linux.vnet.ibm.com>
-References: <5044692D.7080608@linux.vnet.ibm.com>
-	<5046B9EE.7000804@linux.vnet.ibm.com>
-	<0000013996b6f21d-d45be653-3111-4aef-b079-31dc673e6fd8-000000@email.amazonses.com>
-	<504812E7.3000700@linux.vnet.ibm.com>
-	<20120906222933.GR2448@linux.vnet.ibm.com>
-	<CAOJsxLFA1sk4KZkRuPL_giktSkFK_g7w-mGi_OEQ9fVXF2UVzw@mail.gmail.com>
-	<504EA6FE.7070405@linux.vnet.ibm.com>
-Date: Tue, 11 Sep 2012 19:29:53 +0300
-X-Google-Sender-Auth: tjW_c72Jz7PE5KfGloVFk4gBGVo
-Message-ID: <CAOJsxLE4TEOJwAnB6M1SKqB1=M9vttHjw5XjNwfgO_ZiaUHyBQ@mail.gmail.com>
-Subject: Re: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
-From: Pekka Enberg <penberg@kernel.org>
+Date: Tue, 11 Sep 2012 09:28:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: paulmck@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org
+Subject: Re: [PATCH 1/3] raid: replace	list_for_each_continue_rcu with new
+ interface
+Message-ID: <20120911162847.GG4257@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <502CB924.10200@linux.vnet.ibm.com>
+ <502DC999.1040407@linux.vnet.ibm.com>
+ <5036D00F.2040009@linux.vnet.ibm.com>
+ <504DA513.2060004@linux.vnet.ibm.com>
+ <20120911162120.5d5b5fe5@notabene.brown>
+ <504ED9DE.2090902@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504ED9DE.2090902@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091116-4242-0000-0000-000002E17104
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 5:50 AM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> On 09/08/2012 04:39 PM, Pekka Enberg wrote:
->> On Fri, Sep 7, 2012 at 1:29 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->>> On Thu, Sep 06, 2012 at 11:05:11AM +0800, Michael Wang wrote:
->>>> On 09/05/2012 09:55 PM, Christoph Lameter wrote:
->>>>> On Wed, 5 Sep 2012, Michael Wang wrote:
->>>>>
->>>>>> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
->>>>>> fake report generated.
->>>>>
->>>>> Ahh... That is a key insight into why this occurs.
->>>>>
->>>>>> This should not happen since we already have init_lock_keys() which will
->>>>>> reassign the lock class for both l3 list and l3 alien.
->>>>>
->>>>> Right. I was wondering why we still get intermitted reports on this.
->>>>>
->>>>>> This patch will invoke init_lock_keys() after we done enable_cpucache()
->>>>>> instead of before to avoid the fake DEADLOCK report.
->>>>>
->>>>> Acked-by: Christoph Lameter <cl@linux.com>
->>>>
->>>> Thanks for your review.
->>>>
->>>> And add Paul to the cc list(my skills on mailing is really poor...).
->>>
->>> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>
->> I'd also like to tag this for the stable tree to avoid bogus lockdep
->> reports. How far back in release history should we queue this?
-> Hi, Pekka
->
-> Sorry for the delayed reply, I try to find out the reason for commit
-> 30765b92 but not get it yet, so I add Peter to the cc list.
->
-> The below patch for release 3.0.0 is the one to cause the bogus report.
->
-> commit 30765b92ada267c5395fc788623cb15233276f5c
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Thu Jul 28 23:22:56 2011 +0200
->
->     slab, lockdep: Annotate the locks before using them
->
->     Fernando found we hit the regular OFF_SLAB 'recursion' before we
->     annotate the locks, cure this.
->
->     The relevant portion of the stack-trace:
->
->     > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
->     > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
->     > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
->     > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
->     > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
->     > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
->     > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
->     > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
->     > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
->     > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
->
->     Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
->     Acked-by: Pekka Enberg <penberg@kernel.org>
->     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
->
-> It moved init_lock_keys() before we build up the alien, so we failed to
-> reclass it.
+On Tue, Sep 11, 2012 at 02:27:42PM +0800, Michael Wang wrote:
+> On 09/11/2012 02:21 PM, NeilBrown wrote:
+> > On Mon, 10 Sep 2012 16:30:11 +0800 Michael Wang <wangyun@linux.vnet.ibm.com>
+> > wrote:
+> > 
+> >> On 08/24/2012 08:51 AM, Michael Wang wrote:
+> >>> On 08/17/2012 12:33 PM, Michael Wang wrote:
+> >>>> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+> >>>>
+> >>>> This patch replaces list_for_each_continue_rcu() with
+> >>>> list_for_each_entry_continue_rcu() to save a few lines
+> >>>> of code and allow removing list_for_each_continue_rcu().
+> >>>>
+> >>>
+> >>> Hi, Neil
+> >>>
+> >>> Could I get some comments on this patch?
+> >>
+> >> Hi, Neil
+> >>
+> >> Could I get some comments?
+> >>
+> >> And please forgive and warn me if this patch has came to the wrong
+> >> place...I get the address from get_maintainer.
+> > 
+> > Sorry, August was a bad month.
+> > 
+> > Yes, patch looks good.  Shall I include it in my tree, do you want to submit
+> > them altogether through some rcu tree?
+> > Either way is fine by me.  If you want to submit it through some other tree, 
+> >    Acked-by: NeilBrown <neilb@suse.de>
+> 
+> Thanks for your review ;-)
+> 
+> I think submit to rcu tree may be better, what's your opinion, Paul?
 
-I've queued the patch for v3.7. Thanks!
+I am fine either way.  If I don't see it in mainline this coming merge
+window, I will pull it into the -rcu tree.
+
+							Thanx, Paul
+
+> Regards,
+> Michael Wang
+> 
+> 
+> > 
+> > If not, it'll probably appear in my -next soonish.
+> > 
+> > Thanks,
+> > NeilBrown
+> > 
+> > 
+> >>
+> >> Regards,
+> >> Michael Wang
+> >>
+> >>>
+> >>> Regards,
+> >>> Michael Wang
+> >>>
+> >>>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> >>>> ---
+> >>>>  drivers/md/bitmap.c |    9 +++------
+> >>>>  1 files changed, 3 insertions(+), 6 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+> >>>> index 15dbe03..b160828 100644
+> >>>> --- a/drivers/md/bitmap.c
+> >>>> +++ b/drivers/md/bitmap.c
+> >>>> @@ -163,20 +163,17 @@ static struct md_rdev *next_active_rdev(struct md_rdev *rdev, struct mddev *mdde
+> >>>>  	 * As devices are only added or removed when raid_disk is < 0 and
+> >>>>  	 * nr_pending is 0 and In_sync is clear, the entries we return will
+> >>>>  	 * still be in the same position on the list when we re-enter
+> >>>> -	 * list_for_each_continue_rcu.
+> >>>> +	 * list_for_each_entry_continue_rcu.
+> >>>>  	 */
+> >>>> -	struct list_head *pos;
+> >>>>  	rcu_read_lock();
+> >>>>  	if (rdev == NULL)
+> >>>>  		/* start at the beginning */
+> >>>> -		pos = &mddev->disks;
+> >>>> +		rdev = list_entry_rcu(&mddev->disks, struct md_rdev, same_set);
+> >>>>  	else {
+> >>>>  		/* release the previous rdev and start from there. */
+> >>>>  		rdev_dec_pending(rdev, mddev);
+> >>>> -		pos = &rdev->same_set;
+> >>>>  	}
+> >>>> -	list_for_each_continue_rcu(pos, &mddev->disks) {
+> >>>> -		rdev = list_entry(pos, struct md_rdev, same_set);
+> >>>> +	list_for_each_entry_continue_rcu(rdev, &mddev->disks, same_set) {
+> >>>>  		if (rdev->raid_disk >= 0 &&
+> >>>>  		    !test_bit(Faulty, &rdev->flags)) {
+> >>>>  			/* this is a usable devices */
+> >>>>
+> >>>
+> > 
+> 
+
