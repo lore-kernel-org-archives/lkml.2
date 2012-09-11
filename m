@@ -1,607 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2IKRk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:40:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45963 "EHLO arroyo.ext.ti.com"
+	id S1756856Ab2IKRkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:40:35 -0400
+Received: from shutemov.name ([176.9.204.213]:58651 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756207Ab2IKRkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:40:01 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
-        <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 01/17] ARM: add mechanism for late code patching
-Date: Tue, 11 Sep 2012 13:38:59 -0400
-Message-ID: <1347385155-11643-2-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
-References: <1347385155-11643-1-git-send-email-cyril@ti.com>
+	id S1756712Ab2IKRkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 13:40:31 -0400
+Date: Tue, 11 Sep 2012 20:41:05 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Message-ID: <20120911174105.GB29805@shutemov.name>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+ <1347382036-18455-4-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347382036-18455-4-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original phys_to_virt/virt_to_phys patching implementation relied on early
-patching prior to MMU initialization.  On PAE systems running out of >4G
-address space, this would have entailed an additional round of patching after
-switching over to the high address space.
+On Tue, Sep 11, 2012 at 05:47:16PM +0100, Will Deacon wrote:
+> From: Steve Capper <steve.capper@arm.com>
+> 
+> Different architectures have slightly different pre-requisites for supporting
+> Transparent Huge Pages. To simplify the layout of mm/Kconfig, a new option
+> HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each architecture's
+> Kconfig file (at the moment x86, with ARM being set in a future patch).
+> 
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-The approach implemented here conceptually extends the original PHYS_OFFSET
-patching implementation with the introduction of "early" patch stubs.  Early
-patch code is required to be functional out of the box, even before the patch
-is applied.  This is implemented by inserting functional (but inefficient)
-load code into the .runtime.patch.code init section.  Having functional code
-out of the box then allows us to defer the init time patch application until
-later in the init sequence.
+Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-In addition to fitting better with our need for physical address-space
-switch-over, this implementation should be somewhat more extensible by virtue
-of its more readable (and hackable) C implementation.  This should prove
-useful for other similar init time specialization needs, especially in light
-of our multi-platform kernel initiative.
+> ---
+>  arch/x86/Kconfig |    4 ++++
+>  mm/Kconfig       |    2 +-
+>  2 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 8ec3a1a..7decdcf 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1297,6 +1297,10 @@ config ILLEGAL_POINTER_VALUE
+>         default 0 if X86_32
+>         default 0xdead000000000000 if X86_64
+>  
+> +config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+> +       def_bool y
+> +       depends on MMU
+> +
+>  source "mm/Kconfig"
+>  
+>  config HIGHPTE
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index d5c8019..3322342 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
+>  
+>  config TRANSPARENT_HUGEPAGE
+>  	bool "Transparent Hugepage Support"
+> -	depends on X86 && MMU
+> +	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
+>  	select COMPACTION
+>  	help
+>  	  Transparent Hugepages allows the kernel to use huge pages and
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-This code has been boot tested in both ARM and Thumb-2 modes on an ARMv7
-(Cortex-A8) device.
-
-Note: the obtuse use of stringified symbols in patch_stub() and
-early_patch_stub() is intentional.  Theoretically this should have been
-accomplished with formal operands passed into the asm block, but this requires
-the use of the 'c' modifier for instantiating the long (e.g. .long %c0).
-However, the 'c' modifier has been found to ICE certain versions of GCC, and
-therefore we resort to stringified symbols here.
-
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
----
- arch/arm/Kconfig                     |    3 +
- arch/arm/include/asm/module.h        |    7 ++
- arch/arm/include/asm/runtime-patch.h |  208 ++++++++++++++++++++++++++++++++++
- arch/arm/kernel/Makefile             |    1 +
- arch/arm/kernel/module.c             |    9 +-
- arch/arm/kernel/runtime-patch.c      |  193 +++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c              |    3 +
- arch/arm/kernel/vmlinux.lds.S        |   10 ++
- 8 files changed, 433 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/include/asm/runtime-patch.h
- create mode 100644 arch/arm/kernel/runtime-patch.c
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 63504f1..36de4ea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -62,6 +62,9 @@ config ARM
- config ARM_HAS_SG_CHAIN
- 	bool
- 
-+config ARM_RUNTIME_PATCH
-+	bool
-+
- config NEED_SG_DMA_LENGTH
- 	bool
- 
-diff --git a/arch/arm/include/asm/module.h b/arch/arm/include/asm/module.h
-index 0d3a28d..c4ebe52 100644
---- a/arch/arm/include/asm/module.h
-+++ b/arch/arm/include/asm/module.h
-@@ -39,9 +39,16 @@ struct mod_arch_specific {
- #define MODULE_ARCH_VERMAGIC_ARMTHUMB ""
- #endif
- 
-+#ifdef CONFIG_ARM_RUNTIME_PATCH
-+#define MODULE_ARCH_VERMAGIC_RT_PATCH "rt-patch "
-+#else
-+#define MODULE_ARCH_VERMAGIC_RT_PATCH ""
-+#endif
-+
- #define MODULE_ARCH_VERMAGIC \
- 	MODULE_ARCH_VERMAGIC_ARMVSN \
- 	MODULE_ARCH_VERMAGIC_ARMTHUMB \
-+	MODULE_ARCH_VERMAGIC_RT_PATCH \
- 	MODULE_ARCH_VERMAGIC_P2V
- 
- #endif /* _ASM_ARM_MODULE_H */
-diff --git a/arch/arm/include/asm/runtime-patch.h b/arch/arm/include/asm/runtime-patch.h
-new file mode 100644
-index 0000000..366444d
---- /dev/null
-+++ b/arch/arm/include/asm/runtime-patch.h
-@@ -0,0 +1,208 @@
-+/*
-+ * arch/arm/include/asm/runtime-patch.h
-+ * Note: this file should not be included by non-asm/.h files
-+ *
-+ * Copyright 2012 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_ARM_RUNTIME_PATCH_H
-+#define __ASM_ARM_RUNTIME_PATCH_H
-+
-+#include <linux/stringify.h>
-+
-+#ifndef __ASSEMBLY__
-+
-+#ifdef CONFIG_ARM_RUNTIME_PATCH
-+
-+struct patch_info {
-+	void		*insn;
-+	u16		 type;
-+	u8		 insn_size;
-+	u8		 data_size;
-+	u32		 data[0];
-+};
-+
-+#define PATCH_IMM8		0x0001
-+struct patch_info_imm8 {
-+	u32		*imm;
-+	u32		 insn;
-+};
-+
-+#define patch_next(p)	((void *)(p) + sizeof(*(p)) + (p)->data_size)
-+#define patch_data(p)	((void *)&(p)->data[0])
-+
-+#define patch_stub(type, code, patch_data, ...)				\
-+	__asm__("@ patch stub\n"					\
-+		"1:\n"							\
-+		code							\
-+		"2:\n"							\
-+		"	.pushsection .runtime.patch.table, \"a\"\n"	\
-+		"3:\n"							\
-+		"	.word 1b\n"					\
-+		"	.hword (" __stringify(type) ")\n"		\
-+		"	.byte (2b-1b)\n"				\
-+		"	.byte (5f-4f)\n"				\
-+		"4:\n"							\
-+		patch_data						\
-+		"	.align\n"					\
-+		"5:\n"							\
-+		"	.popsection\n"					\
-+		__VA_ARGS__)
-+
-+#define early_patch_stub(type, code, pad, patch_data, ...)		\
-+	__asm__("@ patch stub\n"					\
-+		"1:\n"							\
-+		"	b	6f\n"					\
-+		"	.fill	" __stringify(pad) ", 1, 0\n"		\
-+		"2:\n"							\
-+		"	.pushsection .runtime.patch.table, \"a\"\n"	\
-+		"3:\n"							\
-+		"	.word 1b\n"					\
-+		"	.hword (" __stringify(type) ")\n"		\
-+		"	.byte (2b-1b)\n"				\
-+		"	.byte (5f-4f)\n"				\
-+		"4:\n"							\
-+		patch_data						\
-+		"	.align\n"					\
-+		"5:\n"							\
-+		"	.popsection\n"					\
-+		"	.pushsection .runtime.patch.code, \"ax\"\n"	\
-+		"6:\n"							\
-+		code							\
-+		"	b 2b\n"						\
-+		"	.popsection\n"					\
-+		__VA_ARGS__)
-+
-+/* constant used to force encoding */
-+#define __IMM8		(0x81 << 24)
-+
-+/*
-+ * patch_imm8() - init-time specialized binary operation (imm8 operand)
-+ *		  This effectively does: to = from "insn" sym,
-+ *		  where the value of sym is fixed at init-time, and is patched
-+ *		  in as an immediate operand.  This value must be
-+ *		  representible as an 8-bit quantity with an optional
-+ *		  rotation.
-+ *
-+ *		  The stub code produced by this variant is non-functional
-+ *		  prior to patching.  Use early_patch_imm8() if you need the
-+ *		  code to be functional early on in the init sequence.
-+ */
-+#define patch_imm8(_insn, _to, _from, _sym, _ofs)			\
-+	patch_stub(							\
-+		/* type */						\
-+			PATCH_IMM8,					\
-+		/* code */						\
-+			_insn "	%[to], %[from], %[imm]\n",		\
-+		/* patch_data */					\
-+			".long " __stringify(_sym + _ofs) "\n"		\
-+			_insn "	%[to], %[from], %[imm]\n",		\
-+		/* operands */						\
-+			: [to]	 "=r" (_to)				\
-+			: [from] "r"  (_from),				\
-+			  [imm]	 "I"  (__IMM8),				\
-+				 "i"  (&(_sym))				\
-+			: "cc")
-+
-+/*
-+ * patch_imm8_mov() - same as patch_imm8(), but for mov/mvn instructions
-+ */
-+#define patch_imm8_mov(_insn, _to, _sym, _ofs)				\
-+	patch_stub(							\
-+		/* type */						\
-+			PATCH_IMM8,					\
-+		/* code */						\
-+			_insn "	%[to], %[imm]\n",			\
-+		/* patch_data */					\
-+			".long " __stringify(_sym + _ofs) "\n"		\
-+			_insn "	%[to], %[imm]\n",			\
-+		/* operands */						\
-+			: [to]	"=r" (_to)				\
-+			: [imm]	"I"  (__IMM8),				\
-+				"i"  (&(_sym))				\
-+			: "cc")
-+
-+/*
-+ * early_patch_imm8() - early functional variant of patch_imm8() above.  The
-+ *			same restrictions on the constant apply here.  This
-+ *			version emits workable (albeit inefficient) code at
-+ *			compile-time, and therefore functions even prior to
-+ *			patch application.
-+ */
-+#define early_patch_imm8(_insn, _to, _from, _sym, _ofs)			\
-+do {									\
-+	unsigned long __tmp;						\
-+	early_patch_stub(						\
-+		/* type */						\
-+			PATCH_IMM8,					\
-+		/* code */						\
-+			"ldr	%[tmp], =" __stringify(_sym + _ofs) "\n"\
-+			"ldr	%[tmp], [%[tmp]]\n"			\
-+			_insn "	%[to], %[from], %[tmp]\n",		\
-+		/* pad */						\
-+			0,						\
-+		/* patch_data */					\
-+			".long " __stringify(_sym + _ofs) "\n"		\
-+			_insn "	%[to], %[from], %[imm]\n",		\
-+		/* operands */						\
-+			: [to]	 "=r"  (_to),				\
-+			  [tmp]	 "=&r" (__tmp)				\
-+			: [from] "r"   (_from),				\
-+			  [imm]	 "I"   (__IMM8),			\
-+				 "i"   (&(_sym))			\
-+			: "cc");					\
-+} while (0)
-+
-+#define early_patch_imm8_mov(_insn, _to, _sym, _ofs)			\
-+do {									\
-+	unsigned long __tmp;						\
-+	early_patch_stub(						\
-+		/* type */						\
-+			PATCH_IMM8					\
-+		/* code */						\
-+			"ldr	%[tmp], =" __stringify(_sym + _ofs) "\n"\
-+			"ldr	%[tmp], [%[tmp]]\n"			\
-+			_insn "	%[to], %[tmp]\n",			\
-+		/* pad */						\
-+			0,						\
-+		/* patch_data */					\
-+			".long " __stringify(_sym + _ofs) "\n"		\
-+			_insn " %[to], %[imm]\n",			\
-+		/* operands */						\
-+			: [to]	"=r"  (_to),				\
-+			  [tmp]	"=&r" (__tmp)				\
-+			: [imm]	"I"   (__IMM8),				\
-+				"i"   (&(_sym))				\
-+			: "cc");					\
-+} while (0)
-+
-+int runtime_patch(const void *table, unsigned size);
-+void runtime_patch_kernel(void);
-+
-+#else
-+
-+static inline int runtime_patch(const void *table, unsigned size)
-+{
-+	return 0;
-+}
-+
-+static inline void runtime_patch_kernel(void)
-+{
-+}
-+
-+#endif /* CONFIG_ARM_RUNTIME_PATCH */
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* __ASM_ARM_RUNTIME_PATCH_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 5dfef9d..c9d5a30 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -80,5 +80,6 @@ endif
- head-y			:= head$(MMUEXT).o
- obj-$(CONFIG_DEBUG_LL)	+= debug.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-+obj-$(CONFIG_ARM_RUNTIME_PATCH)	+= runtime-patch.o patch.o
- 
- extra-y := $(head-y) vmlinux.lds
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index 1e9be5d..10a2922 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -24,6 +24,7 @@
- #include <asm/sections.h>
- #include <asm/smp_plat.h>
- #include <asm/unwind.h>
-+#include <asm/runtime-patch.h>
- 
- #ifdef CONFIG_XIP_KERNEL
- /*
-@@ -276,7 +277,7 @@ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 	const char *secstrs = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
- 	const Elf_Shdr *sechdrs_end = sechdrs + hdr->e_shnum;
- 	struct mod_unwind_map maps[ARM_SEC_MAX];
--	int i;
-+	int i, err;
- 
- 	memset(maps, 0, sizeof(maps));
- 
-@@ -321,6 +322,12 @@ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 	if (s)
- 		fixup_pv_table((void *)s->sh_addr, s->sh_size);
- #endif
-+	s = find_mod_section(hdr, sechdrs, ".runtime.patch.table");
-+	if (s) {
-+		err = runtime_patch((void *)s->sh_addr, s->sh_size);
-+		if (err)
-+			return err;
-+	}
- 	s = find_mod_section(hdr, sechdrs, ".alt.smp.init");
- 	if (s && !is_smp())
- #ifdef CONFIG_SMP_ON_UP
-diff --git a/arch/arm/kernel/runtime-patch.c b/arch/arm/kernel/runtime-patch.c
-new file mode 100644
-index 0000000..28a6367
---- /dev/null
-+++ b/arch/arm/kernel/runtime-patch.c
-@@ -0,0 +1,193 @@
-+/*
-+ * arch/arm/kernel/runtime-patch.c
-+ *
-+ * Copyright 2012 Texas Instruments, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+
-+#include <asm/opcodes.h>
-+#include <asm/cacheflush.h>
-+#include <asm/runtime-patch.h>
-+
-+#include "patch.h"
-+
-+static inline void flush_icache_insn(void *insn_ptr, int bytes)
-+{
-+	unsigned long insn_addr = (unsigned long)insn_ptr;
-+	flush_icache_range(insn_addr, insn_addr + bytes - 1);
-+}
-+
-+#ifdef CONFIG_THUMB2_KERNEL
-+
-+static int do_patch_imm8(u32 insn, u32 imm, u32 *ninsn)
-+{
-+	u32 op, rot, val;
-+	const u32 supported_ops = (BIT(0)  | /* and */
-+				   BIT(1)  | /* bic */
-+				   BIT(2)  | /* orr/mov */
-+				   BIT(3)  | /* orn/mvn */
-+				   BIT(4)  | /* eor */
-+				   BIT(8)  | /* add */
-+				   BIT(10) | /* adc */
-+				   BIT(11) | /* sbc */
-+				   BIT(12) | /* sub */
-+				   BIT(13)); /* rsb */
-+
-+	insn = __mem_to_opcode_thumb32(insn);
-+
-+	if (!__opcode_is_thumb32(insn)) {
-+		pr_err("patch: invalid thumb2 insn %08x\n", insn);
-+		return -EINVAL;
-+	}
-+
-+	/* allow only data processing (immediate)
-+	 * 1111 0x0x xxx0 xxxx 0xxx xxxx xxxx xxxx */
-+	if ((insn & 0xfa008000) != 0xf0000000) {
-+		pr_err("patch: unknown insn %08x\n", insn);
-+		return -EINVAL;
-+	}
-+
-+	/* extract op code */
-+	op = (insn >> 21) & 0xf;
-+
-+	/* disallow unsupported opcodes */
-+	if ((supported_ops & BIT(op)) == 0) {
-+		pr_err("patch: unsupported opcode %x\n", op);
-+		return -EINVAL;
-+	}
-+
-+	if (imm <= 0xff) {
-+		rot = 0;
-+		val = imm;
-+	} else {
-+		rot = 32 - fls(imm); /* clz */
-+		if (imm & ~(0xff000000 >> rot)) {
-+			pr_err("patch: constant overflow %08x\n", imm);
-+			return -EINVAL;
-+		}
-+		val  = (imm >> (24 - rot)) & 0x7f;
-+		rot += 8; /* encoded i:imm3:a */
-+
-+		/* pack least-sig rot bit into most-sig val bit */
-+		val |= (rot & 1) << 7;
-+		rot >>= 1;
-+	}
-+
-+	*ninsn  = insn & ~(BIT(26) | 0x7 << 12 | 0xff);
-+	*ninsn |= (rot >> 3) << 26;	/* field "i" */
-+	*ninsn |= (rot & 0x7) << 12;	/* field "imm3" */
-+	*ninsn |= val;
-+
-+	return 0;
-+}
-+
-+#else
-+
-+static int do_patch_imm8(u32 insn, u32 imm, u32 *ninsn)
-+{
-+	u32 rot, val, op;
-+
-+	insn = __mem_to_opcode_arm(insn);
-+
-+	/* disallow special unconditional instructions
-+	 * 1111 xxxx xxxx xxxx xxxx xxxx xxxx xxxx */
-+	if ((insn >> 24) == 0xf) {
-+		pr_err("patch: unconditional insn %08x\n", insn);
-+		return -EINVAL;
-+	}
-+
-+	/* allow only data processing (immediate)
-+	 * xxxx 001x xxxx xxxx xxxx xxxx xxxx xxxx */
-+	if (((insn >> 25) & 0x3) != 1) {
-+		pr_err("patch: unknown insn %08x\n", insn);
-+		return -EINVAL;
-+	}
-+
-+	/* extract op code */
-+	op = (insn >> 20) & 0x1f;
-+
-+	/* disallow unsupported 10xxx op codes */
-+	if (((op >> 3) & 0x3) == 2) {
-+		pr_err("patch: unsupported opcode %08x\n", insn);
-+		return -EINVAL;
-+	}
-+
-+	rot = imm ? __ffs(imm) / 2 : 0;
-+	val = imm >> (rot * 2);
-+	rot = (-rot) & 0xf;
-+
-+	/* does this fit in 8-bit? */
-+	if (val > 0xff) {
-+		pr_err("patch: constant overflow %08x\n", imm);
-+		return -EINVAL;
-+	}
-+
-+	/* patch in new immediate and rotation */
-+	*ninsn = (insn & ~0xfff) | (rot << 8) | val;
-+
-+	return 0;
-+}
-+
-+#endif	/* CONFIG_THUMB2_KERNEL */
-+
-+static int apply_patch_imm8(const struct patch_info *p)
-+{
-+	u32 *insn_ptr = p->insn, ninsn;
-+	int count = p->insn_size / sizeof(u32);
-+	const struct patch_info_imm8 *info;
-+	int err;
-+
-+
-+	if (count <= 0 || p->data_size != count * sizeof(*info)) {
-+		pr_err("patch: bad patch, insn size %d, data size %d\n",
-+		       p->insn_size, p->data_size);
-+		return -EINVAL;
-+	}
-+
-+	for (info = patch_data(p); count; count--, info++, insn_ptr++) {
-+		err = do_patch_imm8(info->insn, *info->imm, &ninsn);
-+		if (err)
-+			return err;
-+		__patch_text(insn_ptr, ninsn);
-+	}
-+
-+
-+	return 0;
-+}
-+
-+int runtime_patch(const void *table, unsigned size)
-+{
-+	const struct patch_info *p = table, *end = (table + size);
-+
-+	for (p = table; p < end; p = patch_next(p)) {
-+		int err = -EINVAL;
-+
-+		if (p->type == PATCH_IMM8)
-+			err = apply_patch_imm8(p);
-+		if (err)
-+			return err;
-+	}
-+	return 0;
-+}
-+
-+void __init runtime_patch_kernel(void)
-+{
-+	extern unsigned __runtime_patch_table_begin, __runtime_patch_table_end;
-+	const void *start = &__runtime_patch_table_begin;
-+	const void *end   = &__runtime_patch_table_end;
-+
-+	BUG_ON(runtime_patch(start, end - start));
-+}
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 0785472..6fa7dbf 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -53,6 +53,7 @@
- #include <asm/traps.h>
- #include <asm/unwind.h>
- #include <asm/memblock.h>
-+#include <asm/runtime-patch.h>
- 
- #include "atags.h"
- #include "tcm.h"
-@@ -764,6 +765,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	if (mdesc->init_early)
- 		mdesc->init_early();
-+
-+	runtime_patch_kernel();
- }
- 
- 
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 36ff15b..ea35ca0 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -167,6 +167,16 @@ SECTIONS
- 		*(.pv_table)
- 		__pv_table_end = .;
- 	}
-+	.init.runtime_patch_table : {
-+		__runtime_patch_table_begin = .;
-+		*(.runtime.patch.table)
-+		__runtime_patch_table_end = .;
-+	}
-+	.init.runtime_patch_code : {
-+		__runtime_patch_code_begin = .;
-+		*(.runtime.patch.code)
-+		__runtime_patch_code_end = .;
-+	}
- 	.init.data : {
- #ifndef CONFIG_XIP_KERNEL
- 		INIT_DATA
 -- 
-1.7.9.5
-
+ Kirill A. Shutemov
