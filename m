@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab2IKNCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 09:02:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56263 "EHLO
+	id S1757181Ab2IKNCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 09:02:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56420 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab2IKNAA (ORCPT
+	with ESMTP id S1752945Ab2IKNCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 09:00:00 -0400
+	Tue, 11 Sep 2012 09:02:46 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: [PATCH 03/16] ARM: ep93xx: move platform_data definitions
-Date: Tue, 11 Sep 2012 14:59:37 +0200
-Message-Id: <1347368390-31252-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: [PATCH 01/16] ARM: at91: move platform_data definitions
+Date: Tue, 11 Sep 2012 14:59:35 +0200
+Message-Id: <1347368390-31252-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1347368390-31252-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1347368350-31212-1-git-send-email-arnd@arndb.de>
 References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:4S4TzLgjYscIKsl7nNFuaBf5grQHl7TzmfVGNtBFjdu
- 4pcXw23IakwYSHcP4OXjYuzfhyrG7oSIk5FZOeaa8/4xkvgULz
- EJFdL3goCpw/HblDjCo6sPL0JCxfVzcwab2Z2WRg/dPFMSlz9M
- fRG4Nc7mC8bC56sxDo4NAETbOaahJuOIllUUm1GJd0p4SOCiSm
- pIa371PMOMMksoF0kmCEBio5bYlMRiDEl89wwbMh+Tpfa4D8l4
- Elq2XOdKBM9Lujq7fB+pJC2LEqjgUxJZAnZZOwuqVzHKSuJNSi
- vlqIsVkqxdcw/O0yIfwhpIBehd3ew7Ttb2zFvInWp1vrZetnxH
- LXN5RrvoCWdnW8H3wvKt5+AKFTYdxQuY2mexxfFuT7pO/03+NE
- FK2CySUi0YlUoDb8tyu5UZy2nXJZ1GyeRk=
+X-Provags-ID: V02:K0:PcUhJhD83uhkIYHP/ZR/QjTrSUIfSqdUSsDS6tATEYv
+ xa1VI3HzGw3jR4CfXgCJUXxgA+FIJhQt0GAdDvKHWMlEcmhMhT
+ fb3ReDnNId/q9FL+KtsL/yxYhf4Rfh1f4lTcJHRsWNjW4+NNsi
+ DhZnit/lMQf78ARZD3hOVdk1i8a5mfaPdDH58XNXDTux+pWqZU
+ 6Tz043O3tyigOVnk7HtshGMiU2ur2Y3HDE8C7FfCBhk8XT70Lf
+ HVe3iBdv0JOZmt89ozoZL941Yn8qCe6pCLiNL4elxNGkurAzw9
+ 7db7tmjP2RIf5RLRLdcWwV9dC/p0TZ5mpgnXCH8CoFg/CL7kA/
+ SSa78Eh1Lbe8aIEv4PLqXKgNJdjGQKavfaLsxSRNpzgFWFEuLg
+ ZZSPDI/Yubl+u6pu6rf7/FddLiQplhYnxU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -45,270 +36,92 @@ Platform data for device drivers should be defined in
 include/linux/platform_data/*.h, not in the architecture
 and platform specific directories.
 
-This moves such data out of the ep93xx include directories
+This moves such data out of the at91 include directories
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com> (supporter:SERIAL ATA
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: Axel Lin <axel.lin@gmail.com>
 ---
- Documentation/spi/ep93xx_spi                                     |    2 +-
- arch/arm/mach-ep93xx/core.c                                      |    6 +++---
- arch/arm/mach-ep93xx/dma.c                                       |    2 +-
- arch/arm/mach-ep93xx/edb93xx.c                                   |    4 ++--
- arch/arm/mach-ep93xx/simone.c                                    |    2 +-
- arch/arm/mach-ep93xx/snappercl15.c                               |    2 +-
- arch/arm/mach-ep93xx/vision_ep9307.c                             |    4 ++--
- drivers/ata/pata_ep93xx.c                                        |    2 +-
- drivers/dma/ep93xx_dma.c                                         |    2 +-
- drivers/input/keyboard/ep93xx_keypad.c                           |    2 +-
- drivers/spi/spi-ep93xx.c                                         |    4 ++--
- drivers/video/ep93xx-fb.c                                        |    2 +-
- .../mach/dma.h => include/linux/platform_data/dma-ep93xx.h       |    0
- .../linux/platform_data/keypad-ep93xx.h                          |    0
- .../ep93xx_spi.h => include/linux/platform_data/spi-ep93xx.h     |    0
- .../mach/fb.h => include/linux/platform_data/video-ep93xx.h      |    0
- sound/soc/ep93xx/ep93xx-ac97.c                                   |    2 +-
- sound/soc/ep93xx/ep93xx-i2s.c                                    |    2 +-
- sound/soc/ep93xx/ep93xx-pcm.c                                    |    2 +-
- 19 files changed, 20 insertions(+), 20 deletions(-)
- rename arch/arm/mach-ep93xx/include/mach/dma.h => include/linux/platform_data/dma-ep93xx.h (100%)
- rename arch/arm/mach-ep93xx/include/mach/ep93xx_keypad.h => include/linux/platform_data/keypad-ep93xx.h (100%)
- rename arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h => include/linux/platform_data/spi-ep93xx.h (100%)
- rename arch/arm/mach-ep93xx/include/mach/fb.h => include/linux/platform_data/video-ep93xx.h (100%)
+ arch/arm/mach-at91/at91sam9g45_devices.c                             |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c                              |    2 +-
+ arch/arm/mach-at91/include/mach/atmel-mci.h                          |    2 +-
+ drivers/dma/at_hdmac_regs.h                                          |    2 +-
+ include/linux/platform_data/atmel-aes.h                              |    2 +-
+ .../mach/at_hdmac.h => include/linux/platform_data/dma-atmel.h       |    0
+ 6 files changed, 5 insertions(+), 5 deletions(-)
+ rename arch/arm/mach-at91/include/mach/at_hdmac.h => include/linux/platform_data/dma-atmel.h (100%)
 
-diff --git a/Documentation/spi/ep93xx_spi b/Documentation/spi/ep93xx_spi
-index d8eb01c..832ddce 100644
---- a/Documentation/spi/ep93xx_spi
-+++ b/Documentation/spi/ep93xx_spi
-@@ -26,7 +26,7 @@ arch/arm/mach-ep93xx/ts72xx.c:
- #include <linux/gpio.h>
- #include <linux/spi/spi.h>
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 0607399..0aa9bdb 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -31,7 +31,7 @@
+ #include <mach/at91sam9g45_matrix.h>
+ #include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+-#include <mach/at_hdmac.h>
++#include <linux/platform_data/dma-atmel.h>
+ #include <mach/atmel-mci.h>
  
--#include <mach/ep93xx_spi.h>
-+#include <linux/platform_data/spi-ep93xx.h>
- 
- /* this is our GPIO line used for chip select */
- #define MMC_CHIP_SELECT_GPIO EP93XX_GPIO_LINE_EGPIO9
-diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
-index 4afe52a..e85bf17 100644
---- a/arch/arm/mach-ep93xx/core.c
-+++ b/arch/arm/mach-ep93xx/core.c
-@@ -36,9 +36,9 @@
- #include <linux/export.h>
- 
- #include <mach/hardware.h>
--#include <mach/fb.h>
--#include <mach/ep93xx_keypad.h>
--#include <mach/ep93xx_spi.h>
-+#include <linux/platform_data/video-ep93xx.h>
-+#include <linux/platform_data/keypad-ep93xx.h>
-+#include <linux/platform_data/spi-ep93xx.h>
- #include <mach/gpio-ep93xx.h>
- 
- #include <asm/mach/map.h>
-diff --git a/arch/arm/mach-ep93xx/dma.c b/arch/arm/mach-ep93xx/dma.c
-index 16976d7..d8bfd02 100644
---- a/arch/arm/mach-ep93xx/dma.c
-+++ b/arch/arm/mach-ep93xx/dma.c
-@@ -25,7 +25,7 @@
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
- 
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- #include <mach/hardware.h>
- 
- #include "soc.h"
-diff --git a/arch/arm/mach-ep93xx/edb93xx.c b/arch/arm/mach-ep93xx/edb93xx.c
-index 337ab7c..b8f53d5 100644
---- a/arch/arm/mach-ep93xx/edb93xx.c
-+++ b/arch/arm/mach-ep93xx/edb93xx.c
-@@ -35,8 +35,8 @@
- #include <sound/cs4271.h>
- 
- #include <mach/hardware.h>
--#include <mach/fb.h>
--#include <mach/ep93xx_spi.h>
-+#include <linux/platform_data/video-ep93xx.h>
-+#include <linux/platform_data/spi-ep93xx.h>
- #include <mach/gpio-ep93xx.h>
- 
- #include <asm/hardware/vic.h>
-diff --git a/arch/arm/mach-ep93xx/simone.c b/arch/arm/mach-ep93xx/simone.c
-index 33dc079..0eb3f17 100644
---- a/arch/arm/mach-ep93xx/simone.c
-+++ b/arch/arm/mach-ep93xx/simone.c
+ #include <media/atmel-isi.h>
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index f09fff9..e4da717 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
 @@ -22,7 +22,7 @@
- #include <linux/i2c-gpio.h>
+ #include <mach/at91sam9rl_matrix.h>
+ #include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+-#include <mach/at_hdmac.h>
++#include <linux/platform_data/dma-atmel.h>
  
- #include <mach/hardware.h>
--#include <mach/fb.h>
-+#include <linux/platform_data/video-ep93xx.h>
- #include <mach/gpio-ep93xx.h>
+ #include "generic.h"
  
- #include <asm/hardware/vic.h>
-diff --git a/arch/arm/mach-ep93xx/snappercl15.c b/arch/arm/mach-ep93xx/snappercl15.c
-index 01abd35..50043ee 100644
---- a/arch/arm/mach-ep93xx/snappercl15.c
-+++ b/arch/arm/mach-ep93xx/snappercl15.c
-@@ -28,7 +28,7 @@
- #include <linux/mtd/nand.h>
+diff --git a/arch/arm/mach-at91/include/mach/atmel-mci.h b/arch/arm/mach-at91/include/mach/atmel-mci.h
+index 998cb0c..cd580a1 100644
+--- a/arch/arm/mach-at91/include/mach/atmel-mci.h
++++ b/arch/arm/mach-at91/include/mach/atmel-mci.h
+@@ -1,7 +1,7 @@
+ #ifndef __MACH_ATMEL_MCI_H
+ #define __MACH_ATMEL_MCI_H
  
- #include <mach/hardware.h>
--#include <mach/fb.h>
-+#include <linux/platform_data/video-ep93xx.h>
- #include <mach/gpio-ep93xx.h>
+-#include <mach/at_hdmac.h>
++#include <linux/platform_data/dma-atmel.h>
  
- #include <asm/hardware/vic.h>
-diff --git a/arch/arm/mach-ep93xx/vision_ep9307.c b/arch/arm/mach-ep93xx/vision_ep9307.c
-index 2905a49..ba92e25 100644
---- a/arch/arm/mach-ep93xx/vision_ep9307.c
-+++ b/arch/arm/mach-ep93xx/vision_ep9307.c
-@@ -30,8 +30,8 @@
- #include <linux/mmc/host.h>
+ /**
+  * struct mci_dma_data - DMA data for MCI interface
+diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+index 8a6c8e8..116e4ad 100644
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -11,7 +11,7 @@
+ #ifndef AT_HDMAC_REGS_H
+ #define	AT_HDMAC_REGS_H
  
- #include <mach/hardware.h>
--#include <mach/fb.h>
--#include <mach/ep93xx_spi.h>
-+#include <linux/platform_data/video-ep93xx.h>
-+#include <linux/platform_data/spi-ep93xx.h>
- #include <mach/gpio-ep93xx.h>
+-#include <mach/at_hdmac.h>
++#include <linux/platform_data/dma-atmel.h>
  
- #include <asm/hardware/vic.h>
-diff --git a/drivers/ata/pata_ep93xx.c b/drivers/ata/pata_ep93xx.c
-index 6ef2e37..e056406 100644
---- a/drivers/ata/pata_ep93xx.c
-+++ b/drivers/ata/pata_ep93xx.c
-@@ -43,7 +43,7 @@
- #include <linux/dmaengine.h>
- #include <linux/ktime.h>
+ #define	AT_DMA_MAX_NR_CHANNELS	8
  
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- #include <mach/platform.h>
+diff --git a/include/linux/platform_data/atmel-aes.h b/include/linux/platform_data/atmel-aes.h
+index e7a1949..ab68082 100644
+--- a/include/linux/platform_data/atmel-aes.h
++++ b/include/linux/platform_data/atmel-aes.h
+@@ -1,7 +1,7 @@
+ #ifndef __LINUX_ATMEL_AES_H
+ #define __LINUX_ATMEL_AES_H
  
- #define DRV_NAME	"ep93xx-ide"
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index c64917e..4aeaea7 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -26,7 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
+-#include <mach/at_hdmac.h>
++#include <linux/platform_data/dma-atmel.h>
  
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- 
- #include "dmaengine.h"
- 
-diff --git a/drivers/input/keyboard/ep93xx_keypad.c b/drivers/input/keyboard/ep93xx_keypad.c
-index c46fc81..7363402 100644
---- a/drivers/input/keyboard/ep93xx_keypad.c
-+++ b/drivers/input/keyboard/ep93xx_keypad.c
-@@ -29,7 +29,7 @@
- #include <linux/slab.h>
- 
- #include <mach/hardware.h>
--#include <mach/ep93xx_keypad.h>
-+#include <linux/platform_data/keypad-ep93xx.h>
- 
- /*
-  * Keypad Interface Register offsets
-diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-index f97f1d2..3a21959 100644
---- a/drivers/spi/spi-ep93xx.c
-+++ b/drivers/spi/spi-ep93xx.c
-@@ -31,8 +31,8 @@
- #include <linux/scatterlist.h>
- #include <linux/spi/spi.h>
- 
--#include <mach/dma.h>
--#include <mach/ep93xx_spi.h>
-+#include <linux/platform_data/dma-ep93xx.h>
-+#include <linux/platform_data/spi-ep93xx.h>
- 
- #define SSPCR0			0x0000
- #define SSPCR0_MODE_SHIFT	6
-diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-index 345d962..f2c092da 100644
---- a/drivers/video/ep93xx-fb.c
-+++ b/drivers/video/ep93xx-fb.c
-@@ -24,7 +24,7 @@
- #include <linux/clk.h>
- #include <linux/fb.h>
- 
--#include <mach/fb.h>
-+#include <linux/platform_data/video-ep93xx.h>
- 
- /* Vertical Frame Timing Registers */
- #define EP93XXFB_VLINES_TOTAL			0x0000	/* SW locked */
-diff --git a/arch/arm/mach-ep93xx/include/mach/dma.h b/include/linux/platform_data/dma-ep93xx.h
+ /**
+  * struct aes_dma_data - DMA data for AES
+diff --git a/arch/arm/mach-at91/include/mach/at_hdmac.h b/include/linux/platform_data/dma-atmel.h
 similarity index 100%
-rename from arch/arm/mach-ep93xx/include/mach/dma.h
-rename to include/linux/platform_data/dma-ep93xx.h
-diff --git a/arch/arm/mach-ep93xx/include/mach/ep93xx_keypad.h b/include/linux/platform_data/keypad-ep93xx.h
-similarity index 100%
-rename from arch/arm/mach-ep93xx/include/mach/ep93xx_keypad.h
-rename to include/linux/platform_data/keypad-ep93xx.h
-diff --git a/arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h b/include/linux/platform_data/spi-ep93xx.h
-similarity index 100%
-rename from arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h
-rename to include/linux/platform_data/spi-ep93xx.h
-diff --git a/arch/arm/mach-ep93xx/include/mach/fb.h b/include/linux/platform_data/video-ep93xx.h
-similarity index 100%
-rename from arch/arm/mach-ep93xx/include/mach/fb.h
-rename to include/linux/platform_data/video-ep93xx.h
-diff --git a/sound/soc/ep93xx/ep93xx-ac97.c b/sound/soc/ep93xx/ep93xx-ac97.c
-index bdffab3..c352165 100644
---- a/sound/soc/ep93xx/ep93xx-ac97.c
-+++ b/sound/soc/ep93xx/ep93xx-ac97.c
-@@ -21,7 +21,7 @@
- #include <sound/ac97_codec.h>
- #include <sound/soc.h>
- 
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- #include "ep93xx-pcm.h"
- 
- /*
-diff --git a/sound/soc/ep93xx/ep93xx-i2s.c b/sound/soc/ep93xx/ep93xx-i2s.c
-index 8df8f6d..ac4a751 100644
---- a/sound/soc/ep93xx/ep93xx-i2s.c
-+++ b/sound/soc/ep93xx/ep93xx-i2s.c
-@@ -28,7 +28,7 @@
- 
- #include <mach/hardware.h>
- #include <mach/ep93xx-regs.h>
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- 
- #include "ep93xx-pcm.h"
- 
-diff --git a/sound/soc/ep93xx/ep93xx-pcm.c b/sound/soc/ep93xx/ep93xx-pcm.c
-index 4eea98b..665d9c9 100644
---- a/sound/soc/ep93xx/ep93xx-pcm.c
-+++ b/sound/soc/ep93xx/ep93xx-pcm.c
-@@ -25,7 +25,7 @@
- #include <sound/soc.h>
- #include <sound/dmaengine_pcm.h>
- 
--#include <mach/dma.h>
-+#include <linux/platform_data/dma-ep93xx.h>
- #include <mach/hardware.h>
- #include <mach/ep93xx-regs.h>
- 
+rename from arch/arm/mach-at91/include/mach/at_hdmac.h
+rename to include/linux/platform_data/dma-atmel.h
 -- 
 1.7.10
 
