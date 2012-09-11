@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab2IKRjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:39:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33184 "EHLO
+	id S1757416Ab2IKRoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:44:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33189 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab2IKRjh (ORCPT
+	with ESMTP id S1751824Ab2IKRji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:39:37 -0400
+	Tue, 11 Sep 2012 13:39:38 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v3 12/17] ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for bootmem
-Date: Tue, 11 Sep 2012 13:39:10 -0400
-Message-ID: <1347385155-11643-13-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 06/17] ARM: LPAE: use signed arithmetic for mask definitions
+Date: Tue, 11 Sep 2012 13:39:04 -0400
+Message-ID: <1347385155-11643-7-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
 References: <1347385155-11643-1-git-send-email-cyril@ti.com>
@@ -24,29 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an architecture defined override for ARCH_LOW_ADDRESS_LIMIT.
-On PAE systems, the absence of this override causes bootmem to incorrectly
-limit itself to 32-bit addressable physical memory.
+This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
+unsigned long math truncates the mask at the 32-bits.  This clearly does bad
+things on PAE systems.
+
+This patch fixes this problem by defining these masks as signed quantities.
+We then rely on sign extension to do the right thing.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/include/asm/memory.h |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/include/asm/page.h           |    2 +-
+ arch/arm/include/asm/pgtable-3level.h |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 0643454..73caaeb 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -307,6 +307,8 @@ static inline __deprecated void *bus_to_virt(unsigned long x)
- #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
- #define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >= PAGE_OFFSET && (unsigned long)(kaddr) < (unsigned long)high_memory)
+diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+index ecf9019..1e0fe08 100644
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -13,7 +13,7 @@
+ /* PAGE_SHIFT determines the page size */
+ #define PAGE_SHIFT		12
+ #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
+-#define PAGE_MASK		(~(PAGE_SIZE-1))
++#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
  
-+#define ARCH_LOW_ADDRESS_LIMIT		PHYS_MASK
-+
- #endif
+ #ifndef __ASSEMBLY__
  
- #include <asm-generic/memory_model.h>
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+index b249035..ae39d11 100644
+--- a/arch/arm/include/asm/pgtable-3level.h
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -48,16 +48,16 @@
+ #define PMD_SHIFT		21
+ 
+ #define PMD_SIZE		(1UL << PMD_SHIFT)
+-#define PMD_MASK		(~(PMD_SIZE-1))
++#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
+ #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
+-#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
+ 
+ /*
+  * section address mask and size definitions.
+  */
+ #define SECTION_SHIFT		21
+ #define SECTION_SIZE		(1UL << SECTION_SHIFT)
+-#define SECTION_MASK		(~(SECTION_SIZE-1))
++#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
+ 
+ #define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
+ 
 -- 
 1.7.9.5
 
