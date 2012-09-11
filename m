@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab2IKSOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 14:14:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52593 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757791Ab2IKSOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 14:14:30 -0400
-Date: Tue, 11 Sep 2012 14:15:40 -0400
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        AnilKumar <anilkumar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: OMAP2+: Enable pinctrl dummy states
-Message-ID: <20120911181540.GO27758@beef>
-References: <1347385599-27558-1-git-send-email-mporter@ti.com>
- <1347385599-27558-3-git-send-email-mporter@ti.com>
- <20120911180306.GI23092@atomide.com>
+	id S1757953Ab2IKSRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 14:17:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753831Ab2IKSRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 14:17:40 -0400
+Date: Tue, 11 Sep 2012 14:16:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>, Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
+ hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120911181600.GK12039@redhat.com>
+References: <20120910223125.GC7677@google.com>
+ <20120911145106.GG12039@redhat.com>
+ <20120911171601.GN7677@google.com>
+ <20120911173524.GJ12039@redhat.com>
+ <20120911175515.GP7677@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120911180306.GI23092@atomide.com>
+In-Reply-To: <20120911175515.GP7677@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:03:06AM -0700, Tony Lindgren wrote:
-> * Matt Porter <mporter@ti.com> [120911 10:46]:
-> > Enable pinctrl dummy states for all OMAP platforms. This allows
-> > drivers to be converted to pinctrl while still running on
-> > platforms that do not provide pinctrl data.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > ---
-> >  arch/arm/mach-omap2/devices.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-> > index c00c689..577cd04 100644
-> > --- a/arch/arm/mach-omap2/devices.c
-> > +++ b/arch/arm/mach-omap2/devices.c
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/err.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/of.h>
-> > +#include <linux/pinctrl/machine.h>
-> >  #include <linux/platform_data/omap4-keypad.h>
-> >  
-> >  #include <mach/hardware.h>
-> > @@ -631,6 +632,9 @@ static inline void omap_init_vout(void) {}
-> >  
-> >  static int __init omap2_init_devices(void)
-> >  {
-> > +	/* Enable dummy states for those platforms without pinctrl support */
-> > +	pinctrl_provide_dummies();
-> > +
-> >  	/*
-> >  	 * please keep these calls, and their implementations above,
-> >  	 * in alphabetical order so they're easier to sort through.
+On Tue, Sep 11, 2012 at 10:55:15AM -0700, Tejun Heo wrote:
+> Hello, Vivek.
 > 
-> Hmm I think this may need to be board specific. And may need to
-> be board specific and depend on unpopulated device tree?
+> On Tue, Sep 11, 2012 at 01:35:25PM -0400, Vivek Goyal wrote:
+> > It is kind of strange. First kernel allows creation of hiearchy for
+> > non-hierarchical controllers and it also gives warning for user space to
+> > not do that.
+> > 
+> > If creating hiearchy for flat controllers is wrong then kernel should
+> > not allow it in first place and enforce it, instead of just giving a
+> > warning to user space to not create the hierarchy.
+> > 
+> > Initially I had blocked the creation of hierarchy deeper than 1 level
+> > but later had to remove it as people wanted libvirt to use blkio
+> > controller and seemed to be fine with flat support. In fact there
+> > were people who insisted on flat support as they thought that made
+> > more sense.
+> 
+> Yes, it is an ugly situation and we'll have to drag ourselves out of
+> this mess gradually.  I hope it hadn't happened like this but what
+> happened already happened and I can't see a better way out.  If you
+> can, please share.
+> 
+> > Sure. Just that CFQ code now has become really complicated and messy
+> > (especially with that 3 service trees per group) so making it hierarchical
+> > is significant amount of effort.
+> 
+> I think the wording for the warning wasn't entirely accurate.  The
+> thing that we wanna warn about is that the hierarchy behavior isn't
+> complete yet and it may change in the future.  If we can absolutely
+> declare that cfq is and will stay broken in terms of hierarchy
+> support, that could work too but I don't really think that's a good
+> idea.  It's something we need to do one way or the other.
+> 
+> > And regarding change of behavior, we can always intoduce a .hierarchy
+> > file like cgroup which needs to be explicitly set to make controller
+> > truly hiearchical. That way behavior does not change in a subtle manner
+> > in future kernel releases. (Not that I am a fan of hierarchy file, just
+> > that it is cost we pay for not implementing hierarchical controller to
+> > begin with).
+> 
+> I think that way of thinking is what led to this horrible mess in the
+> first place.  More flexibility doesn't equal better.  We can't keep
+> piling things on top.  I'd like to at least have an exit strategy.
+> use_hierarchy drives us further away from where we wanna be.
 
-If I run this on AM33xx with dummy states enabled, I'm able to override
-that dummy state just fine with an appropriate pinctl/pinmux entry in my
-DT data for spi.
+Ok, so whole point of warning seems to be so that we can change the
+behavior in future and say to user space they few kernel releases back we
+had started printing a warning that creating hierarchy is wrong and 
+move to a flat setup. So don't complain to us now.?
 
-Meanwhile on xM booting from board-omap3evm.c/!DT and debug enabled I
-get the following:
+Are you planning to get rid of .user_hierarchy file from memory cgroup
+too? If you are planning not to put such a file in blkio controller,
+then it will make sense to remove it from mem_cgorup too.
 
-[    1.837829] omap2_mcspi omap2_mcspi.1: no of_node; not parsing
-pinctrl DT
-[    1.845214] omap2_mcspi omap2_mcspi.1: using pinctrl dummy state
-(default)
-[    1.854278] omap2_mcspi omap2_mcspi.2: no of_node; not parsing
-pinctrl DT
-[    1.861572] omap2_mcspi omap2_mcspi.2: using pinctrl dummy state
-(default)
-[    1.870025] omap2_mcspi omap2_mcspi.3: no of_node; not parsing
-pinctrl DT
-[    1.877288] omap2_mcspi omap2_mcspi.3: using pinctrl dummy state
-(default)
-[    1.885681] omap2_mcspi omap2_mcspi.4: no of_node; not parsing
-pinctrl DT
-[    1.892913] omap2_mcspi omap2_mcspi.4: using pinctrl dummy state
-(default)
+.use_hierarchy was not set by default in memory controller and I think one
+of the reasons was increased overhead of accounting in deep hierarchies.
+Has that been sorted out?
 
-which seems to cover things being informative enough about what is
-going on. Are you wanting to see an explicit warning that the pinctrl
-dummy state is in use when pinctrl data is not available?
- 
-> For board-generic.c we always want to see the warnings. And some boards
-> insist on doing all the muxing only in the bootloader.
+The point I am trying to make is that deep hierarchies (5-6 levels) are
+/going to be a reality and if accounting overhead is not manageable then
+enabling hierarchy by default might not be a practical solution even
+if you implement hierarchy support (like memory cgroup), and in that
+case retaining .use_hierarchy will make sense.
 
-Which warnings are you saying we should see in the board-generic.c
-case?  Sure, there's plenty of cases where this will be unused due to
-somebody setting all the muxes in the bootloader and then not using
-pinctrl data. I'll have to doublecheck but I believe that case is also
-fine as the -single driver can't override the dummy state if the DT has
-no pinctrl data for the spi driver.
+IIUC, are you saying that now none of the controller will have flat
+hiearchy support because there is no way to be able to create flat 
+hierarchy. (Any new group is child of root group). So are we moving
+towards a model where every controller is hierarhical and there is
+no concept of flat hierarchy.
 
--Matt
+Thanks
+Vivek
