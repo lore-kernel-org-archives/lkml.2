@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab2IKRgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:36:43 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:46549 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751113Ab2IKRgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:36:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Zx99uaDilMGRuT+Nejdi3
-Date: Tue, 11 Sep 2012 10:36:26 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vaibhav Hiremath <hvaibhav@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        J Keerthy <j-keerthy@ti.com>, David Woodhouse <dwmw2@infradead.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
-Message-ID: <20120911173626.GF23092@atomide.com>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <CAMQu2gz8F2FcgRuok3x1uJ4pP8=0E2-9jhYGchzU9AUtUHjYhg@mail.gmail.com>
- <504F6249.2090501@ti.com>
- <201209111704.16708.arnd@arndb.de>
+	id S1752805Ab2IKRiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:38:06 -0400
+Received: from shutemov.name ([176.9.204.213]:58646 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab2IKRiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 13:38:05 -0400
+Date: Tue, 11 Sep 2012 20:38:34 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
+ passing in mm/huge_memory.c
+Message-ID: <20120911173833.GA29805@shutemov.name>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+ <1347382036-18455-3-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201209111704.16708.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1347382036-18455-3-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [120911 10:05]:
-> On Tuesday 11 September 2012, Vaibhav Hiremath wrote:
-> > On 9/11/2012 7:54 PM, Shilimkar, Santosh wrote:
-> > > On Tue, Sep 11, 2012 at 7:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > >> On Tuesday 11 September 2012, Shilimkar, Santosh wrote:
-> > >>> Just curious to know how you came with some of the above header names ?
-> > >>>
-> > >>> plat/mcbsp ---> dsp-mcbsp.h
-> > >>> There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
-> > >>> better name.
-> > >>
-> > >> This one was a mistake on my side, as Tony and  Peter already pointed out.
-> > >> How about asoc-mcbsp.h or asoc-omap-mcbsp.h?
-> > >>
-> > > After re-reading the cover-letter and your below response,
-> > > 'asoc-omap-mcbsp.h' seems to be fine.
-> > > 
-> > 
-> > Note that mcbsp is also applicable to Davinci family of devices.
+On Tue, Sep 11, 2012 at 05:47:15PM +0100, Will Deacon wrote:
+> From: Catalin Marinas <catalin.marinas@arm.com>
 > 
-> asoc-ti-mcbsp.h then?
+> The update_mmu_cache() takes a pointer (to pte_t by default) as the last
+> argument but the huge_memory.c passes a pmd_t value. The patch changes
+> the argument to the pmd_t * pointer.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Sounds good to me. Whatever the name ends up being:
+Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+> ---
+>  mm/huge_memory.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 57c4b93..4aa6d02 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -934,7 +934,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		entry = pmd_mkyoung(orig_pmd);
+>  		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+>  		if (pmdp_set_access_flags(vma, haddr, pmd, entry,  1))
+> -			update_mmu_cache(vma, address, entry);
+> +			update_mmu_cache(vma, address, pmd);
+>  		ret |= VM_FAULT_WRITE;
+>  		goto out_unlock;
+>  	}
+> @@ -986,7 +986,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		pmdp_clear_flush_notify(vma, haddr, pmd);
+>  		page_add_new_anon_rmap(new_page, vma, haddr);
+>  		set_pmd_at(mm, haddr, pmd, entry);
+> -		update_mmu_cache(vma, address, entry);
+> +		update_mmu_cache(vma, address, pmd);
+>  		page_remove_rmap(page);
+>  		put_page(page);
+>  		ret |= VM_FAULT_WRITE;
+> @@ -1989,7 +1989,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	BUG_ON(!pmd_none(*pmd));
+>  	page_add_new_anon_rmap(new_page, vma, address);
+>  	set_pmd_at(mm, address, pmd, _pmd);
+> -	update_mmu_cache(vma, address, _pmd);
+> +	update_mmu_cache(vma, address, pmd);
+>  	prepare_pmd_huge_pte(pgtable, mm);
+>  	spin_unlock(&mm->page_table_lock);
+>  
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+ Kirill A. Shutemov
