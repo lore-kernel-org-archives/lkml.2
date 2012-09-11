@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab2IKQsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 12:48:21 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61467 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758556Ab2IKQr3 (ORCPT
+	id S1759072Ab2IKRAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:00:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45492 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758597Ab2IKQ76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 12:47:29 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steve Capper <steve.capper@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 1/3] mm: thp: Fix the pmd_clear() arguments in pmdp_get_and_clear()
-Date: Tue, 11 Sep 2012 17:47:14 +0100
-Message-Id: <1347382036-18455-2-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+	Tue, 11 Sep 2012 12:59:58 -0400
+Date: Tue, 11 Sep 2012 09:59:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+Message-ID: <20120911165953.GK7677@google.com>
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+Hello,
 
-The CONFIG_TRANSPARENT_HUGEPAGE implementation of pmdp_get_and_clear()
-calls pmd_clear() with 3 arguments instead of 1.
+On Fri, Jul 20, 2012 at 06:30:01PM +0200, Paolo Bonzini wrote:
+> These commands cannot be issued right now without giving CAP_SYS_RAWIO to
+> the process who wishes to send them.  These commands can be useful also to
+> non-privileged programs who have access to the block devices.  For example
+> a virtual machine monitor needs them to forward trim/discard to host disks.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  block/scsi_ioctl.c |    3 ++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index 260fa80..dd71f18 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+>  	/* Basic writing commands */
+>  	__set_bit(WRITE_6, filter->write_ok);
+>  	__set_bit(WRITE_10, filter->write_ok);
+> +	__set_bit(WRITE_SAME, filter->write_ok);
+>  	__set_bit(WRITE_VERIFY, filter->write_ok);
+>  	__set_bit(WRITE_12, filter->write_ok);
+>  	__set_bit(WRITE_VERIFY_12, filter->write_ok);
+>  	__set_bit(WRITE_16, filter->write_ok);
+> +	__set_bit(WRITE_SAME_16, filter->write_ok);
+>  	__set_bit(WRITE_LONG, filter->write_ok);
+>  	__set_bit(WRITE_LONG_2, filter->write_ok);
+>  	__set_bit(ERASE, filter->write_ok);
+> +	__set_bit(UNMAP, filter->write_ok);
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Steve Capper <steve.capper@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- include/asm-generic/pgtable.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+FWIW, I don't think this is the right way to expose functionality
+which needs management in terms of access control, interpretation
+(stacking drivers) and serving concurrent users.  SG_IO filtering was
+mostly for cd/dvd burning and other removeable devices.  Especially
+for the former, the possibility of having a properly encapsulated
+interface was long lost and I think significant part of that is how
+the underlying technology and its hardware interface developed.  We
+basically just gave up.  Fortunately, they're going the way of
+floppies.
 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index ff4947b..f7e0206 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -87,7 +87,7 @@ static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
- 				       pmd_t *pmdp)
- {
- 	pmd_t pmd = *pmdp;
--	pmd_clear(mm, address, pmdp);
-+	pmd_clear(pmdp);
- 	return pmd;
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+So, it wouldn't be a good idea to abuse SG_IO filtering for exposing
+trim/discard.  It's something which should be retired or at least
+severely restricted in time.  I don't think we want to be developing
+new uses of it.
+
+I think trim/discards are fairly easy to abstract and common enough to
+justify having properly abstracted interface.  In fact, we already
+have block layer interface for it - BLKDISCARD.  If it's lacking,
+let's improve that.
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
