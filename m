@@ -1,136 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758977Ab2IKOi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:38:28 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:60423 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab2IKOi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:38:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqsDAIBLT1BbdWObgWdsb2JhbABFhgetJ4giIgEBFiYngiABAQQBIwRABwsFCwsVAyoCAlcGExuHbwqoP5M0ixCFFIESA6hi
-X-IronPort-AV: E=Sophos;i="4.80,405,1344204000"; 
-   d="asc'?scan'208";a="564687889"
-Message-ID: <1347374377.4539.115.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH 08/20] Staging: ipack: Switch to 8MHz operation before
- reading ID.
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Jens Taprogge <jens.taprogge@taprogge.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net
-Date: Tue, 11 Sep 2012 16:39:37 +0200
-In-Reply-To: <20120911113919.GA7174@endeavour.taprogge.org>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
-	 <1347267118-9580-8-git-send-email-siglesias@igalia.com>
-	 <20120911084818.GP19396@mwanda>
-	 <1347363066.4539.112.camel@fourier.local.igalia.com>
-	 <20120911113919.GA7174@endeavour.taprogge.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-rzSt1dpzBlVgXwmodpIk"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1759001Ab2IKOjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:39:49 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:60447 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755975Ab2IKOjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 10:39:47 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
+        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC 05/11] vfs: add one new mount option -o hottrack
+Date: Tue, 11 Sep 2012 22:27:19 +0800
+Message-Id: <1347373645-2119-6-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
+References: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091114-5806-0000-0000-0000197794C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
---=-rzSt1dpzBlVgXwmodpIk
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+  Introduce one new mount option '-o hottrack',
+and add its parsing support.
+  Its usage looks like:
+   mount -o hottrack
+   mount -o nouser,hottrack
+   mount -o nouser,hottrack,loop
+   mount -o hottrack,nouser
 
-On Tue, 2012-09-11 at 13:39 +0200, Jens Taprogge wrote:
-> On Tue, Sep 11, 2012 at 01:31:06PM +0200, Samuel Iglesias Gons=C3=A1lvez =
-wrote:
-> > On Tue, 2012-09-11 at 11:48 +0300, Dan Carpenter wrote:
-> > > On Mon, Sep 10, 2012 at 10:51:46AM +0200, Samuel Iglesias Gons=C3=A1l=
-vez wrote:
-> > > > From: Jens Taprogge <jens.taprogge@taprogge.org>
-> > > >=20
-> > > > Reading the ID space at 8 MHz is always supported.  Most carriers w=
-ill
-> > > > boot up in 8MHz mode.  Still, play it safe and ensure we are operat=
-ing at
-> > > > 8Mhz.
-> > > >=20
-> > > > Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-> > > > Signed-off-by: Samuel Iglesias Gons=C3=A1lvez <siglesias@igalia.com=
->
-> > > > ---
-> > > >  drivers/staging/ipack/ipack.c |   11 ++++++++---
-> > > >  1 file changed, 8 insertions(+), 3 deletions(-)
-> > > >=20
-> > > > diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/=
-ipack.c
-> > > > index 4f3c945..95f56b8 100644
-> > > > --- a/drivers/staging/ipack/ipack.c
-> > > > +++ b/drivers/staging/ipack/ipack.c
-> > > > @@ -376,6 +376,9 @@ struct ipack_device *ipack_device_register(stru=
-ct ipack_bus_device *bus,
-> > > >  	dev_set_name(&dev->dev,
-> > > >  		     "ipack-dev.%u.%u", dev->bus_nr, dev->slot);
-> > > > =20
-> > > > +	if (bus->ops->set_clockrate(dev, 8))
-> > > > +		dev_warn(&dev->dev, "failed to switch to 8 MHz operation for rea=
-ding of device ID.\n");
-> > > > +
-> > > >  	ret =3D ipack_device_read_id(dev);
-> > > >  	if (ret < 0) {
-> > > >  		dev_err(&dev->dev, "error reading device id section.\n");
-> > > > @@ -384,9 +387,11 @@ struct ipack_device *ipack_device_register(str=
-uct ipack_bus_device *bus,
-> > > >  	}
-> > > > =20
-> > > >  	/* if the device supports 32 MHz operation, use it. */
-> > > > -	ret =3D bus->ops->set_clockrate(dev, dev->speed_32mhz ? 32 : 8);
-> > > > -	if (ret < 0)
-> > > > -		dev_err(&dev->dev, "failed to switch to 32 MHz operation.\n");
-> > > > +	if (dev->speed_32mhz) {
-> > > > +		ret =3D bus->ops->set_clockrate(dev, 32);
-> > > > +		if (ret < 0)
-> > > > +			dev_err(&dev->dev, "failed to switch to 32 MHz operation.\n");
-> > > > +	}
-> > >=20
-> > > Ah.  Well done.  That's what I suggested earlier.  I think you
-> > > should get rid of the ->speed_8mhz all together.
-> >=20
-> > I will do it in a follow-up patch. The rest of suggestions have been
-> > integrated in the patches. I will submit the patches very soon.
->=20
-> I have not seen any IPack V2 device yet.  But since the ID space
-> provides the 8MHz flag, it might be useful.  On the other hand, we can
-> still readd it when we see it.
->=20
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/hot_track.c            |   34 ++++++++++++++++++++++++++++++++++
+ fs/hot_track.h            |    1 +
+ fs/super.c                |    5 +++++
+ include/linux/hot_track.h |    6 ++++++
+ 4 files changed, 46 insertions(+), 0 deletions(-)
 
-If we have the flag, we should use it in some point. Not only save it in
-the variable speed_8mhz and don't use it at all.
-
-> When you remove the flag, you can perhaps leave a comment in the code so
-> that it is easy to re-enable.
->=20
-
-OK. I will send a patch in Industry Pack mailing list and we can discuss
-there if this is a good solution or not before sending to staging ML.
-
-Thanks,
-
-Sam
-
-
---=-rzSt1dpzBlVgXwmodpIk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlBPTSkACgkQWrfbyfmd9eIiTgCeKM6nHxtPpEc5iYnqXcFnEJUJ
-12IAniMBuvuxUPTJBcjhoMsDcqCwoUJW
-=5KHq
------END PGP SIGNATURE-----
-
---=-rzSt1dpzBlVgXwmodpIk--
+diff --git a/fs/hot_track.c b/fs/hot_track.c
+index 3690f26..36a41cb 100644
+--- a/fs/hot_track.c
++++ b/fs/hot_track.c
+@@ -16,6 +16,40 @@
+ #include "hot_track.h"
+ 
+ /*
++ * Regular mount options parser for -hottrack option.
++ * return false if no -hottrack is specified;
++ * otherwise return true. And the -hottrack will be
++ * removed from options.
++ */
++bool hot_track_parse_options(char *options)
++{
++	long len;
++	char *p;
++	static char opts_hot[] = "hottrack";
++
++	if (!options)
++		return false;
++
++	p = strstr(options, opts_hot);
++	if (!p)
++		return false;
++
++	while (p) {
++		len = options + strlen(options) - (p + strlen(opts_hot));
++		if (len == 0) {
++			options[0] = '\0';
++			break;
++		}
++
++		memmove(p, p + strlen(opts_hot) + 1, len);
++		p = strstr(options, opts_hot);
++	}
++
++	printk(KERN_INFO "vfs: turning on hot data tracking\n");
++	return true;
++}
++
++/*
+  * Initialize hot_inode_item, hot_range_item
+  * and hot_hash_node kmem cache
+  */
+diff --git a/fs/hot_track.h b/fs/hot_track.h
+index cf4cf35..dc0f5a2 100644
+--- a/fs/hot_track.h
++++ b/fs/hot_track.h
+@@ -15,6 +15,7 @@
+ 
+ #include "hot_rb.h"
+ 
++bool hot_track_parse_options(char *options);
+ void __init hot_track_item_cache_init(void);
+ 
+ #endif /* __HOT_TRACK__ */
+diff --git a/fs/super.c b/fs/super.c
+index 0902cfa..d5bc781 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -35,6 +35,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/lockdep.h>
+ #include "internal.h"
++#include "hot_track.h"
+ 
+ 
+ LIST_HEAD(super_blocks);
+@@ -1125,6 +1126,7 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 	struct dentry *root;
+ 	struct super_block *sb;
+ 	char *secdata = NULL;
++	bool hottrack = false;
+ 	int error = -ENOMEM;
+ 
+ 	if (data && !(type->fs_flags & FS_BINARY_MOUNTDATA)) {
+@@ -1137,6 +1139,9 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 			goto out_free_secdata;
+ 	}
+ 
++	if (data && hot_track_parse_options(data))
++		hottrack = true;
++
+ 	root = type->mount(type, flags, name, data);
+ 	if (IS_ERR(root)) {
+ 		error = PTR_ERR(root);
+diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
+index 2256496..b56a467 100644
+--- a/include/linux/hot_track.h
++++ b/include/linux/hot_track.h
+@@ -20,6 +20,11 @@
+ #include <linux/rbtree.h>
+ #include <linux/kref.h>
+ 
++/*
++ * Flags for hot data tracking mount options.
++ */
++#define HOT_MOUNT_HOT_TRACK		(1 << 0)
++
+ /* A tree that sits on the hot_info */
+ struct hot_inode_tree {
+ 	struct rb_root map;
+@@ -89,6 +94,7 @@ struct hot_range_item {
+ };
+ 
+ struct hot_info {
++	unsigned long mount_opt;
+ 
+ 	/* red-black tree that keeps track of fs-wide hot data */
+ 	struct hot_inode_tree hot_inode_tree;
+-- 
+1.7.6.5
 
