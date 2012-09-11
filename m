@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2IKUvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 16:51:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756721Ab2IKUvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 16:51:37 -0400
-Date: Tue, 11 Sep 2012 16:50:28 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH UPDATED RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120911205027.GA25837@redhat.com>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <20120911182356.GR7677@google.com>
+	id S1757455Ab2IKUzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 16:55:24 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37908 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab2IKUzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 16:55:22 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+	<CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
+	<20120907193825.GA4633@fieldses.org>
+Date: Tue, 11 Sep 2012 22:56:52 +0200
+In-Reply-To: <20120907193825.GA4633@fieldses.org> (J. Bruce Fields's message
+	of "Fri, 7 Sep 2012 15:38:26 -0400")
+Message-ID: <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911182356.GR7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-On Tue, Sep 11, 2012 at 11:23:56AM -0700, Tejun Heo wrote:
-> +			/* we're fully hierarchical iff root uses hierarchy */
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-minor nit: s/iff/if/
+>> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
+>> > check refuses permission to write to the inode which prevents us from
+>> > copying it up even though we have a writable upper layer.  (With an ext4
+>> > lower layer the inode check will succeed if the inode  is writable even
+>> > if the filesystem is not.)  It is not clear what the right solution is
+>> > here.  One approach is to check the inode permissions only (avoiding the
+>> > filesystem specific permissions op), but it is not clear we can rely on
+>> > these for all underlying filesystems.  Perhaps this check should only be
+>> > used for NFS.
+>
+> Then couldn't you for example end up circumventing ACLs on the
+> underlying file to access data cached by reads from another user on the
+> same system?
 
--- 
-Aristeu
+Ignoring ACL's should always give less access, isn't that right?
 
+>
+> Is it possible to arrange that the check for a readonly filesystem be
+> done only by the vfs and not also by ->permission?
+
+You'd need to modify NFS servers for that to work, no?  It's possible
+but not practical.
+
+Thanks,
+Miklos
+
+
+
+>
+> --b.
+>
+>> > Perhaps it needs to be a mount option.  The second patch
+>> > (for discussion) following this email implements this, using the inode
+>> > permissions when the lowerlayer is read-only.  This seems to work as
+>> > expected in my limited testing.
+>> 
+>> I fear that will create an inconsistency between the read-only and the
+>> non-read-only case, even though both should behave the same.
+>> 
+>> I think the cleanest would be to create a mount option to always use
+>> generic_permission (on both the lower and the upper fs).  That would
+>> give us two, slightly different, operating modes but each would be
+>> self consistent.
+>> 
+>> Thanks,
+>> Miklos
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
