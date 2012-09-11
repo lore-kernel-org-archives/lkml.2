@@ -1,142 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975Ab2IKTWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:22:50 -0400
-Received: from mo5.mail-out.ovh.net ([178.32.228.5]:35093 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488Ab2IKTWt (ORCPT
+	id S1759970Ab2IKTYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:24:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63869 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2IKTYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:22:49 -0400
-Date: Tue, 11 Sep 2012 15:20:59 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 01/16] ARM: at91: move platform_data definitions
-Message-ID: <20120911132059.GG31430@game.jcrosoft.org>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-1-git-send-email-arnd@arndb.de>
+	Tue, 11 Sep 2012 15:24:38 -0400
+Message-ID: <504F8FF0.3000408@redhat.com>
+Date: Tue, 11 Sep 2012 21:24:32 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347368390-31252-1-git-send-email-arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 4293619295861582596
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrheeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrheeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <20120911182904.GS7677@google.com> <504F88CB.6030105@redhat.com> <20120911191325.GU7677@google.com>
+In-Reply-To: <20120911191325.GU7677@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:59 Tue 11 Sep     , Arnd Bergmann wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
+Il 11/09/2012 21:13, Tejun Heo ha scritto:
+> Hello, Paolo.
 > 
-> This moves such data out of the at91 include directories
+> On Tue, Sep 11, 2012 at 08:54:03PM +0200, Paolo Bonzini wrote:
+>>> On Tue, Sep 11, 2012 at 07:56:53PM +0200, Paolo Bonzini wrote:
+>>>> Understood; unfortunately, there is another major user of it
+>>>> (virtualization).  If you are passing "raw" LUNs down to a virtual
+>>>> machine, there's no possibility at all to use a properly encapsulated
+>>>
+>>> Is there still command filtering issue when you're passing "raw" LUNs
+>>> down?
+>>
+>> Yes, the passing down is just a userland program that gets SCSI
+>> commands from the guest, sends them via SG_IO, and passes back the
+>> result.  If the userland program is unprivileged (it usually is), then
+>> you go through the filter.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> ---
->  arch/arm/mach-at91/at91sam9g45_devices.c                             |    2 +-
->  arch/arm/mach-at91/at91sam9rl_devices.c                              |    2 +-
->  arch/arm/mach-at91/include/mach/atmel-mci.h                          |    2 +-
->  drivers/dma/at_hdmac_regs.h                                          |    2 +-
->  include/linux/platform_data/atmel-aes.h                              |    2 +-
->  .../mach/at_hdmac.h => include/linux/platform_data/dma-atmel.h       |    0
->  6 files changed, 5 insertions(+), 5 deletions(-)
->  rename arch/arm/mach-at91/include/mach/at_hdmac.h => include/linux/platform_data/dma-atmel.h (100%)
-> 
-> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-> index 0607399..0aa9bdb 100644
-> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-> @@ -31,7 +31,7 @@
->  #include <mach/at91sam9g45_matrix.h>
->  #include <mach/at91_matrix.h>
->  #include <mach/at91sam9_smc.h>
-> -#include <mach/at_hdmac.h>
-> +#include <linux/platform_data/dma-atmel.h>
->  #include <mach/atmel-mci.h>
->  
->  #include <media/atmel-isi.h>
-> diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-> index f09fff9..e4da717 100644
-> --- a/arch/arm/mach-at91/at91sam9rl_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-> @@ -22,7 +22,7 @@
->  #include <mach/at91sam9rl_matrix.h>
->  #include <mach/at91_matrix.h>
->  #include <mach/at91sam9_smc.h>
-> -#include <mach/at_hdmac.h>
-> +#include <linux/platform_data/dma-atmel.h>
-I prefer to have all of them in atmel.h
+> Could being able to bypass the filters for this "you own this LUN" be
+> a solution?  Or is it that we still need command filtering for
+> whatever reason?
 
-as I started
+Yes, it could be.  Enabling/disabling the filters from a privileged
+program and passing the unfiltered fd via SCM_RIGHTS would be enough.
 
-Best Regards,
-J.
->  
->  #include "generic.h"
->  
-> diff --git a/arch/arm/mach-at91/include/mach/atmel-mci.h b/arch/arm/mach-at91/include/mach/atmel-mci.h
-> index 998cb0c..cd580a1 100644
-> --- a/arch/arm/mach-at91/include/mach/atmel-mci.h
-> +++ b/arch/arm/mach-at91/include/mach/atmel-mci.h
-> @@ -1,7 +1,7 @@
->  #ifndef __MACH_ATMEL_MCI_H
->  #define __MACH_ATMEL_MCI_H
->  
-> -#include <mach/at_hdmac.h>
-> +#include <linux/platform_data/dma-atmel.h>
->  
->  /**
->   * struct mci_dma_data - DMA data for MCI interface
-> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-> index 8a6c8e8..116e4ad 100644
-> --- a/drivers/dma/at_hdmac_regs.h
-> +++ b/drivers/dma/at_hdmac_regs.h
-> @@ -11,7 +11,7 @@
->  #ifndef AT_HDMAC_REGS_H
->  #define	AT_HDMAC_REGS_H
->  
-> -#include <mach/at_hdmac.h>
-> +#include <linux/platform_data/dma-atmel.h>
->  
->  #define	AT_DMA_MAX_NR_CHANNELS	8
->  
-> diff --git a/include/linux/platform_data/atmel-aes.h b/include/linux/platform_data/atmel-aes.h
-> index e7a1949..ab68082 100644
-> --- a/include/linux/platform_data/atmel-aes.h
-> +++ b/include/linux/platform_data/atmel-aes.h
-> @@ -1,7 +1,7 @@
->  #ifndef __LINUX_ATMEL_AES_H
->  #define __LINUX_ATMEL_AES_H
->  
-> -#include <mach/at_hdmac.h>
-> +#include <linux/platform_data/dma-atmel.h>
->  
->  /**
->   * struct aes_dma_data - DMA data for AES
-> diff --git a/arch/arm/mach-at91/include/mach/at_hdmac.h b/include/linux/platform_data/dma-atmel.h
-> similarity index 100%
-> rename from arch/arm/mach-at91/include/mach/at_hdmac.h
-> rename to include/linux/platform_data/dma-atmel.h
-> -- 
-> 1.7.10
+>> This is the userland for virtio-scsi (the kernel part of virtio-scsi is just
+>> a driver running in the guest).  It can run in two mode: it can do its own
+>> SCSI emulation, or it can just relay CDBs and their results.
+>>
+>> It can (and does) use higher-level services if SCSI emulation is done in
+>> userland.  In that case, trim/discard can become a BLKDISCARD or a fallocate
+>> for example.  However, in this case userland doesn't do any emulation and in
+>> fact doesn't even need to know that this CDB is a discard.
 > 
+> Couldn't it intercept some of them - e.g. RWs and discards?
+> What's the benifit / use case of doing pure bypass?
+
+Basically, using the same storage technology for bare metal and
+virtualized systems.  IMHO losing sense data is a no-no, but the above
+solution could be feasible too.
+
+> Would the benefits be strong enough to justify whole bpf cdb filtering?
+
+If we can get a simpler solution that is okay with kernel maintainers,
+I'm all for it.
+
+>>> Hmmm?  This was about discard, no?
+>>
+>> One example of block layer interfaces that I want to add is BLKPING, so
+>> that you can see if the NAS is reachable.  Then SCSI emulation can map
+>> the "test unit ready" command to BLKPING.  There's a handful of such
+>> ioctls that would be useful, such as BLKDISCARD itself.
+> 
+> Can't you make use of the existing disk events mechanism for that?
+> Block layer already knows how to watch readiness of a device and tell
+> the userland about it via uevent.
+
+How?  But anyway i don't want to divert the discussion from the actual
+topic...
+
+Paolo
