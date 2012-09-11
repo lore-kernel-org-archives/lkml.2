@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758704Ab2IKTEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:04:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60563 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab2IKTEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:04:43 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] 3.4-stable timekeeping fixes merged in 3.6
-Date: Tue, 11 Sep 2012 15:04:16 -0400
-Message-Id: <1347390259-54838-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091119-7182-0000-0000-000002970BC3
+	id S1758452Ab2IKTIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:08:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39615 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab2IKTIf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 15:08:35 -0400
+Date: Tue, 11 Sep 2012 12:08:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Toshiaki Yamane <yamanetoshi@gmail.com>
+Cc: devel@driverdev.osuosl.org, Manohar Vanga <manohar.vanga@gmail.com>,
+        linux-kernel@vger.kernel.org, Martyn Welch <martyn.welch@ge.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 1/2] staging/vme: Use pr_ printks in vme_user.c
+Message-ID: <20120911190829.GA3327@kroah.com>
+References: <20120904202053.GA23449@kroah.com>
+ <1347347775-9282-1-git-send-email-yamanetoshi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347347775-9282-1-git-send-email-yamanetoshi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanted to send out a few timekeeping fixes that were merged
-in 3.6 which are appropriate for -stable.
+On Tue, Sep 11, 2012 at 04:16:14PM +0900, Toshiaki Yamane wrote:
+> The below checkpatch warnings was fixed,
+> 
+> -WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+> -WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+> -WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
 
-This queue backports the following fixes:
------------------------------------------
-cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
-bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
-4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+A lot of these can be using dev_* instead of the pr_* functions, right?
+Please convert to using them wherever possible.
 
-I've run these through my timetest suite w/ kvm on both i386
-& x86_64. But more testing would be of course appreciated.
-	https://github.com/johnstultz-work/timetests
+Because of that, I can't take this patch, sorry.  Care to redo it?
 
-I also have patch queues for all the -stable trees that I'll be
-sending out as my testing completes for those trees.
+thanks,
 
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-
-John Stultz (3):
-  3.4.y: time: Improve sanity checking of timekeeping inputs
-  3.4.y: time: Avoid making adjustments if we haven't accumulated
-    anything
-  3.4.y: time: Move ktime_t overflow checking into
-    timespec_valid_strict
-
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   29 +++++++++++++++++++++++++++--
- kernel/time/timekeeping.c |   33 +++++++++++++++++++++++++++++----
- 3 files changed, 56 insertions(+), 13 deletions(-)
-
--- 
-1.7.9.5
-
+greg k-h
