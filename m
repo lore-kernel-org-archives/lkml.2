@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab2IKVDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 17:03:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:65427 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab2IKVDP (ORCPT
+	id S1757722Ab2IKVHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 17:07:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11779 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561Ab2IKVHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 17:03:15 -0400
-Date: Tue, 11 Sep 2012 23:04:34 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org
-Subject: Re: [PATCH v4] can: rename LED trigger name on netdev renames
-Message-ID: <20120911210434.GA3895@gmail.com>
-References: <20120907071934.GB37685@macbook.local>
- <1347207464-2002-1-git-send-email-fabio.baltieri@gmail.com>
- <20120910142827.GB11000@vandijck-laurijssen.be>
- <504E30AE.50201@hartkopp.net>
- <20120910184049.GD2006@gmail.com>
- <20120910200648.GB546@vandijck-laurijssen.be>
+	Tue, 11 Sep 2012 17:07:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="235486651"
+Date: Tue, 11 Sep 2012 14:07:26 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, Chris Ball <cjb@laptop.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 05/16] ARM: msm: move platform_data definitions
+Message-ID: <20120911210726.GA17002@codeaurora.org>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
+ <1347368390-31252-1-git-send-email-arnd@arndb.de>
+ <1347368390-31252-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120910200648.GB546@vandijck-laurijssen.be>
-X-Operating-System: Linux balto-eee 3.6.0-rc3-balto-eee-00469-g5b836b0
- GNU/Linux
+In-Reply-To: <1347368390-31252-5-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kurt,
-
-On Mon, Sep 10, 2012 at 10:06:48PM +0200, Kurt Van Dijck wrote:
-> can: rename LED trigger name on netdev renames
+On Tue, Sep 11, 2012 at 02:59:39PM +0200, Arnd Bergmann wrote:
+> Platform data for device drivers should be defined in
+> include/linux/platform_data/*.h, not in the architecture
+> and platform specific directories.
 > 
-> The LED trigger name for CAN devices is based on the initial
-> CAN device name, but does never change. The LED trigger name
-> is not guaranteed to be unique in case of hotplugging CAN devices.
+> This moves such data out of the msm include directories
 > 
-> This patch tries to address this problem by modifying the
-> LED trigger name according to the CAN device name when
-> the latter changes.
-> 
-> v1 - Kurt Van Dijck
-> v2 - Fabio Baltieri
-> - remove rename blocking if trigger is bound
-> - use led-subsystem function for the actual rename (still WiP)
-> - call init/exit functions from dev.c
-> v3 - Kurt Van Dijck
-> - safe operation for non-candev based devices (vcan, slcan)
-> 	based on earlier patch
-> v4 - Kurt Van Dijck
-> - trivial patch mistakes fixed
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Daniel Walker <dwalker@fifo99.com>
+> Cc: Bryan Huntsman <bryanh@codeaurora.org>
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Cc: linux-arm-msm@vger.kernel.org
+> ---
+>  arch/arm/mach-msm/board-qsd8x50.c                                    |    2 +-
+>  arch/arm/mach-msm/board-trout-mmc.c                                  |    2 +-
+>  arch/arm/mach-msm/board-trout-panel.c                                |    2 +-
+>  arch/arm/mach-msm/devices-msm7x00.c                                  |    2 +-
+>  arch/arm/mach-msm/devices-msm7x30.c                                  |    2 +-
+>  arch/arm/mach-msm/devices-qsd8x50.c                                  |    2 +-
+>  arch/arm/mach-msm/include/mach/board.h                               |    2 +-
+>  drivers/mmc/host/msm_sdcc.c                                          |    2 +-
+>  drivers/video/msm/mddi.c                                             |    2 +-
+>  drivers/video/msm/mddi_client_dummy.c                                |    2 +-
+>  drivers/video/msm/mddi_client_nt35399.c                              |    2 +-
+>  drivers/video/msm/mddi_client_toshiba.c                              |    2 +-
+>  drivers/video/msm/mdp.c                                              |    2 +-
+>  drivers/video/msm/mdp_hw.h                                           |    2 +-
+>  drivers/video/msm/mdp_ppp.c                                          |    2 +-
+>  drivers/video/msm/msm_fb.c                                           |    2 +-
+>  .../include/mach/mmc.h => include/linux/platform_data/mmc-msm_sdcc.h |    0
+>  .../mach/msm_fb.h => include/linux/platform_data/video-msm_fb.h      |    0
+>  18 files changed, 16 insertions(+), 16 deletions(-)
+>  rename arch/arm/mach-msm/include/mach/mmc.h => include/linux/platform_data/mmc-msm_sdcc.h (100%)
+>  rename arch/arm/mach-msm/include/mach/msm_fb.h => include/linux/platform_data/video-msm_fb.h (100%)
 
-Well done, I'm testing the last patches (my can-leds-devel branch on
-github) and seems to work good (tested rename, disconnect-reconnect,
-vcan rename, rename from udev rule).
-
-Now I think we just have to wait for Bryan for the LED rename patch.
-
-Fabio
+Acked-by: David Brown <davidb@codeaurora.org>
 
 -- 
-Fabio Baltieri
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
