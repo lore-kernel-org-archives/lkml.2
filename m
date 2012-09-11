@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2IKBxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 21:53:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47808 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2IKBxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 21:53:16 -0400
+	id S1757620Ab2IKCLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 22:11:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8032 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757302Ab2IKCLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 22:11:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,400,1344236400"; 
+   d="scan'208";a="220518594"
+Date: Tue, 11 Sep 2012 10:10:51 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Subject: Re: [PATCH 2/2] Documentation: add description of
+ dirty_background_time
+Message-ID: <20120911021051.GB22077@localhost>
+References: <1346083301-3545-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120910084025.GP13739@n2100.arm.linux.org.uk>
-References: <CAOAMb1CTk1_dQAUiHy5ch=UxN7vSe0of81KcKbjPjCFqR9e9tw@mail.gmail.com>
-	<20120910084025.GP13739@n2100.arm.linux.org.uk>
-Date: Tue, 11 Sep 2012 10:53:14 +0900
-Message-ID: <CAOAMb1A71iNuRHkuTynBF35DjZx0jHMz+SrwbMUzkdp4i1FZ7A@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Fix build warning in do_alignment.
-From: Chanho Min <chanho0207@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        David Howells <dhowells@redhat.com>, Nicolas Pitre <nico@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346083301-3545-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What it's caused by is do_alignment_t32_to_handler(), and its assignment
-> through a pointer of this variable.  You can see that this is the cause
-> because the patch below fixes the warning.
-We couldn't fix the warning with your patch. the patch below fixes it instead.
-IMHO, gcc can't seems to know that do_alignment_ldmstm never returns TYPE_LDST.
-So It just warn that do_alignment_finish_ldst is called with the
-uninitialized value.
-I know gcc is not smart enough to see all the reasons. So, It is optional.
-Also, I'm not sure these optional warning should be fixed.
-Anyway, this is the last build warning in our whole source when using gcc-4.6.3
+On Mon, Aug 27, 2012 at 12:01:41PM -0400, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> This commit adds dirty_background_time description in bdi sysfs
+> documentation.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
+> ---
+>  Documentation/ABI/testing/sysfs-class-bdi |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
+> index 5f50097..018e26a 100644
+> --- a/Documentation/ABI/testing/sysfs-class-bdi
+> +++ b/Documentation/ABI/testing/sysfs-class-bdi
+> @@ -48,3 +48,16 @@ max_ratio (read-write)
+>  	most of the write-back cache.  For example in case of an NFS
+>  	mount that is prone to get stuck, or a FUSE mount which cannot
+>  	be trusted to play fair.
+> +
+> +dirty_background_time (read-write)
+> +
+> +	It is used to start early writeback of given bdi once bdi dirty
+> +	data exceeds product of average write bandwidth and
+> +	dirty_background_time.
 
-Thanks
-Chanho,
+It may be worth to note that it works _in parallel with_ the global
+background writeback threshold rather than replacing it.
 
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 9107231..978db1f 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -856,8 +856,10 @@ do_alignment(unsigned long addr, unsigned int
-fsr, struct pt_regs *regs)
- 	case 0x08000000:	/* ldm or stm, or thumb-2 32bit instruction */
- 		if (thumb2_32b)
- 			handler = do_alignment_t32_to_handler(&instr, regs, &offset);
--		else
-+		else {
-+			offset.un = 0;
- 			handler = do_alignment_ldmstm;
-+		}
- 		break;
+> It is mainly useful for tuning writeback
+> +	speed at 'NFS Server' so that NFS client could see better write speed.
 
- 	default:
+Hopefully more clear: 
+
+A good use case is setting it to around 100 (1 second) in the NFS
+server for improving NFS write performance. Note that it's not
+recommended to set it to a too small value, which might lead to
+small IO size. Setting it to 0 disables the feature.
+
+> +	However, sometimes it may not match user expectations as it is based
+> +	on bdi write bandwidth estimation.
+
+The users should not expect this threshold to work accurately.
+
+> Write bandwidth estimation is a
+> +	best effort to estimate bdi write speed bandwidth. But it can be
+> +	wildly wrong in certain situations.
+
+such as sudden change of workload (including the workload startup stage),
+or if there are no heavy writes since boot, in which case there is no
+reasonable estimation yet.
+
+> +	dirty_background_time is expressed in msec.
+
+That can be eliminated if changing to dirty_background_centisecs.
+
+Thanks,
+Fengguang
