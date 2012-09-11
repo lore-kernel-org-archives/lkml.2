@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab2IKOGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:06:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab2IKOGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:06:17 -0400
-Date: Tue, 11 Sep 2012 16:05:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] perf tool: Allow wildcard in PMU name
-Message-ID: <20120911140549.GC3800@krava.brq.redhat.com>
-References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
- <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
+	id S1758336Ab2IKOG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:06:56 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:35047 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755208Ab2IKOGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 10:06:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347368559-31329-1-git-send-email-arnd@arndb.de>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368559-31329-1-git-send-email-arnd@arndb.de>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 11 Sep 2012 19:36:30 +0530
+Message-ID: <CAMQu2gwLoccyjGwjjgndiW2aR--_S=UhCCTdcav6LicvYWe5SQ@mail.gmail.com>
+Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jean Pihet <j-pihet@ti.com>, J Keerthy <j-keerthy@ti.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 03:53:51PM +0800, Yan, Zheng wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> 
+Arnd,
 
-SNIP
+On Tue, Sep 11, 2012 at 6:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Platform data for device drivers should be defined in
+> include/linux/platform_data/*.h, not in the architecture
+> and platform specific directories.
+>
+> This moves such data out of the omap include directories
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-> +int parse_events_add_pmu(struct list_head **_list, int *idx,
->  			 char *name, struct list_head *head_config)
->  {
->  	struct perf_event_attr attr;
-> -	struct perf_pmu *pmu;
-> +	struct list_head *list;
-> +	struct perf_pmu *pmu = NULL;
-> +	struct perf_evsel *evsel, *first = NULL;
-> +	int orig_idx = *idx;
->  
-> -	pmu = perf_pmu__find(name);
-> -	if (!pmu)
-> -		return -EINVAL;
-> +	list = malloc(sizeof(*list));
-> +	if (!list)
-> +		return -ENOMEM;
-> +	INIT_LIST_HEAD(list);
+[...]
 
-list should be allocated only if (!*_list)) same as in add_event function
+>  81 files changed, 87 insertions(+), 87 deletions(-)
+>  rename arch/arm/plat-omap/include/plat/mcbsp.h => include/linux/platform_data/dsp-mcbsp.h (100%)
+>  rename arch/arm/plat-omap/include/plat/dsp.h => include/linux/platform_data/dsp-omap.h (100%)
+>  rename arch/arm/plat-omap/include/plat/keypad.h => include/linux/platform_data/keypad-omap.h (100%)
+>  rename arch/arm/plat-omap/include/plat/lcd_mipid.h => include/linux/platform_data/lcd-mipid.h (100%)
+>  rename arch/arm/plat-omap/include/plat/nand.h => include/linux/platform_data/mtd-nand-omap2.h (100%)
+>  rename arch/arm/plat-omap/include/plat/onenand.h => include/linux/platform_data/mtd-onenand-omap2.h (100%)
+>  rename arch/arm/plat-omap/include/plat/remoteproc.h => include/linux/platform_data/remoteproc-omap.h (100%)
+>  rename arch/arm/plat-omap/include/plat/voltage.h => include/linux/platform_data/smartreflex-omap.h (100%)
+>  rename arch/arm/plat-omap/include/plat/mcspi.h => include/linux/platform_data/spi-omap2-mcspi.h (100%)
+>
+Just curious to know how you came with some of the above header names ?
 
-I haven't test, but I think you'll leak/loose events if there's another pmu
-event defined after ','
+plat/mcbsp ---> dsp-mcbsp.h
+There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
+better name.
 
-jirka
+plat/nand.h --> /mtd-nand-omap2.h
+plat/onenand.h --> /mtd-onenand-omap2.h
+May be "omap-nand.h" and "omap-onenand.h"
+
+plat/mcspi.h-->spi-omap2-mcspi.h
+May be "omap-spi.h"
+
+Regards,
+Santosh
