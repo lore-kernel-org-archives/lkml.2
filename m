@@ -1,147 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab2IKOdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:33:23 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48771 "EHLO e9.ny.us.ibm.com"
+	id S1757999Ab2IKOet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:34:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52512 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755857Ab2IKOdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:33:20 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
-        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC 02/11] vfs: introduce one rb tree - hot_inode_tree
-Date: Tue, 11 Sep 2012 22:27:16 +0800
-Message-Id: <1347373645-2119-3-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
-References: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091114-7182-0000-0000-00000292C41B
+	id S1750891Ab2IKOer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 10:34:47 -0400
+Date: Tue, 11 Sep 2012 10:34:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, drbd-dev@lists.linbit.com,
+        Kent Overstreet <koverstreet@google.com>
+Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
+Message-ID: <20120911143426.GD12039@redhat.com>
+References: <8439412.RChiDciQdh@fat-tyre>
+ <20120904224620.GB9092@dhcp-172-17-108-109.mtv.corp.google.com>
+ <3029802.oqG0dEY71l@fat-tyre>
+ <20120905084915.GF3195@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120905100724.GA27527@soda.linbit>
+ <20120906212952.GP29092@google.com>
+ <20120907084221.GD7028@soda.linbit>
+ <20120910225442.GE7677@google.com>
+ <20120910230654.GF7677@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910230654.GF7677@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, Sep 10, 2012 at 04:06:54PM -0700, Tejun Heo wrote:
+> Hello, again.
+> 
+> cc'ing Kent and Vivek.  The original thread is at
+> 
+>   http://thread.gmane.org/gmane.linux.network.drbd.devel/2130
+> 
+> On Mon, Sep 10, 2012 at 03:54:42PM -0700, Tejun Heo wrote:
+> > > We can possibly work around that by introducing an additional submitter thread,
+> > > or at least our own list where we queue assembled bios until the lower
+> > > level device queue drains.
+> > > 
+> > > But we'd rather have the elevator see the FLUSH/FUA,
+> > > and treat them as at least a soft barrier/reorder boundary.
+> > > 
+> > > I may be wrong here, but all the necessary bits for this seem to be in
+> > > place already, if the information would even reach the elevator in one
+> > > way or other, and not be completely stripped away early.
+> > > 
+> > > What would you rather see, the elevator recognizing reorder boundaries?
+> > > Or additional higher level queueing and extra thread/work queue/whatever?
+> > > 
+> > > Both are fine with me, I'm just asking for an opinion.
+> > 
+> > First of all, using FLUSH/FUA for such purpose is an error-prone
+> > abuse.  You're trying to exploit an implementation detail which may
+> > change at any time.  I think what you want is to be able to specify
+> > REQ_SOFTBARRIER on bio submission, which shouldn't be too hard but I'm
+> > still lost why this is necessary.  Can you please explain it a bit
+> > more?
+> 
+> The problem with exposing REQ_SOFTBARRIER at bio submission is that it
+> would require block layer not to reorder bios while passing through
+> stacked adrivers until it reaches a rq-based driver.  I *suspect* this
+> has been true until now but Kent's pending patch to fix possible
+> deadlock issue breaks that.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.bcache.devel/1017/focus=1356250
+> 
+> As for what the resolution should be, urgh... I don't know. :(
 
-  Adds hot_inode_tree struct to keep track of
-frequently accessed files, and be keyed by {inode, offset}.
-Trees contain hot_inode_items representing those files
-and ranges.
-  Having these trees means that vfs can quickly determine the
-temperature of some data by doing some calculations on the
-hot_freq_data struct that hangs off of the tree item.
+I think we should not go back to providing any kind of ordering interface
+or gurantees. IIRC, Jens had mentioned that older ordering requirements
+were problematic while implemeting multiqueue stuff he is working on. He
+was glad that ordering requirements were gone.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/Makefile               |    3 ++-
- fs/hot_rb.c               |   30 ++++++++++++++++++++++++++++++
- fs/hot_rb.h               |   21 +++++++++++++++++++++
- include/linux/hot_track.h |    9 +++++++++
- 4 files changed, 62 insertions(+), 1 deletions(-)
- create mode 100644 fs/hot_rb.c
- create mode 100644 fs/hot_rb.h
+Also if somebody is implementing caching target as stacked device, then
+it can very well reorder the bios. It can submit bios to underlying device
+it does not want to cache and hold back some of the bios it wants to
+cache.
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 2fb9779..d3bc906 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -11,7 +11,8 @@ obj-y :=	open.o read_write.o file_table.o super.o \
- 		attr.o bad_inode.o file.o filesystems.o namespace.o \
- 		seq_file.o xattr.o libfs.o fs-writeback.o \
- 		pnode.o drop_caches.o splice.o sync.o utimes.o \
--		stack.o fs_struct.o statfs.o
-+		stack.o fs_struct.o statfs.o \
-+		hot_rb.o
- 
- ifeq ($(CONFIG_BLOCK),y)
- obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
-diff --git a/fs/hot_rb.c b/fs/hot_rb.c
-new file mode 100644
-index 0000000..726d1c5
---- /dev/null
-+++ b/fs/hot_rb.c
-@@ -0,0 +1,30 @@
-+/*
-+ * fs/hot_rb.c
-+ *
-+ * Copyright (C) 2012 IBM Corp. All rights reserved.
-+ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-+ *            Ben Chociej <bchociej@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/hardirq.h>
-+#include <linux/blkdev.h>
-+#include "hot_rb.h"
-+#include "hot_hash.h"
-+
-+/*
-+ * Initialize the inode tree. Should be called for each new inode
-+ * access or other user of the hot_inode interface.
-+ */
-+void hot_rb_inode_tree_init(struct hot_inode_tree *tree)
-+{
-+	tree->map = RB_ROOT;
-+	rwlock_init(&tree->lock);
-+}
-diff --git a/fs/hot_rb.h b/fs/hot_rb.h
-new file mode 100644
-index 0000000..895c61c
---- /dev/null
-+++ b/fs/hot_rb.h
-@@ -0,0 +1,21 @@
-+/*
-+ * fs/hot_rb.h
-+ *
-+ * Copyright (C) 2012 IBM Corp. All rights reserved.
-+ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-+ *            Ben Chociej <bchociej@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ */
-+
-+#ifndef __HOT_MAP__
-+#define __HOT_MAP__
-+
-+#include <linux/rbtree.h>
-+#include <linux/hot_track.h>
-+
-+void hot_rb_inode_tree_init(struct hot_inode_tree *tree);
-+
-+#endif /* __HOT_MAP__ */
-diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
-index 5716b93..fa2aeb6 100644
---- a/include/linux/hot_track.h
-+++ b/include/linux/hot_track.h
-@@ -20,7 +20,16 @@
- #include <linux/rbtree.h>
- #include <linux/kref.h>
- 
-+/* A tree that sits on the hot_info */
-+struct hot_inode_tree {
-+	struct rb_root map;
-+	rwlock_t lock;
-+};
-+
- struct hot_info {
-+
-+	/* red-black tree that keeps track of fs-wide hot data */
-+	struct hot_inode_tree hot_inode_tree;
- };
- 
- #endif  /* _LINUX_HOTTRACK_H */
--- 
-1.7.6.5
+REQ_FLUSH/REQ_FUA never provided any ordering gurantees. Just that file
+system needs to wait for previous IOs to finish and then submit REQ_FLUSH/
+REQ_FUA to implement any kind of ordering. I guess any driver in the
+stack needs to do the same if they need some kind of ordering behavior.
 
+Thanks
+Vivek
