@@ -1,173 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab2IKATM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:19:12 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52312 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886Ab2IKATH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:19:07 -0400
-Message-ID: <504E8372.20904@linaro.org>
-Date: Mon, 10 Sep 2012 17:18:58 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: prarit@redhat.com, xen-devel@lists.xensource.com,
-        linaro-dev@lists.linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-pm@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        richardcochran@gmail.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@kernel.org,
-        lenb@kernel.org
-Subject: Re: CONFIG_NO_HZ + CONFIG_CPU_IDLE freeze the system (Was Re: [PATCH]
- acpi : remove power from acpi_processor_cx structure)
-References: <1343164349-28550-1-git-send-email-daniel.lezcano@linaro.org> <201209062204.11288.rjw@sisk.pl> <50490920.9070204@linaro.org> <201209062318.42874.rjw@sisk.pl> <504A02BD.4000805@linaro.org> <504A2D73.3010702@linaro.org> <504A68A0.7010907@linaro.org> <504E1FE5.6090502@linaro.org> <504E4343.5070004@linaro.org>
-In-Reply-To: <504E4343.5070004@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091100-7182-0000-0000-00000290E060
+	id S1758514Ab2IKAWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:22:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48873 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab2IKAWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 20:22:43 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
+        neilb@suse.de
+Subject: [PATCH v2 00/26] Prep work for immutable bio vecs
+Date: Mon, 10 Sep 2012 17:22:11 -0700
+Message-Id: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2012 12:45 PM, Daniel Lezcano wrote:
-> On 09/10/2012 07:14 PM, John Stultz wrote:
->> In the meantime, I'll try to reproduce on my T61. If you could send me
->> your .config, I'd appreciate it.
-> http://pastebin.com/qSxqfdDK
->
-> The header of the config file shows for a v3.5-rc7 because it is the
-> result of the git-bisect. If you keep this config file for the latest
-> kernel that should reproduce the problem.
->
-> Let me know if you were able to reproduce the problem.
-Great! With this I was able to quickly reproduce the problem and I think 
-I have a fix.
+Random assortment of refactoring and trivial cleanups;
 
-Would you mind testing the following patch? It seems to resolve the 
-issue, but I've not yet run it through my test suite to make sure it 
-didn't break anything else.
+Immutable bio vecs and efficient bio splitting require auditing and
+removing pretty much all bi_idx uses, among other things.
 
-If both your and my testing comes back ok, I'll submit it to Thomas.
+The reason is that with immutable bio vecs we can't use the bvec array
+directly; if we have a partially completed bvec, that'll be indicated
+with a field in struct bvec_iter (which gets embedded in struct bio) -
+bi_bvec_done.
 
-thanks
--john
+bio_for_each_segments() will handle this transparently, so code needs to
+be converted to use it or some other generic accessor.
 
- From f10a285a5b532a14d3330f6e60e4d7bd5627932a Mon Sep 17 00:00:00 2001
-From: John Stultz <john.stultz@linaro.org>
-Date: Mon, 10 Sep 2012 20:00:15 -0400
-Subject: [PATCH] time: Fix timeekeping_get_ns overflow on 32bit systems
+Also, bio splitting means that when a driver gets a bio, bi_idx and
+bi_bvec_done may both be nonzero. Again, just need to use generic
+accessors.
 
-Daniel Lezcano reported seeing multi-second stalls from
-keyboard input on his T61 laptop when NOHZ and CPU_IDLE
-were enabled on a 32bit kernel.
+v2: Patch series now has all the prep work to be done before abstracting
+out the bio iterator, I think.
 
-He bisected the problem down to
-1e75fa8be9fb61e1af46b5b3b176347a4c958ca1 (time: Condense
-timekeeper.xtime into xtime_sec).
+Kent Overstreet (26):
+  block: Convert integrity to bvec_alloc_bs(), and a bugfix
+  block: Add bio_advance()
+  block: Refactor blk_update_request()
+  md: Convert md_trim_bio() to use bio_advance()
+  block: Add bio_end()
+  block: Use bio_sectors() more consistently
+  block: Don't use bi_idx in bio_split() or require it to be 0
+  block: Remove bi_idx references
+  block: Remove some unnecessary bi_vcnt usage
+  block: Add submit_bio_wait(), remove from md
+  raid10: Use bio_reset()
+  raid1: use bio_reset()
+  raid5: use bio_reset()
+  raid1: Refactor narrow_write_error() to not use bi_idx
+  block: Add bio_copy_data()
+  pktcdvd: use bio_copy_data()
+  pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
+  raid1: use bio_copy_data()
+  bounce: Refactor __blk_queue_bounce to not use bi_io_vec
+  block: Add bio_for_each_segment_all()
+  block: Convert some code to bio_for_each_segment_all()
+  block: Add bio_alloc_pages()
+  raid1: use bio_alloc_pages()
+  block: Add an explicit bio flag for bios that own their bvec
+  bio-integrity: Add explicit field for owner of bip_buf
+  block: Add BIO_SUBMITTED flag, kill BIO_CLONED
 
-After reproducing this issue, I narrowed the problem down
-to the fact that timekeeping_get_ns() returns a 64bit
-nsec value that hasn't been accumulated. In some cases
-this value was being then stored in timespec.tv_nsec
-(which is a long).
+ block/blk-core.c                         |  88 +++---------
+ block/cfq-iosched.c                      |   7 +-
+ block/deadline-iosched.c                 |   2 +-
+ drivers/block/aoe/aoeblk.c               |   2 +-
+ drivers/block/aoe/aoecmd.c               |   2 +-
+ drivers/block/brd.c                      |   3 +-
+ drivers/block/drbd/drbd_req.c            |   8 +-
+ drivers/block/floppy.c                   |   1 -
+ drivers/block/pktcdvd.c                  | 102 ++++----------
+ drivers/block/ps3vram.c                  |   2 +-
+ drivers/md/dm-crypt.c                    |   3 +-
+ drivers/md/dm-raid1.c                    |   2 +-
+ drivers/md/dm-stripe.c                   |   2 +-
+ drivers/md/dm-verity.c                   |   4 +-
+ drivers/md/dm.c                          |   1 -
+ drivers/md/faulty.c                      |   6 +-
+ drivers/md/linear.c                      |   3 +-
+ drivers/md/md.c                          |  19 +--
+ drivers/md/raid0.c                       |   9 +-
+ drivers/md/raid1.c                       | 131 ++++++------------
+ drivers/md/raid10.c                      |  78 +++--------
+ drivers/md/raid5.c                       |  50 +++----
+ drivers/message/fusion/mptsas.c          |   6 +-
+ drivers/s390/block/dcssblk.c             |   3 +-
+ drivers/scsi/libsas/sas_expander.c       |   6 +-
+ drivers/scsi/mpt2sas/mpt2sas_transport.c |  10 +-
+ fs/bio-integrity.c                       | 134 ++++++------------
+ fs/bio.c                                 | 226 +++++++++++++++++++++++++++----
+ fs/btrfs/extent_io.c                     |   3 +-
+ fs/buffer.c                              |   1 -
+ fs/direct-io.c                           |   8 +-
+ fs/exofs/ore.c                           |   2 +-
+ fs/exofs/ore_raid.c                      |   2 +-
+ fs/gfs2/lops.c                           |   2 +-
+ fs/jfs/jfs_logmgr.c                      |   2 -
+ fs/logfs/dev_bdev.c                      |   5 -
+ include/linux/bio.h                      |  34 +++--
+ include/linux/blk_types.h                |   3 +-
+ include/trace/events/block.h             |  10 +-
+ mm/bounce.c                              |  75 +++-------
+ mm/page_io.c                             |   1 -
+ 41 files changed, 471 insertions(+), 587 deletions(-)
 
-On 32bit systems, With idle times larger then 4 seconds
-(or less, depending on the value of xtime_nsec), the
-returned nsec value would overflow 32bits. This limited
-kept time from increasing, causing timers to not expire.
-
-The fix is to make sure we don't directly store the
-result of timekeeping_get_ns() into a tv_nsec field,
-instead using a 64bit nsec value which can then be
-added into the timespec via timespec_add_ns().
-
-With this patch I cannot reproduce the issue.
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Reported-and-bisected-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
-  kernel/time/timekeeping.c |   19 ++++++++++++-------
-  1 file changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 34e5eac..d3b91e7 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -303,10 +303,11 @@ void getnstimeofday(struct timespec *ts)
-  		seq = read_seqbegin(&tk->lock);
-  
-  		ts->tv_sec = tk->xtime_sec;
--		ts->tv_nsec = timekeeping_get_ns(tk);
-+		nsecs = timekeeping_get_ns(tk);
-  
-  	} while (read_seqretry(&tk->lock, seq));
-  
-+	ts->tv_nsec = 0;
-  	timespec_add_ns(ts, nsecs);
-  }
-  EXPORT_SYMBOL(getnstimeofday);
-@@ -345,6 +346,7 @@ void ktime_get_ts(struct timespec *ts)
-  {
-  	struct timekeeper *tk = &timekeeper;
-  	struct timespec tomono;
-+	s64 nsec;
-  	unsigned int seq;
-  
-  	WARN_ON(timekeeping_suspended);
-@@ -352,13 +354,14 @@ void ktime_get_ts(struct timespec *ts)
-  	do {
-  		seq = read_seqbegin(&tk->lock);
-  		ts->tv_sec = tk->xtime_sec;
--		ts->tv_nsec = timekeeping_get_ns(tk);
-+		nsec = timekeeping_get_ns(tk);
-  		tomono = tk->wall_to_monotonic;
-  
-  	} while (read_seqretry(&tk->lock, seq));
-  
--	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec,
--				ts->tv_nsec + tomono.tv_nsec);
-+	ts->tv_sec += tomono.tv_sec;
-+	ts->tv_nsec = 0;
-+	timespec_add_ns(ts, nsec + tomono.tv_nsec);
-  }
-  EXPORT_SYMBOL_GPL(ktime_get_ts);
-  
-@@ -1244,6 +1247,7 @@ void get_monotonic_boottime(struct timespec *ts)
-  {
-  	struct timekeeper *tk = &timekeeper;
-  	struct timespec tomono, sleep;
-+	s64 nsec;
-  	unsigned int seq;
-  
-  	WARN_ON(timekeeping_suspended);
-@@ -1251,14 +1255,15 @@ void get_monotonic_boottime(struct timespec *ts)
-  	do {
-  		seq = read_seqbegin(&tk->lock);
-  		ts->tv_sec = tk->xtime_sec;
--		ts->tv_nsec = timekeeping_get_ns(tk);
-+		nsec = timekeeping_get_ns(tk);
-  		tomono = tk->wall_to_monotonic;
-  		sleep = tk->total_sleep_time;
-  
-  	} while (read_seqretry(&tk->lock, seq));
-  
--	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
--			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec);
-+	ts->tv_sec += tomono.tv_sec + sleep.tv_sec;
-+	ts->tv_nsec = 0;
-+	timespec_add_ns(ts, nsec + tomono.tv_nsec + sleep.tv_nsec);
-  }
-  EXPORT_SYMBOL_GPL(get_monotonic_boottime);
-  
 -- 
-1.7.9.5
+1.7.12
 
