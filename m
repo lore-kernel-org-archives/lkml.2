@@ -1,196 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2IKOsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:48:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56639 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab2IKOsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:48:19 -0400
-Date: Tue, 11 Sep 2012 16:48:14 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, sachin.kamat@linaro.org, patches@linaro.org
-Subject: Re: [PATCH v2] pwm: Fix compilation error when CONFIG_PWM is not
- defined
-Message-ID: <20120911144814.GB3824@avionic-0098.mockup.avionic-design.de>
-References: <1347356655-17191-1-git-send-email-tushar.behera@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UHN/qo2QbUvPLonB"
-Content-Disposition: inline
-In-Reply-To: <1347356655-17191-1-git-send-email-tushar.behera@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:/MztECl+dd6IH+mHPPx1DTRM6R/6Bc4cFBXp5TMpqzn
- z6T0WTw6DyEPj9zM57Q19B+EeKRPqKuimiwegTWjR8nCW87X7m
- zavrPMpSe31i70nXveHU3C3rkGJkPoWu2X06Wh0J6Jni/J/zHW
- DAZ4Sshz2Ohj+uUmEoY1AybFLMauVekmUPLYpGWesAfF/XZoDV
- vXvuEqkSgojT9DkM2zW8h+LS4cV9wIy8TGbDsd4XVPsWknRbrt
- IH3K+YXeNIppN9MMtutq+IySmheEDgax0qeOxv3PiCQuup2lN5
- cJjx65kekqPehhE6MnnXvLn5qf9KZ9t1bwtMpEYJep3pnz/OvX
- KqDdWCAW7hfUYy8qFgGpwaZQBkmX4VNun5nYMDhQrhui64VDCH
- 7mH8oVS+fxaCcqxKpE+2b+CLbgWrgP4bnM=
+	id S1756443Ab2IKOug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:50:36 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59157 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755975Ab2IKOue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 10:50:34 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
+        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC 10/11] vfs: add 3 new ioctl interfaces
+Date: Tue, 11 Sep 2012 22:40:44 +0800
+Message-Id: <1347374445-3018-5-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1347374445-3018-1-git-send-email-zwu.kernel@gmail.com>
+References: <1347374445-3018-1-git-send-email-zwu.kernel@gmail.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091114-7182-0000-0000-000002930AB0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
---UHN/qo2QbUvPLonB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  FS_IOC_GET_HEAT_INFO: return a struct containing the various
+metrics collected in btrfs_freq_data structs, and also return a
+calculated data temperature based on those metrics. Optionally, retrieve
+the temperature from the hot data hash list instead of recalculating it.
 
-On Tue, Sep 11, 2012 at 03:14:15PM +0530, Tushar Behera wrote:
-> Add dummy implemention of public symbols for compilation-safe inclusion
-> of include/linux/pwm.h file when CONFIG_PWM is not defined.
->=20
-> While at it, also reorganize the file.
->=20
-> Reported-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> ---
-> Changes since v1:
-> * Incorporated Thierry's suggestions regarding adding dummy function
-> implemention for all global functions
-> * Reorganized header file to have structure definitions first and then the
-> function definitions.
->=20
->  include/linux/pwm.h |  135 ++++++++++++++++++++++++++++++++++++---------=
------
->  1 files changed, 97 insertions(+), 38 deletions(-)
->=20
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index 21d076c..f1e685b 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -6,32 +6,6 @@
->  struct pwm_device;
->  struct seq_file;
-> =20
-> -/*
-> - * pwm_request - request a PWM device
-> - */
-> -struct pwm_device *pwm_request(int pwm_id, const char *label);
-> -
-> -/*
-> - * pwm_free - free a PWM device
-> - */
-> -void pwm_free(struct pwm_device *pwm);
-> -
-> -/*
-> - * pwm_config - change a PWM device configuration
-> - */
-> -int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
-> -
-> -/*
-> - * pwm_enable - start a PWM output toggling
-> - */
-> -int pwm_enable(struct pwm_device *pwm);
-> -
-> -/*
-> - * pwm_disable - stop a PWM output toggling
-> - */
-> -void pwm_disable(struct pwm_device *pwm);
-> -
-> -#ifdef CONFIG_PWM
->  struct pwm_chip;
-> =20
->  enum {
-> @@ -113,18 +87,6 @@ struct pwm_chip {
->  	unsigned int		of_pwm_n_cells;
->  };
-> =20
-> -int pwm_set_chip_data(struct pwm_device *pwm, void *data);
-> -void *pwm_get_chip_data(struct pwm_device *pwm);
-> -
-> -int pwmchip_add(struct pwm_chip *chip);
-> -int pwmchip_remove(struct pwm_chip *chip);
-> -struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
-> -					 unsigned int index,
-> -					 const char *label);
-> -
-> -struct pwm_device *pwm_get(struct device *dev, const char *consumer);
-> -void pwm_put(struct pwm_device *pwm);
-> -
->  struct pwm_lookup {
->  	struct list_head list;
->  	const char *provider;
-> @@ -141,8 +103,105 @@ struct pwm_lookup {
->  		.con_id =3D _con_id,			\
->  	}
-> =20
-> +#ifdef CONFIG_PWM
-> +/*
-> + * pwm_request - request a PWM device
-> + */
-> +struct pwm_device *pwm_request(int pwm_id, const char *label);
-> +
-> +/*
-> + * pwm_free - free a PWM device
-> + */
-> +void pwm_free(struct pwm_device *pwm);
-> +
-> +/*
-> + * pwm_config - change a PWM device configuration
-> + */
-> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
-> +
-> +/*
-> + * pwm_enable - start a PWM output toggling
-> + */
-> +int pwm_enable(struct pwm_device *pwm);
-> +
-> +/*
-> + * pwm_disable - stop a PWM output toggling
-> + */
-> +void pwm_disable(struct pwm_device *pwm);
+  FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+state of hot data tracking and migration:
 
-The legacy functions probably need to be declared unconditionally
-because they are also available if HAVE_PWM is defined. Or rather than
-unconditionally they should probably be protected by something like:
+0 = do nothing
+1 = track frequency of access
 
-#if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
-  ...
-#else
-  dummies go here
-#endif
+FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+migration, as described above.
 
-In that case it may be worth splitting this into two #if blocks, one for
-the legacy API and one for the new stuff, maybe even keeping the file
-layout to reduce the patch size.
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/compat_ioctl.c         |    8 +++
+ fs/ioctl.c                |  132 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h        |   11 ++++
+ include/linux/hot_track.h |   12 ++++
+ 4 files changed, 163 insertions(+), 0 deletions(-)
 
-Alternatively we could postpone this patch a bit until HAVE_PWM can be
-removed. I've posted patches that convert all remaining legacy
-implementations and except for Unicore32 it looks like we may be able to
-get all of them into 3.7.
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index debdfe0..a88c7de 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -1390,6 +1390,11 @@ COMPATIBLE_IOCTL(TIOCSTART)
+ COMPATIBLE_IOCTL(TIOCSTOP)
+ #endif
+ 
++/*Hot data tracking*/
++COMPATIBLE_IOCTL(FS_IOC_GET_HEAT_INFO)
++COMPATIBLE_IOCTL(FS_IOC_SET_HEAT_OPTS)
++COMPATIBLE_IOCTL(FS_IOC_GET_HEAT_OPTS)
++
+ /* fat 'r' ioctls. These are handled by fat with ->compat_ioctl,
+    but we don't want warnings on other file systems. So declare
+    them as compatible here. */
+@@ -1572,6 +1577,9 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
+ 	case FIBMAP:
+ 	case FIGETBSZ:
+ 	case FIONREAD:
++	case FS_IOC_GET_HEAT_INFO:
++	case FS_IOC_SET_HEAT_OPTS:
++	case FS_IOC_GET_HEAT_OPTS:
+ 		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
+ 			break;
+ 		/*FALL THROUGH*/
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index 29167be..9242969 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -18,6 +18,9 @@
+ 
+ #include <asm/ioctls.h>
+ 
++#include "hot_hash.h"
++#include "hot_rb.h"
++
+ /* So that the fiemap access checks can't overflow on 32 bit machines. */
+ #define FIEMAP_MAX_EXTENTS	(UINT_MAX / sizeof(struct fiemap_extent))
+ 
+@@ -537,6 +540,126 @@ static int ioctl_fsthaw(struct file *filp)
+ }
+ 
+ /*
++ * Retrieve information about access frequency for the given file. Return it in
++ * a userspace-friendly struct for btrfsctl (or another tool) to parse.
++ *
++ * The temperature that is returned can be "live" -- that is, recalculated when
++ * the ioctl is called -- or it can be returned from the hashtable, reflecting
++ * the (possibly old) value that the system will use when considering files
++ * for migration. This behavior is determined by heat_info->live.
++ */
++static int ioctl_heat_info(struct file *file, void __user *argp)
++{
++	struct inode *mnt_inode = file->f_path.dentry->d_inode;
++	struct inode *file_inode;
++	struct file *file_filp;
++	struct hot_info *root = &(mnt_inode->i_sb->s_hotinfo);
++	struct heat_info *heat_info;
++	struct hot_inode_tree *hitree;
++	struct hot_inode_item *he;
++	int ret;
++
++	heat_info = kmalloc(sizeof(struct heat_info),
++				GFP_KERNEL | GFP_NOFS);
++
++	if (copy_from_user((void *) heat_info,
++			argp,
++			sizeof(struct heat_info)) != 0) {
++		ret = -EFAULT;
++		goto err;
++	}
++
++	file_filp = filp_open(heat_info->filename, O_RDONLY, 0);
++	file_inode = file_filp->f_dentry->d_inode;
++	filp_close(file_filp, NULL);
++
++	hitree = &root->hot_inode_tree;
++	read_lock(&hitree->lock);
++	he = hot_rb_lookup_hot_inode_item(hitree, file_inode->i_ino);
++	read_unlock(&hitree->lock);
++	if (!he) {
++		/* we don't have any info on this file yet */
++		ret = -ENODATA;
++		goto err;
++	}
++
++	spin_lock(&he->lock);
++	heat_info->avg_delta_reads =
++			(__u64) he->hot_freq_data.avg_delta_reads;
++	heat_info->avg_delta_writes =
++			(__u64) he->hot_freq_data.avg_delta_writes;
++	heat_info->last_read_time =
++			(__u64) timespec_to_ns(&he->hot_freq_data.last_read_time);
++	heat_info->last_write_time =
++			(__u64) timespec_to_ns(&he->hot_freq_data.last_write_time);
++	heat_info->num_reads =
++			(__u32) he->hot_freq_data.nr_reads;
++	heat_info->num_writes =
++			(__u32) he->hot_freq_data.nr_writes;
++
++	if (heat_info->live > 0) {
++		/* got a request for live temperature,
++		 * call hot_hash_calc_temperature to recalculate
++		 */
++		heat_info->temperature =
++			hot_hash_calc_temperature(&he->hot_freq_data);
++	} else {
++		/* not live temperature, get it from the hashlist */
++		read_lock(&he->heat_node->hlist->rwlock);
++		heat_info->temperature = he->heat_node->hlist->temperature;
++		read_unlock(&he->heat_node->hlist->rwlock);
++	}
++	spin_unlock(&he->lock);
++
++	hot_rb_free_hot_inode_item(he);
++
++	if (copy_to_user(argp, (void *) heat_info,
++			sizeof(struct heat_info))) {
++		ret = -EFAULT;
++		goto err;
++	}
++
++	kfree(heat_info);
++	return 0;
++
++err:
++	kfree(heat_info);
++	return ret;
++}
++
++static int ioctl_heat_opts(struct file *file, void __user *argp, int set)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	int arg, ret = 0;
++
++	if (!set) {
++		arg = TRACK_THIS_INODE(inode) ? 1 : 0;
++
++		if (copy_to_user(argp, (void *) &arg, sizeof(int)) != 0)
++			ret = -EFAULT;
++	} else {
++		if (copy_from_user((void *) &arg, argp, sizeof(int)) != 0) {
++			ret = -EFAULT;
++		} else {
++			switch (arg) {
++			case 0: /* track nothing */
++				/* set S_NOHOTDATATRACK */
++				inode->i_flags |= S_NOHOTDATATRACK;
++				break;
++			case 1: /* do tracking */
++				/* clear S_NOHOTDATATRACK */
++				inode->i_flags &= ~S_NOHOTDATATRACK;
++				break;
++			default:
++				ret = -EINVAL;
++			}
++		}
++	}
++
++	return ret;
++}
++
++/*
+  * When you add any new common ioctls to the switches above and below
+  * please update compat_sys_ioctl() too.
+  *
+@@ -591,6 +714,15 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 	case FIGETBSZ:
+ 		return put_user(inode->i_sb->s_blocksize, argp);
+ 
++	case FS_IOC_GET_HEAT_INFO:
++		return ioctl_heat_info(filp, argp);
++
++	case FS_IOC_SET_HEAT_OPTS:
++		return ioctl_heat_opts(filp, argp, 1);
++
++	case FS_IOC_GET_HEAT_OPTS:
++		return ioctl_heat_opts(filp, argp, 0);
++
+ 	default:
+ 		if (S_ISREG(inode->i_mode))
+ 			error = file_ioctl(filp, cmd, arg);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 6229895..99698f1 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -256,6 +256,7 @@ struct inodes_stat_t {
+ #define S_IMA		1024	/* Inode has an associated IMA struct */
+ #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
+ #define S_NOSEC		4096	/* no suid or xattr security attributes */
++#define S_NOHOTDATATRACK (1 << 13)	/* hot data tracking */
+ 
+ /*
+  * Note that nosuid etc flags are inode-specific: setting some file-system
+@@ -354,6 +355,16 @@ struct inodes_stat_t {
+ #define FS_IOC32_SETVERSION		_IOW('v', 2, int)
+ 
+ /*
++ * Hot data tracking ioctls:
++ *
++ * HOT_INFO - retrieve info on frequency of access
++ */
++#define FS_IOC_GET_HEAT_INFO _IOR('f', 17, \
++				struct heat_info)
++#define FS_IOC_SET_HEAT_OPTS _IOW('f', 18, int)
++#define FS_IOC_GET_HEAT_OPTS _IOR('f', 19, int)
++
++/*
+  * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+  */
+ #define	FS_SECRM_FL			0x00000001 /* Secure deletion */
+diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
+index 6b8493a..152d3f6 100644
+--- a/include/linux/hot_track.h
++++ b/include/linux/hot_track.h
+@@ -68,6 +68,18 @@ struct hot_freq_data {
+ 	u32 last_temperature;
+ };
+ 
++struct heat_info {
++	__u64 avg_delta_reads;
++	__u64 avg_delta_writes;
++	__u64 last_read_time;
++	__u64 last_write_time;
++	__u32 num_reads;
++	__u32 num_writes;
++	__u32 temperature;
++	__u8 live;
++	char filename[PATH_MAX];
++};
++
+ /* Hash list heads for hot hash table */
+ struct hot_hash_head {
+ 	struct hlist_head hashhead;
+-- 
+1.7.6.5
 
-In the meantime you could solve the problem on your end, as I mentioned,
-by selecting PWM from the board's Kconfig. If enough people think this
-needs to be done now I may just be persuaded to accept a patch like this
-and remove the extra check for HAVE_PWM along with HAVE_PWM when that
-happens.
-
-Thierry
-
---UHN/qo2QbUvPLonB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQT08uAAoJEN0jrNd/PrOh26AP/3pWcD9iaHL/L1vzAI46Jjwj
-ervwyM94oKXDsKXo0igLl2JvhfykxHIBSoM+hGBDlWGjGj6HsLPq7ot04VQEO/Xs
-GYorEr+uZHcwhWYWa2i21nysBRl6VZ/o0YchI3Ukq3XkspUxrP+6oHARVPzFY7xB
-swrHxgvriB0jWWmj3TdI/zcR7rtHj1D4Jw4AppHzAYBv+TdTN2//AYe1RJJwQoSz
-EQTonl0Ku3+YrkN9tDvDCUE8t1c9zI2npyC5BDgdQMv2giO86f7lByd9ge0DTR9v
-hbhk1o8H82sXb6qeXXVuTrvRa+RZ2oMunyWzVWW8m9pm2lNmo50SGIZ+5hqa6znm
-ov6pO/U0hFus7qbR09a96CK5CDfns/g2tezmpz1sM24dQTUbeV0XtMQnKPU35GqI
-YK9uQNofgrXiSAkwhCU8ahzRBLfQG075bQB+vzS4WUiR9CQLOPqlSdYoPwx/kTPd
-PSUbLD3y8zIRZtbRj+LPKxJ5BbUc+fH387FZZg0mLd/i/X7kzOaFwpukw+wkYMOb
-NBbmAbtOew99XBAEwV40695VnHJqY8xqy0LfWdAbyGuJ2+l+flA6CauSmHO3j+cU
-pvVUUZw6y6JaQJqRDC+i4DI6eJhBqHKo86YU20cfpE6GuEa4+frw+MfHrt7v38fx
-/JdgDOx0F7B0elVzOJdT
-=VuWo
------END PGP SIGNATURE-----
-
---UHN/qo2QbUvPLonB--
