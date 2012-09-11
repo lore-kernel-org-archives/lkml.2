@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab2IKR24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:28:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16858 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab2IKR2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:28:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="235380270"
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-msm@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: [RFC][PATCH] fs/buffer.c: Revoke LRU when trying to drop buffers
-Date: Tue, 11 Sep 2012 10:28:49 -0700
-Message-Id: <1347384529-5862-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	id S1751990Ab2IKRgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:36:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab2IKRgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 13:36:08 -0400
+Date: Tue, 11 Sep 2012 13:35:25 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>, Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
+ hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120911173524.GJ12039@redhat.com>
+References: <20120910223125.GC7677@google.com>
+ <20120911145106.GG12039@redhat.com>
+ <20120911171601.GN7677@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120911171601.GN7677@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a buffer is added to the LRU list, a reference is taken which is
-not dropped until the buffer is evicted from the LRU list. This is the
-correct behavior, however this LRU reference will prevent the buffer
-from being dropped. This means that the buffer can't actually be dropped
-until it is selected for eviction. There's no bound on the time spent
-on the LRU list, which means that the buffer may be undroppable for
-very long periods of time. Given that migration involves dropping
-buffers, the associated page is now unmigratible for long periods of
-time as well. CMA relies on being able to migrate a specific range
-of pages, so these these types of failures make CMA significantly
-less reliable, especially under high filesystem usage.
+On Tue, Sep 11, 2012 at 10:16:01AM -0700, Tejun Heo wrote:
+> Hello, Vivek.
+> 
+> On Tue, Sep 11, 2012 at 10:51:06AM -0400, Vivek Goyal wrote:
+> > > * Move users away from using hierarchy on currently non-hierarchical
+> > >   subsystems, so that implementing proper hierarchy support on those
+> > >   doesn't surprise them.
+> > 
+> > I know two current/potential users. systemd and libvirt. They are
+> > anyway going to create hierarchy irrespective of the fact whether
+> > controller supports it or not.
+> 
+> systemd mounts all controllers by default but it only creates
+> hierarchy for controllers other than cpu, so we're in the clear there.
+> 
+> > So even if we start screaming, nothing is going to change there, I 
+> > suspect. Just that by default they expect every controller supports
+> > hiearchies. 
+> 
+> As for libvirt, that's exactly the case where we want to be warning.
+> The problem is that they're currently creating a hierarchy and
+> expecting (or at least experiencing) flat behavior.  We want them to
+> be either switch to explicit flat cgroups or at least know very well
+> that they're doing something unsupported and the behavior will change
+> beneath them.
 
-Rather than waiting for the LRU algorithm to eventually kick out
-the buffer, explicitly remove the buffer from the LRU list when trying
-to drop it. There is still the possibility that the buffer
-could be added back on the list, but that indicates the buffer is
-still in use and would probably have other 'in use' indicates to
-prevent dropping.
+It is kind of strange. First kernel allows creation of hiearchy for
+non-hierarchical controllers and it also gives warning for user space to
+not do that.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- fs/buffer.c | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+If creating hiearchy for flat controllers is wrong then kernel should
+not allow it in first place and enforce it, instead of just giving a
+warning to user space to not create the hierarchy.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index ad5938c..daa0c3d 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1399,12 +1399,49 @@ static bool has_bh_in_lru(int cpu, void *dummy)
- 	return 0;
- }
- 
-+static void __evict_bh_lru(void *arg)
-+{
-+	struct bh_lru *b = &get_cpu_var(bh_lrus);
-+	struct buffer_head *bh = arg;
-+	int i;
-+
-+	for (i = 0; i < BH_LRU_SIZE; i++) {
-+		if (b->bhs[i] == bh) {
-+			brelse(b->bhs[i]);
-+			b->bhs[i] = NULL;
-+			goto out;
-+		}
-+	}
-+out:
-+	put_cpu_var(bh_lrus);
-+}
-+
-+static bool bh_exists_in_lru(int cpu, void *arg)
-+{
-+	struct bh_lru *b = per_cpu_ptr(&bh_lrus, cpu);
-+	struct buffer_head *bh = arg;
-+	int i;
-+
-+	for (i = 0; i < BH_LRU_SIZE; i++) {
-+		if (b->bhs[i] == bh)
-+			return 1;
-+	}
-+
-+	return 0;
-+
-+}
- void invalidate_bh_lrus(void)
- {
- 	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1, GFP_KERNEL);
- }
- EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
- 
-+void evict_bh_lrus(struct buffer_head *bh)
-+{
-+	on_each_cpu_cond(bh_exists_in_lru, __evict_bh_lru, bh, 1, GFP_ATOMIC);
-+}
-+EXPORT_SYMBOL_GPL(evict_bh_lrus);
-+
- void set_bh_page(struct buffer_head *bh,
- 		struct page *page, unsigned long offset)
- {
-@@ -3052,6 +3089,7 @@ drop_buffers(struct page *page, struct buffer_head **buffers_to_free)
- 
- 	bh = head;
- 	do {
-+		evict_bh_lrus(bh);
- 		if (buffer_write_io_error(bh) && page->mapping)
- 			set_bit(AS_EIO, &page->mapping->flags);
- 		if (buffer_busy(bh))
--- 
-1.7.11.3
+Initially I had blocked the creation of hierarchy deeper than 1 level
+but later had to remove it as people wanted libvirt to use blkio
+controller and seemed to be fine with flat support. In fact there
+were people who insisted on flat support as they thought that made
+more sense.
 
+> 
+> > > * Keep track of which controllers are broken how and nudge the
+> > >   subsystems to implement proper hierarchy support.
+> > 
+> > I thought we can easily keep track of this in a simple .txt file and
+> > we really don't have to  provide explicit warnings.
+> > 
+> > I think for these controllers it is a known fact that they don't support
+> > hiearchy yet. I am skeptical that providing explicit warnings is going
+> > to help.
+> 
+> We should change blkio to support full hierarchy and soon and the
+> current users of the broken hierarchy should be warned loudly and
+> clearly; otherwise, this whole excercise is pointless,
+
+Sure. Just that CFQ code now has become really complicated and messy
+(especially with that 3 service trees per group) so making it hierarchical
+is significant amount of effort.
+
+And regarding change of behavior, we can always intoduce a .hierarchy
+file like cgroup which needs to be explicitly set to make controller
+truly hiearchical. That way behavior does not change in a subtle manner
+in future kernel releases. (Not that I am a fan of hierarchy file, just
+that it is cost we pay for not implementing hierarchical controller to
+begin with).
+
+Thanks
+Vivek
