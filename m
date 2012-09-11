@@ -1,75 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab2IKTba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:31:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33774 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab2IKTb2 (ORCPT
+	id S1760025Ab2IKTlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:41:46 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36409 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759174Ab2IKTln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:31:28 -0400
-Date: Tue, 11 Sep 2012 12:31:24 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
-        Vivek Goyal <vgoyal@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        bharrosh@panasas.com, david@fromorbit.com
-Subject: Re: [PATCH 2/2] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120911193124.GI19739@google.com>
-References: <20120910002810.GA23241@moria.home.lan>
- <20120910172210.GC14103@google.com>
- <20120910202435.GG16360@google.com>
- <20120910204010.GA32310@google.com>
- <20120910213349.GH16360@google.com>
- <20120910213710.GA7677@google.com>
- <20120910215633.GA19739@google.com>
- <CAFR8ued=Le4B4i_Rf4eECXsVgKvce9J7bO9sDSS91PFzBZ6j5w@mail.gmail.com>
- <20120911184553.GT7677@google.com>
- <CAFR8uefj7kxNUHLeppsH8THPzM7XCzT3tOxtuZ0qr4XUe7Bbmw@mail.gmail.com>
+	Tue, 11 Sep 2012 15:41:43 -0400
+Message-ID: <504F93F1.2060005@suse.cz>
+Date: Tue, 11 Sep 2012 21:41:37 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFR8uefj7kxNUHLeppsH8THPzM7XCzT3tOxtuZ0qr4XUe7Bbmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: qemu-kvm loops after kernel udpate
+References: <504F7ED8.1030702@suse.cz> <20120911190303.GA3626@amt.cnet>
+In-Reply-To: <20120911190303.GA3626@amt.cnet>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:58:05AM -0700, Muthu Kumar wrote:
-> On Tue, Sep 11, 2012 at 11:45 AM, Tejun Heo <tj@kernel.org> wrote:
-> > Hello,
-> >
-> > On Tue, Sep 11, 2012 at 11:36:28AM -0700, Muthu Kumar wrote:
-> >> Does this preserve the CPU from which the bio was submitted
-> >> originally. Not familiar with cmwq, may be Tejun can clarify.
-> >>
-> >> Tejun - the question is, do we honor the rq_affinity with the above
-> >> rescue worker implementation?
-> >
-> > The work item would run from the same CPU but there isn't any
-> > mechanism to keep track of the issuing CPU if there are multiple bios
-> > to be rescued.  Isn't rq_affinity an optimization hint?  If so, I
-> > don't think it matters here.
-> >
+On 09/11/2012 09:03 PM, Marcelo Tosatti wrote:
+> On Tue, Sep 11, 2012 at 08:11:36PM +0200, Jiri Slaby wrote:
+>> Hi,
+>>
+>> it looks like an update from next-20120824 to next-20120910 makes kvm
+>> defunct. When I try to run qemu, it loops forever without printing
+>> anything on the monitor.
+>>
+>> -no-kvm makes it indeed work.
+>>
+>> Cmdline I use:
+>> qemu-kvm -k en-us -usbdevice tablet -balloon virtio -hda IMAGE -smp 2 -m
+>> 1000M -net user -net nic,model=e1000 -usb -serial pty
+>>
+>> Before I start investigating further, like biscection, is this a known
+>> issue already and fix available somewhere?
 > 
-> Thanks... Just worried about performance impact.
-> 
-> Kent - Anything to validate that the performance is not impacted would
-> be really good. Otherwise, the patch looks great.
+> Its not a known issue. 'info registers' (for both vcpus) and
+> 'x /20i $eip' might help track it down. 
 
-Well - there'll only be any performance impact at all when we're memory
-constrained enough that GFP_NOWAIT allocations fail, which for these
-size allocations definitely isn't normal.
+I don't think it's in a state with something loaded.
 
-I did test it with forcing everything to use the rescuer, and I also
-benchmarked Vivek's version - in any sane configuration, the impact of
-punting everything to workqueue is not very noticable (the AHCI
-interrupt handler uses more cpu).
+(qemu) cpu 0
+(qemu) info registers
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000623
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00010002 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 000f0000 0000ffff 0000f300
+SS =0000 00000000 0000ffff 0000f300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
+DR3=0000000000000000
+DR6=00000000ffff0ff0 DR7=0000000000000400
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=00000000000000000000000000000000
+XMM01=00000000000000000000000000000000
+XMM02=00000000000000000000000000000000
+XMM03=00000000000000000000000000000000
+XMM04=00000000000000000000000000000000
+XMM05=00000000000000000000000000000000
+XMM06=00000000000000000000000000000000
+XMM07=00000000000000000000000000000000
+(qemu) cpu 1
+(qemu) info registers
+EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000623
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+EIP=0000fff0 EFL=00000002 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0000 00000000 0000ffff 00009300
+CS =f000 000f0000 0000ffff 0000f300
+SS =0000 00000000 0000ffff 0000f300
+DS =0000 00000000 0000ffff 00009300
+FS =0000 00000000 0000ffff 00009300
+GS =0000 00000000 0000ffff 00009300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 0000ffff
+IDT=     00000000 0000ffff
+CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
+DR3=0000000000000000
+DR6=00000000ffff0ff0 DR7=0000000000000400
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=00000000000000000000000000000000
+XMM01=00000000000000000000000000000000
+XMM02=00000000000000000000000000000000
+XMM03=00000000000000000000000000000000
+XMM04=00000000000000000000000000000000
+XMM05=00000000000000000000000000000000
+XMM06=00000000000000000000000000000000
+XMM07=00000000000000000000000000000000
 
-> 
-> Feel free to add:
-> 
-> Reviewed-by: Muthukumar Ratty <muthur@gmail.com>
+(qemu) x /20i $eip
+0x000000000000fff0:  add    %al,(%bx,%si)
+0x000000000000fff2:  add    %al,(%bx,%si)
+0x000000000000fff4:  add    %al,(%bx,%si)
+0x000000000000fff6:  add    %al,(%bx,%si)
+0x000000000000fff8:  add    %al,(%bx,%si)
+0x000000000000fffa:  add    %al,(%bx,%si)
+0x000000000000fffc:  add    %al,(%bx,%si)
+0x000000000000fffe:  add    %al,(%bx,%si)
+0x0000000000010000:  add    %al,(%bx,%si)
+0x0000000000010002:  add    %al,(%bx,%si)
+0x0000000000010004:  add    %al,(%bx,%si)
+0x0000000000010006:  add    %al,(%bx,%si)
+0x0000000000010008:  add    %al,(%bx,%si)
+0x000000000001000a:  add    %al,(%bx,%si)
+0x000000000001000c:  add    %al,(%bx,%si)
+0x000000000001000e:  add    %al,(%bx,%si)
+0x0000000000010010:  add    %al,(%bx,%si)
+0x0000000000010012:  add    %al,(%bx,%si)
+0x0000000000010014:  add    %al,(%bx,%si)
+0x0000000000010016:  add    %al,(%bx,%si)
 
-Thanks!
+thanks,
+-- 
+js
+suse labs
