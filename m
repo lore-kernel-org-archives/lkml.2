@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab2IKVo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 17:44:56 -0400
-Received: from fieldses.org ([174.143.236.118]:60328 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab2IKVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 17:44:53 -0400
-Date: Tue, 11 Sep 2012 17:44:50 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
-Message-ID: <20120911214450.GB28418@fieldses.org>
-References: <1346946994-21286-1-git-send-email-apw@canonical.com>
- <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
- <20120907193825.GA4633@fieldses.org>
- <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
+	id S1757739Ab2IKVuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 17:50:46 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59707 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2IKVuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 17:50:44 -0400
+Message-ID: <504FB22E.4090707@redhat.com>
+Date: Tue, 11 Sep 2012 23:50:38 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com> <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <20120911182904.GS7677@google.com> <504F88CB.6030105@redhat.com> <20120911191325.GU7677@google.com> <504F8FF0.3000408@redhat.com> <20120911200150.GV7677@google.com>
+In-Reply-To: <20120911200150.GV7677@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
-> 
-> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
-> >> > check refuses permission to write to the inode which prevents us from
-> >> > copying it up even though we have a writable upper layer.  (With an ext4
-> >> > lower layer the inode check will succeed if the inode  is writable even
-> >> > if the filesystem is not.)  It is not clear what the right solution is
-> >> > here.  One approach is to check the inode permissions only (avoiding the
-> >> > filesystem specific permissions op), but it is not clear we can rely on
-> >> > these for all underlying filesystems.  Perhaps this check should only be
-> >> > used for NFS.
-> >
-> > Then couldn't you for example end up circumventing ACLs on the
-> > underlying file to access data cached by reads from another user on the
-> > same system?
-> 
-> Ignoring ACL's should always give less access, isn't that right?
+[Al: you can jump down to "One problem:"]
 
-Not necessarily.
-
-(It's up to the server--and if anything servers probably want to err on
-the side of returning mode bits that are an upper, not a lower, bound on
-the permissions.)
-
-> > Is it possible to arrange that the check for a readonly filesystem be
-> > done only by the vfs and not also by ->permission?
+Il 11/09/2012 22:01, Tejun Heo ha scritto:
+> Hello, Paolo.
 > 
-> You'd need to modify NFS servers for that to work, no?  It's possible
-> but not practical.
-
-Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
-had been mounted readonly on the NFS client.
-
-If it's a read-write mount of a filesystem that's read-only on the
-server side: well, there is at least an error for that case: the server
-should return NFSERR_ROFS, and you should see EROFS--could you do the
-copy-up only in the case you get that error?
-
---b.
-
+> On Tue, Sep 11, 2012 at 09:24:32PM +0200, Paolo Bonzini wrote:
+>>> Couldn't it intercept some of them - e.g. RWs and discards?
+>>> What's the benifit / use case of doing pure bypass?
+>>
+>> Basically, using the same storage technology for bare metal and
+>> virtualized systems.  IMHO losing sense data is a no-no, but the above
+>> solution could be feasible too.
 > 
-> Thanks,
-> Miklos
+> Either way, with or without virtualization, making detailed error
+> information to userland is a valid goal.  I *think* we're finally
+> getting there after years of talking via structured printk.  I don't
+> know much about the details but heard about exposing sense data via
+> printk.
+
+Wait wait, there is already a perfectly 1:1 solution for this, and it's
+SG_IO.
+
+I think error processing falls roughly in two categories: "I need each
+command's precise state" and "I need to know if/when something bad
+happens".  Luckily, I/O also falls roughly in the same two categories:
+"I need precise control of each commands" and "I just care of getting
+this to disk".  The former can use SG_IO, the latter can use logs.
+
+So, let's not complicate the problem further.  We have a perfectly sane
+API that (with different names) is even provided by almost every
+operating system in existence.  There's just this little detail of
+filtering that is done for unprivileged processes; I hoped to fix 50% of
+the problem with this 3-line patch but it's not the end of the world if
+it's rejected constructively.
+
+The solution I outlined in my previous email:
+
+>> Enabling/disabling the filters from a privileged
+>> program and passing the unfiltered fd via SCM_RIGHTS would be enough.
+
+would entail some userland coding, but nothing paramount at all (and
+closer to my usual territory :)).  And we would have to do it anyway for
+the reservations case.
+
+Basically it would be a ioctl(fd, SG_SET_FILTER_ENABLED, arg) where arg
+can be:
+
+-1 for "enable/disable based on CAP_SYS_RAWIO" (default)
+0 for always enable filter
+1 for always disable filter
+
+And also a dual ioctl(fd, SG_GET_FILTER_ENABLED, arg).
+
+One problem: to do this, I need to access some "struct file" member in
+SG_IO, and thus change the ioctl member from block_device/fmode to
+block_device/file.   This would partially undo the 2007 switch from
+inode/file by Al Viro.  He was already asked about it in
+https://lkml.org/lkml/2012/6/12/414, let's try again here.
+
+>>> Can't you make use of the existing disk events mechanism for that?
+>>> Block layer already knows how to watch readiness of a device and tell
+>>> the userland about it via uevent.
+>>
+>> How?  But anyway i don't want to divert the discussion from the actual
+>> topic...
 > 
+> Disk events mechanism is there to watch (either via async notification
+> or polling) media change and device readiness and generates the usual
+> uevents when it detects them.  For sd devices, it basically issues TUR
+> periodically, so it's already doing pretty much what you need.
+
+Ah, no, we can't do that because the device should be opened with
+O_EXCL.  It is not right now, but it's a bug.  It's not very different
+from burning a CD (in fact, it's absolutely the same if you burn a CD
+inside a guest :)).
+
+> I guess the repeating question is whether to solve the problem within
+> the framework the underlying OS is providing or having direct access
+> to the raw hardware.  I don't know the answer.
 > 
-> 
-> >
-> > --b.
-> >
-> >> > Perhaps it needs to be a mount option.  The second patch
-> >> > (for discussion) following this email implements this, using the inode
-> >> > permissions when the lowerlayer is read-only.  This seems to work as
-> >> > expected in my limited testing.
-> >> 
-> >> I fear that will create an inconsistency between the read-only and the
-> >> non-read-only case, even though both should behave the same.
-> >> 
-> >> I think the cleanest would be to create a mount option to always use
-> >> generic_permission (on both the lower and the upper fs).  That would
-> >> give us two, slightly different, operating modes but each would be
-> >> self consistent.
-> >> 
-> >> Thanks,
-> >> Miklos
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Accessing the "raw" hardware does have its advantages but managing
+> multiple users
+
+In this case, the constraints pretty much guarantee that you have only
+one user.  To stick with everyday hardware, if you pass your CD drive to
+a guest you can well expect that the host will not be able to use it.
+
+Or, if you have more than one user, that they know what they are doing
+(reservations, etc.).
+
+> I personally hope "raw" to be strictly confined to specific areas
+> where performance impact of having kernel inbetween is prohibitive but
+> that's just me hoping.
+
+Well, it's not just about performance but also about precision sometimes.
+
+Paolo
+
