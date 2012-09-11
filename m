@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab2IKWDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 18:03:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38076 "EHLO
+	id S1758816Ab2IKWEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 18:04:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53998 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab2IKWD1 (ORCPT
+	with ESMTP id S1752172Ab2IKWEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 18:03:27 -0400
+	Tue, 11 Sep 2012 18:04:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344355862-2726-3-git-send-email-jiang.liu@huawei.com>
-References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-3-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1344355862-2726-4-git-send-email-jiang.liu@huawei.com>
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-4-git-send-email-jiang.liu@huawei.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Sep 2012 16:03:05 -0600
-Message-ID: <CAErSpo7oXFGARWS+M=_7_R_4Hw6j5pufRbaNKtwTr5BT-_xeAA@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 02/22] PCI: trivial cleanups for drivers/pci/remove.c
+Date: Tue, 11 Sep 2012 16:03:50 -0600
+Message-ID: <CAErSpo7C_-Yp6pNu0J9L3gMds9fuO2ZLRFvo28gVEGL0iM1JuQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 03/22] PCI: change PCI device management code to
+ better follow device model
 To: Jiang Liu <liuj97@gmail.com>
 Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
         Greg KH <gregkh@linuxfoundation.org>,
@@ -30,86 +31,73 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> Trivial cleanups for drivers/pci/remove.c:
-> 1) move the comment for pci_stop_and_remove_bus_device() to the right place
-> 2) rename __pci_remove_behind_bridge() to pci_remove_behind_bridge()
+> According to device model documentation, the way to add/remove device
+> object should be symmetric.
+>
+> /**
+>  * device_del - delete device from system.
+>  * @dev: device.
+>  *
+>  * This is the first part of the device unregistration
+>  * sequence. This removes the device from the lists we control
+>  * from here, has it removed from the other driver model
+>  * subsystems it was added to in device_add(), and removes it
+>  * from the kobject hierarchy.
+>  *
+>  * NOTE: this should be called manually _iff_ device_add() was
+>  * also called manually.
+>  */
+>
+> The rule here is to either use
+> 1) device_register()/device_unregister()
+> or
+> 2) device_initialize()/device_add()/device_del()/put_device().
+>
+> So change PCI core to follow the rule and get rid of the redundant
+> pci_dev_get()/pci_dev_put() pair.
 
-This seems fine, but I think my pci/bjorn-cleanup-remove branch subsumes it.
+Seems OK to me.
 
 > Signed-off-by: Jiang Liu <liuj97@gmail.com>
 > ---
->  drivers/pci/remove.c |   33 +++++++++++++++++----------------
->  1 file changed, 17 insertions(+), 16 deletions(-)
+>  drivers/pci/probe.c  |    1 -
+>  drivers/pci/remove.c |    4 ++--
+>  2 files changed, 2 insertions(+), 3 deletions(-)
 >
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 0840409..dacca26 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  {
+>         device_initialize(&dev->dev);
+>         dev->dev.release = pci_release_dev;
+> -       pci_dev_get(dev);
+>
+>         dev->dev.dma_mask = &dev->dma_mask;
+>         dev->dev.dma_parms = &dev->dma_parms;
 > diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 04a4861..33b6318 100644
+> index 33b6318..b9ac765 100644
 > --- a/drivers/pci/remove.c
 > +++ b/drivers/pci/remove.c
-> @@ -78,25 +78,14 @@ void pci_remove_bus(struct pci_bus *pci_bus)
->  }
->  EXPORT_SYMBOL(pci_remove_bus);
->
-> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
-> -/**
-> - * pci_stop_and_remove_bus_device - remove a PCI device and any children
-> - * @dev: the device to remove
-> - *
-> - * Remove a PCI device from the device lists, informing the drivers
-> - * that the device has been removed.  We also remove any subordinate
-> - * buses and children in a depth-first manner.
-> - *
-> - * For each device we remove, delete the device structure from the
-> - * device lists, remove the /proc entry, and notify userspace
-> - * (/sbin/hotplug).
-> - */
-> +static void pci_remove_behind_bridge(struct pci_dev *dev);
-> +
->  void __pci_remove_bus_device(struct pci_dev *dev)
->  {
->         if (dev->subordinate) {
->                 struct pci_bus *b = dev->subordinate;
->
-> -               __pci_remove_behind_bridge(dev);
-> +               pci_remove_behind_bridge(dev);
->                 pci_remove_bus(b);
->                 dev->subordinate = NULL;
+> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
+>         if (dev->is_added) {
+>                 pci_proc_detach_device(dev);
+>                 pci_remove_sysfs_dev_files(dev);
+> -               device_unregister(&dev->dev);
+> +               device_del(&dev->dev);
+>                 dev->is_added = 0;
 >         }
-> @@ -105,13 +94,25 @@ void __pci_remove_bus_device(struct pci_dev *dev)
->  }
->  EXPORT_SYMBOL(__pci_remove_bus_device);
 >
-> +/**
-> + * pci_stop_and_remove_bus_device - remove a PCI device and any children
-> + * @dev: the device to remove
-> + *
-> + * Remove a PCI device from the device lists, informing the drivers
-> + * that the device has been removed.  We also remove any subordinate
-> + * buses and children in a depth-first manner.
-> + *
-> + * For each device we remove, delete the device structure from the
-> + * device lists, remove the /proc entry, and notify userspace
-> + * (/sbin/hotplug).
-> + */
->  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
->  {
->         pci_stop_bus_device(dev);
->         __pci_remove_bus_device(dev);
+> @@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
+>         up_write(&pci_bus_sem);
+>
+>         pci_free_resources(dev);
+> -       pci_dev_put(dev);
+> +       put_device(&dev->dev);
 >  }
 >
-> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
-> +static void pci_remove_behind_bridge(struct pci_dev *dev)
->  {
->         struct list_head *l, *n;
->
-> @@ -141,7 +142,7 @@ static void pci_stop_behind_bridge(struct pci_dev *dev)
->  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
->  {
->         pci_stop_behind_bridge(dev);
-> -       __pci_remove_behind_bridge(dev);
-> +       pci_remove_behind_bridge(dev);
->  }
->
->  static void pci_stop_bus_devices(struct pci_bus *bus)
+>  /**
 > --
 > 1.7.9.5
 >
