@@ -1,212 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759235Ab2IKLws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:52:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33215 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759153Ab2IKLwq convert rfc822-to-8bit (ORCPT
+	id S1759261Ab2IKL7Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 07:59:25 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:46814 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759048Ab2IKL7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:52:46 -0400
-From: "Kaneshige, Kenji" <kaneshige.kenji@jp.fujitsu.com>
-To: "Indoh, Takao" <indou.takao@jp.fujitsu.com>
-CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "hbabu@us.ibm.com" <hbabu@us.ibm.com>,
-        "Ishii, Hironobu" <ishii.hironobu@jp.fujitsu.com>,
-        "martin.wilck@ts.fujitsu.com" <martin.wilck@ts.fujitsu.com>
-Subject: RE: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
- with iommu
-Thread-Topic: [RFC][PATCH] Reset PCIe devices to address DMA problem on
- kdump with iommu
-Thread-Index: AQHNcWshux+i/ugmYU6XzbvpSogZp5dHYZeAgAQ9MoCAAQ6HAIAuhvIAgAHu0rCABaAbAIAAr0JA
-Date: Tue, 11 Sep 2012 11:52:42 +0000
-Message-ID: <4A338DB2991D2A44B9A44B8718AECF650A4AC9A5@G01JPEXMBYT03>
-References: <501BB4EF.7080909@jp.fujitsu.com>
- <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com>
- <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com>
- <4A338DB2991D2A44B9A44B8718AECF650A4AA6BF@G01JPEXMBYT03>
- <504D8A28.9090105@jp.fujitsu.com>
-In-Reply-To: <504D8A28.9090105@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-securitypolicycheck: OK by SHieldMailChecker v1.7.4
-x-originating-ip: [10.124.134.168]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Sep 2012 07:59:22 -0400
+Date: Tue, 11 Sep 2012 14:54:50 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Shubhrajyoti <shubhrajyoti@ti.com>
+Cc: balbi@ti.com, Kevin Hilman <khilman@deeprootsystems.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-serial@vger.kernel.org, Sourav Poddar <sourav.poddar@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        alan@linux.intel.com
+Subject: Re: [PATCH v4 00/21] OMAP UART Patches
+Message-ID: <20120911115449.GH18907@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <20120906122948.GC29202@arwen.pp.htv.fi>
+ <1346935540-1792-1-git-send-email-balbi@ti.com>
+ <87harahiv6.fsf@deeprootsystems.com>
+ <20120907054932.GB3136@arwen.pp.htv.fi>
+ <87oblhmu6g.fsf@deeprootsystems.com>
+ <20120908190423.GA14771@arwen.pp.htv.fi>
+ <504F20FA.7020003@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGu/vTNewDGZ7tmp"
+Content-Disposition: inline
+In-Reply-To: <504F20FA.7020003@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Takao Indoh [mailto:indou.takao@jp.fujitsu.com]
-> Sent: Monday, September 10, 2012 3:35 PM
-> To: Kaneshige, Kenji/金重 憲治
-> Cc: vgoyal@redhat.com; kexec@lists.infradead.org;
-> linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org;
-> bhelgaas@google.com; hbabu@us.ibm.com; Ishii, Hironobu/石井 宏延;
-> martin.wilck@ts.fujitsu.com
-> Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
-> with iommu
-> 
-> (2012/09/10 11:34), Kaneshige, Kenji wrote:
-> >> -----Original Message-----
-> >> From: linux-pci-owner@vger.kernel.org
-> >> [mailto:linux-pci-owner@vger.kernel.org] On Behalf Of Takao Indoh
-> >> Sent: Wednesday, September 05, 2012 8:10 PM
-> >> To: vgoyal@redhat.com
-> >> Cc: kexec@lists.infradead.org; linux-kernel@vger.kernel.org;
-> >> linux-pci@vger.kernel.org; bhelgaas@google.com; hbabu@us.ibm.com;
-> Ishii,
-> >> Hironobu/石井 宏延; martin.wilck@ts.fujitsu.com
-> >> Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on
-> kdump
-> >> with iommu
-> >>
-> >> (2012/08/07 5:39), Vivek Goyal wrote:
-> >>> On Mon, Aug 06, 2012 at 01:30:47PM +0900, Takao Indoh wrote:
-> >>>> Hi Vivek,
-> >>>>
-> >>>> (2012/08/03 20:46), Vivek Goyal wrote:
-> >>>>> On Fri, Aug 03, 2012 at 08:24:31PM +0900, Takao Indoh wrote:
-> >>>>>> Hi all,
-> >>>>>>
-> >>>>>> This patch adds kernel parameter "reset_pcie_devices" which resets
-> >> PCIe
-> >>>>>> devices at boot time to address DMA problem on kdump with iommu.
-> When
-> >>>>>> this parameter is specified, a hot reset is triggered on each PCIe
-> >> root
-> >>>>>> port and downstream port to reset its downstream endpoint.
-> >>>>>
-> >>>>> Hi Takao,
-> >>>>>
-> >>>>> Why not use existing "reset_devices" parameter instead of introducing
-> >>>>> a new one?
-> >>>>
-> >>>> "reset_devices" is used for each driver to reset their own device,
-> and
-> >>>> this patch resets all devices forcibly, so I thought they were different
-> >>>> things.
-> >>>
-> >>> Yes reset_devices currently is used for driver to reset its device.
-> I
-> >>> thought one could very well extend its reach to reset pci express devices
-> >>> at bus level.
-> >>>
-> >>> Having them separate is not going to be much useful from kdump
-> >>> perspective. We will end up passing both reset_devices and
-> >>> reset_pcie_devices to second kernel whill lead to bus level reset as
-> well
-> >>> as device level reset.
-> >>>
-> >>> Ideal situation would be that somehow detect that bus level reset has
-> >> been
-> >>> done and skip device level reset (assuming bus level reset obviates
-> the
-> >>> need of device level reset, please correct me if that's not the case).
-> >>>
-> >>> After pcie reset, can we store the state in a variable and drivers can
-> >>> use that variable to check if PCIe level reset was done or not. If yes,
-> >>> skip device level reset (Assuming driver knows that device is on a
-> >>> PCIe slot).
-> >>>
-> >>> In that case we will not have to introduce new kernel command line,
-> and
-> >>> also avoid double reset?
-> >>
-> >> I found a problem when testing my patch on some machines.
-> >>
-> >> Originally there are two problems in kdump kernel when iommu is enabled;
-> >> DMAR error and PCI SERR. I thought they are fixed by my patch, but I
-> >> noticed that PCI SERR is still detected after applying the patch. It
-> >> seems that something happens when Interrupt Remapping is initialized
-> in
-> >> kdump kernel.
-> >
-> > I'm not sure, but I guess the PCI SERR might be caused as follows.
-> >
-> > - The 1st kernel enables interrupt remapping. The MSI(-X) address and
-> >    data registers of PCI devices are programmed in remappable format.
-> >
-> > - At the beginning of 2nd kernel, interrupt remapping is still active.
-> >    And then it is disabled by enable_IR() function for initialization.
-> >
-> > - PCI device generate an interrupt. At this moment, interrupt remapping
-> >    is not enabled yet. On the other hand, MSI(-X) address and data of
-> this
-> >    interrupt is in remappable format because those are programmed by 1st
-> >    kernel. I guess this might be a cause of PCI SERR.
-> >
-> > I guess clearing command register or disabling MSI before interrupt
-> > remapping initialization in 2nd kernel might solve the PCI SERR problem.
-> 
-> Thank you for your comment. That makes sense.
-> 
-> Though I think clearing bus master bit is enough, do you think I need to
-> clear
-> all command register bit not only bus master?
 
-I thought clearing bus master bit. But we might also need to set the
-disable INTx bit.
+--MGu/vTNewDGZ7tmp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It would not be needed if we can reset devices before interrupt remapping
-initialization. I guess resetting devices before interrupt remapping
-initialization would need complex code change and be difficult to implement.
-If so, clearing bus master bit would be one of the alternative solution
-against PCI SERR issue.
+On Tue, Sep 11, 2012 at 05:01:06PM +0530, Shubhrajyoti wrote:
+> On Sunday 09 September 2012 12:34 AM, Felipe Balbi wrote:
+> >> In addition, IMO, if this was only tested on Panda (as suggested by
+> >> > earlier cover letters), it really should not have been merged until =
+it
+> >> > got some broader testing.
+> > Shubhro's got his Tested-by tag. I believe he tested on beagleboard and
+> > omap4sdp. Shubhro, can you confirm which platforms you tested the UART
+> > patches ? cheers
+> Felipe I had boot tested on omap3sdp and onap4 sdp and did pm testing
+> on both with omap3 hitting off.
 
-Regards,
-Kenji Kaneshige
+Thanks ;-)
 
+--=20
+balbi
 
+--MGu/vTNewDGZ7tmp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
-> Thanks,
-> Takao Indoh
-> 
-> 
-> > Regards,
-> > Kenji Kaneshige
-> >
-> >
-> >>
-> >> Therefore resetting devices has to be done before enable_IR() is
-> >> called. I have three ideas for it.
-> >>
-> >>    (i) Resetting devices in 1st kernel(panic kernel)
-> >>    We can reset devices before jumping into 2nd kernel. Of course it
-> may
-> >>    be dangerous to scan pci device tree and call PCI functions in panic'd
-> >>    kernel. Beforehand we need to collect device information so that only
-> >>    minimal code could run on panic.
-> >>
-> >>    (ii) Resetting devices in purgatory
-> >>    It seems to be be appropriate place to do this, but I'm not sure
-> >>    where I can save/restore PCI config when resetting devices in
-> >>    purgatory.
-> >>
-> >>    (iii) Resetting devices in 2nd kernel(kdump kernel)
-> >>    Important point is to do reset before enable_IR() is called as I wrote
-> >>    above. I think I should add new function to do reset into
-> >>    arch/x86/pci/early.c and call it in setup_arch like
-> >>    early_dump_pci_devices() or early_quirks().
-> >>
-> >> Any comments?
-> >>
-> >> Thanks,
-> >> Takao Indoh
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-pci"
-> in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQTyaIAAoJEIaOsuA1yqRES4AP/161NxY2gSXOJW6E7HcGKu5f
+rqRyuL6LEEjYhIxuSyAUn8bvTPfCmWGiswWFoOVbV4xWb1JfZCo1pKUzrqcU6jMs
+EFFMPZDvmS99Eyu5V3WhMZCVvmEl+3pawTf2AmLhxqNKWKTcoHUEEY3SkuVlVWbt
+ZTp/Vj54v+eDkvRu5PwmUQ22radyUK7L9wDSd3INAu6GYgWjijX/2xQRtM7tvmf5
+Zc1LbxH6LW9eWy1jeOVaneNTlLXOXKCo5W0hG7FNoC+2QW4EQsOWMJ6G0Wi9RdPM
+iQQUsrhMe187Ux/76wCuNK0Riv3U0ip5lrhX0H7l6vrFK7JE0srMc1oDxUPuAdhe
+AtQ1j8WNvpfEJCymSmyp53Zuw90d4ZAxstOyho8X4vtpmIeEF6mHmhGf7uuT+xO+
+F4uhev0qZ+GFGQ7L8ZeizFTluxSHwfPKHW+YcRDNf2aKrieXMplDnCd1am5E2tDY
+M+oaE7CeCWSEjZi75tM1xN/a0lDAKIfeSgQkdXCrJa8sdCIqJZe46/LG0zBn5wwi
+OV1HWrZS2zDumQdN1P0nMlIqeljnLNd21u8uYYyLrpNuGJEErLk1T2EQpU2Dpell
+PC0N7oVnPKkiqxrA+CqM5GKt6EOGOu5jwdha4k3tLxv+Ev4JFw2dI/buFq8G4J/z
+diHTtDQCE2GYb55xOWuJ
+=joTh
+-----END PGP SIGNATURE-----
+
+--MGu/vTNewDGZ7tmp--
