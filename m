@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2IKOLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 10:11:13 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53439 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab2IKOLK (ORCPT
+	id S1758612Ab2IKORz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 10:17:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab2IKORx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 10:11:10 -0400
-Date: Tue, 11 Sep 2012 15:15:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+	Tue, 11 Sep 2012 10:17:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
+Date: Tue, 11 Sep 2012 14:17:42 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 06/12] tty/serial/kgdboc: Add and wire up clear_irqs
- callback
-Message-ID: <20120911151540.362001c6@pyramind.ukuu.org.uk>
-In-Reply-To: <1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
-References: <20120911093042.GA12471@lizard>
-	<1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Ohad Ben-Cohen" <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Jean Pihet <j-pihet@ti.com>, J Keerthy <j-keerthy@ti.com>,
+        linux-omap@vger.kernel.org
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368559-31329-1-git-send-email-arnd@arndb.de> <CAMQu2gwLoccyjGwjjgndiW2aR--_S=UhCCTdcav6LicvYWe5SQ@mail.gmail.com>
+In-Reply-To: <CAMQu2gwLoccyjGwjjgndiW2aR--_S=UhCCTdcav6LicvYWe5SQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201209111417.42879.arnd@arndb.de>
+X-Provags-ID: V02:K0:O25yZjq5HBkhbcIGROBvAz+iFLAvav0HprMLqKd3bxB
+ ar94MWoHRfVSU9oT3cn1Xl1Z1++N08rnW3nLwgPyyNQzWOBELw
+ 3UWWEovziHYBAEEGmnEY/PjZc8Ux8Uii+Z4u7LAfTG4X1wAKsb
+ gJ0BKbqEIt56D1zKBaziQr/iIMSfu91++3AuCH4nxZ8Tu9CSMq
+ a3Tzi7oGzDjjtn/86WvB8Jw8U6TZ/WrHO84goLN3T4MfMxQDAy
+ 7q8VCCQgkXj4fZ5T7G7x9DN7y5+EP6qvFCuDao+MRwlSL2fWi1
+ DBcmMiV/53kO6Y59W5qnqbj8D32sH7qRCnCtAZHlIx9wQbYPR2
+ NUZ625cah4I0ert0VKN8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012 02:35:00 -0700
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+On Tuesday 11 September 2012, Shilimkar, Santosh wrote:
+> Just curious to know how you came with some of the above header names ?
+> 
+> plat/mcbsp ---> dsp-mcbsp.h
+> There is no connection of DSP with McBSP. "omap-mcbsp.h" would been a
+> better name.
 
-> This patch implements a new callback: clear_irqs. It is used for the
+This one was a mistake on my side, as Tony and  Peter already pointed out.
+How about asoc-mcbsp.h or asoc-omap-mcbsp.h?
 
+> plat/nand.h --> /mtd-nand-omap2.h
+> plat/onenand.h --> /mtd-onenand-omap2.h
+> May be "omap-nand.h" and "omap-onenand.h"
+> 
+> plat/mcspi.h-->spi-omap2-mcspi.h
+> May be "omap-spi.h"
+> 
 
-This bit I still really don't like. I would like to know what the generic
-IRQ folks thing about it and if Thomas Gleixner has any brilliant ideas
-here. I don't think its a show stopper it would just be nice if there was
-a better solution first.
+As I wrote in the introductory mail, I tried to always prefix the file
+names with the subsystem, followed by the name of the driver, in order
+to standardize on just one set of rules.
 
-Alan
+The drivers implementing the three headers above are:
+
+drivers/mtd/nand/omap2.c
+drivers/mtd/onenand/omap2.c
+drivers/spi/spi-omap2-mcspi.c
+
+so these all seem appropriate.
+
+	Arnd
