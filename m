@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab2IKRoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 13:44:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33196 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab2IKRji (ORCPT
+	id S1754492Ab2IKRph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 13:45:37 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60696 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2IKRpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 13:39:38 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
-        <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v3 17/17] ARM: mm: clean up membank size limit checks
-Date: Tue, 11 Sep 2012 13:39:15 -0400
-Message-ID: <1347385155-11643-18-git-send-email-cyril@ti.com>
+	Tue, 11 Sep 2012 13:45:34 -0400
+From: Matt Porter <mporter@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Lindgren <tony@atomide.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        AnilKumar <anilkumar@ti.com>
+Subject: [PATCH 0/2] Add pinctrl support to omap2-mcspi
+Date: Tue, 11 Sep 2012 13:46:37 -0400
+Message-Id: <1347385599-27558-1-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347385155-11643-1-git-send-email-cyril@ti.com>
-References: <1347385155-11643-1-git-send-email-cyril@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up the highmem sanity check code by simplifying the range
-checks with a pre-calculated size_limit.  This patch should otherwise have no
-functional impact on behavior.
+This series enables pinctrl support for McSPI. Platforms that boot only
+from DT and rely on pinctrl to set pinmuxes appropriately require this
+for omap2-mcspi operation.
 
-This patch also removes a redundant (bank->start < vmalloc_limit) check, since
-this is already covered by the !highmem condition.
+It has been tested on AM335x BeagleBone with an Adafruit SPI LCD attached
+and regression tested on Beagleboard xM booting in the !DT case, using
+board-omap3evm.c. There is a dependency on the patch to enable PINCTRL
+support (https://patchwork.kernel.org/patch/1376331/) for
+ARCH_OMAP2PLUS_TYPICAL.
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
----
- arch/arm/mm/mmu.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+Matt Porter (2):
+  spi: omap2-mcspi: add pinctrl support
+  ARM: OMAP2+: Enable pinctrl dummy states
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 6c35483..50d9df5 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -917,10 +917,15 @@ void __init sanity_check_meminfo(void)
- 
- 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
- 		struct membank *bank = &meminfo.bank[j];
-+		phys_addr_t size_limit;
-+
- 		*bank = meminfo.bank[i];
-+		size_limit = bank->size;
- 
- 		if (bank->start >= vmalloc_limit)
- 			highmem = 1;
-+		else
-+			size_limit = vmalloc_limit - bank->start;
- 
- 		bank->highmem = highmem;
- 
-@@ -929,8 +934,7 @@ void __init sanity_check_meminfo(void)
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
- 		 */
--		if (!highmem && bank->start < vmalloc_limit &&
--		    bank->size > vmalloc_limit - bank->start) {
-+		if (!highmem && bank->size > size_limit) {
- 			if (meminfo.nr_banks >= NR_BANKS) {
- 				printk(KERN_CRIT "NR_BANKS too low, "
- 						 "ignoring high memory\n");
-@@ -939,12 +943,12 @@ void __init sanity_check_meminfo(void)
- 					(meminfo.nr_banks - i) * sizeof(*bank));
- 				meminfo.nr_banks++;
- 				i++;
--				bank[1].size -= vmalloc_limit - bank->start;
-+				bank[1].size -= size_limit;
- 				bank[1].start = vmalloc_limit;
- 				bank[1].highmem = highmem = 1;
- 				j++;
- 			}
--			bank->size = vmalloc_limit - bank->start;
-+			bank->size = size_limit;
- 		}
- #else
- 		/*
-@@ -962,14 +966,13 @@ void __init sanity_check_meminfo(void)
- 		 * Check whether this memory bank would partially overlap
- 		 * the vmalloc area.
- 		 */
--		if (bank->start + bank->size > vmalloc_limit)
--			unsigned long newsize = vmalloc_limit - bank->start;
-+		if (bank->size > size_limit) {
- 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
- 			       "to -%.8llx (vmalloc region overlap).\n",
- 			       (unsigned long long)bank->start,
- 			       (unsigned long long)bank->start + bank->size - 1,
--			       (unsigned long long)bank->start + newsize - 1);
--			bank->size = newsize;
-+			       (unsigned long long)bank->start + size_limit - 1);
-+			bank->size = size_limit;
- 		}
- #endif
- 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
+ arch/arm/mach-omap2/devices.c |    4 ++++
+ drivers/spi/spi-omap2-mcspi.c |    9 +++++++++
+ 2 files changed, 13 insertions(+)
+
 -- 
 1.7.9.5
 
