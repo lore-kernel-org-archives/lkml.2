@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2IKJju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:39:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55085 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758220Ab2IKJiX (ORCPT
+	id S1758329Ab2IKJkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:40:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41808 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758219Ab2IKJiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:38:23 -0400
+	Tue, 11 Sep 2012 05:38:20 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -19,424 +19,546 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 09/12] ARM: Move some macros from entry-armv to entry-header
-Date: Tue, 11 Sep 2012 02:35:03 -0700
-Message-Id: <1347356106-25368-9-git-send-email-anton.vorontsov@linaro.org>
+Subject: =?UTF-8?q?=5BPATCH=2008/12=5D=20tty/serial=3A=20Add=20kgdb=5Fnmi=20driver?=
+Date: Tue, 11 Sep 2012 02:35:02 -0700
+Message-Id: <1347356106-25368-8-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120911093042.GA12471@lizard>
 References: <20120911093042.GA12471@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just move the macros into header file as we would want to use them for
-KGDB FIQ entry code.
+This special driver makes it possible to temporary use NMI debugger port
+as a normal console by issuing 'nmi_console' command (assuming that the
+port is attached to KGDB).
 
-The following macros were moved:
+Unlike KDB's disable_nmi command, with this driver you are always able
+to go back to the debugger using KGDB escape sequence ($3#33).  This is
+because this console driver processes the input in NMI context, and thus
+is able to intercept the magic sequence.
 
- - svc_entry
- - usr_entry
- - kuser_cmpxchg_check
- - vector_stub
+Note that since the console interprets input and uses polling
+communication methods, for things like PPP it is still better to fully
+detach debugger port from the KGDB NMI (i.e. disable_nmi), and use raw
+console.
 
-To make kuser_cmpxchg_check actually work across different files, we
-also have to make kuser_cmpxchg64_fixup global.
+Usually, to enter the debugger one have to type the magic sequence, so
+initially the kernel will print the following prompt on the NMI debugger
+console:
 
+	Type $3#33 to enter the debugger>
+
+For convenience, there is a kgdb_fiq.knock kernel command line option,
+when set to 0, this turns the special command to just a return key
+press, so the kernel will be printing this:
+
+	Hit <return> to enter the debugger>
+
+This is more convenient for long debugging sessions, although it makes
+nmi_console feature somewhat useless.
+
+And for the cases when NMI connected to a dedicated button, the knocking
+can be disabled altogether by setting kgdb_fiq.knock to -1.
+
+Suggested-by: Colin Cross <ccross@android.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- arch/arm/kernel/entry-armv.S   | 167 +---------------------------------------
- arch/arm/kernel/entry-header.S | 170 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 171 insertions(+), 166 deletions(-)
+ drivers/tty/serial/Kconfig    |  19 ++
+ drivers/tty/serial/Makefile   |   1 +
+ drivers/tty/serial/kgdb_nmi.c | 391 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/tty/serial/kgdboc.c   |   6 +
+ include/linux/kgdb.h          |  10 ++
+ 5 files changed, 427 insertions(+)
+ create mode 100644 drivers/tty/serial/kgdb_nmi.c
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 0f82098..0f15368 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -136,57 +136,6 @@ common_invalid:
- 	b	bad_mode
- ENDPROC(__und_invalid)
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 26907cf..b22e45b 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -141,6 +141,25 @@ config SERIAL_ATMEL_TTYAT
  
--/*
-- * SVC mode handlers
-- */
--
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
--#define SPFIX(code...) code
--#else
--#define SPFIX(code...)
--#endif
--
--	.macro	svc_entry, stack_hole=0
-- UNWIND(.fnstart		)
-- UNWIND(.save {r0 - pc}		)
--	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
--#ifdef CONFIG_THUMB2_KERNEL
-- SPFIX(	str	r0, [sp]	)	@ temporarily saved
-- SPFIX(	mov	r0, sp		)
-- SPFIX(	tst	r0, #4		)	@ test original stack alignment
-- SPFIX(	ldr	r0, [sp]	)	@ restored
--#else
-- SPFIX(	tst	sp, #4		)
--#endif
-- SPFIX(	subeq	sp, sp, #4	)
--	stmia	sp, {r1 - r12}
--
--	ldmia	r0, {r3 - r5}
--	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""      ""       ""
--	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-- SPFIX(	addeq	r2, r2, #4	)
--	str	r3, [sp, #-4]!		@ save the "real" r0 copied
--					@ from the exception stack
--
--	mov	r3, lr
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r2 - sp_svc
--	@  r3 - lr_svc
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	stmia	r7, {r2 - r6}
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	bl	trace_hardirqs_off
--#endif
--	.endm
--
- 	.align	5
- __dabt_svc:
- 	svc_entry
-@@ -348,71 +297,8 @@ ENDPROC(__pabt_svc)
+ 	  Say Y if you have an external 8250/16C550 UART.  If unsure, say N.
  
- /*
-  * User mode handlers
-- *
-- * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
++config SERIAL_KGDB_NMI
++	bool "Serial console over KGDB NMI debugger port"
++	depends on KGDB_SERIAL_CONSOLE
++	help
++	  This special driver allows you to temporary use NMI debugger port
++	  as a normal console (assuming that the port is attached to KGDB).
++
++	  Unlike KDB's disable_nmi command, with this driver you are always
++	  able to go back to the debugger using KGDB escape sequence ($3#33).
++	  This is because this console driver processes the input in NMI
++	  context, and thus is able to intercept the magic sequence.
++
++	  Note that since the console interprets input and uses polling
++	  communication methods, for things like PPP you still must fully
++	  detach debugger port from the KGDB NMI (i.e. disable_nmi), and
++	  use raw console.
++
++	  If unsure, say N.
++
+ config SERIAL_KS8695
+ 	bool "Micrel KS8695 (Centaur) serial port support"
+ 	depends on ARCH_KS8695
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index ce88667..4f694da 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs.o
+ obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
+ obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
+ obj-$(CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL) += nwpserial.o
++obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
+ obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
+ obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
+ obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
+diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
+new file mode 100644
+index 0000000..fdb7d26
+--- /dev/null
++++ b/drivers/tty/serial/kgdb_nmi.c
+@@ -0,0 +1,391 @@
++/*
++ * KGDB NMI serial console
++ *
++ * Copyright 2010 Google, Inc.
++ *		  Arve Hjønnevåg <arve@android.com>
++ *		  Colin Cross <ccross@android.com>
++ * Copyright 2012 Linaro Ltd.
++ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/compiler.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/atomic.h>
++#include <linux/console.h>
++#include <linux/tty.h>
++#include <linux/tty_driver.h>
++#include <linux/tty_flip.h>
++#include <linux/interrupt.h>
++#include <linux/hrtimer.h>
++#include <linux/tick.h>
++#include <linux/kfifo.h>
++#include <linux/kgdb.h>
++#include <linux/kdb.h>
++
++static int kgdb_nmi_knock = 1;
++module_param_named(knock, kgdb_nmi_knock, int, 0600);
++MODULE_PARM_DESC(knock, "if set to 1 (default), the special '$3#33' command "
++			"must be used to enter the debugger; when set to 0, "
++			"hitting return key is enough to enter the debugger; "
++			"when set to -1, the debugger is entered immediately "
++			"upon NMI");
++
++static char *kgdb_nmi_magic = "$3#33";
++module_param_named(magic, kgdb_nmi_magic, charp, 0600);
++MODULE_PARM_DESC(magic, "magic sequence to enter NMI debugger (default $3#33)");
++
++static bool kgdb_nmi_tty_enabled;
++
++static void kgdb_nmi_console_write(struct console *co, const char *s, uint c)
++{
++	int i;
++
++	if (!kgdb_nmi_tty_enabled || atomic_read(&kgdb_active) >= 0)
++		return;
++
++	for (i = 0; i < c; i++)
++		dbg_io_ops->write_char(s[i]);
++}
++
++static struct tty_driver *kgdb_nmi_tty_driver;
++
++static struct tty_driver *kgdb_nmi_console_device(struct console *co, int *idx)
++{
++	*idx = co->index;
++	return kgdb_nmi_tty_driver;
++}
++
++static struct console kgdb_nmi_console = {
++	.name	= "ttyNMI",
++	.write	= kgdb_nmi_console_write,
++	.device	= kgdb_nmi_console_device,
++	.flags	= CON_PRINTBUFFER | CON_ANYTIME | CON_ENABLED,
++	.index	= -1,
++};
++
++/*
++ * This is usually the maximum rate on debug ports. We make fifo large enough
++ * to make copy-pasting to the terminal usable.
++ */
++#define KGDB_NMI_BAUD		115200
++#define KGDB_NMI_FIFO_SIZE	roundup_pow_of_two(KGDB_NMI_BAUD / 8 / HZ)
++
++struct kgdb_nmi_tty_priv {
++	struct tty_port port;
++	int opened;
++	struct tasklet_struct tlet;
++	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
++};
++
++static struct kgdb_nmi_tty_priv *kgdb_nmi_port_to_priv(struct tty_port *port)
++{
++	return container_of(port, struct kgdb_nmi_tty_priv, port);
++}
++
++/*
++ * Our debugging console is polled in a tasklet, so we'll check for input
++ * every tick. In HZ-less mode, we should program the next tick.  We have
++ * to use the lowlevel stuff as no locks should be grabbed.
++ */
++#ifdef CONFIG_HIGH_RES_TIMERS
++static void kgdb_tty_poke(void)
++{
++	tick_program_event(ktime_get(), 0);
++}
++#else
++static inline void kgdb_tty_poke(void) {}
++#endif
++
++static struct tty_port *kgdb_nmi_port;
++
++static void kgdb_tty_recv(int ch)
++{
++	struct kgdb_nmi_tty_priv *priv;
++	char c = ch;
++
++	if (!kgdb_nmi_port || ch < 0)
++		return;
++	/*
++	 * Can't use port->tty->driver_data as tty might be not there. Tasklet
++	 * will check for tty and will get the ref, but here we don't have to
++	 * do that, and actually, we can't: we're in NMI context, no locks are
++	 * possible.
++	 */
++	priv = kgdb_nmi_port_to_priv(kgdb_nmi_port);
++	kfifo_in(&priv->fifo, &c, 1);
++	kgdb_tty_poke();
++}
++
++static int kgdb_nmi_poll_one_knock(void)
++{
++	static int n;
++	int c = -1;
++	const char *magic = kgdb_nmi_magic;
++	size_t m = strlen(magic);
++	bool printch = 0;
++
++	c = dbg_io_ops->read_char();
++	if (c == NO_POLL_CHAR)
++		return c;
++
++	if (!kgdb_nmi_knock && (c == '\r' || c == '\n')) {
++		return 1;
++	} else if (c == magic[n]) {
++		n = (n + 1) % m;
++		if (!n)
++			return 1;
++		printch = 1;
++	} else {
++		n = 0;
++	}
++
++	if (kgdb_nmi_tty_enabled) {
++		kgdb_tty_recv(c);
++		return 0;
++	}
++
++	if (printch) {
++		kdb_printf("%c", c);
++		return 0;
++	}
++
++	kdb_printf("\r%s %s to enter the debugger> %*s",
++		   kgdb_nmi_knock ? "Type" : "Hit",
++		   kgdb_nmi_knock ? magic  : "<return>", m, "");
++	while (m--)
++		kdb_printf("\b");
++	return 0;
++}
++
++/**
++ * kgdb_nmi_poll_knock - Check if it is time to enter the debugger
++ *
++ * "Serial ports are often noisy, especially when muxed over another port (we
++ * often use serial over the headset connector). Noise on the async command
++ * line just causes characters that are ignored, on a command line that blocked
++ * execution noise would be catastrophic." -- Colin Cross
++ *
++ * So, this function implements KGDB/KDB knocking on the serial line: we won't
++ * enter the debugger until we receive a known magic phrase (which is actually
++ * "$3#33", known as "escape to KDB" command. There is also a relaxed variant
++ * of knocking, i.e. just pressing the return key is enough to enter the
++ * debugger. And if knocking is disabled, the function always returns 1.
++ */
++bool kgdb_nmi_poll_knock(void)
++{
++	if (kgdb_nmi_knock < 0)
++		return 1;
++
++	dbg_io_ops->clear_irqs();
++
++	while (1) {
++		int ret;
++
++		ret = kgdb_nmi_poll_one_knock();
++		if (ret == NO_POLL_CHAR)
++			return 0;
++		else if (ret == 1)
++			break;
++	}
++	return 1;
++}
++
++/*
++ * The tasklet is cheap, it does not cause wakeups when reschedules itself,
++ * instead it waits for the next tick.
++ */
++static void kgdb_nmi_tty_receiver(unsigned long data)
++{
++	struct kgdb_nmi_tty_priv *priv = (void *)data;
++	struct tty_struct *tty;
++	char ch;
++
++	tasklet_schedule(&priv->tlet);
++
++	if (likely(!kgdb_nmi_tty_enabled || !kfifo_len(&priv->fifo)))
++		return;
++
++	/* Port is there, but tty might be hung up, check. */
++	tty = tty_port_tty_get(kgdb_nmi_port);
++	if (!tty)
++		return;
++
++	while (kfifo_out(&priv->fifo, &ch, 1))
++		tty_insert_flip_char(priv->port.tty, ch, TTY_NORMAL);
++	tty_flip_buffer_push(priv->port.tty);
++
++	tty_kref_put(tty);
++}
++
++static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
++{
++	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
++
++	kgdb_nmi_port = port;
++	tasklet_schedule(&priv->tlet);
++	return 0;
++}
++
++static void kgdb_nmi_tty_shutdown(struct tty_port *port)
++{
++	struct kgdb_nmi_tty_priv *priv = port->tty->driver_data;
++
++	tasklet_kill(&priv->tlet);
++	kgdb_nmi_port = NULL;
++}
++
++static const struct tty_port_operations kgdb_nmi_tty_port_ops = {
++	.activate	= kgdb_nmi_tty_activate,
++	.shutdown	= kgdb_nmi_tty_shutdown,
++};
++
++static int kgdb_nmi_tty_install(struct tty_driver *drv, struct tty_struct *tty)
++{
++	struct kgdb_nmi_tty_priv *priv;
++	int ret;
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	INIT_KFIFO(priv->fifo);
++	tasklet_init(&priv->tlet, kgdb_nmi_tty_receiver, (unsigned long)priv);
++	tty_port_init(&priv->port);
++	priv->port.ops = &kgdb_nmi_tty_port_ops;
++	tty->driver_data = priv;
++
++	ret = tty_port_install(&priv->port, drv, tty);
++	if (ret) {
++		pr_err("%s: can't nstall tty port: %d\n", __func__, ret);
++		goto err;
++	}
++	return 0;
++err:
++	kfree(priv);
++	return ret;
++}
++
++static void kgdb_nmi_tty_cleanup(struct tty_struct *tty)
++{
++	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
++
++	tty->driver_data = NULL;
++	kfree(priv);
++}
++
++static int kgdb_nmi_tty_open(struct tty_struct *tty, struct file *file)
++{
++	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
++
++	return tty_port_open(&priv->port, tty, file);
++}
++
++static void kgdb_nmi_tty_close(struct tty_struct *tty, struct file *file)
++{
++	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
++
++	tty_port_close(&priv->port, tty, file);
++}
++
++static int kgdb_nmi_tty_write_room(struct tty_struct *tty)
++{
++	/* Actually, we can handle any amount as we use polled writes. */
++	return 2048;
++}
++
++static int kgdb_nmi_tty_write(struct tty_struct *tty, const unchar *buf, int c)
++{
++	int i;
++
++	for (i = 0; i < c; i++)
++		dbg_io_ops->write_char(buf[i]);
++	return c;
++}
++
++static const struct tty_operations kgdb_nmi_tty_ops = {
++	.open		= kgdb_nmi_tty_open,
++	.close		= kgdb_nmi_tty_close,
++	.install	= kgdb_nmi_tty_install,
++	.cleanup	= kgdb_nmi_tty_cleanup,
++	.write_room	= kgdb_nmi_tty_write_room,
++	.write		= kgdb_nmi_tty_write,
++};
++
++static int kgdb_nmi_enable_console(int argc, const char *argv[])
++{
++	kgdb_nmi_tty_enabled = !(argc == 1 && !strcmp(argv[1], "off"));
++	return 0;
++}
++
++int kgdb_register_nmi_console(void)
++{
++	int ret;
++
++	kgdb_nmi_tty_driver = alloc_tty_driver(1);
++	if (!kgdb_nmi_tty_driver) {
++		pr_err("%s: cannot allocate tty\n", __func__);
++		return -ENOMEM;
++	}
++	kgdb_nmi_tty_driver->driver_name	= "ttyNMI";
++	kgdb_nmi_tty_driver->name		= "ttyNMI";
++	kgdb_nmi_tty_driver->num		= 1;
++	kgdb_nmi_tty_driver->type		= TTY_DRIVER_TYPE_SERIAL;
++	kgdb_nmi_tty_driver->subtype		= SERIAL_TYPE_NORMAL;
++	kgdb_nmi_tty_driver->flags		= TTY_DRIVER_REAL_RAW;
++	kgdb_nmi_tty_driver->init_termios	= tty_std_termios;
++	tty_termios_encode_baud_rate(&kgdb_nmi_tty_driver->init_termios,
++				     KGDB_NMI_BAUD, KGDB_NMI_BAUD);
++	tty_set_operations(kgdb_nmi_tty_driver, &kgdb_nmi_tty_ops);
++
++	ret = tty_register_driver(kgdb_nmi_tty_driver);
++	if (ret) {
++		pr_err("%s: can't register tty driver: %d\n", __func__, ret);
++		goto err_drv_reg;
++	}
++
++	ret = kdb_register("nmi_console", kgdb_nmi_enable_console, "[off]",
++			   "switch to Linux NMI console", 0);
++	if (ret) {
++		pr_err("%s: can't register kdb command: %d\n", __func__, ret);
++		goto err_kdb_reg;
++	}
++
++	register_console(&kgdb_nmi_console);
++	kgdb_enable_nmi(1);
++
++	return 0;
++err_kdb_reg:
++	tty_unregister_driver(kgdb_nmi_tty_driver);
++err_drv_reg:
++	put_tty_driver(kgdb_nmi_tty_driver);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(kgdb_register_nmi_console);
++
++int kgdb_unregister_nmi_console(void)
++{
++	int ret;
++
++	kgdb_enable_nmi(0);
++	kdb_unregister("nmi_console");
++
++	ret = unregister_console(&kgdb_nmi_console);
++	if (ret)
++		return ret;
++
++	ret = tty_unregister_driver(kgdb_nmi_tty_driver);
++	if (ret)
++		return ret;
++	put_tty_driver(kgdb_nmi_tty_driver);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kgdb_unregister_nmi_console);
+diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
+index 0aa08c8..bb69803 100644
+--- a/drivers/tty/serial/kgdboc.c
++++ b/drivers/tty/serial/kgdboc.c
+@@ -145,6 +145,8 @@ __setup("kgdboc=", kgdboc_option_setup);
+ 
+ static void cleanup_kgdboc(void)
+ {
++	if (kgdb_unregister_nmi_console())
++		return;
+ 	kgdboc_unregister_kbd();
+ 	if (configured == 1)
+ 		kgdb_unregister_io_module(&kgdboc_io_ops);
+@@ -198,6 +200,10 @@ do_register:
+ 	if (err)
+ 		goto noconfig;
+ 
++	err = kgdb_register_nmi_console();
++	if (err)
++		goto noconfig;
++
+ 	configured = 1;
+ 
+ 	return 0;
+diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+index 1fd1cf0..fb7c55c 100644
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -245,6 +245,16 @@ extern void kgdb_arch_enable_nmi(bool on);
   */
+ extern int kgdb_enable_nmi(bool on);
  
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
--#error "sizeof(struct pt_regs) must be a multiple of 8"
--#endif
--
--	.macro	usr_entry
-- UNWIND(.fnstart	)
-- UNWIND(.cantunwind	)	@ don't unwind the user space
--	sub	sp, sp, #S_FRAME_SIZE
-- ARM(	stmib	sp, {r1 - r12}	)
-- THUMB(	stmia	sp, {r0 - r12}	)
--
--	ldmia	r0, {r3 - r5}
--	add	r0, sp, #S_PC		@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""     ""        ""
--
--	str	r3, [sp]		@ save the "real" r0 copied
--					@ from the exception stack
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	@ Also, separately save sp_usr and lr_usr
--	@
--	stmia	r0, {r4 - r6}
-- ARM(	stmdb	r0, {sp, lr}^			)
-- THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
--
--	@
--	@ Enable the alignment trap while in kernel mode
--	@
--	alignment_trap r0
--
--	@
--	@ Clear FP to mark the first stack frame
--	@
--	zero_fp
--
--#ifdef CONFIG_IRQSOFF_TRACER
--	bl	trace_hardirqs_off
--#endif
--	.endm
--
--	.macro	kuser_cmpxchg_check
--#if !defined(CONFIG_CPU_32v6K) && !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
--#ifndef CONFIG_MMU
--#warning "NPTL on non MMU needs fixing"
--#else
--	@ Make sure our user space atomic helper is restarted
--	@ if it was interrupted in a critical region.  Here we
--	@ perform a quick test inline since it should be false
--	@ 99.9999% of the time.  The rest is done out of line.
--	cmp	r4, #TASK_SIZE
--	blhs	kuser_cmpxchg64_fixup
--#endif
--#endif
--	.endm
--
- 	.align	5
- __dabt_usr:
- 	usr_entry
-@@ -846,6 +732,7 @@ __kuser_cmpxchg64:				@ 0xffff0f60
- 	ldmfd	sp!, {r4, r5, r6, pc}
- 
- 	.text
-+	.global kuser_cmpxchg64_fixup
- kuser_cmpxchg64_fixup:
- 	@ Called from kuser_cmpxchg_fixup.
- 	@ r4 = address of interrupted insn (must be preserved).
-@@ -976,58 +863,6 @@ __kuser_helper_end:
- 
-  THUMB(	.thumb	)
- 
--/*
-- * Vector stubs.
-- *
-- * This code is copied to 0xffff0200 so we can use branches in the
-- * vectors, rather than ldr's.  Note that this code must not
-- * exceed 0x300 bytes.
-- *
-- * Common stub entry macro:
-- *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-- *
-- * SP points to a minimal amount of processor-private memory, the address
-- * of which is copied into r0 for the mode specific abort handler.
-- */
--	.macro	vector_stub, name, mode, correction=0
--	.align	5
--
--vector_\name:
--	.if \correction
--	sub	lr, lr, #\correction
--	.endif
--
--	@
--	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
--	@ (parent CPSR)
--	@
--	stmia	sp, {r0, lr}		@ save r0, lr
--	mrs	lr, spsr
--	str	lr, [sp, #8]		@ save spsr
--
--	@
--	@ Prepare for SVC32 mode.  IRQs remain disabled.
--	@
--	mrs	r0, cpsr
--	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
--	msr	spsr_cxsf, r0
--
--	@
--	@ the branch table must immediately follow this code
--	@
--	and	lr, lr, #0x0f
-- THUMB(	adr	r0, 1f			)
-- THUMB(	ldr	lr, [r0, lr, lsl #2]	)
--	mov	r0, sp
-- ARM(	ldr	lr, [pc, lr, lsl #2]	)
--	movs	pc, lr			@ branch to handler in SVC mode
--ENDPROC(vector_\name)
--
--	.align	2
--	@ handler addresses follow this label
--1:
--	.endm
--
- 	.globl	__stubs_start
- __stubs_start:
- /*
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 9a8531e..c3c09ac 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -73,6 +73,109 @@
- 	msr	cpsr_c, \rtemp			@ switch back to the SVC mode
- 	.endm
- 
-+/*
-+ * Vector stubs.
-+ *
-+ * This code is copied to 0xffff0200 so we can use branches in the
-+ * vectors, rather than ldr's.  Note that this code must not
-+ * exceed 0x300 bytes.
-+ *
-+ * Common stub entry macro:
-+ *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-+ *
-+ * SP points to a minimal amount of processor-private memory, the address
-+ * of which is copied into r0 for the mode specific abort handler.
-+ */
-+	.macro	vector_stub, name, mode, correction=0
-+	.align	5
-+
-+vector_\name:
-+	.if \correction
-+	sub	lr, lr, #\correction
-+	.endif
-+
-+	@
-+	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
-+	@ (parent CPSR)
-+	@
-+	stmia	sp, {r0, lr}		@ save r0, lr
-+	mrs	lr, spsr
-+	str	lr, [sp, #8]		@ save spsr
-+
-+	@
-+	@ Prepare for SVC32 mode.  IRQs remain disabled.
-+	@
-+	mrs	r0, cpsr
-+	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
-+	msr	spsr_cxsf, r0
-+
-+	@
-+	@ the branch table must immediately follow this code
-+	@
-+	and	lr, lr, #0x0f
-+ THUMB(	adr	r0, 1f			)
-+ THUMB(	ldr	lr, [r0, lr, lsl #2]	)
-+	mov	r0, sp
-+ ARM(	ldr	lr, [pc, lr, lsl #2]	)
-+	movs	pc, lr			@ branch to handler in SVC mode
-+ENDPROC(vector_\name)
-+
-+	.align	2
-+	@ handler addresses follow this label
-+1:
-+	.endm
-+
-+/*
-+ * SVC mode handlers
-+ */
-+
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
-+#define SPFIX(code...) code
++#ifdef CONFIG_SERIAL_KGDB_NMI
++extern int kgdb_register_nmi_console(void);
++extern int kgdb_unregister_nmi_console(void);
++extern bool kgdb_nmi_poll_knock(void);
 +#else
-+#define SPFIX(code...)
++static inline int kgdb_register_nmi_console(void) { return 0; }
++static inline int kgdb_unregister_nmi_console(void) { return 0; }
++static inline bool kgdb_nmi_poll_knock(void) { return 1; }
 +#endif
 +
-+	.macro	svc_entry, stack_hole=0
-+ UNWIND(.fnstart		)
-+ UNWIND(.save {r0 - pc}		)
-+	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+#ifdef CONFIG_THUMB2_KERNEL
-+ SPFIX(	str	r0, [sp]	)	@ temporarily saved
-+ SPFIX(	mov	r0, sp		)
-+ SPFIX(	tst	r0, #4		)	@ test original stack alignment
-+ SPFIX(	ldr	r0, [sp]	)	@ restored
-+#else
-+ SPFIX(	tst	sp, #4		)
-+#endif
-+ SPFIX(	subeq	sp, sp, #4	)
-+	stmia	sp, {r1 - r12}
-+
-+	ldmia	r0, {r3 - r5}
-+	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""      ""       ""
-+	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+ SPFIX(	addeq	r2, r2, #4	)
-+	str	r3, [sp, #-4]!		@ save the "real" r0 copied
-+					@ from the exception stack
-+
-+	mov	r3, lr
-+
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r2 - sp_svc
-+	@  r3 - lr_svc
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	stmia	r7, {r2 - r6}
-+
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+	.endm
-+
- #ifndef CONFIG_THUMB2_KERNEL
- 	.macro	svc_exit, rpsr
- 	msr	spsr_cxsf, \rpsr
-@@ -164,6 +267,73 @@
- #endif	/* !CONFIG_THUMB2_KERNEL */
- 
- /*
-+ * User mode handlers
-+ *
-+ * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
-+ */
-+
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
-+#error "sizeof(struct pt_regs) must be a multiple of 8"
-+#endif
-+
-+	.macro	usr_entry
-+ UNWIND(.fnstart	)
-+ UNWIND(.cantunwind	)	@ don't unwind the user space
-+	sub	sp, sp, #S_FRAME_SIZE
-+ ARM(	stmib	sp, {r1 - r12}	)
-+ THUMB(	stmia	sp, {r0 - r12}	)
-+
-+	ldmia	r0, {r3 - r5}
-+	add	r0, sp, #S_PC		@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""     ""        ""
-+
-+	str	r3, [sp]		@ save the "real" r0 copied
-+					@ from the exception stack
-+
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	@ Also, separately save sp_usr and lr_usr
-+	@
-+	stmia	r0, {r4 - r6}
-+ ARM(	stmdb	r0, {sp, lr}^			)
-+ THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
-+
-+	@
-+	@ Enable the alignment trap while in kernel mode
-+	@
-+	alignment_trap r0
-+
-+	@
-+	@ Clear FP to mark the first stack frame
-+	@
-+	zero_fp
-+
-+#ifdef CONFIG_IRQSOFF_TRACER
-+	bl	trace_hardirqs_off
-+#endif
-+	.endm
-+
-+	.macro	kuser_cmpxchg_check
-+#if !defined(CONFIG_CPU_32v6K) && !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
-+#ifndef CONFIG_MMU
-+#warning "NPTL on non MMU needs fixing"
-+#else
-+	@ Make sure our user space atomic helper is restarted
-+	@ if it was interrupted in a critical region.  Here we
-+	@ perform a quick test inline since it should be false
-+	@ 99.9999% of the time.  The rest is done out of line.
-+	cmp	r4, #TASK_SIZE
-+	blhs	kuser_cmpxchg64_fixup
-+#endif
-+#endif
-+	.endm
-+
-+/*
-  * These are the registers used in the syscall handler, and allow us to
-  * have in theory up to 7 arguments to a function - r0 to r6.
-  *
+ /**
+  * struct kgdb_arch - Describe architecture specific values.
+  * @gdb_bpt_instr: The instruction to trigger a breakpoint.
 -- 
 1.7.11.5
 
