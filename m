@@ -1,253 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab2IKCtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 22:49:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52913 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab2IKCtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 22:49:51 -0400
-X-IronPort-AV: E=Sophos;i="4.80,401,1344182400"; 
-   d="scan'208";a="5817600"
-Message-ID: <504EA827.3000700@cn.fujitsu.com>
-Date: Tue, 11 Sep 2012 10:55:35 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1757989Ab2IKCut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 22:50:49 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37063 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2IKCur (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Sep 2012 22:50:47 -0400
+Message-ID: <504EA6FE.7070405@linux.vnet.ibm.com>
+Date: Tue, 11 Sep 2012 10:50:38 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [V4 PATCH 02/26] memory_hotplug: fix missing nodemask management
-References: <1347267558-6707-1-git-send-email-laijs@cn.fujitsu.com> <1347267558-6707-3-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1347267558-6707-3-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 10:49:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/11 10:49:17,
-	Serialize complete at 2012/09/11 10:49:17
-Content-Transfer-Encoding: 7bit
+To: Pekka Enberg <penberg@kernel.org>
+CC: paulmck@linux.vnet.ibm.com, Christoph Lameter <cl@linux.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] slab: fix the DEADLOCK issue on l3 alien lock
+References: <5044692D.7080608@linux.vnet.ibm.com> <5046B9EE.7000804@linux.vnet.ibm.com> <0000013996b6f21d-d45be653-3111-4aef-b079-31dc673e6fd8-000000@email.amazonses.com>	<504812E7.3000700@linux.vnet.ibm.com>	<20120906222933.GR2448@linux.vnet.ibm.com> <CAOJsxLFA1sk4KZkRuPL_giktSkFK_g7w-mGi_OEQ9fVXF2UVzw@mail.gmail.com>
+In-Reply-To: <CAOJsxLFA1sk4KZkRuPL_giktSkFK_g7w-mGi_OEQ9fVXF2UVzw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091102-5816-0000-0000-000004661885
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/10/2012 04:58 PM, Lai Jiangshan Wrote:
-> Currently memory_hotplug only manages the node_states[N_HIGH_MEMORY],
-> it forgot to manage node_states[N_NORMAL_MEMORY]. fix it.
+On 09/08/2012 04:39 PM, Pekka Enberg wrote:
+> On Fri, Sep 7, 2012 at 1:29 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+>> On Thu, Sep 06, 2012 at 11:05:11AM +0800, Michael Wang wrote:
+>>> On 09/05/2012 09:55 PM, Christoph Lameter wrote:
+>>>> On Wed, 5 Sep 2012, Michael Wang wrote:
+>>>>
+>>>>> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+>>>>> fake report generated.
+>>>>
+>>>> Ahh... That is a key insight into why this occurs.
+>>>>
+>>>>> This should not happen since we already have init_lock_keys() which will
+>>>>> reassign the lock class for both l3 list and l3 alien.
+>>>>
+>>>> Right. I was wondering why we still get intermitted reports on this.
+>>>>
+>>>>> This patch will invoke init_lock_keys() after we done enable_cpucache()
+>>>>> instead of before to avoid the fake DEADLOCK report.
+>>>>
+>>>> Acked-by: Christoph Lameter <cl@linux.com>
+>>>
+>>> Thanks for your review.
+>>>
+>>> And add Paul to the cc list(my skills on mailing is really poor...).
+>>
+>> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> Add check_nodemasks_changes_online() and check_nodemasks_changes_offline
-> to detect do node_states[N_HIGH_MEMORY] and node_states[N_NORMAL_MEMORY]
-> are changed while hotplug.
-> 
-> Also add @status_change_nid_normal to struct memory_notify, thus
-> the memory hotplug callbacks know whether the node_states[N_NORMAL_MEMORY]
-> are changed.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  Documentation/memory-hotplug.txt |    5 ++-
->  include/linux/memory.h           |    1 +
->  mm/memory_hotplug.c              |   94 +++++++++++++++++++++++++++++++------
->  3 files changed, 83 insertions(+), 17 deletions(-)
-> 
-> diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-> index 6d0c251..6e6cbc7 100644
-> --- a/Documentation/memory-hotplug.txt
-> +++ b/Documentation/memory-hotplug.txt
-> @@ -377,15 +377,18 @@ The third argument is passed by pointer of struct memory_notify.
->  struct memory_notify {
->         unsigned long start_pfn;
->         unsigned long nr_pages;
-> +       int status_change_nid_normal;
->         int status_change_nid;
->  }
->  
->  start_pfn is start_pfn of online/offline memory.
->  nr_pages is # of pages of online/offline memory.
-> +status_change_nid_normal is set node id when N_NORMAL_MEMORY of nodemask
-> +is (will be) set/clear, if this is -1, then nodemask status is not changed.
->  status_change_nid is set node id when N_HIGH_MEMORY of nodemask is (will be)
->  set/clear. It means a new(memoryless) node gets new memory by online and a
->  node loses all memory. If this is -1, then nodemask status is not changed.
-> -If status_changed_nid >= 0, callback should create/discard structures for the
-> +If status_changed_nid* >= 0, callback should create/discard structures for the
->  node if necessary.
->  
->  --------------
-> diff --git a/include/linux/memory.h b/include/linux/memory.h
-> index 1ac7f6e..6b9202b 100644
-> --- a/include/linux/memory.h
-> +++ b/include/linux/memory.h
-> @@ -53,6 +53,7 @@ int arch_get_memory_phys_device(unsigned long start_pfn);
->  struct memory_notify {
->  	unsigned long start_pfn;
->  	unsigned long nr_pages;
-> +	int status_change_nid_normal;
->  	int status_change_nid;
->  };
->  
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 3ad25f9..8c3bcf6 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -456,6 +456,34 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
->  	return 0;
->  }
->  
-> +static void check_nodemasks_changes_online(unsigned long nr_pages,
-> +	struct zone *zone, struct memory_notify *arg)
-> +{
-> +	int nid = zone_to_nid(zone);
-> +	enum zone_type zone_last = ZONE_NORMAL;
-> +
-> +	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-> +		zone_last = ZONE_MOVABLE;
-> +
-> +	if (zone_idx(zone) <= zone_last && !node_state(nid, N_NORMAL_MEMORY))
-> +		arg->status_change_nid_normal = nid;
-> +	else
-> +		arg->status_change_nid_normal = -1;
-> +
-> +	if (!node_state(nid, N_HIGH_MEMORY))
-> +		arg->status_change_nid = nid;
-> +	else
-> +		arg->status_change_nid = -1;
-> +}
-> +
-> +static void set_nodemasks(int node, struct memory_notify *arg)
-> +{
-> +	if (arg->status_change_nid_normal >= 0)
-> +		node_set_state(node, N_NORMAL_MEMORY);
-> +
-> +	node_set_state(node, N_HIGH_MEMORY);
-> +}
-> +
->  
->  int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
->  {
-> @@ -467,13 +495,18 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
->  	struct memory_notify arg;
->  
->  	lock_memory_hotplug();
-> +	/*
-> +	 * This doesn't need a lock to do pfn_to_page().
-> +	 * The section can't be removed here because of the
-> +	 * memory_block->state_mutex.
-> +	 */
+> I'd also like to tag this for the stable tree to avoid bogus lockdep
+> reports. How far back in release history should we queue this?
+Hi, Pekka
 
-If we hotremove memory, we remove the section without memory_block->state_mutex,
-it is fixed by the following patch:
-https://lkml.org/lkml/2012/9/5/162
+Sorry for the delayed reply, I try to find out the reason for commit
+30765b92 but not get it yet, so I add Peter to the cc list.
 
-Thanks
-Wen Congyang
+The below patch for release 3.0.0 is the one to cause the bogus report.
 
-> +	zone = page_zone(pfn_to_page(pfn));
-> +
->  	arg.start_pfn = pfn;
->  	arg.nr_pages = nr_pages;
-> -	arg.status_change_nid = -1;
-> +	check_nodemasks_changes_online(nr_pages, zone, &arg);
->  
->  	nid = page_to_nid(pfn_to_page(pfn));
-> -	if (node_present_pages(nid) == 0)
-> -		arg.status_change_nid = nid;
->  
->  	ret = memory_notify(MEM_GOING_ONLINE, &arg);
->  	ret = notifier_to_errno(ret);
-> @@ -483,12 +516,6 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
->  		return ret;
->  	}
->  	/*
-> -	 * This doesn't need a lock to do pfn_to_page().
-> -	 * The section can't be removed here because of the
-> -	 * memory_block->state_mutex.
-> -	 */
-> -	zone = page_zone(pfn_to_page(pfn));
-> -	/*
->  	 * If this zone is not populated, then it is not in zonelist.
->  	 * This means the page allocator ignores this zone.
->  	 * So, zonelist must be updated after online.
-> @@ -513,7 +540,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
->  	zone->present_pages += onlined_pages;
->  	zone->zone_pgdat->node_present_pages += onlined_pages;
->  	if (onlined_pages) {
-> -		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-> +		set_nodemasks(zone_to_nid(zone), &arg);
->  		if (need_zonelists_rebuild)
->  			build_all_zonelists(NULL, zone);
->  		else
-> @@ -866,6 +893,44 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
->  	return offlined;
->  }
->  
-> +static void check_nodemasks_changes_offline(unsigned long nr_pages,
-> +		struct zone *zone, struct memory_notify *arg)
-> +{
-> +	struct pglist_data *pgdat = zone->zone_pgdat;
-> +	unsigned long present_pages = 0;
-> +	enum zone_type zt, zone_last = ZONE_NORMAL;
-> +
-> +	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-> +		zone_last = ZONE_MOVABLE;
-> +
-> +	for (zt = 0; zt <= zone_last; zt++)
-> +		present_pages += pgdat->node_zones[zt].present_pages;
-> +	if (zone_idx(zone) <= zone_last && nr_pages >= present_pages)
-> +		arg->status_change_nid_normal = zone_to_nid(zone);
-> +	else
-> +		arg->status_change_nid_normal = -1;
-> +
-> +	zone_last = ZONE_MOVABLE;
-> +	for (; zt <= zone_last; zt++)
-> +		present_pages += pgdat->node_zones[zt].present_pages;
-> +	if (nr_pages >= present_pages)
-> +		arg->status_change_nid = zone_to_nid(zone);
-> +	else
-> +		arg->status_change_nid = -1;
-> +}
-> +
-> +static void clear_nodemasks(int node, struct memory_notify *arg)
-> +{
-> +	if (arg->status_change_nid_normal >= 0)
-> +		node_clear_state(node, N_NORMAL_MEMORY);
-> +
-> +	if (N_HIGH_MEMORY == N_NORMAL_MEMORY)
-> +		return;
-> +
-> +	if (arg->status_change_nid >= 0)
-> +		node_clear_state(node, N_HIGH_MEMORY);
-> +}
-> +
->  static int __ref offline_pages(unsigned long start_pfn,
->  		  unsigned long end_pfn, unsigned long timeout)
->  {
-> @@ -899,9 +964,7 @@ static int __ref offline_pages(unsigned long start_pfn,
->  
->  	arg.start_pfn = start_pfn;
->  	arg.nr_pages = nr_pages;
-> -	arg.status_change_nid = -1;
-> -	if (nr_pages >= node_present_pages(node))
-> -		arg.status_change_nid = node;
-> +	check_nodemasks_changes_offline(nr_pages, zone, &arg);
->  
->  	ret = memory_notify(MEM_GOING_OFFLINE, &arg);
->  	ret = notifier_to_errno(ret);
-> @@ -969,10 +1032,9 @@ repeat:
->  	if (!populated_zone(zone))
->  		zone_pcp_reset(zone);
->  
-> -	if (!node_present_pages(node)) {
-> -		node_clear_state(node, N_HIGH_MEMORY);
-> +	clear_nodemasks(node, &arg);
-> +	if (arg.status_change_nid >= 0)
->  		kswapd_stop(node);
-> -	}
->  
->  	vm_total_pages = nr_free_pagecache_pages();
->  	writeback_set_ratelimit();
+commit 30765b92ada267c5395fc788623cb15233276f5c
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Thu Jul 28 23:22:56 2011 +0200
+
+    slab, lockdep: Annotate the locks before using them
+
+    Fernando found we hit the regular OFF_SLAB 'recursion' before we
+    annotate the locks, cure this.
+
+    The relevant portion of the stack-trace:
+
+    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
+    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
+    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
+    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
+    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
+    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
+    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
+    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
+    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
+    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
+
+    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+    Acked-by: Pekka Enberg <penberg@kernel.org>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+It moved init_lock_keys() before we build up the alien, so we failed to
+reclass it.
+
+Regards,
+Michael Wang
+
+> 
 
