@@ -1,87 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261Ab2IKL7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 07:59:25 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:46814 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759048Ab2IKL7W (ORCPT
+	id S1759290Ab2IKMAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 08:00:11 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34193 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759100Ab2IKMAI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 07:59:22 -0400
-Date: Tue, 11 Sep 2012 14:54:50 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Shubhrajyoti <shubhrajyoti@ti.com>
-Cc: balbi@ti.com, Kevin Hilman <khilman@deeprootsystems.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-serial@vger.kernel.org, Sourav Poddar <sourav.poddar@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        alan@linux.intel.com
-Subject: Re: [PATCH v4 00/21] OMAP UART Patches
-Message-ID: <20120911115449.GH18907@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <20120906122948.GC29202@arwen.pp.htv.fi>
- <1346935540-1792-1-git-send-email-balbi@ti.com>
- <87harahiv6.fsf@deeprootsystems.com>
- <20120907054932.GB3136@arwen.pp.htv.fi>
- <87oblhmu6g.fsf@deeprootsystems.com>
- <20120908190423.GA14771@arwen.pp.htv.fi>
- <504F20FA.7020003@ti.com>
+	Tue, 11 Sep 2012 08:00:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGu/vTNewDGZ7tmp"
-Content-Disposition: inline
-In-Reply-To: <504F20FA.7020003@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87har6kmfx.fsf@devron.myhome.or.jp>
+References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
+	<20120904161747.GJ23464@ZenIV.linux.org.uk>
+	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
+	<87harc34d9.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
+	<87y5knz6l5.fsf@devron.myhome.or.jp>
+	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
+	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
+	<1347020137.2223.13.camel@iscandar.digidescorp.com>
+	<87oblfpmnb.fsf@devron.myhome.or.jp>
+	<87k3w3ph8d.fsf@devron.myhome.or.jp>
+	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
+	<87har6kmfx.fsf@devron.myhome.or.jp>
+Date: Tue, 11 Sep 2012 21:00:07 +0900
+Message-ID: <CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        bfields@fieldses.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/9/10, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> Yes, It is  true(current VFAT of -mm tree is not stable). Although we
+>> set lookupcache=none while mounting, ESTALE error can still occur in
+>> rename case.
+>> So there still remain ESTALE error issue from rename case on current -mm
+>> tree.
+>> plz See the step as the following
+>> 1. on client write to file.
+>> 2. on client, move/rename file.
+>> 3. on server, do drop_caches. etc to somehow evict indoe number so
+>> that it gets new inode number
+>> 4. on client, resume the program to write to file. write will fail
+>> (write: Stale NFS file handle)
+>
+Hi OGAWA.
+> Since rename() will be disabled on stable ino patches, this will be
+> unfixable, so rather maybe it is worse.
+Currently with our patchset : only rename issue (could not find any
+correct approach to ignore this. If we do not update this immediately
+at i_pos change – it is just delaying the problem). And we can return
+EBUSY when rename is called while process is opening file with rename
+limitation. Without our patchset also - the rename issue can occur
+over NFS file access - when the inode is evicted from the SERVER
+cache.
+>
+> Did you checked why it returns -ESTALE?  Or rename() issue also is
+> unfixable on -mm?
+It is reproducible regardless of lookupcache is enable or disable.
+The inode is not found in server inode cache. So when
+d_obtain_alias(inode) is called, it returns ESTALE.
+Call path like this.
+fh_verify()-->nfsd_set_fh_dentry()-->exportfs_decode_fh()-->nop->fh_to_dentry()-->fat_fh_to_dentry()-->generic_fh_to_dentry()-->get_inode()-->fat_nfs_get_inode()
 
---MGu/vTNewDGZ7tmp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+static struct inode *fat_nfs_get_inode(struct super_block *sb,
+                                       u64 ino, u32 generation)
+{
+......
+        inode = ilookup(sb, ino); ->This looks up in inode cache and
+returns null
+        if (inode && generation && (inode->i_generation != generation)) {
+                iput(inode);
+                inode = NULL;
+         }
+        return inode;
+}
 
-On Tue, Sep 11, 2012 at 05:01:06PM +0530, Shubhrajyoti wrote:
-> On Sunday 09 September 2012 12:34 AM, Felipe Balbi wrote:
-> >> In addition, IMO, if this was only tested on Panda (as suggested by
-> >> > earlier cover letters), it really should not have been merged until =
-it
-> >> > got some broader testing.
-> > Shubhro's got his Tested-by tag. I believe he tested on beagleboard and
-> > omap4sdp. Shubhro, can you confirm which platforms you tested the UART
-> > patches ? cheers
-> Felipe I had boot tested on omap3sdp and onap4 sdp and did pm testing
-> on both with omap3 hitting off.
+I think that it is unfixable because we can not know i_pos of inode
+changed by rename.
+And even though we know it, there is no rebuild inode routine in -mm.
+And It even can not fix in our patches.
 
-Thanks ;-)
+>
+>> And ......
+>> If we mount NFS with lookupcache=none, FAT file lookup performance is
+>> severely dropped.
+>> LOOKUP performance is very poor on slow network and slow device. I do
+>> not recommend to disable lookup cache on NFS.
+>> And that is why reconstructing inode is already implemented in other
+>> filesystem (e.g. EXT4, XFS etc..)
+>> Currently lookupcache is enabled by default in NFS, it means users
+>> already have disclosed and experienced ESTALE issues on NFS over VFAT.
+>>
+>> I agree wth you to make NFS over VFAT read-only filesystem to avoid all
+>> issues.
+>> Eventually we can make it writable with rename limitation when we
+>> decide that it is pretty stable in mainline.
+>> So, I suggest to add 'nfs_ro' mount option instead of 'nfs' option.
+>
+> -mm seems to be more stable than I thought. As he said, sounds like
+> rename() is an only known issue on -mm, true?
+Yes, There is only rename issue in stability if we use lookcache is disable.
+But performance will severely be dropped
+But If lookup cache is enable, there are estale and rename issue in -mm.
+>
+> And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
+> like to improve performance by enabling lookupcache.
+We checked this patches when facing estale issue in -mm.
+But It is no use, these patches just retry system call one more when
+estale error.
 
---=20
-balbi
+> I'd like to be knowing the critical reason we have to replace it.
+I arrange to help your decision as the following.
 
---MGu/vTNewDGZ7tmp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+1. lookup cache is enable at default in NFS. So estale error can be
+easily occurred in -mm.
+2. If lookup cache is disable, there is rename issue and file lookup
+performance is dropped in -mm.
+4. If we use our patches, there is rename issue. but we can use VFAT
+over NFS with lookup cache enable.
+5. If we use read-only with our patches, there is no issue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQTyaIAAoJEIaOsuA1yqRES4AP/161NxY2gSXOJW6E7HcGKu5f
-rqRyuL6LEEjYhIxuSyAUn8bvTPfCmWGiswWFoOVbV4xWb1JfZCo1pKUzrqcU6jMs
-EFFMPZDvmS99Eyu5V3WhMZCVvmEl+3pawTf2AmLhxqNKWKTcoHUEEY3SkuVlVWbt
-ZTp/Vj54v+eDkvRu5PwmUQ22radyUK7L9wDSd3INAu6GYgWjijX/2xQRtM7tvmf5
-Zc1LbxH6LW9eWy1jeOVaneNTlLXOXKCo5W0hG7FNoC+2QW4EQsOWMJ6G0Wi9RdPM
-iQQUsrhMe187Ux/76wCuNK0Riv3U0ip5lrhX0H7l6vrFK7JE0srMc1oDxUPuAdhe
-AtQ1j8WNvpfEJCymSmyp53Zuw90d4ZAxstOyho8X4vtpmIeEF6mHmhGf7uuT+xO+
-F4uhev0qZ+GFGQ7L8ZeizFTluxSHwfPKHW+YcRDNf2aKrieXMplDnCd1am5E2tDY
-M+oaE7CeCWSEjZi75tM1xN/a0lDAKIfeSgQkdXCrJa8sdCIqJZe46/LG0zBn5wwi
-OV1HWrZS2zDumQdN1P0nMlIqeljnLNd21u8uYYyLrpNuGJEErLk1T2EQpU2Dpell
-PC0N7oVnPKkiqxrA+CqM5GKt6EOGOu5jwdha4k3tLxv+Ev4JFw2dI/buFq8G4J/z
-diHTtDQCE2GYb55xOWuJ
-=joTh
------END PGP SIGNATURE-----
-
---MGu/vTNewDGZ7tmp--
+Thanks.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
