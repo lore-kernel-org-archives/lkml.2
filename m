@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab2IKKC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 06:02:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33665 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab2IKKC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 06:02:26 -0400
-Message-ID: <504F0C11.8050500@ti.com>
-Date: Tue, 11 Sep 2012 12:01:53 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757497Ab2IKKEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 06:04:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56431 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751572Ab2IKKEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 06:04:40 -0400
+Date: Tue, 11 Sep 2012 12:04:33 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120911100433.GC8058@dhcp22.suse.cz>
+References: <20120910223125.GC7677@google.com>
+ <20120910223355.GD7677@google.com>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: <tony@atomide.com>, <balbi@ti.com>, <linux@arm.linux.org.uk>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <rnayak@ti.com>, <hvaibhav@ti.com>, <peter.ujfalusi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] arm/dts: omap: add dt data for MUSB
-References: <1347345381-4390-1-git-send-email-kishon@ti.com> <504EF587.3080903@ti.com> <CAAe_U6JoW36bWSamHkRV66JX5fZ3QkLQv=4XJr-MuaFgaRjOaA@mail.gmail.com> <504F0053.6000808@ti.com> <CAAe_U6Kanxmvw5mWzGQ-7Jig6K75FA7UwxUipKfp4gURtntrRg@mail.gmail.com>
-In-Reply-To: <CAAe_U6Kanxmvw5mWzGQ-7Jig6K75FA7UwxUipKfp4gURtntrRg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120910223355.GD7677@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2012 11:16 AM, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
-> 
-> On Tue, Sep 11, 2012 at 2:41 PM, Benoit Cousson <b-cousson@ti.com> wrote:
->> On 09/11/2012 10:44 AM, ABRAHAM, KISHON VIJAY wrote:
->>> Hi Benoit,
->>>
->>> On Tue, Sep 11, 2012 at 1:55 PM, Benoit Cousson <b-cousson@ti.com> wrote:
->>>> On 09/11/2012 08:36 AM, Kishon Vijay Abraham I wrote:
->>>>> No major change from the previous version. Just removed the
->>>>> omap-usb2 dt data and sent that as a separate patch.
->>>>
->>>> Well, I think you'd better keep them in the same series :-)
->>>>
->>>>> Rebased on
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git musb
->>>>
->>>> Since it is DTS stuf, you should rebase that on top of the latest
->>>> lo/devel-dt branch. All the latest DTS patches an in there for 3.7.
->>>
->>> The ocp2scp data is not in linux-omap :-( And omap-usb2 has to be a
->>> child of ocp2scp. So I used arm-soc tree to which ocp2scp stuff was
->>> pulled into.
->>
->> Mmm, but from what tree? It did not go through Tony?
->> What arm-soc branch exactly?
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git for-next
-> (or) ocp2scp
+I like the approach in general but see the comments bellow:
 
+On Mon 10-09-12 15:33:55, Tejun Heo wrote:
+[...]
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3855,12 +3855,17 @@ static int mem_cgroup_hierarchy_write(st
+>  	 */
+>  	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
+>  				(val == 1 || val == 0)) {
+> -		if (list_empty(&cont->children))
+> +		if (list_empty(&cont->children)) {
+>  			memcg->use_hierarchy = val;
+> -		else
+> +			/* we're fully hierarchical iff root uses hierarchy */
+> +			if (mem_cgroup_is_root(memcg))
+> +				mem_cgroup_subsys.broken_hierarchy = !val;
+> +		} else {
+>  			retval = -EBUSY;
+> -	} else
+> +		}
+> +	} else {
+>  		retval = -EINVAL;
+> +	}
+>  
+>  out:
+>  	cgroup_unlock();
+> @@ -4953,6 +4958,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  						&per_cpu(memcg_stock, cpu);
+>  			INIT_WORK(&stock->work, drain_local_stock);
+>  		}
+> +		mem_cgroup_subsys.broken_hierarchy = !memcg->use_hierarchy;
 
-OK, here it is:
+Hmmm, this will warn even if we have
+root (default use_hierarchy=0)
+ \
+  A (use_hierarchy=1)
+   \
+    B <- here
 
-+
-+               ocp2scp {
-+                       compatible = "ti,omap-ocp2scp";
-+                       #address-cells = <1>;
-+                       #size-cells = <1>;
-+                       ranges;
-+                       ti,hwmods = "ocp2scp_usb_phy";
-+               };
+which is unfortunate because it will add a noise to a reasonable
+configuration.
+I think this is fixable if you move the warning after 
+cgroup_subsys_state::create and broken_hierarchy would be set only if
+parent is not root and use_hierarchy==0 in mem_cgroup_create. Something
+like:
 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 795e525..d5c93ab 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4973,6 +4973,13 @@ mem_cgroup_create(struct cgroup *cont)
+ 	} else {
+ 		res_counter_init(&memcg->res, NULL);
+ 		res_counter_init(&memcg->memsw, NULL);
++		/*
++		 * Deeper hierachy with use_hierarchy == false doesn't make
++		 * much sense so let cgroup subsystem know about this unfortunate
++		 * state in our controller.
++		 */
++		if (parent && parent != root_mem_cgroup)
++			mem_cgroup_subsys.broken_hierarchy = true;
+ 	}
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
 
-In order to be consistent with the OMAP4 data now, you should update it
-to add the reg, and IRQ if applicable.
+What do you think?
 
-But for that we do need a proper base with ocp2scp + devel-dt.
+>  		hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
+>  	} else {
+>  		parent = mem_cgroup_from_cont(cont->parent);
+> --- a/net/core/netprio_cgroup.c
+> +++ b/net/core/netprio_cgroup.c
+> @@ -330,7 +330,17 @@ struct cgroup_subsys net_prio_subsys = {
+>  	.subsys_id	= net_prio_subsys_id,
+>  #endif
+>  	.base_cftypes	= ss_files,
+> -	.module		= THIS_MODULE
+> +	.module		= THIS_MODULE,
+> +
+> +	/*
+> +	 * net_prio has artificial limit on the number of cgroups and
+> +	 * disallows nesting making it impossible to co-mount it with other
+> +	 * hierarchical subsystems.  Remove the artificially low PRIOIDX_SZ
+> +	 * limit and properly nest configuration such that children follow
+> +	 * their parents' configurations by default and are allowed to
+> +	 * override and remove the following.
+> +	 */
+> +	.broken_hierarchy = trye,
 
-Regards,
-Benoit
+typo
 
+-- 
+Michal Hocko
+SUSE Labs
