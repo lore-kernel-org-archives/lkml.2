@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852Ab2IKAZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Sep 2012 20:25:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47085 "EHLO
+	id S932203Ab2IKA0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Sep 2012 20:26:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48873 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758784Ab2IKAXF (ORCPT
+	with ESMTP id S1758743Ab2IKAW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Sep 2012 20:23:05 -0400
+	Mon, 10 Sep 2012 20:22:59 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
         neilb@suse.de
-Subject: [PATCH v2 19/26] bounce: Refactor __blk_queue_bounce to not use bi_io_vec
-Date: Mon, 10 Sep 2012 17:22:30 -0700
-Message-Id: <1347322957-25260-20-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 14/26] raid1: Refactor narrow_write_error() to not use bi_idx
+Date: Mon, 10 Sep 2012 17:22:25 -0700
+Message-Id: <1347322957-25260-15-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
@@ -22,131 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bunch of what __blk_queue_bounce() was doing was problematic for the
-immutable bvec work; this cleans that up and the code is quite a bit
-smaller, too.
-
-The __bio_for_each_segment() in copy_to_high_bio_irq() was changed
-because that one's looping over the original bio, not the bounce bio -
-since the bounce code doesn't own that bio the __ version wasn't
-correct.
+More bi_idx removal. This code was just open coding bio_clone(). This
+could probably be further improved by using bio_advance() instead of
+skipping over null pages, but that'd be a larger rework.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+CC: NeilBrown <neilb@suse.de>
 ---
- mm/bounce.c | 73 ++++++++++++++++---------------------------------------------
- 1 file changed, 19 insertions(+), 54 deletions(-)
+ drivers/md/raid1.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 0420867..3068300 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -101,7 +101,7 @@ static void copy_to_high_bio_irq(struct bio *to, struct bio *from)
- 	struct bio_vec *tovec, *fromvec;
- 	int i;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index bd3e3b9..b1072da 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2052,8 +2052,6 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 	struct mddev *mddev = r1_bio->mddev;
+ 	struct r1conf *conf = mddev->private;
+ 	struct md_rdev *rdev = conf->mirrors[i].rdev;
+-	int vcnt, idx;
+-	struct bio_vec *vec;
  
--	__bio_for_each_segment(tovec, to, i, 0) {
-+	bio_for_each_segment(tovec, to, i) {
- 		fromvec = from->bi_io_vec + i;
+ 	/* bio has the data to be written to device 'i' where
+ 	 * we just recently had a write error.
+@@ -2081,30 +2079,32 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 		   & ~(sector_t)(block_sectors - 1))
+ 		- sector;
  
- 		/*
-@@ -181,78 +181,43 @@ static void bounce_end_io_read_isa(struct bio *bio, int err)
- static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 			       mempool_t *pool)
- {
--	struct page *page;
--	struct bio *bio = NULL;
--	int i, rw = bio_data_dir(*bio_orig);
-+	struct bio *bio;
-+	int rw = bio_data_dir(*bio_orig);
- 	struct bio_vec *to, *from;
-+	unsigned i;
- 
--	bio_for_each_segment(from, *bio_orig, i) {
--		page = from->bv_page;
-+	bio_for_each_segment(from, *bio_orig, i)
-+		if (page_to_pfn(from->bv_page) > queue_bounce_pfn(q))
-+			goto bounce;
- 
--		/*
--		 * is destination page below bounce pfn?
--		 */
--		if (page_to_pfn(page) <= queue_bounce_pfn(q))
--			continue;
--
--		/*
--		 * irk, bounce it
--		 */
--		if (!bio) {
--			unsigned int cnt = (*bio_orig)->bi_vcnt;
-+	return;
-+bounce:
-+	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
- 
--			bio = bio_alloc(GFP_NOIO, cnt);
--			memset(bio->bi_io_vec, 0, cnt * sizeof(struct bio_vec));
--		}
--			
-+	bio_for_each_segment(to, bio, i) {
-+		struct page *page = to->bv_page;
- 
--		to = bio->bi_io_vec + i;
-+		if (page_to_pfn(page) <= queue_bounce_pfn(q))
-+			continue;
- 
--		to->bv_page = mempool_alloc(pool, q->bounce_gfp);
--		to->bv_len = from->bv_len;
--		to->bv_offset = from->bv_offset;
- 		inc_zone_page_state(to->bv_page, NR_BOUNCE);
-+		to->bv_page = mempool_alloc(pool, q->bounce_gfp);
- 
- 		if (rw == WRITE) {
- 			char *vto, *vfrom;
- 
--			flush_dcache_page(from->bv_page);
-+			flush_dcache_page(page);
-+
- 			vto = page_address(to->bv_page) + to->bv_offset;
--			vfrom = kmap(from->bv_page) + from->bv_offset;
-+			vfrom = kmap_atomic(page) + to->bv_offset;
- 			memcpy(vto, vfrom, to->bv_len);
--			kunmap(from->bv_page);
-+			kunmap_atomic(vfrom);
- 		}
- 	}
- 
--	/*
--	 * no pages bounced
--	 */
--	if (!bio)
--		return;
--
- 	trace_block_bio_bounce(q, *bio_orig);
- 
--	/*
--	 * at least one page was bounced, fill in possible non-highmem
--	 * pages
--	 */
--	__bio_for_each_segment(from, *bio_orig, i, 0) {
--		to = bio_iovec_idx(bio, i);
--		if (!to->bv_page) {
--			to->bv_page = from->bv_page;
--			to->bv_len = from->bv_len;
--			to->bv_offset = from->bv_offset;
--		}
+-	if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
+-		vcnt = r1_bio->behind_page_count;
+-		vec = r1_bio->behind_bvecs;
+-		idx = 0;
+-		while (vec[idx].bv_page == NULL)
+-			idx++;
+-	} else {
+-		vcnt = r1_bio->master_bio->bi_vcnt;
+-		vec = r1_bio->master_bio->bi_io_vec;
+-		idx = r1_bio->master_bio->bi_idx;
 -	}
--
--	bio->bi_bdev = (*bio_orig)->bi_bdev;
- 	bio->bi_flags |= (1 << BIO_BOUNCED);
--	bio->bi_sector = (*bio_orig)->bi_sector;
--	bio->bi_rw = (*bio_orig)->bi_rw;
--
--	bio->bi_vcnt = (*bio_orig)->bi_vcnt;
--	bio->bi_idx = (*bio_orig)->bi_idx;
--	bio->bi_size = (*bio_orig)->bi_size;
+ 	while (sect_to_write) {
+ 		struct bio *wbio;
+ 		if (sectors > sect_to_write)
+ 			sectors = sect_to_write;
+ 		/* Write at 'sector' for 'sectors'*/
  
- 	if (pool == page_pool) {
- 		bio->bi_end_io = bounce_end_io_write;
+-		wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
+-		memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
+-		wbio->bi_sector = r1_bio->sector;
++		if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
++			unsigned vcnt = r1_bio->behind_page_count;
++			struct bio_vec *vec = r1_bio->behind_bvecs;
++
++			while (!vec->bv_page) {
++				vec++;
++				vcnt--;
++			}
++
++			wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
++			memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
++
++			wbio->bi_vcnt = vcnt;
++		} else {
++			wbio = bio_clone_mddev(r1_bio->master_bio, GFP_NOIO, mddev);
++		}
++
+ 		wbio->bi_rw = WRITE;
+-		wbio->bi_vcnt = vcnt;
++		wbio->bi_sector = r1_bio->sector;
+ 		wbio->bi_size = r1_bio->sectors << 9;
+-		wbio->bi_idx = idx;
+ 
+ 		md_trim_bio(wbio, sector - r1_bio->sector, sectors);
+ 		wbio->bi_sector += rdev->data_offset;
 -- 
 1.7.12
 
