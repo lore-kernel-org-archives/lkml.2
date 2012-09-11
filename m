@@ -1,364 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab2IKTur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 15:50:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42748 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760006Ab2IKTud (ORCPT
+	id S1759458Ab2IKTyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 15:54:09 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63753 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab2IKTyF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 15:50:33 -0400
-Date: Tue, 11 Sep 2012 12:50:29 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: "Alasdair G. Kergon" <agk@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tj@kernel.org, bharrosh@panasas.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2] dm: Use bioset's front_pad for dm_target_io
-Message-ID: <20120911195029.GJ19739@google.com>
-References: <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120831014359.GB15218@moria.home.lan>
- <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com>
- <20120904034100.GA21602@moria.home.lan>
- <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com>
- <20120904195156.GE25236@google.com>
- <Pine.LNX.4.64.1209111349210.23947@file.rdu.redhat.com>
+	Tue, 11 Sep 2012 15:54:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=Aa3/NDOVOGTOuZZv4eL
+	kZqjggvNOinwwezVPyruH53dvgQ9GHx0j74xaZBiLNuY/9XjFhSrwfWNpk0whxTq
+	BGg0h5RpjFfVSl0efEBeBlY7jMKuqigrttQ0Apeu4ZLwjADZrYIpfYpgNjRuwzNU
+	WUSs62jfDL1nVtVAOgNOAEOw=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.7.11.6
+Date: Tue, 11 Sep 2012 12:54:02 -0700
+Message-ID: <7v8vcggwth.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1209111349210.23947@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 7030B2C8-FC4A-11E1-A341-BAB72E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 03:28:57PM -0400, Mikulas Patocka wrote:
-> 
-> 
-> On Tue, 4 Sep 2012, Kent Overstreet wrote:
-> 
-> > On Tue, Sep 04, 2012 at 03:26:19PM -0400, Mikulas Patocka wrote:
-> > > 
-> > > 
-> > > On Mon, 3 Sep 2012, Kent Overstreet wrote:
-> > > 
-> > > > On Mon, Sep 03, 2012 at 04:41:37PM -0400, Mikulas Patocka wrote:
-> > > > > ... or another possibility - start a timer when something is put to 
-> > > > > current->bio_list and use that timer to pop entries off current->bio_list 
-> > > > > and submit them to a workqueue. The timer can be cpu-local so only 
-> > > > > interrupt masking is required to synchronize against the timer.
-> > > > > 
-> > > > > This would normally run just like the current kernel and in case of 
-> > > > > deadlock, the timer would kick in and resolve the deadlock.
-> > > > 
-> > > > Ugh. That's a _terrible_ idea.
-> > > > 
-> > > > Remember the old plugging code? You ever have to debug performance
-> > > > issues caused by it?
-> > > 
-> > > Yes, I do remember it (and I fixed one bug that resulted in missed unplug 
-> > > and degraded performance).
-> > > 
-> > > But currently, deadlocks due to exhausted mempools and bios being stalled 
-> > > in current->bio_list don't happen (or do happen below so rarely that they 
-> > > aren't reported).
-> > > 
-> > > If we add a timer, it will turn a deadlock into an i/o delay, but it can't 
-> > > make things any worse.
-> > 
-> > This is all true. I'm not arguing your solution wouldn't _work_... I'd
-> > try and give some real reasoning for my objections but it'll take me
-> > awhile to figure out how to coherently explain it and I'm very sleep
-> > deprived.
-> > 
-> > > Currently, dm targets allocate request-specific data from target-specific 
-> > > mempool. mempools are in dm-crypt, dm-delay, dm-mirror, dm-snapshot, 
-> > > dm-thin, dm-verity. You can change it to allocate request-specific data 
-> > > with the bio.
-> > 
-> > I wrote a patch for dm_target_io last night. I think I know an easy way
-> > to go about converting the rest but it'll probably have to wait until
-> > I'm further along with my immutable bvec stuff.
-> > 
-> > Completely untested patch below:
-> 
-> The patch didn't work (it has random allocation failures and crashes when 
-> the device is closed). The patch also contains some unrelated changes.
-> 
-> I created this patch that does the same thing.
+A maintenance release Git v1.7.11.6 is now available at the
+usual places.
 
-Cool! Thanks for finishing this.
+The release tarballs are found at:
 
-I like your approach with rolling the bio allocation into alloc_tio() -
-it solves a problem I was having with the front_pad not being zeroed -
-but it does prevent the use of bio_clone_bioset(), which is going to
-cause minor issues with my immutable bvec work.
+    http://code.google.com/p/git-core/downloads/list
 
-Perhaps bio_alloc_bioset() should just be changed to zero the front_pad,
-that'd probably be useful elsewhere anyways.
+and their SHA-1 checksums are:
 
-You might want to rebase onto Jens' tree, it has my patches that get rid
-of bi_destructor and the front_pad conversion for request based dm:
+f678531535643806733e8c7e87db77386c48738b  git-1.7.11.6.tar.gz
+e6ccf6cffa3b69dc5d658f43bb8a10ed70b176f2  git-htmldocs-1.7.11.6.tar.gz
+7bbb12429e65184d9462dfc01b104a4780bc67a8  git-manpages-1.7.11.6.tar.gz
 
-git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git for-next
+Also the following public repositories all have a copy of the v1.7.11.6
+tag and the maint-1.7.11 branch that the tag points at:
 
-> 
-> Mikulas
-> 
-> ---
-> Use front pad to allocate dm_target_io
-> 
-> dm_target_io was previously allocated from a mempool. For each
-> dm_target_io, there is exactly one bio allocated from a bioset.
-> 
-> This patch merges these two allocations into one allocating: we create a
-> bioset with front_pad equal to the size of dm_target_io - so that every
-> bio allocated from the bioset has sizeof(struct dm_target_io) bytes
-> before it. We allocate a bio and use the bytes before the bio as
-> dm_target_io.
-> 
-> This idea was introdiced by Kent Overstreet <koverstreet@google.com>
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> ---
->  drivers/md/dm.c |   96 +++++++++++++++++++++++---------------------------------
->  1 file changed, 41 insertions(+), 55 deletions(-)
-> 
-> Index: linux-3.5.3-fast/drivers/md/dm.c
-> ===================================================================
-> --- linux-3.5.3-fast.orig/drivers/md/dm.c	2012-09-10 16:06:30.000000000 +0200
-> +++ linux-3.5.3-fast/drivers/md/dm.c	2012-09-11 19:32:36.000000000 +0200
-> @@ -71,6 +71,7 @@ struct dm_target_io {
->  	struct dm_io *io;
->  	struct dm_target *ti;
->  	union map_info info;
-> +	struct bio clone;
->  };
->  
->  /*
-> @@ -464,7 +465,9 @@ static void free_io(struct mapped_device
->  
->  static void free_tio(struct mapped_device *md, struct dm_target_io *tio)
->  {
-> -	mempool_free(tio, md->tio_pool);
-> +	tio->clone.bi_private = md->bs;
-> +	tio->clone.bi_end_io = NULL;
-> +	bio_put(&tio->clone);
->  }
->  
->  static struct dm_rq_target_io *alloc_rq_tio(struct mapped_device *md,
-> @@ -710,13 +713,7 @@ static void clone_endio(struct bio *bio,
->  		}
->  	}
->  
-> -	/*
-> -	 * Store md for cleanup instead of tio which is about to get freed.
-> -	 */
-> -	bio->bi_private = md->bs;
-> -
->  	free_tio(md, tio);
-> -	bio_put(bio);
->  	dec_pending(io, error);
->  }
->  
-> @@ -1032,12 +1029,12 @@ int dm_set_target_max_io_len(struct dm_t
->  }
->  EXPORT_SYMBOL_GPL(dm_set_target_max_io_len);
->  
-> -static void __map_bio(struct dm_target *ti, struct bio *clone,
-> -		      struct dm_target_io *tio)
-> +static void __map_bio(struct dm_target *ti, struct dm_target_io *tio)
->  {
->  	int r;
->  	sector_t sector;
->  	struct mapped_device *md;
-> +	struct bio *clone = &tio->clone;
->  
->  	clone->bi_end_io = clone_endio;
->  	clone->bi_private = tio;
-> @@ -1061,12 +1058,6 @@ static void __map_bio(struct dm_target *
->  		/* error the io and bail out, or requeue it if needed */
->  		md = tio->io->md;
->  		dec_pending(tio->io, r);
-> -		/*
-> -		 * Store bio_set for cleanup.
-> -		 */
-> -		clone->bi_end_io = NULL;
-> -		clone->bi_private = md->bs;
-> -		bio_put(clone);
->  		free_tio(md, tio);
->  	} else if (r) {
->  		DMWARN("unimplemented target map return value: %d", r);
-> @@ -1094,15 +1085,13 @@ static void dm_bio_destructor(struct bio
->  /*
->   * Creates a little bio that just does part of a bvec.
->   */
-> -static struct bio *split_bvec(struct bio *bio, sector_t sector,
-> -			      unsigned short idx, unsigned int offset,
-> -			      unsigned int len, struct bio_set *bs)
-> +static void split_bvec(struct dm_target_io *tio, struct bio *bio,
-> +		       sector_t sector, unsigned short idx, unsigned int offset,
-> +		       unsigned int len, struct bio_set *bs)
->  {
-> -	struct bio *clone;
-> +	struct bio *clone = &tio->clone;
->  	struct bio_vec *bv = bio->bi_io_vec + idx;
->  
-> -	clone = bio_alloc_bioset(GFP_NOIO, 1, bs);
-> -	clone->bi_destructor = dm_bio_destructor;
->  	*clone->bi_io_vec = *bv;
->  
->  	clone->bi_sector = sector;
-> @@ -1119,22 +1108,19 @@ static struct bio *split_bvec(struct bio
->  		bio_integrity_trim(clone,
->  				   bio_sector_offset(bio, idx, offset), len);
->  	}
-> -
-> -	return clone;
->  }
->  
->  /*
->   * Creates a bio that consists of range of complete bvecs.
->   */
-> -static struct bio *clone_bio(struct bio *bio, sector_t sector,
-> -			     unsigned short idx, unsigned short bv_count,
-> -			     unsigned int len, struct bio_set *bs)
-> +static void clone_bio(struct dm_target_io *tio, struct bio *bio,
-> +		      sector_t sector, unsigned short idx,
-> +		      unsigned short bv_count, unsigned int len,
-> +		      struct bio_set *bs)
->  {
-> -	struct bio *clone;
-> +	struct bio *clone = &tio->clone;
->  
-> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
->  	__bio_clone(clone, bio);
-> -	clone->bi_destructor = dm_bio_destructor;
->  	clone->bi_sector = sector;
->  	clone->bi_idx = idx;
->  	clone->bi_vcnt = idx + bv_count;
-> @@ -1148,14 +1134,17 @@ static struct bio *clone_bio(struct bio 
->  			bio_integrity_trim(clone,
->  					   bio_sector_offset(bio, idx, 0), len);
->  	}
-> -
-> -	return clone;
->  }
->  
->  static struct dm_target_io *alloc_tio(struct clone_info *ci,
-> -				      struct dm_target *ti)
-> +				      struct dm_target *ti, int nr_iovecs)
->  {
-> -	struct dm_target_io *tio = mempool_alloc(ci->md->tio_pool, GFP_NOIO);
-> +	struct dm_target_io *tio;
-> +	struct bio *clone;
-> +
-> +	clone = bio_alloc_bioset(GFP_NOIO, nr_iovecs, ci->md->bs);
-> +	tio = container_of(clone, struct dm_target_io, clone);
-> +	tio->clone.bi_destructor = dm_bio_destructor;
->  
->  	tio->io = ci->io;
->  	tio->ti = ti;
-> @@ -1167,8 +1156,8 @@ static struct dm_target_io *alloc_tio(st
->  static void __issue_target_request(struct clone_info *ci, struct dm_target *ti,
->  				   unsigned request_nr, sector_t len)
->  {
-> -	struct dm_target_io *tio = alloc_tio(ci, ti);
-> -	struct bio *clone;
-> +	struct dm_target_io *tio = alloc_tio(ci, ti, ci->bio->bi_max_vecs);
-> +	struct bio *clone = &tio->clone;
->  
->  	tio->info.target_request_nr = request_nr;
->  
-> @@ -1177,15 +1166,13 @@ static void __issue_target_request(struc
->  	 * ci->bio->bi_max_vecs is BIO_INLINE_VECS anyway, for both flush
->  	 * and discard, so no need for concern about wasted bvec allocations.
->  	 */
-> -	clone = bio_alloc_bioset(GFP_NOIO, ci->bio->bi_max_vecs, ci->md->bs);
->  	__bio_clone(clone, ci->bio);
-> -	clone->bi_destructor = dm_bio_destructor;
->  	if (len) {
->  		clone->bi_sector = ci->sector;
->  		clone->bi_size = to_bytes(len);
->  	}
->  
-> -	__map_bio(ti, clone, tio);
-> +	__map_bio(ti, tio);
->  }
->  
->  static void __issue_target_requests(struct clone_info *ci, struct dm_target *ti,
-> @@ -1214,14 +1201,13 @@ static int __clone_and_map_empty_flush(s
->   */
->  static void __clone_and_map_simple(struct clone_info *ci, struct dm_target *ti)
->  {
-> -	struct bio *clone, *bio = ci->bio;
-> +	struct bio *bio = ci->bio;
->  	struct dm_target_io *tio;
->  
-> -	tio = alloc_tio(ci, ti);
-> -	clone = clone_bio(bio, ci->sector, ci->idx,
-> -			  bio->bi_vcnt - ci->idx, ci->sector_count,
-> -			  ci->md->bs);
-> -	__map_bio(ti, clone, tio);
-> +	tio = alloc_tio(ci, ti, bio->bi_max_vecs);
-> +	clone_bio(tio, bio, ci->sector, ci->idx, bio->bi_vcnt - ci->idx,
-> +		  ci->sector_count, ci->md->bs);
-> +	__map_bio(ti, tio);
->  	ci->sector_count = 0;
->  }
->  
-> @@ -1259,7 +1245,7 @@ static int __clone_and_map_discard(struc
->  
->  static int __clone_and_map(struct clone_info *ci)
->  {
-> -	struct bio *clone, *bio = ci->bio;
-> +	struct bio *bio = ci->bio;
->  	struct dm_target *ti;
->  	sector_t len = 0, max;
->  	struct dm_target_io *tio;
-> @@ -1299,10 +1285,10 @@ static int __clone_and_map(struct clone_
->  			len += bv_len;
->  		}
->  
-> -		tio = alloc_tio(ci, ti);
-> -		clone = clone_bio(bio, ci->sector, ci->idx, i - ci->idx, len,
-> -				  ci->md->bs);
-> -		__map_bio(ti, clone, tio);
-> +		tio = alloc_tio(ci, ti, bio->bi_max_vecs);
-> +		clone_bio(tio, bio, ci->sector, ci->idx, i - ci->idx, len,
-> +			  ci->md->bs);
-> +		__map_bio(ti, tio);
->  
->  		ci->sector += len;
->  		ci->sector_count -= len;
-> @@ -1327,12 +1313,11 @@ static int __clone_and_map(struct clone_
->  
->  			len = min(remaining, max);
->  
-> -			tio = alloc_tio(ci, ti);
-> -			clone = split_bvec(bio, ci->sector, ci->idx,
-> -					   bv->bv_offset + offset, len,
-> -					   ci->md->bs);
-> +			tio = alloc_tio(ci, ti, 1);
-> +			split_bvec(tio, bio, ci->sector, ci->idx,
-> +				   bv->bv_offset + offset, len, ci->md->bs);
->  
-> -			__map_bio(ti, clone, tio);
-> +			__map_bio(ti, tio);
->  
->  			ci->sector += len;
->  			ci->sector_count -= len;
-> @@ -2765,7 +2750,8 @@ struct dm_md_mempools *dm_alloc_md_mempo
->  	if (!pools->tio_pool)
->  		goto free_io_pool_and_out;
->  
-> -	pools->bs = bioset_create(pool_size, 0);
-> +	pools->bs = bioset_create(pool_size, (type == DM_TYPE_BIO_BASED) ?
-> +		offsetof(struct dm_target_io, clone) : 0);
->  	if (!pools->bs)
->  		goto free_tio_pool_and_out;
->  
+  ;; url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+[repo seems to be having a problem right now]
+
+Git v1.7.11.6 Release Notes
+===========================
+
+Fixes since v1.7.11.5
+---------------------
+
+ * "ciabot" script (in contrib/) has been updated with extensive
+   documentation.
+
+ * "git foo" errored out with "Not a directory" when the user had a
+   non-directory on $PATH, and worse yet it masked an alias "foo" from
+   running.
+
+ * When the user exports a non-default IFS without HT, scripts that
+   rely on being able to parse "ls-files -s | while read a b c..."
+   started to fail.  Protect them from such a misconfiguration.
+
+ * When the user gives an argument that can be taken as both a
+   revision name and a pathname without disambiguating with "--", we
+   used to give a help message "Use '--' to separate".  The message
+   has been clarified to show where that '--' goes on the command
+   line.
+
+ * Documentation for the configuration file format had a confusing
+   example.
+
+ * Older parts of the documentation described as if having a regular
+   file in .git/refs/ hierarchy were the only way to have branches and
+   tags, which is not true for quite some time.
+
+ * It was generally understood that "--long-option"s to many of our
+   subcommands can be abbreviated to the unique prefix, but it was not
+   easy to find it described for new readers of the documentation set.
+
+ * The "--topo-order", "--date-order" (and the lack of either means
+   the default order) options to "rev-list" and "log" family of
+   commands were poorly described in the documentation.
+
+ * "git commit --amend" let the user edit the log message and then
+   died when the human-readable committer name was given
+   insufficiently by getpwent(3).
+
+ * The exit status code from "git config" was way overspecified while
+   being incorrect.  The implementation has been updated to give the
+   documented status for a case that was documented, and introduce a
+   new code for "all other errors".
+
+ * The output from "git diff -B" for a file that ends with an
+   incomplete line did not put "\ No newline..." on a line of its own.
+
+ * "git diff" had a confusion between taking data from a path in the
+   working tree and taking data from an object that happens to have
+   name 0{40} recorded in a tree.
+
+ * The "--rebase" option to "git pull" can be abbreviated to "-r",
+   but we didn't document it.
+
+ * When "git push" triggered the automatic gc on the receiving end, a
+   message from "git prune" that said it was removing cruft leaked to
+   the standard output, breaking the communication protocol.
+
+ * The reflog entries left by "git rebase" and "git rebase -i" were
+   inconsistent (the interactive one gave an abbreviated object name).
+
+ * "git send-email" did not unquote encoded words that appear on the
+   header correctly, and lost "_" from strings.
+
+ * "git stash apply/pop" did not trigger "rerere" upon conflicts
+   unlike other mergy operations.
+
+ * "git submodule <cmd> path" did not error out when the path to the
+   submodule was misspelt.
+
+ * "git submodule update -f" did not update paths in the working tree
+   that has local changes.
+   (merge 01d4721 sz/submodule-force-update later to maint).
+
+ * "gitweb" when used with PATH_INFO failed to notice directories with
+   SP (and other characters that need URL-style quoting) in them.
+
+ * Fallback 'getpass' implementation made unportable use of stdio API.
+
+ * A utility shell function test_seq has been added as a replacement
+   for the 'seq' utility found on some platforms.
+
+----------------------------------------------------------------
+
+Changes since v1.7.11.5 are as follows:
+
+Adam Butcher (1):
+      Fix '\ No newline...' annotation in rewrite diffs
+
+Ben Walton (1):
+      Enable HAVE_DEV_TTY for Solaris
+
+Brandon Casey (1):
+      t/t5400: demonstrate breakage caused by informational message from prune
+
+Eric S. Raymond (3):
+      contrib/ciabot: Get ciabot configuration from git variables
+      Improved documentation for the ciabot scripts.
+      Make the ciabot scripts completely self-configuring in the normal case.
+
+Heiko Voigt (2):
+      Let submodule command exit with error status if path does not exist
+      Documentation/CodingGuidelines: spell out more shell guidelines
+
+Jay Soffian (1):
+      gitweb: URL-decode $my_url/$my_uri when stripping PATH_INFO
+
+Jeff King (6):
+      commit: check committer identity more strictly
+      diff: do not use null sha1 as a sentinel value
+      do not write null sha1s to on-disk index
+      fsck: detect null sha1 in tree entries
+      terminal: seek when switching between reading and writing
+      docs: monospace listings in docbook output
+
+Junio C Hamano (13):
+      config: "git config baa" should exit with status 1
+      t7406: fix misleading "rev-parse --max-count=1 HEAD"
+      sane_execvp(): ignore non-directory on $PATH
+      Documentation: do not mention .git/refs/* directories
+      receive-pack: do not leak output from auto-gc to standard output
+      sh-setup: protect from exported IFS
+      rev-list docs: clarify --topo-order description
+      gitcli: describe abbreviation of long options
+      git-config doc: unconfuse an example
+      mergetool: style fixes
+      Prepare for 1.7.11.6
+      Almost 1.7.11.6
+      Git 1.7.11.6
+
+Luka Perkov (1):
+      builtin.h: remove unused cmd_<foo> declarations
+
+Martin von Zweigbergk (1):
+      add tests for 'git rebase --keep-empty'
+
+Matthieu Moy (1):
+      setup: clarify error messages for file/revisions ambiguity
+
+Michael Haggerty (1):
+      git-config.txt: fix example
+
+Michael J Gruber (1):
+      rebase -i: use full onto sha1 in reflog
+
+Michał Kiedrowicz (1):
+      tests: Introduce test_seq
+
+Miklos Vajna (1):
+      man: git pull -r is a short for --rebase
+
+Nguyễn Thái Ngọc Duy (1):
+      read_index_from: remove bogus errno assignments
+
+Paul Gortmaker (1):
+      apply: delete unused deflate_origlen from patch struct
+
+Phil Hord (2):
+      test: git-stash conflict sets up rerere
+      stash: invoke rerere in case of conflict
+
+Stefan Zager (1):
+      Make 'git submodule update --force' always check out submodules.
+
+Thomas Rast (3):
+      send-email: improve RFC2047 quote parsing
+      diff_setup_done(): return void
+      merge-recursive: eliminate flush_buffer() in favor of write_in_full()
+
