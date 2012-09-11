@@ -1,140 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab2IKMAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 08:00:11 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34193 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759100Ab2IKMAI convert rfc822-to-8bit (ORCPT
+	id S932316Ab2IKMBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 08:01:52 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51674 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932143Ab2IKMBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 08:00:08 -0400
+	Tue, 11 Sep 2012 08:01:51 -0400
+Date: Tue, 11 Sep 2012 14:57:19 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Ryan Mallon'" <rmallon@gmail.com>, balbi@ti.com,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio: samsung: use pr_* instead of printk
+Message-ID: <20120911115716.GI18907@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <002f01cd8f4b$b1100a30$13301e90$%han@samsung.com>
+ <20120911063048.GA18072@arwen.pp.htv.fi>
+ <002201cd8fe8$2aafa070$800ee150$%han@samsung.com>
+ <504EDEA1.1050108@gmail.com>
+ <002601cd8feb$7aa51c60$6fef5520$%han@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <87har6kmfx.fsf@devron.myhome.or.jp>
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	<87harc34d9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
-	<87y5knz6l5.fsf@devron.myhome.or.jp>
-	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
-	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
-	<1347020137.2223.13.camel@iscandar.digidescorp.com>
-	<87oblfpmnb.fsf@devron.myhome.or.jp>
-	<87k3w3ph8d.fsf@devron.myhome.or.jp>
-	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
-	<87har6kmfx.fsf@devron.myhome.or.jp>
-Date: Tue, 11 Sep 2012 21:00:07 +0900
-Message-ID: <CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3eH4Qcq5fItR5cpy"
+Content-Disposition: inline
+In-Reply-To: <002601cd8feb$7aa51c60$6fef5520$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/10, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> Yes, It is  true(current VFAT of -mm tree is not stable). Although we
->> set lookupcache=none while mounting, ESTALE error can still occur in
->> rename case.
->> So there still remain ESTALE error issue from rename case on current -mm
->> tree.
->> plz See the step as the following
->> 1. on client write to file.
->> 2. on client, move/rename file.
->> 3. on server, do drop_caches. etc to somehow evict indoe number so
->> that it gets new inode number
->> 4. on client, resume the program to write to file. write will fail
->> (write: Stale NFS file handle)
->
-Hi OGAWA.
-> Since rename() will be disabled on stable ino patches, this will be
-> unfixable, so rather maybe it is worse.
-Currently with our patchset : only rename issue (could not find any
-correct approach to ignore this. If we do not update this immediately
-at i_pos change – it is just delaying the problem). And we can return
-EBUSY when rename is called while process is opening file with rename
-limitation. Without our patchset also - the rename issue can occur
-over NFS file access - when the inode is evicted from the SERVER
-cache.
->
-> Did you checked why it returns -ESTALE?  Or rename() issue also is
-> unfixable on -mm?
-It is reproducible regardless of lookupcache is enable or disable.
-The inode is not found in server inode cache. So when
-d_obtain_alias(inode) is called, it returns ESTALE.
-Call path like this.
-fh_verify()-->nfsd_set_fh_dentry()-->exportfs_decode_fh()-->nop->fh_to_dentry()-->fat_fh_to_dentry()-->generic_fh_to_dentry()-->get_inode()-->fat_nfs_get_inode()
 
-static struct inode *fat_nfs_get_inode(struct super_block *sb,
-                                       u64 ino, u32 generation)
-{
-......
-        inode = ilookup(sb, ino); ->This looks up in inode cache and
-returns null
-        if (inode && generation && (inode->i_generation != generation)) {
-                iput(inode);
-                inode = NULL;
-         }
-        return inode;
-}
+--3eH4Qcq5fItR5cpy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think that it is unfixable because we can not know i_pos of inode
-changed by rename.
-And even though we know it, there is no rebuild inode routine in -mm.
-And It even can not fix in our patches.
+On Tue, Sep 11, 2012 at 04:02:59PM +0900, Jingoo Han wrote:
+> On Tuesday, September 11, 2012 3:48 PM Ryan Mallon wrote
+> >=20
+> > On 11/09/12 16:39, Jingoo Han wrote:
+> > > On Tuesday, September 11, 2012 3:31 PM Felipe Balbi wrote
+> > >
+> > >>
+> > >> Hi,
+> > >>
+> > >> On Mon, Sep 10, 2012 at 08:59:11PM +0900, Jingoo Han wrote:
+> > >>> This patch uses pr_* instead of printk.
+> > >>>
+> > >>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > >>> ---
+> > >>>  drivers/gpio/gpio-samsung.c |    6 +++---
+> > >>>  1 files changed, 3 insertions(+), 3 deletions(-)
+> > >>>
+> > >>> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsun=
+g.c
+> > >>> index ba126cc..e38d990 100644
+> > >>> --- a/drivers/gpio/gpio-samsung.c
+> > >>> +++ b/drivers/gpio/gpio-samsung.c
+> > >>> @@ -45,7 +45,7 @@
+> > >>>  #ifndef DEBUG_GPIO
+> > >>>  #define gpio_dbg(x...) do { } while (0)
+> > >>>  #else
+> > >>> -#define gpio_dbg(x...) printk(KERN_DEBUG x)
+> > >>> +#define gpio_dbg(x...) pr_debug(x)
+> > >>>  #endif
+> > >>>
+> > >>>  int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
+> > >>> @@ -926,10 +926,10 @@ static void __init samsung_gpiolib_add(struct=
+ samsung_gpio_chip *chip)
+> > >>>  #ifdef CONFIG_PM
+> > >>>  	if (chip->pm !=3D NULL) {
+> > >>>  		if (!chip->pm->save || !chip->pm->resume)
+> > >>> -			printk(KERN_ERR "gpio: %s has missing PM functions\n",
+> > >>> +			pr_err("gpio: %s has missing PM functions\n",
+> > >>>  			       gc->label);
+> > >>
+> > >> I would rather see dev_* conversion instead.
+> > >>
+> > >> my 2 cents
+> > >
+> > > Hi Felipe Balbi,
+> > >
+> > > OK, I will replace printk(KERN_ERR...) with dev_err.
+> > > Thank you.
+> >=20
+> > I was going to suggest that also, but I don't think that there is a dev
+> > pointer to use. The gpio_chip structure has an optional one, but from my
+> > quick glance it didn't look like the Samsung driver was using it. I
+> > could be wrong though. If I am, go with dev_err (and dev_dbg for
+> > replacing the gpio_dbg statements).
+>=20
+> Also, I cannot find dev point to use.
+> I will use pr_dbg, pr_err.
 
->
->> And ......
->> If we mount NFS with lookupcache=none, FAT file lookup performance is
->> severely dropped.
->> LOOKUP performance is very poor on slow network and slow device. I do
->> not recommend to disable lookup cache on NFS.
->> And that is why reconstructing inode is already implemented in other
->> filesystem (e.g. EXT4, XFS etc..)
->> Currently lookupcache is enabled by default in NFS, it means users
->> already have disclosed and experienced ESTALE issues on NFS over VFAT.
->>
->> I agree wth you to make NFS over VFAT read-only filesystem to avoid all
->> issues.
->> Eventually we can make it writable with rename limitation when we
->> decide that it is pretty stable in mainline.
->> So, I suggest to add 'nfs_ro' mount option instead of 'nfs' option.
->
-> -mm seems to be more stable than I thought. As he said, sounds like
-> rename() is an only known issue on -mm, true?
-Yes, There is only rename issue in stability if we use lookcache is disable.
-But performance will severely be dropped
-But If lookup cache is enable, there are estale and rename issue in -mm.
->
-> And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
-> like to improve performance by enabling lookupcache.
-We checked this patches when facing estale issue in -mm.
-But It is no use, these patches just retry system call one more when
-estale error.
+Now that I look at the driver, the missing dev pointer is just because
+gpio-samsung.c is NOT a proper driver. I'd strongly suggest to convert
+the driver to a proper platform_driver, but it's your call anyway ;-)
 
-> I'd like to be knowing the critical reason we have to replace it.
-I arrange to help your decision as the following.
+my 2 cents
 
-1. lookup cache is enable at default in NFS. So estale error can be
-easily occurred in -mm.
-2. If lookup cache is disable, there is rename issue and file lookup
-performance is dropped in -mm.
-4. If we use our patches, there is rename issue. but we can use VFAT
-over NFS with lookup cache enable.
-5. If we use read-only with our patches, there is no issue.
+--=20
+balbi
 
-Thanks.
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+--3eH4Qcq5fItR5cpy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQTyccAAoJEIaOsuA1yqREIsMP/3trgnz77BH6gQ69CqX3DoI3
+QFvGbHTEVqM5FOkBLDPO4rSwT6jr1bdPZk3rL7GM2lAE9DtTSsId3aXxE1z1g4jB
+qkyFXLWzHZtRAX34uS4UC9+jZWRq6sPqH5BpKL3HYMWcNLLuRdtZNcAcLGhuwCTt
+DUj2LtIzUnQa9vlJ2M+9Lxy9skiliJu+SUIIJY8FHUBMORDY7Yo3oRalTdtsBa6p
+jjo3R3RKKVghtVQZ7bU2QkNCDAe+r/tfj7AZwQwZqOVU0zuTht4JibRXAb9PrTZa
+HBUUML2HcCAvtximGOM7VxgCHiR4VsMUimbOKj65c41mg9ukPHu7i2y7bkkBR60U
+YWxLKccmBcvHvssDICH5pi6KQDPuTiyo9Uta4invIs0GGUx51Hom52UdJnFJX5MN
+QAoWqCyLNugY4E9Kdo7e5ou0yuxUrHoUH9xJjn+puU50HwwqAMlTgB0JvCcauPeT
+/Zy+W6YvRcaA7bzqm7SQKKkrT11EnkRNmfqcduFtCWHM0w9rrTKDlXB53fxvRCaZ
+qXZBvQ2SLgnpBZkO+Ex+s2o4b/S0Ne9ltEty78b95B6eytM5SesSYU3IFtvnaHKd
+8j1Uv5TZRck8HO8w5bIJZT1Ro3AIujgyOntvC+AD88LwiydgdVpPrCXj1ZXdhGBb
+DUNj5IB+IwFC1LByJKUg
+=uoNH
+-----END PGP SIGNATURE-----
+
+--3eH4Qcq5fItR5cpy--
