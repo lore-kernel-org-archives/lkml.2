@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2IKEnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 00:43:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751750Ab2IKEny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 00:43:54 -0400
-Date: Tue, 11 Sep 2012 14:43:43 +1000
-From: NeilBrown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Alasdair Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v10 0/8] Block cleanups
-Message-ID: <20120911144343.6148050d@notabene.brown>
-In-Reply-To: <20120906234805.GD9426@google.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
-	<20120906234805.GD9426@google.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/8emAo+PhD2f90fcVY5=r3k5"; protocol="application/pgp-signature"
+	id S1751697Ab2IKEzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 00:55:00 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52237 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2IKEy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 00:54:58 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q8B4sJTf003568, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
+Date: Tue, 11 Sep 2012 12:54:18 +0800
+Message-ID: <cover.1347330871.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8emAo+PhD2f90fcVY5=r3k5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-On Thu, 6 Sep 2012 16:48:05 -0700 Tejun Heo <tj@kernel.org> wrote:
+Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
 
-> Hello, guys.
->=20
-> (cc'ing Jens, Alasdair and Neil)
->=20
-> On Thu, Sep 06, 2012 at 03:34:54PM -0700, Kent Overstreet wrote:
-> > Screwed up the bio_reset() patch in the last patch series when I went t=
-o edit
-> > the description, fixed that here.
-> >=20
-> > Only other change is the dm patch - made the front_pad conditional on
-> > DM_TYPE_BIO_BASED.
-> >=20
-> > Kent Overstreet (8):
-> >   block: Generalized bio pool freeing
-> >   block: Ues bi_pool for bio_integrity_alloc()
-> >   dm: Use bioset's front_pad for dm_rq_clone_bio_info
-> >   block: Add bio_reset()
-> >   pktcdvd: Switch to bio_kmalloc()
-> >   block: Kill bi_destructor
-> >   block: Consolidate bio_alloc_bioset(), bio_kmalloc()
-> >   block: Add bio_clone_bioset(), bio_clone_kmalloc()
->=20
-> This series looks good to me now.  If someone can ack the dm patch, I
-> think it's good to go.  Jens, what do you think?
->=20
-> Thanks.
->=20
+v2:
+1. Using platform device to replace realtek slot bus
 
-I'm very happy with them from the perspective of 'md'.  Great work!
+v3:
+1. Fix a bug that DMA out of SW-IOMMU space in Lenovo Thinkpad x121e
+2. Tested by Borislav Petkov <bp@alien8.de>
 
- Acked-by: NeilBrown <neilb@suse.de>
+v4:
+1. Fulfill power management callbacks
 
-for the few patches which touch drivers/md/md.c
+v5:
+1. Support Memstick card
 
+v6:
+1. Fix some coding style
 
-NeilBrown
+Wei WANG (3):
+  drivers/mfd: Add realtek pcie card reader driver
+  drivers/mmc: Add realtek pcie sdmmc host driver
+  drivers/memstick: Add realtek pcie memstick host driver
 
---Sig_/8emAo+PhD2f90fcVY5=r3k5
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+ drivers/memstick/host/Kconfig       |   10 +
+ drivers/memstick/host/Makefile      |    1 +
+ drivers/memstick/host/rtsx_pci_ms.c |  637 ++++++++++++++++
+ drivers/mfd/Kconfig                 |    9 +
+ drivers/mfd/Makefile                |    4 +
+ drivers/mfd/rts5209.c               |  188 +++++
+ drivers/mfd/rts5229.c               |  179 +++++
+ drivers/mfd/rtsx_pcr.c              | 1345 ++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h              |   31 +
+ drivers/mmc/host/Kconfig            |    7 +
+ drivers/mmc/host/Makefile           |    2 +
+ drivers/mmc/host/rtsx_pci_sdmmc.c   | 1372 +++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rtsx_common.h     |   47 ++
+ include/linux/mfd/rtsx_pci.h        |  773 ++++++++++++++++++++
+ 14 files changed, 4605 insertions(+)
+ create mode 100644 drivers/memstick/host/rtsx_pci_ms.c
+ create mode 100644 drivers/mfd/rts5209.c
+ create mode 100644 drivers/mfd/rts5229.c
+ create mode 100644 drivers/mfd/rtsx_pcr.c
+ create mode 100644 drivers/mfd/rtsx_pcr.h
+ create mode 100644 drivers/mmc/host/rtsx_pci_sdmmc.c
+ create mode 100644 include/linux/mfd/rtsx_common.h
+ create mode 100644 include/linux/mfd/rtsx_pci.h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+-- 
+1.7.9.5
 
-iQIVAwUBUE7Bfznsnt1WYoG5AQJ5Uw//Wn0m3tnxkfuDE/vXQi3v//WYXb4t8PTv
-iqqv3Yzusjg55dxtJ0Bj43PssyYdj9YZ8c5GDL4CDPC7c0rpm88kq+Ybm4X7c3Ih
-fEPq0g9lEyzKUfalZT0YP0DJYWQqlyPI51geNbPL7Pzy3AcSCeA5YPyrJAFLF6Rm
-DOKLssnNL+SRJ3+/WWLJl14OrBCdAlKRuuS9NhT6njRDS0BI8WrThdD0IcBEQB8E
-EuOJmHesmyy3up1jAGR+wVjB9Hj9ZZ9aNzGgVneK+M4BitvW+0PEhTLe+HFDyvN7
-DEu4H/v+5QMyXfzoWVdvvoGqY4m336NuquveUwKx8QdesRJhFZDJ5/vsF/wsFT2k
-0evozZvgOuQOOnEl9ADjFs3fAABIk4itSD0tV9waQ8WB06q/eT4QPnlHWs+9vlF5
-wrcCkJrzmAKIfXvd7azfhSNdmhiltELTbTQKa8MK1UBYS3hmPyr/XgFl9q2hK2UP
-zN7nc59Qlo+6ai56XxgfQ7WHzA+Rv7y+ScqFPvnKbxrNv8IDVzBabmQQbsw2KcsT
-bQSDzo9ZmRYPLN/pBrt8l7ZTbrL8d8BYA+werLaIZrFCVwS6fwcG0YlDfQxvkaNU
-JWIlRagAa8WxhH/Hz/lgbIdAh45BibkZ2S2PREiCGvccy8EhAjj0XiaDO83T1QHk
-3cuhsfkTZ8M=
-=hRQB
------END PGP SIGNATURE-----
-
---Sig_/8emAo+PhD2f90fcVY5=r3k5--
