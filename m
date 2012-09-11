@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab2IKG02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 02:26:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35147 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753183Ab2IKG00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 02:26:26 -0400
+	id S1756799Ab2IKG1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 02:27:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48021 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2IKG1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 02:27:11 -0400
 From: Prabhakar Lad <prabhakar.lad@ti.com>
 To: LAK <linux-arm-kernel@lists.infradead.org>
 CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-kernel@vger.kernel.org>,
         Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>,
         "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH v3 1/2] ARM: da850/omap-l138: Add SoC related definitions for VPIF
-Date: Tue, 11 Sep 2012 11:55:08 +0530
-Message-ID: <1347344709-6180-2-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH v3 2/2] ARM: da850/omap-l138: Add EVM specific code for VPIF to work
+Date: Tue, 11 Sep 2012 11:55:09 +0530
+Message-ID: <1347344709-6180-3-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1347344709-6180-1-git-send-email-prabhakar.lad@ti.com>
 References: <1347344709-6180-1-git-send-email-prabhakar.lad@ti.com>
@@ -26,325 +27,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Add clock, pin mux definitions and registration function for
-VPIF capture and display driver on DA850/OMAP-L138 SoC.
+Include the expander settings to select VPIF peripheral on
+UI card and add registration call in EVM init. Also add platform
+data to configure display and capture devices.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 Cc: Sekhar Nori <nsekhar@ti.com>
 ---
- arch/arm/mach-davinci/da850.c              |  152 ++++++++++++++++++++++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |   11 ++
- arch/arm/mach-davinci/include/mach/mux.h   |   42 ++++++++
- arch/arm/mach-davinci/include/mach/psc.h   |    1 +
- 4 files changed, 206 insertions(+), 0 deletions(-)
+ arch/arm/mach-davinci/Kconfig           |    7 ++
+ arch/arm/mach-davinci/board-da850-evm.c |  156 +++++++++++++++++++++++++++++++
+ 2 files changed, 163 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index b44dc84..20d16ff 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -347,6 +347,13 @@ static struct clk spi1_clk = {
- 	.flags		= DA850_CLK_ASYNC3,
- };
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index ab99c3c..026b4b2 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -186,6 +186,13 @@ config DA850_UI_RMII
+ 	  NOTE: Please take care while choosing this option, MII PHY will
+ 	  not be functional if RMII mode is selected.
  
-+static struct clk vpif_clk = {
-+	.name		= "vpif",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA850_LPSC1_VPIF,
-+	.gpsc		= 1,
-+};
++config DA850_UI_SD_VIDEO_PORT
++	bool "Video Port Interface"
++	help
++	  Say Y if you want to use Video Port Interface (VPIF) on the
++	  DA850/OMAP-L138 EVM. The Video decoders/encoders are found on the
++	  UI daughter card that is supplied with the EVM.
 +
- static struct clk sata_clk = {
- 	.name		= "sata",
- 	.parent		= &pll0_sysclk2,
-@@ -397,6 +404,7 @@ static struct clk_lookup da850_clks[] = {
- 	CLK(NULL,		"usb20",	&usb20_clk),
- 	CLK("spi_davinci.0",	NULL,		&spi0_clk),
- 	CLK("spi_davinci.1",	NULL,		&spi1_clk),
-+	CLK("vpif",		NULL,		&vpif_clk),
- 	CLK("ahci",		NULL,		&sata_clk),
- 	CLK(NULL,		NULL,		NULL),
- };
-@@ -573,6 +581,46 @@ static const struct mux_config da850_pins[] = {
- 	MUX_CFG(DA850, GPIO6_10,	13,	20,	15,	8,	false)
- 	MUX_CFG(DA850, GPIO6_13,	13,	8,	15,	8,	false)
- 	MUX_CFG(DA850, RTC_ALARM,	0,	28,	15,	2,	false)
-+	/* VPIF Capture */
-+	MUX_CFG(DA850, VPIF_DIN0,	15,	4,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN1,	15,	0,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN2,	14,	28,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN3,	14,	24,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN4,	14,	20,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN5,	14,	16,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN6,	14,	12,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN7,	14,	8,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN8,	16,	4,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN9,	16,	0,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN10,	15,	28,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN11,	15,	24,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN12,	15,	20,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN13,	15,	16,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN14,	15,	12,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DIN15,	15,	8,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKIN0,	14,	0,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKIN1,	14,	4,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKIN2,	19,	8,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKIN3,	19,	16,	15,	1,	false)
-+	/* VPIF Display */
-+	MUX_CFG(DA850, VPIF_DOUT0,	17,	4,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT1,	17,	0,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT2,	16,	28,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT3,	16,	24,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT4,	16,	20,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT5,	16,	16,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT6,	16,	12,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT7,	16,	8,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT8,	18,	4,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT9,	18,	0,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT10,	17,	28,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT11,	17,	24,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT12,	17,	20,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT13,	17,	16,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT14,	17,	12,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_DOUT15,	17,	8,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKO2,	19,	12,	15,	1,	false)
-+	MUX_CFG(DA850, VPIF_CLKO3,	19,	20,	15,	1,	false)
- #endif
- };
+ endchoice
  
-@@ -595,6 +643,26 @@ const short da850_lcdcntl_pins[] __initdata = {
- 	-1
- };
- 
-+const short da850_vpif_capture_pins[] __initdata = {
-+	DA850_VPIF_DIN0, DA850_VPIF_DIN1, DA850_VPIF_DIN2, DA850_VPIF_DIN3,
-+	DA850_VPIF_DIN4, DA850_VPIF_DIN5, DA850_VPIF_DIN6, DA850_VPIF_DIN7,
-+	DA850_VPIF_DIN8, DA850_VPIF_DIN9, DA850_VPIF_DIN10, DA850_VPIF_DIN11,
-+	DA850_VPIF_DIN12, DA850_VPIF_DIN13, DA850_VPIF_DIN14, DA850_VPIF_DIN15,
-+	DA850_VPIF_CLKIN0, DA850_VPIF_CLKIN1, DA850_VPIF_CLKIN2,
-+	DA850_VPIF_CLKIN3,
-+	-1
-+};
-+
-+const short da850_vpif_display_pins[] __initdata = {
-+	DA850_VPIF_DOUT0, DA850_VPIF_DOUT1, DA850_VPIF_DOUT2, DA850_VPIF_DOUT3,
-+	DA850_VPIF_DOUT4, DA850_VPIF_DOUT5, DA850_VPIF_DOUT6, DA850_VPIF_DOUT7,
-+	DA850_VPIF_DOUT8, DA850_VPIF_DOUT9, DA850_VPIF_DOUT10,
-+	DA850_VPIF_DOUT11, DA850_VPIF_DOUT12, DA850_VPIF_DOUT13,
-+	DA850_VPIF_DOUT14, DA850_VPIF_DOUT15, DA850_VPIF_CLKO2,
-+	DA850_VPIF_CLKO3,
-+	-1
-+};
-+
- /* FIQ are pri 0-1; otherwise 2-7, with 7 lowest priority */
- static u8 da850_default_priorities[DA850_N_CP_INTC_IRQ] = {
- 	[IRQ_DA8XX_COMMTX]		= 7,
-@@ -1064,6 +1132,90 @@ no_ddrpll_mem:
- 	return ret;
- }
- 
-+/* VPIF resource, platform data */
-+static u64 da850_vpif_dma_mask = DMA_BIT_MASK(32);
-+
-+static struct resource da850_vpif_resource[] = {
-+	{
-+		.start = DA8XX_VPIF_BASE,
-+		.end   = DA8XX_VPIF_BASE + 0xfff,
-+		.flags = IORESOURCE_MEM,
-+	}
-+};
-+
-+static struct platform_device da850_vpif_dev = {
-+	.name		= "vpif",
-+	.id		= -1,
-+	.dev		= {
-+		.dma_mask		= &da850_vpif_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+	.resource	= da850_vpif_resource,
-+	.num_resources	= ARRAY_SIZE(da850_vpif_resource),
-+};
-+
-+static struct resource da850_vpif_display_resource[] = {
-+	{
-+		.start = IRQ_DA850_VPIFINT,
-+		.end   = IRQ_DA850_VPIFINT,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device da850_vpif_display_dev = {
-+	.name		= "vpif_display",
-+	.id		= -1,
-+	.dev		= {
-+		.dma_mask		= &da850_vpif_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+	.resource       = da850_vpif_display_resource,
-+	.num_resources  = ARRAY_SIZE(da850_vpif_display_resource),
-+};
-+
-+static struct resource da850_vpif_capture_resource[] = {
-+	{
-+		.start = IRQ_DA850_VPIFINT,
-+		.end   = IRQ_DA850_VPIFINT,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = IRQ_DA850_VPIFINT,
-+		.end   = IRQ_DA850_VPIFINT,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device da850_vpif_capture_dev = {
-+	.name		= "vpif_capture",
-+	.id		= -1,
-+	.dev		= {
-+		.dma_mask		= &da850_vpif_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+	.resource       = da850_vpif_capture_resource,
-+	.num_resources  = ARRAY_SIZE(da850_vpif_capture_resource),
-+};
-+
-+int __init da850_register_vpif(void)
-+{
-+	return platform_device_register(&da850_vpif_dev);
-+}
-+
-+int __init da850_register_vpif_display(struct vpif_display_config
-+						*display_config)
-+{
-+	da850_vpif_display_dev.dev.platform_data = display_config;
-+	return platform_device_register(&da850_vpif_display_dev);
-+}
-+
-+int __init da850_register_vpif_capture(struct vpif_capture_config
-+							*capture_config)
-+{
-+	da850_vpif_capture_dev.dev.platform_data = capture_config;
-+	return platform_device_register(&da850_vpif_capture_dev);
-+}
-+
- static struct davinci_soc_info davinci_soc_info_da850 = {
- 	.io_desc		= da850_io_desc,
- 	.io_desc_num		= ARRAY_SIZE(da850_io_desc),
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index a2f1f27..8eecbce 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -16,6 +16,7 @@
- #include <linux/platform_device.h>
- #include <linux/davinci_emac.h>
- #include <linux/spi/spi.h>
-+#include <linux/videodev2.h>
- 
- #include <mach/serial.h>
- #include <mach/edma.h>
-@@ -26,6 +27,8 @@
- #include <mach/pm.h>
+ config DA850_WL12XX
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 0149fb4..d0954a2 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -45,6 +45,8 @@
+ #include <mach/aemif.h>
  #include <mach/spi.h>
  
-+#include <media/davinci/vpif_types.h>
++#include <media/tvp514x.h>
 +
- extern void __iomem *da8xx_syscfg0_base;
- extern void __iomem *da8xx_syscfg1_base;
+ #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+ #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
+ #define DA850_LCD_BL_PIN		GPIO_TO_PIN(2, 15)
+@@ -452,6 +454,15 @@ static void da850_evm_ui_keys_init(unsigned gpio)
+ 	}
+ }
  
-@@ -63,6 +66,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_PLL0_BASE		0x01c11000
- #define DA8XX_TIMER64P0_BASE	0x01c20000
- #define DA8XX_TIMER64P1_BASE	0x01c21000
-+#define DA8XX_VPIF_BASE		0x01e17000
- #define DA8XX_GPIO_BASE		0x01e26000
- #define DA8XX_PSC1_BASE		0x01e27000
- #define DA8XX_AEMIF_CS2_BASE	0x60000000
-@@ -92,6 +96,11 @@ int da8xx_register_cpuidle(void);
- void __iomem * __init da8xx_get_mem_ctlr(void);
- int da850_register_pm(struct platform_device *pdev);
- int __init da850_register_sata(unsigned long refclkpn);
-+int __init da850_register_vpif(void);
-+int __init da850_register_vpif_display
-+			(struct vpif_display_config *display_config);
-+int __init da850_register_vpif_capture
-+			(struct vpif_capture_config *capture_config);
- void da8xx_restart(char mode, const char *cmd);
- 
- extern struct platform_device da8xx_serial_device;
-@@ -126,6 +135,8 @@ extern const short da830_ecap1_pins[];
- extern const short da830_ecap2_pins[];
- extern const short da830_eqep0_pins[];
- extern const short da830_eqep1_pins[];
-+extern const short da850_vpif_capture_pins[];
-+extern const short da850_vpif_display_pins[];
- 
- extern const short da850_i2c0_pins[];
- extern const short da850_i2c1_pins[];
-diff --git a/arch/arm/mach-davinci/include/mach/mux.h b/arch/arm/mach-davinci/include/mach/mux.h
-index a7e92fc..9e95b8a 100644
---- a/arch/arm/mach-davinci/include/mach/mux.h
-+++ b/arch/arm/mach-davinci/include/mach/mux.h
-@@ -928,6 +928,48 @@ enum davinci_da850_index {
- 	DA850_GPIO6_10,
- 	DA850_GPIO6_13,
- 	DA850_RTC_ALARM,
++#ifdef CONFIG_DA850_UI_SD_VIDEO_PORT
++static inline void da850_evm_setup_video_port(int video_sel)
++{
++	gpio_set_value_cansleep(video_sel, 0);
++}
++#else
++static inline void da850_evm_setup_video_port(int video_sel) { }
++#endif
 +
-+	/* VPIF Capture */
-+	DA850_VPIF_DIN0,
-+	DA850_VPIF_DIN1,
-+	DA850_VPIF_DIN2,
-+	DA850_VPIF_DIN3,
-+	DA850_VPIF_DIN4,
-+	DA850_VPIF_DIN5,
-+	DA850_VPIF_DIN6,
-+	DA850_VPIF_DIN7,
-+	DA850_VPIF_DIN8,
-+	DA850_VPIF_DIN9,
-+	DA850_VPIF_DIN10,
-+	DA850_VPIF_DIN11,
-+	DA850_VPIF_DIN12,
-+	DA850_VPIF_DIN13,
-+	DA850_VPIF_DIN14,
-+	DA850_VPIF_DIN15,
-+	DA850_VPIF_CLKIN0,
-+	DA850_VPIF_CLKIN1,
-+	DA850_VPIF_CLKIN2,
-+	DA850_VPIF_CLKIN3,
-+
-+	/* VPIF Display */
-+	DA850_VPIF_DOUT0,
-+	DA850_VPIF_DOUT1,
-+	DA850_VPIF_DOUT2,
-+	DA850_VPIF_DOUT3,
-+	DA850_VPIF_DOUT4,
-+	DA850_VPIF_DOUT5,
-+	DA850_VPIF_DOUT6,
-+	DA850_VPIF_DOUT7,
-+	DA850_VPIF_DOUT8,
-+	DA850_VPIF_DOUT9,
-+	DA850_VPIF_DOUT10,
-+	DA850_VPIF_DOUT11,
-+	DA850_VPIF_DOUT12,
-+	DA850_VPIF_DOUT13,
-+	DA850_VPIF_DOUT14,
-+	DA850_VPIF_DOUT15,
-+	DA850_VPIF_CLKO2,
-+	DA850_VPIF_CLKO3,
- };
+ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 						unsigned ngpio, void *c)
+ {
+@@ -497,6 +508,8 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
  
- enum davinci_tnetv107x_index {
-diff --git a/arch/arm/mach-davinci/include/mach/psc.h b/arch/arm/mach-davinci/include/mach/psc.h
-index 405318e..40a0027 100644
---- a/arch/arm/mach-davinci/include/mach/psc.h
-+++ b/arch/arm/mach-davinci/include/mach/psc.h
-@@ -166,6 +166,7 @@
- #define DA830_LPSC1_McASP1		8
- #define DA850_LPSC1_SATA		8
- #define DA830_LPSC1_McASP2		9
-+#define DA850_LPSC1_VPIF		9
- #define DA8XX_LPSC1_SPI1		10
- #define DA8XX_LPSC1_I2C			11
- #define DA8XX_LPSC1_UART1		12
+ 	da850_evm_setup_emac_rmii(sel_a);
+ 
++	da850_evm_setup_video_port(sel_c);
++
+ 	return 0;
+ 
+ exp_setup_keys_fail:
+@@ -1149,6 +1162,147 @@ static __init int da850_evm_init_cpufreq(void)
+ static __init int da850_evm_init_cpufreq(void) { return 0; }
+ #endif
+ 
++#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
++
++#define TVP5147_CH0		"tvp514x-0"
++#define TVP5147_CH1		"tvp514x-1"
++
++/* VPIF capture configuration */
++static struct tvp514x_platform_data tvp5146_pdata = {
++		.clk_polarity = 0,
++		.hs_polarity  = 1,
++		.vs_polarity  = 1,
++};
++
++#define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
++
++static const struct vpif_input da850_ch0_inputs[] = {
++	{
++		.input = {
++			.index = 0,
++			.name  = "Composite",
++			.type  = V4L2_INPUT_TYPE_CAMERA,
++			.std   = TVP514X_STD_ALL,
++		},
++		.subdev_name = TVP5147_CH0,
++	},
++};
++
++static const struct vpif_input da850_ch1_inputs[] = {
++	{
++		.input = {
++			.index = 0,
++			.name  = "S-Video",
++			.type  = V4L2_INPUT_TYPE_CAMERA,
++			.std   = TVP514X_STD_ALL,
++		},
++		.subdev_name = TVP5147_CH1,
++	},
++};
++
++static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
++	{
++		.name = TVP5147_CH0,
++		.board_info = {
++			I2C_BOARD_INFO("tvp5146", 0x5d),
++			.platform_data = &tvp5146_pdata,
++		},
++		.input = INPUT_CVBS_VI2B,
++		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
++		.can_route = 1,
++		.vpif_if = {
++			.if_type = VPIF_IF_BT656,
++			.hd_pol  = 1,
++			.vd_pol  = 1,
++			.fid_pol = 0,
++		},
++	},
++	{
++		.name = TVP5147_CH1,
++		.board_info = {
++			I2C_BOARD_INFO("tvp5146", 0x5c),
++			.platform_data = &tvp5146_pdata,
++		},
++		.input = INPUT_SVIDEO_VI2C_VI1C,
++		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
++		.can_route = 1,
++		.vpif_if = {
++			.if_type = VPIF_IF_BT656,
++			.hd_pol  = 1,
++			.vd_pol  = 1,
++			.fid_pol = 0,
++		},
++	},
++};
++
++static struct vpif_capture_config da850_vpif_capture_config = {
++	.subdev_info = da850_vpif_capture_sdev_info,
++	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
++	.chan_config[0] = {
++		.inputs = da850_ch0_inputs,
++		.input_count = ARRAY_SIZE(da850_ch0_inputs),
++	},
++	.chan_config[1] = {
++		.inputs = da850_ch1_inputs,
++		.input_count = ARRAY_SIZE(da850_ch1_inputs),
++	},
++	.card_name = "DA850/OMAP-L138 Video Capture",
++};
++
++/* VPIF display configuration */
++static struct vpif_subdev_info da850_vpif_subdev[] = {
++	{
++		.name = "adv7343",
++		.board_info = {
++			I2C_BOARD_INFO("adv7343", 0x2a),
++		},
++	},
++};
++
++static const char const *vpif_output[] = {
++		"Composite",
++		"S-Video",
++};
++
++static struct vpif_display_config da850_vpif_display_config = {
++	.subdevinfo   = da850_vpif_subdev,
++	.subdev_count = ARRAY_SIZE(da850_vpif_subdev),
++	.output       = vpif_output,
++	.output_count = ARRAY_SIZE(vpif_output),
++	.card_name    = "DA850/OMAP-L138 Video Display",
++};
++
++static __init void da850_vpif_init(void)
++{
++	int ret;
++
++	ret = da850_register_vpif();
++	if (ret)
++		pr_warn("da850_evm_init: VPIF setup failed: %d\n", ret);
++
++	ret = davinci_cfg_reg_list(da850_vpif_capture_pins);
++	if (ret)
++		pr_warn("da850_evm_init: VPIF capture mux setup failed: %d\n",
++			ret);
++
++	ret = da850_register_vpif_capture(&da850_vpif_capture_config);
++	if (ret)
++		pr_warn("da850_evm_init: VPIF capture setup failed: %d\n", ret);
++
++	ret = davinci_cfg_reg_list(da850_vpif_display_pins);
++	if (ret)
++		pr_warn("da850_evm_init: VPIF display mux setup failed: %d\n",
++			ret);
++
++	ret = da850_register_vpif_display(&da850_vpif_display_config);
++	if (ret)
++		pr_warn("da850_evm_init: VPIF display setup failed: %d\n", ret);
++}
++
++#else
++static __init void da850_vpif_init(void) {}
++#endif
++
+ #ifdef CONFIG_DA850_WL12XX
+ 
+ static void wl12xx_set_power(int index, bool power_on)
+@@ -1375,6 +1529,8 @@ static __init void da850_evm_init(void)
+ 		pr_warning("da850_evm_init: suspend registration failed: %d\n",
+ 				ret);
+ 
++	da850_vpif_init();
++
+ 	ret = da8xx_register_spi(1, da850evm_spi_info,
+ 				 ARRAY_SIZE(da850evm_spi_info));
+ 	if (ret)
 -- 
 1.7.0.4
 
