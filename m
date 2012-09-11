@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab2IKJSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 05:18:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab2IKJSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 05:18:30 -0400
-Message-ID: <504F01DE.20505@redhat.com>
-Date: Tue, 11 Sep 2012 12:18:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
-References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032FA78.9040405@linux.vnet.ibm.com> <5034CB60.30107@redhat.com> <5034D4E3.2080801@linux.vnet.ibm.com> <5048AE96.3050909@redhat.com> <5049C4D7.50101@linux.vnet.ibm.com> <20120910223140.GA24275@amt.cnet>
-In-Reply-To: <20120910223140.GA24275@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757559Ab2IKJUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 05:20:00 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:60422 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab2IKJT7 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Tue, 11 Sep 2012 05:19:59 -0400
+From: acho@suse.com
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, oneukum@suse.com, acho@suse.com,
+        jlee@suse.com, resler@cs.cas.cz
+Subject: [PATCH] Bluetooth: Add support for BCM20702A0 [04ca, 2003]
+Date: Tue, 11 Sep 2012 17:25:32 +0800
+Message-Id: <1347355532-9185-1-git-send-email-acho@suse.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2012 01:31 AM, Marcelo Tosatti wrote:
-> On Fri, Sep 07, 2012 at 05:56:39PM +0800, Xiao Guangrong wrote:
->> On 09/06/2012 10:09 PM, Avi Kivity wrote:
->> > On 08/22/2012 03:47 PM, Xiao Guangrong wrote:
->> >> On 08/22/2012 08:06 PM, Avi Kivity wrote:
->> >>> On 08/21/2012 06:03 AM, Xiao Guangrong wrote:
->> >>>> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
->> >>>> caused by write access on readonly memslot
->> >>>
->> >>> Please document this in chapter 5 of apic.txt.
->> >>>
->> >>
->> >> Okay, please review this one.
->> >>
->> >> Subject: [PATCH v6 12/12] KVM: indicate readonly access fault
->> >>
->> >> Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
->> >> caused by write access on readonly memslot
->> >>
->> > 
->> > I'm not sure whether this indication can be trusted by userspace.  By
->> > the time userspace gets to process this, the slot may no longer exist,
->> > or it may be writable.
->> 
->> The case of deleting memslot is ok, because userspace just skips this fault
->> if no readonly mem or no fault handler can be found.
->> 
->> Switching memslot from readonly to writable sounds strange, i agree with you
->> that this flag is untrusty under this case.
->> 
->> Marcelo, any comments?
-> 
-> The same can happen with slot deletion, for example. 
-> 
-> Userspace (which performed the modification which can result in faults
-> to non-existant/read-only/.../new-tag memslot), must handle the faults 
-> properly or avoid the possibility for reference to memslot information 
-> from the past.
-> 
-> I think its worthwhile to add a note about this in the API
-> documentation: "The user of this interface is responsible for handling 
-> references to stale memslot information, either by handling
-> exit notifications which reference stale memslot information or not
-> allowing these notifications to exist by stopping all vcpus in userspace
-> before performing modifications to the memslots map".
+From: Jaroslav Resler <resler@cs.cas.cz>
 
-Or we can drop the new interface and rely on userspace to perform the
-lookup under its own locking rules.
+Add another vendor specific ID for BCM20702A0.
 
-It's slow, but writes to ROM or ROM/device are rare anyway.
+output of usb-devices:
+T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=04ca ProdID=2003 Rev= 1.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=446D57861623
+C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+---
+ drivers/bluetooth/btusb.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index fbfb069..5f74ad9 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[] = {
+ 	{ USB_DEVICE(0x0c10, 0x0000) },
+ 
+ 	/* Broadcom BCM20702A0 */
++	{ USB_DEVICE(0x04ca, 0x2003) }
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.7
+
