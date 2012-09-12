@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760861Ab2ILRKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:10:51 -0400
+	id S1760897Ab2ILRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:11:27 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:40226 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932203Ab2ILQ7h (ORCPT
+	with ESMTP id S932194Ab2ILQ7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:59:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521330"
+	Wed, 12 Sep 2012 12:59:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521328"
 From: David Brown <davidb@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 03/24] ARM: msm: Remove unused idle.c
-Date: Wed, 12 Sep 2012 09:58:39 -0700
-Message-Id: <1347469140-25069-4-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH 02/24] ARM: msm: clock-pcom: Mark functions static
+Date: Wed, 12 Sep 2012 09:58:38 -0700
+Message-Id: <1347469140-25069-3-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
@@ -26,85 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-Forcing arm_pm_idle to be msm_idle() doesn't make sense in
-configurations that don't have CONFIG_MSM7X00A_IDLE=y (i.e. any
-targets that aren't 7x00a). Furthermore, that config doesn't even
-exist, so this entire file is dead code. Just remove it so we can
-use the default idle support on MSM.
+These functions are only used within clock-pcom.c, therefore mark
+them as static.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-msm/Makefile |  2 +-
- arch/arm/mach-msm/idle.c   | 49 ----------------------------------------------
- 2 files changed, 1 insertion(+), 50 deletions(-)
- delete mode 100644 arch/arm/mach-msm/idle.c
+ arch/arm/mach-msm/clock-pcom.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 4ad3969..5fd0464 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,4 +1,4 @@
--obj-y += io.o idle.o timer.o
-+obj-y += io.o timer.o
- obj-y += clock.o
- obj-$(CONFIG_DEBUG_FS) += clock-debug.o
+diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
+index 63b7113..a52c970 100644
+--- a/arch/arm/mach-msm/clock-pcom.c
++++ b/arch/arm/mach-msm/clock-pcom.c
+@@ -25,7 +25,7 @@
+ /*
+  * glue for the proc_comm interface
+  */
+-int pc_clk_enable(unsigned id)
++static int pc_clk_enable(unsigned id)
+ {
+ 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_ENABLE, &id, NULL);
+ 	if (rc < 0)
+@@ -34,7 +34,7 @@ int pc_clk_enable(unsigned id)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
  
-diff --git a/arch/arm/mach-msm/idle.c b/arch/arm/mach-msm/idle.c
-deleted file mode 100644
-index 0c9e13c..0000000
---- a/arch/arm/mach-msm/idle.c
-+++ /dev/null
-@@ -1,49 +0,0 @@
--/* arch/arm/mach-msm/idle.c
-- *
-- * Idle processing for MSM7K - work around bugs with SWFI.
-- *
-- * Copyright (c) 2007 QUALCOMM Incorporated.
-- * Copyright (C) 2007 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/init.h>
--#include <asm/system.h>
--
--static void msm_idle(void)
--{
--#ifdef CONFIG_MSM7X00A_IDLE
--	asm volatile (
--
--	"mrc     p15, 0, r1, c1, c0, 0    /* read current CR    */ \n\t"
--	"bic     r0, r1, #(1 << 2)        /* clear dcache bit   */ \n\t"
--	"bic     r0, r0, #(1 << 12)       /* clear icache bit   */ \n\t"
--	"mcr     p15, 0, r0, c1, c0, 0    /* disable d/i cache  */ \n\t"
--
--	"mov     r0, #0                   /* prepare wfi value  */ \n\t"
--	"mcr     p15, 0, r0, c7, c10, 0   /* flush the cache    */ \n\t"
--	"mcr     p15, 0, r0, c7, c10, 4   /* memory barrier     */ \n\t"
--	"mcr     p15, 0, r0, c7, c0, 4    /* wait for interrupt */ \n\t"
--
--	"mcr     p15, 0, r1, c1, c0, 0    /* restore d/i cache  */ \n\t"
--
--	: : : "r0","r1" );
--#endif
--}
--
--static int __init msm_idle_init(void)
--{
--	arm_pm_idle = msm_idle;
--	return 0;
--}
--
--arch_initcall(msm_idle_init);
+-void pc_clk_disable(unsigned id)
++static void pc_clk_disable(unsigned id)
+ {
+ 	msm_proc_comm(PCOM_CLKCTL_RPC_DISABLE, &id, NULL);
+ }
+@@ -54,7 +54,7 @@ int pc_clk_reset(unsigned id, enum clk_reset_action action)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-int pc_clk_set_rate(unsigned id, unsigned rate)
++static int pc_clk_set_rate(unsigned id, unsigned rate)
+ {
+ 	/* The rate _might_ be rounded off to the nearest KHz value by the
+ 	 * remote function. So a return value of 0 doesn't necessarily mean
+@@ -67,7 +67,7 @@ int pc_clk_set_rate(unsigned id, unsigned rate)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-int pc_clk_set_min_rate(unsigned id, unsigned rate)
++static int pc_clk_set_min_rate(unsigned id, unsigned rate)
+ {
+ 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MIN_RATE, &id, &rate);
+ 	if (rc < 0)
+@@ -76,7 +76,7 @@ int pc_clk_set_min_rate(unsigned id, unsigned rate)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-int pc_clk_set_max_rate(unsigned id, unsigned rate)
++static int pc_clk_set_max_rate(unsigned id, unsigned rate)
+ {
+ 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MAX_RATE, &id, &rate);
+ 	if (rc < 0)
+@@ -85,7 +85,7 @@ int pc_clk_set_max_rate(unsigned id, unsigned rate)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-int pc_clk_set_flags(unsigned id, unsigned flags)
++static int pc_clk_set_flags(unsigned id, unsigned flags)
+ {
+ 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS, &id, &flags);
+ 	if (rc < 0)
+@@ -94,7 +94,7 @@ int pc_clk_set_flags(unsigned id, unsigned flags)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
+-unsigned pc_clk_get_rate(unsigned id)
++static unsigned pc_clk_get_rate(unsigned id)
+ {
+ 	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE, &id, NULL))
+ 		return 0;
+@@ -102,7 +102,7 @@ unsigned pc_clk_get_rate(unsigned id)
+ 		return id;
+ }
+ 
+-unsigned pc_clk_is_enabled(unsigned id)
++static unsigned pc_clk_is_enabled(unsigned id)
+ {
+ 	if (msm_proc_comm(PCOM_CLKCTL_RPC_ENABLED, &id, NULL))
+ 		return 0;
+@@ -110,7 +110,7 @@ unsigned pc_clk_is_enabled(unsigned id)
+ 		return id;
+ }
+ 
+-long pc_clk_round_rate(unsigned id, unsigned rate)
++static long pc_clk_round_rate(unsigned id, unsigned rate)
+ {
+ 
+ 	/* Not really supported; pc_clk_set_rate() does rounding on it's own. */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
