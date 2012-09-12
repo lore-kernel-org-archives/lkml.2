@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab2ILKWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:22:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9288 "EHLO mga09.intel.com"
+	id S1756843Ab2ILKXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:23:15 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:49695 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab2ILKWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:22:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
-References: <alpine.LRH.2.02.1209121333031.4482@tundra.namei.org>
-	<CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
-Date: Wed, 12 Sep 2012 13:22:13 +0300
-Message-ID: <CALLzPKZ=rBqRUqb_G6U=5XWoC-ps0qGGphgsPz3iHmAGxSGQnw@mail.gmail.com>
-Subject: Re: [GIT] Digital signature library bugfix
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1754697Ab2ILKXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:23:14 -0400
+From: ciminaghi@gnudd.com
+To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com
+Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: [PATCH 0/8 RESEND] sta2x11-mfd patches
+Date: Wed, 12 Sep 2012 12:22:46 +0200
+Message-Id: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 8:38 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Sep 12, 2012 at 11:34 AM, James Morris <jmorris@namei.org> wrote:
->>
->> -       if (!err && len == hlen)
->> -               err = memcmp(out2, h, hlen);
->> +       if (err || len != hlen) {
->> +               err = -EINVAL;
->> +               goto err;
->> +       }
->> +
->> +       err = memcmp(out2, h, hlen);
->>
->>  err:
->
-> Hmm. I'll pull, but this seems to drop the error return from
-> pkcs_1_v1_5_decode_emsa() and always replace it with -EINVAL.
->
-> Now, I didn't look, and maybe that's the only error that the decode
-> thing can return, but still, it looks bad.
->
-> Wouldn't it have been better to do instead
->
->    if (err)
->       goto err;
->    err = -EINVAL;
->    if (len != hlen)
->       goto err;
->
-> and not overwrite the 'err' return with EINVAL?
->
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-Error code here just means success or failure.
-I did not like it either, but that was just to fix a bug (cc:stable)
-and I have one patch more to refactor that stuff for mainline kernel.
+Hi,
 
-But I will re-send updated patch in a moment.
+this is a resend of a patchset dated Jun 10th (see
+https://lkml.org/lkml/2012/6/10/188) even if some of the
+commits have been squashed.
 
-Thanks.
+I'm working on the implementation of the common clock framework
+for the STA2X11 (aka CONNEXT) soc.
+To configure, enable and disable clocks, some general purpose
+registers (apb-soc-registers) must be accessed. Such registers
+can be reached through bar #1 of a multifunction pci device,
+which is not covered by the current version of sta2x11-mfd.
+This patch series adds support for the apb-soc-registers device
+and rearranges the sta2x11-mfd driver to avoid unnecessary
+code duplications and to cope with the increased number of platform
+devices.
 
->              Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Davide
+
+Davide Ciminaghi (8):
+  sta2x11-mfd : add apb-soc regs driver and factor out common code
+  sta2x11-mfd : add sta2x11_mfd_get_regs_data() function
+  sta2x11-mfd : use defines for platform devices' names
+  sta2x11-mfd : only add sta2x11_mfd if it hasn't already been added
+  sta2x11-mfd : platform probe: don't mind about gpio platform data
+  sta2x11-mfd : use one lock per device instead of one lock per mfd.
+  sta2x11-mfd : add defines for some sta2x11 sctl registers.
+  sta2x11-mfd : add myself to copyright
+
+ drivers/mfd/sta2x11-mfd.c       |  416 ++++++++++++++++++++++++++-------------
+ include/linux/mfd/sta2x11-mfd.h |  190 ++++++++++++++++++-
+ 2 files changed, 470 insertions(+), 136 deletions(-)
+
+-- 
+1.7.9.1
+
