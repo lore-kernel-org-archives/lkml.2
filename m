@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2ILVf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 17:35:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40105 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab2ILVfP (ORCPT
+	id S1754657Ab2ILVfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 17:35:24 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46311 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754559Ab2ILVfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 17:35:15 -0400
-Message-Id: <20120912213507.717230135@openvz.org>
+	Wed, 12 Sep 2012 17:35:16 -0400
+Message-Id: <20120912213507.817386985@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 13 Sep 2012 01:29:12 +0400
+Date: Thu, 13 Sep 2012 01:29:13 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Al Viro <viro@zeniv.linux.org.uk>
@@ -20,27 +20,16 @@ Cc: Alexey Dobriyan <adobriyan@gmail.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
         aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>
-Subject: [patch 6/7] fs, epoll: Add procfs fdinfo helper v2
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 7/7] fdinfo: Show sigmask for signalfd fd v2
 References: <20120912212906.407242774@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventpoll-7
+Content-Disposition: inline; filename=seq-fdinfo-signalfd-3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out eventpoll target file descriptor,
-events and data, the /proc/pid/fdinfo/fd consists of
-
- | pos:	0
- | flags:	02
- | tfd:        5 events:       1d data: ffffffffffffffff
-
-This feature is CONFIG_CHECKPOINT_RESTORE only.
-
-[avagin@: fix for unitialized ret variable]
-
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
 CC: Al Viro <viro@ZenIV.linux.org.uk>
 CC: Alexey Dobriyan <adobriyan@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
@@ -50,57 +39,102 @@ CC: Alexey Dobriyan <adobriyan@gmail.com>
 CC: Matthew Helsley <matt.helsley@gmail.com>
 CC: "J. Bruce Fields" <bfields@fieldses.org>
 CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Andrey Vagin <avagin@openvz.org>
 ---
- fs/eventpoll.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ fs/proc/array.c         |    2 +-
+ fs/signalfd.c           |   26 ++++++++++++++++++++++++++
+ include/linux/proc_fs.h |    3 +++
+ 3 files changed, 30 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.git/fs/eventpoll.c
+Index: linux-2.6.git/fs/proc/array.c
 ===================================================================
---- linux-2.6.git.orig/fs/eventpoll.c
-+++ linux-2.6.git/fs/eventpoll.c
-@@ -38,6 +38,8 @@
- #include <asm/io.h>
- #include <asm/mman.h>
- #include <linux/atomic.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -220,7 +220,7 @@ static inline void task_state(struct seq
+ 	seq_putc(m, '\n');
+ }
  
- /*
-  * LOCKING:
-@@ -783,8 +785,34 @@ static unsigned int ep_eventpoll_poll(st
- 	return pollflags != -1 ? pollflags : 0;
+-static void render_sigset_t(struct seq_file *m, const char *header,
++void render_sigset_t(struct seq_file *m, const char *header,
+ 				sigset_t *set)
+ {
+ 	int i;
+Index: linux-2.6.git/fs/signalfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/signalfd.c
++++ linux-2.6.git/fs/signalfd.c
+@@ -29,6 +29,7 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
++#include <linux/proc_fs.h>
+ 
+ void signalfd_cleanup(struct sighand_struct *sighand)
+ {
+@@ -46,6 +47,7 @@ void signalfd_cleanup(struct sighand_str
+ }
+ 
+ struct signalfd_ctx {
++	seqcount_t cnt;
+ 	sigset_t sigmask;
+ };
+ 
+@@ -227,7 +229,28 @@ static ssize_t signalfd_read(struct file
+ 	return total ? total: ret;
  }
  
 +#ifdef CONFIG_PROC_FS
-+static int ep_show_fdinfo(struct seq_file *m, struct file *f)
++static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
 +{
-+	struct eventpoll *ep = f->private_data;
-+	struct rb_node *rbp;
-+	int ret = 0;
++	struct signalfd_ctx *ctx = f->private_data;
++	sigset_t sigmask;
++	unsigned seq;
 +
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
++	do {
++		seq = read_seqcount_begin(&ctx->cnt);
++		sigmask = ctx->sigmask;
++	} while (read_seqcount_retry(&ctx->cnt, seq));
 +
-+		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
-+				 epi->ffd.fd, epi->event.events,
-+				 (long long)epi->event.data);
-+		if (ret)
-+			break;
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return ret;
++	signotset(&sigmask);
++	render_sigset_t(m, "sigmask:\t", &sigmask);
++	return 0;
 +}
 +#endif
 +
- /* File callbacks that implement the eventpoll file behaviour */
- static const struct file_operations eventpoll_fops = {
+ static const struct file_operations signalfd_fops = {
 +#ifdef CONFIG_PROC_FS
-+	.show_fdinfo	= ep_show_fdinfo,
++	.show_fdinfo	= signalfd_show_fdinfo,
 +#endif
- 	.release	= ep_eventpoll_release,
- 	.poll		= ep_eventpoll_poll,
- 	.llseek		= noop_llseek,
+ 	.release	= signalfd_release,
+ 	.poll		= signalfd_poll,
+ 	.read		= signalfd_read,
+@@ -259,6 +282,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -ENOMEM;
+ 
+ 		ctx->sigmask = sigmask;
++		seqcount_init(&ctx->cnt);
+ 
+ 		/*
+ 		 * When we call this, the initialization must be complete, since
+@@ -279,7 +303,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -EINVAL;
+ 		}
+ 		spin_lock_irq(&current->sighand->siglock);
++		write_seqcount_begin(&ctx->cnt);
+ 		ctx->sigmask = sigmask;
++		write_seqcount_end(&ctx->cnt);
+ 		spin_unlock_irq(&current->sighand->siglock);
+ 
+ 		wake_up(&current->sighand->signalfd_wqh);
+Index: linux-2.6.git/include/linux/proc_fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/proc_fs.h
++++ linux-2.6.git/include/linux/proc_fs.h
+@@ -290,4 +290,7 @@ static inline struct net *PDE_NET(struct
+ 	return pde->parent->data;
+ }
+ 
++#include <asm/signal.h>
++
++void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
+ #endif /* _LINUX_PROC_FS_H */
 
