@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab2IMAk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:40:29 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64398 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab2ILXbk (ORCPT
+	id S1755710Ab2ILXbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:31:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab2ILXbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:40 -0400
+	Wed, 12 Sep 2012 19:31:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: [ 021/108] vfs: canonicalize create mode in build_open_flags()
-Date: Wed, 12 Sep 2012 16:28:19 -0700
-Message-Id: <20120912232452.756868397@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        William Dauchy <wdauchy@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 033/108] NFS: Clear key construction data if the idmap upcall fails
+Date: Wed, 12 Sep 2012 16:28:31 -0700
+Message-Id: <20120912232454.016533928@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,41 +31,151 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit e68726ff72cf7ba5e7d789857fcd9a75ca573f03 upstream.
+commit c5066945b7ea346a11424dbeb7830b7d7d00c206 upstream.
 
-Userspace can pass weird create mode in open(2) that we canonicalize to
-"(mode & S_IALLUGO) | S_IFREG" in vfs_create().
+idmap_pipe_downcall already clears this field if the upcall succeeds,
+but if it fails (rpc.idmapd isn't running) the field will still be set
+on the next call triggering a BUG_ON().  This patch tries to handle all
+possible ways that the upcall could fail and clear the idmap key data
+for each one.
 
-The problem is that we use the uncanonicalized mode before calling vfs_create()
-with unforseen consequences.
-
-So do the canonicalization early in build_open_flags().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Tested-by: William Dauchy <wdauchy@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/open.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/nfs/idmap.c |   56 ++++++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 42 insertions(+), 14 deletions(-)
 
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -930,9 +930,10 @@ static inline int build_open_flags(int f
- 	int lookup_flags = 0;
- 	int acc_mode;
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -63,6 +63,12 @@ struct idmap {
+ 	struct mutex		idmap_mutex;
+ };
  
--	if (!(flags & O_CREAT))
--		mode = 0;
--	op->mode = mode;
-+	if (flags & O_CREAT)
-+		op->mode = (mode & S_IALLUGO) | S_IFREG;
-+	else
-+		op->mode = 0;
++struct idmap_legacy_upcalldata {
++	struct rpc_pipe_msg pipe_msg;
++	struct idmap_msg idmap_msg;
++	struct idmap *idmap;
++};
++
+ /**
+  * nfs_fattr_init_names - initialise the nfs_fattr owner_name/group_name fields
+  * @fattr: fully initialised struct nfs_fattr
+@@ -326,6 +332,7 @@ static ssize_t nfs_idmap_get_key(const c
+ 		ret = nfs_idmap_request_key(&key_type_id_resolver_legacy,
+ 					    name, namelen, type, data,
+ 					    data_size, idmap);
++		idmap->idmap_key_cons = NULL;
+ 		mutex_unlock(&idmap->idmap_mutex);
+ 	}
+ 	return ret;
+@@ -383,11 +390,13 @@ static const match_table_t nfs_idmap_tok
+ static int nfs_idmap_legacy_upcall(struct key_construction *, const char *, void *);
+ static ssize_t idmap_pipe_downcall(struct file *, const char __user *,
+ 				   size_t);
++static void idmap_release_pipe(struct inode *);
+ static void idmap_pipe_destroy_msg(struct rpc_pipe_msg *);
  
- 	/* Must never be set by userspace */
- 	flags &= ~FMODE_NONOTIFY;
+ static const struct rpc_pipe_ops idmap_upcall_ops = {
+ 	.upcall		= rpc_pipe_generic_upcall,
+ 	.downcall	= idmap_pipe_downcall,
++	.release_pipe	= idmap_release_pipe,
+ 	.destroy_msg	= idmap_pipe_destroy_msg,
+ };
+ 
+@@ -619,7 +628,8 @@ void nfs_idmap_quit(void)
+ 	nfs_idmap_quit_keyring();
+ }
+ 
+-static int nfs_idmap_prepare_message(char *desc, struct idmap_msg *im,
++static int nfs_idmap_prepare_message(char *desc, struct idmap *idmap,
++				     struct idmap_msg *im,
+ 				     struct rpc_pipe_msg *msg)
+ {
+ 	substring_t substr;
+@@ -662,6 +672,7 @@ static int nfs_idmap_legacy_upcall(struc
+ 				   const char *op,
+ 				   void *aux)
+ {
++	struct idmap_legacy_upcalldata *data;
+ 	struct rpc_pipe_msg *msg;
+ 	struct idmap_msg *im;
+ 	struct idmap *idmap = (struct idmap *)aux;
+@@ -669,15 +680,15 @@ static int nfs_idmap_legacy_upcall(struc
+ 	int ret = -ENOMEM;
+ 
+ 	/* msg and im are freed in idmap_pipe_destroy_msg */
+-	msg = kmalloc(sizeof(*msg), GFP_KERNEL);
+-	if (!msg)
+-		goto out0;
+-
+-	im = kmalloc(sizeof(*im), GFP_KERNEL);
+-	if (!im)
++	data = kmalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
+ 		goto out1;
+ 
+-	ret = nfs_idmap_prepare_message(key->description, im, msg);
++	msg = &data->pipe_msg;
++	im = &data->idmap_msg;
++	data->idmap = idmap;
++
++	ret = nfs_idmap_prepare_message(key->description, idmap, im, msg);
+ 	if (ret < 0)
+ 		goto out2;
+ 
+@@ -686,15 +697,15 @@ static int nfs_idmap_legacy_upcall(struc
+ 
+ 	ret = rpc_queue_upcall(idmap->idmap_pipe, msg);
+ 	if (ret < 0)
+-		goto out2;
++		goto out3;
+ 
+ 	return ret;
+ 
++out3:
++	idmap->idmap_key_cons = NULL;
+ out2:
+-	kfree(im);
++	kfree(data);
+ out1:
+-	kfree(msg);
+-out0:
+ 	complete_request_key(cons, ret);
+ 	return ret;
+ }
+@@ -778,9 +789,26 @@ out_incomplete:
+ static void
+ idmap_pipe_destroy_msg(struct rpc_pipe_msg *msg)
+ {
++	struct idmap_legacy_upcalldata *data = container_of(msg,
++			struct idmap_legacy_upcalldata,
++			pipe_msg);
++	struct idmap *idmap = data->idmap;
++	struct key_construction *cons;
++	if (msg->errno) {
++		cons = ACCESS_ONCE(idmap->idmap_key_cons);
++		idmap->idmap_key_cons = NULL;
++		complete_request_key(cons, msg->errno);
++	}
+ 	/* Free memory allocated in nfs_idmap_legacy_upcall() */
+-	kfree(msg->data);
+-	kfree(msg);
++	kfree(data);
++}
++
++static void
++idmap_release_pipe(struct inode *inode)
++{
++	struct rpc_inode *rpci = RPC_I(inode);
++	struct idmap *idmap = (struct idmap *)rpci->private;
++	idmap->idmap_key_cons = NULL;
+ }
+ 
+ int nfs_map_name_to_uid(const struct nfs_server *server, const char *name, size_t namelen, __u32 *uid)
 
 
