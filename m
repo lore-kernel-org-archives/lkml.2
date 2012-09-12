@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab2ILOo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:44:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53776 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2ILOo1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:44:27 -0400
-Message-ID: <1347461060.15764.44.camel@twins>
-Subject: Re: [PATCH v2 2/3] perf: use hrtimer for event multiplexing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Date: Wed, 12 Sep 2012 16:44:20 +0200
-In-Reply-To: <CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
-	 <1347459195-5491-3-git-send-email-eranian@google.com>
-	 <1347459764.15764.32.camel@twins>
-	 <CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1759566Ab2ILOon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:44:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759456Ab2ILOol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 10:44:41 -0400
+Date: Wed, 12 Sep 2012 16:45:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] uprobes: Xol should send SIGTRAP if X86_EFLAGS_TF
+	was set
+Message-ID: <20120912144532.GA1786@redhat.com>
+References: <20120903152525.GA9028@redhat.com> <20120903152616.GA9081@redhat.com> <20120912120857.GA9582@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120912120857.GA9582@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-12 at 16:43 +0200, Stephane Eranian wrote:
-> The hrtimer_active is used to prevent activating the timer multiple times
-> in a row. 
+On 09/12, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:16]:
+>
+> > Note: send_sig(SIGTRAP) is not actually right, we need send_sigtrap().
+>
+> Are you pointing to the info field not being filled? or are there other
+> problems?
 
-see hrtimer_active(), this should do what you want I think.
+Yes.
+
+Also, I am not sure but I feel we should move this into generic code
+somehow. We will see.
+
+> > But this needs more changes, handle_swbp() does the same and this is
+> > equally wrong.
+>
+> send_sigtrap() is arch specific and defined for only few archs.
+> we would have to force.
+
+Yes, but we have user_single_step_siginfo(), probably this is enough.
+
+> But these are not related to the patch.
+
+Agreed, lets do this later.
+
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+Thanks!
+
+Oleg.
+
