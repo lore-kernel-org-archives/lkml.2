@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2ILIwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:52:12 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:52632 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab2ILIwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:52:00 -0400
-Date: Wed, 12 Sep 2012 10:51:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-Message-ID: <20120912085140.GA12277@aftab.osrc.amd.com>
-References: <1347403947-20187-1-git-send-email-johunt@akamai.com>
- <504FC2E9.4010708@akamai.com>
+	id S1752742Ab2ILI5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:57:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59105 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab2ILI5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:57:13 -0400
+Date: Wed, 12 Sep 2012 09:54:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: wzch <wzch@marvell.com>, Dave Martin <dave.martin@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH] ARM: suspend: use flush range instead of flush all
+Message-ID: <20120912085445.GW13739@n2100.arm.linux.org.uk>
+References: <1347434328-7207-1-git-send-email-wzch@marvell.com> <CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <504FC2E9.4010708@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 06:02:01PM -0500, Josh Hunt wrote:
-> On 09/11/2012 05:52 PM, Josh Hunt wrote:
-> >With recent kernels we noticed that edac was reporting double the memory size on
-> >systems running with AMD family 0Fh processors. I'm not very familiar with the
-> >code, but this resolves it from what I can see on my systems. At least in
-> >amd64_debug_display_dimm_sizes() and k8_dbam_to_chip_select() there appeared
-> >to be redundant shifts to the left by 1 when WIDTH_128 is present.
+On Wed, Sep 12, 2012 at 01:13:33PM +0530, Shilimkar, Santosh wrote:
+> On Wed, Sep 12, 2012 at 12:48 PM, wzch <wzch@marvell.com> wrote:
+> >  void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
+> >  {
+> > +       u32 *ptr_orig = ptr;
+> >         *save_ptr = virt_to_phys(ptr);
+> >
+> >         /* This must correspond to the LDM in cpu_resume() assembly */
+> > @@ -26,7 +27,8 @@ void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
+> >
+> >         cpu_do_suspend(ptr);
+> >
+> > -       flush_cache_all();
+> Lorenzo's patch was limiting above flush to local cache (LOUs) instead
+> of dropping it completely.
 
-Any chance you could enable CONFIG_EDAC_DEBUG, boot and send me your
-whole dmesg? Privately is fine too.
+Err, that is wrong.  Normally, when CPUs go into suspend, the L1 cache is
+lost entirely.  This is the only flush which many CPUs see of the L1
+cache.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+So removing this flush _will_ break suspend to RAM on existing CPUs.
