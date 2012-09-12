@@ -1,106 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab2ILPS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:18:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34071 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759990Ab2ILPSr (ORCPT
+	id S1760019Ab2ILPTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:19:22 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:37337 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758790Ab2ILPTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:18:47 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
-References: <1346946994-21286-1-git-send-email-apw@canonical.com>
-	<CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
-	<20120907193825.GA4633@fieldses.org>
-	<87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
-	<20120911214450.GB28418@fieldses.org>
-Date: Wed, 12 Sep 2012 17:20:17 +0200
-In-Reply-To: <20120911214450.GB28418@fieldses.org> (J. Bruce Fields's message
-	of "Tue, 11 Sep 2012 17:44:50 -0400")
-Message-ID: <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 12 Sep 2012 11:19:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Wed, 12 Sep 2012 20:49:16 +0530
+Message-ID: <CADysL2bb+LC1ySgkp8Hd_VL8GaFJ_gsuMF=WkmWp+YTdJqKJ4A@mail.gmail.com>
+Subject: [PATCH v5 2/2] OMAP:IOMMU:flush L1 and L2 caches
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+>From d78ddb5b0dffed3fd77e6e010735e869ea41b02f Mon Sep 17 00:00:00 2001
+From: Ramesh Gupta G <grgupta@ti.com>
+Date: Wed, 12 Sep 2012 19:05:29 +0530
+Subject: [PATCH v5 2/2] OMAP:IOMMU:flush L1 and L2 caches
 
-> On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
->> "J. Bruce Fields" <bfields@fieldses.org> writes:
->> 
->> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
->> >> > check refuses permission to write to the inode which prevents us from
->> >> > copying it up even though we have a writable upper layer.  (With an ext4
->> >> > lower layer the inode check will succeed if the inode  is writable even
->> >> > if the filesystem is not.)  It is not clear what the right solution is
->> >> > here.  One approach is to check the inode permissions only (avoiding the
->> >> > filesystem specific permissions op), but it is not clear we can rely on
->> >> > these for all underlying filesystems.  Perhaps this check should only be
->> >> > used for NFS.
->> >
->> > Then couldn't you for example end up circumventing ACLs on the
->> > underlying file to access data cached by reads from another user on the
->> > same system?
->> 
->> Ignoring ACL's should always give less access, isn't that right?
->
-> Not necessarily.
->
-> (It's up to the server--and if anything servers probably want to err on
-> the side of returning mode bits that are an upper, not a lower, bound on
-> the permissions.)
+OMAP IOMMU need to make sure that data in the L1 and L2 caches
+is visible to the MMU hardware whenever the pagetables are
+updated. The current code only takes care of L1 cache using
+assembly. Added code to handle this using a new L1 cache
+maintenance function and the outer cache function.
+Thanks to the RMK's suggestions.
 
-Okay, I looked at the POSIX ACL access check algorithm and now
-understand things better.
+Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
+---
+ drivers/iommu/omap-iommu.c |   41 +++++++++++++++++++----------------------
+ 1 files changed, 19 insertions(+), 22 deletions(-)
 
-Now i think that enforcing ACL's on the overlay is not possible if ACL's
-are not copied up together with the data.
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index d0b1234..8f61ef9 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -469,24 +469,21 @@ EXPORT_SYMBOL_GPL(omap_foreach_iommu_device);
+ /*
+  *	H/W pagetable operations
+  */
+-static void flush_iopgd_range(u32 *first, u32 *last)
++static void flush_iopgd_range(u32 *first, size_t size)
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pgd"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	phys_addr_t phys = virt_to_phys(first);
++
++	iommu_flush_area(first, size);
++	outer_flush_range(phys, phys + size);
+ }
 
-This is because during the copy-up the server checks for access, but it
-checks access for only a single user/group pair.  Subsequent access
-checks on the copied-up object by any other user/group may not reflect
-the original ACL's on the lower filesystem.
+-static void flush_iopte_range(u32 *first, u32 *last)
++static void flush_iopte_range(u32 *first, size_t size)
++
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pte"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	phys_addr_t phys = virt_to_phys(first);
++
++	iommu_flush_area(first, size);
++	outer_flush_range(phys, phys + size);
+ }
 
-So assuming that we can't copy up NFS ACL's, it is possible to
-circumvent those ACL's by triggering a copy-up.  Of course this type of
-"attack" is limited by the fact that copy-up is only triggerable by a
-write type operation.
+ static void iopte_free(u32 *iopte)
+@@ -515,7 +512,7 @@ static u32 *iopte_alloc(struct omap_iommu *obj,
+u32 *iopgd, u32 da)
+ 			return ERR_PTR(-ENOMEM);
 
-I'm not sure...  I believe that we should say that NFS ACL's on the
-lower layer and overlayfs simply don't mix.  In that case current
-behavior of erroring out seems to be the correct one.
+ 		*iopgd = virt_to_phys(iopte) | IOPGD_TABLE;
+-		flush_iopgd_range(iopgd, iopgd);
++		flush_iopgd_range(iopgd, sizeof(*iopgd));
 
-Andy, I'm wondering: what is your use case for NFS with ACL's?
+ 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
+ 	} else {
+@@ -544,7 +541,7 @@ static int iopgd_alloc_section(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+ 	}
 
-Because overlayfs can't completely ignore ACL's on the lower filesystem,
-but it can't enforce them properly either.  So it's a rather weird
-situation.
+ 	*iopgd = (pa & IOSECTION_MASK) | prot | IOPGD_SECTION;
+-	flush_iopgd_range(iopgd, iopgd);
++	flush_iopgd_range(iopgd, sizeof(*iopgd));
+ 	return 0;
+ }
+
+@@ -561,7 +558,7 @@ static int iopgd_alloc_super(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+
+ 	for (i = 0; i < 16; i++)
+ 		*(iopgd + i) = (pa & IOSUPER_MASK) | prot | IOPGD_SUPER;
+-	flush_iopgd_range(iopgd, iopgd + 15);
++	flush_iopgd_range(iopgd, sizeof(*iopgd) * 16);
+ 	return 0;
+ }
+
+@@ -574,7 +571,7 @@ static int iopte_alloc_page(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+ 		return PTR_ERR(iopte);
+
+ 	*iopte = (pa & IOPAGE_MASK) | prot | IOPTE_SMALL;
+-	flush_iopte_range(iopte, iopte);
++	flush_iopte_range(iopte, sizeof(*iopte));
+
+ 	dev_vdbg(obj->dev, "%s: da:%08x pa:%08x pte:%p *pte:%08x\n",
+ 		 __func__, da, pa, iopte, *iopte);
+@@ -599,7 +596,7 @@ static int iopte_alloc_large(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+
+ 	for (i = 0; i < 16; i++)
+ 		*(iopte + i) = (pa & IOLARGE_MASK) | prot | IOPTE_LARGE;
+-	flush_iopte_range(iopte, iopte + 15);
++	flush_iopte_range(iopte, sizeof(*iopte) * 16);
+ 	return 0;
+ }
+
+@@ -702,7 +699,7 @@ static size_t iopgtable_clear_entry_core(struct
+omap_iommu *obj, u32 da)
+ 		}
+ 		bytes *= nent;
+ 		memset(iopte, 0, nent * sizeof(*iopte));
+-		flush_iopte_range(iopte, iopte + (nent - 1) * sizeof(*iopte));
++		flush_iopte_range(iopte, iopte + (nent) * sizeof(*iopte));
+
+ 		/*
+ 		 * do table walk to check if this table is necessary or not
+@@ -724,7 +721,7 @@ static size_t iopgtable_clear_entry_core(struct
+omap_iommu *obj, u32 da)
+ 		bytes *= nent;
+ 	}
+ 	memset(iopgd, 0, nent * sizeof(*iopgd));
+-	flush_iopgd_range(iopgd, iopgd + (nent - 1) * sizeof(*iopgd));
++	flush_iopgd_range(iopgd, iopgd + (nent) * sizeof(*iopgd));
+ out:
+ 	return bytes;
+ }
+@@ -768,7 +765,7 @@ static void iopgtable_clear_entry_all(struct
+omap_iommu *obj)
+ 			iopte_free(iopte_offset(iopgd, 0));
+
+ 		*iopgd = 0;
+-		flush_iopgd_range(iopgd, iopgd);
++		flush_iopgd_range(iopgd, sizeof(*iopgd));
+ 	}
+
+ 	flush_iotlb_all(obj);
+-- 
+1.7.0.4
 
 
->
->> > Is it possible to arrange that the check for a readonly filesystem be
->> > done only by the vfs and not also by ->permission?
->> 
->> You'd need to modify NFS servers for that to work, no?  It's possible
->> but not practical.
->
-> Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
-> had been mounted readonly on the NFS client.
->
-> If it's a read-write mount of a filesystem that's read-only on the
-> server side: well, there is at least an error for that case: the server
-> should return NFSERR_ROFS, and you should see EROFS--could you do the
-> copy-up only in the case you get that error?
-
-If the server returns EROFS then all you know is that the filesystem is
-read-only.  But that's not what we are interested in.  We are interested
-in whether the access would be allowed *if* the filesystem *wasn't*
-read-only.  The server doesn't tell us that.
-
-Thanks,
-Miklos
+-- 
+regards
+Ramesh Gupta G
