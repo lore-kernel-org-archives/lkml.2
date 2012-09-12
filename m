@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335Ab2ILXzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:55:52 -0400
+	id S933364Ab2ILX4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:56:10 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab2ILXnK (ORCPT
+	with ESMTP id S933157Ab2ILXm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:43:10 -0400
+	Wed, 12 Sep 2012 19:42:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Heiko Stuebner <heiko@sntech.de>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 07/46] ARM: S3C24XX: Fix s3c2410_dma_enqueue parameters
-Date: Wed, 12 Sep 2012 16:38:57 -0700
-Message-Id: <20120912233818.432460711@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Wang Xingchao <xingchao.wang@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 03/46] ALSA: hda - fix Copyright debug message
+Date: Wed, 12 Sep 2012 16:38:53 -0700
+Message-Id: <20120912233818.024833982@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,35 +28,30 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Heiko Stuebner <heiko@sntech.de>
+From: Wang Xingchao <xingchao.wang@intel.com>
 
-commit b01858c7806e7e6f6121da2e51c9222fc4d21dc6 upstream.
+commit 088c820b732dbfd515fc66d459d5f5777f79b406 upstream.
 
-Commit d670ac019f60 (ARM: SAMSUNG: DMA Cleanup as per sparse) changed the
-prototype of the s3c2410_dma_* functions to use the enum dma_ch instead
-of an generic unsigned int.
+As spec said, 1 indicates no copyright is asserted.
 
-In the s3c24xx dma.c s3c2410_dma_enqueue seems to have been forgotten,
-the other functions there were changed correctly.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-s3c24xx/dma.c |    2 +-
+ sound/pci/hda/hda_proc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/plat-s3c24xx/dma.c
-+++ b/arch/arm/plat-s3c24xx/dma.c
-@@ -431,7 +431,7 @@ s3c2410_dma_canload(struct s3c2410_dma_c
-  * when necessary.
- */
- 
--int s3c2410_dma_enqueue(unsigned int channel, void *id,
-+int s3c2410_dma_enqueue(enum dma_ch channel, void *id,
- 			dma_addr_t data, int size)
- {
- 	struct s3c2410_dma_chan *chan = s3c_dma_lookup_channel(channel);
+--- a/sound/pci/hda/hda_proc.c
++++ b/sound/pci/hda/hda_proc.c
+@@ -406,7 +406,7 @@ static void print_digital_conv(struct sn
+ 	if (digi1 & AC_DIG1_EMPHASIS)
+ 		snd_iprintf(buffer, " Preemphasis");
+ 	if (digi1 & AC_DIG1_COPYRIGHT)
+-		snd_iprintf(buffer, " Copyright");
++		snd_iprintf(buffer, " Non-Copyright");
+ 	if (digi1 & AC_DIG1_NONAUDIO)
+ 		snd_iprintf(buffer, " Non-Audio");
+ 	if (digi1 & AC_DIG1_PROFESSIONAL)
 
 
