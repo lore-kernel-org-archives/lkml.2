@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab2IMB7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:59:24 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:34990 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2IMB7W (ORCPT
+	id S1755105Ab2IMB7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:59:31 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:17297 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab2IMB72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:59:22 -0400
+	Wed, 12 Sep 2012 21:59:28 -0400
 From: Craig Hada <craig.hada@hp.com>
 To: netdev@vger.kernel.org, craig.hada@hp.com
 Cc: sathya.perla@emulex.com, subbu.seetharaman@emulex.com,
         ajit.khaparde@emulex.com, linux-kernel@vger.kernel.org
 Subject: [PATCH net-next] drivers/net: Enable IOMMU pass through for be2net
-Date: Wed, 12 Sep 2012 10:58:53 -0700
-Message-Id: <1347472734-3196-1-git-send-email-craig.hada@hp.com>
+Date: Wed, 12 Sep 2012 10:58:54 -0700
+Message-Id: <1347472734-3196-2-git-send-email-craig.hada@hp.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1347472734-3196-1-git-send-email-craig.hada@hp.com>
+References: <1347472734-3196-1-git-send-email-craig.hada@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -39,35 +41,28 @@ https://lkml.org/lkml/2012/6/15/20
 Patch 2 - DMAR:[fault reason 02] Present bit in context entry is clear
 https://lkml.org/lkml/2011/11/11/279
 
-The performance of this patch was measured with netperf with vt-d
-enabled and disabled along with kernel boot parameters intel_iommu
-and iommu. Netperf was run 3 times and averaged for each configuration
-of vt-d and boot parameters. The command and parameters used in the
-netperf runs along with results are as follows:
-
-# netperf -c -p 12865 -H 10.10.0.2 -t TCP_STREAM -l 60
-
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
-
-vt-d enabled and intel-iommu=on
- 87380  16384  16384    60.0       3634.29   16.76    -1.00    2.267   -1.000
-
-vt-d enabled
- 87380  16384  16384    60.00      6779.01   6.77     -1.00    0.489   -1.000
-
-vt-d disabled
- 87380  16384  16384    60.00      6807.70   7.00     -1.00    0.505   -1.000
-
-vt-d enabled and intel_iommu=on and iommu=pt
- 87380  16384  16384    60.00      6849.93   7.19     -1.00    0.516   -1.000
-
-
-Craig Hada (1):
-  drivers/net: Enable IOMMU pass through for be2net
-
+Signed-off-by: Craig Hada <craig.hada@hp.com>
+---
  drivers/net/ethernet/emulex/benet/be_main.c |    6 ++++++
  1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index 78b8aa8..57bbea4 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -3835,6 +3835,12 @@ static int __devinit be_probe(struct pci_dev *pdev,
+ 
+ 	status = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
+ 	if (!status) {
++		status = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
++		if (status < 0) {
++			dev_err(&pdev->dev,
++				"dma_set_coherent_mask failed, aborting\n");
++			goto free_netdev;
++		}
+ 		netdev->features |= NETIF_F_HIGHDMA;
+ 	} else {
+ 		status = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+-- 
+1.7.1
 
