@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2IMAfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:35:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1756001Ab2ILXcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:32:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044Ab2ILXcx (ORCPT
+	with ESMTP id S1755083Ab2ILXcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:53 -0400
+	Wed, 12 Sep 2012 19:32:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 040/108] Bluetooth: Set name_state to unknown when entry name is empty
-Date: Wed, 12 Sep 2012 16:28:38 -0700
-Message-Id: <20120912232454.727762687@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Malahal Naineni <malahal@us.ibm.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 050/108] svcrpc: sends on closed socket should stop immediately
+Date: Wed, 12 Sep 2012 16:28:48 -0700
+Message-Id: <20120912232455.784459448@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,31 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ram Malovany <ramm@ti.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit c3e7c0d90b14a3e7ac091d24cef09efb516d587b upstream.
+commit f06f00a24d76e168ecb38d352126fd203937b601 upstream.
 
-When the name of the given entry is empty , the state needs to be
-updated accordingly.
+svc_tcp_sendto sets XPT_CLOSE if we fail to transmit the entire reply.
+However, the XPT_CLOSE won't be acted on immediately.  Meanwhile other
+threads could send further replies before the socket is really shut
+down.  This can manifest as data corruption: for example, if a truncated
+read reply is followed by another rpc reply, that second reply will look
+to the client like further read data.
 
-Signed-off-by: Ram Malovany <ramm@ti.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Symptoms were data corruption preceded by svc_tcp_sendto logging
+something like
+
+	kernel: rpc-srv/tcp: nfsd: sent only 963696 when sending 1048708 bytes - shutting down socket
+
+Reported-by: Malahal Naineni <malahal@us.ibm.com>
+Tested-by: Malahal Naineni <malahal@us.ibm.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/svc_xprt.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1418,6 +1418,8 @@ static void hci_check_pending_name(struc
- 		e->name_state = NAME_KNOWN;
- 		mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
- 				 e->data.rssi, name, name_len);
-+	} else {
-+		e->name_state = NAME_NOT_KNOWN;
- 	}
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -791,7 +791,8 @@ int svc_send(struct svc_rqst *rqstp)
  
- 	if (hci_resolve_next_name(hdev))
+ 	/* Grab mutex to serialize outgoing data. */
+ 	mutex_lock(&xprt->xpt_mutex);
+-	if (test_bit(XPT_DEAD, &xprt->xpt_flags))
++	if (test_bit(XPT_DEAD, &xprt->xpt_flags)
++			|| test_bit(XPT_CLOSE, &xprt->xpt_flags))
+ 		len = -ENOTCONN;
+ 	else
+ 		len = xprt->xpt_ops->xpo_sendto(rqstp);
 
 
