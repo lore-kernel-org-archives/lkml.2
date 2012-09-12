@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2ILILj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:11:39 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31859 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2ILILf (ORCPT
+	id S1756139Ab2ILIMB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:12:01 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:40484 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754768Ab2ILIL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:11:35 -0400
-Date: Wed, 12 Sep 2012 11:11:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, b-cousson@ti.com,
-        j-keerthy@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/4] staging: omap-thermal: Correct checkpatch.pl warnings
-Message-ID: <20120912081127.GB19396@mwanda>
-References: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
- <1347379615-6881-2-git-send-email-eduardo.valentin@ti.com>
+	Wed, 12 Sep 2012 04:11:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347379615-6881-2-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20120912155231.716530c364bb20bd43efec0d@canb.auug.org.au>
+References: <20120912155231.716530c364bb20bd43efec0d@canb.auug.org.au>
+Date: Wed, 12 Sep 2012 11:11:55 +0300
+Message-ID: <CAGF5oy9yPedug0=N5W=47qaN6D1vOr9xje98jm3NBv6qDxof5w@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the staging tree with the thermal tree
+From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 07:06:52PM +0300, Eduardo Valentin wrote:
-> From: J Keerthy <j-keerthy@ti.com>
-> 
-> Removes checkpatch warnings on omap-bandgap.c.
-> 
+Hello Stephen,
 
-Which checkpatch.pl warnings?
 
-> +				omap_bandgap_writel(bg_ptr,
-> +					rval->tshut_threshold,
-> +						   tsr->tshut_threshold);
+On Wed, Sep 12, 2012 at 8:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Greg,
+>
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/omap-thermal/omap-thermal-common.c between commit
+> 76f726fb24bd ("Thermal: Remove tc1/tc2 in generic thermal layer") from
+> the thermal tree and commit 765a1939a364 ("staging: omap-thermal: fix
+> polling period settings") from the staging tree.
+>
+> I fixed it up (I think - see below) and can carry the fix as necessary
+> (no action is required).
 
-That's just whacky.
+Just to confirm that the fix is correct.
 
-Personally, I've never cared much about long lines, so I'd prefer
-to leave these as is until someone can break the functions up and
-remove them in a proper way instead of just shifting everything
-randomly to the left.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/staging/omap-thermal/omap-thermal-common.c
+> index b4cd6cc,46ee0a9..0000000
+> --- a/drivers/staging/omap-thermal/omap-thermal-common.c
+> +++ b/drivers/staging/omap-thermal/omap-thermal-common.c
+> @@@ -248,7 -268,9 +270,8 @@@ int omap_thermal_expose_sensor(struct o
+>         /* Create thermal zone */
+>         data->omap_thermal = thermal_zone_device_register(domain,
+>                                 OMAP_TRIP_NUMBER, 0, data, &omap_thermal_ops,
+> -                               0, FAST_TEMP_MONITORING_RATE);
+>  -                              1, 2, /*TODO: remove this when FW allows */
+> +                               FAST_TEMP_MONITORING_RATE,
+> +                               FAST_TEMP_MONITORING_RATE);
+>         if (IS_ERR_OR_NULL(data->omap_thermal)) {
+>                 dev_err(bg_ptr->dev, "thermal zone device is NULL\n");
+>                 return PTR_ERR(data->omap_thermal);
 
-regards,
-dan carpenter
 
+
+-- 
+
+Eduardo Valentin
