@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab2ILXoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:44:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab2ILXoQ (ORCPT
+	id S1756752Ab2ILXvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:51:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756955Ab2ILXoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:16 -0400
+	Wed, 12 Sep 2012 19:44:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 21/46] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
-Date: Wed, 12 Sep 2012 16:39:11 -0700
-Message-Id: <20120912233819.885242313@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Sreekanth Reddy <sreekanth.reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 37/46] SCSI: mpt2sas: Fix for Driver oops, when loading driver with max_queue_depth command line option to a very small value
+Date: Wed, 12 Sep 2012 16:39:27 -0700
+Message-Id: <20120912233821.552343377@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,71 +29,60 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
 
-commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
+commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
 
-The rpc server tries to ensure that there will be room to send a reply
-before it receives a request.
+If the specified max_queue_depth setting is less than the
+expected number of internal commands, then driver will calculate
+the queue depth size to a negitive number. This negitive number
+is actually a very large number because variable is unsigned
+16bit integer. So, the driver will ask for a very large amount of
+memory for message frames and resulting into oops as memory
+allocation routines will not able to handle such a large request.
 
-It does this by tracking, in xpt_reserved, an upper bound on the total
-size of the replies that is has already committed to for the socket.
+So, in order to limit this kind of oops, The driver need to set
+the max_queue_depth to a scsi mid layer's can_queue value. Then
+the overall message frames required for IO is minimum of either
+(max_queue_depth plus internal commands) or the IOC global
+credits.
 
-Currently it is adding in the estimate for a new reply *before* it
-checks whether there is space available.  If it finds that there is not
-space, it then subtracts the estimate back out.
-
-This may lead the subsequent svc_xprt_enqueue to decide that there is
-space after all.
-
-The results is a svc_recv() that will repeatedly return -EAGAIN, causing
-server threads to loop without doing any actual work.
-
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc_xprt.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -323,7 +323,6 @@ static bool svc_xprt_has_something_to_do
-  */
- void svc_xprt_enqueue(struct svc_xprt *xprt)
- {
--	struct svc_serv	*serv = xprt->xpt_server;
- 	struct svc_pool *pool;
- 	struct svc_rqst	*rqstp;
- 	int cpu;
-@@ -369,8 +368,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
- 				rqstp, rqstp->rq_xprt);
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 		pool->sp_stats.threads_woken++;
- 		wake_up(&rqstp->rq_wait);
- 	} else {
-@@ -650,8 +647,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 	if (xprt) {
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 
- 		/* As there is a shortage of threads and this request
- 		 * had to be queued, don't allow the thread to wait so
-@@ -748,6 +743,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 		else
- 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
- 		dprintk("svc: got len=%d\n", len);
-+		rqstp->rq_reserved = serv->sv_max_mesg;
-+		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2140,10 +2140,13 @@ _base_allocate_memory_pools(struct MPT2S
  	}
- 	svc_xprt_received(xprt);
+ 
+ 	/* command line tunables  for max controller queue depth */
+-	if (max_queue_depth != -1)
+-		max_request_credit = (max_queue_depth < facts->RequestCredit)
+-		    ? max_queue_depth : facts->RequestCredit;
+-	else
++	if (max_queue_depth != -1 && max_queue_depth != 0) {
++		max_request_credit = min_t(u16, max_queue_depth +
++			ioc->hi_priority_depth + ioc->internal_depth,
++			facts->RequestCredit);
++		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
++			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
++	} else
+ 		max_request_credit = min_t(u16, facts->RequestCredit,
+ 		    MAX_HBA_QUEUE_DEPTH);
+ 
+@@ -2218,7 +2221,7 @@ _base_allocate_memory_pools(struct MPT2S
+ 	/* set the scsi host can_queue depth
+ 	 * with some internal commands that could be outstanding
+ 	 */
+-	ioc->shost->can_queue = ioc->scsiio_depth - (2);
++	ioc->shost->can_queue = ioc->scsiio_depth;
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
+ 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
  
 
 
