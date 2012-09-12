@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab2ILXy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:54:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562Ab2ILXnS (ORCPT
+	id S933263Ab2ILXze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:55:34 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933175Ab2ILXnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:43:18 -0400
+	Wed, 12 Sep 2012 19:43:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Christop Fritz <chf.fritz@googlemail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 09/46] ASoC: wm9712: Fix microphone source selection
-Date: Wed, 12 Sep 2012 16:38:59 -0700
-Message-Id: <20120912233818.633847169@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Yong Shen <yong.shen@linaro.org>
+Subject: [ 08/46] ARM: imx: select CPU_FREQ_TABLE when needed
+Date: Wed, 12 Sep 2012 16:38:58 -0700
+Message-Id: <20120912233818.529389627@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -29,73 +30,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit ccf795847a38235ee4a56a24129ce75147d6ba8f upstream.
+commit f637c4c9405e21f44cf0045eaf77eddd3a79ca5a upstream.
 
-Currently the microphone input source is not selectable as while there is
-a DAPM widget it's not connected to anything so it won't be properly
-instantiated. Add something more correct for the input structure to get
-things going, even though it's not hooked into the rest of the routing
-map and so won't actually achieve anything except allowing the relevant
-register bits to be written.
+The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
+so it needs to select that code to be built. This problem has
+apparently existed since the i.MX cpufreq code was first merged
+in v2.6.37.
 
-Reported-by: Christop Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Building IMX without CPU_FREQ_TABLE results in:
+
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
+arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
+arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
+arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
+arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
+arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
+arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
+arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Yong Shen <yong.shen@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm9712.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/codecs/wm9712.c
-+++ b/sound/soc/codecs/wm9712.c
-@@ -270,7 +270,7 @@ SOC_DAPM_ENUM("Route", wm9712_enum[9]);
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1875,6 +1875,7 @@ source "drivers/cpufreq/Kconfig"
+ config CPU_FREQ_IMX
+ 	tristate "CPUfreq driver for i.MX CPUs"
+ 	depends on ARCH_MXC && CPU_FREQ
++	select CPU_FREQ_TABLE
+ 	help
+ 	  This enables the CPUfreq driver for i.MX CPUs.
  
- /* Mic select */
- static const struct snd_kcontrol_new wm9712_mic_src_controls =
--SOC_DAPM_ENUM("Route", wm9712_enum[7]);
-+SOC_DAPM_ENUM("Mic Source Select", wm9712_enum[7]);
- 
- /* diff select */
- static const struct snd_kcontrol_new wm9712_diff_sel_controls =
-@@ -289,7 +289,9 @@ SND_SOC_DAPM_MUX("Left Capture Select",
- 	&wm9712_capture_selectl_controls),
- SND_SOC_DAPM_MUX("Right Capture Select", SND_SOC_NOPM, 0, 0,
- 	&wm9712_capture_selectr_controls),
--SND_SOC_DAPM_MUX("Mic Select Source", SND_SOC_NOPM, 0, 0,
-+SND_SOC_DAPM_MUX("Left Mic Select Source", SND_SOC_NOPM, 0, 0,
-+	&wm9712_mic_src_controls),
-+SND_SOC_DAPM_MUX("Right Mic Select Source", SND_SOC_NOPM, 0, 0,
- 	&wm9712_mic_src_controls),
- SND_SOC_DAPM_MUX("Differential Source", SND_SOC_NOPM, 0, 0,
- 	&wm9712_diff_sel_controls),
-@@ -317,6 +319,7 @@ SND_SOC_DAPM_PGA("Out 3 PGA", AC97_INT_P
- SND_SOC_DAPM_PGA("Line PGA", AC97_INT_PAGING, 2, 1, NULL, 0),
- SND_SOC_DAPM_PGA("Phone PGA", AC97_INT_PAGING, 1, 1, NULL, 0),
- SND_SOC_DAPM_PGA("Mic PGA", AC97_INT_PAGING, 0, 1, NULL, 0),
-+SND_SOC_DAPM_PGA("Differential Mic", SND_SOC_NOPM, 0, 0, NULL, 0),
- SND_SOC_DAPM_MICBIAS("Mic Bias", AC97_INT_PAGING, 10, 1),
- SND_SOC_DAPM_OUTPUT("MONOOUT"),
- SND_SOC_DAPM_OUTPUT("HPOUTL"),
-@@ -377,6 +380,18 @@ static const struct snd_soc_dapm_route w
- 	{"Mic PGA", NULL, "MIC1"},
- 	{"Mic PGA", NULL, "MIC2"},
- 
-+	/* microphones */
-+	{"Differential Mic", NULL, "MIC1"},
-+	{"Differential Mic", NULL, "MIC2"},
-+	{"Left Mic Select Source", "Mic 1", "MIC1"},
-+	{"Left Mic Select Source", "Mic 2", "MIC2"},
-+	{"Left Mic Select Source", "Stereo", "MIC1"},
-+	{"Left Mic Select Source", "Differential", "Differential Mic"},
-+	{"Right Mic Select Source", "Mic 1", "MIC1"},
-+	{"Right Mic Select Source", "Mic 2", "MIC2"},
-+	{"Right Mic Select Source", "Stereo", "MIC2"},
-+	{"Right Mic Select Source", "Differential", "Differential Mic"},
-+
- 	/* left capture selector */
- 	{"Left Capture Select", "Mic", "MIC1"},
- 	{"Left Capture Select", "Speaker Mixer", "Speaker Mixer"},
 
 
