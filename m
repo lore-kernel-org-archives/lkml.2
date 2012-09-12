@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989Ab2IMADt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:03:49 -0400
+	id S933022Ab2IMAEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:04:12 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756747Ab2ILXkp (ORCPT
+	with ESMTP id S1754590Ab2ILXkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:45 -0400
+	Wed, 12 Sep 2012 19:40:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Milton Miller <miltonm@bga.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 65/85] powerpc: Make sure IPI handlers see data written by IPI senders
-Date: Wed, 12 Sep 2012 16:36:48 -0700
-Message-Id: <20120912233548.543035462@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 52/85] rapidio/tsi721: fix unused variable compiler warning
+Date: Wed, 12 Sep 2012 16:36:35 -0700
+Message-Id: <20120912233547.182687031@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,108 +31,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 9fb1b36ca1234e64a5d1cc573175303395e3354d upstream.
+commit 9a9a9a7adafe62a34de8b4fb48936c1c5f9bafa5 upstream.
 
-We have been observing hangs, both of KVM guest vcpu tasks and more
-generally, where a process that is woken doesn't properly wake up and
-continue to run, but instead sticks in TASK_WAKING state.  This
-happens because the update of rq->wake_list in ttwu_queue_remote()
-is not ordered with the update of ipi_message in
-smp_muxed_ipi_message_pass(), and the reading of rq->wake_list in
-scheduler_ipi() is not ordered with the reading of ipi_message in
-smp_ipi_demux().  Thus it is possible for the IPI receiver not to see
-the updated rq->wake_list and therefore conclude that there is nothing
-for it to do.
+Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
+option off.
 
-In order to make sure that anything done before smp_send_reschedule()
-is ordered before anything done in the resulting call to scheduler_ipi(),
-this adds barriers in smp_muxed_message_pass() and smp_ipi_demux().
-The barrier in smp_muxed_message_pass() is a full barrier to ensure that
-there is a full ordering between the smp_send_reschedule() caller and
-scheduler_ipi().  In smp_ipi_demux(), we use xchg() rather than
-xchg_local() because xchg() includes release and acquire barriers.
-Using xchg() rather than xchg_local() makes sense given that
-ipi_message is not just accessed locally.
+This patch is applicable to kernel versions starting from v3.2
 
-This moves the barrier between setting the message and calling the
-cause_ipi() function into the individual cause_ipi implementations.
-Most of them -- those that used outb, out_8 or similar -- already had
-a full barrier because out_8 etc. include a sync before the MMIO
-store.  This adds an explicit barrier in the two remaining cases.
-
-These changes made no measurable difference to the speed of IPIs as
-measured using a simple ping-pong latency test across two CPUs on
-different cores of a POWER7 machine.
-
-The analysis of the reason why processes were not waking up properly
-is due to Milton Miller.
-
-Reported-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/dbell.c       |    2 ++
- arch/powerpc/kernel/smp.c         |   11 +++++++++--
- arch/powerpc/sysdev/xics/icp-hv.c |    6 +++++-
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/rapidio/devices/tsi721.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/dbell.c
-+++ b/arch/powerpc/kernel/dbell.c
-@@ -28,6 +28,8 @@ void doorbell_setup_this_cpu(void)
- 
- void doorbell_cause_ipi(int cpu, unsigned long data)
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2162,7 +2162,7 @@ static int __devinit tsi721_probe(struct
+ 				  const struct pci_device_id *id)
  {
-+	/* Order previous accesses vs. msgsnd, which is treated as a store */
-+	mb();
- 	ppc_msgsnd(PPC_DBELL, 0, data);
- }
+ 	struct tsi721_device *priv;
+-	int i, cap;
++	int cap;
+ 	int err;
+ 	u32 regval;
  
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -215,8 +215,15 @@ void smp_muxed_ipi_message_pass(int cpu,
- 	struct cpu_messages *info = &per_cpu(ipi_message, cpu);
- 	char *message = (char *)&info->messages;
+@@ -2182,12 +2182,15 @@ static int __devinit tsi721_probe(struct
+ 	priv->pdev = pdev;
  
-+	/*
-+	 * Order previous accesses before accesses in the IPI handler.
-+	 */
-+	smp_mb();
- 	message[msg] = 1;
--	mb();
-+	/*
-+	 * cause_ipi functions are required to include a full barrier
-+	 * before doing whatever causes the IPI.
-+	 */
- 	smp_ops->cause_ipi(cpu, info->data);
- }
- 
-@@ -228,7 +235,7 @@ irqreturn_t smp_ipi_demux(void)
- 	mb();	/* order any irq clear */
- 
- 	do {
--		all = xchg_local(&info->messages, 0);
-+		all = xchg(&info->messages, 0);
- 
- #ifdef __BIG_ENDIAN
- 		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNCTION)))
---- a/arch/powerpc/sysdev/xics/icp-hv.c
-+++ b/arch/powerpc/sysdev/xics/icp-hv.c
-@@ -65,7 +65,11 @@ static inline void icp_hv_set_xirr(unsig
- static inline void icp_hv_set_qirr(int n_cpu , u8 value)
- {
- 	int hw_cpu = get_hard_smp_processor_id(n_cpu);
--	long rc = plpar_hcall_norets(H_IPI, hw_cpu, value);
-+	long rc;
-+
-+	/* Make sure all previous accesses are ordered before IPI sending */
-+	mb();
-+	rc = plpar_hcall_norets(H_IPI, hw_cpu, value);
- 	if (rc != H_SUCCESS) {
- 		pr_err("%s: bad return code qirr cpu=%d hw_cpu=%d mfrr=0x%x "
- 			"returned %ld\n", __func__, n_cpu, hw_cpu, value, rc);
+ #ifdef DEBUG
++	{
++	int i;
+ 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
+ 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
+ 			i, (unsigned long long)pci_resource_start(pdev, i),
+ 			(unsigned long)pci_resource_len(pdev, i),
+ 			pci_resource_flags(pdev, i));
+ 	}
++	}
+ #endif
+ 	/*
+ 	 * Verify BAR configuration
 
 
