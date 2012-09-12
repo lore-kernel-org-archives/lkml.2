@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab2ILLsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 07:48:47 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:56182 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755974Ab2ILLrA (ORCPT
+	id S1755065Ab2ILLqv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 07:46:51 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:40422 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754107Ab2ILLqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 07:47:00 -0400
+	Wed, 12 Sep 2012 07:46:48 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -17,9 +17,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>
-Subject: [PATCH 06/11] ARM: OMAP4: hwmod_data: Add resource names to McPDM memory ranges
-Date: Wed, 12 Sep 2012 14:47:02 +0300
-Message-Id: <1347450427-27627-7-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 02/11] ASoC: omap-mcbsp: Use sDMA packet mode instead of frame mode
+Date: Wed, 12 Sep 2012 14:46:58 +0300
+Message-Id: <1347450427-27627-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
@@ -27,34 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help the driver to get the correct memory range to access McPDM
-registers.
+When McBSP is configured in threshold mode we can use sDMA packet mode in
+all cases.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/omap/omap-mcbsp.c | 47 ++++++++++++++++-----------------------------
+ 1 file changed, 17 insertions(+), 30 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 242aee4..f65251e 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -5059,6 +5059,7 @@ static struct omap_hwmod_ocp_if omap44xx_l4_per__mcbsp4 = {
+diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
+index 2e91a86..fe3debc 100644
+--- a/sound/soc/omap/omap-mcbsp.c
++++ b/sound/soc/omap/omap-mcbsp.c
+@@ -81,9 +81,6 @@ static void omap_mcbsp_set_threshold(struct snd_pcm_substream *substream)
+ 	 */
+ 	if (dma_data->packet_size)
+ 		words = dma_data->packet_size;
+-	else if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD)
+-		words = snd_pcm_lib_period_bytes(substream) /
+-						(mcbsp->wlen / 8);
+ 	else
+ 		words = 1;
  
- static struct omap_hwmod_addr_space omap44xx_mcpdm_addrs[] = {
- 	{
-+		.name		= "mpu",
- 		.pa_start	= 0x40132000,
- 		.pa_end		= 0x4013207f,
- 		.flags		= ADDR_TYPE_RT
-@@ -5077,6 +5078,7 @@ static struct omap_hwmod_ocp_if omap44xx_l4_abe__mcpdm = {
+@@ -251,6 +248,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 		dma_data->set_threshold = omap_mcbsp_set_threshold;
+ 		if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD) {
+ 			int period_words, max_thrsh;
++			int divider = 0;
  
- static struct omap_hwmod_addr_space omap44xx_mcpdm_dma_addrs[] = {
- 	{
-+		.name		= "dma",
- 		.pa_start	= 0x49032000,
- 		.pa_end		= 0x4903207f,
- 		.flags		= ADDR_TYPE_RT
+ 			period_words = params_period_bytes(params) / (wlen / 8);
+ 			if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+@@ -258,34 +256,23 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 			else
+ 				max_thrsh = mcbsp->max_rx_thres;
+ 			/*
+-			 * If the period contains less or equal number of words,
+-			 * we are using the original threshold mode setup:
+-			 * McBSP threshold = sDMA frame size = period_size
+-			 * Otherwise we switch to sDMA packet mode:
+-			 * McBSP threshold = sDMA packet size
+-			 * sDMA frame size = period size
++			 * Use sDMA packet mode if McBSP is in threshold mode:
++			 * If period words less than the FIFO size the packet
++			 * size is set to the number of period words, otherwise
++			 * Look for the biggest threshold value which divides
++			 * the period size evenly.
+ 			 */
+-			if (period_words > max_thrsh) {
+-				int divider = 0;
+-
+-				/*
+-				 * Look for the biggest threshold value, which
+-				 * divides the period size evenly.
+-				 */
+-				divider = period_words / max_thrsh;
+-				if (period_words % max_thrsh)
+-					divider++;
+-				while (period_words % divider &&
+-					divider < period_words)
+-					divider++;
+-				if (divider == period_words)
+-					return -EINVAL;
+-
+-				pkt_size = period_words / divider;
+-				sync_mode = OMAP_DMA_SYNC_PACKET;
+-			} else {
+-				sync_mode = OMAP_DMA_SYNC_FRAME;
+-			}
++			divider = period_words / max_thrsh;
++			if (period_words % max_thrsh)
++				divider++;
++			while (period_words % divider &&
++				divider < period_words)
++				divider++;
++			if (divider == period_words)
++				return -EINVAL;
++
++			pkt_size = period_words / divider;
++			sync_mode = OMAP_DMA_SYNC_PACKET;
+ 		} else if (channels > 1) {
+ 			/* Use packet mode for non mono streams */
+ 			pkt_size = channels;
 -- 
 1.7.12
 
