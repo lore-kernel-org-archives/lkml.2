@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2ILPpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:45:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58610 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2ILPp3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:45:29 -0400
+	id S1754662Ab2ILPqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:46:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39087 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab2ILPqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:46:15 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        David Howells <dhowells@redhat.com>, Nicolas Pitre <nico@linaro.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH] ARM: fix warning on uninitialized offset.un
+Date: Wed, 12 Sep 2012 11:46:04 -0400
+Message-ID: <1347464765-24167-1-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <87fw6nn7gx.wl%kuninori.morimoto.gx@renesas.com>
-References: <20120912031131.GA22076@localhost>
-	<87fw6nn7gx.wl%kuninori.morimoto.gx@renesas.com>
-Date: Wed, 12 Sep 2012 17:45:28 +0200
-Message-ID: <CACRpkdYagWXN4zOEVNK==kR96R2x7qjM7UX-NmUhtPwEyx=L_A@mail.gmail.com>
-Subject: Re: [PATCH] gpio: pcf857x: fixup smatch WARNING
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 7:19 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
+This patch fixes the following warning:
 
-> 6e20a0a429bd4dc07d6de16d9c247270e04e4aa0
-> (gpio: pcf857x: enable gpio_to_irq() support)
-> added new smatch warnings
->
-> drivers/gpio/gpio-pcf857x.c:288 pcf857x_probe() error: we previously \
->         assumed 'pdata' could be null (see line 277)
-> drivers/gpio/gpio-pcf857x.c:364 pcf857x_probe() warn: variable dereferenced\
->          before check 'pdata' (see line 292)
-> drivers/gpio/gpio-pcf857x.c:421 pcf857x_remove() error: we previously\
->          assumed 'pdata' could be null (see line 410)
->
-> This patch fixes it
->
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+arch/arm/mm/alignment.c: In function 'do_alignment':
+arch/arm/mm/alignment.c:327:15: warning: 'offset.un' may be used uninitialized in this function [-Wmaybe-uninitialized]
+arch/arm/mm/alignment.c:749:21: note: 'offset.un' was declared here
 
-Applied, thanks!
-Linus Walleij
+The fix is to promote the initialization of offset into do_alignment().
+
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+---
+ arch/arm/mm/alignment.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index 9107231..d15877c 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -699,7 +699,6 @@ do_alignment_t32_to_handler(unsigned long *pinstr, struct pt_regs *regs,
+ 	unsigned long instr = *pinstr;
+ 	u16 tinst1 = (instr >> 16) & 0xffff;
+ 	u16 tinst2 = instr & 0xffff;
+-	poffset->un = 0;
+ 
+ 	switch (tinst1 & 0xffe0) {
+ 	/* A6.3.5 Load/Store multiple */
+@@ -795,6 +794,7 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+  fixup:
+ 
+ 	regs->ARM_pc += isize;
++	offset.un = 0;
+ 
+ 	switch (CODING_BITS(instr)) {
+ 	case 0x00000000:	/* 3.13.4 load/store instruction extensions */
+-- 
+1.7.9.5
+
