@@ -1,62 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab2ILAuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 20:50:07 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:57300 "EHLO e6.ny.us.ibm.com"
+	id S1756611Ab2ILAuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 20:50:05 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:59351 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755069Ab2ILAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754829Ab2ILAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 20:50:00 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Prarit Bhargava <prarit@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: John Stultz <john.stultz@linaro.org>, Zhouping Liu <zliu@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] 3.0.y: time: Avoid making adjustments if we haven't accumulated anything
-Date: Tue, 11 Sep 2012 20:49:52 -0400
-Message-Id: <1347410993-19004-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/3] 3.0.y: time: Move ktime_t overflow checking into timespec_valid_strict
+Date: Tue, 11 Sep 2012 20:49:53 -0400
+Message-Id: <1347410993-19004-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
 References: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091200-1976-0000-0000-00001139ADAE
+x-cbid: 12091200-5112-0000-0000-00000C337B86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a -stable backport of bf2ac312195155511a0f79325515cbb61929898a
+This is a -stable backport of cee58483cf56e0ba355fdd97ff5e8925329aa936
 
-If update_wall_time() is called and the current offset isn't large
-enough to accumulate, avoid re-calling timekeeping_adjust which may
-change the clock freq and can cause 1ns inconsistencies with
-CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
+Andreas Bombe reported that the added ktime_t overflow checking added to
+timespec_valid in commit 4e8b14526ca7 ("time: Improve sanity checking of
+timekeeping inputs") was causing problems with X.org because it caused
+timeouts larger then KTIME_T to be invalid.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
+Previously, these large timeouts would be clamped to KTIME_MAX and would
+never expire, which is valid.
+
+This patch splits the ktime_t overflow checking into a new
+timespec_valid_strict function, and converts the timekeeping codes
+internal checking to use this more strict function.
+
+Reported-and-tested-by: Andreas Bombe <aeb@debian.org>
+Cc: Zhouping Liu <zliu@redhat.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/time.h      |    7 +++++++
+ kernel/time/timekeeping.c |   14 ++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/time.h b/include/linux/time.h
+index c8f7233..8c0216e 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -125,6 +125,13 @@ static inline bool timespec_valid(const struct timespec *ts)
+ 	/* Can't have more nanoseconds then a second */
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return false;
++	return true;
++}
++
++static inline bool timespec_valid_strict(const struct timespec *ts)
++{
++	if (!timespec_valid(ts))
++		return false;
+ 	/* Disallow values that could overflow ktime_t */
+ 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
+ 		return false;
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index bfa6be73..3bbaf2d0 100644
+index 3bbaf2d0..c3cbd8c 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -919,6 +919,10 @@ static void update_wall_time(void)
- #else
- 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
- #endif
-+	/* Check if there's really nothing to do */
-+	if (offset < timekeeper.cycle_interval)
-+		return;
-+
- 	timekeeper.xtime_nsec = (s64)xtime.tv_nsec << timekeeper.shift;
+@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespec *tv)
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
  
- 	/*
+-	if (!timespec_valid(tv))
++	if (!timespec_valid_strict(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -428,7 +428,7 @@ int timekeeping_inject_offset(struct timespec *ts)
+ 	timekeeping_forward_now();
+ 
+ 	tmp = timespec_add(xtime,  *ts);
+-	if (!timespec_valid(&tmp)) {
++	if (!timespec_valid_strict(&tmp)) {
+ 		ret = -EINVAL;
+ 		goto error;
+ 	}
+@@ -591,7 +591,7 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
+-	if (!timespec_valid(&now)) {
++	if (!timespec_valid_strict(&now)) {
+ 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		now.tv_sec = 0;
+@@ -599,7 +599,7 @@ void __init timekeeping_init(void)
+ 	}
+ 
+ 	read_boot_clock(&boot);
+-	if (!timespec_valid(&boot)) {
++	if (!timespec_valid_strict(&boot)) {
+ 		pr_warn("WARNING: Boot clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		boot.tv_sec = 0;
+@@ -649,6 +649,12 @@ static void update_sleep_time(struct timespec t)
+  */
+ static void __timekeeping_inject_sleeptime(struct timespec *delta)
+ {
++	if (!timespec_valid_strict(delta)) {
++		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
++					"sleep delta value!\n");
++		return;
++	}
++
+ 	xtime = timespec_add(xtime, *delta);
+ 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
+ 	update_sleep_time(timespec_add(total_sleep_time, *delta));
 -- 
 1.7.9.5
 
