@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2IMAF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:05:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1756945Ab2IMAGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:06:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab2ILXkJ (ORCPT
+	with ESMTP id S932873Ab2ILXkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:09 -0400
+	Wed, 12 Sep 2012 19:40:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Malahal Naineni <malahal@us.ibm.com>,
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 42/85] svcrpc: sends on closed socket should stop immediately
-Date: Wed, 12 Sep 2012 16:36:25 -0700
-Message-Id: <20120912233546.165115856@linuxfoundation.org>
+Subject: [ 40/85] svcrpc: fix BUG() in svc_tcp_clear_pages
+Date: Wed, 12 Sep 2012 16:36:23 -0700
+Message-Id: <20120912233545.956678410@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,40 +30,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit f06f00a24d76e168ecb38d352126fd203937b601 upstream.
+commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
 
-svc_tcp_sendto sets XPT_CLOSE if we fail to transmit the entire reply.
-However, the XPT_CLOSE won't be acted on immediately.  Meanwhile other
-threads could send further replies before the socket is really shut
-down.  This can manifest as data corruption: for example, if a truncated
-read reply is followed by another rpc reply, that second reply will look
-to the client like further read data.
+Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
+consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
+sk_tcplen would lead us to expect n pages of data).
 
-Symptoms were data corruption preceded by svc_tcp_sendto logging
-something like
+svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
+This is OK, since both functions are serialized by XPT_BUSY.  However,
+that means the inconsistency must be repaired before dropping XPT_BUSY.
 
-	kernel: rpc-srv/tcp: nfsd: sent only 963696 when sending 1048708 bytes - shutting down socket
+Therefore we should be ensuring that svc_tcp_save_pages repairs the
+problem before exiting svc_tcp_recv_record on error.
 
-Reported-by: Malahal Naineni <malahal@us.ibm.com>
-Tested-by: Malahal Naineni <malahal@us.ibm.com>
+Symptoms were a BUG() in svc_tcp_clear_pages.
+
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc_xprt.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sunrpc/svcsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -794,7 +794,8 @@ int svc_send(struct svc_rqst *rqstp)
- 
- 	/* Grab mutex to serialize outgoing data. */
- 	mutex_lock(&xprt->xpt_mutex);
--	if (test_bit(XPT_DEAD, &xprt->xpt_flags))
-+	if (test_bit(XPT_DEAD, &xprt->xpt_flags)
-+			|| test_bit(XPT_CLOSE, &xprt->xpt_flags))
- 		len = -ENOTCONN;
- 	else
- 		len = xprt->xpt_ops->xpo_sendto(rqstp);
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1137,9 +1137,9 @@ static int svc_tcp_recvfrom(struct svc_r
+ 	if (len >= 0)
+ 		svsk->sk_tcplen += len;
+ 	if (len != want) {
++		svc_tcp_save_pages(svsk, rqstp);
+ 		if (len < 0 && len != -EAGAIN)
+ 			goto err_other;
+-		svc_tcp_save_pages(svsk, rqstp);
+ 		dprintk("svc: incomplete TCP record (%d of %d)\n",
+ 			svsk->sk_tcplen, svsk->sk_reclen);
+ 		goto err_noclose;
 
 
