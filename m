@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab2ILXrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:47:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S933423Ab2ILXpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:45:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933425Ab2ILXpT (ORCPT
+	with ESMTP id S933396Ab2ILXpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:45:19 -0400
+	Wed, 12 Sep 2012 19:45:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 27/46] block: replace __getblk_slow misfix by grow_dev_page fix
-Date: Wed, 12 Sep 2012 16:39:17 -0700
-Message-Id: <20120912233820.511734466@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 34/46] powerpc: Restore correct DSCR in context switch
+Date: Wed, 12 Sep 2012 16:39:24 -0700
+Message-Id: <20120912233821.243407330@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,202 +28,99 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 676ce6d5ca3098339c028d44fe0427d1566a4d2d upstream.
+commit 714332858bfd40dcf8f741498336d93875c23aa7 upstream.
 
-Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
-is not good: a successful call to grow_buffers() cannot guarantee
-that the page won't be reclaimed before the immediate next call to
-__find_get_block(), which is why there was always a loop there.
+During a context switch we always restore the per thread DSCR value.
+If we aren't doing explicit DSCR management
+(ie thread.dscr_inherit == 0) and the default DSCR changed while
+the process has been sleeping we end up with the wrong value.
 
-Yesterday I got "EXT4-fs error (device loop0): __ext4_get_inode_loc:3595:
-inode #19278: block 664: comm cc1: unable to read itable block" on console,
-which pointed to this commit.
+Check thread.dscr_inherit and select the default DSCR or per thread
+DSCR as required.
 
-I've been trying to bisect for weeks, why kbuild-on-ext4-on-loop-on-tmpfs
-sometimes fails from a missing header file, under memory pressure on
-ppc G5.  I've never seen this on x86, and I've never seen it on 3.5-rc7
-itself, despite that commit being in there: bisection pointed to an
-irrelevant pinctrl merge, but hard to tell when failure takes between
-18 minutes and 38 hours (but so far it's happened quicker on 3.6-rc2).
+This was found with the following test case, when running with
+more threads than CPUs (ie forcing context switching):
 
-(I've since found such __ext4_get_inode_loc errors in /var/log/messages
-from previous weeks: why the message never appeared on console until
-yesterday morning is a mystery for another day.)
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
 
-Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
-a checkpatch nitfix).  Simplify the interface between grow_buffers()
-and grow_dev_page(), and avoid the infinite loop beyond end of device
-by instead checking init_page_buffers()'s end_block there (I presume
-that's more efficient than a repeated call to blkdev_max_block()),
-returning -ENXIO to __getblk_slow() in that case.
+With the four patches applied I can run a combination of all
+test cases successfully at the same time:
 
-And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
-comment, but that is worrying: are all users of __getblk() really
-now prepared for a NULL bh beyond end of device, or will some oops??
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c |   66 +++++++++++++++++++++++++++---------------------------------
- 1 file changed, 30 insertions(+), 36 deletions(-)
+ arch/powerpc/kernel/asm-offsets.c |    1 +
+ arch/powerpc/kernel/entry_64.S    |   23 +++++++++++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -961,7 +961,7 @@ link_dev_buffers(struct page *page, stru
- /*
-  * Initialise the state of a blockdev page's buffers.
-  */ 
--static void
-+static sector_t
- init_page_buffers(struct page *page, struct block_device *bdev,
- 			sector_t block, int size)
- {
-@@ -983,33 +983,41 @@ init_page_buffers(struct page *page, str
- 		block++;
- 		bh = bh->b_this_page;
- 	} while (bh != head);
+--- a/arch/powerpc/kernel/asm-offsets.c
++++ b/arch/powerpc/kernel/asm-offsets.c
+@@ -75,6 +75,7 @@ int main(void)
+ 	DEFINE(SIGSEGV, SIGSEGV);
+ 	DEFINE(NMI_MASK, NMI_MASK);
+ 	DEFINE(THREAD_DSCR, offsetof(struct thread_struct, dscr));
++	DEFINE(THREAD_DSCR_INHERIT, offsetof(struct thread_struct, dscr_inherit));
+ #else
+ 	DEFINE(THREAD_INFO, offsetof(struct task_struct, stack));
+ #endif /* CONFIG_PPC64 */
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -380,6 +380,12 @@ _GLOBAL(ret_from_fork)
+ 	li	r3,0
+ 	b	syscall_exit
+ 
++	.section	".toc","aw"
++DSCR_DEFAULT:
++	.tc dscr_default[TC],dscr_default
 +
-+	/*
-+	 * Caller needs to validate requested block against end of device.
-+	 */
-+	return end_block;
- }
- 
- /*
-  * Create the page-cache page that contains the requested block.
-  *
-- * This is user purely for blockdev mappings.
-+ * This is used purely for blockdev mappings.
-  */
--static struct page *
-+static int
- grow_dev_page(struct block_device *bdev, sector_t block,
--		pgoff_t index, int size)
-+		pgoff_t index, int size, int sizebits)
- {
- 	struct inode *inode = bdev->bd_inode;
- 	struct page *page;
- 	struct buffer_head *bh;
-+	sector_t end_block;
-+	int ret = 0;		/* Will call free_more_memory() */
- 
- 	page = find_or_create_page(inode->i_mapping, index,
- 		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
- 	if (!page)
--		return NULL;
-+		return ret;
- 
- 	BUG_ON(!PageLocked(page));
- 
- 	if (page_has_buffers(page)) {
- 		bh = page_buffers(page);
- 		if (bh->b_size == size) {
--			init_page_buffers(page, bdev, block, size);
--			return page;
-+			end_block = init_page_buffers(page, bdev,
-+						index << sizebits, size);
-+			goto done;
- 		}
- 		if (!try_to_free_buffers(page))
- 			goto failed;
-@@ -1029,15 +1037,15 @@ grow_dev_page(struct block_device *bdev,
- 	 */
- 	spin_lock(&inode->i_mapping->private_lock);
- 	link_dev_buffers(page, bh);
--	init_page_buffers(page, bdev, block, size);
-+	end_block = init_page_buffers(page, bdev, index << sizebits, size);
- 	spin_unlock(&inode->i_mapping->private_lock);
--	return page;
-+done:
-+	ret = (block < end_block) ? 1 : -ENXIO;
- 
- failed:
--	BUG();
- 	unlock_page(page);
- 	page_cache_release(page);
--	return NULL;
-+	return ret;
- }
- 
- /*
-@@ -1047,7 +1055,6 @@ failed:
- static int
- grow_buffers(struct block_device *bdev, sector_t block, int size)
- {
--	struct page *page;
- 	pgoff_t index;
- 	int sizebits;
- 
-@@ -1071,22 +1078,14 @@ grow_buffers(struct block_device *bdev,
- 			bdevname(bdev, b));
- 		return -EIO;
- 	}
--	block = index << sizebits;
++	.section	".text"
 +
- 	/* Create a page with the proper size buffers.. */
--	page = grow_dev_page(bdev, block, index, size);
--	if (!page)
--		return 0;
--	unlock_page(page);
--	page_cache_release(page);
--	return 1;
-+	return grow_dev_page(bdev, block, index, size, sizebits);
- }
+ /*
+  * This routine switches between two different tasks.  The process
+  * state of one is saved on its kernel stack.  Then the state
+@@ -519,9 +525,6 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_1T_SEG
+ 	mr	r1,r8		/* start using new stack pointer */
+ 	std	r7,PACAKSAVE(r13)
  
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
--	int ret;
--	struct buffer_head *bh;
+-	ld	r6,_CCR(r1)
+-	mtcrf	0xFF,r6
 -
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1099,21 +1098,20 @@ __getblk_slow(struct block_device *bdev,
- 		return NULL;
- 	}
+ #ifdef CONFIG_ALTIVEC
+ BEGIN_FTR_SECTION
+ 	ld	r0,THREAD_VRSAVE(r4)
+@@ -530,14 +533,22 @@ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
+ #endif /* CONFIG_ALTIVEC */
+ #ifdef CONFIG_PPC64
+ BEGIN_FTR_SECTION
++	lwz	r6,THREAD_DSCR_INHERIT(r4)
++	ld	r7,DSCR_DEFAULT@toc(2)
+ 	ld	r0,THREAD_DSCR(r4)
+-	cmpd	r0,r25
+-	beq	1f
++	cmpwi	r6,0
++	bne	1f
++	ld	r0,0(r7)
++1:	cmpd	r0,r25
++	beq	2f
+ 	mtspr	SPRN_DSCR,r0
+-1:	
++2:
+ END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
+ #endif
  
--retry:
--	bh = __find_get_block(bdev, block, size);
--	if (bh)
--		return bh;
-+	for (;;) {
-+		struct buffer_head *bh;
-+		int ret;
- 
--	ret = grow_buffers(bdev, block, size);
--	if (ret == 0) {
--		free_more_memory();
--		goto retry;
--	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
++	ld	r6,_CCR(r1)
++	mtcrf	0xFF,r6
 +
-+		ret = grow_buffers(bdev, block, size);
-+		if (ret < 0)
-+			return NULL;
-+		if (ret == 0)
-+			free_more_memory();
- 	}
--	return NULL;
- }
- 
- /*
-@@ -1369,10 +1367,6 @@ EXPORT_SYMBOL(__find_get_block);
-  * which corresponds to the passed block_device, block and size. The
-  * returned buffer has its reference count incremented.
-  *
-- * __getblk() cannot fail - it just keeps trying.  If you pass it an
-- * illegal block number, __getblk() will happily return a buffer_head
-- * which represents the non-existent block.  Very weird.
-- *
-  * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
-  * attempt is failing.  FIXME, perhaps?
-  */
+ 	/* r3-r13 are destroyed -- Cort */
+ 	REST_8GPRS(14, r1)
+ 	REST_10GPRS(22, r1)
 
 
