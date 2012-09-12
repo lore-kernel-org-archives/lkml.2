@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2ILMDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:03:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52767 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756296Ab2ILMDD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:03:03 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "S, Venkatraman" <svenkatr@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "cjb@laptop.org" <cjb@laptop.org>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
-Subject: RE: [PATCH] mmc: omap_hsmmc: Enable HSPE bit for high speed cards
-Thread-Topic: [PATCH] mmc: omap_hsmmc: Enable HSPE bit for high speed cards
-Thread-Index: AQHNiqD9Is2lA8IYP0Sv6fHcSAOj0JeGFa+AgACMIOA=
-Date: Wed, 12 Sep 2012 12:02:54 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA804A8@DBDE01.ent.ti.com>
-References: <1346764151-21323-1-git-send-email-gururaja.hebbar@ti.com>
- <CANfBPZ-Wb7HE45DTmwsMt-hpJRUevjbjm9-aCR61B4JFULb8Mw@mail.gmail.com>
-In-Reply-To: <CANfBPZ-Wb7HE45DTmwsMt-hpJRUevjbjm9-aCR61B4JFULb8Mw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-puzzleid: {20A2B275-26C5-4D43-B732-A9DDCC74933C}
-x-cr-hashedpuzzle: CZ5N F733 OTZO S0et Y9Sc bCgo ctQk hOmf jI1O mKmQ rjUn
- s1Fb w1Fu 3By4 9A5s
- 9THs;6;YwBqAGIAQABsAGEAcAB0AG8AcAAuAG8AcgBnADsAZwByAGEAbgB0AC4AbABpAGsAZQBsAHkAQABzAGUAYwByAGUAdABsAGEAYgAuAGMAYQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBtAG0AYwBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AbwBtAGEAcABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgBvAGIALgBoAGUAcgByAGkAbgBnAEAAYwBhAGwAeABlAGQAYQAuAGMAbwBtAA==;Sosha1_v1;7;{20A2B275-26C5-4D43-B732-A9DDCC74933C};ZwB1AHIAdQByAGEAagBhAC4AaABlAGIAYgBhAHIAQAB0AGkALgBjAG8AbQA=;Wed,
- 12 Sep 2012 12:02:37
- GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAbQBtAGMAOgAgAG8AbQBhAHAAXwBoAHMAbQBtAGMAOgAgAEUAbgBhAGIAbABlACAASABTAFAARQAgAGIAaQB0ACAAZgBvAHIAIABoAGkAZwBoACAAcwBwAGUAZQBkACAAYwBhAHIAZABzAA==
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757557Ab2ILME5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:04:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51178 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753792Ab2ILMEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 08:04:55 -0400
+Message-ID: <1347451493.8707.4.camel@joe2Laptop>
+Subject: [PATCH V2] netfilter/iptables: Fix log-level processing
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: auto75914331@hushmail.com, Bart De Schuymer <bart.de.schuymer@pandora.be>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Sep 2012 05:04:53 -0700
+In-Reply-To: <1347437245.13103.697.camel@edumazet-glaptop>
+References: <20120912045120.9E1A76F446@smtp.hushmail.com>
+	 <1347435973.2456.23.camel@joe2Laptop>
+	 <1347437245.13103.697.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 14:19:51, S, Venkatraman wrote:
-> On Tue, Sep 4, 2012 at 6:39 PM, Hebbar, Gururaja <gururaja.hebbar@ti.com> wrote:
-> > HSMMC IP on AM33xx need a special setting to handle High-speed cards.
-> > Other platforms like TI81xx, OMAP4 may need this as-well. This depends
-> > on the HSMMC IP timing closure done for the high speed cards.
-> >
-> > From AM335x TRM (SPRUH73F - 18.3.12 Output Signals Generation)
-> >
-> > The MMC/SD/SDIO output signals can be driven on either falling edge or
-> > rising edge depending on the SD_HCTL[2] HSPE bit. This feature allows
-> > to reach better timing performance, and thus to increase data transfer
-> > frequency.
-> >
-> > There are few pre-requisites for enabling the HSPE bit
-> > - Controller should support High-Speed-Enable Bit and
-> > - Controller should not be using DDR Mode and
-> > - Controller should advertise that it supports High Speed in
-> >   capabilities register and
-> > - MMC/SD clock coming out of controller > 25MHz
-> >
-> 
-> The patch is well written. But then, I don't see a need for a DT
-> binding for this feature.
+auto75914331@hushmail.com reports that iptables does not correctly
+output the KERN_<level>.
 
-My reasons for DT Binding
-1. Not all platforms using this driver has this bit (OMAP2)
-2. Not all platforms using this driver needs this bit to be enabled (OMAP4)
-3. Platforms which require this bit this to be set needs a method to inform 
-driver.
+$IPTABLES -A RULE_0_in  -j LOG  --log-level notice --log-prefix "DENY  in: "
 
-In order to not disturb old/unsupported platforms, I chose this DT method.
+result with linux 3.6-rc5
+Sep 12 06:37:29 xxxxx kernel: <5>DENY  in: IN=eth0 OUT= MAC=.......
 
-> By definition, HS implies 25MHz or above, so that check seems to be
-> redundant as well.
+result with linux 3.5.3 and older:
+Sep  9 10:43:01 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC......
 
-There are chances that the platform Max Clock output from HSMMC IP is < than 
-25 MHz even if the card is High Speed. In such cases it would be better to
-Confirm that the Clock output is actually > 25 MHz
+commit 04d2c8c83d0
+("printk: convert the format for KERN_<LEVEL> to a 2 byte pattern")
+updated the syslog header style but did not update netfilter uses.
 
-Kindly correct me if I am wrong.
+Do so.
 
-> Meanwhile, I'll check with HSPE enabled on OMAP.
-> 
-> Regards,
-> Venkat.
-> 
+Signed-off-by: Joe Perches <joe@perches.com>
+cc: auto75914331@hushmail.com
+---
+v2: Use KERN_SOH and string concatenation instead of "%c" KERN_SOH_ASCII
+as suggested by Eric Dumazet.
+
+ net/bridge/netfilter/ebt_log.c |    2 +-
+ net/netfilter/xt_LOG.c         |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/net/bridge/netfilter/ebt_log.c b/net/bridge/netfilter/ebt_log.c
+index f88ee53..92de5e5 100644
+--- a/net/bridge/netfilter/ebt_log.c
++++ b/net/bridge/netfilter/ebt_log.c
+@@ -80,7 +80,7 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
+ 	unsigned int bitmask;
+ 
+ 	spin_lock_bh(&ebt_log_lock);
+-	printk("<%c>%s IN=%s OUT=%s MAC source = %pM MAC dest = %pM proto = 0x%04x",
++	printk(KERN_SOH "%c%s IN=%s OUT=%s MAC source = %pM MAC dest = %pM proto = 0x%04x",
+ 	       '0' + loginfo->u.log.level, prefix,
+ 	       in ? in->name : "", out ? out->name : "",
+ 	       eth_hdr(skb)->h_source, eth_hdr(skb)->h_dest,
+diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+index ff5f75f..d1609dd 100644
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@ -436,8 +436,8 @@ log_packet_common(struct sbuff *m,
+ 		  const struct nf_loginfo *loginfo,
+ 		  const char *prefix)
+ {
+-	sb_add(m, "<%d>%sIN=%s OUT=%s ", loginfo->u.log.level,
+-	       prefix,
++	sb_add(m, KERN_SOH "%c%sIN=%s OUT=%s ",
++	       '0' + loginfo->u.log.level, prefix,
+ 	       in ? in->name : "",
+ 	       out ? out->name : "");
+ #ifdef CONFIG_BRIDGE_NETFILTER
 
 
-Regards, 
-Gururaja
+
