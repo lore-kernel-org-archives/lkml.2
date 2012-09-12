@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab2ILM50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:57:26 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50909 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758327Ab2ILM40 (ORCPT
+	id S1758436Ab2ILM5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:57:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55061 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2ILM5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:56:26 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/8] drivers/media/dvb-frontends/s5h1432.c: Removes useless kfree()
-Date: Wed, 12 Sep 2012 14:56:02 +0200
-Message-Id: <1347454564-5178-6-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 12 Sep 2012 08:57:36 -0400
+Message-ID: <505086B3.6070603@linux.vnet.ibm.com>
+Date: Wed, 12 Sep 2012 20:57:23 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] thp: introduce khugepaged_cleanup_page
+References: <50508632.9090003@linux.vnet.ibm.com>
+In-Reply-To: <50508632.9090003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091212-1396-0000-0000-000001DCFDFE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+It is used to release the page on the fail path, then the page need not
+be cleaned up in khugepaged_prealloc_page anymore
 
-Remove useless kfree() and clean up code related to the removal.
-
-The semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r exists@
-position p1,p2;
-expression x;
-@@
-
-if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
-
-@unchanged exists@
-position r.p1,r.p2;
-expression e <= r.x,x,e1;
-iterator I;
-statement S;
-@@
-
-if (x@p1 == NULL) { ... when != I(x,...) S
-                        when != e = e1
-                        when != e += e1
-                        when != e -= e1
-                        when != ++e
-                        when != --e
-                        when != e++
-                        when != e--
-                        when != &e
-   kfree@p2(x); ... return ...; }
-
-@ok depends on unchanged exists@
-position any r.p1;
-position r.p2;
-expression x;
-@@
-
-... when != true x@p1 == NULL
-kfree@p2(x);
-
-@depends on !ok && unchanged@
-position r.p2;
-expression x;
-@@
-
-*kfree@p2(x);
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- drivers/media/dvb-frontends/s5h1432.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ mm/huge_memory.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/s5h1432.c b/drivers/media/dvb-frontends/s5h1432.c
-index 8352ce1..6ec16a2 100644
---- a/drivers/media/dvb-frontends/s5h1432.c
-+++ b/drivers/media/dvb-frontends/s5h1432.c
-@@ -351,8 +351,8 @@ struct dvb_frontend *s5h1432_attach(const struct s5h1432_config *config,
- 	printk(KERN_INFO " Enter s5h1432_attach(). attach success!\n");
- 	/* allocate memory for the internal state */
- 	state = kmalloc(sizeof(struct s5h1432_state), GFP_KERNEL);
--	if (state == NULL)
--		goto error;
-+	if (!state)
-+		return NULL;
- 
- 	/* setup the state */
- 	state->config = config;
-@@ -367,10 +367,6 @@ struct dvb_frontend *s5h1432_attach(const struct s5h1432_config *config,
- 	state->frontend.demodulator_priv = state;
- 
- 	return &state->frontend;
--
--error:
--	kfree(state);
--	return NULL;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5622347..de0a028 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1827,9 +1827,6 @@ static bool khugepaged_prealloc_page(struct page **hpage, bool *wait)
+ 		*wait = false;
+ 		*hpage = NULL;
+ 		khugepaged_alloc_sleep();
+-	} else if (*hpage) {
+-		put_page(*hpage);
+-		*hpage = NULL;
+ 	}
+
+ 	return true;
+@@ -1863,6 +1860,13 @@ static struct page
+ 	count_vm_event(THP_COLLAPSE_ALLOC);
+ 	return *hpage;
  }
- EXPORT_SYMBOL(s5h1432_attach);
- 
++
++static void khugepaged_cleanup_page(struct page **hpage)
++{
++	VM_BUG_ON(!*hpage);
++	put_page(*hpage);
++	*hpage = NULL;
++}
+ #else
+ static struct page *khugepaged_alloc_hugepage(bool *wait)
+ {
+@@ -1903,6 +1907,10 @@ static struct page
+ 	VM_BUG_ON(!*hpage);
+ 	return  *hpage;
+ }
++
++static void khugepaged_cleanup_page(struct page **hpage)
++{
++}
+ #endif
+
+ static void collapse_huge_page(struct mm_struct *mm,
+@@ -1936,8 +1944,10 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	if (!new_page)
+ 		return;
+
+-	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
++	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
++		khugepaged_cleanup_page(hpage);
+ 		return;
++	}
+
+ 	/*
+ 	 * Prevent all access to pagetables with the exception of
+@@ -2048,6 +2058,7 @@ out_up_write:
+ 	return;
+
+ out:
++	khugepaged_cleanup_page(hpage);
+ 	mem_cgroup_uncharge_page(new_page);
+ 	goto out_up_write;
+ }
+-- 
+1.7.7.6
 
