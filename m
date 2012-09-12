@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab2ILXj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:39:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S932879Ab2ILXkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:40:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab2ILXjv (ORCPT
+	with ESMTP id S932871Ab2ILXj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:51 -0400
+	Wed, 12 Sep 2012 19:39:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 51/85] rapidio/tsi721: fix inbound doorbell interrupt handling
-Date: Wed, 12 Sep 2012 16:36:34 -0700
-Message-Id: <20120912233547.083807018@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 39/85] Revert "drm/radeon: fix bo creation retry path"
+Date: Wed, 12 Sep 2012 16:36:22 -0700
+Message-Id: <20120912233545.842346087@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -31,52 +28,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3670e7e12e582c6d67761275d148171feb7a9004 upstream.
+commit 676bc2e1e4f9072f7a640d5b7c99ffdf9709a6e7 upstream.
 
-Make sure that there is no doorbell messages left behind due to disabled
-interrupts during inbound doorbell processing.
+This reverts commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c.
 
-The most common case for this bug is loss of rionet JOIN messages in
-systems with three or more rionet participants and MSI or MSI-X enabled.
-As result, requests for packet transfers may finish with "destination
-unreachable" error message.
+ttm_bo_init() destroys the BO on failure. So this patch makes
+the retry path work with freed memory.  This ends up causing
+kernel panics when this path is hit.
 
-This patch is applicable to kernel versions starting from v3.2.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/radeon/radeon_object.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -439,6 +439,9 @@ static void tsi721_db_dpc(struct work_st
- 				" info %4.4x\n", DBELL_SID(idb.bytes),
- 				DBELL_TID(idb.bytes), DBELL_INF(idb.bytes));
- 		}
-+
-+		wr_ptr = ioread32(priv->regs +
-+				  TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -136,6 +136,7 @@ int radeon_bo_create(struct radeon_devic
+ 	acc_size = ttm_bo_dma_acc_size(&rdev->mman.bdev, size,
+ 				       sizeof(struct radeon_bo));
  
- 	iowrite32(rd_ptr & (IDB_QSIZE - 1),
-@@ -449,6 +452,10 @@ static void tsi721_db_dpc(struct work_st
- 	regval |= TSI721_SR_CHINT_IDBQRCV;
- 	iowrite32(regval,
- 		priv->regs + TSI721_SR_CHINTE(IDB_QUEUE));
-+
-+	wr_ptr = ioread32(priv->regs + TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
-+	if (wr_ptr != rd_ptr)
-+		schedule_work(&priv->idb_work);
- }
- 
- /**
++retry:
+ 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
+ 	if (bo == NULL)
+ 		return -ENOMEM;
+@@ -149,8 +150,6 @@ int radeon_bo_create(struct radeon_devic
+ 	bo->surface_reg = -1;
+ 	INIT_LIST_HEAD(&bo->list);
+ 	INIT_LIST_HEAD(&bo->va);
+-
+-retry:
+ 	radeon_ttm_placement_from_domain(bo, domain);
+ 	/* Kernel allocation are uninterruptible */
+ 	mutex_lock(&rdev->vram_mutex);
 
 
