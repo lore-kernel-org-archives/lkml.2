@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab2ILXfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:35:42 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473Ab2ILXfg (ORCPT
+	id S1756542Ab2ILXft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:35:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab2ILXfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:36 -0400
+	Wed, 12 Sep 2012 19:35:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 096/108] Input: i8042 - add Gigabyte T1005 series netbooks to noloop table
-Date: Wed, 12 Sep 2012 16:29:34 -0700
-Message-Id: <20120912232500.576566695@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 083/108] Remove user-triggerable BUG from mpol_to_str
+Date: Wed, 12 Sep 2012 16:29:21 -0700
+Message-Id: <20120912232459.203810186@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,44 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Dave Jones <davej@redhat.com>
 
-commit 7b125b94ca16b7e618c6241cb02c4c8060cea5e3 upstream.
+commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
 
-They all define their chassis type as "Other" and therefore are not
-categorized as "laptops" by the driver, which tries to perform AUX IRQ
-delivery test which fails and causes touchpad not working.
+Trivially triggerable, found by trinity:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42620
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+  kernel BUG at mm/mempolicy.c:2546!
+  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
+  Call Trace:
+    show_numa_map+0xd5/0x450
+    show_pid_numa_map+0x13/0x20
+    traverse+0xf2/0x230
+    seq_read+0x34b/0x3e0
+    vfs_read+0xac/0x180
+    sys_pread64+0xa2/0xc0
+    system_call_fastpath+0x1a/0x1f
+  RIP: mpol_to_str+0x156/0x360
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ mm/mempolicy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -177,6 +177,20 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Gigabyte T1005 - defines wrong chassis type ("Other") */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "T1005"),
-+		},
-+	},
-+	{
-+		/* Gigabyte T1005M/P - defines wrong chassis type ("Other") */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "T1005M/P"),
-+		},
-+	},
-+	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2556,7 +2556,7 @@ int mpol_to_str(char *buffer, int maxlen
+ 		break;
+ 
+ 	default:
+-		BUG();
++		return -EINVAL;
+ 	}
+ 
+ 	l = strlen(policy_modes[mode]);
 
 
