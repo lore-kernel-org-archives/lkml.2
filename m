@@ -1,117 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2ILXCP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:02:15 -0400
+	id S1752206Ab2ILXCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:02:13 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:12341 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab2ILXCL (ORCPT
+	with ESMTP id S1750830Ab2ILXCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:02:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6833"; a="233698678"
+	Wed, 12 Sep 2012 19:02:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6833"; a="233698645"
 From: David Brown <davidb@codeaurora.org>
 To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: David Brown <davidb@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 2/2] ARM: msm: Move core.h contents into common.h
-Date: Wed, 12 Sep 2012 16:01:40 -0700
-Message-Id: <1347490900-8409-2-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH 1/2] ARM: SoC: convert MSM SMP to SoC descriptor
+Date: Wed, 12 Sep 2012 16:01:39 -0700
+Message-Id: <1347490900-8409-1-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347490900-8409-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1347461906-13527-7-git-send-email-arnd@arndb.de>
 References: <1347461906-13527-7-git-send-email-arnd@arndb.de>
- <1347490900-8409-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No real need to have a separate core.h from the common.h file.  Fold
-these two prototypes into the common header file.
+From: Marc Zyngier <marc.zyngier@arm.com>
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David Brown <davidb@codeaurora.org>
+Convert MSM SMP platforms to use the SoC descriptor to provide
+their SMP and CPU hotplug operations.
+
+Cc: David Brown <davidb@codeaurora.org>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
-This is Stephen Boyd's suggestion to not have a separate core.h.  It
-is probably best to just fold this into the previous patch.
+This is an adaptation of this change on top of the msm-for-3.7 tree I
+recently sent out a pull request for.  The only real change is to
+resolve the conflicts with the simplified board files.
 
- arch/arm/mach-msm/board-dt-8660.c | 1 -
- arch/arm/mach-msm/board-dt-8960.c | 1 -
- arch/arm/mach-msm/common.h        | 2 ++
- arch/arm/mach-msm/core.h          | 2 --
- arch/arm/mach-msm/hotplug.c       | 2 +-
- arch/arm/mach-msm/platsmp.c       | 2 +-
- 6 files changed, 4 insertions(+), 6 deletions(-)
- delete mode 100644 arch/arm/mach-msm/core.h
+ arch/arm/mach-msm/board-dt-8660.c |  2 ++
+ arch/arm/mach-msm/board-dt-8960.c |  2 ++
+ arch/arm/mach-msm/core.h          |  2 ++
+ arch/arm/mach-msm/hotplug.c       | 18 +++---------------
+ arch/arm/mach-msm/platsmp.c       | 19 +++++++++++++++----
+ 5 files changed, 24 insertions(+), 19 deletions(-)
+ create mode 100644 arch/arm/mach-msm/core.h
 
 diff --git a/arch/arm/mach-msm/board-dt-8660.c b/arch/arm/mach-msm/board-dt-8660.c
-index e5643f6..b5b4de2 100644
+index f77f57f..e5643f6 100644
 --- a/arch/arm/mach-msm/board-dt-8660.c
 +++ b/arch/arm/mach-msm/board-dt-8660.c
-@@ -20,7 +20,6 @@
+@@ -20,6 +20,7 @@
  
  #include <mach/board.h>
  #include "common.h"
--#include "core.h"
++#include "core.h"
  
  static const struct of_device_id msm_dt_gic_match[] __initconst = {
  	{ .compatible = "qcom,msm-8660-qgic", .data = gic_of_init },
+@@ -53,6 +54,7 @@ static const char *msm8x60_fluid_match[] __initdata = {
+ };
+ 
+ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.smp = smp_ops(msm_smp_ops),
+ 	.map_io = msm_map_msm8x60_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.handle_irq = gic_handle_irq,
 diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
-index 139d61b..4490edb 100644
+index 8df99b8..139d61b 100644
 --- a/arch/arm/mach-msm/board-dt-8960.c
 +++ b/arch/arm/mach-msm/board-dt-8960.c
-@@ -18,7 +18,6 @@
+@@ -18,6 +18,7 @@
  #include <asm/mach/arch.h>
  
  #include "common.h"
--#include "core.h"
++#include "core.h"
  
  static const struct of_device_id msm_dt_gic_match[] __initconst = {
  	{ .compatible = "qcom,msm-qgic2", .data = gic_of_init },
-diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
-index d68e5d7..633a7159 100644
---- a/arch/arm/mach-msm/common.h
-+++ b/arch/arm/mach-msm/common.h
-@@ -26,5 +26,7 @@ extern void msm_map_qsd8x50_io(void);
- extern void __iomem *__msm_ioremap_caller(unsigned long phys_addr, size_t size,
- 					  unsigned int mtype, void *caller);
+@@ -40,6 +41,7 @@ static const char * const msm8960_dt_match[] __initconst = {
+ };
  
+ DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.smp = smp_ops(msm_smp_ops),
+ 	.map_io = msm_map_msm8960_io,
+ 	.init_irq = msm_dt_init_irq,
+ 	.timer = &msm_dt_timer,
+diff --git a/arch/arm/mach-msm/core.h b/arch/arm/mach-msm/core.h
+new file mode 100644
+index 0000000..a9bab53
+--- /dev/null
++++ b/arch/arm/mach-msm/core.h
+@@ -0,0 +1,2 @@
 +extern struct smp_operations msm_smp_ops;
 +extern void msm_cpu_die(unsigned int cpu);
- 
- #endif
-diff --git a/arch/arm/mach-msm/core.h b/arch/arm/mach-msm/core.h
-deleted file mode 100644
-index a9bab53..0000000
---- a/arch/arm/mach-msm/core.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--extern struct smp_operations msm_smp_ops;
--extern void msm_cpu_die(unsigned int cpu);
 diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
-index d0f79e8..3f87911 100644
+index a446fc1..d0f79e8 100644
 --- a/arch/arm/mach-msm/hotplug.c
 +++ b/arch/arm/mach-msm/hotplug.c
-@@ -13,7 +13,7 @@
+@@ -13,6 +13,8 @@
  #include <asm/cacheflush.h>
  #include <asm/smp_plat.h>
  
--#include "core.h"
-+#include "common.h"
- 
++#include "core.h"
++
  extern volatile int pen_release;
  
+ static inline void cpu_enter_lowpower(void)
+@@ -57,17 +59,12 @@ static inline void platform_do_lowpower(unsigned int cpu)
+ 	}
+ }
+ 
+-int platform_cpu_kill(unsigned int cpu)
+-{
+-	return 1;
+-}
+-
+ /*
+  * platform-specific code to shutdown a CPU
+  *
+  * Called with IRQs disabled
+  */
+-void platform_cpu_die(unsigned int cpu)
++void msm_cpu_die(unsigned int cpu)
+ {
+ 	/*
+ 	 * we're ready for shutdown now, so do it
+@@ -81,12 +78,3 @@ void platform_cpu_die(unsigned int cpu)
+ 	 */
+ 	cpu_leave_lowpower();
+ }
+-
+-int platform_cpu_disable(unsigned int cpu)
+-{
+-	/*
+-	 * we don't allow CPU 0 to be shutdown (it is still too special
+-	 * e.g. clock tick interrupts)
+-	 */
+-	return cpu == 0 ? -EPERM : 0;
+-}
 diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 313bd7d..948f970 100644
+index b119f99..313bd7d 100644
 --- a/arch/arm/mach-msm/platsmp.c
 +++ b/arch/arm/mach-msm/platsmp.c
-@@ -23,7 +23,7 @@
+@@ -23,6 +23,7 @@
  #include <asm/smp_plat.h>
  
  #include "scm-boot.h"
--#include "core.h"
-+#include "common.h"
++#include "core.h"
  
  #define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
  #define SCSS_CPU1CORE_RESET 0xD80
+@@ -43,7 +44,7 @@ static inline int get_core_count(void)
+ 	return ((read_cpuid_id() >> 4) & 3) + 1;
+ }
+ 
+-void __cpuinit platform_secondary_init(unsigned int cpu)
++static void __cpuinit msm_secondary_init(unsigned int cpu)
+ {
+ 	/*
+ 	 * if any interrupts are already enabled for the primary
+@@ -85,7 +86,7 @@ static __cpuinit void prepare_cold_cpu(unsigned int cpu)
+ 				  "address\n");
+ }
+ 
+-int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
++static int __cpuinit msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ {
+ 	unsigned long timeout;
+ 	static int cold_boot_done;
+@@ -145,7 +146,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+  * does not support the ARM SCU, so just set the possible cpu mask to
+  * NR_CPUS.
+  */
+-void __init smp_init_cpus(void)
++static void __init msm_smp_init_cpus(void)
+ {
+ 	unsigned int i, ncores = get_core_count();
+ 
+@@ -161,6 +162,16 @@ void __init smp_init_cpus(void)
+         set_smp_cross_call(gic_raise_softirq);
+ }
+ 
+-void __init platform_smp_prepare_cpus(unsigned int max_cpus)
++static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+ {
+ }
++
++struct smp_operations msm_smp_ops __initdata = {
++	.smp_init_cpus		= msm_smp_init_cpus,
++	.smp_prepare_cpus	= msm_smp_prepare_cpus,
++	.smp_secondary_init	= msm_secondary_init,
++	.smp_boot_secondary	= msm_boot_secondary,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_die		= msm_cpu_die,
++#endif
++};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
