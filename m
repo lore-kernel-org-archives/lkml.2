@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2ILPHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:07:42 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59171 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759917Ab2ILPHS (ORCPT
+	id S932184Ab2ILPHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:07:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60432 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759910Ab2ILPHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Sep 2012 11:07:18 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Hansjoerg Lipp <hjlipp@web.de>
-Cc: kernel-janitors@vger.kernel.org, Tilman Schmidt <tilman@imap.cc>,
-        Karsten Keil <isdn@linux-pingi.de>,
-        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] drivers/isdn/gigaset/common.c: Remove useless kfree
-Date: Wed, 12 Sep 2012 17:06:47 +0200
-Message-Id: <1347462407-13499-9-git-send-email-peter.senna@gmail.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/9] sound/soc/soc-core.c: Remove useless kfree
+Date: Wed, 12 Sep 2012 17:06:46 +0200
+Message-Id: <1347462407-13499-8-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -74,19 +74,20 @@ expression x;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/isdn/gigaset/common.c |    1 -
- 1 file changed, 1 deletion(-)
+ sound/soc/soc-core.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
-index aa41485..30a6b17 100644
---- a/drivers/isdn/gigaset/common.c
-+++ b/drivers/isdn/gigaset/common.c
-@@ -1123,7 +1123,6 @@ struct gigaset_driver *gigaset_initdriver(unsigned minor, unsigned minors,
- 	return drv;
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 2a4c7bb..6b29c73 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4052,8 +4052,6 @@ int snd_soc_register_codec(struct device *dev,
+ 	return 0;
  
- error:
--	kfree(drv->cs);
- 	kfree(drv);
- 	return NULL;
- }
+ fail:
+-	kfree(codec->reg_def_copy);
+-	codec->reg_def_copy = NULL;
+ 	kfree(codec->name);
+ 	kfree(codec);
+ 	return ret;
 
