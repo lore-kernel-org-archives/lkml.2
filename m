@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab2ILQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:59:46 -0400
+	id S1760679Ab2ILRBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:01:22 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:40251 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab2ILQ7k (ORCPT
+	with ESMTP id S932267Ab2ILQ7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:59:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521456"
+	Wed, 12 Sep 2012 12:59:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521483"
 From: David Brown <davidb@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
 Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 14/24] ARM: msm: Move 8660 to DT timer
-Date: Wed, 12 Sep 2012 09:58:50 -0700
-Message-Id: <1347469140-25069-15-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH 23/24] ARM: msm: Allow msm_iomap-8x60 and msm_iomap-8960 to coexist
+Date: Wed, 12 Sep 2012 09:58:59 -0700
+Message-Id: <1347469140-25069-24-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
@@ -26,67 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-Add the timer entry and point the machine descriptor to the
-device tree based msm timer.
+Remove the unused GCC, ACC, and shared memory definitions in the
+8660 static mappings. This allows the 8660 header file to be
+included in msm_iomap.h unconditionally.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-[davidb@codeaurora.org: Remove leading zeros]
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/boot/dts/msm8660-surf.dts | 19 ++++++++++++++++++-
- arch/arm/mach-msm/board-msm8x60.c  |  2 +-
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h | 11 -----------
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |  3 +--
+ arch/arm/mach-msm/io.c                          |  2 --
+ 3 files changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-index 45bc4bb..31f2157 100644
---- a/arch/arm/boot/dts/msm8660-surf.dts
-+++ b/arch/arm/boot/dts/msm8660-surf.dts
-@@ -7,7 +7,7 @@
- 	compatible = "qcom,msm8660-surf", "qcom,msm8660";
- 	interrupt-parent = <&intc>;
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+index c6d38f1..199372e 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+@@ -41,21 +41,10 @@
+ #define MSM8X60_QGIC_CPU_PHYS	0x02081000
+ #define MSM8X60_QGIC_CPU_SIZE	SZ_4K
  
--	intc: interrupt-controller@02080000 {
-+	intc: interrupt-controller@2080000 {
- 		compatible = "qcom,msm-8660-qgic";
- 		interrupt-controller;
- 		#interrupt-cells = <3>;
-@@ -15,6 +15,23 @@
- 		      < 0x02081000 0x1000 >;
- 	};
+-#define MSM_ACC_BASE		IOMEM(0xF0002000)
+-#define MSM_ACC_PHYS		0x02001000
+-#define MSM_ACC_SIZE		SZ_4K
+-
+-#define MSM_GCC_BASE		IOMEM(0xF0003000)
+-#define MSM_GCC_PHYS		0x02082000
+-#define MSM_GCC_SIZE		SZ_4K
+-
+ #define MSM_TLMM_BASE		IOMEM(0xF0004000)
+ #define MSM_TLMM_PHYS		0x00800000
+ #define MSM_TLMM_SIZE		SZ_16K
  
-+	timer@2000004 {
-+		compatible = "qcom,msm-gpt", "qcom,msm-timer";
-+		interrupts = <1 1 0x301>;
-+		reg = <0x02000004 0x10>;
-+		clock-frequency = <32768>;
-+		cpu-offset = <0x40000>;
-+	};
-+
-+	timer@2000024 {
-+		compatible = "qcom,msm-dgt", "qcom,msm-timer";
-+		interrupts = <1 0 0x301>;
-+		reg = <0x02000024 0x10>,
-+		      <0x02000034 0x4>;
-+		clock-frequency = <6750000>;
-+		cpu-offset = <0x40000>;
-+	};
-+
- 	serial@19c400000 {
- 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
- 		reg = <0x19c40000 0x1000>,
-diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-index 97db3cd..64c981d 100644
---- a/arch/arm/mach-msm/board-msm8x60.c
-+++ b/arch/arm/mach-msm/board-msm8x60.c
-@@ -154,7 +154,7 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.handle_irq = gic_handle_irq,
- 	.init_machine = msm8x60_dt_init,
- 	.init_late = msm8x60_init_late,
--	.timer = &msm8x60_timer,
-+	.timer = &msm_dt_timer,
- 	.dt_compat = msm8x60_fluid_match,
- MACHINE_END
- #endif /* CONFIG_OF */
+-#define MSM_SHARED_RAM_BASE	IOMEM(0xF0100000)
+-#define MSM_SHARED_RAM_SIZE	SZ_1M
+-
+ #define MSM8X60_TMR_PHYS	0x02000000
+ #define MSM8X60_TMR_SIZE	SZ_4K
+ 
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
+index 00afdfb..2ab7cf0 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
+@@ -41,12 +41,11 @@
+ #include "msm_iomap-7x30.h"
+ #elif defined(CONFIG_ARCH_QSD8X50)
+ #include "msm_iomap-8x50.h"
+-#elif defined(CONFIG_ARCH_MSM8X60)
+-#include "msm_iomap-8x60.h"
+ #else
+ #include "msm_iomap-7x00.h"
+ #endif
+ 
++#include "msm_iomap-8x60.h"
+ #include "msm_iomap-8960.h"
+ 
+ #define MSM_DEBUG_UART_SIZE	SZ_4K
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 3854f6f..123ef9c 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -111,8 +111,6 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
+ 	MSM_CHIP_DEVICE(QGIC_CPU, MSM8X60),
+ 	MSM_CHIP_DEVICE(TMR, MSM8X60),
+ 	MSM_CHIP_DEVICE(TMR0, MSM8X60),
+-	MSM_DEVICE(ACC),
+-	MSM_DEVICE(GCC),
+ #ifdef CONFIG_DEBUG_MSM8660_UART
+ 	MSM_DEVICE(DEBUG_UART),
+ #endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
