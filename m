@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab2ILMAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:00:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19835 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab2ILMAO (ORCPT
+	id S1757494Ab2ILMCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:02:14 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59356 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab2ILMCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:00:14 -0400
-Date: Wed, 12 Sep 2012 14:59:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
-Subject: Re: [PATCH 03/20] Staging: ipack/bridges/tpci200: provide new
- callbacks to tpci200
-Message-ID: <20120912115926.GF19396@mwanda>
-References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
- <1347267118-9580-3-git-send-email-siglesias@igalia.com>
- <20120911084702.GM19396@mwanda>
- <20120912092833.GA24558@endeavour.taprogge.org>
- <20120912111330.GD19396@mwanda>
- <1347448877.4539.164.camel@fourier.local.igalia.com>
+	Wed, 12 Sep 2012 08:02:13 -0400
+Date: Wed, 12 Sep 2012 13:00:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>
+Subject: Re: [PATCH 11/11] ASoC: omap-pcm: Convert to use dmaengine
+Message-ID: <20120912120028.GC28448@n2100.arm.linux.org.uk>
+References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com> <1347450427-27627-12-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1347448877.4539.164.camel@fourier.local.igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1347450427-27627-12-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 01:21:17PM +0200, Samuel Iglesias Gonsálvez wrote:
-> On Wed, 2012-09-12 at 14:13 +0300, Dan Carpenter wrote:
-> > On Wed, Sep 12, 2012 at 11:28:33AM +0200, Jens Taprogge wrote:
-> > > On Tue, Sep 11, 2012 at 11:47:02AM +0300, Dan Carpenter wrote:
-> > > > > +static int tpci200_get_clockrate(struct ipack_device *dev)
-> > > > > +{
-> > > > > +	struct tpci200_board *tpci200 = check_slot(dev);
-> > > > > +	__le16 __iomem *addr;
-> > > > 
-> > > > The point of the underscores in the __le16 is that you don't want to
-> > > > pollute user space headers in glibc with a bunch of kernel typedefs.
-> > > > It is not needed here.  (Or if it is, then we would need to replace
-> > > > the u16 uses as well).
-> > > 
-> > > I was under the impression that "__le16" is used to indicate the
-> > > byteorder of the pointed to memory.  As far as I can see that
-> > > information is lost when we use u16.  Am I missing something?
-> > > 
-> > 
-> > Use the no-underscore version unless it's inside a header which is
-> > exported to userspace.
-> > 
-> > 	le16 __iomem *addr;
-> > 
-> 
-> But it is not declared in linux/types, it is?
-> 
-> I have found only this typedef in a quick search:
-> 
-> http://lxr.linux.no/#linux+v3.5.3/fs/ntfs/types.h#L28
-> 
-> Should we define them in ipack.h header file or they are defined in
-> other place?
-> 
+On Wed, Sep 12, 2012 at 02:47:07PM +0300, Peter Ujfalusi wrote:
+> 2. Pause/Resume
+>    OMAP DMA engine backend does not support pausing and resuming
+>    an in-progress transfer.  It is unclear from the specs what
+>    effect clearing the enable bit has on the DMA position of a
+>    destination synchronized transfer, and whether the transfer
+>    can be restarted from the exact point that it was paused (or
+>    whether the data in the FIFO read from memory is simply
+>    discarded.)
 
-Oh crap!  You're right.  That's embarrassing.  I'm just totally
-wrong here.  Sorry for that.
+It's worth noting that this comment (which was in my original patch)
+is there to spark _comment_ and _discussion_ and should not make its
+way into the final version of these patches.
 
-regards,
-dan carpenter
+Given that suspend/resume is important on OMAP platforms, it's something
+that needs to be resolved - in a way that complies with what ALSA expects.
+I do not believe that the way the existing drivers do this is compliant
+as the manuals imply that stopping memory->peripheral transfers results
+in data being discarded from the DMA's FIFOs.  As I understand it, ALSA
+requires no data to be discarded.
 
+As we have no way to know how much data may be discarded from the DMA
+FIFO...
