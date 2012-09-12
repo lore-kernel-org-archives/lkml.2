@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab2ILKiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:38:55 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:53298 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757044Ab2ILKix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:38:53 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] plist: Make plist test announcements KERN_DEBUG
-Date: Wed, 12 Sep 2012 12:38:50 +0200
-Message-Id: <1347446330-6378-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
+	id S1757429Ab2ILKob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:44:31 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59388 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756941Ab2ILKoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:44:23 -0400
+Message-ID: <5050679F.9030002@gmail.com>
+Date: Wed, 12 Sep 2012 12:44:47 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Thomas Lendacky <tahm@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
+ when possible
+References: <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120906084526.GE17656@redhat.com> <87txvahfv3.fsf@rustcorp.com.au> <14037987.hiN6MSGY6z@tomlt1.ibmoffice.com> <87bohbdb0o.fsf@rustcorp.com.au>
+In-Reply-To: <87bohbdb0o.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On 09/12/2012 08:13 AM, Rusty Russell wrote:
+> The real question is now whether we'd want a separate indirect cache for
+> the 3 case (so num above should be a bitmap?), or reuse the same one, or
+> not use it at all?
+> 
+> Benchmarking will tell...
 
-They show up in dmesg
+Since there are no specific decisions about actual values, I'll just modify the
+code to use cache per-vq instead of per-device.
 
-[    4.041094] start plist test
-[    4.045804] end plist test
 
-without a lot of meaning so hide them behind debug loglevel.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- lib/plist.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/lib/plist.c b/lib/plist.c
-index 6ab0e521c48b..1ebc95f7a46f 100644
---- a/lib/plist.c
-+++ b/lib/plist.c
-@@ -175,7 +175,7 @@ static int  __init plist_test(void)
- 	int nr_expect = 0, i, loop;
- 	unsigned int r = local_clock();
- 
--	printk(KERN_INFO "start plist test\n");
-+	pr_debug("start plist test\n");
- 	plist_head_init(&test_head);
- 	for (i = 0; i < ARRAY_SIZE(test_node); i++)
- 		plist_node_init(test_node + i, 0);
-@@ -203,7 +203,7 @@ static int  __init plist_test(void)
- 		plist_test_check(nr_expect);
- 	}
- 
--	printk(KERN_INFO "end plist test\n");
-+	pr_debug("end plist test\n");
- 	return 0;
- }
- 
--- 
-1.7.11.rc1
-
+Thanks,
+Sasha
