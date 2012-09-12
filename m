@@ -1,84 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2ILGiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:38:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40404 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab2ILGiT (ORCPT
+	id S1757012Ab2ILGnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:43:25 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62072 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab2ILGnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:38:19 -0400
-Date: Wed, 12 Sep 2012 16:38:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Venu Byravarasu <vbyravarasu@nvidia.com>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: linux-next: manual merge of the tegra tree with the usb tree
-Message-Id: <20120912163809.bc39832f08b77a0c85dd4289@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac"
+	Wed, 12 Sep 2012 02:43:23 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-2e-50502f08477c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 1/2] perf ui/hist: Fix output for 100.00%
+Date: Wed, 12 Sep 2012 15:35:05 +0900
+Message-Id: <1347431706-7839-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hi all,
+Current hpp format functions assume that the output will fit to 6
+character including % sign (XX.YY%) so used "%5.2f%%" as a format
+string.  However it might be the case if collapsing resulted in a
+single entry which has 100.00% (7 character) of period. In this case
+the output will be shifted by 1 character.
 
-Today's linux-next merge of the tegra tree got a conflict in
-drivers/usb/phy/tegra_usb_phy.c between commit 1ba8216f0bc0 ("usb: move
-phy driver from mach-tegra to drivers/usb") from the usb tree and commit
-b0e51927b1e5 ("ARM: tegra: remove useless includes of <mach/*.h>") from
-the tegra tree.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/browsers/hists.c |  2 +-
+ tools/perf/ui/gtk/browser.c    |  2 +-
+ tools/perf/ui/hist.c           | 28 ++++++++++++++--------------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 5a5739bbe6ac..11783170ac62 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -571,7 +571,7 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+ {									\
+ 	double percent = 100.0 * he->_field / hpp->total_period;	\
+ 	*(double *)hpp->ptr = percent;					\
+-	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);	\
++	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
+ }
+ 
+ HPP__COLOR_FN(overhead, period)
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 55acba6e0df4..7ff99ec1d95e 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -56,7 +56,7 @@ static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
+ 	markup = perf_gtk__get_percent_color(percent);				\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%5.2f%%", percent); 	\
++	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
+ 										\
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 407e855cccb8..e3f8cd46e7d7 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -33,13 +33,13 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 			percent = 0.0;
+ 	}
+ 
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
+ 
+ 	if (hpp->ptr) {
+ 		struct hists *old_hists = hpp->ptr;
+@@ -57,52 +57,52 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 
+ static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
+ }
+ 
+ static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_us(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "user");
+ }
+ 
+ static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -121,14 +121,14 @@ static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -147,14 +147,14 @@ static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+-- 
+1.7.11.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/phy/tegra_usb_phy.c
-index 4739903,34ffebb..0000000
---- a/drivers/usb/phy/tegra_usb_phy.c
-+++ b/drivers/usb/phy/tegra_usb_phy.c
-@@@ -28,8 -30,7 +28,7 @@@
-  #include <linux/usb/otg.h>
-  #include <linux/usb/ulpi.h>
-  #include <asm/mach-types.h>
-- #include <mach/gpio-tegra.h>
- -#include <mach/usb_phy.h>
- +#include <linux/usb/tegra_usb_phy.h>
-  #include <mach/iomap.h>
- =20
-  #define ULPI_VIEWPORT		0x170
-
---Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUC3RAAoJEECxmPOUX5FEYGMP/jTx5SmWyQJ7M6XHeV1r2WEn
-AJHvMOScf1G5CdjgzXtBjvurKifvCVwi+IpoI0Dx6rF6C9MK8MIjo2QnLMOOUqaG
-UtY3n58jLoPFF4Vac097Pwp7jLfBKxH8HjtOwjA8iRB4C/tI179tNSx7iLDIGquF
-sQb1Ki5yqXjZFV5pg6fmSAJRAkwFDu2TuZWpcF6im/AAv1ylVvlJVYzYf1QMKANp
-p7XMeLwF9pDX7g+CuhT4mlk/i0UJ12FwOYruO9DCrfXWI05Kq8v5DMy/LmpZ7qf/
-qMlu1MKufPlL7BsCkhxlQ21eU/DBjct8+pGtQwMqO/arDdocJJuGaqyHKzjGe6cI
-odULnsdOVXiZXGdw7Pn/OxbmycFQMf+irgIvKaYNP4cY43AgM65dfv8HLrUGz+Dp
-ELWB/2NdLVCeVKGhwr/qIqkM+zrA99/RktfiKeEXgxEOKUMY4YH1yURTGCHot6aH
-lD01LrAyike7bCc1xLwJFeHGFxQxMOKikV06xXUV/6/zAzbNFiY7iFCBlxXL2Irm
-ps545YBVHLSwyJ1ifFiFBUJu7QdInPWWPEPLUE5ff7b9rwdlYgFFRelLA96ZwNQX
-iN9ZliExLZpPaOzwWi0+B6M+rg2JoXXfySK0IMZO0ygSv/sDwL1EwZ9/KVqG+Jkn
-7sWx4rZ7r0S7TGsBMJyp
-=4BUu
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac--
