@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2ILKSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:18:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34607 "EHLO mx2.suse.de"
+	id S1756736Ab2ILKWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:22:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9288 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab2ILKSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:18:32 -0400
-Date: Wed, 12 Sep 2012 11:18:26 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Machek <pavel@ucw.cz>, David Rientjes <rientjes@google.com>,
-        sgruszka@redhat.com, linux-wireless@vger.kernel.org,
-        johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
-Message-ID: <20120912101826.GL11266@suse.de>
-References: <20120909213228.GA5538@elf.ucw.cz>
- <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
- <20120910111113.GA25159@elf.ucw.cz>
- <20120911162536.bd5171a1.akpm@linux-foundation.org>
+	id S1754697Ab2ILKWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:22:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120911162536.bd5171a1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
+References: <alpine.LRH.2.02.1209121333031.4482@tundra.namei.org>
+	<CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
+Date: Wed, 12 Sep 2012 13:22:13 +0300
+Message-ID: <CALLzPKZ=rBqRUqb_G6U=5XWoC-ps0qGGphgsPz3iHmAGxSGQnw@mail.gmail.com>
+Subject: Re: [GIT] Digital signature library bugfix
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 04:25:36PM -0700, Andrew Morton wrote:
-> On Mon, 10 Sep 2012 13:11:13 +0200
-> Pavel Machek <pavel@ucw.cz> wrote:
-> 
-> > On Sun 2012-09-09 15:40:55, David Rientjes wrote:
-> > > On Sun, 9 Sep 2012, Pavel Machek wrote:
-> > > 
-> > > > On 3.6.0-rc2+, I tried to turn on the wireless, but got
-> > > > 
-> > > > root@amd:~# ifconfig wlan0 10.0.0.6 up
-> > > > SIOCSIFFLAGS: Cannot allocate memory
-> > > > SIOCSIFFLAGS: Cannot allocate memory
-> > > > root@amd:~# 
-> > > > 
-> > > > It looks like it uses "a bit too big" allocations to allocate
-> > > > firmware...? Order five allocation....
-> > > > 
-> > > > Hmm... then I did "echo 3  > /proc/sys/vm/drop_caches" and now the
-> > > > network works. Is it VM problem that it failed to allocate memory when
-> > > > it was freeable?
-> > > > 
-> > > 
-> > > Do you have CONFIG_COMPACTION enabled?
-> > 
-> > Yes:
-> > 
-> > pavel@amd:/data/l/linux-good$ zgrep CONFIG_COMPACTION /proc/config.gz 
-> > CONFIG_COMPACTION=y
-> 
-> Asking for a 256k allocation is pretty crazy - this is an operating
-> system kernel, not a userspace application.
-> 
-> I'm wondering if this is due to a recent change, but I'm having trouble
-> working out where the allocation call site is.
+On Wed, Sep 12, 2012 at 8:38 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Sep 12, 2012 at 11:34 AM, James Morris <jmorris@namei.org> wrote:
+>>
+>> -       if (!err && len == hlen)
+>> -               err = memcmp(out2, h, hlen);
+>> +       if (err || len != hlen) {
+>> +               err = -EINVAL;
+>> +               goto err;
+>> +       }
+>> +
+>> +       err = memcmp(out2, h, hlen);
+>>
+>>  err:
+>
+> Hmm. I'll pull, but this seems to drop the error return from
+> pkcs_1_v1_5_decode_emsa() and always replace it with -EINVAL.
+>
+> Now, I didn't look, and maybe that's the only error that the decode
+> thing can return, but still, it looks bad.
+>
+> Wouldn't it have been better to do instead
+>
+>    if (err)
+>       goto err;
+>    err = -EINVAL;
+>    if (len != hlen)
+>       goto err;
+>
+> and not overwrite the 'err' return with EINVAL?
+>
 
-It may be indirectly due to a recent change and this was somewhat
-deliberate. Order-5 is larger than PAGE_ALLOC_COSTLY_ORDER and I doubt
-__GFP_REPEAT was set so it is treated as something that can fail in
-preference to aggressively reclaiming pages to satisfy the allocation. In
-older kernels with lumpy reclaim and an aggressive kswapd it would have
-probably succeeded but now it errs on the side of failing early instead
-assuming that the caller can recover. Drivers that depend on order-5
-allocations to succeed for correct operation are somewhat frowned upon.
+Error code here just means success or failure.
+I did not like it either, but that was just to fix a bug (cc:stable)
+and I have one patch more to refactor that stuff for mainline kernel.
 
--- 
-Mel Gorman
-SUSE Labs
+But I will re-send updated patch in a moment.
+
+Thanks.
+
+>              Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
