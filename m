@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760430Ab2ILQbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:31:31 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48385 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755983Ab2ILQba (ORCPT
+	id S1760465Ab2ILQel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:34:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53082 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760391Ab2ILQei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:31:30 -0400
-Date: Wed, 12 Sep 2012 22:00:54 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: <marc.zyngier@arm.com>
-Cc: <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>
-Subject: Re: Fwd: [PATCH v9 07/13] ARM: SoC: convert ux500 to SoC descriptor
-Message-ID: <20120912163053.GA10988@bnru02>
-References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
- <1347461906-13527-8-git-send-email-arnd@arndb.de>
- <CAE2-_9o5gEpEddGLvRRA=pe=vroTnBXmGmoBO1Ojos-hOJXQAQ@mail.gmail.com>
+	Wed, 12 Sep 2012 12:34:38 -0400
+Date: Wed, 12 Sep 2012 09:34:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120912163433.GL7677@google.com>
+References: <20120910223125.GC7677@google.com>
+ <20120910223355.GD7677@google.com>
+ <504F30DB.60808@huawei.com>
+ <20120911170837.GM7677@google.com>
+ <20120911174319.GO7677@google.com>
+ <505057D8.4010908@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE2-_9o5gEpEddGLvRRA=pe=vroTnBXmGmoBO1Ojos-hOJXQAQ@mail.gmail.com>
+In-Reply-To: <505057D8.4010908@parallels.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+Hello,
 
+On Wed, Sep 12, 2012 at 01:37:28PM +0400, Glauber Costa wrote:
+> "If a cpuset is cpu or mem exclusive, no other cpuset, other than
+> a direct ancestor or descendant, may share any of the same CPUs or
+> Memory Nodes."
 > 
-> From: Marc Zyngier <marc.zyngier@arm.com>
-> 
-> Convert ux500 platforms to use the SoC descriptor to provide
-> their SMP and CPU hotplug operations.
-> 
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-ux500/board-mop500.c       |    4 ++++
->  arch/arm/mach-ux500/hotplug.c            |   36 ++++++++----------------------
->  arch/arm/mach-ux500/include/mach/setup.h |    3 +++
->  arch/arm/mach-ux500/platsmp.c            |   18 +++++++++++----
->  4 files changed, 30 insertions(+), 31 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> index a534d88..1c6f74b 100644
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -694,6 +694,7 @@ static void __init hrefv60_init_machine(void)
->  MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
->         /* Maintainer: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com> */
->         .atag_offset    = 0x100,
-> +       .smp            = smp_ops(ux500_smp_ops),
->         .map_io         = u8500_map_io,
->         .init_irq       = ux500_init_irq,
->         /* we re-use nomadik timer here */
-> @@ -705,6 +706,7 @@ MACHINE_END
+> So I think it tricked me as well. I was under the impression that
+> "exclusive" would also disallow the kids.
 
-This looks like mips way doing smp operations.
+You two are confusing me even more.  AFAICS, the hierarchical
+properties don't seem to change whether exclusive is set or not.  It
+still ensures children can't have something parent doesn't allow and
+exclusive applies to whether to share something with siblings, so I
+don't think anything is broken hierarchy-wise.  Am I missing
+something?  If so, please be explicit and elaborate where and how it's
+broken.
 
-I have not tested the patch series, will do later.
+Thanks.
 
-Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-
-/srinidhi
+-- 
+tejun
