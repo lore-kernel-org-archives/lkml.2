@@ -1,31 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910Ab2ILXlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:41:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932757Ab2ILXlQ (ORCPT
+	id S933083Ab2IMABF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:01:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757Ab2ILXlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:16 -0400
+	Wed, 12 Sep 2012 19:41:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Herton Ronaldo Krzesinski <herton@canonical.com>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: =?UTF-8?q?=5B=2058/85=5D=20USB=3A=20rtl8187=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
-Date: Wed, 12 Sep 2012 16:36:41 -0700
-Message-Id: <20120912233547.827487228@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Sven Schnelle <svens@stackframe.org>
+Subject: [ 60/85] USB: CDC ACM: Fix NULL pointer dereference
+Date: Wed, 12 Sep 2012 16:36:43 -0700
+Message-Id: <20120912233548.026924705@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,38 +27,34 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Sven Schnelle <svens@stackframe.org>
 
-commit a3433179d0822ccfa8e80aa4d1d52843bd2dcc63 upstream.
+commit 99f347caa4568cb803862730b3b1f1942639523f upstream.
 
-This structure needs to always stick around, even if CONFIG_HOTPLUG
-is disabled, otherwise we can oops when trying to probe a device that
-was added after the structure is thrown away.
+If a device specifies zero endpoints in its interface descriptor,
+the kernel oopses in acm_probe(). Even though that's clearly an
+invalid descriptor, we should test wether we have all endpoints.
+This is especially bad as this oops can be triggered by just
+plugging a USB device in.
 
-Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Bjørn Mork <bjorn@mork.no>
-CC: Herton Ronaldo Krzesinski <herton@canonical.com>
-CC: Hin-Tak Leung <htl10@users.sourceforge.net>
-CC: Larry Finger <Larry.Finger@lwfinger.net>
-CC: "John W. Linville" <linville@tuxdriver.com>
+Signed-off-by: Sven Schnelle <svens@stackframe.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtl818x/rtl8187/dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
-+++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
-@@ -44,7 +44,7 @@ MODULE_AUTHOR("Larry Finger <Larry.Finge
- MODULE_DESCRIPTION("RTL8187/RTL8187B USB wireless driver");
- MODULE_LICENSE("GPL");
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1104,7 +1104,8 @@ skip_normal_probe:
+ 	}
  
--static struct usb_device_id rtl8187_table[] __devinitdata = {
-+static struct usb_device_id rtl8187_table[] = {
- 	/* Asus */
- 	{USB_DEVICE(0x0b05, 0x171d), .driver_info = DEVICE_RTL8187},
- 	/* Belkin */
+ 
+-	if (data_interface->cur_altsetting->desc.bNumEndpoints < 2)
++	if (data_interface->cur_altsetting->desc.bNumEndpoints < 2 ||
++	    control_interface->cur_altsetting->desc.bNumEndpoints == 0)
+ 		return -EINVAL;
+ 
+ 	epctrl = &control_interface->cur_altsetting->endpoint[0].desc;
 
 
