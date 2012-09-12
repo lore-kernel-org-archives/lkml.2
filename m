@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab2ILXo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:44:28 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab2ILXoU (ORCPT
+	id S1757030Ab2ILXoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:44:38 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757000Ab2ILXob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:20 -0400
+	Wed, 12 Sep 2012 19:44:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Cree <mcree@orcon.net.nz>,
-        Matt Turner <mattst88@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 12/46] alpha: Dont export SOCK_NONBLOCK to user space.
-Date: Wed, 12 Sep 2012 16:39:02 -0700
-Message-Id: <20120912233818.947448589@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ian Abbott <abbotti@mev.co.uk>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 39/46] udf: Fix data corruption for files in ICB
+Date: Wed, 12 Sep 2012 16:39:29 -0700
+Message-Id: <20120912233821.757276515@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -29,40 +28,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Cree <mcree@orcon.net.nz>
+From: Jan Kara <jack@suse.cz>
 
-commit a2fa3ccd7b43665fe14cb562761a6c3d26a1d13f upstream.
+commit 9c2fc0de1a6e638fe58c354a463f544f42a90a09 upstream.
 
-Currently we export SOCK_NONBLOCK to user space but that conflicts with
-the definition from glibc leading to compilation errors in user programs
-(e.g.  see Debian bug #658460).
+When a file is stored in ICB (inode), we overwrite part of the file, and
+the page containing file's data is not in page cache, we end up corrupting
+file's data by overwriting them with zeros. The problem is we use
+simple_write_begin() which simply zeroes parts of the page which are not
+written to. The problem has been introduced by be021ee4 (udf: convert to
+new aops).
 
-The generic socket.h restricts the definition of SOCK_NONBLOCK to the
-kernel, as does the MIPS specific socket.h, so let's do the same on
-Alpha.
+Fix the problem by providing a ->write_begin function which makes the page
+properly uptodate.
 
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Acked-by: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/include/asm/socket.h |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/udf/file.c |   35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
 
---- a/arch/alpha/include/asm/socket.h
-+++ b/arch/alpha/include/asm/socket.h
-@@ -69,9 +69,11 @@
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -39,20 +39,24 @@
+ #include "udf_i.h"
+ #include "udf_sb.h"
  
- #define SO_RXQ_OVFL             40
+-static int udf_adinicb_readpage(struct file *file, struct page *page)
++static void __udf_adinicb_readpage(struct page *page)
+ {
+ 	struct inode *inode = page->mapping->host;
+ 	char *kaddr;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
  
-+#ifdef __KERNEL__
- /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
-  * have to define SOCK_NONBLOCK to a different value here.
-  */
- #define SOCK_NONBLOCK	0x40000000
-+#endif /* __KERNEL__ */
+-	BUG_ON(!PageLocked(page));
+-
+ 	kaddr = kmap(page);
+-	memset(kaddr, 0, PAGE_CACHE_SIZE);
+ 	memcpy(kaddr, iinfo->i_ext.i_data + iinfo->i_lenEAttr, inode->i_size);
++	memset(kaddr + inode->i_size, 0, PAGE_CACHE_SIZE - inode->i_size);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	kunmap(page);
++}
++
++static int udf_adinicb_readpage(struct file *file, struct page *page)
++{
++	BUG_ON(!PageLocked(page));
++	__udf_adinicb_readpage(page);
+ 	unlock_page(page);
  
- #endif /* _ASM_SOCKET_H */
+ 	return 0;
+@@ -77,6 +81,25 @@ static int udf_adinicb_writepage(struct
+ 	return 0;
+ }
+ 
++static int udf_adinicb_write_begin(struct file *file,
++			struct address_space *mapping, loff_t pos,
++			unsigned len, unsigned flags, struct page **pagep,
++			void **fsdata)
++{
++	struct page *page;
++
++	if (WARN_ON_ONCE(pos >= PAGE_CACHE_SIZE))
++		return -EIO;
++	page = grab_cache_page_write_begin(mapping, 0, flags);
++	if (!page)
++		return -ENOMEM;
++	*pagep = page;
++
++	if (!PageUptodate(page) && len != PAGE_CACHE_SIZE)
++		__udf_adinicb_readpage(page);
++	return 0;
++}
++
+ static int udf_adinicb_write_end(struct file *file,
+ 			struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned copied,
+@@ -98,8 +121,8 @@ static int udf_adinicb_write_end(struct
+ const struct address_space_operations udf_adinicb_aops = {
+ 	.readpage	= udf_adinicb_readpage,
+ 	.writepage	= udf_adinicb_writepage,
+-	.write_begin = simple_write_begin,
+-	.write_end = udf_adinicb_write_end,
++	.write_begin	= udf_adinicb_write_begin,
++	.write_end	= udf_adinicb_write_end,
+ };
+ 
+ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 
