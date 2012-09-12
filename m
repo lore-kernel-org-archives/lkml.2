@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab2ILHEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:04:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55780 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2ILHEb (ORCPT
+	id S1757502Ab2ILHG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:06:26 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:46460 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab2ILHGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:04:31 -0400
-Date: Wed, 12 Sep 2012 00:01:54 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [RFC] tty/serial/kgdboc: Add and wire up clear_irqs callback
-Message-ID: <20120912070154.GA8932@lizard>
-References: <20120911093042.GA12471@lizard>
- <1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
- <20120911151540.362001c6@pyramind.ukuu.org.uk>
- <20120912033209.GA32156@lizard>
- <CAMbhsRTmZyxFE-vAa-UvNE8KJ2f0cfXP7mncXKcpUiNF6C9PUQ@mail.gmail.com>
- <20120912040657.GA3880@lizard>
- <CAMbhsRT+JR9-qzADiPXo9e59oHFCY4g6HNObKNMeciC5Xj6m6g@mail.gmail.com>
+	Wed, 12 Sep 2012 03:06:24 -0400
+From: "Zhang, Lin-Bao (ESSN-MCXS-Linux Kernel R&D)" <linbao.zhang@hp.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Croxon, Nigel" <nigel.croxon@hp.com>
+Subject: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+ interrupt during the time window between changing VT-d table base address
+ and initializing these VT-d entries
+Thread-Topic: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+ interrupt during the time window between changing VT-d table base address
+ and initializing these VT-d entries
+Thread-Index: Ac2QszzoAvNse2b0TNGUNPrbhE0QOw==
+Date: Wed, 12 Sep 2012 07:02:51 +0000
+Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F9095637@G1W3648.americas.hpqcorp.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.11]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRT+JR9-qzADiPXo9e59oHFCY4g6HNObKNMeciC5Xj6m6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8C76U8C027833
 
-On Tue, Sep 11, 2012 at 09:40:35PM -0700, Colin Cross wrote:
-[..]
-> >> the polling rx function should clear the interrupt
-> >> for you.
-> >
-> > Yes, that's an option. But that way we add a new semantic for the
-> > polling routines, and effecitvely we just merge the two callbacks.
-> >
-> > Of course, if Alan is OK with this, I'm more than OK too. :-)
-> >
-> > (But the polling routines would need to clear all interrupts, not
-> > just rx/tx. For example, if the controller indicated some error, and
-> > nobody clears it, then we'll start reentering infinitely.)
-> 
-> For exynos5, the only non-8250 based serial port I've come across, we
-> clear all interrupts in the rx poll function (see
-> https://android.googlesource.com/kernel/exynos/+/ef427aafffb7153dde59745e440fd7ec41ea969d/arch/arm/mach-exynos/exynos_fiq_debugger.c).
+Hi all, 
+This defect can be observed when the x2apic setting in BIOS is set to "auto" and the BIOS has virtual wire mode enabled on a power up. This defect was found on a 2.6.32 based kernel.
 
-Yes, but if you'd like to merge your code, some might ask you: why?
+The kernel code (smpboot.c, apic.c) does not mask 8259A interrupts before changing and initializing the new VT-d table when x2apic virtual wire mode is enable on power up. The Linux Kernel expects virtual wire mode to be disabled when booting and enables it when interrupts are masked.
 
-You'd answer that you need to clear the interrupts, otherwise you'll
-keep reentering NMI. The next that you might get is this: "this does
-not belong to the getc callback, it's better to factor it out". :-) And
-here comes clear_irq() (or alike, see below).
+The BIOS code builds a simple VT-d table on power up. While the Linux Kernel boots, it first builds an empty VT-d table and use it. After some time, the Linux Kernel then initializes the IO-APIC redirect table, and then initializes the VT-d entries. The window between initializing the redirect table and the VT-d entries, the 8259A interrupts are not masked. If an interrupt occurs in this window, the Linux Kernel will not find a valid entry for this interrupt. The kernel treats it to be a fatal error and panics. If the error never gets cleared, the Linux kernel continuously print this error:
+"NMI: IOCK error (debug interrupt?) for reason"
 
-> >> If you use a clear_irqs callback, you can drop characters if
-> >> one arrives between the last character buffer read and calling
-> >> clear_irqs.
-> >
-> > Only if we call clear_irqs() after reading the characters, but we do
-> > it before. So if new characters are available, we will reenter NMI,
-> > which is OK.
-> >
-> > But if used incorrectly, it truly can cause dropping (or staling) of
-> > characters, so I'd better add some comments about this.
-> 
-> What does clear_irqs() mean for a status or tx interrupt?  The tx
-> interrupt will generally re-assert as long as the tx fifo is empty,
-> which would require disabling it.
+The fix to this defect, the code change is to mask 8259A interrupts before changing VT-d table and initializing VT-d entries. Then unmask interrupts after completing the redirect table entries.
 
-Yup, and that's exactly what we do: http://lkml.org/lkml/2012/9/11/119
 
-Your words made me think that clear_irq() might be indeed a somewhat
-inappropriate name. We have to be even stricter on its definition and
-behaviour.
+Signed-off-by: Zhang, Lin-Bao <linbao.zhang@hp.com>
+Tested-by: Nigel Croxon <nigel.croxon@hp.com>
 
-So, returning to your question "What does clear_irqs() mean", I'd
-answer that: the function must do whatever needed to lower the IRQ
-line, plus the function must leave the port in the state that it's
-still able to throw RX interrupts after the call.
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c index 24deb30..299172c 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1556,7 +1556,6 @@ void __init enable_IR_x2apic(void)
+        }
 
-So, the 100% proper name for this function would be this:
+        local_irq_save(flags);
+-       legacy_pic->mask_all();
+        mask_ioapic_entries();
 
-	quiesce_irqs_but_rx()
+        if (x2apic_preenabled && nox2apic) @@ -1603,7 +1602,6 @@ void __init enable_IR_x2apic(void)
+ skip_x2apic:
+        if (ret < 0) /* IR enabling failed */
+                restore_ioapic_entries();
+-       legacy_pic->restore_mask();
+        local_irq_restore(flags);
+ }
 
-It's a bit long, but does exactly what the name states.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c index 7c5a8c3..95fee01 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1000,7 +1000,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+                zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
+        }
+        set_cpu_sibling_map(0);
+-
++       mask_8259A();
 
-Thanks!
-Anton.
+        if (smp_sanity_check(max_cpus) < 0) {
+                pr_info("SMP disabled\n"); @@ -1037,6 +1037,8 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+                apic->setup_portio_remap();
+
+        smpboot_setup_io_apic();
++       unmask_8259A();
++
+        /*
+         * Set up local APIC timer on boot CPU.
+         */
+
+
+
+-- Bob(Zhang LinBao)
+×ÓÔ»£º¡±²»»¼ÈËÖª²»¼ºÖª,»¼²»ÖªÈËÒ²¡±
+"If not us, who ? if not now, when ?"
+ESSN-MCBS linux kernel enginner
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
