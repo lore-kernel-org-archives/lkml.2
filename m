@@ -1,127 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2ILIwC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:52:02 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:41815 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab2ILIv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:51:59 -0400
-Message-ID: <50504CF1.70605@huawei.com>
-Date: Wed, 12 Sep 2012 16:50:57 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1753355Ab2ILIwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:52:12 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52632 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab2ILIwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:52:00 -0400
+Date: Wed, 12 Sep 2012 10:51:40 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
+ family 0Fh
+Message-ID: <20120912085140.GA12277@aftab.osrc.amd.com>
+References: <1347403947-20187-1-git-send-email-johunt@akamai.com>
+ <504FC2E9.4010708@akamai.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH v1 02/22] PCI: trivial cleanups for drivers/pci/remove.c
-References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-3-git-send-email-jiang.liu@huawei.com> <CAErSpo7oXFGARWS+M=_7_R_4Hw6j5pufRbaNKtwTr5BT-_xeAA@mail.gmail.com>
-In-Reply-To: <CAErSpo7oXFGARWS+M=_7_R_4Hw6j5pufRbaNKtwTr5BT-_xeAA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504FC2E9.4010708@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-9-12 6:03, Bjorn Helgaas wrote:
-> On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> Trivial cleanups for drivers/pci/remove.c:
->> 1) move the comment for pci_stop_and_remove_bus_device() to the right place
->> 2) rename __pci_remove_behind_bridge() to pci_remove_behind_bridge()
-> 
-> This seems fine, but I think my pci/bjorn-cleanup-remove branch subsumes it.
-Hi Bjorn,
-	I have rebased my latest patchset to your pci-next branch, so this
-patch has been dropped.
+On Tue, Sep 11, 2012 at 06:02:01PM -0500, Josh Hunt wrote:
+> On 09/11/2012 05:52 PM, Josh Hunt wrote:
+> >With recent kernels we noticed that edac was reporting double the memory size on
+> >systems running with AMD family 0Fh processors. I'm not very familiar with the
+> >code, but this resolves it from what I can see on my systems. At least in
+> >amd64_debug_display_dimm_sizes() and k8_dbam_to_chip_select() there appeared
+> >to be redundant shifts to the left by 1 when WIDTH_128 is present.
 
-> 
->> Signed-off-by: Jiang Liu <liuj97@gmail.com>
->> ---
->>  drivers/pci/remove.c |   33 +++++++++++++++++----------------
->>  1 file changed, 17 insertions(+), 16 deletions(-)
->>
->> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
->> index 04a4861..33b6318 100644
->> --- a/drivers/pci/remove.c
->> +++ b/drivers/pci/remove.c
->> @@ -78,25 +78,14 @@ void pci_remove_bus(struct pci_bus *pci_bus)
->>  }
->>  EXPORT_SYMBOL(pci_remove_bus);
->>
->> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
->> -/**
->> - * pci_stop_and_remove_bus_device - remove a PCI device and any children
->> - * @dev: the device to remove
->> - *
->> - * Remove a PCI device from the device lists, informing the drivers
->> - * that the device has been removed.  We also remove any subordinate
->> - * buses and children in a depth-first manner.
->> - *
->> - * For each device we remove, delete the device structure from the
->> - * device lists, remove the /proc entry, and notify userspace
->> - * (/sbin/hotplug).
->> - */
->> +static void pci_remove_behind_bridge(struct pci_dev *dev);
->> +
->>  void __pci_remove_bus_device(struct pci_dev *dev)
->>  {
->>         if (dev->subordinate) {
->>                 struct pci_bus *b = dev->subordinate;
->>
->> -               __pci_remove_behind_bridge(dev);
->> +               pci_remove_behind_bridge(dev);
->>                 pci_remove_bus(b);
->>                 dev->subordinate = NULL;
->>         }
->> @@ -105,13 +94,25 @@ void __pci_remove_bus_device(struct pci_dev *dev)
->>  }
->>  EXPORT_SYMBOL(__pci_remove_bus_device);
->>
->> +/**
->> + * pci_stop_and_remove_bus_device - remove a PCI device and any children
->> + * @dev: the device to remove
->> + *
->> + * Remove a PCI device from the device lists, informing the drivers
->> + * that the device has been removed.  We also remove any subordinate
->> + * buses and children in a depth-first manner.
->> + *
->> + * For each device we remove, delete the device structure from the
->> + * device lists, remove the /proc entry, and notify userspace
->> + * (/sbin/hotplug).
->> + */
->>  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
->>  {
->>         pci_stop_bus_device(dev);
->>         __pci_remove_bus_device(dev);
->>  }
->>
->> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
->> +static void pci_remove_behind_bridge(struct pci_dev *dev)
->>  {
->>         struct list_head *l, *n;
->>
->> @@ -141,7 +142,7 @@ static void pci_stop_behind_bridge(struct pci_dev *dev)
->>  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
->>  {
->>         pci_stop_behind_bridge(dev);
->> -       __pci_remove_behind_bridge(dev);
->> +       pci_remove_behind_bridge(dev);
->>  }
->>
->>  static void pci_stop_bus_devices(struct pci_bus *bus)
->> --
->> 1.7.9.5
->>
-> 
-> .
-> 
+Any chance you could enable CONFIG_EDAC_DEBUG, boot and send me your
+whole dmesg? Privately is fine too.
 
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
