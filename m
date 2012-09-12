@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759030Ab2ILONC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:13:02 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55648 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758990Ab2ILOM6 (ORCPT
+	id S1759048Ab2ILONi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:13:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17301 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758949Ab2ILONd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:12:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <871ui84l4l.fsf@devron.myhome.or.jp>
-References: <1346774264-8031-1-git-send-email-linkinjeon@gmail.com>
-	<20120904161747.GJ23464@ZenIV.linux.org.uk>
-	<CAKYAXd_wTxqbC-UxYimCkZtvSddx=f3FG0hoiEY_doMjoxkKog@mail.gmail.com>
-	<87harc34d9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8aztDe1QiFT=NSQX8J+h_FM+cAWwo+Q+fUQHpNGTctw@mail.gmail.com>
-	<87y5knz6l5.fsf@devron.myhome.or.jp>
-	<CAKYAXd_mxq26bhRYd-YM9OBjYMO12TD4wHxm6PqHBLjgGFHaZg@mail.gmail.com>
-	<CAKYAXd-QtSYy4SQErVTXrxcv=YhFzhOm3PKpj=HoZKmpAG7vGQ@mail.gmail.com>
-	<1347020137.2223.13.camel@iscandar.digidescorp.com>
-	<87oblfpmnb.fsf@devron.myhome.or.jp>
-	<87k3w3ph8d.fsf@devron.myhome.or.jp>
-	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
-	<87har6kmfx.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-	<87oblc4u6f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
-	<871ui84l4l.fsf@devron.myhome.or.jp>
-Date: Wed, 12 Sep 2012 23:12:56 +0900
-Message-ID: <CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        bfields@fieldses.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 Sep 2012 10:13:33 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=jUoZk2RAzk0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xkD7W5DCUvkA:10 a=CelUsDXF5JJlFZLyqW0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347459210.10751.48.camel@gandalf.local.home>
+Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
+ from interrupt context
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Wed, 12 Sep 2012 10:13:30 -0400
+In-Reply-To: <20120912010720.GM4257@linux.vnet.ibm.com>
+References: <20120904230834.GB11494@jtriplet-mobl1>
+	 <1346801031.27919.39.camel@gandalf.local.home>
+	 <20120904233344.GB11855@jtriplet-mobl1>
+	 <20120904234307.GY2593@linux.vnet.ibm.com>
+	 <20120906185402.GB5738@jtriplet-mobl1>
+	 <1346961244.1680.46.camel@gandalf.local.home> <20120907060940.GA21166@leaf>
+	 <20120907142441.GD2462@linux.vnet.ibm.com> <20120907144717.GA22059@leaf>
+	 <1347030967.8178.15.camel@gandalf.local.home>
+	 <20120912010720.GM4257@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/12 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> I think that it is unfixable because we can not know i_pos of inode
->>>> changed by rename.
->>>> And even though we know it, there is no rebuild inode routine in -mm.
->>>> And It even can not fix in our patches.
->>>
->>>>> And are you tried https://lkml.org/lkml/2012/6/29/381 patches? It sounds
->>>>> like to improve performance by enabling lookupcache.
->>>> We checked this patches when facing estale issue in -mm.
->>>> But It is no use, these patches just retry system call one more when
->>>> estale error.
->>>
->>> What happens if client retried from lookup() after -ESTALE? (client NFS
->>> doesn't have the name of entry anymore?)
->> Need to rebuild inode routine because inode cache is already evicted on Server.
->>>
->>> I'm assuming the retry means - it restarts from building the NFS file
->>> handle. I might be just wrong here though.
->> As I remember, just retry in VFS of NFS client..I heard this patch is
->> needed for
->> a very specific set of circumstances where an entry goes stale once
->> between the lookup and the actual operation(s).
->> It is not related with current issues(inode cache eviction on server).
->
-> Supposing, the server/client state is after cold boot, and client try to
-> rename at first without any cache on client/server.
->
-> Even if this state, does the server return ESTALE? If it doesn't return
-> ESTALE, I can't understand why it is really unfixable.
-Hi OGAWA.
-Server will not return ESTALE in this case. because the client does
-not have any information for files yet.
-I mean NFS client does not have any old NFS FH(containing old inode
-number) for this.
+On Tue, 2012-09-11 at 18:07 -0700, Paul E. McKenney wrote:
+>  
+> > Paul, you just push your changes through tip, right? Then we can just
+> > let Ingo know. I could even make the patch a separate branch, that Ingo
+> > can pull into the RCU branch too.
+> 
+> Yep!  But we also need to worry about -next and -fengguang.
+> 
+> How about if you push your change into 3.7 and I push mine into 3.8?
 
->
-> If it returns ESTALE, why does it return? I'm assuming the previous code
-> path is the cached FH path.
-The main point for observation is the file handle-which is used for
-all the NFS operation.
-So for all the NFS operation(read/write....) which makes use of the
-NFS file handle in between if there is a change in inode number
-It will result in ESTALE.
-Changing inode number on rename happened at NFS server by inode cache
-eviction with memory pressure.
+Bah, this is what Linus said not to do. Although he's more about not
+having this happen in a single merge window, but this isn't the "git
+way".
 
-lookupcache is used at NFS client to reduce number of LOOKUP operations.
-But , we can still get ESTALE if inode number at NFS Server change
-after LOOKUP, although lookupcache is disable.
+There should be no problem in pushing the patch based off of Linus's
+tree and have it be pulled into two branches. This is what Linus said he
+wanted. The change will go in via one of the branches, whichever is
+pulled first. And as the change will have the same SHA1 in both
+branches, git will merge it nicely. This is what Linus said at kernel
+summit that he wants people to do.
 
-LOOKUP return NFS FH->[inode number changed at NFS Server] ->
-But we still use old NFS FH returned from LOOKUP for any file
-operation(write,read,etc..)
--> ESTALE will be returned.
+Note, this will also get into -next and -fengguang's tree as well,
+without issue.
 
-Thanks!
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+-- Steve
+
+
