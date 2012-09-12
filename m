@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab2ILPtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:49:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab2ILPtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:49:08 -0400
-Date: Wed, 12 Sep 2012 17:49:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120912154907.GW21579@dhcp22.suse.cz>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <20120911100433.GC8058@dhcp22.suse.cz>
- <5050568B.9090601@parallels.com>
+	id S1756404Ab2ILPtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:49:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40313 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab2ILPtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:49:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5050568B.9090601@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBQw=Y-V9+QsBxG_=sRwt=eO3wZ+p+KvC6PbA+S-AJpG-A@mail.gmail.com>
+References: <1347459195-5491-1-git-send-email-eranian@google.com>
+	<1347459195-5491-3-git-send-email-eranian@google.com>
+	<1347459764.15764.32.camel@twins>
+	<CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
+	<CABPqkBQw=Y-V9+QsBxG_=sRwt=eO3wZ+p+KvC6PbA+S-AJpG-A@mail.gmail.com>
+Date: Wed, 12 Sep 2012 17:49:41 +0200
+Message-ID: <CABPqkBTAU2uHVUpsBqHE46aw8OhVRDPVr3vjdksUbhwTZdT37g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] perf: use hrtimer for event multiplexing
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-09-12 13:31:55, Glauber Costa wrote:
-> On 09/11/2012 02:04 PM, Michal Hocko wrote:
-> > I like the approach in general but see the comments bellow:
-> > 
-> > On Mon 10-09-12 15:33:55, Tejun Heo wrote:
-> > [...]
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -3855,12 +3855,17 @@ static int mem_cgroup_hierarchy_write(st
-> >>  	 */
-> >>  	if ((!parent_memcg || !parent_memcg->use_hierarchy) &&
-> >>  				(val == 1 || val == 0)) {
-> >> -		if (list_empty(&cont->children))
-> >> +		if (list_empty(&cont->children)) {
-> >>  			memcg->use_hierarchy = val;
-> >> -		else
-> >> +			/* we're fully hierarchical iff root uses hierarchy */
-> >> +			if (mem_cgroup_is_root(memcg))
-> >> +				mem_cgroup_subsys.broken_hierarchy = !val;
-> >> +		} else {
-> >>  			retval = -EBUSY;
-> >> -	} else
-> >> +		}
-> >> +	} else {
-> >>  		retval = -EINVAL;
-> >> +	}
-> >>  
-> >>  out:
-> >>  	cgroup_unlock();
-> >> @@ -4953,6 +4958,7 @@ mem_cgroup_create(struct cgroup *cont)
-> >>  						&per_cpu(memcg_stock, cpu);
-> >>  			INIT_WORK(&stock->work, drain_local_stock);
-> >>  		}
-> >> +		mem_cgroup_subsys.broken_hierarchy = !memcg->use_hierarchy;
-> > 
-> > Hmmm, this will warn even if we have
-> > root (default use_hierarchy=0)
-> >  \
-> >   A (use_hierarchy=1)
-> >    \
-> >     B <- here
-> > 
-> > which is unfortunate because it will add a noise to a reasonable
-> > configuration.
-> > I think this is fixable if you move the warning after 
-> > cgroup_subsys_state::create and broken_hierarchy would be set only if
-> > parent is not root and use_hierarchy==0 in mem_cgroup_create. Something
-> > like:
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 795e525..d5c93ab 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -4973,6 +4973,13 @@ mem_cgroup_create(struct cgroup *cont)
-> >  	} else {
-> >  		res_counter_init(&memcg->res, NULL);
-> >  		res_counter_init(&memcg->memsw, NULL);
-> > +		/*
-> > +		 * Deeper hierachy with use_hierarchy == false doesn't make
-> > +		 * much sense so let cgroup subsystem know about this unfortunate
-> > +		 * state in our controller.
-> > +		 */
-> > +		if (parent && parent != root_mem_cgroup)
-> > +			mem_cgroup_subsys.broken_hierarchy = true;
-> >  	}
-> >  	memcg->last_scanned_node = MAX_NUMNODES;
-> >  	INIT_LIST_HEAD(&memcg->oom_notify);
-> > 
-> > What do you think?
-> > 
-> I side with Tejun's original intentions.
-> 
-> While I respect your goal of not warning about any configuration
-> with max_level = 1, I believe the only sane configuration as soon
-> as we get any 2nd-level child is use_hierarchy = 1 for everybody.
-> 
-> Everything aside from it should be warned.
+On Wed, Sep 12, 2012 at 5:37 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Sep 12, 2012 at 4:43 PM, Stephane Eranian <eranian@google.com> wrote:
+>> On Wed, Sep 12, 2012 at 4:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Wed, 2012-09-12 at 16:13 +0200, Stephane Eranian wrote:
+>>>> +static DEFINE_PER_CPU(struct list_head, rotation_list);
+>>>
+>>> Why do you keep the rotation list? The only use seems to be:
+>>>
+>>>
+>>>> +void perf_cpu_hrtimer_cancel(int cpu)
+>>>> +{
+>>>> +       struct list_head *head = &__get_cpu_var(rotation_list);
+>>>> +       struct perf_cpu_context *cpuctx, *tmp;
+>>>> +       unsigned long flags;
+>>>> +
+>>>> +       if (WARN_ON(cpu != smp_processor_id()))
+>>>> +               return;
+>>>> +
+>>>> +       local_irq_save(flags);
+>>>> +
+>>>> +       list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
+>>>> +               if (cpuctx->hrtimer_active) {
+>>>> +                       hrtimer_cancel(&cpuctx->hrtimer);
+>>>> +                       cpuctx->hrtimer_active = 0;
+>>>> +               }
+>>>> +       }
+>>>> +
+>>>> +       local_irq_restore(flags);
+>>>> +}
+>>>
+>>> Which is weird, why not use the existing for-each-pmu loop in
+>>> perf_event_exit_cpu_context() ? Or something similar to iterate all
+>>> extant PMUs and thus their cpuctxs?
+>>>
+>> True. That would probably work too.
+>>
+> Note however that the rotation_list is still used in perf_event_task_tick()
+> to iterate over the ctx which needs unthrottling. We would have to switch
+> that loop over to a for-each-pmu() which would necessary incur more
+> iterations as it would include all the SW PMUs.
 
-Defintely. And that what the above guarantess, doesn't it?
-
--- 
-Michal Hocko
-SUSE Labs
+That reminds me that dropping sw context from rotation_list causes an
+issue in perf_event_task_tick() because that means the sw PMU are
+not considered anymore for interrupt unthrottling but they should. So
+I think switching to for-each-pmu() in perf_event_task_tick() will solve
+that problem too.
