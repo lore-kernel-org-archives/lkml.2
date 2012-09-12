@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab2IMAUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:20:11 -0400
+	id S1756759Ab2IMAUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:20:49 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab2ILXg2 (ORCPT
+	with ESMTP id S1756668Ab2ILXgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:36:28 -0400
+	Wed, 12 Sep 2012 19:36:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 100/108] e1000e: DoS while TSO enabled caused by link partner with small MSS
-Date: Wed, 12 Sep 2012 16:29:38 -0700
-Message-Id: <20120912232500.985321825@linuxfoundation.org>
+        =?UTF-8?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: =?UTF-8?q?=5B=20108/108=5D=20hwmon=3A=20=28asus=5Fatk0110=29=20Add=20quirk=20for=20Asus=20M5A78L?=
+Date: Wed, 12 Sep 2012 16:29:46 -0700
+Message-Id: <20120912232501.842234777@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
  <20120912232450.500619493@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,181 +34,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit d821a4c4d11ad160925dab2bb009b8444beff484 upstream.
+commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
 
-With a low enough MSS on the link partner and TSO enabled locally, the
-networking stack can periodically send a very large (e.g.  64KB) TCP
-message for which the driver will attempt to use more Tx descriptors than
-are available by default in the Tx ring.  This is due to a workaround in
-the code that imposes a limit of only 4 MSS-sized segments per descriptor
-which appears to be a carry-over from the older e1000 driver and may be
-applicable only to some older PCI or PCIx parts which are not supported in
-e1000e.  When the driver gets a message that is too large to fit across the
-configured number of Tx descriptors, it stops the upper stack from queueing
-any more and gets stuck in this state.  After a timeout, the upper stack
-assumes the adapter is hung and calls the driver to reset it.
+The old interface is bugged and reads the wrong sensor when retrieving
+the reading for the chassis fan (it reads the CPU sensor); the new
+interface works fine.
 
-Remove the unnecessary limitation of using up to only 4 MSS-sized segments
-per Tx descriptor, and put in a hard failure test to catch when attempting
-to check for message sizes larger than would fit in the whole Tx ring.
-Refactor the remaining logic that limits the size of data per Tx descriptor
-from a seemingly arbitrary 8KB to a limit based on the dynamic size of the
-Tx packet buffer as described in the hardware specification.
-
-Also, fix the logic in the check for space in the Tx ring for the next
-largest possible packet after the current one has been successfully queued
-for transmit, and use the appropriate defines for default ring sizes in
-e1000_probe instead of magic values.
-
-This issue goes back to the introduction of e1000e in 2.6.24 when it was
-split off from e1000.
-
-Reported-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Göran Uddeborg <goeran@uddeborg.se>
+Tested-by: Göran Uddeborg <goeran@uddeborg.se>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/e1000.h  |    1 
- drivers/net/ethernet/intel/e1000e/netdev.c |   48 +++++++++++++----------------
- 2 files changed, 24 insertions(+), 25 deletions(-)
+ drivers/hwmon/asus_atk0110.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000e/e1000.h
-@@ -310,6 +310,7 @@ struct e1000_adapter {
- 	 */
- 	struct e1000_ring *tx_ring /* One per active queue */
- 						____cacheline_aligned_in_smp;
-+	u32 tx_fifo_limit;
- 
- 	struct napi_struct napi;
- 
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -3477,6 +3477,15 @@ void e1000e_reset(struct e1000_adapter *
- 	}
- 
- 	/*
-+	 * Alignment of Tx data is on an arbitrary byte boundary with the
-+	 * maximum size per Tx descriptor limited only to the transmit
-+	 * allocation of the packet buffer minus 96 bytes with an upper
-+	 * limit of 24KB due to receive synchronization limitations.
-+	 */
-+	adapter->tx_fifo_limit = min_t(u32, ((er32(PBA) >> 16) << 10) - 96,
-+				       24 << 10);
-+
-+	/*
- 	 * Disable Adaptive Interrupt Moderation if 2 full packets cannot
- 	 * fit in receive buffer.
- 	 */
-@@ -4745,12 +4754,9 @@ static bool e1000_tx_csum(struct e1000_r
- 	return 1;
- }
- 
--#define E1000_MAX_PER_TXD	8192
--#define E1000_MAX_TXD_PWR	12
--
- static int e1000_tx_map(struct e1000_ring *tx_ring, struct sk_buff *skb,
- 			unsigned int first, unsigned int max_per_txd,
--			unsigned int nr_frags, unsigned int mss)
-+			unsigned int nr_frags)
- {
- 	struct e1000_adapter *adapter = tx_ring->adapter;
- 	struct pci_dev *pdev = adapter->pdev;
-@@ -4983,20 +4989,19 @@ static int __e1000_maybe_stop_tx(struct
- 
- static int e1000_maybe_stop_tx(struct e1000_ring *tx_ring, int size)
- {
-+	BUG_ON(size > tx_ring->count);
-+
- 	if (e1000_desc_unused(tx_ring) >= size)
- 		return 0;
- 	return __e1000_maybe_stop_tx(tx_ring, size);
- }
- 
--#define TXD_USE_COUNT(S, X) (((S) >> (X)) + 1)
- static netdev_tx_t e1000_xmit_frame(struct sk_buff *skb,
- 				    struct net_device *netdev)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	struct e1000_ring *tx_ring = adapter->tx_ring;
- 	unsigned int first;
--	unsigned int max_per_txd = E1000_MAX_PER_TXD;
--	unsigned int max_txd_pwr = E1000_MAX_TXD_PWR;
- 	unsigned int tx_flags = 0;
- 	unsigned int len = skb_headlen(skb);
- 	unsigned int nr_frags;
-@@ -5016,18 +5021,8 @@ static netdev_tx_t e1000_xmit_frame(stru
- 	}
- 
- 	mss = skb_shinfo(skb)->gso_size;
--	/*
--	 * The controller does a simple calculation to
--	 * make sure there is enough room in the FIFO before
--	 * initiating the DMA for each buffer.  The calc is:
--	 * 4 = ceil(buffer len/mss).  To make sure we don't
--	 * overrun the FIFO, adjust the max buffer len if mss
--	 * drops.
--	 */
- 	if (mss) {
- 		u8 hdr_len;
--		max_per_txd = min(mss << 2, max_per_txd);
--		max_txd_pwr = fls(max_per_txd) - 1;
- 
- 		/*
- 		 * TSO Workaround for 82571/2/3 Controllers -- if skb->data
-@@ -5057,12 +5052,12 @@ static netdev_tx_t e1000_xmit_frame(stru
- 		count++;
- 	count++;
- 
--	count += TXD_USE_COUNT(len, max_txd_pwr);
-+	count += DIV_ROUND_UP(len, adapter->tx_fifo_limit);
- 
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	for (f = 0; f < nr_frags; f++)
--		count += TXD_USE_COUNT(skb_frag_size(&skb_shinfo(skb)->frags[f]),
--				       max_txd_pwr);
-+		count += DIV_ROUND_UP(skb_frag_size(&skb_shinfo(skb)->frags[f]),
-+				      adapter->tx_fifo_limit);
- 
- 	if (adapter->hw.mac.tx_pkt_filtering)
- 		e1000_transfer_dhcp_info(adapter, skb);
-@@ -5104,15 +5099,18 @@ static netdev_tx_t e1000_xmit_frame(stru
- 		tx_flags |= E1000_TX_FLAGS_NO_FCS;
- 
- 	/* if count is 0 then mapping error has occurred */
--	count = e1000_tx_map(tx_ring, skb, first, max_per_txd, nr_frags, mss);
-+	count = e1000_tx_map(tx_ring, skb, first, adapter->tx_fifo_limit,
-+			     nr_frags);
- 	if (count) {
- 		skb_tx_timestamp(skb);
- 
- 		netdev_sent_queue(netdev, skb->len);
- 		e1000_tx_queue(tx_ring, tx_flags, count);
- 		/* Make sure there is space in the ring for the next send. */
--		e1000_maybe_stop_tx(tx_ring, MAX_SKB_FRAGS + 2);
--
-+		e1000_maybe_stop_tx(tx_ring,
-+				    (MAX_SKB_FRAGS *
-+				     DIV_ROUND_UP(PAGE_SIZE,
-+						  adapter->tx_fifo_limit) + 2));
- 	} else {
- 		dev_kfree_skb_any(skb);
- 		tx_ring->buffer_info[first].time_stamp = 0;
-@@ -6284,8 +6282,8 @@ static int __devinit e1000_probe(struct
- 	adapter->hw.phy.autoneg_advertised = 0x2f;
- 
- 	/* ring size defaults */
--	adapter->rx_ring->count = 256;
--	adapter->tx_ring->count = 256;
-+	adapter->rx_ring->count = E1000_DEFAULT_RXD;
-+	adapter->tx_ring->count = E1000_DEFAULT_TXD;
- 
- 	/*
- 	 * Initial Wake on LAN setting - If APM wake is enabled in
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -34,6 +34,12 @@ static const struct dmi_system_id __init
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
+ 		}
++	}, {
++		/* Old interface reads the same sensor for fan0 and fan1 */
++		.ident = "Asus M5A78L",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
++		}
+ 	},
+ 	{ }
+ };
 
 
