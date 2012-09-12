@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab2ILRqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:46:03 -0400
-Received: from fieldses.org ([174.143.236.118]:50485 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab2ILRqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:46:01 -0400
-Date: Wed, 12 Sep 2012 13:45:56 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-Message-ID: <20120912174556.GH3009@fieldses.org>
-References: <87har6kmfx.fsf@devron.myhome.or.jp>
- <CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
- <87oblc4u6f.fsf@devron.myhome.or.jp>
- <CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
- <871ui84l4l.fsf@devron.myhome.or.jp>
- <CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
- <20120912143227.GE3009@fieldses.org>
- <87vcfjfa14.fsf@devron.myhome.or.jp>
- <20120912171128.GG3009@fieldses.org>
- <87r4q7f8fw.fsf@devron.myhome.or.jp>
+	id S1760569Ab2ILRrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:47:12 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:47161
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752804Ab2ILRrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 13:47:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MA902D-01-FME-02
+X-M-MSG: 
+Date: Wed, 12 Sep 2012 19:46:55 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: David Ahern <dsahern@gmail.com>
+CC: <acme@ghostprotocols.net>, <linux-kernel@vger.kernel.org>,
+        <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 1/3] perf tool: precise mode requires exclude_guest
+Message-ID: <20120912174655.GA8285@erda.amd.com>
+References: <1347462990-29481-1-git-send-email-dsahern@gmail.com>
+ <1347462990-29481-2-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <87r4q7f8fw.fsf@devron.myhome.or.jp>
+In-Reply-To: <1347462990-29481-2-git-send-email-dsahern@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 02:38:11AM +0900, OGAWA Hirofumi wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
+On 12.09.12 09:16:28, David Ahern wrote:
+> Summary of events per Peter:
 > 
-> >> On other view (as server side solution), we are thinking there is
-> >> possible to make the stable filehandle on FAT if we disabled some
-> >> operations (e.g. rename(), unlink()) which change inode location in FAT.
-> >> 
-> >> Yes, it would be stable, but supporting limited operations.
-> >> 
-> >> This is server side solution, and we comparing it with client solution.
-> >
-> > Is that useful to anyone?
+>   "Intel PEBS in VT-x context uses the DS address as a guest linear address,
+>   even though its programmed by the host as a host linear address. This
+>   either results in guest memory corruption and or the hardware faulting and
+>   'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
+>   enter and re-enable on VT-x exit, enforcing a strict exclude_guest.
 > 
-> Good question. I'm not sure though, Namjae is asking. And I was asked
-> about stable read-only export in past.
+>   AMB IBS does work but doesn't currently support exclude_* at all,
+>   setting an exclude_* bit will make it fail."
 > 
-> >> >> LOOKUP return NFS FH->[inode number changed at NFS Server] ->
-> >> >> But we still use old NFS FH returned from LOOKUP for any file
-> >> >> operation(write,read,etc..)
-> >> >> -> ESTALE will be returned.
-> >> 
-> >> Yes.  And I'm expecting as client side solution,
-> >> 
-> >> -> ESTALE will be returned -> discard old FH -> restart from LOOKUP ->
-> >> make cached inode -> use returned new FH.
-> >> 
-> >> Yeah, I know this is unstable (there is no perfect solution for now),
-> >
-> > You may end up with a totally different file, of course:
-> >
-> > 	client:			server:
-> >
-> > 	open "/foo/bar"
-> > 				rename "/foo/baz"->"/foo/bar"
-> > 	write to file
-> >
-> > And now we're writing to the file that was originally named /foo/baz
-> > when we should have gotten ESTALE.
+> This patch handles userspace perf command, setting the exclude_guest
+> attribute if precise mode is requested, but only if a user has not
+> specified a request for guest or host only profiling (G or H attribute).
 > 
-> I see. So, client can't solve the ESTALE if inode cache was evicted,
-> right? (without application changes)
+> Kernel side AMD currently ignores all exclude_* bits, so there is no impact
+> to existing IBS code paths. Robert Richter has a patch where IBS code will
+> return EINVAL if an exclude_* bit is set. When this goes in it means use
+> of :p on AMD with IBS will first fail with EINVAL (because exclude_guest
+> will be set). Then the existing fallback code within perf will unset
+> exclude_guest and try again. The second attempt will succeed if the CPU
+> supports IBS profiling.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Link: https://lkml.org/lkml/2012/7/9/264
+> ---
+>  tools/perf/util/parse-events.c |    3 +++
+>  1 file changed, 3 insertions(+)
 
-I don't see how.
+Acked-by: Robert Richter <robert.richter@amd.com>
 
+I tested the patch set with AMD IBS and it works fine.
 
-As another server-side workaround: maybe they could try tuning the inode
-caching to make eviction less likely?
+-Robert
 
-Grepping around...  Documentation/sysctl/vm.txt mentions a
-vfs_cache_pressure parameter.
+> 
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 44afcf4..696cc7e 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -694,6 +694,9 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+>  			eH = 0;
+>  		} else if (*str == 'p') {
+>  			precise++;
+> +			/* use of precise requires exclude_guest */
+> +			if (!exclude_GH)
+> +				eG = 1;
+>  		} else
+>  			break;
+>  
+> -- 
+> 1.7.10.1
+> 
+> 
 
---b.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
