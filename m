@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760727Ab2ILR00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:26:26 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17983 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab2ILR0X (ORCPT
+	id S1760773Ab2ILR2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:28:19 -0400
+Received: from [216.32.181.181] ([216.32.181.181]:10944 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752734Ab2ILR2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:26:23 -0400
-Date: Wed, 12 Sep 2012 20:25:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Marcos Souza <marcos.souza.org@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 7/8] drivers/media/platform/davinci/vpbe.c: Removes
- useless kfree()
-Message-ID: <20120912172554.GH19396@mwanda>
-References: <1347454564-5178-2-git-send-email-peter.senna@gmail.com>
- <CAH0vN5+ZoexHtmgyZ+s9tiW3LYx+6PMT8aLyYt-T5mnaGXvYbQ@mail.gmail.com>
- <CA+MoWDquDi6+kY9z3rj79dJK6j5tSWO9oWHCkvt6J-XBB=HNvA@mail.gmail.com>
+	Wed, 12 Sep 2012 13:28:17 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202h1d1ah1d2ahzz17326ah8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MA8Z4L-02-2TS-02
+X-M-MSG: 
+Date: Wed, 12 Sep 2012 19:26:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: <mingo@kernel.org>, <hpa@zytor.com>, <paulus@samba.org>,
+        <linux-kernel@vger.kernel.org>, <acme@redhat.com>,
+        <a.p.zijlstra@chello.nl>, <namhyung.kim@lge.com>, <tglx@linutronix.de>,
+        <namhyung@kernel.org>, <linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:perf/core] perf hists: Introduce perf_hpp for hist period
+ printing
+Message-ID: <20120912172641.GB29278@erda.amd.com>
+References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
+ <tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+MoWDquDi6+kY9z3rj79dJK6j5tSWO9oWHCkvt6J-XBB=HNvA@mail.gmail.com>
+In-Reply-To: <tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 05:50:54PM +0200, Peter Senna Tschudin wrote:
-> Marcos,
+On 09.09.12 01:54:39, tip-bot for Namhyung Kim wrote:
+> Commit-ID:  ea251d51d2c7d7233790123227f787c477f567f5
+> Gitweb:     http://git.kernel.org/tip/ea251d51d2c7d7233790123227f787c477f567f5
+> Author:     Namhyung Kim <namhyung.kim@lge.com>
+> AuthorDate: Mon, 3 Sep 2012 11:53:06 +0900
+> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+> CommitDate: Sat, 8 Sep 2012 13:19:44 -0300
 > 
-> > Now that you removed this kfree, you could remove this label too. Very
-> > nice your cleanup :)
-> Thanks!
+> perf hists: Introduce perf_hpp for hist period printing
 > 
-> >
-> >>  vpbe_fail_sd_register:
-> >>         kfree(vpbe_dev->encoders);
-> >>  vpbe_fail_v4l2_device:
+> Current hist print functions are messy because it has to consider many
+> of command line options and the code doing that is scattered around to
+> places. So when someone wants to add an option to manipulate the hist
+> output it'd very easy to miss to update all of them in sync. And things
+> getting worse as more options/features are added continuously.
 > 
-> The problem removing the label is that it will require some more work
-> naming the labels. See:
-> if (!vpbe_dev->amp) {
-> ...
-> 	goto vpbe_fail_amp_register;
+> So I'd like to refactor them using hpp formats and move common code to
+> ui/hist.c in order to make it easy to maintain and to add new features.
 > 
-> If I just remove the label vpbe_fail_amp_register, the label names
-> will not make sense any more as the next label is
-> vpbe_fail_sd_register. So I will need to change the name to something
-> different or rename all labels to out1, out2, out3 or err1, err2,
-> err3, or ....
-> 
-> Any suggestions?
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/r/1346640790-17197-2-git-send-email-namhyung@kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/Makefile        |    2 +
+>  tools/perf/builtin-diff.c  |    1 +
+>  tools/perf/ui/hist.c       |  340 ++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/ui/setup.c      |    8 +-
+>  tools/perf/ui/stdio/hist.c |  238 ++++++-------------------------
+>  tools/perf/util/hist.h     |   37 +++++
+>  6 files changed, 426 insertions(+), 200 deletions(-)
 
-Labal names should not be numbers because this is not GW-BASIC.  The
-label should reflect what happens on the next line.  Labeling the
-place after the goto location where you started from is always
-nonsense.
+This patch breaks perf-record/report that the number of samples can't
+be shown in pipe mode:
 
-regards,
-dan carpenter
+ # perf record -e cycles -aq sleep 1 ; perf report -n --sort comm,dso | sed '/%/q;d' ; \
+   perf record -e cycles -aq sleep 1 | perf report -n --sort comm,dso | sed '/%/q;d'
+     99.86%        11804       swapper  [kernel.kallsyms]
+     91.57%      swapper  [kernel.kallsyms]
+           ^^^^^^
+           number of samples missing
+
+Moving and changing the code at the same time make the patch
+unreviewable. So no clue that's the problem here.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
