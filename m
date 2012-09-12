@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758449Ab2ILM4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:56:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758410Ab2ILM4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:56:44 -0400
-Message-ID: <5050867B.2080605@redhat.com>
-Date: Wed, 12 Sep 2012 14:56:27 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S932112Ab2ILM4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:56:51 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55028 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758452Ab2ILM4t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 08:56:49 -0400
+Message-ID: <50508689.50904@linux.vnet.ibm.com>
+Date: Wed, 12 Sep 2012 20:56:41 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3/3] block: add back command filter modification via sysfs
-References: <1347449133-26476-1-git-send-email-pbonzini@redhat.com> <1347449133-26476-4-git-send-email-pbonzini@redhat.com> <20120912134124.55d968ef@pyramind.ukuu.org.uk>
-In-Reply-To: <20120912134124.55d968ef@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] thp: move release mmap_sem lock out of khugepaged_alloc_page
+References: <50508632.9090003@linux.vnet.ibm.com>
+In-Reply-To: <50508632.9090003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12091212-1396-0000-0000-000001DCFDD8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/09/2012 14:41, Alan Cox ha scritto:
->> > +	if (!q->cmd_filter) {
->> > +		q->cmd_filter = kmalloc(sizeof(struct blk_cmd_filter),
->> > +					GFP_KERNEL);
->> > +		blk_set_cmd_filter_defaults(q->cmd_filter);
->> > +	}
->> > +
-> This also needs CAP_SYS_RAWIO otherwise you have a capability escalation
-> path.
+To make the code more clear, move release the lock out of khugepaged_alloc_page
 
-Seems more like for CAP_SYS_ADMIN, since it can affect other processes
-than the one writing to the file.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ mm/huge_memory.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-> I'm not really in favour of this patch as is. It's not as flexible as
-> doing it with a BPF filter which if we are going to have a new API is
-> going to be cleaner, faster and has a clear understood API plus tools.
-> 
-> With BPF you can do things like enabling command A with option B on a
-> specific device for a certain block range.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 66d2bc6..5622347 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1854,11 +1854,6 @@ static struct page
+ 	*hpage  = alloc_hugepage_vma(khugepaged_defrag(), vma, address,
+ 				      node, __GFP_OTHER_NODE);
 
-I liked the BPF idea, either with SCM_RIGHTS or cgroups, but I do wonder
-if it's overengineered.  There are two uses for the filtering:
+-	/*
+-	 * After allocating the hugepage, release the mmap_sem read lock in
+-	 * preparation for taking it in write mode.
+-	 */
+-	up_read(&mm->mmap_sem);
+ 	if (unlikely(!*hpage)) {
+ 		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 		*hpage = ERR_PTR(-ENOMEM);
+@@ -1905,7 +1900,6 @@ static struct page
+ 		       struct vm_area_struct *vma, unsigned long address,
+ 		       int node)
+ {
+-	up_read(&mm->mmap_sem);
+ 	VM_BUG_ON(!*hpage);
+ 	return  *hpage;
+ }
+@@ -1931,8 +1925,14 @@ static void collapse_huge_page(struct mm_struct *mm,
 
-- non-privileged users who want to burn a CD or something like that.
-For this, a bitmap is more than enough.  Customizing the bitmap lets
-userspace fix the case of different meanings for the same byte value in
-different SCSI standards.
+ 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
 
-- virtualization who wants to pass through almost everything, but still
-run as confined as possible.  In this case a more complex filtering can
-be done just as easily in userspace (i.e. QEMU).  Of course this means
-the filter can be subverted if the guest can escape the QEMU jail, but
-the "almost everything" takes care of that, for example you could still
-block WRITE BUFFER commands.
+-	/* release the mmap_sem read lock. */
+ 	new_page = khugepaged_alloc_page(hpage, mm, vma, address, node);
++
++	/*
++	 * After allocating the hugepage, release the mmap_sem read lock in
++	 * preparation for taking it in write mode.
++	 */
++	up_read(&mm->mmap_sem);
++
+ 	if (!new_page)
+ 		return;
 
-I would be okay with a ioctl to disable the filter altogether (four
-options: regular filter, no filter, no SG_IO at all, choose depending on
-CAP_SYS_RAWIO).  Then you can use file descriptor passing with
-SCM_RIGHTS, and do everything in userspace.  But it doesn't work too
-well with the first usage above, besides being a larger patch.
+-- 
+1.7.7.6
 
-Paolo
