@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab2ILPaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:30:03 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36029 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab2ILPaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:30:00 -0400
-Message-ID: <5050AA74.6050408@wwwdotorg.org>
-Date: Wed, 12 Sep 2012 09:29:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1760124Ab2ILPaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:30:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56447 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759654Ab2ILPaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:30:17 -0400
+Date: Wed, 12 Sep 2012 17:30:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH 1/3] mm: thp: Fix the pmd_clear() arguments in
+ pmdp_get_and_clear()
+Message-ID: <20120912153016.GS21579@dhcp22.suse.cz>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+ <1347382036-18455-2-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>, linux-kernel@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] usb: move phy driver from mach-tegra to drivers/usb
-References: <1346851223-29180-1-git-send-email-vbyravarasu@nvidia.com> <504F681E.4070402@wwwdotorg.org> <20120912134919.GR5732@arwen.pp.htv.fi>
-In-Reply-To: <20120912134919.GR5732@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347382036-18455-2-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 07:49 AM, Felipe Balbi wrote:
-> On Tue, Sep 11, 2012 at 10:34:38AM -0600, Stephen Warren wrote:
->> On 09/05/2012 07:20 AM, Venu Byravarasu wrote:
->>> As part of this patch: 1. Moved existing tegra phy driver to
->>> drivers/USB directory. 2. Added standard USB phy driver APIs to
->>> tegra phy driver.
->>> 
->>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
->> 
->> Felipe,
->> 
->> I see this patch hasn't been applied yet. Can I ask that it be
->> deferred to 3.8 rather than being applied for 3.7. The reason is
->> that in 3.7, I want to add a new include of the header that this
->> patch moves, and without merging the Tegra and USB PHY trees
->> together, the two patches together would cause a build break.
->> Now, it's a little late to merge the branches, since I need to
->> send my pull requests in about 3 days, so they hit arm-soc by
->> 3.6-rc6.
+On Tue 11-09-12 17:47:14, Will Deacon wrote:
+> From: Catalin Marinas <catalin.marinas@arm.com>
 > 
-> According to git I've applied this on September 5th:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/balbi/usb.git;a=commit;h=1ba8216f0bc02af6ba70d1108d60eb1b064395e4
+> The CONFIG_TRANSPARENT_HUGEPAGE implementation of pmdp_get_and_clear()
+> calls pmd_clear() with 3 arguments instead of 1.
 
-Sorry,
-> 
-I had not noticed that; that branch isn't in linux-next, and I
-didn't see any email notification that the patch was applied.
+only for !__HAVE_ARCH_PMDP_GET_AND_CLEAR which doesn't seem to happen
+because x86 defines this and it uses pmd_update.
 
-As discussed off-list, I'll resolve this by rebasing the relevant
-Tegra branch on top of your xceiv branch's pull request tag. Sorry for
-the confusion.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+
+Other than that it looks good.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/asm-generic/pgtable.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index ff4947b..f7e0206 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -87,7 +87,7 @@ static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
+>  				       pmd_t *pmdp)
+>  {
+>  	pmd_t pmd = *pmdp;
+> -	pmd_clear(mm, address, pmdp);
+> +	pmd_clear(pmdp);
+>  	return pmd;
+>  }
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+> -- 
+> 1.7.4.1
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
