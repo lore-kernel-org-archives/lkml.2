@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2IMAmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:42:06 -0400
+	id S1753836Ab2IMAme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:42:34 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553Ab2ILXbW (ORCPT
+	with ESMTP id S1755432Ab2ILXbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:22 -0400
+	Wed, 12 Sep 2012 19:31:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Idan Kedar <idank@tonian.com>,
-        Benny Halevy <bhalevy@tonian.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 030/108] pnfs: defer release of pages in layoutget
-Date: Wed, 12 Sep 2012 16:28:28 -0700
-Message-Id: <20120912232453.694891498@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 012/108] xen/setup: Fix one-off error when adding for-balloon PFNs to the P2M.
+Date: Wed, 12 Sep 2012 16:28:10 -0700
+Message-Id: <20120912232451.773982631@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,204 +29,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Idan Kedar <idank@tonian.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 8554116e17eef055d9dd58a94b3427cb2ad1c317 upstream.
+commit c96aae1f7f393387d160211f60398d58463a7e65 upstream.
 
-we have encountered a bug whereby reading a lot of files (copying
-fedora's /bin) from a pNFS mount and hitting Ctrl+C in the middle caused
-a general protection fault in xdr_shrink_bufhead. this function is
-called when decoding the response from LAYOUTGET. the decoding is done
-by a worker thread, and the caller of LAYOUTGET waits for the worker
-thread to complete.
+When we are finished with return PFNs to the hypervisor, then
+populate it back, and also mark the E820 MMIO and E820 gaps
+as IDENTITY_FRAMEs, we then call P2M to set areas that can
+be used for ballooning. We were off by one, and ended up
+over-writting a P2M entry that most likely was an IDENTITY_FRAME.
+For example:
 
-hitting Ctrl+C caused the synchronous wait to end and the next thing the
-caller does is to free the pages, so when the worker thread calls
-xdr_shrink_bufhead, the pages are gone. therefore, the cleanup of these
-pages has been moved to nfs4_layoutget_release.
+1-1 mapping on 40000->40200
+1-1 mapping on bc558->bc5ac
+1-1 mapping on bc5b4->bc8c5
+1-1 mapping on bc8c6->bcb7c
+1-1 mapping on bcd00->100000
+Released 614 pages of unused memory
+Set 277889 page(s) to 1-1 mapping
+Populating 40200-40466 pfn range: 614 pages added
 
-Signed-off-by: Idan Kedar <idank@tonian.com>
-Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+=> here we set from 40466 up to bc559 P2M tree to be
+INVALID_P2M_ENTRY. We should have done it up to bc558.
+
+The end result is that if anybody is trying to construct
+a PTE for PFN bc558 they end up with ~PAGE_PRESENT.
+
+Reported-by-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/nfs/pnfs.c     |   39 ------------------------------------
- fs/nfs/pnfs.h     |    2 -
- 3 files changed, 58 insertions(+), 40 deletions(-)
+ arch/x86/xen/setup.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6164,11 +6164,58 @@ static void nfs4_layoutget_done(struct r
- 	dprintk("<-- %s\n", __func__);
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -78,9 +78,16 @@ static void __init xen_add_extra_mem(u64
+ 	memblock_reserve(start, size);
+ 
+ 	xen_max_p2m_pfn = PFN_DOWN(start + size);
++	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
++		unsigned long mfn = pfn_to_mfn(pfn);
++
++		if (WARN(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
++			continue;
++		WARN(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
++			pfn, mfn);
+ 
+-	for (pfn = PFN_DOWN(start); pfn <= xen_max_p2m_pfn; pfn++)
+ 		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
++	}
  }
  
-+static size_t max_response_pages(struct nfs_server *server)
-+{
-+	u32 max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
-+	return nfs_page_array_len(0, max_resp_sz);
-+}
-+
-+static void nfs4_free_pages(struct page **pages, size_t size)
-+{
-+	int i;
-+
-+	if (!pages)
-+		return;
-+
-+	for (i = 0; i < size; i++) {
-+		if (!pages[i])
-+			break;
-+		__free_page(pages[i]);
-+	}
-+	kfree(pages);
-+}
-+
-+static struct page **nfs4_alloc_pages(size_t size, gfp_t gfp_flags)
-+{
-+	struct page **pages;
-+	int i;
-+
-+	pages = kcalloc(size, sizeof(struct page *), gfp_flags);
-+	if (!pages) {
-+		dprintk("%s: can't alloc array of %zu pages\n", __func__, size);
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < size; i++) {
-+		pages[i] = alloc_page(gfp_flags);
-+		if (!pages[i]) {
-+			dprintk("%s: failed to allocate page\n", __func__);
-+			nfs4_free_pages(pages, size);
-+			return NULL;
-+		}
-+	}
-+
-+	return pages;
-+}
-+
- static void nfs4_layoutget_release(void *calldata)
- {
- 	struct nfs4_layoutget *lgp = calldata;
-+	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
- 
- 	dprintk("--> %s\n", __func__);
-+	nfs4_free_pages(lgp->args.layout.pages, max_pages);
- 	put_nfs_open_context(lgp->args.ctx);
- 	kfree(calldata);
- 	dprintk("<-- %s\n", __func__);
-@@ -6180,9 +6227,10 @@ static const struct rpc_call_ops nfs4_la
- 	.rpc_release = nfs4_layoutget_release,
- };
- 
--int nfs4_proc_layoutget(struct nfs4_layoutget *lgp)
-+int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
- {
- 	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
- 	struct rpc_task *task;
- 	struct rpc_message msg = {
- 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_LAYOUTGET],
-@@ -6200,6 +6248,13 @@ int nfs4_proc_layoutget(struct nfs4_layo
- 
- 	dprintk("--> %s\n", __func__);
- 
-+	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
-+	if (!lgp->args.layout.pages) {
-+		nfs4_layoutget_release(lgp);
-+		return -ENOMEM;
-+	}
-+	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
-+
- 	lgp->res.layoutp = &lgp->args.layout;
- 	lgp->res.seq_res.sr_slot = NULL;
- 	nfs41_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -583,9 +583,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	struct nfs_server *server = NFS_SERVER(ino);
- 	struct nfs4_layoutget *lgp;
- 	struct pnfs_layout_segment *lseg = NULL;
--	struct page **pages = NULL;
--	int i;
--	u32 max_resp_sz, max_pages;
- 
- 	dprintk("--> %s\n", __func__);
- 
-@@ -594,20 +591,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	if (lgp == NULL)
- 		return NULL;
- 
--	/* allocate pages for xdr post processing */
--	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
--	max_pages = nfs_page_array_len(0, max_resp_sz);
--
--	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
--	if (!pages)
--		goto out_err_free;
--
--	for (i = 0; i < max_pages; i++) {
--		pages[i] = alloc_page(gfp_flags);
--		if (!pages[i])
--			goto out_err_free;
--	}
--
- 	lgp->args.minlength = PAGE_CACHE_SIZE;
- 	if (lgp->args.minlength > range->length)
- 		lgp->args.minlength = range->length;
-@@ -616,39 +599,19 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	lgp->args.type = server->pnfs_curr_ld->id;
- 	lgp->args.inode = ino;
- 	lgp->args.ctx = get_nfs_open_context(ctx);
--	lgp->args.layout.pages = pages;
--	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
- 	lgp->lsegpp = &lseg;
- 	lgp->gfp_flags = gfp_flags;
- 
- 	/* Synchronously retrieve layout information from server and
- 	 * store in lseg.
- 	 */
--	nfs4_proc_layoutget(lgp);
-+	nfs4_proc_layoutget(lgp, gfp_flags);
- 	if (!lseg) {
- 		/* remember that LAYOUTGET failed and suspend trying */
- 		set_bit(lo_fail_bit(range->iomode), &lo->plh_flags);
- 	}
- 
--	/* free xdr pages */
--	for (i = 0; i < max_pages; i++)
--		__free_page(pages[i]);
--	kfree(pages);
--
- 	return lseg;
--
--out_err_free:
--	/* free any allocated xdr pages, lgp as it's not used */
--	if (pages) {
--		for (i = 0; i < max_pages; i++) {
--			if (!pages[i])
--				break;
--			__free_page(pages[i]);
--		}
--		kfree(pages);
--	}
--	kfree(lgp);
--	return NULL;
- }
- 
- /* Initiates a LAYOUTRETURN(FILE) */
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -171,7 +171,7 @@ extern int nfs4_proc_getdevicelist(struc
- 				   struct pnfs_devicelist *devlist);
- extern int nfs4_proc_getdeviceinfo(struct nfs_server *server,
- 				   struct pnfs_device *dev);
--extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp);
-+extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags);
- extern int nfs4_proc_layoutreturn(struct nfs4_layoutreturn *lrp);
- 
- /* pnfs.c */
+ static unsigned long __init xen_do_chunk(unsigned long start,
 
 
