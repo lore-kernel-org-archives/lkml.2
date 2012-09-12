@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab2ILXgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:36:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1756785Ab2ILXgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:36:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756693Ab2ILXgc (ORCPT
+	with ESMTP id S1756755Ab2ILXgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:36:32 -0400
+	Wed, 12 Sep 2012 19:36:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 101/108] PARISC: Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
-Date: Wed, 12 Sep 2012 16:29:39 -0700
-Message-Id: <20120912232501.093312426@linuxfoundation.org>
+        "Ren, Yongjie" <yongjie.ren@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 104/108] xen/pciback: Fix proper FLR steps.
+Date: Wed, 12 Sep 2012 16:29:42 -0700
+Message-Id: <20120912232501.404255572@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,59 +30,63 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit bba3d8c3b3c0f2123be5bc687d1cddc13437c923 upstream.
+commit 80ba77dfbce85f2d1be54847de3c866de1b18a9a upstream.
 
-The following build error occured during a parisc build with
-swap-over-NFS patches applied.
+When we do FLR and save PCI config we did it in the wrong order.
+The end result was that if a PCI device was unbind from
+its driver, then binded to xen-pciback, and then back to its
+driver we would get:
 
-net/core/sock.c:274:36: error: initializer element is not constant
-net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
-net/core/sock.c:274:36: error: initializer element is not constant
+> lspci -s 04:00.0
+04:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+13:42:12 # 4 :~/
+> echo "0000:04:00.0" > /sys/bus/pci/drivers/pciback/unbind
+> modprobe e1000e
+e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
+e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
+e1000e 0000:04:00.0: Disabling ASPM L0s L1
+e1000e 0000:04:00.0: enabling device (0000 -> 0002)
+xen: registering gsi 48 triggering 0 polarity 1
+Already setup the GSI :48
+e1000e 0000:04:00.0: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+e1000e: probe of 0000:04:00.0 failed with error -2
 
-Dave Anglin says:
-> Here is the line in sock.i:
->
-> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> ((atomic_t) { (0) }) });
+This fixes it by first saving the PCI configuration space, then
+doing the FLR.
 
-The above line contains two compound literals.  It also uses a designated
-initializer to initialize the field enabled.  A compound literal is not a
-constant expression.
-
-The location of the above statement isn't fully clear, but if a compound
-literal occurs outside the body of a function, the initializer list must
-consist of constant expressions.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Ren, Yongjie <yongjie.ren@intel.com>
+Reported-and-Tested-by: Tobias Geiger <tobias.geiger@vido.info>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/atomic.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/xen-pciback/pci_stub.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/parisc/include/asm/atomic.h
-+++ b/arch/parisc/include/asm/atomic.h
-@@ -141,7 +141,7 @@ static __inline__ int __atomic_add_unles
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -353,16 +353,16 @@ static int __devinit pcistub_init_device
+ 	if (err)
+ 		goto config_release;
  
- #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
- 
--#define ATOMIC_INIT(i)	((atomic_t) { (i) })
-+#define ATOMIC_INIT(i)	{ (i) }
- 
- #define smp_mb__before_atomic_dec()	smp_mb()
- #define smp_mb__after_atomic_dec()	smp_mb()
-@@ -150,7 +150,7 @@ static __inline__ int __atomic_add_unles
- 
- #ifdef CONFIG_64BIT
- 
--#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
-+#define ATOMIC64_INIT(i) { (i) }
- 
- static __inline__ s64
- __atomic64_add_return(s64 i, atomic64_t *v)
+-	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
+-	__pci_reset_function_locked(dev);
+-
+ 	/* We need the device active to save the state. */
+ 	dev_dbg(&dev->dev, "save state of device\n");
+ 	pci_save_state(dev);
+ 	dev_data->pci_saved_state = pci_store_saved_state(dev);
+ 	if (!dev_data->pci_saved_state)
+ 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
+-
++	else {
++		dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
++		__pci_reset_function_locked(dev);
++	}
+ 	/* Now disable the device (this also ensures some private device
+ 	 * data is setup before we export)
+ 	 */
 
 
