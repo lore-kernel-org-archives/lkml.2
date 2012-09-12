@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab2ILXoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:44:14 -0400
+	id S1756990Ab2ILXo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:44:28 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933381Ab2ILXoJ (ORCPT
+	with ESMTP id S1756881Ab2ILXoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:09 -0400
+	Wed, 12 Sep 2012 19:44:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 19/46] audit: fix refcounting in audit-tree
-Date: Wed, 12 Sep 2012 16:39:09 -0700
-Message-Id: <20120912233819.675862459@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Cree <mcree@orcon.net.nz>,
+        Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 12/46] alpha: Dont export SOCK_NONBLOCK to user space.
+Date: Wed, 12 Sep 2012 16:39:02 -0700
+Message-Id: <20120912233818.947448589@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -29,87 +29,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Michael Cree <mcree@orcon.net.nz>
 
-commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
+commit a2fa3ccd7b43665fe14cb562761a6c3d26a1d13f upstream.
 
-Refcounting of fsnotify_mark in audit tree is broken.  E.g:
+Currently we export SOCK_NONBLOCK to user space but that conflicts with
+the definition from glibc leading to compilation errors in user programs
+(e.g.  see Debian bug #658460).
 
-                              refcount
-create_chunk
-  alloc_chunk                 1
-  fsnotify_add_mark           2
+The generic socket.h restricts the definition of SOCK_NONBLOCK to the
+kernel, as does the MIPS specific socket.h, so let's do the same on
+Alpha.
 
-untag_chunk
-  fsnotify_get_mark           3
-  fsnotify_destroy_mark
-    audit_tree_freeing_mark   2
-  fsnotify_put_mark           1
-  fsnotify_put_mark           0
-  via destroy_list
-    fsnotify_mark_destroy    -1
-
-This was reported by various people as triggering Oops when stopping auditd.
-
-We could just remove the put_mark from audit_tree_freeing_mark() but that would
-break freeing via inode destruction.  So this patch simply omits a put_mark
-after calling destroy_mark or adds a get_mark before.
-
-The additional get_mark is necessary where there's no other put_mark after
-fsnotify_destroy_mark() since it assumes that the caller is holding a reference
-(or the inode is keeping the mark pinned, not the case here AFAICS).
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reported-by: Valentin Avram <aval13@gmail.com>
-Reported-by: Peter Moody <pmoody@google.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit_tree.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/socket.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -256,7 +256,6 @@ static void untag_chunk(struct node *p)
- 		spin_unlock(&hash_lock);
- 		spin_unlock(&entry->lock);
- 		fsnotify_destroy_mark(entry);
--		fsnotify_put_mark(entry);
- 		goto out;
- 	}
+--- a/arch/alpha/include/asm/socket.h
++++ b/arch/alpha/include/asm/socket.h
+@@ -69,9 +69,11 @@
  
-@@ -299,7 +298,6 @@ static void untag_chunk(struct node *p)
- 	spin_unlock(&hash_lock);
- 	spin_unlock(&entry->lock);
- 	fsnotify_destroy_mark(entry);
--	fsnotify_put_mark(entry);
- 	goto out;
+ #define SO_RXQ_OVFL             40
  
- Fallback:
-@@ -338,6 +336,7 @@ static int create_chunk(struct inode *in
- 		spin_unlock(&hash_lock);
- 		chunk->dead = 1;
- 		spin_unlock(&entry->lock);
-+		fsnotify_get_mark(entry);
- 		fsnotify_destroy_mark(entry);
- 		fsnotify_put_mark(entry);
- 		return 0;
-@@ -418,6 +417,7 @@ static int tag_chunk(struct inode *inode
- 		spin_unlock(&chunk_entry->lock);
- 		spin_unlock(&old_entry->lock);
++#ifdef __KERNEL__
+ /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
+  * have to define SOCK_NONBLOCK to a different value here.
+  */
+ #define SOCK_NONBLOCK	0x40000000
++#endif /* __KERNEL__ */
  
-+		fsnotify_get_mark(chunk_entry);
- 		fsnotify_destroy_mark(chunk_entry);
- 
- 		fsnotify_put_mark(chunk_entry);
-@@ -451,7 +451,6 @@ static int tag_chunk(struct inode *inode
- 	spin_unlock(&old_entry->lock);
- 	fsnotify_destroy_mark(old_entry);
- 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
--	fsnotify_put_mark(old_entry); /* and kill it */
- 	return 0;
- }
- 
+ #endif /* _ASM_SOCKET_H */
 
 
