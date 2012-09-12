@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab2ILMbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:31:43 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54924 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab2ILMbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:31:42 -0400
-Date: Wed, 12 Sep 2012 13:36:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-iscsi@vger.kernel.org
-Subject: Re: [PATCH 2/3] scsi: create an all-zero filter for scanners
-Message-ID: <20120912133613.1255aa52@pyramind.ukuu.org.uk>
-In-Reply-To: <1347449024-26387-3-git-send-email-pbonzini@redhat.com>
-References: <1347449024-26387-1-git-send-email-pbonzini@redhat.com>
-	<1347449024-26387-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756762Ab2ILMcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:32:01 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46216 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755256Ab2ILMb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 08:31:59 -0400
+Date: Wed, 12 Sep 2012 17:57:54 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] uprobes: Make arch_uprobe_task->saved_trap_nr
+ "unsigned int"
+Message-ID: <20120912122754.GB9582@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120903152525.GA9028@redhat.com>
+ <20120903152620.GA9088@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120903152620.GA9088@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091212-7182-0000-0000-000002987503
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Sep 2012 13:23:43 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+* Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:20]:
 
-> Using /dev/sg for scanners is blocked from unprivileged users.  Reimplement
-> this using customizable command filters, so that the sysfs knobs will work
-> in this case too.
+> Make arch_uprobe_task->saved_trap_nr "unsigned int" and move it down
+> after ->saved_scratch_register, this changes sizeof() from 24 to 16.
 > 
-> Cc: linux-iscsi@vger.kernel.org
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
 > ---
->  drivers/scsi/scsi_scan.c |    6 +++++-
->  drivers/scsi/sg.c        |    3 ---
->  2 files changed, 5 insertions(+), 4 deletions(-)
+>  arch/x86/include/asm/uprobes.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 56a9379..d168c15 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -773,13 +773,17 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
->  	}
->  
->  	switch (sdev->type) {
-> +	case TYPE_SCANNER:
-> +		sdev->request_queue->cmd_filter =
-> +			kzalloc(sizeof(struct blk_cmd_filter), GFP_KERNEL);
-> +		/* fallthrough */
-
-Is that really desireable in the kzalloc failing case ?
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index d561ff5..8ff8be7 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -42,10 +42,10 @@ struct arch_uprobe {
+>  };
+> 
+>  struct arch_uprobe_task {
+> -	unsigned long			saved_trap_nr;
+>  #ifdef CONFIG_X86_64
+>  	unsigned long			saved_scratch_register;
+>  #endif
+> +	unsigned int			saved_trap_nr;
+>  	unsigned int			saved_tf;
+>  };
+> 
+> -- 
+> 1.5.5.1
+> 
 
