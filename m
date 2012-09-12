@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674Ab2ILOul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:50:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53905 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759456Ab2ILOuk convert rfc822-to-8bit (ORCPT
+	id S1759754Ab2ILOv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:51:27 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39887 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758854Ab2ILOvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:50:40 -0400
-Message-ID: <1347461431.15764.49.camel@twins>
-Subject: Re: [PATCH v2 2/3] perf: use hrtimer for event multiplexing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
+	Wed, 12 Sep 2012 10:51:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347461351.15764.47.camel@twins>
+References: <1347459195-5491-1-git-send-email-eranian@google.com>
+	<1347459195-5491-2-git-send-email-eranian@google.com>
+	<1347459984.15764.34.camel@twins>
+	<CABPqkBSnhjgAhn5+gOuBWWPrxKojKW1hKPJEn7zvvYhiw-LPLg@mail.gmail.com>
+	<1347460719.15764.42.camel@twins>
+	<CABPqkBSCY1N8Zc9ZxRYmQykqg+hiukxW4ZRMWkp9wfaOSzgGrA@mail.gmail.com>
+	<1347461351.15764.47.camel@twins>
+Date: Wed, 12 Sep 2012 16:51:23 +0200
+Message-ID: <CABPqkBRiDjaCw9CEpWgjxeOu4ybgv=-ieRZwZLberiU9m9vHOg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
         "ak@linux.intel.com" <ak@linux.intel.com>,
         "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Date: Wed, 12 Sep 2012 16:50:31 +0200
-In-Reply-To: <CABPqkBRRS7uz9kt-g8Rjj8K86AE+7U-emqKv1=tqcuRyqEk=Zw@mail.gmail.com>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
-	 <1347459195-5491-3-git-send-email-eranian@google.com>
-	 <1347459764.15764.32.camel@twins>
-	 <CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
-	 <1347461060.15764.44.camel@twins>
-	 <CABPqkBRRS7uz9kt-g8Rjj8K86AE+7U-emqKv1=tqcuRyqEk=Zw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-12 at 16:48 +0200, Stephane Eranian wrote:
-> On Wed, Sep 12, 2012 at 4:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2012-09-12 at 16:43 +0200, Stephane Eranian wrote:
-> >> The hrtimer_active is used to prevent activating the timer multiple times
-> >> in a row.
-> >
-> > see hrtimer_active(), this should do what you want I think.
-> 
-> I need something that is true even when the hrtimer is not executing
-> the callback handler. I guess that may be the different between
-> hrtimer_active() vs. hrtimer_running()?
-
-As the comment states, hrtimer_active() returns true if the timer is
-either in the tree (enqueued) or running.
-
-hrtimer_callback_running() is true iff the callback is currently
-executing.
-
-hrtimer_queued() is true iff the timer is queued.
-
-
+On Wed, Sep 12, 2012 at 4:49 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-09-12 at 16:46 +0200, Stephane Eranian wrote:
+>
+>> I am fine with dropping this patch. I just found it odd there was a per-cpu
+>> data reference embedded deep into the call. I wanted things to be more
+>> explicit. I know it works without the proposed change.
+>
+> Ah the reason its there is to make sure the base pointer is a valid base
+> pointer, this avoids an extra conditional in a number of places. Note
+> that it uses raw_get_cpu_var(), so it doesn't even actually know which
+> specific pointer goes in.
+>
+>
+Ok, fine. Then let's drop this patch then.
+Thanks for the explanations.
