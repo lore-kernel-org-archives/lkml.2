@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2ILPr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:47:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58044 "EHLO mx2.suse.de"
+	id S1755906Ab2ILPsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:48:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56349 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab2ILPry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:47:54 -0400
-Date: Wed, 12 Sep 2012 17:47:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120912154745.GV21579@dhcp22.suse.cz>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <20120911100433.GC8058@dhcp22.suse.cz>
- <20120911170746.GL7677@google.com>
+	id S1755090Ab2ILPsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:48:06 -0400
+Date: Wed, 12 Sep 2012 12:44:52 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
+Message-ID: <20120912154452.GA19789@amt.cnet>
+References: <5032F8FD.2020306@linux.vnet.ibm.com>
+ <5032FA78.9040405@linux.vnet.ibm.com>
+ <5034CB60.30107@redhat.com>
+ <5034D4E3.2080801@linux.vnet.ibm.com>
+ <5048AE96.3050909@redhat.com>
+ <5049C4D7.50101@linux.vnet.ibm.com>
+ <20120910223140.GA24275@amt.cnet>
+ <504F01DE.20505@redhat.com>
+ <20120911143901.GA11792@amt.cnet>
+ <5050AB89.20705@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120911170746.GL7677@google.com>
+In-Reply-To: <5050AB89.20705@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 11-09-12 10:07:46, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Tue, Sep 11, 2012 at 12:04:33PM +0200, Michal Hocko wrote:
-> > >  	cgroup_unlock();
-> > > @@ -4953,6 +4958,7 @@ mem_cgroup_create(struct cgroup *cont)
-> > >  						&per_cpu(memcg_stock, cpu);
-> > >  			INIT_WORK(&stock->work, drain_local_stock);
-> > >  		}
-> > > +		mem_cgroup_subsys.broken_hierarchy = !memcg->use_hierarchy;
+On Wed, Sep 12, 2012 at 06:34:33PM +0300, Avi Kivity wrote:
+> On 09/11/2012 05:39 PM, Marcelo Tosatti wrote:
+> > On Tue, Sep 11, 2012 at 12:18:22PM +0300, Avi Kivity wrote:
+> >> > The same can happen with slot deletion, for example. 
+> >> > 
+> >> > Userspace (which performed the modification which can result in faults
+> >> > to non-existant/read-only/.../new-tag memslot), must handle the faults 
+> >> > properly or avoid the possibility for reference to memslot information 
+> >> > from the past.
+> >> > 
+> >> > I think its worthwhile to add a note about this in the API
+> >> > documentation: "The user of this interface is responsible for handling 
+> >> > references to stale memslot information, either by handling
+> >> > exit notifications which reference stale memslot information or not
+> >> > allowing these notifications to exist by stopping all vcpus in userspace
+> >> > before performing modifications to the memslots map".
+> >> 
+> >> Or we can drop the new interface and rely on userspace to perform the
+> >> lookup under its own locking rules.
+> >> 
+> >> It's slow, but writes to ROM or ROM/device are rare anyway.
 > > 
-> > Hmmm, this will warn even if we have
-> > root (default use_hierarchy=0)
-> >  \
-> >   A (use_hierarchy=1)
-> >    \
-> >     B <- here
-> > 
-> > which is unfortunate because it will add a noise to a reasonable
-> > configuration.
+> > Lookup what information? 
 > 
-> I suppose you're talking about having root group not performing any
-> accounting and/or control?
+> Where to dispatch the write.
+> 
+> In fact userspace has to do that anyway if it's a ROM/device.  There's
+> no way userspace can guess that unless we pass in the slot number (which
+> isn't synchronized with anything).
 
-It doesn't do any controlling because you cannot set any limit for it.
-Root cgroup has always been special.
+Alright, do you prefer the details of this exit to be worked out later,
+when necessary, then? 
 
-> I suppose such could be a valid use case
-> (is it really necessary tho?)  but I don't think .use_hierarchy is the
-> right interface for that.  
+That is, not merge this particular patch of the series? 
 
-I am not sure I understand what you mean by that. My only concern with
-is that we shouldn't complain if somebody doesn't do anything wrong.
-And creating a group under root without any other children, no matter
-what use_hierarchy says, is a valid use case and we shouldn't make too
-much noise about that.
-The only difference in such a use case is that hierarchical stats will
-include numbers from the group only if root had use_hierarchy==1. There
-are no other side effects.
-
-> If it's absolutely necessary, I think it should be a root-only flag
-> (even if that ends up using the same code path).  Eventually, we
-> really want to kill .use_hierarchy, or at least make it to RO 1.  As
-> it's currently defined, it's just way too confusing.
-
-Agreed on that, definitely.
-
--- 
-Michal Hocko
-SUSE Labs
