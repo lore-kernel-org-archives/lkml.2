@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2ILAoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 20:44:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57378 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab2ILAoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 20:44:39 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-d2-504fdaf32fb9
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/18] perf sched: Remove die() calls
-References: <1347407590-30960-1-git-send-email-acme@infradead.org>
-	<1347407590-30960-3-git-send-email-acme@infradead.org>
-Date: Wed, 12 Sep 2012 09:37:43 +0900
-In-Reply-To: <1347407590-30960-3-git-send-email-acme@infradead.org> (Arnaldo
-	Carvalho de Melo's message of "Tue, 11 Sep 2012 20:52:54 -0300")
-Message-ID: <871ui8axew.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1755749Ab2ILArf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 20:47:35 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33423 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752113Ab2ILAre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 20:47:34 -0400
+Message-ID: <1347410853.2456.7.camel@joe2Laptop>
+Subject: [PATCH] checkpatch: Check networking specific block comment style
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Tue, 11 Sep 2012 17:47:33 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012 20:52:54 -0300, Arnaldo Carvalho de Melo wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
->
-> Just use pr_err() + return -1 and perf_session__process_events to abort
-> when some event would call die(), then let the perf's main() exit doing
-> whatever it needs.
+In an effort to get fewer checkpatch reviewer corrections,
+add a networking specific style test for the preferred
+networking comment style.
 
-It looks this patch has a same problem as patch 1/18.
+	/* The preferred style for block comments in
+	 * drivers/net/... and net/... is like this
+	 */
 
-Thanks,
-Namhyung
+These tests are only used in net/ and drivers/net/
+
+Tested with:
+
+$ cat drivers/net/t.c
+
+/* foo */
+
+/*
+ * foo
+ */
+
+/* foo
+ */
+
+/* foo
+ * bar */
+$ ./scripts/checkpatch.pl -f drivers/net/t.c
+WARNING: networking block comments don't use an empty /* line, use /* Comment...
+#4: FILE: net/t.c:4:
++
++/*
+
+WARNING: networking block comments put the trailing */ on a separate line
+#12: FILE: net/t.c:12:
++ * bar */
+
+total: 0 errors, 2 warnings, 12 lines checked
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index ca05ba2..7165516 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1873,6 +1873,20 @@ sub process {
+ 			    "No space is necessary after a cast\n" . $hereprev);
+ 		}
+ 
++		if ($realfile =~ m@^(drivers/net/|net/)@ &&
++		    $rawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
++		    $prevrawline =~ /^\+[ \t]*$/) {
++			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
++			     "networking block comments don't use an empty /* line, use /* Comment...\n" . $hereprev);
++		}
++
++		if ($realfile =~ m@^(drivers/net/|net/)@ &&
++		    $rawline !~ m@^\+[ \t]*(\/\*|\*\/)@ &&
++		    $rawline =~ m@^\+[ \t]*.+\*\/[ \t]*$@) {
++			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
++			     "networking block comments put the trailing */ on a separate line\n" . $herecurr);
++		}
++
+ # check for spaces at the beginning of a line.
+ # Exceptions:
+ #  1) within comments
+
+
