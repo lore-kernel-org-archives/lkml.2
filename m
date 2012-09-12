@@ -1,204 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab2ILM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:27:24 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50190 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab2ILM1W (ORCPT
+	id S1753598Ab2ILM2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:28:40 -0400
+Received: from shamrock.taprogge.org ([213.146.117.139]:57896 "EHLO
+	shamrock.taprogge.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2ILM2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:27:22 -0400
-Subject: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
-To: tony.luck@intel.com
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: gong.chen@linux.intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, bp@amd64.org,
-        lcm@us.ibm.com, andi@firstfloor.org, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, gregkh@suse.de, linux-edac@vger.kernel.org
-Date: Wed, 12 Sep 2012 17:55:16 +0530
-Message-ID: <20120912122516.3825.87838.stgit@localhost.localdomain>
-In-Reply-To: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
-References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
-User-Agent: StGit/0.16
+	Wed, 12 Sep 2012 08:28:39 -0400
+Date: Wed, 12 Sep 2012 14:28:14 +0200
+From: Jens Taprogge <jens.taprogge@taprogge.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
+Subject: Re: [PATCH 03/20] Staging: ipack/bridges/tpci200: provide new
+ callbacks to tpci200
+Message-ID: <20120912122814.GB7164@endeavour.taprogge.org>
+References: <1347267118-9580-1-git-send-email-siglesias@igalia.com>
+ <1347267118-9580-3-git-send-email-siglesias@igalia.com>
+ <20120911084702.GM19396@mwanda>
+ <20120912092833.GA24558@endeavour.taprogge.org>
+ <20120912111330.GD19396@mwanda>
+ <1347448877.4539.164.camel@fourier.local.igalia.com>
+ <20120912115926.GF19396@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/mixed; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+In-Reply-To: <20120912115926.GF19396@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091212-8878-0000-0000-000003FAC6C4
+X-Anti-Spam: Skipped scanning; message comes from a trusted host.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI spec doesn't provide for a way for the bios to pass down
-recommended thresholds to the OS on a _per-bank_ basis. This patch adds
-a new boot option, which if passed, allows bios to initialize the CMCI
-threshold. In such a case, we simply skip programming any threshold
-value.
 
-As fail-safe, we initialize threshold to 1 if some banks have not been
-initialized by the bios and warn the user.
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-v3: Updated messages as per Tony's inputs.
-v2: Just separating out the patch. I will send a separate patch for
-consolidating the MCE boot flags.
+On Wed, Sep 12, 2012 at 02:59:26PM +0300, Dan Carpenter wrote:
+> On Wed, Sep 12, 2012 at 01:21:17PM +0200, Samuel Iglesias Gons=E1lvez w=
+rote:
+> > On Wed, 2012-09-12 at 14:13 +0300, Dan Carpenter wrote:
+> > > On Wed, Sep 12, 2012 at 11:28:33AM +0200, Jens Taprogge wrote:
+> > > > On Tue, Sep 11, 2012 at 11:47:02AM +0300, Dan Carpenter wrote:
+> > > > > > +static int tpci200_get_clockrate(struct ipack_device *dev)
+> > > > > > +{
+> > > > > > +	struct tpci200_board *tpci200 =3D check_slot(dev);
+> > > > > > +	__le16 __iomem *addr;
+> > > > >=20
+> > > > > The point of the underscores in the __le16 is that you don't wa=
+nt to
+> > > > > pollute user space headers in glibc with a bunch of kernel type=
+defs.
+> > > > > It is not needed here.  (Or if it is, then we would need to rep=
+lace
+> > > > > the u16 uses as well).
+> > > >=20
+> > > > I was under the impression that "__le16" is used to indicate the
+> > > > byteorder of the pointed to memory.  As far as I can see that
+> > > > information is lost when we use u16.  Am I missing something?
+> > > >=20
+> > >=20
+> > > Use the no-underscore version unless it's inside a header which is
+> > > exported to userspace.
+> > >=20
+> > > 	le16 __iomem *addr;
+> > >=20
+> >=20
+> > But it is not declared in linux/types, it is?
+> >=20
+> > I have found only this typedef in a quick search:
+> >=20
+> > http://lxr.linux.no/#linux+v3.5.3/fs/ntfs/types.h#L28
+> >=20
+> > Should we define them in ipack.h header file or they are defined in
+> > other place?
+> >=20
+>=20
+> Oh crap!  You're right.  That's embarrassing.  I'm just totally
+> wrong here.  Sorry for that.
+>=20
+> regards,
+> dan carpenter
 
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Sam,
+
+can you please add the endianess-aware versions back?  Patch attached.
+
+One of the earlier uses was not correct.
+
+Best Regards,
+Jens
+
+--BOKacYhQ+x31HxR3
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-staging-ipack-bridges-tpci200-Use-endianess-aware-ty.patch"
+
+>From 3ed4dd686dec8b8b6fed1a35752daf4525002d0c Mon Sep 17 00:00:00 2001
+From: Jens Taprogge <jens.taprogge@taprogge.org>
+Date: Wed, 12 Sep 2012 14:25:25 +0200
+Subject: [PATCH] staging: ipack/bridges/tpci200: Use endianess-aware types
+ where applicable.
+
+Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
 ---
- Documentation/x86/x86_64/boot-options.txt |    5 ++++
- arch/x86/include/asm/mce.h                |    1 +
- arch/x86/kernel/cpu/mcheck/mce.c          |   10 ++++++++
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |   35 +++++++++++++++++++++++++++--
- 4 files changed, 48 insertions(+), 3 deletions(-)
+ drivers/staging/ipack/bridges/tpci200.c |   10 +++++-----
+ drivers/staging/ipack/bridges/tpci200.h |    8 ++++----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-index c54b4f5..ec92540 100644
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -50,6 +50,11 @@ Machine check
- 		monarchtimeout:
- 		Sets the time in us to wait for other CPUs on machine checks. 0
- 		to disable.
-+   mce=bios_cmci_threshold
-+		Don't overwrite the bios-set CMCI threshold. This boot option
-+		prevents Linux from overwriting the CMCI threshold set by the
-+		bios. Without this option, Linux always sets the CMCI
-+		threshold to 1.
- 
-    nomce (for compatibility with i386): same as mce=off
- 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a3ac52b..8ad5078 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -171,6 +171,7 @@ DECLARE_PER_CPU(struct device *, mce_device);
- #ifdef CONFIG_X86_MCE_INTEL
- extern int mce_cmci_disabled;
- extern int mce_ignore_ce;
-+extern int mce_bios_cmci_threshold;
- void mce_intel_feature_init(struct cpuinfo_x86 *c);
- void cmci_clear(void);
- void cmci_reenable(void);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c311122..29e87d3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -83,6 +83,7 @@ static int			mce_dont_log_ce		__read_mostly;
- int				mce_cmci_disabled	__read_mostly;
- int				mce_ignore_ce		__read_mostly;
- int				mce_ser			__read_mostly;
-+int				mce_bios_cmci_threshold	__read_mostly;
- 
- struct mce_bank                *mce_banks		__read_mostly;
- 
-@@ -1946,6 +1947,7 @@ static struct miscdevice mce_chrdev_device = {
-  *	check, or 0 to not wait
-  * mce=bootlog Log MCEs from before booting. Disabled by default on AMD.
-  * mce=nobootlog Don't log MCEs from before booting.
-+ * mce=bios_cmci_threshold Don't program the CMCI threshold
-  */
- static int __init mcheck_enable(char *str)
+diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
+index 5341aa8..af1cac8 100644
+--- a/drivers/staging/ipack/bridges/tpci200.c
++++ b/drivers/staging/ipack/bridges/tpci200.c
+@@ -357,7 +357,7 @@ out_disable_pci:
+ static int tpci200_get_clockrate(struct ipack_device *dev)
  {
-@@ -1965,6 +1967,8 @@ static int __init mcheck_enable(char *str)
- 		mce_ignore_ce = 1;
- 	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
- 		mce_bootlog = (str[0] == 'b');
-+	else if (!strcmp(str, "bios_cmci_threshold"))
-+		mce_bios_cmci_threshold = 1;
- 	else if (isdigit(str[0])) {
- 		get_option(&str, &tolerant);
- 		if (*str == ',') {
-@@ -2205,6 +2209,11 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
- 	&mce_cmci_disabled
- };
+ 	struct tpci200_board *tpci200 = check_slot(dev);
+-	u16 __iomem *addr;
++	__le16 __iomem *addr;
  
-+static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
-+	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
-+	&mce_bios_cmci_threshold
-+};
-+
- static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_tolerant.attr,
- 	&dev_attr_check_interval.attr,
-@@ -2213,6 +2222,7 @@ static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_dont_log_ce.attr,
- 	&dev_attr_ignore_ce.attr,
- 	&dev_attr_cmci_disabled.attr,
-+	&dev_attr_bios_cmci_threshold.attr,
- 	NULL
- };
+ 	if (!tpci200)
+ 		return -ENODEV;
+@@ -369,7 +369,7 @@ static int tpci200_get_clockrate(struct ipack_device *dev)
+ static int tpci200_set_clockrate(struct ipack_device *dev, int mherz)
+ {
+ 	struct tpci200_board *tpci200 = check_slot(dev);
+-	u16 __iomem *addr;
++	__le16 __iomem *addr;
  
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 098386f..5f88abf 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -181,10 +181,12 @@ static void cmci_discover(int banks)
- 	unsigned long *owned = (void *)&__get_cpu_var(mce_banks_owned);
- 	unsigned long flags;
- 	int i;
-+	int bios_wrong_thresh = 0;
+ 	if (!tpci200)
+ 		return -ENODEV;
+@@ -392,7 +392,7 @@ static int tpci200_set_clockrate(struct ipack_device *dev, int mherz)
+ static int tpci200_get_error(struct ipack_device *dev)
+ {
+ 	struct tpci200_board *tpci200 = check_slot(dev);
+-	u16 __iomem *addr;
++	__le16 __iomem *addr;
+ 	u16 mask;
  
- 	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++) {
- 		u64 val;
-+		int bios_zero_thresh = 0;
+ 	if (!tpci200)
+@@ -406,7 +406,7 @@ static int tpci200_get_error(struct ipack_device *dev)
+ static int tpci200_get_timeout(struct ipack_device *dev)
+ {
+ 	struct tpci200_board *tpci200 = check_slot(dev);
+-	u16 __iomem *addr;
++	__le16 __iomem *addr;
+ 	u16 mask;
  
- 		if (test_bit(i, owned))
- 			continue;
-@@ -198,8 +200,20 @@ static void cmci_discover(int banks)
- 			continue;
- 		}
+ 	if (!tpci200)
+@@ -421,7 +421,7 @@ static int tpci200_get_timeout(struct ipack_device *dev)
+ static int tpci200_reset_timeout(struct ipack_device *dev)
+ {
+ 	struct tpci200_board *tpci200 = check_slot(dev);
+-	u16 __iomem *addr;
++	__le16 __iomem *addr;
+ 	u16 mask;
  
--		val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
--		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
-+		if (!mce_bios_cmci_threshold) {
-+			val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
-+			val |= CMCI_THRESHOLD;
-+		} else if (!(val & MCI_CTL2_CMCI_THRESHOLD_MASK)) {
-+			/*
-+			 * If bios_cmci_threshold boot option was specified
-+			 * but the threshold is zero, we'll try to initialize
-+			 * it to 1.
-+			 */
-+			bios_zero_thresh = 1;
-+			val |= CMCI_THRESHOLD;
-+		}
-+
-+		val |= MCI_CTL2_CMCI_EN;
- 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
- 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 	if (!tpci200)
+diff --git a/drivers/staging/ipack/bridges/tpci200.h b/drivers/staging/ipack/bridges/tpci200.h
+index 3327025..982f319 100644
+--- a/drivers/staging/ipack/bridges/tpci200.h
++++ b/drivers/staging/ipack/bridges/tpci200.h
+@@ -37,12 +37,12 @@
+ #define TPCI200_MEM8_SPACE_BAR        5
  
-@@ -207,11 +221,26 @@ static void cmci_discover(int banks)
- 		if (val & MCI_CTL2_CMCI_EN) {
- 			set_bit(i, owned);
- 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
-+			/*
-+			 * We are able to set thresholds for some banks that
-+			 * had a threshold of 0. This means the BIOS has not
-+			 * set the thresholds properly or does not work with
-+			 * this boot option. Note down now and report later.
-+			 */
-+			if (mce_bios_cmci_threshold && bios_zero_thresh &&
-+					(val & MCI_CTL2_CMCI_THRESHOLD_MASK))
-+				bios_wrong_thresh = 1;
- 		} else {
- 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
- 		}
- 	}
- 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	if (mce_bios_cmci_threshold && bios_wrong_thresh) {
-+		pr_info_once(
-+			"bios_cmci_threshold: Some banks do not have valid thresholds set\n");
-+		pr_info_once(
-+			"bios_cmci_threshold: Make sure your BIOS supports this boot option\n");
-+	}
- }
+ struct tpci200_regs {
+-	u16	revision;
++	__le16	revision;
+ 	/* writes to control should occur with the mutex held to protect
+ 	 * read-modify-write operations */
+-	u16  control[4];
+-	u16	reset;
+-	u16	status;
++	__le16  control[4];
++	__le16	reset;
++	__le16	status;
+ 	u8	reserved[242];
+ } __packed;
  
- /*
-@@ -249,7 +278,7 @@ void cmci_clear(void)
- 			continue;
- 		/* Disable CMCI */
- 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
--		val &= ~(MCI_CTL2_CMCI_EN|MCI_CTL2_CMCI_THRESHOLD_MASK);
-+		val &= ~MCI_CTL2_CMCI_EN;
- 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
- 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
- 	}
+-- 
+1.7.9.5
 
+
+--BOKacYhQ+x31HxR3--
