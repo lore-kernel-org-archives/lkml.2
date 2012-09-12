@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2ILS6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 14:58:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49433 "EHLO mx1.redhat.com"
+	id S1751328Ab2ILTAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 15:00:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38454 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab2ILS6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 14:58:30 -0400
-Date: Wed, 12 Sep 2012 21:00:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [PATCH] coredump: prevent double-free on an error path in core
-	dumper
-Message-ID: <20120912190038.GA12473@redhat.com>
-References: <1347449845-23764-1-git-send-email-vda.linux@googlemail.com> <D958900912E20642BCBC71664EFECE3E6DDEFB8D10@BGMAIL02.nvidia.com> <20120912130020.GA29585@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912130020.GA29585@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750718Ab2ILTAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 15:00:37 -0400
+From: David Milburn <dmilburn@redhat.com>
+To: axboe@kernel.dk
+Cc: asamymuthupa@micron.com, linux-kernel@vger.kernel.org, thenzl@redhat.com
+Subject: [PATCH] mtip32xx: fix user_buffer check in exec_drive_command
+Date: Wed, 12 Sep 2012 14:06:12 -0500
+Message-Id: <1347476772-21798-1-git-send-email-dmilburn@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12, Oleg Nesterov wrote:
->
-> On 09/12, Venu Byravarasu wrote:
-> >
-> > > --- a/fs/binfmt_elf.c
-> > > +++ b/fs/binfmt_elf.c
-> > > @@ -1695,30 +1695,19 @@ static int elf_note_info_init(struct elf_note_info
-> > > *info)
-> > >  		return 0;
-> > >  	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
-> >
-> > Why don't you change kmalloc to devm_kzalloc, so that free can be ignored altogether.
->
-> kzalloc(), I guess...
->
-> Still I can't understand what did you mean.
+Current user_buffer check is incorrect and causes hdparm to fail
 
-Denys explained me privately what did you mean.
+# hdparm -I /dev/rssda
+ HDIO_DRIVE_CMD(identify) failed: Input/output error
 
-Well. elf_core_dump() does a lot of kmalloc's. We should either
-change them all or nothing. And even if we do this, I think this
-particular patch makes sense anyway.
+/dev/rssda:
 
-Not sure we want "struct device" for this, perhaps this devres
-code should be generalized somehow.
+Patching linux-3.6-rc5 hdparm works as expected
 
-Oleg.
+# hdparm -I /dev/rssda
+/dev/rssda:
 
+ATA device, with non-removable media
+	Model Number:       DELL_P320h-MTFDGAL350SAH                
+	Serial Number:      00000000121302025F01
+	Firmware Revision:  B1442808
+<snip>
+
+Reported-by: Tomas Henzl <thenzl@redhat.com>
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index a8fddeb..b24efe3 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -1900,7 +1900,7 @@ static int exec_drive_command(struct mtip_port *port, u8 *command,
+ 	int rv = 0, xfer_sz = command[3];
+ 
+ 	if (xfer_sz) {
+-		if (user_buffer)
++		if (!user_buffer)
+ 			return -EFAULT;
+ 
+ 		buf = dmam_alloc_coherent(&port->dd->pdev->dev,
