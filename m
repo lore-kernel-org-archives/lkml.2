@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2ILXkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:40:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab2ILXkm (ORCPT
+	id S932989Ab2IMADt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:03:49 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab2ILXkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:42 -0400
+	Wed, 12 Sep 2012 19:40:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+Cc: Greg KH <gregkh@linuxfoundation.org>, Milton Miller <miltonm@bga.com>,
+        Paul Mackerras <paulus@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 64/85] powerpc: Restore correct DSCR in context switch
-Date: Wed, 12 Sep 2012 16:36:47 -0700
-Message-Id: <20120912233548.436072787@linuxfoundation.org>
+Subject: [ 65/85] powerpc: Make sure IPI handlers see data written by IPI senders
+Date: Wed, 12 Sep 2012 16:36:48 -0700
+Message-Id: <20120912233548.543035462@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,99 +29,108 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 714332858bfd40dcf8f741498336d93875c23aa7 upstream.
+commit 9fb1b36ca1234e64a5d1cc573175303395e3354d upstream.
 
-During a context switch we always restore the per thread DSCR value.
-If we aren't doing explicit DSCR management
-(ie thread.dscr_inherit == 0) and the default DSCR changed while
-the process has been sleeping we end up with the wrong value.
+We have been observing hangs, both of KVM guest vcpu tasks and more
+generally, where a process that is woken doesn't properly wake up and
+continue to run, but instead sticks in TASK_WAKING state.  This
+happens because the update of rq->wake_list in ttwu_queue_remote()
+is not ordered with the update of ipi_message in
+smp_muxed_ipi_message_pass(), and the reading of rq->wake_list in
+scheduler_ipi() is not ordered with the reading of ipi_message in
+smp_ipi_demux().  Thus it is possible for the IPI receiver not to see
+the updated rq->wake_list and therefore conclude that there is nothing
+for it to do.
 
-Check thread.dscr_inherit and select the default DSCR or per thread
-DSCR as required.
+In order to make sure that anything done before smp_send_reschedule()
+is ordered before anything done in the resulting call to scheduler_ipi(),
+this adds barriers in smp_muxed_message_pass() and smp_ipi_demux().
+The barrier in smp_muxed_message_pass() is a full barrier to ensure that
+there is a full ordering between the smp_send_reschedule() caller and
+scheduler_ipi().  In smp_ipi_demux(), we use xchg() rather than
+xchg_local() because xchg() includes release and acquire barriers.
+Using xchg() rather than xchg_local() makes sense given that
+ipi_message is not just accessed locally.
 
-This was found with the following test case, when running with
-more threads than CPUs (ie forcing context switching):
+This moves the barrier between setting the message and calling the
+cause_ipi() function into the individual cause_ipi implementations.
+Most of them -- those that used outb, out_8 or similar -- already had
+a full barrier because out_8 etc. include a sync before the MMIO
+store.  This adds an explicit barrier in the two remaining cases.
 
-http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+These changes made no measurable difference to the speed of IPIs as
+measured using a simple ping-pong latency test across two CPUs on
+different cores of a POWER7 machine.
 
-With the four patches applied I can run a combination of all
-test cases successfully at the same time:
+The analysis of the reason why processes were not waking up properly
+is due to Milton Miller.
 
-http://ozlabs.org/~anton/junkcode/dscr_default_test.c
-http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
-http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Reported-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/asm-offsets.c |    1 +
- arch/powerpc/kernel/entry_64.S    |   23 +++++++++++++++++------
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/dbell.c       |    2 ++
+ arch/powerpc/kernel/smp.c         |   11 +++++++++--
+ arch/powerpc/sysdev/xics/icp-hv.c |    6 +++++-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/asm-offsets.c
-+++ b/arch/powerpc/kernel/asm-offsets.c
-@@ -76,6 +76,7 @@ int main(void)
- 	DEFINE(SIGSEGV, SIGSEGV);
- 	DEFINE(NMI_MASK, NMI_MASK);
- 	DEFINE(THREAD_DSCR, offsetof(struct thread_struct, dscr));
-+	DEFINE(THREAD_DSCR_INHERIT, offsetof(struct thread_struct, dscr_inherit));
- #else
- 	DEFINE(THREAD_INFO, offsetof(struct task_struct, stack));
- #endif /* CONFIG_PPC64 */
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -373,6 +373,12 @@ _GLOBAL(ret_from_fork)
- 	li	r3,0
- 	b	syscall_exit
+--- a/arch/powerpc/kernel/dbell.c
++++ b/arch/powerpc/kernel/dbell.c
+@@ -28,6 +28,8 @@ void doorbell_setup_this_cpu(void)
  
-+	.section	".toc","aw"
-+DSCR_DEFAULT:
-+	.tc dscr_default[TC],dscr_default
-+
-+	.section	".text"
-+
- /*
-  * This routine switches between two different tasks.  The process
-  * state of one is saved on its kernel stack.  Then the state
-@@ -512,9 +518,6 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_1T_SEG
- 	mr	r1,r8		/* start using new stack pointer */
- 	std	r7,PACAKSAVE(r13)
+ void doorbell_cause_ipi(int cpu, unsigned long data)
+ {
++	/* Order previous accesses vs. msgsnd, which is treated as a store */
++	mb();
+ 	ppc_msgsnd(PPC_DBELL, 0, data);
+ }
  
--	ld	r6,_CCR(r1)
--	mtcrf	0xFF,r6
--
- #ifdef CONFIG_ALTIVEC
- BEGIN_FTR_SECTION
- 	ld	r0,THREAD_VRSAVE(r4)
-@@ -523,14 +526,22 @@ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
- #endif /* CONFIG_ALTIVEC */
- #ifdef CONFIG_PPC64
- BEGIN_FTR_SECTION
-+	lwz	r6,THREAD_DSCR_INHERIT(r4)
-+	ld	r7,DSCR_DEFAULT@toc(2)
- 	ld	r0,THREAD_DSCR(r4)
--	cmpd	r0,r25
--	beq	1f
-+	cmpwi	r6,0
-+	bne	1f
-+	ld	r0,0(r7)
-+1:	cmpd	r0,r25
-+	beq	2f
- 	mtspr	SPRN_DSCR,r0
--1:	
-+2:
- END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
- #endif
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -215,8 +215,15 @@ void smp_muxed_ipi_message_pass(int cpu,
+ 	struct cpu_messages *info = &per_cpu(ipi_message, cpu);
+ 	char *message = (char *)&info->messages;
  
-+	ld	r6,_CCR(r1)
-+	mtcrf	0xFF,r6
++	/*
++	 * Order previous accesses before accesses in the IPI handler.
++	 */
++	smp_mb();
+ 	message[msg] = 1;
+-	mb();
++	/*
++	 * cause_ipi functions are required to include a full barrier
++	 * before doing whatever causes the IPI.
++	 */
+ 	smp_ops->cause_ipi(cpu, info->data);
+ }
+ 
+@@ -228,7 +235,7 @@ irqreturn_t smp_ipi_demux(void)
+ 	mb();	/* order any irq clear */
+ 
+ 	do {
+-		all = xchg_local(&info->messages, 0);
++		all = xchg(&info->messages, 0);
+ 
+ #ifdef __BIG_ENDIAN
+ 		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNCTION)))
+--- a/arch/powerpc/sysdev/xics/icp-hv.c
++++ b/arch/powerpc/sysdev/xics/icp-hv.c
+@@ -65,7 +65,11 @@ static inline void icp_hv_set_xirr(unsig
+ static inline void icp_hv_set_qirr(int n_cpu , u8 value)
+ {
+ 	int hw_cpu = get_hard_smp_processor_id(n_cpu);
+-	long rc = plpar_hcall_norets(H_IPI, hw_cpu, value);
++	long rc;
 +
- 	/* r3-r13 are destroyed -- Cort */
- 	REST_8GPRS(14, r1)
- 	REST_10GPRS(22, r1)
++	/* Make sure all previous accesses are ordered before IPI sending */
++	mb();
++	rc = plpar_hcall_norets(H_IPI, hw_cpu, value);
+ 	if (rc != H_SUCCESS) {
+ 		pr_err("%s: bad return code qirr cpu=%d hw_cpu=%d mfrr=0x%x "
+ 			"returned %ld\n", __func__, n_cpu, hw_cpu, value, rc);
 
 
