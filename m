@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab2ILXpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:45:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S933143Ab2ILXrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:47:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933396Ab2ILXpI (ORCPT
+	with ESMTP id S1757095Ab2ILXpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:45:08 -0400
+	Wed, 12 Sep 2012 19:45:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 34/46] powerpc: Restore correct DSCR in context switch
-Date: Wed, 12 Sep 2012 16:39:24 -0700
-Message-Id: <20120912233821.243407330@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 35/46] Remove user-triggerable BUG from mpol_to_str
+Date: Wed, 12 Sep 2012 16:39:25 -0700
+Message-Id: <20120912233821.338551227@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,99 +28,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Dave Jones <davej@redhat.com>
 
-commit 714332858bfd40dcf8f741498336d93875c23aa7 upstream.
+commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
 
-During a context switch we always restore the per thread DSCR value.
-If we aren't doing explicit DSCR management
-(ie thread.dscr_inherit == 0) and the default DSCR changed while
-the process has been sleeping we end up with the wrong value.
+Trivially triggerable, found by trinity:
 
-Check thread.dscr_inherit and select the default DSCR or per thread
-DSCR as required.
+  kernel BUG at mm/mempolicy.c:2546!
+  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
+  Call Trace:
+    show_numa_map+0xd5/0x450
+    show_pid_numa_map+0x13/0x20
+    traverse+0xf2/0x230
+    seq_read+0x34b/0x3e0
+    vfs_read+0xac/0x180
+    sys_pread64+0xa2/0xc0
+    system_call_fastpath+0x1a/0x1f
+  RIP: mpol_to_str+0x156/0x360
 
-This was found with the following test case, when running with
-more threads than CPUs (ie forcing context switching):
-
-http://ozlabs.org/~anton/junkcode/dscr_default_test.c
-
-With the four patches applied I can run a combination of all
-test cases successfully at the same time:
-
-http://ozlabs.org/~anton/junkcode/dscr_default_test.c
-http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
-http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/asm-offsets.c |    1 +
- arch/powerpc/kernel/entry_64.S    |   23 +++++++++++++++++------
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ mm/mempolicy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/asm-offsets.c
-+++ b/arch/powerpc/kernel/asm-offsets.c
-@@ -75,6 +75,7 @@ int main(void)
- 	DEFINE(SIGSEGV, SIGSEGV);
- 	DEFINE(NMI_MASK, NMI_MASK);
- 	DEFINE(THREAD_DSCR, offsetof(struct thread_struct, dscr));
-+	DEFINE(THREAD_DSCR_INHERIT, offsetof(struct thread_struct, dscr_inherit));
- #else
- 	DEFINE(THREAD_INFO, offsetof(struct task_struct, stack));
- #endif /* CONFIG_PPC64 */
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -380,6 +380,12 @@ _GLOBAL(ret_from_fork)
- 	li	r3,0
- 	b	syscall_exit
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2500,7 +2500,7 @@ int mpol_to_str(char *buffer, int maxlen
+ 		break;
  
-+	.section	".toc","aw"
-+DSCR_DEFAULT:
-+	.tc dscr_default[TC],dscr_default
-+
-+	.section	".text"
-+
- /*
-  * This routine switches between two different tasks.  The process
-  * state of one is saved on its kernel stack.  Then the state
-@@ -519,9 +525,6 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_1T_SEG
- 	mr	r1,r8		/* start using new stack pointer */
- 	std	r7,PACAKSAVE(r13)
+ 	default:
+-		BUG();
++		return -EINVAL;
+ 	}
  
--	ld	r6,_CCR(r1)
--	mtcrf	0xFF,r6
--
- #ifdef CONFIG_ALTIVEC
- BEGIN_FTR_SECTION
- 	ld	r0,THREAD_VRSAVE(r4)
-@@ -530,14 +533,22 @@ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
- #endif /* CONFIG_ALTIVEC */
- #ifdef CONFIG_PPC64
- BEGIN_FTR_SECTION
-+	lwz	r6,THREAD_DSCR_INHERIT(r4)
-+	ld	r7,DSCR_DEFAULT@toc(2)
- 	ld	r0,THREAD_DSCR(r4)
--	cmpd	r0,r25
--	beq	1f
-+	cmpwi	r6,0
-+	bne	1f
-+	ld	r0,0(r7)
-+1:	cmpd	r0,r25
-+	beq	2f
- 	mtspr	SPRN_DSCR,r0
--1:	
-+2:
- END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
- #endif
- 
-+	ld	r6,_CCR(r1)
-+	mtcrf	0xFF,r6
-+
- 	/* r3-r13 are destroyed -- Cort */
- 	REST_8GPRS(14, r1)
- 	REST_10GPRS(22, r1)
+ 	l = strlen(policy_modes[mode]);
 
 
