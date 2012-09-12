@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454Ab2ILXp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:45:27 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933437Ab2ILXpX (ORCPT
+	id S933467Ab2ILXph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:45:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933456Ab2ILXpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:45:23 -0400
+	Wed, 12 Sep 2012 19:45:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 44/46] PARISC: Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
-Date: Wed, 12 Sep 2012 16:39:34 -0700
-Message-Id: <20120912233822.280525638@linuxfoundation.org>
+        =?UTF-8?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: =?UTF-8?q?=5B=2046/46=5D=20hwmon=3A=20=28asus=5Fatk0110=29=20Add=20quirk=20for=20Asus=20M5A78L?=
+Date: Wed, 12 Sep 2012 16:39:36 -0700
+Message-Id: <20120912233822.479479931@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,59 +33,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit bba3d8c3b3c0f2123be5bc687d1cddc13437c923 upstream.
+commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
 
-The following build error occured during a parisc build with
-swap-over-NFS patches applied.
+The old interface is bugged and reads the wrong sensor when retrieving
+the reading for the chassis fan (it reads the CPU sensor); the new
+interface works fine.
 
-net/core/sock.c:274:36: error: initializer element is not constant
-net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
-net/core/sock.c:274:36: error: initializer element is not constant
-
-Dave Anglin says:
-> Here is the line in sock.i:
->
-> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> ((atomic_t) { (0) }) });
-
-The above line contains two compound literals.  It also uses a designated
-initializer to initialize the field enabled.  A compound literal is not a
-constant expression.
-
-The location of the above statement isn't fully clear, but if a compound
-literal occurs outside the body of a function, the initializer list must
-consist of constant expressions.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Göran Uddeborg <goeran@uddeborg.se>
+Tested-by: Göran Uddeborg <goeran@uddeborg.se>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/atomic.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/asus_atk0110.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/parisc/include/asm/atomic.h
-+++ b/arch/parisc/include/asm/atomic.h
-@@ -248,7 +248,7 @@ static __inline__ int atomic_add_unless(
- 
- #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
- 
--#define ATOMIC_INIT(i)	((atomic_t) { (i) })
-+#define ATOMIC_INIT(i)	{ (i) }
- 
- #define smp_mb__before_atomic_dec()	smp_mb()
- #define smp_mb__after_atomic_dec()	smp_mb()
-@@ -257,7 +257,7 @@ static __inline__ int atomic_add_unless(
- 
- #ifdef CONFIG_64BIT
- 
--#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
-+#define ATOMIC64_INIT(i) { (i) }
- 
- static __inline__ s64
- __atomic64_add_return(s64 i, atomic64_t *v)
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -34,6 +34,12 @@ static const struct dmi_system_id __init
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
+ 		}
++	}, {
++		/* Old interface reads the same sensor for fan0 and fan1 */
++		.ident = "Asus M5A78L",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
++		}
+ 	},
+ 	{ }
+ };
 
 
