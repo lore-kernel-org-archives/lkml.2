@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760110Ab2ILPSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:18:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4916 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759751Ab2ILPSn (ORCPT
+	id S1760119Ab2ILPS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:18:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34071 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759990Ab2ILPSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:18:43 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=jUoZk2RAzk0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xkD7W5DCUvkA:10 a=VwQbUJbxAAAA:8 a=f8us78lFAAAA:8 a=is1WEdOEVPPngleRh-wA:9 a=PUjeQqilurYA:10 a=HEdnscJc8mAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347463120.10751.63.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
- from interrupt context
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Sep 2012 11:18:40 -0400
-In-Reply-To: <20120912150328.GN4257@linux.vnet.ibm.com>
-References: <20120904233344.GB11855@jtriplet-mobl1>
-	 <20120904234307.GY2593@linux.vnet.ibm.com>
-	 <20120906185402.GB5738@jtriplet-mobl1>
-	 <1346961244.1680.46.camel@gandalf.local.home> <20120907060940.GA21166@leaf>
-	 <20120907142441.GD2462@linux.vnet.ibm.com> <20120907144717.GA22059@leaf>
-	 <1347030967.8178.15.camel@gandalf.local.home>
-	 <20120912010720.GM4257@linux.vnet.ibm.com>
-	 <1347459210.10751.48.camel@gandalf.local.home>
-	 <20120912150328.GN4257@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Sep 2012 11:18:47 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+	<CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
+	<20120907193825.GA4633@fieldses.org>
+	<87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
+	<20120911214450.GB28418@fieldses.org>
+Date: Wed, 12 Sep 2012 17:20:17 +0200
+In-Reply-To: <20120911214450.GB28418@fieldses.org> (J. Bruce Fields's message
+	of "Tue, 11 Sep 2012 17:44:50 -0400")
+Message-ID: <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Linus to verify what I'm talking about ]
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-On Wed, 2012-09-12 at 08:03 -0700, Paul E. McKenney wrote:
+> On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
+>> "J. Bruce Fields" <bfields@fieldses.org> writes:
+>> 
+>> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
+>> >> > check refuses permission to write to the inode which prevents us from
+>> >> > copying it up even though we have a writable upper layer.  (With an ext4
+>> >> > lower layer the inode check will succeed if the inode  is writable even
+>> >> > if the filesystem is not.)  It is not clear what the right solution is
+>> >> > here.  One approach is to check the inode permissions only (avoiding the
+>> >> > filesystem specific permissions op), but it is not clear we can rely on
+>> >> > these for all underlying filesystems.  Perhaps this check should only be
+>> >> > used for NFS.
+>> >
+>> > Then couldn't you for example end up circumventing ACLs on the
+>> > underlying file to access data cached by reads from another user on the
+>> > same system?
+>> 
+>> Ignoring ACL's should always give less access, isn't that right?
+>
+> Not necessarily.
+>
+> (It's up to the server--and if anything servers probably want to err on
+> the side of returning mode bits that are an upper, not a lower, bound on
+> the permissions.)
 
-> Doesn't Fengguang pull branches individually?  And won't that mean
-> that as soon as I push my export-removal commit, that he will see
-> build failures?
-> 
-> Or are you suggesting that we both send both commits?
+Okay, I looked at the POSIX ACL access check algorithm and now
+understand things better.
 
-No, what I could do is to push the branch out to my repository on
-kernel.org (I'm currently running it under my test suite), and then both
-you and Ingo can pull from it.
+Now i think that enforcing ACL's on the overlay is not possible if ACL's
+are not copied up together with the data.
 
-It is based off of v3.6-rc5 and only has Josh's change in it. This way,
-when Ingo pulls it into the perf/core branch, I can work against that,
-and you could either pull the same branch directly from me (as you need
-it to work too), or you could have Ingo pull it into the rcu branches in
-tip, and you could work against that.
+This is because during the copy-up the server checks for access, but it
+checks access for only a single user/group pair.  Subsequent access
+checks on the copied-up object by any other user/group may not reflect
+the original ACL's on the lower filesystem.
 
-The trick is that the branch I push is against Linus's tree (something
-that we all should be working against) and contains only the one change.
-Then everyone that needs this change can just pull it directly, and git
-will sort it all out without any conflicts. This is the method that
-Linus was talking about at Kernel Summit.
+So assuming that we can't copy up NFS ACL's, it is possible to
+circumvent those ACL's by triggering a copy-up.  Of course this type of
+"attack" is limited by the fact that copy-up is only triggerable by a
+write type operation.
 
--- Steve
+I'm not sure...  I believe that we should say that NFS ACL's on the
+lower layer and overlayfs simply don't mix.  In that case current
+behavior of erroring out seems to be the correct one.
+
+Andy, I'm wondering: what is your use case for NFS with ACL's?
+
+Because overlayfs can't completely ignore ACL's on the lower filesystem,
+but it can't enforce them properly either.  So it's a rather weird
+situation.
 
 
+>
+>> > Is it possible to arrange that the check for a readonly filesystem be
+>> > done only by the vfs and not also by ->permission?
+>> 
+>> You'd need to modify NFS servers for that to work, no?  It's possible
+>> but not practical.
+>
+> Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
+> had been mounted readonly on the NFS client.
+>
+> If it's a read-write mount of a filesystem that's read-only on the
+> server side: well, there is at least an error for that case: the server
+> should return NFSERR_ROFS, and you should see EROFS--could you do the
+> copy-up only in the case you get that error?
+
+If the server returns EROFS then all you know is that the filesystem is
+read-only.  But that's not what we are interested in.  We are interested
+in whether the access would be allowed *if* the filesystem *wasn't*
+read-only.  The server doesn't tell us that.
+
+Thanks,
+Miklos
