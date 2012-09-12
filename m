@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab2ILXiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:15 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569Ab2ILXiH (ORCPT
+	id S932622Ab2ILXiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606Ab2ILXiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:07 -0400
+	Wed, 12 Sep 2012 19:38:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Heiko Stuebner <heiko@sntech.de>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 10/85] ARM: S3C24XX: Fix s3c2410_dma_enqueue parameters
-Date: Wed, 12 Sep 2012 16:35:53 -0700
-Message-Id: <20120912233542.809307421@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 13/85] ARM: imx6: spin the cpu until hardware takes it down
+Date: Wed, 12 Sep 2012 16:35:56 -0700
+Message-Id: <20120912233543.122007874@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,35 +27,68 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Heiko Stuebner <heiko@sntech.de>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit b01858c7806e7e6f6121da2e51c9222fc4d21dc6 upstream.
+commit c944b0b9354ea06ffb0c8a7178949f1185f9f499 upstream.
 
-Commit d670ac019f60 (ARM: SAMSUNG: DMA Cleanup as per sparse) changed the
-prototype of the s3c2410_dma_* functions to use the enum dma_ch instead
-of an generic unsigned int.
+Though commit 602bf40 (ARM: imx6: exit coherency when shutting down
+a cpu) improves the stability of imx6q cpu hotplug a lot, there are
+still hangs seen with a more stressful hotplug testing.
 
-In the s3c24xx dma.c s3c2410_dma_enqueue seems to have been forgotten,
-the other functions there were changed correctly.
+It's expected that once imx_enable_cpu(cpu, false) is called, the cpu
+will be taken down by hardware immediately, and the code after that
+will not get any chance to execute.  However, this is not always the
+case from the testing.  The cpu could possibly be alive for a few
+cycles before hardware actually takes it down.  So rather than letting
+cpu execute some code that could cause a hang in these cycles, let's
+make the cpu spin there and wait for hardware to take it down.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-s3c24xx/dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-imx/hotplug.c |   23 +++--------------------
+ 1 file changed, 3 insertions(+), 20 deletions(-)
 
---- a/arch/arm/plat-s3c24xx/dma.c
-+++ b/arch/arm/plat-s3c24xx/dma.c
-@@ -430,7 +430,7 @@ s3c2410_dma_canload(struct s3c2410_dma_c
-  * when necessary.
- */
+--- a/arch/arm/mach-imx/hotplug.c
++++ b/arch/arm/mach-imx/hotplug.c
+@@ -42,22 +42,6 @@ static inline void cpu_enter_lowpower(vo
+ 	  : "cc");
+ }
  
--int s3c2410_dma_enqueue(unsigned int channel, void *id,
-+int s3c2410_dma_enqueue(enum dma_ch channel, void *id,
- 			dma_addr_t data, int size)
+-static inline void cpu_leave_lowpower(void)
+-{
+-	unsigned int v;
+-
+-	asm volatile(
+-		"mrc	p15, 0, %0, c1, c0, 0\n"
+-	"	orr	%0, %0, %1\n"
+-	"	mcr	p15, 0, %0, c1, c0, 0\n"
+-	"	mrc	p15, 0, %0, c1, c0, 1\n"
+-	"	orr	%0, %0, %2\n"
+-	"	mcr	p15, 0, %0, c1, c0, 1\n"
+-	  : "=&r" (v)
+-	  : "Ir" (CR_C), "Ir" (0x40)
+-	  : "cc");
+-}
+-
+ /*
+  * platform-specific code to shutdown a CPU
+  *
+@@ -67,11 +51,10 @@ void platform_cpu_die(unsigned int cpu)
  {
- 	struct s3c2410_dma_chan *chan = s3c_dma_lookup_channel(channel);
+ 	cpu_enter_lowpower();
+ 	imx_enable_cpu(cpu, false);
+-	cpu_do_idle();
+-	cpu_leave_lowpower();
+ 
+-	/* We should never return from idle */
+-	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
++	/* spin here until hardware takes it down */
++	while (1)
++		;
+ }
+ 
+ int platform_cpu_disable(unsigned int cpu)
 
 
