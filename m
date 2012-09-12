@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2ILH5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:57:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52332 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab2ILH5q (ORCPT
+	id S1753767Ab2ILH7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:59:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61131 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab2ILH7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:57:46 -0400
+	Wed, 12 Sep 2012 03:59:08 -0400
+Message-ID: <505040C6.1020501@linaro.org>
+Date: Wed, 12 Sep 2012 13:29:02 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Date: Wed, 12 Sep 2012 16:57:45 +0900
-Message-ID: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
-Subject: [PATCH -tip/perf/core] perf probe: Add union member access support
-From: Hyeoncheol Lee <hyc.lee@gmail.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: linux-kernel@vger.kernel.org, sachin.kamat@linaro.org, patches@linaro.org
+Subject: Re: [PATCH v2] pwm: Fix compilation error when CONFIG_PWM is not
+ defined
+References: <1347356655-17191-1-git-send-email-tushar.behera@linaro.org> <20120911144814.GB3824@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120911144814.GB3824@avionic-0098.mockup.avionic-design.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Union members can be accessed with '.' or '->' like data structure
-member access
+On 09/11/2012 08:18 PM, Thierry Reding wrote:
+> On Tue, Sep 11, 2012 at 03:14:15PM +0530, Tushar Behera wrote:
+>> Add dummy implemention of public symbols for compilation-safe inclusion
+>> of include/linux/pwm.h file when CONFIG_PWM is not defined.
+>>
+>> While at it, also reorganize the file.
+>>
+>> Reported-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> ---
+>> Changes since v1:
+>> * Incorporated Thierry's suggestions regarding adding dummy function
+>> implemention for all global functions
+>> * Reorganized header file to have structure definitions first and then the
+>> function definitions.
+>>
+>>  include/linux/pwm.h |  135 ++++++++++++++++++++++++++++++++++++--------------
+>>  1 files changed, 97 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+>> index 21d076c..f1e685b 100644
+>> --- a/include/linux/pwm.h
+>> +++ b/include/linux/pwm.h
+>> @@ -6,32 +6,6 @@
+>>  struct pwm_device;
+>>  struct seq_file;
+>>  
+>> -/*
+>> - * pwm_request - request a PWM device
+>> - */
+>> -struct pwm_device *pwm_request(int pwm_id, const char *label);
+>> -
+>> -/*
+>> - * pwm_free - free a PWM device
+>> - */
+>> -void pwm_free(struct pwm_device *pwm);
+>> -
+>> -/*
+>> - * pwm_config - change a PWM device configuration
+>> - */
+>> -int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+>> -
+>> -/*
+>> - * pwm_enable - start a PWM output toggling
+>> - */
+>> -int pwm_enable(struct pwm_device *pwm);
+>> -
+>> -/*
+>> - * pwm_disable - stop a PWM output toggling
+>> - */
+>> -void pwm_disable(struct pwm_device *pwm);
+>> -
+>> -#ifdef CONFIG_PWM
+>>  struct pwm_chip;
+>>  
+>>  enum {
+>> @@ -113,18 +87,6 @@ struct pwm_chip {
+>>  	unsigned int		of_pwm_n_cells;
+>>  };
+>>  
+>> -int pwm_set_chip_data(struct pwm_device *pwm, void *data);
+>> -void *pwm_get_chip_data(struct pwm_device *pwm);
+>> -
+>> -int pwmchip_add(struct pwm_chip *chip);
+>> -int pwmchip_remove(struct pwm_chip *chip);
+>> -struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+>> -					 unsigned int index,
+>> -					 const char *label);
+>> -
+>> -struct pwm_device *pwm_get(struct device *dev, const char *consumer);
+>> -void pwm_put(struct pwm_device *pwm);
+>> -
+>>  struct pwm_lookup {
+>>  	struct list_head list;
+>>  	const char *provider;
+>> @@ -141,8 +103,105 @@ struct pwm_lookup {
+>>  		.con_id = _con_id,			\
+>>  	}
+>>  
+>> +#ifdef CONFIG_PWM
+>> +/*
+>> + * pwm_request - request a PWM device
+>> + */
+>> +struct pwm_device *pwm_request(int pwm_id, const char *label);
+>> +
+>> +/*
+>> + * pwm_free - free a PWM device
+>> + */
+>> +void pwm_free(struct pwm_device *pwm);
+>> +
+>> +/*
+>> + * pwm_config - change a PWM device configuration
+>> + */
+>> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+>> +
+>> +/*
+>> + * pwm_enable - start a PWM output toggling
+>> + */
+>> +int pwm_enable(struct pwm_device *pwm);
+>> +
+>> +/*
+>> + * pwm_disable - stop a PWM output toggling
+>> + */
+>> +void pwm_disable(struct pwm_device *pwm);
+> 
+> The legacy functions probably need to be declared unconditionally
+> because they are also available if HAVE_PWM is defined. Or rather than
+> unconditionally they should probably be protected by something like:
+> 
+> #if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
+>   ...
+> #else
+>   dummies go here
+> #endif
+> 
+> In that case it may be worth splitting this into two #if blocks, one for
+> the legacy API and one for the new stuff, maybe even keeping the file
+> layout to reduce the patch size.
+> 
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Hyunchul Lee <hyc.lee@gmail.com>
----
- tools/perf/util/probe-finder.c |   24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+Let me repost this series with two #if blocks as suggested by you.
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 94a00de..cc2b856 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -525,8 +525,10 @@ static int convert_variable_fields(Dwarf_Die
-*vr_die, const char *varname,
- 			return -ENOENT;
- 		}
- 		/* Verify it is a data structure  */
--		if (dwarf_tag(&type) != DW_TAG_structure_type) {
--			pr_warning("%s is not a data structure.\n", varname);
-+		tag = dwarf_tag(&type);
-+		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
-+			pr_warning("%s is not a data structure nor an union.\n",
-+				   varname);
- 			return -EINVAL;
- 		}
+> Alternatively we could postpone this patch a bit until HAVE_PWM can be
+> removed. I've posted patches that convert all remaining legacy
+> implementations and except for Unicore32 it looks like we may be able to
+> get all of them into 3.7.
+> 
+> In the meantime you could solve the problem on your end, as I mentioned,
+> by selecting PWM from the board's Kconfig. If enough people think this
 
-@@ -539,8 +541,9 @@ static int convert_variable_fields(Dwarf_Die
-*vr_die, const char *varname,
- 			*ref_ptr = ref;
- 	} else {
- 		/* Verify it is a data structure  */
--		if (tag != DW_TAG_structure_type) {
--			pr_warning("%s is not a data structure.\n", varname);
-+		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
-+			pr_warning("%s is not a data structure nor an union.\n",
-+				   varname);
- 			return -EINVAL;
- 		}
- 		if (field->name[0] == '[') {
-@@ -567,10 +570,15 @@ static int convert_variable_fields(Dwarf_Die
-*vr_die, const char *varname,
- 	}
+Yeah, sure.
 
- 	/* Get the offset of the field */
--	ret = die_get_data_member_location(die_mem, &offs);
--	if (ret < 0) {
--		pr_warning("Failed to get the offset of %s.\n", field->name);
--		return ret;
-+	if (tag == DW_TAG_union_type) {
-+		offs = 0;
-+	} else {
-+		ret = die_get_data_member_location(die_mem, &offs);
-+		if (ret < 0) {
-+			pr_warning("Failed to get the offset of %s.\n",
-+				   field->name);
-+			return ret;
-+		}
- 	}
- 	ref->offset += (long)offs;
+> needs to be done now I may just be persuaded to accept a patch like this
+> and remove the extra check for HAVE_PWM along with HAVE_PWM when that
+> happens.
+> 
+> Thierry
+> 
+
 
 -- 
-1.7.10
+Tushar Behera
