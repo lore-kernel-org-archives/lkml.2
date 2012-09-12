@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab2ILGee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:34:34 -0400
-Received: from ozlabs.org ([203.10.76.45]:51955 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab2ILGd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:33:29 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mike Waychison <mikew@google.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Frank Swiderski <fes@google.com>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
-In-Reply-To: <CAGTjWtCiqjkR_Ze=0-ebO08+eziz6c8TXLb+O1iiArRQeSE6zw@mail.gmail.com>
-References: <1340742778-11282-1-git-send-email-fes@google.com> <20120910090521.GB18544@redhat.com> <CAGTjWtBa5jW6+y1k6zZmD9TUNHBgv8WRbO_iy7huY_dJSumStw@mail.gmail.com> <20120910195931.GD20721@redhat.com> <CAGTjWtCiqjkR_Ze=0-ebO08+eziz6c8TXLb+O1iiArRQeSE6zw@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 12 Sep 2012 14:55:08 +0930
-Message-ID: <87ligfdd8r.fsf@rustcorp.com.au>
+	id S1757092Ab2ILGfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:35:04 -0400
+Received: from nm21-vm2.bullet.mail.ne1.yahoo.com ([98.138.91.209]:48334 "HELO
+	nm21-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753878Ab2ILGfA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 02:35:00 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Sep 2012 02:34:59 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 639213.23311.bm@omp1014.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Dq9XduXaFANTHVmF+S6oi6A7s0XpDS2PBf4VJaPkzXsSAnf/VU7qRe/1Qv5SJEitdAXyu9fsoUkcaFS+WI2fHpM3s5tBT3I1YVxLnnURuZhScn8cUbcwAuWtNLsXyUPYYzHMfNnBYNlPzmu6VoZo2mmOkY/utWrotCyI3w6OY9c=;
+X-YMail-OSG: 4fnUgdcVM1kEc141mNivZQdEav0skl.dOnmXDj8xT8uuMfG
+ 3OW5FpxHMp1BUVCpmqXNNM8wYQj51MiswgeJYXuSuo9EI1wEKzVD_VRYYWCV
+ rWIrqzz.H6LTLuM_L1BXEaQEtelNdlIHWN1vykZHtovKPxP_JZKdogHZr_Mu
+ ApdPigKbhKr5xUadWHmEjiO48KcJCzWYnG_BMg6_E49GBE5dbSlx_5CCx59k
+ J.Nn9HJHjTL2UI5SVRsdSWzxfDwW1EQGHlQagGhI3jj_j0h56OeDFWJQYIje
+ HVtiUOdAKF1a261Aj3f91DLTygQgQclmTrRFZ3v7Laq5qjYAq2q87fAy7psZ
+ 8KJ2T43t1RfjqAKRTxqRT84rYUMHqjo16ROEm5yQH4UCceitieahYypSucXP
+ 2R6P4xeLoh4tjmDCEaMiUjjKiC5qCD6wOMKYoOL8uS3xs8p9Q.GybTmkztxE
+ dPNgH1QgCI_6N.jjhueo0YRhBwSlvVlg-
+X-Mailer: YahooMailWebService/0.8.121.416
+References: <cover.1347330871.git.wei_wang@realsil.com.cn> <8e6b82eff5844d15612b196a53b28424f4c13c5c.1347330871.git.wei_wang@realsil.com.cn>
+Message-ID: <1347431336.12833.YahooMailNeo@web121004.mail.ne1.yahoo.com>
+Date: Tue, 11 Sep 2012 23:28:56 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Reply-To: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH v6 3/3] drivers/memstick: Add realtek pcie memstick host driver
+To: "wei_wang@realsil.com.cn" <wei_wang@realsil.com.cn>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Cc: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "bp@alien8.de" <bp@alien8.de>
+In-Reply-To: <8e6b82eff5844d15612b196a53b28424f4c13c5c.1347330871.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Waychison <mikew@google.com> writes:
-> On Mon, Sep 10, 2012 at 3:59 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> On Mon, Sep 10, 2012 at 01:37:06PM -0400, Mike Waychison wrote:
->>> On Mon, Sep 10, 2012 at 5:05 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>> > On Tue, Jun 26, 2012 at 01:32:58PM -0700, Frank Swiderski wrote:
->>> >> This implementation of a virtio balloon driver uses the page cache to
->>> >> "store" pages that have been released to the host.  The communication
->>> >> (outside of target counts) is one way--the guest notifies the host when
->>> >> it adds a page to the page cache, allowing the host to madvise(2) with
->>> >> MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
->>> >> (via the regular page reclaim).  This means that inflating the balloon
->>> >> is similar to the existing balloon mechanism, but the deflate is
->>> >> different--it re-uses existing Linux kernel functionality to
->>> >> automatically reclaim.
->>> >>
->>> >> Signed-off-by: Frank Swiderski <fes@google.com>
->>>
->>> Hi Michael,
->>>
->>> I'm very sorry that Frank and I have been silent on these threads.
->>> I've been out of the office and Frank has been been swamped :)
->>>
->>> I'll take a stab at answering some of your questions below, and
->>> hopefully we can end up on the same page.
+> 
 
-Hi Mike, Frank, Michael,
+> From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> Realtek PCI-E Memstick card host driver is used to access Memstick
+> card, with the help of Realtek PCI-E card reader MFD driver.
+> 
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 
-        Thanks for the explanation and discussion.  I like that this
-implementation is more dynamic: the guest can use more pages for a while
-(and the balloon kthread will furiously start trying to grab more pages
-to give back).  This part is a completely reasonable implementation, and
-more sophisticated that what we have.
-
-It doesn't *quite* meet the spec, because we don't notify the host when
-we pull a page from the balloon, but I think that is quite possible.  If
-this is a performance waster, we should add a "SILENT_DEFLATE" feature
-to tell the driver that it doesn't need to, though we should stll
-support the !SILENT_DEFLATE case.
-
-And Michael: thanks again for doing the heavy lifting on this!
-
-Cheers,
-Rusty.
+Acked-by: Alex Dubov <oakad@yahoo.com>
