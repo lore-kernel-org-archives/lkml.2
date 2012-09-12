@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab2IMAPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:15:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932616Ab2IMAQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:16:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab2ILXh4 (ORCPT
+	with ESMTP id S932521Ab2ILXht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:37:56 -0400
+	Wed, 12 Sep 2012 19:37:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 07/85] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP systems
-Date: Wed, 12 Sep 2012 16:35:50 -0700
-Message-Id: <20120912233542.497655685@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Matt Turner <mattst88@gentoo.org>,
+        Mike Frysinger <vapier@gentoo.org>, Michael Cree <mcree@orcon.net.nz>,
+        Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 19/85] alpha: fix fpu.h usage in userspace
+Date: Wed, 12 Sep 2012 16:36:02 -0700
+Message-Id: <20120912233543.748601289@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,44 +30,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
+commit 0be421862b857e61964435ffcaa7499cf77a5e5a upstream.
 
-Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
- #720789") added workarounds for erratum #720789 to the range TLB
-invalidation functions with the observation that the erratum only
-affects SMP platforms. However, when running an SMP_ON_UP kernel on a
-uniprocessor platform we must take care to preserve the ASID as the
-workaround is not required.
+After commit ec2212088c42 ("Disintegrate asm/system.h for Alpha"), the
+fpu.h header which we install for userland started depending on
+special_insns.h which is not installed.
 
-This patch ensures that we don't set the ASID to 0 when flushing the TLB
-on such a system, preserving the original behaviour with the workaround
-disabled.
+However, fpu.h only uses that for __KERNEL__ code, so protect the
+inclusion the same way to avoid build breakage in glibc:
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+  /usr/include/asm/fpu.h:4:31: fatal error: asm/special_insns.h: No such file or directory
+
+Reported-by: Matt Turner <mattst88@gentoo.org>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/tlb-v7.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/fpu.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/mm/tlb-v7.S
-+++ b/arch/arm/mm/tlb-v7.S
-@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
- 	dsb
- 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
- 	mov	r1, r1, lsr #PAGE_SHIFT
--#ifdef CONFIG_ARM_ERRATA_720789
--	mov	r3, #0
--#else
- 	asid	r3, r3				@ mask ASID
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(W(mov)	r3, #0	)
-+	ALT_UP(W(nop)		)
- #endif
- 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
- 	mov	r1, r1, lsl #PAGE_SHIFT
+--- a/arch/alpha/include/asm/fpu.h
++++ b/arch/alpha/include/asm/fpu.h
+@@ -1,7 +1,9 @@
+ #ifndef __ASM_ALPHA_FPU_H
+ #define __ASM_ALPHA_FPU_H
+ 
++#ifdef __KERNEL__
+ #include <asm/special_insns.h>
++#endif
+ 
+ /*
+  * Alpha floating-point control register defines:
 
 
