@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2ILIjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:39:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21821 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab2ILIjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:39:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,408,1344236400"; 
-   d="scan'208";a="202075209"
-Date: Wed, 12 Sep 2012 10:39:16 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Cooper <marcus.xm.cooper@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd/ab3100: split ab3100 headers out of abx500.h
-Message-ID: <20120912083916.GZ3647@sortiz-mobl>
-References: <1344587555-8454-1-git-send-email-linus.walleij@stericsson.com>
+	id S1752748Ab2ILImz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:42:55 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43383 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab2ILImx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:42:53 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-ff-50504b0a943c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hyeoncheol Lee <hyc.lee@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip/perf/core] perf probe: Add union member access support
+References: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
+Date: Wed, 12 Sep 2012 17:35:59 +0900
+In-Reply-To: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
+	(Hyeoncheol Lee's message of "Wed, 12 Sep 2012 16:57:45 +0900")
+Message-ID: <877grzab9s.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344587555-8454-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Hyeoncheol,
 
-On Fri, Aug 10, 2012 at 10:32:35AM +0200, Linus Walleij wrote:
-> From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
-> 
-> The U8500 has its own set of separate header, so the abx500
-> becomes completely abstract. Do the same split for the AB3100
-> legacy ASIC.
-> 
-> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+It seems you don't use git send-email which adds people on Cc: lines of
+changelog into actual CC list automatically.  Or did you send the email
+to Masami and Srikar privately?
+
+Thanks,
+Namhyung
+
+
+On Wed, 12 Sep 2012 16:57:45 +0900, Hyeoncheol Lee wrote:
+> Union members can be accessed with '.' or '->' like data structure
+> member access
+>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Hyunchul Lee <hyc.lee@gmail.com>
 > ---
->  arch/arm/mach-u300/i2c.c   |   2 +-
->  drivers/mfd/ab3100-core.c  |   1 +
->  drivers/regulator/ab3100.c |   1 +
->  include/linux/mfd/ab3100.h | 129 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/abx500.h | 117 +---------------------------------------
->  5 files changed, 133 insertions(+), 117 deletions(-)
->  create mode 100644 include/linux/mfd/ab3100.h
-Patch applied, thanks.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+>  tools/perf/util/probe-finder.c |   24 ++++++++++++++++--------
+>  1 file changed, 16 insertions(+), 8 deletions(-)
+>
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 94a00de..cc2b856 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -525,8 +525,10 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  			return -ENOENT;
+>  		}
+>  		/* Verify it is a data structure  */
+> -		if (dwarf_tag(&type) != DW_TAG_structure_type) {
+> -			pr_warning("%s is not a data structure.\n", varname);
+> +		tag = dwarf_tag(&type);
+> +		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
+> +			pr_warning("%s is not a data structure nor an union.\n",
+> +				   varname);
+>  			return -EINVAL;
+>  		}
+>
+> @@ -539,8 +541,9 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  			*ref_ptr = ref;
+>  	} else {
+>  		/* Verify it is a data structure  */
+> -		if (tag != DW_TAG_structure_type) {
+> -			pr_warning("%s is not a data structure.\n", varname);
+> +		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
+> +			pr_warning("%s is not a data structure nor an union.\n",
+> +				   varname);
+>  			return -EINVAL;
+>  		}
+>  		if (field->name[0] == '[') {
+> @@ -567,10 +570,15 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  	}
+>
+>  	/* Get the offset of the field */
+> -	ret = die_get_data_member_location(die_mem, &offs);
+> -	if (ret < 0) {
+> -		pr_warning("Failed to get the offset of %s.\n", field->name);
+> -		return ret;
+> +	if (tag == DW_TAG_union_type) {
+> +		offs = 0;
+> +	} else {
+> +		ret = die_get_data_member_location(die_mem, &offs);
+> +		if (ret < 0) {
+> +			pr_warning("Failed to get the offset of %s.\n",
+> +				   field->name);
+> +			return ret;
+> +		}
+>  	}
+>  	ref->offset += (long)offs;
