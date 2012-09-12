@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab2ILXfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:35:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1756603Ab2ILXf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:35:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab2ILXfu (ORCPT
+	with ESMTP id S1756567Ab2ILXfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:50 -0400
+	Wed, 12 Sep 2012 19:35:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Oliver Neukum <oneukum@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 085/108] usbnet: fix deadlock in resume
-Date: Wed, 12 Sep 2012 16:29:23 -0700
-Message-Id: <20120912232459.417462728@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Kashyap Desai <Kashyap.Desai@lsi.com>,
+        Adam Radford <aradford@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 086/108] SCSI: megaraid_sas: Move poll_aen_lock initializer
+Date: Wed, 12 Sep 2012 16:29:24 -0700
+Message-Id: <20120912232459.518558119@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,37 +31,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Kashyap Desai <Kashyap.Desai@lsi.com>
 
-commit ab6f148de28261682d300662e87b9477f7efc95b upstream.
+commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
 
-A usbnet device can share a multifunction device
-with a storage device. If the storage device is autoresumed
-the usbnet devices also needs to be autoresumed. Allocating
-memory with GFP_KERNEL can deadlock in this case.
+The following patch moves the poll_aen_lock initializer from
+megasas_probe_one() to megasas_init().  This prevents a crash when a user
+loads the driver and tries to issue a poll() system call on the ioctl
+interface with no adapters present.
 
-This should go back into all kernels that have
-commit 65841fd5132c3941cdf5df09e70df3ed28323212
-That is 3.5
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
+Signed-off-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1580,7 +1580,7 @@ int usbnet_resume (struct usb_interface
- 				netif_device_present(dev->net) &&
- 				!timer_pending(&dev->delay) &&
- 				!test_bit(EVENT_RX_HALT, &dev->flags))
--					rx_alloc_submit(dev, GFP_KERNEL);
-+					rx_alloc_submit(dev, GFP_NOIO);
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4066,7 +4066,6 @@ megasas_probe_one(struct pci_dev *pdev,
+ 	spin_lock_init(&instance->cmd_pool_lock);
+ 	spin_lock_init(&instance->hba_lock);
+ 	spin_lock_init(&instance->completion_lock);
+-	spin_lock_init(&poll_aen_lock);
  
- 			if (!(dev->txq.qlen >= TX_QLEN(dev)))
- 				netif_tx_wake_all_queues(dev->net);
+ 	mutex_init(&instance->aen_mutex);
+ 	mutex_init(&instance->reset_mutex);
+@@ -5392,6 +5391,8 @@ static int __init megasas_init(void)
+ 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
+ 	       MEGASAS_EXT_VERSION);
+ 
++	spin_lock_init(&poll_aen_lock);
++
+ 	support_poll_for_event = 2;
+ 	support_device_change = 1;
+ 
 
 
