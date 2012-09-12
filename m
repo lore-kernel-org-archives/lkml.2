@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab2ILX4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:56:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123Ab2ILXmn (ORCPT
+	id S933346Ab2ILX4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:56:55 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63342 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615Ab2ILX4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: [ 11/46] vfs: canonicalize create mode in build_open_flags()
-Date: Wed, 12 Sep 2012 16:39:01 -0700
-Message-Id: <20120912233818.840135743@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
-References: <20120912233817.662663809@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 12 Sep 2012 19:56:51 -0400
+X-AuditID: 9c93016f-b7bffae000003557-9c-505121401570
+Date: Thu, 13 Sep 2012 08:58:55 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Kyungmin Park <kmpark@infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] mm: cma: Discard clean pages during contiguous
+ allocation instead of migration
+Message-ID: <20120912235855.GB2766@bbox>
+References: <1347324112-14134-1-git-send-email-minchan@kernel.org>
+ <20120912130732.99ecf764.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120912130732.99ecf764.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Wed, Sep 12, 2012 at 01:07:32PM -0700, Andrew Morton wrote:
+> On Tue, 11 Sep 2012 09:41:52 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > This patch drops clean cache pages instead of migration during
+> > alloc_contig_range() to minimise allocation latency by reducing the amount
+> > of migration is necessary. It's useful for CMA because latency of migration
+> > is more important than evicting the background processes working set.
+> > In addition, as pages are reclaimed then fewer free pages for migration
+> > targets are required so it avoids memory reclaiming to get free pages,
+> > which is a contributory factor to increased latency.
+> > 
+> > * from v1
+> >   * drop migrate_mode_t
+> >   * add reclaim_clean_pages_from_list instad of MIGRATE_DISCARD support - Mel
+> > 
+> > I measured elapsed time of __alloc_contig_migrate_range which migrates
+> > 10M in 40M movable zone in QEMU machine.
+> > 
+> > Before - 146ms, After - 7ms
+> > 
+> > ...
+> >
+> > @@ -758,7 +760,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			wait_on_page_writeback(page);
+> >  		}
+> >  
+> > -		references = page_check_references(page, sc);
+> > +		if (!force_reclaim)
+> > +			references = page_check_references(page, sc);
+> 
+> grumble.  Could we please document `enum page_references' and
+> page_check_references()?
+> 
+> And the `force_reclaim' arg could do with some documentation.  It only
+> forces reclaim under certain circumstances.  They should be described,
+> and a reson should be provided.
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+I will give it a shot by another patch.
 
-------------------
+> 
+> Why didn't this patch use PAGEREF_RECLAIM_CLEAN?  It is possible for
+> someone to dirty one of these pages after we tested its cleanness and
+> we'll then go off and write it out, but we won't be reclaiming it?
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Absolutely.
+Thanks Andrew!
 
-commit e68726ff72cf7ba5e7d789857fcd9a75ca573f03 upstream.
+Here it goes.
 
-Userspace can pass weird create mode in open(2) that we canonicalize to
-"(mode & S_IALLUGO) | S_IFREG" in vfs_create().
+====== 8< ======
 
-The problem is that we use the uncanonicalized mode before calling vfs_create()
-with unforseen consequences.
+>From 90022feb9ecf8e9a4efba7cbf49d7cead777020f Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Thu, 13 Sep 2012 08:45:58 +0900
+Subject: [PATCH] mm: cma: reclaim only clean pages
 
-So do the canonicalization early in build_open_flags().
+It is possible for pages to be dirty after the check
+in reclaim_clean_pages_from_list so that it ends up
+paging out the pages, which is never what we want for speed up.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch fixes it.
 
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- fs/open.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ mm/vmscan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -900,9 +900,10 @@ static inline int build_open_flags(int f
- 	int lookup_flags = 0;
- 	int acc_mode;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f8f56f8..1ee4b69 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -694,7 +694,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		struct address_space *mapping;
+ 		struct page *page;
+ 		int may_enter_fs;
+-		enum page_references references = PAGEREF_RECLAIM;
++		enum page_references references = PAGEREF_RECLAIM_CLEAN;
  
--	if (!(flags & O_CREAT))
--		mode = 0;
--	op->mode = mode;
-+	if (flags & O_CREAT)
-+		op->mode = (mode & S_IALLUGO) | S_IFREG;
-+	else
-+		op->mode = 0;
+ 		cond_resched();
  
- 	/* Must never be set by userspace */
- 	flags &= ~FMODE_NONOTIFY;
+-- 
+1.7.9.5
 
-
+-- 
+Kind regards,
+Minchan Kim
