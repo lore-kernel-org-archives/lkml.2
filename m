@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab2ILXlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:41:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S932927Ab2ILXlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:41:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab2ILXlA (ORCPT
+	with ESMTP id S932897Ab2ILXlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:00 -0400
+	Wed, 12 Sep 2012 19:41:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Mads <mads@ab3.no>,
-        Mike Frysinger <vapier@gentoo.org>, "H. J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 54/85] x32: Use compat shims for {g,s}etsockopt
-Date: Wed, 12 Sep 2012 16:36:37 -0700
-Message-Id: <20120912233547.389692918@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Doron Cohen <doronc@siano-ms.com>
+Subject: =?UTF-8?q?=5B=2059/85=5D=20USB=3A=20smsusb=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
+Date: Wed, 12 Sep 2012 16:36:42 -0700
+Message-Id: <20120912233547.928811944@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,93 +36,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 515c7af85ed92696c311c53d53cb4898ff32d784 upstream.
+commit d04dbd1c0ec17a13326c8f2279399c225836a79f upstream.
 
-Some of the arguments to {g,s}etsockopt are passed in userland pointers.
-If we try to use the 64bit entry point, we end up sometimes failing.
+This structure needs to always stick around, even if CONFIG_HOTPLUG
+is disabled, otherwise we can oops when trying to probe a device that
+was added after the structure is thrown away.
 
-For example, dhcpcd doesn't run in x32:
-	# dhcpcd eth0
-	dhcpcd[1979]: version 5.5.6 starting
-	dhcpcd[1979]: eth0: broadcasting for a lease
-	dhcpcd[1979]: eth0: open_socket: Invalid argument
-	dhcpcd[1979]: eth0: send_raw_packet: Bad file descriptor
+Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
 
-The code in particular is getting back EINVAL when doing:
-	struct sock_fprog pf;
-	setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &pf, sizeof(pf));
-
-Diving into the kernel code, we can see:
-include/linux/filter.h:
-	struct sock_fprog {
-		unsigned short len;
-		struct sock_filter __user *filter;
-	};
-
-net/core/sock.c:
-	case SO_ATTACH_FILTER:
-		ret = -EINVAL;
-		if (optlen == sizeof(struct sock_fprog)) {
-			struct sock_fprog fprog;
-
-			ret = -EFAULT;
-			if (copy_from_user(&fprog, optval, sizeof(fprog)))
-				break;
-
-			ret = sk_attach_filter(&fprog, sk);
-		}
-		break;
-
-arch/x86/syscalls/syscall_64.tbl:
-	54 common setsockopt sys_setsockopt
-	55 common getsockopt sys_getsockopt
-
-So for x64, sizeof(sock_fprog) is 16 bytes.  For x86/x32, it's 8 bytes.
-This comes down to the pointer being 32bit for x32, which means we need
-to do structure size translation.  But since x32 comes in directly to
-sys_setsockopt, it doesn't get translated like x86.
-
-After changing the syscall table and rebuilding glibc with the new kernel
-headers, dhcp runs fine in an x32 userland.
-
-Oddly, it seems like Linus noted the same thing during the initial port,
-but I guess that was missed/lost along the way:
-	https://lkml.org/lkml/2011/8/26/452
-
-[ hpa: tagging for -stable since this is an ABI fix. ]
-
-Bugzilla: https://bugs.gentoo.org/423649
-Reported-by: Mads <mads@ab3.no>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1345320697-15713-1-git-send-email-vapier@gentoo.org
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: Michael Krufky <mkrufky@linuxtv.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Doron Cohen <doronc@siano-ms.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/syscalls/syscall_64.tbl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/dvb/siano/smsusb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -60,8 +60,8 @@
- 51	common	getsockname		sys_getsockname
- 52	common	getpeername		sys_getpeername
- 53	common	socketpair		sys_socketpair
--54	common	setsockopt		sys_setsockopt
--55	common	getsockopt		sys_getsockopt
-+54	64	setsockopt		sys_setsockopt
-+55	64	getsockopt		sys_getsockopt
- 56	common	clone			stub_clone
- 57	common	fork			stub_fork
- 58	common	vfork			stub_vfork
-@@ -351,3 +351,5 @@
- 538	x32	sendmmsg		compat_sys_sendmmsg
- 539	x32	process_vm_readv	compat_sys_process_vm_readv
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
-+541	x32	setsockopt		compat_sys_setsockopt
-+542	x32	getsockopt		compat_sys_getsockopt
+--- a/drivers/media/dvb/siano/smsusb.c
++++ b/drivers/media/dvb/siano/smsusb.c
+@@ -481,7 +481,7 @@ static int smsusb_resume(struct usb_inte
+ 	return 0;
+ }
+ 
+-static const struct usb_device_id smsusb_id_table[] __devinitconst = {
++static const struct usb_device_id smsusb_id_table[] = {
+ 	{ USB_DEVICE(0x187f, 0x0010),
+ 		.driver_info = SMS1XXX_BOARD_SIANO_STELLAR },
+ 	{ USB_DEVICE(0x187f, 0x0100),
 
 
