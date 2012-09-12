@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab2ILPIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:08:42 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56430 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759895Ab2ILPHQ (ORCPT
+	id S1760049Ab2ILPIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:08:40 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:65276 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759898Ab2ILPHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Sep 2012 11:07:16 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] drivers/char/mmtimer.c: Remove useless kfree
-Date: Wed, 12 Sep 2012 17:06:45 +0200
-Message-Id: <1347462407-13499-7-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 5/9] drivers/staging/gdm72xx/gdm_sdio.c: Remove useless kfree
+Date: Wed, 12 Sep 2012 17:06:44 +0200
+Message-Id: <1347462407-13499-6-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -73,28 +72,31 @@ expression x;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/char/mmtimer.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/gdm72xx/gdm_sdio.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/mmtimer.c b/drivers/char/mmtimer.c
-index 33dc229..3d6c067 100644
---- a/drivers/char/mmtimer.c
-+++ b/drivers/char/mmtimer.c
-@@ -826,7 +826,7 @@ static int __init mmtimer_init(void)
+diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
+index f824290..a0621d9 100644
+--- a/drivers/staging/gdm72xx/gdm_sdio.c
++++ b/drivers/staging/gdm72xx/gdm_sdio.c
+@@ -94,17 +94,14 @@ static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
+ 	struct sdio_rx *r = NULL;
  
- 	/* Allocate list of node ptrs to mmtimer_t's */
- 	timers = kzalloc(sizeof(struct mmtimer_node)*maxn, GFP_KERNEL);
--	if (timers == NULL) {
-+	if (!timers) {
- 		printk(KERN_ERR "%s: failed to allocate memory for device\n",
- 				MMTIMER_NAME);
- 		goto out3;
-@@ -848,7 +848,6 @@ static int __init mmtimer_init(void)
- 	return 0;
+ 	r = kmalloc(sizeof(*r), GFP_ATOMIC);
+-	if (r == NULL)
+-		goto out;
++	if (!r)
++		return NULL;
  
- out3:
--	kfree(timers);
- 	misc_deregister(&mmtimer_miscdev);
- out2:
- 	free_irq(SGI_MMTIMER_VECTOR, NULL);
+ 	memset(r, 0, sizeof(*r));
+ 
+ 	r->rx_cxt = rx;
+ 
+ 	return r;
+-out:
+-	kfree(r);
+-	return NULL;
+ }
+ 
+ static void free_rx_struct(struct sdio_rx *r)
 
