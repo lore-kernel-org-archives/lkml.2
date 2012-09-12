@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab2ILXl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:41:58 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572Ab2ILXlv (ORCPT
+	id S933042Ab2ILXmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:42:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933020Ab2ILXl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:51 -0400
+	Wed, 12 Sep 2012 19:41:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Babu Moger <babu.moger@netapp.com>,
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Matthias Prager <linux@matthiasprager.de>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 69/85] SCSI: scsi_lib: fix scsi_io_completions SG_IO error propagation
-Date: Wed, 12 Sep 2012 16:36:52 -0700
-Message-Id: <20120912233548.948155923@linuxfoundation.org>
+Subject: [ 71/85] SCSI: Fix Device not ready issue on mpt2sas
+Date: Wed, 12 Sep 2012 16:36:54 -0700
+Message-Id: <20120912233549.151013664@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,83 +29,108 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 27c419739b67decced4650440829b8d51bef954b upstream.
+commit 14216561e164671ce147458653b1fea06a4ada1e upstream.
 
-The following v3.4-rc1 commit unmasked an existing bug in scsi_io_completion's
-SG_IO error handling: 47ac56d [SCSI] scsi_error: classify some ILLEGAL_REQUEST
-sense as a permanent TARGET_ERROR
+This is a particularly nasty SCSI ATA Translation Layer (SATL) problem.
 
-Given that certain ILLEGAL_REQUEST are now properly categorized as
-TARGET_ERROR the host_byte is being set (before host_byte wasn't ever
-set for these ILLEGAL_REQUEST).
+SAT-2 says (section 8.12.2)
 
-In scsi_io_completion, initialize req->errors with cmd->result _after_
-the SG_IO block that calls __scsi_error_from_host_byte (which may
-modify the host_byte).
+        if the device is in the stopped state as the result of
+        processing a START STOP UNIT command (see 9.11), then the SATL
+        shall terminate the TEST UNIT READY command with CHECK CONDITION
+        status with the sense key set to NOT READY and the additional
+        sense code of LOGICAL UNIT NOT READY, INITIALIZING COMMAND
+        REQUIRED;
 
-Before this fix:
+mpt2sas internal SATL seems to implement this.  The result is very confusing
+standby behaviour (using hdparm -y).  If you suspend a drive and then send
+another command, usually it wakes up.  However, if the next command is a TEST
+UNIT READY, the SATL sees that the drive is suspended and proceeds to follow
+the SATL rules for this, returning NOT READY to all subsequent commands.  This
+means that the ordering of TEST UNIT READY is crucial: if you send TUR and
+then a command, you get a NOT READY to both back.  If you send a command and
+then a TUR, you get GOOD status because the preceeding command woke the drive.
 
-    cdb to send: 12 01 01 00 00 00
-ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
-    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
-    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
-    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0x10,
-    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-SCSI Status: Check Condition
+This bit us badly because
 
-Sense Information:
-sense buffer empty
+commit 85ef06d1d252f6a2e73b678591ab71caad4667bb
+Author: Tejun Heo <tj@kernel.org>
+Date:   Fri Jul 1 16:17:47 2011 +0200
 
-After:
+    block: flush MEDIA_CHANGE from drivers on close(2)
 
-    cdb to send: 12 01 01 00 00 00
-ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
-    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
-    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
-    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0,
-    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-SCSI Status: Check Condition
+Changed our ordering on TEST UNIT READY commands meaning that SATA drives
+connected to an mpt2sas now suspend and refuse to wake (because the mpt2sas
+SATL sees the suspend *before* the drives get awoken by the next ATA command)
+resulting in lots of failed commands.
 
-Sense Information:
- Fixed format, current;  Sense key: Illegal Request
- Additional sense: Invalid field in cdb
- Raw sense data (in hex):
-        70 00 05 00 00 00 00 0b  00 00 00 00 24 00 00 00
-        00 00 00
+The standard is completely nuts forcing this inconsistent behaviour, but we
+have to work around it.
 
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Tested-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Reviewed-by: Babu Moger <babu.moger@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The fix for this is twofold:
+
+   1. Set the allow_restart flag so we wake the drive when we see it has been
+      suspended
+
+   2. Return all TEST UNIT READY status directly to the mid layer without any
+      further error handling which prevents us causing error handling which
+      may offline the device just because of a media check TUR.
+
+Reported-by: Matthias Prager <linux@matthiasprager.de>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_error.c |   10 ++++++++++
+ drivers/scsi/scsi_scan.c  |   10 ++++++++++
+ 2 files changed, 20 insertions(+)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -760,7 +760,6 @@ void scsi_io_completion(struct scsi_cmnd
- 	}
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -42,6 +42,8 @@
  
- 	if (req->cmd_type == REQ_TYPE_BLOCK_PC) { /* SG_IO ioctl from block level */
--		req->errors = result;
- 		if (result) {
- 			if (sense_valid && req->sense) {
- 				/*
-@@ -776,6 +775,10 @@ void scsi_io_completion(struct scsi_cmnd
- 			if (!sense_deferred)
- 				error = __scsi_error_from_host_byte(cmd, result);
- 		}
+ #include <trace/events/scsi.h>
+ 
++static void scsi_eh_done(struct scsi_cmnd *scmd);
++
+ #define SENSE_TIMEOUT		(10*HZ)
+ 
+ /*
+@@ -241,6 +243,14 @@ static int scsi_check_sense(struct scsi_
+ 	if (! scsi_command_normalize_sense(scmd, &sshdr))
+ 		return FAILED;	/* no valid sense data */
+ 
++	if (scmd->cmnd[0] == TEST_UNIT_READY && scmd->scsi_done != scsi_eh_done)
 +		/*
-+		 * __scsi_error_from_host_byte may have reset the host_byte
++		 * nasty: for mid-layer issued TURs, we need to return the
++		 * actual sense data without any recovery attempt.  For eh
++		 * issued ones, we need to try to recover and interpret
 +		 */
-+		req->errors = cmd->result;
++		return SUCCESS;
++
+ 	if (scsi_sense_is_deferred(&sshdr))
+ 		return NEEDS_RETRY;
  
- 		req->resid_len = scsi_get_resid(cmd);
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -776,6 +776,16 @@ static int scsi_add_lun(struct scsi_devi
+ 	sdev->model = (char *) (sdev->inquiry + 16);
+ 	sdev->rev = (char *) (sdev->inquiry + 32);
  
++	if (strncmp(sdev->vendor, "ATA     ", 8) == 0) {
++		/*
++		 * sata emulation layer device.  This is a hack to work around
++		 * the SATL power management specifications which state that
++		 * when the SATL detects the device has gone into standby
++		 * mode, it shall respond with NOT READY.
++		 */
++		sdev->allow_restart = 1;
++	}
++
+ 	if (*bflags & BLIST_ISROM) {
+ 		sdev->type = TYPE_ROM;
+ 		sdev->removable = 1;
 
 
