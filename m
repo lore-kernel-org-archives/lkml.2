@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2ILUCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 16:02:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62163 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab2ILUB7 (ORCPT
+	id S1753034Ab2ILUHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 16:07:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45090 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751891Ab2ILUHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 16:01:59 -0400
+	Wed, 12 Sep 2012 16:07:33 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX1+jCOFkM5yj3EQ9rE4Q27BHQoERz8cs6uXqNQ4bnM
+	8OAvV971oSf44E
+From: Marc Dietrich <marvin24@gmx.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] staging: nvec: adjust for mfd_add_devices() API change
+Date: Wed, 12 Sep 2012 22:07 +0200
+Message-ID: <1378976.P27YKfEPUV@ax5200p>
+User-Agent: KMail/4.8.4 (Linux/3.5.0-13-generic; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1347467160-22724-1-git-send-email-swarren@wwwdotorg.org>
+References: <1347467160-22724-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6T=vQnP2u6KP0+sDvT5=iQs1UFjpOLub+9y=B2k_MRgQ@mail.gmail.com>
-References: <20120907163313.614852012@vyatta.com> <CAErSpo6T=vQnP2u6KP0+sDvT5=iQs1UFjpOLub+9y=B2k_MRgQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 12 Sep 2012 14:01:37 -0600
-Message-ID: <CAErSpo5q6-afy-ekqTAZnDKxsy=cmj4-GP5gjSaDJEutFm+xyg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] PCI error handler const
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Linas Vepstas <linasvepstas@gmail.com>, linux-pci@vger.kernel.org,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 7, 2012 at 4:42 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Sep 7, 2012 at 9:33 AM, Stephen Hemminger <shemminger@vyatta.com> wrote:
->> This is a trivial patch to make PCI error handler function
->> tables const. Split into pieces so that core changes are first.
->
-> I put all four of these on this branch:
->
-> http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/pci/stephen-const
->
-> If the netdev and scsi folks approve, I can handle them all through my PCI tree.
+On Wednesday 12 September 2012 10:26:00 Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> Commit 6607bad "mfd: core: Push irqdomain mapping out into devices"
+> added a new parameter to mfd_add_devices(), but missed updating the
+> nvec driver in staging.
+> 
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Marc Dietrich <marvin24@gmx.de>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-I didn't see any objection, so I pushed these four patches to the PCI
-"next" branch.
+wops, I somehow missed this one. Anyway, the patch looks fine.
 
-Thanks!
+Signed-off-by: Marc Dietrich <marvin24@gmx.de>
 
-Bjorn
+> --
+> Samuel, I wonder if this patch should be squashed into the commit mentioned
+> above in the MFD tree?
+> ---
+>  drivers/staging/nvec/nvec.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+> index b0972d0..24d8eeb 100644
+> --- a/drivers/staging/nvec/nvec.c
+> +++ b/drivers/staging/nvec/nvec.c
+> @@ -837,7 +837,7 @@ static int __devinit tegra_nvec_probe(struct
+> platform_device *pdev) }
+> 
+>  	ret = mfd_add_devices(nvec->dev, -1, nvec_devices,
+> -			      ARRAY_SIZE(nvec_devices), base, 0);
+> +			      ARRAY_SIZE(nvec_devices), base, 0, NULL);
+>  	if (ret)
+>  		dev_err(nvec->dev, "error adding subdevices\n");
