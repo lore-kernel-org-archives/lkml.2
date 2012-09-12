@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab2ILX5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:57:14 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	id S1757378Ab2ILX5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:57:36 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933110Ab2ILXmh (ORCPT
+	with ESMTP id S933106Ab2ILXmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:37 -0400
+	Wed, 12 Sep 2012 19:42:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 83/85] x86, microcode, AMD: Fix broken ucode patch size check
-Date: Wed, 12 Sep 2012 16:37:06 -0700
-Message-Id: <20120912233550.374073379@linuxfoundation.org>
+        =?UTF-8?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: =?UTF-8?q?=5B=2085/85=5D=20hwmon=3A=20=28asus=5Fatk0110=29=20Add=20quirk=20for=20Asus=20M5A78L?=
+Date: Wed, 12 Sep 2012 16:37:08 -0700
+Message-Id: <20120912233550.569736985@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,54 +33,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit 36bf50d7697be18c6bfd0401e037df10bff1e573 upstream.
+commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
 
-This issue was recently observed on an AMD C-50 CPU where a patch of
-maximum size was applied.
+The old interface is bugged and reads the wrong sensor when retrieving
+the reading for the chassis fan (it reads the CPU sensor); the new
+interface works fine.
 
-Commit be62adb49294 ("x86, microcode, AMD: Simplify ucode verification")
-added current_size in get_matching_microcode(). This is calculated as
-size of the ucode patch + 8 (ie. size of the header). Later this is
-compared against the maximum possible ucode patch size for a CPU family.
-And of course this fails if the patch has already maximum size.
-
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1344361461-10076-1-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Göran Uddeborg <goeran@uddeborg.se>
+Tested-by: Göran Uddeborg <goeran@uddeborg.se>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_amd.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/hwmon/asus_atk0110.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -143,11 +143,12 @@ static int get_matching_microcode(int cp
- 				  unsigned int *current_size)
- {
- 	struct microcode_header_amd *mc_hdr;
--	unsigned int actual_size;
-+	unsigned int actual_size, patch_size;
- 	u16 equiv_cpu_id;
- 
- 	/* size of the current patch we're staring at */
--	*current_size = *(u32 *)(ucode_ptr + 4) + SECTION_HDR_SIZE;
-+	patch_size = *(u32 *)(ucode_ptr + 4);
-+	*current_size = patch_size + SECTION_HDR_SIZE;
- 
- 	equiv_cpu_id = find_equiv_id();
- 	if (!equiv_cpu_id)
-@@ -174,7 +175,7 @@ static int get_matching_microcode(int cp
- 	/*
- 	 * now that the header looks sane, verify its size
- 	 */
--	actual_size = verify_ucode_size(cpu, *current_size, leftover_size);
-+	actual_size = verify_ucode_size(cpu, patch_size, leftover_size);
- 	if (!actual_size)
- 		return 0;
- 
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -34,6 +34,12 @@ static const struct dmi_system_id __init
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
+ 		}
++	}, {
++		/* Old interface reads the same sensor for fan0 and fan1 */
++		.ident = "Asus M5A78L",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
++		}
+ 	},
+ 	{ }
+ };
 
 
