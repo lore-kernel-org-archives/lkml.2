@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760409Ab2ILQ04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:26:56 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56314 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758845Ab2ILQ0y (ORCPT
+	id S1760442Ab2ILQ3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:29:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34014 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760432Ab2ILQ3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:26:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233503953"
-Date: Wed, 12 Sep 2012 09:26:52 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 06/13] ARM: SoC: convert MSM SMP to SoC descriptor
-Message-ID: <20120912162651.GA22904@codeaurora.org>
-References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
- <1347461906-13527-7-git-send-email-arnd@arndb.de>
+	Wed, 12 Sep 2012 12:29:08 -0400
+Message-ID: <5050B850.807@wwwdotorg.org>
+Date: Wed, 12 Sep 2012 10:29:04 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347461906-13527-7-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Gyungoh Yoo <jack.yoo@maxim-ic.com>, devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 REPOST] mfd: add MAX8907 core driver
+References: <1346973015-7252-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1346973015-7252-1-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 04:58:19PM +0200, Arnd Bergmann wrote:
-> From: Marc Zyngier <marc.zyngier@arm.com>
+On 09/06/2012 05:10 PM, Stephen Warren wrote:
+> From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
 > 
-> Convert MSM SMP platforms to use the SoC descriptor to provide
-> their SMP and CPU hotplug operations.
-> 
-> Cc: David Brown <davidb@codeaurora.org>
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-msm/board-msm8960.c |    3 +++
->  arch/arm/mach-msm/board-msm8x60.c |    7 +++++++
+> The MAX8907 is an I2C-based power-management IC containing voltage
+> regulators, a reset controller, a real-time clock, and a touch-screen
+> controller.
 
-Stephen Boyd recently sent out a patch series that remove the non-DT
-support for these two targets, which naturally generates a bunch of
-conflicts.
+Samuel,
 
-I'm about to send out a pull request including these changes, and
-after that, I'll rework this patch for the new board files, and give
-it a try.
+This patch as-is won't compile due to the mfd_add_devices() API change.
+Do you want to fix this up when you apply (simply add an extra parameter
+"NULL" to the mfd_add_devices() call), or should I send an updated V5
+for this?
 
-David Brown
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks.
