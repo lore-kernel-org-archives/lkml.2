@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab2ILPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:49:56 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:55626 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab2ILPto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:49:44 -0400
-Date: Wed, 12 Sep 2012 17:49:43 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-Message-ID: <20120912154943.GB12103@aftab.osrc.amd.com>
-References: <1347403947-20187-1-git-send-email-johunt@akamai.com>
- <504FC2E9.4010708@akamai.com>
- <20120912085140.GA12277@aftab.osrc.amd.com>
- <5050824B.9050006@akamai.com>
- <5050857F.5060207@akamai.com>
- <20120912153016.GA12103@aftab.osrc.amd.com>
- <5050AC2E.3050408@akamai.com>
+	id S1759646Ab2ILPu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:50:59 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45669 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756715Ab2ILPuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:50:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5050AC2E.3050408@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH0vN5+ZoexHtmgyZ+s9tiW3LYx+6PMT8aLyYt-T5mnaGXvYbQ@mail.gmail.com>
+References: <1347454564-5178-2-git-send-email-peter.senna@gmail.com>
+	<CAH0vN5+ZoexHtmgyZ+s9tiW3LYx+6PMT8aLyYt-T5mnaGXvYbQ@mail.gmail.com>
+Date: Wed, 12 Sep 2012 17:50:54 +0200
+Message-ID: <CA+MoWDquDi6+kY9z3rj79dJK6j5tSWO9oWHCkvt6J-XBB=HNvA@mail.gmail.com>
+Subject: Re: [PATCH v2 7/8] drivers/media/platform/davinci/vpbe.c: Removes
+ useless kfree()
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Marcos Souza <marcos.souza.org@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 10:37:18AM -0500, Josh Hunt wrote:
-> Well from what I see 603ad... would only fix the case of printing the
-> values correctly on boot, by removing the factor=1 shift. However,
-> that is merely cosmetic as it does not affect the actual calculation
-> of nr_pages. I guess maybe I wasn't completely clear before, but I
-> see the doubling of the amount of memory both on boot via dmesg, but
-> also in /sys/devices/system/edac/mc/mc0/size_mb and all of the csrow*
-> subdirs therein.
+Marcos,
 
-Yes, that's because the whole init_csrows thing has been b0rked since
-forever. In your case, amd64_csrow_nr_pages() should pay attention to
-the dct (second argument) which on K8 is always 0 (we have only one DCT
-aka Dram ConTroller on K8) and the function should return 0 if dct is 1.
-But the whole loop in init_csrows is fishy too so I'll need to rework
-that properly. Oh well...
+> Now that you removed this kfree, you could remove this label too. Very
+> nice your cleanup :)
+Thanks!
 
-Thanks.
+>
+>>  vpbe_fail_sd_register:
+>>         kfree(vpbe_dev->encoders);
+>>  vpbe_fail_v4l2_device:
+
+The problem removing the label is that it will require some more work
+naming the labels. See:
+if (!vpbe_dev->amp) {
+...
+	goto vpbe_fail_amp_register;
+
+If I just remove the label vpbe_fail_amp_register, the label names
+will not make sense any more as the next label is
+vpbe_fail_sd_register. So I will need to change the name to something
+different or rename all labels to out1, out2, out3 or err1, err2,
+err3, or ....
+
+Any suggestions?
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Peter
