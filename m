@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab2ILXb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:31:26 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab2ILXbL (ORCPT
+	id S1755664Ab2ILXbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:31:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab2ILXbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:11 -0400
+	Wed, 12 Sep 2012 19:31:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 013/108] ARM: imx6: spin the cpu until hardware takes it down
-Date: Wed, 12 Sep 2012 16:28:11 -0700
-Message-Id: <20120912232451.904294771@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 005/108] ARM: 7487/1: mm: avoid setting nG bit for user mappings that arent present
+Date: Wed, 12 Sep 2012 16:28:03 -0700
+Message-Id: <20120912232450.949141769@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -28,68 +31,97 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit c944b0b9354ea06ffb0c8a7178949f1185f9f499 upstream.
+commit 47f1204329237a0f8655f5a9f14a38ac81946ca1 upstream.
 
-Though commit 602bf40 (ARM: imx6: exit coherency when shutting down
-a cpu) improves the stability of imx6q cpu hotplug a lot, there are
-still hangs seen with a more stressful hotplug testing.
+Swap entries are encoding in ptes such that !pte_present(pte) and
+pte_file(pte). The remaining bits of the descriptor are used to identify
+the swapfile and offset within it to the swap entry.
 
-It's expected that once imx_enable_cpu(cpu, false) is called, the cpu
-will be taken down by hardware immediately, and the code after that
-will not get any chance to execute.  However, this is not always the
-case from the testing.  The cpu could possibly be alive for a few
-cycles before hardware actually takes it down.  So rather than letting
-cpu execute some code that could cause a hang in these cycles, let's
-make the cpu spin there and wait for hardware to take it down.
+When writing such a pte for a user virtual address, set_pte_at
+unconditionally sets the nG bit, which (in the case of LPAE) will
+corrupt the swapfile offset and lead to a BUG:
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+[  140.494067] swap_free: Unused swap offset entry 000763b4
+[  140.509989] BUG: Bad page map in process rs:main Q:Reg  pte:0ec76800 pmd:8f92e003
+
+This patch fixes the problem by only setting the nG bit for user
+mappings that are actually present.
+
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/hotplug.c |   23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+ arch/arm/include/asm/pgtable.h |   34 ++++++++++++++++++----------------
+ arch/arm/mm/flush.c            |    2 --
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/arch/arm/mach-imx/hotplug.c
-+++ b/arch/arm/mach-imx/hotplug.c
-@@ -42,22 +42,6 @@ static inline void cpu_enter_lowpower(vo
- 	  : "cc");
- }
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -195,6 +195,18 @@ static inline pte_t *pmd_page_vaddr(pmd_
  
--static inline void cpu_leave_lowpower(void)
--{
--	unsigned int v;
--
--	asm volatile(
--		"mrc	p15, 0, %0, c1, c0, 0\n"
--	"	orr	%0, %0, %1\n"
--	"	mcr	p15, 0, %0, c1, c0, 0\n"
--	"	mrc	p15, 0, %0, c1, c0, 1\n"
--	"	orr	%0, %0, %2\n"
--	"	mcr	p15, 0, %0, c1, c0, 1\n"
--	  : "=&r" (v)
--	  : "Ir" (CR_C), "Ir" (0x40)
--	  : "cc");
--}
--
- /*
-  * platform-specific code to shutdown a CPU
-  *
-@@ -67,11 +51,10 @@ void platform_cpu_die(unsigned int cpu)
+ #define pte_clear(mm,addr,ptep)	set_pte_ext(ptep, __pte(0), 0)
+ 
++#define pte_none(pte)		(!pte_val(pte))
++#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
++#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
++#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
++#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
++#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
++#define pte_special(pte)	(0)
++
++#define pte_present_user(pte) \
++	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
++	 (L_PTE_PRESENT | L_PTE_USER))
++
+ #if __LINUX_ARM_ARCH__ < 6
+ static inline void __sync_icache_dcache(pte_t pteval)
  {
- 	cpu_enter_lowpower();
- 	imx_enable_cpu(cpu, false);
--	cpu_do_idle();
--	cpu_leave_lowpower();
+@@ -206,25 +218,15 @@ extern void __sync_icache_dcache(pte_t p
+ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 			      pte_t *ptep, pte_t pteval)
+ {
+-	if (addr >= TASK_SIZE)
+-		set_pte_ext(ptep, pteval, 0);
+-	else {
++	unsigned long ext = 0;
++
++	if (addr < TASK_SIZE && pte_present_user(pteval)) {
+ 		__sync_icache_dcache(pteval);
+-		set_pte_ext(ptep, pteval, PTE_EXT_NG);
++		ext |= PTE_EXT_NG;
+ 	}
+-}
  
--	/* We should never return from idle */
--	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
-+	/* spin here until hardware takes it down */
-+	while (1)
-+		;
- }
+-#define pte_none(pte)		(!pte_val(pte))
+-#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
+-#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
+-#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
+-#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
+-#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
+-#define pte_special(pte)	(0)
+-
+-#define pte_present_user(pte) \
+-	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
+-	 (L_PTE_PRESENT | L_PTE_USER))
++	set_pte_ext(ptep, pteval, ext);
++}
  
- int platform_cpu_disable(unsigned int cpu)
+ #define PTE_BIT_FUNC(fn,op) \
+ static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -231,8 +231,6 @@ void __sync_icache_dcache(pte_t pteval)
+ 	struct page *page;
+ 	struct address_space *mapping;
+ 
+-	if (!pte_present_user(pteval))
+-		return;
+ 	if (cache_is_vipt_nonaliasing() && !pte_exec(pteval))
+ 		/* only flush non-aliasing VIPT caches for exec mappings */
+ 		return;
 
 
