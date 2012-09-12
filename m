@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab2ILXnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:43:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S933355Ab2ILXoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:44:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933294Ab2ILXnp (ORCPT
+	with ESMTP id S933339Ab2ILXn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:43:45 -0400
+	Wed, 12 Sep 2012 19:43:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Pavel Machek <pavel@ucw.cz>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Eliad Peller <eliad@wizery.com>,
-        Devendra Naga <devendra.aaru@gmail.com>
-Subject: =?UTF-8?q?=5B=2013/46=5D=20USB=3A=20winbond=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
-Date: Wed, 12 Sep 2012 16:39:03 -0700
-Message-Id: <20120912233819.053796875@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Boaz Harrosh <bharrosh@panasas.com>,
+        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 16/46] NFSv4.1: Remove a bogus BUG_ON() in nfs4_layoutreturn_done
+Date: Wed, 12 Sep 2012 16:39:06 -0700
+Message-Id: <20120912233819.364182315@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,39 +29,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 43a34695d9cd79c6659f09da6d3b0624f3dd169f upstream.
+commit 47fbf7976e0b7d9dcdd799e2a1baba19064d9631 upstream.
 
-This structure needs to always stick around, even if CONFIG_HOTPLUG
-is disabled, otherwise we can oops when trying to probe a device that
-was added after the structure is thrown away.
+Ever since commit 0a57cdac3f (NFSv4.1 send layoutreturn to fence
+disconnected data server) we've been sending layoutreturn calls
+while there is potentially still outstanding I/O to the data
+servers. The reason we do this is to avoid races between replayed
+writes to the MDS and the original writes to the DS.
 
-Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
+When this happens, the BUG_ON() in nfs4_layoutreturn_done can
+be triggered because it assumes that we would never call
+layoutreturn without knowing that all I/O to the DS is
+finished. The fix is to remove the BUG_ON() now that the
+assumptions behind the test are obsolete.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Bjørn Mork <bjorn@mork.no>
-CC: Pavel Machek <pavel@ucw.cz>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: "John W. Linville" <linville@tuxdriver.com>
-CC: Eliad Peller <eliad@wizery.com>
-CC: Devendra Naga <devendra.aaru@gmail.com>
+Reported-by: Boaz Harrosh <bharrosh@panasas.com>
+Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/winbond/wbusb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/winbond/wbusb.c
-+++ b/drivers/staging/winbond/wbusb.c
-@@ -24,7 +24,7 @@ MODULE_DESCRIPTION("IS89C35 802.11bg WLA
- MODULE_LICENSE("GPL");
- MODULE_VERSION("0.1");
- 
--static const struct usb_device_id wb35_table[] __devinitconst = {
-+static const struct usb_device_id wb35_table[] = {
- 	{ USB_DEVICE(0x0416, 0x0035) },
- 	{ USB_DEVICE(0x18E8, 0x6201) },
- 	{ USB_DEVICE(0x18E8, 0x6206) },
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -5766,12 +5766,8 @@ static void nfs4_layoutreturn_done(struc
+ 		return;
+ 	}
+ 	spin_lock(&lo->plh_inode->i_lock);
+-	if (task->tk_status == 0) {
+-		if (lrp->res.lrs_present) {
+-			pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
+-		} else
+-			BUG_ON(!list_empty(&lo->plh_segs));
+-	}
++	if (task->tk_status == 0 && lrp->res.lrs_present)
++		pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
+ 	lo->plh_block_lgets--;
+ 	spin_unlock(&lo->plh_inode->i_lock);
+ 	dprintk("<-- %s\n", __func__);
 
 
