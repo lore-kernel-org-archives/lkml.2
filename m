@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab2ILNiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 09:38:10 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:50112 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab2ILNiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 09:38:08 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [Resend][PATCH V3] trace,x86: add x86 irq vector tracepoints
-Thread-Topic: [Resend][PATCH V3] trace,x86: add x86 irq vector tracepoints
-Thread-Index: Ac2CDARLx46d4YhzRzCtj3bjUVsV0QObXStgABFrVwAACxOGcA==
-Date: Wed, 12 Sep 2012 13:37:20 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41384FC7F@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41384F5FD@USINDEM103.corp.hds.com>
- <50500D04.6030907@zytor.com>
-In-Reply-To: <50500D04.6030907@zytor.com>
-Accept-Language: ja-JP, en-US
+	id S1755249Ab2ILNlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 09:41:14 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:7910
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750809Ab2ILNlL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 09:41:11 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VPS-10(zz98dI9371I936eI1b0bI542M1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
+From: "Ashish P. Chavan" <Ashish.Chavan@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
+Thread-Topic: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
+Thread-Index: AQHNkJJXjYGL0ryTjE2i7+7aamj50JeGqQlqgAANv0A=
+Date: Wed, 12 Sep 2012 13:40:31 +0000
+Message-ID: <E3DB41DBD579A349B4BC7C95EADB061645B8BAD0@KCHJEXMB03.kpit.com>
+References: <1347375823.12329.14.camel@matrix>
+ <20120912025709.GD9162@opensource.wolfsonmicro.com>
+ <1347454578.23366.305.camel@matrix>
+ <20120912124932.GC19055@opensource.wolfsonmicro.com>
+In-Reply-To: <20120912124932.GC19055@opensource.wolfsonmicro.com>
+Accept-Language: en-US, en-IN
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.10.20.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-09-12_04:2012-09-12,2012-09-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1209120114
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8CDcFqt029433
 
-Hi,
+FYI.
 
-I will submit some performance testing result.
+-----Original Message-----
+From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com] 
+Sent: Wednesday, September 12, 2012 6:20 PM
+To: Ashish P. Chavan
+Cc: lrg; alsa-devel; linux-kernel; David Dajun Chen
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
 
-Thanks!
+On Wed, Sep 12, 2012 at 06:26:18PM +0530, Ashish Chavan wrote:
+> On Wed, 2012-09-12 at 10:57 +0800, Mark Brown wrote:
 
-Seiji
+> > Why is any of this being exposed to userspace?  If this should be 
+> > configured I'd expect it to be static platform data, not something 
+> > that gets changed at runtime.
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Wednesday, September 12, 2012 12:18 AM
-> To: Seiji Aguchi
-> Cc: Thomas Gleixner (tglx@linutronix.de); linux-kernel@vger.kernel.org; rostedt@goodmis.org; 'mingo@elte.hu' (mingo@elte.hu);
-> x86@kernel.org; dle-develop@lists.sourceforge.net; Satoru Moriya
-> Subject: Re: [Resend][PATCH V3] trace,x86: add x86 irq vector tracepoints
-> 
-> On 09/11/2012 05:00 PM, Seiji Aguchi wrote:
-> > Thomas,
-> >
-> > Please review my patch as we talked in Plumbers.
-> >
-> 
-> Is there any measurable latency added here?  These are some of the most
-> performance- (or at least latency-)critical paths in the kernel.
-> 
-> 	-hpa
-> 
-> --
-> H. Peter Anvin, Intel Open Source Technology Center I work for Intel.  I don't speak on their behalf.
+> These parameters are exposed considering the fact that DMIC itself is 
+> not part of the codec. Codec only provides DMIC interface using which 
+> an external DMIC can be attached. These parameters depend on the 
+> actual DMIC hardware and hence kept configurable to allow runtime plug 
+> in of any DMIC hardware. Doesn't it make sense to keep them runtime 
+> configurable?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+No.  The only realistic way to attach a new DMIC to a board is to solder it down, that's not something people are going to do while the system is actve.  It's something that's fixed at PCB design time.
+
+> > > +	/* In slave mode, there is only one set of divisors */
+> > > +	if (!da9055->master)
+> > > +		fout = 2822400;
+
+> > Should check the user supplied this value
+
+> Can you explain which value / user supplied value you are referring to?
+> It is not quite clear to me.
+
+The specified output frequency, you just totally ignore it.
+
+> For other things like input mixers, Headphone and Lineouts, DAPM is 
+> already used to control power specific bits. The confusion is because 
+> there are two separate control bits for these blocks. One bit is for 
+> "Enabling" that block and other is for "Enabling Amplifier" of that 
+> block.
+> e.g for headphone, one bit is for "output enable" while other is for 
+> "output amplifier enable".
+
+So document this.
+
+
