@@ -1,88 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2ILWCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 18:02:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44673 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab2ILWCK convert rfc822-to-8bit (ORCPT
+	id S1754735Ab2ILWHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 18:07:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57518 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab2ILWHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 18:02:10 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul@pwsan.com" <paul@pwsan.com>
-Subject: RE: [PATCH 2/2] ARM: AM33XX: hwmod: Add OMAP_INTC_START offset to
- all module int nos
-Thread-Topic: [PATCH 2/2] ARM: AM33XX: hwmod: Add OMAP_INTC_START offset to
- all module int nos
-Thread-Index: AQHNkSvMo2LUiOAJuUeROWiAYVjWgJeG40cAgABdpJA=
-Date: Wed, 12 Sep 2012 22:02:03 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EAB2BB0@DBDE01.ent.ti.com>
-References: <1347484551-11775-1-git-send-email-hvaibhav@ti.com>
- <1347484551-11775-3-git-send-email-hvaibhav@ti.com>
- <20120912215232.GE5997@atomide.com>
-In-Reply-To: <20120912215232.GE5997@atomide.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Sep 2012 18:07:19 -0400
+Message-ID: <50510791.8080302@wwwdotorg.org>
+Date: Wed, 12 Sep 2012 16:07:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-pm@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <1347443867-18868-2-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1347443867-18868-2-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 03:22:32, Tony Lindgren wrote:
-> * Vaibhav Hiremath <hvaibhav@ti.com> [120912 14:17]:
-> > With recent migration of omap architectures to SPARSE_IRQ framework,
-> > it is important to add OMAP_INTC_START to all interrupt numbers
-> > which will be eventually requested by drivers.
-> > 
-> > This is required in order to get AM33XX boot functionality.
-> > 
-> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > ---
-> >  arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  168 ++++++++++++++--------------
-> >  1 files changed, 84 insertions(+), 84 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> > index 7b7ed08..3c320f4 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+On 09/12/2012 03:57 AM, Alexandre Courbot wrote:
+> Some device drivers (panel backlights especially) need to follow precise
+> sequences for powering on and off, involving gpios, regulators, PWMs
+> with a precise powering order and delays to respect between each steps.
+> These sequences are board-specific, and do not belong to a particular
+> driver - therefore they have been performed by board-specific hook
+> functions to far.
 > 
-> You should just have on top of this file:
+> With the advent of the device tree and of ARM kernels that are not
+> board-tied, we cannot rely on these board-specific hooks anymore but
+> need a way to implement these sequences in a portable manner. This patch
+> introduces a simple interpreter that can execute such power sequences
+> encoded either as platform data or within the device tree.
 > 
-> #define OMAP_INTC_START		0
-> 
-> Then Paul can apply this, and while merging with the sparseirq
-> changes, the above can be removed.
-> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Ok, I will add this at the top of the file and resend this patch.
+> diff --git a/Documentation/power/power_seq.txt b/Documentation/power/power_seq.txt
 
+> +Sometimes, you may want to browse the list of resources allocated by a sequence,
+> +for instance to ensure that a resource of a given type is present. The
+> +power_seq_set_resources() function returns a list head that can be used with
+> +the power_seq_for_each_resource() macro to browse all the resources of a set:
+> +
+> +  struct list_head *power_seq_set_resources(struct power_seq_set *seqs);
 
-> > @@ -72,7 +72,7 @@ static struct omap_hwmod_class am33xx_emif_hwmod_class = {
-> >  };
-> >  
-> >  static struct omap_hwmod_irq_info am33xx_emif_irqs[] = {
-> > -	{ .name = "ddrerr0", .irq = 101 },
-> > +	{ .name = "ddrerr0", .irq = 101 + OMAP_INTC_START },
-> >  	{ .irq = -1 }
-> >  };
-> >  
-> 
-> Then these should be fixed up to have trailing commas
-> as requested by Russell earlier on several occasions.
-> 
+I don't think you need to include that prototype here?
 
-Ok, I will fix this and all other places as well and resend.
+> +  power_seq_for_each_resource(pos, seqs)
+> +
+> +Here "pos" will be a pointer to a struct power_seq_resource. This structure
+> +contains the type of the resource, the information used for identifying it, and
+> +the resolved resource itself.
 
-Thanks,
-Vaibhav
+> diff --git a/drivers/power/power_seq/Makefile b/drivers/power/power_seq/Makefile
+> new file mode 100644
+> index 0000000..f77a359
+> --- /dev/null
+> +++ b/drivers/power/power_seq/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_POWER_SEQ)		+= power_seq.o
 
+Don't you need to compile all the power_seq_*.c too?
+
+Oh, I see the following in power_seq.c:
+
+> +#include "power_seq_delay.c"
+> +#include "power_seq_regulator.c"
+> +#include "power_seq_pwm.c"
+> +#include "power_seq_gpio.c"
+
+It's probably better just to compile them separately and link them.
+
+> diff --git a/drivers/power/power_seq/power_seq.c b/drivers/power/power_seq/power_seq.c
+
+> +struct power_seq_step {
+> +	/* Copy of the platform data */
+> +	struct platform_power_seq_step pdata;
+
+I'd reword the comment to "Copy of the step", and name the field "step".
+
+> +static const struct power_seq_res_ops power_seq_types[POWER_SEQ_NUM_TYPES] = {
+> +	[POWER_SEQ_DELAY] = POWER_SEQ_DELAY_TYPE,
+> +	[POWER_SEQ_REGULATOR] = POWER_SEQ_REGULATOR_TYPE,
+> +	[POWER_SEQ_PWM] = POWER_SEQ_PWM_TYPE,
+> +	[POWER_SEQ_GPIO] = POWER_SEQ_GPIO_TYPE,
+> +};
+
+Ah, I see why you're using #include now.
+
+> +MODULE_LICENSE("GPL");
+
+s/GPL/GPL v2/ given the license header.
+
+> diff --git a/drivers/power/power_seq/power_seq_gpio.c b/drivers/power/power_seq/power_seq_gpio.c
+
+> +static int power_seq_res_alloc_gpio(struct device *dev,
+> +				    struct platform_power_seq_step *pstep,
+> +				    struct power_seq_resource *res)
+> +{
+> +	int err;
+> +
+> +	err = devm_gpio_request_one(dev, pstep->gpio.gpio,
+> +				    GPIOF_OUT_INIT_LOW, dev_name(dev));
+
+Hmm. The INIT_LOW part of that might be somewhat presumptive. I would
+suggest simply requesting the GPIO here, and using
+gpio_direction_output() in power_seq_step_run_gpio(), thus deferring the
+decision of what value to set the GPIO to until a real sequence is
+actually run.
+
+> diff --git a/drivers/power/power_seq/power_seq_pwm.c b/drivers/power/power_seq/power_seq_pwm.c
+
+> diff --git a/drivers/power/power_seq/power_seq_regulator.c b/drivers/power/power_seq/power_seq_regulator.c
+
+> diff --git a/include/linux/power_seq.h b/include/linux/power_seq.h
+
+> +#include <net/irda/parameters.h>
+
+That looks out of place.
+
+> +/**
+> + * struct power_seq_resource - resource used by a power sequence set
+> + * @pdata:	Pointer to the platform data used to resolve this resource
+> + * @regulator:	Resolved regulator if of type POWER_SEQ_REGULATOR
+> + * @pwm:	Resolved PWM if of type POWER_SEQ_PWM
+> + * @list:	Used to link resources together
+> + */
+
+I think that kerneldoc is stale.
+
+> +struct power_seq_resource {
+> +	enum power_seq_res_type type;
+> +	/* resolved resource and identifier */
+> +	union {
+> +		struct {
+> +			struct regulator *regulator;
+> +			const char *id;
+> +		} regulator;
+> +		struct {
+> +			struct pwm_device *pwm;
+> +			const char *id;
+> +		} pwm;
+> +		struct {
+> +			int gpio;
+> +		} gpio;
+> +	};
+> +	struct list_head list;
+> +};
+
+Aside from those minor issues, this all looks reasonable to me, so,
+Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
