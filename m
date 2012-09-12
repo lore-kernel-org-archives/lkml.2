@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab2IMAMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:12:25 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab2ILXis (ORCPT
+	id S932715Ab2ILXir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932681Ab2ILXil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:48 -0400
+	Wed, 12 Sep 2012 19:38:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 35/85] NFS: Alias the nfs module to nfs4
-Date: Wed, 12 Sep 2012 16:36:18 -0700
-Message-Id: <20120912233545.415421386@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 33/85] Bluetooth: Set name_state to unknown when entry name is empty
+Date: Wed, 12 Sep 2012 16:36:16 -0700
+Message-Id: <20120912233545.206473343@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,28 +28,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
+From: Ram Malovany <ramm@ti.com>
 
-This allows distros to remove the line from their modprobe
-configuration.
+commit c3e7c0d90b14a3e7ac091d24cef09efb516d587b upstream.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+When the name of the given entry is empty , the state needs to be
+updated accordingly.
+
+Signed-off-by: Ram Malovany <ramm@ti.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/nfs/super.c |    2 ++
+ net/bluetooth/hci_event.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -3146,4 +3146,6 @@ static struct dentry *nfs4_referral_moun
- 	return res;
- }
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1400,6 +1400,8 @@ static void hci_check_pending_name(struc
+ 		e->name_state = NAME_KNOWN;
+ 		mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
+ 				 e->data.rssi, name, name_len);
++	} else {
++		e->name_state = NAME_NOT_KNOWN;
+ 	}
  
-+MODULE_ALIAS("nfs4");
-+
- #endif /* CONFIG_NFS_V4 */
+ 	if (hci_resolve_next_name(hdev))
 
 
