@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2ILLsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 07:48:25 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:46027 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752686Ab2ILLrE (ORCPT
+	id S1757521Ab2ILLss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 07:48:48 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:37916 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755114Ab2ILLq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 07:47:04 -0400
+	Wed, 12 Sep 2012 07:46:57 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -17,9 +17,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>
-Subject: [PATCH 07/11] ASoC: omap-mcpdm: Use platform_get_resource_* to get resources
-Date: Wed, 12 Sep 2012 14:47:03 +0300
-Message-Id: <1347450427-27627-8-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 05/11] ASoC: omap-pcm: Prepare to configure the DMA data_type based on stream properties
+Date: Wed, 12 Sep 2012 14:47:01 +0300
+Message-Id: <1347450427-27627-6-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
@@ -27,75 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get the needed resources in a correct way and avoid using defines for them.
+Based on the format of the stream the omap-pcm can decide alone what data
+type should be used with by the sDMA.
+Keep the possibility for OMAP dai drivers to tell omap-pcm if they want to
+use different data type. This is needed for the omap-hdmi for example which
+needs 32bit data type even if the stream format is S16_LE.
+
+The check if (dma_data->data_type) is safe at the moment since omap-pcm
+does not support 8bit samples (OMAP_DMA_DATA_TYPE_S8 == 0x00).
+
+The next step is to redefine the meaning of dma_data->data_type to unblock
+this limitation.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- sound/soc/omap/omap-mcpdm.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+ sound/soc/omap/omap-pcm.c | 31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-index baf92da..36648e0 100644
---- a/sound/soc/omap/omap-mcpdm.c
-+++ b/sound/soc/omap/omap-mcpdm.c
-@@ -41,7 +41,6 @@
- #include <sound/soc.h>
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index 02eeb2e..4c13a5f 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -149,6 +149,24 @@ static int omap_pcm_hw_free(struct snd_pcm_substream *substream)
+ 	return 0;
+ }
  
- #include <plat/dma.h>
--#include <plat/omap_hwmod.h>
- #include "omap-mcpdm.h"
- #include "omap-pcm.h"
++static int omap_pcm_get_dma_type(int num_bits)
++{
++	int data_type;
++
++	switch (num_bits) {
++	case 16:
++		data_type = OMAP_DMA_DATA_TYPE_S16;
++		break;
++	case 32:
++		data_type = OMAP_DMA_DATA_TYPE_S32;
++		break;
++	default:
++		data_type = -EINVAL;
++		break;
++	}
++	return data_type;
++}
++
+ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+@@ -163,7 +181,16 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ 		return 0;
  
-@@ -71,15 +70,11 @@ struct omap_mcpdm {
- static struct omap_pcm_dma_data omap_mcpdm_dai_dma_params[] = {
- 	{
- 		.name = "Audio playback",
--		.dma_req = OMAP44XX_DMA_MCPDM_DL,
- 		.data_type = OMAP_DMA_DATA_TYPE_S32,
--		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_DN_DATA,
- 	},
- 	{
- 		.name = "Audio capture",
--		.dma_req = OMAP44XX_DMA_MCPDM_UP,
- 		.data_type = OMAP_DMA_DATA_TYPE_S32,
--		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_UP_DATA,
- 	},
- };
+ 	memset(&dma_params, 0, sizeof(dma_params));
+-	dma_params.data_type			= dma_data->data_type;
++
++	if (dma_data->data_type)
++		dma_params.data_type = dma_data->data_type;
++	else
++		dma_params.data_type = omap_pcm_get_dma_type(
++				snd_pcm_format_physical_width(runtime->format));
++
++	if (dma_params.data_type < 0)
++		return dma_params.data_type;
++
+ 	dma_params.trigger			= dma_data->dma_req;
  
-@@ -452,10 +447,33 @@ static __devinit int asoc_mcpdm_probe(struct platform_device *pdev)
+ 	if (dma_data->packet_size)
+@@ -195,7 +222,7 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ 	 * still can get an interrupt at each period bounary
+ 	 */
+ 	bytes = snd_pcm_lib_period_bytes(substream);
+-	dma_params.elem_count	= bytes >> dma_data->data_type;
++	dma_params.elem_count	= bytes >> dma_params.data_type;
+ 	dma_params.frame_count	= runtime->periods;
+ 	omap_set_dma_params(prtd->dma_ch, &dma_params);
  
- 	mutex_init(&mcpdm->mutex);
- 
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dma");
-+	if (res == NULL)
-+		return -ENOMEM;
-+
-+	omap_mcpdm_dai_dma_params[0].port_addr = res->start + MCPDM_REG_DN_DATA;
-+	omap_mcpdm_dai_dma_params[1].port_addr = res->start + MCPDM_REG_UP_DATA;
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res == NULL)
- 		return -ENOMEM;
- 
-+	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "dn_link");
-+	if (!res)
-+		return -ENODEV;
-+
-+	omap_mcpdm_dai_dma_params[0].dma_req = res->start;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "up_link");
-+	if (!res)
-+		return -ENODEV;
-+
-+	omap_mcpdm_dai_dma_params[1].dma_req = res->start;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mpu");
-+	if (res == NULL)
-+		return -ENOMEM;
-+
- 	if (!devm_request_mem_region(&pdev->dev, res->start,
- 				     resource_size(res), "McPDM"))
- 		return -EBUSY;
 -- 
 1.7.12
 
