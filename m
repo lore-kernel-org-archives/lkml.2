@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab2ILIHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:07:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26316 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab2ILIGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:06:48 -0400
-Date: Wed, 12 Sep 2012 11:06:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/media: Removes useless kfree()
-Message-ID: <20120912080642.GA19396@mwanda>
-References: <1347386432-12954-1-git-send-email-peter.senna@gmail.com>
+	id S1756252Ab2ILIHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:07:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754682Ab2ILIGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:06:55 -0400
+Message-ID: <50504299.2050205@redhat.com>
+Date: Wed, 12 Sep 2012 11:06:49 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347386432-12954-1-git-send-email-peter.senna@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: qemu-kvm loops after kernel udpate
+References: <504F7ED8.1030702@suse.cz> <20120911190303.GA3626@amt.cnet> <504F93F1.2060005@suse.cz>
+In-Reply-To: <504F93F1.2060005@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 08:00:32PM +0200, Peter Senna Tschudin wrote:
-> diff --git a/drivers/media/dvb-frontends/lg2160.c b/drivers/media/dvb-frontends/lg2160.c
-> index cc11260..748da5d 100644
-> --- a/drivers/media/dvb-frontends/lg2160.c
-> +++ b/drivers/media/dvb-frontends/lg2160.c
-> @@ -1451,7 +1451,6 @@ struct dvb_frontend *lg2160_attach(const struct lg2160_config *config,
->  	return &state->frontend;
->  fail:
->  	lg_warn("unable to detect LG216x hardware\n");
-> -	kfree(state);
->  	return NULL;
->  }
+On 09/11/2012 10:41 PM, Jiri Slaby wrote:
+> On 09/11/2012 09:03 PM, Marcelo Tosatti wrote:
+>> On Tue, Sep 11, 2012 at 08:11:36PM +0200, Jiri Slaby wrote:
+>>> Hi,
+>>>
+>>> it looks like an update from next-20120824 to next-20120910 makes kvm
+>>> defunct. When I try to run qemu, it loops forever without printing
+>>> anything on the monitor.
+>>>
+>>> -no-kvm makes it indeed work.
+>>>
+>>> Cmdline I use:
+>>> qemu-kvm -k en-us -usbdevice tablet -balloon virtio -hda IMAGE -smp 2 -m
+>>> 1000M -net user -net nic,model=e1000 -usb -serial pty
+>>>
+>>> Before I start investigating further, like biscection, is this a known
+>>> issue already and fix available somewhere?
+>> 
+>> Its not a known issue. 'info registers' (for both vcpus) and
+>> 'x /20i $eip' might help track it down. 
+> 
+> I don't think it's in a state with something loaded.
+> 
+> (qemu) cpu 0
+> (qemu) info registers
+> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000623
+> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+> EIP=0000fff0 EFL=00010002 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+> ES =0000 00000000 0000ffff 00009300
+> CS =f000 000f0000 0000ffff 0000f300
 
-I wish you had fixed this the same as the others and removed the
-goto.  Also the printk is redundant and wrong.  Remove it too.
+This is before the first instruction is executed.
 
-regards,
-dan carpenter
+You're on an Intel host, yes?  Please provide the output of vmxcap
+(http://goo.gl/c5lUO), and a snapshot of kvm_stat while the guest is hung.
 
+
+-- 
+error compiling committee.c: too many arguments to function
