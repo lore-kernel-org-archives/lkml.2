@@ -1,318 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab2ILL0C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 07:26:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58365 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab2ILLZ6 (ORCPT
+	id S1751668Ab2ILL1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 07:27:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49876 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab2ILL1s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 07:25:58 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 3/3] block: add back command filter modification via sysfs
-Date: Wed, 12 Sep 2012 13:25:33 +0200
-Message-Id: <1347449133-26476-4-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347449133-26476-1-git-send-email-pbonzini@redhat.com>
-References: <1347449133-26476-1-git-send-email-pbonzini@redhat.com>
+	Wed, 12 Sep 2012 07:27:48 -0400
+Message-ID: <1347449261.15764.9.camel@twins>
+Subject: [RFC][PATCH] perf, intel: Expose SMI_COUNT as a fixed counter
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>, mingo@kernel.org
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Wed, 12 Sep 2012 13:27:41 +0200
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds two new sysfs attributes to the queue kobject.  The attributes
-allow reading and writing the whitelist of unprivileged commands.
+Subject: perf, intel: Expose SMI_COUNT as a fixed counter
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed Sep 12 13:10:53 CEST 2012
 
-This is again a bit different from what was removed in commit 018e044
-(block: get rid of queue-private command filter, 2009-06-26), but the idea
-is the same.  One difference is that it does not use a separate kobject.
-Also, the supported sysfs syntax is a bit more expressive: it includes
-ranges, the ability to replace all of the filter with a single command,
-and does not force usage of hexadecimal.
+The Intel SMI_COUNT sadly isn't a proper PMU event but a free-running
+MSR, expose it by creating another fake fixed PMC and another pseudo
+event.
 
-Since the names are different, and the old ones were anyway never really
-enabled, the different API is not a problem.
-
-Cc: linux-scsi@vger.kernel.org
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- Documentation/block/queue-sysfs.txt |   16 ++++++
- block/Kconfig                       |   10 ++++
- block/blk-sysfs.c                   |   41 ++++++++++++++
- block/scsi_ioctl.c                  |  100 +++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h              |   21 +++++++
- 5 files changed, 188 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/block/queue-sysfs.txt b/Documentation/block/queue-sysfs.txt
-index e54ac1d..1152b38 100644
---- a/Documentation/block/queue-sysfs.txt
-+++ b/Documentation/block/queue-sysfs.txt
-@@ -133,6 +133,22 @@ control of this block device to that new IO scheduler. Note that writing
- an IO scheduler name to this file will attempt to load that IO scheduler
- module, if it isn't already present in the system.
+Only added to wsm because that's what my testbox is ;-)
+
+ arch/x86/include/asm/perf_event.h      |   18 ++++++++
+ arch/x86/kernel/cpu/perf_event.c       |   68 +++++++++++++++++++++++++--------
+ arch/x86/kernel/cpu/perf_event.h       |    9 ++++
+ arch/x86/kernel/cpu/perf_event_intel.c |   42 ++++++++++++++------
+ 4 files changed, 109 insertions(+), 28 deletions(-)
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -131,13 +131,29 @@ struct x86_pmu_capability {
+ #define INTEL_PMC_MSK_FIXED_REF_CYCLES	(1ULL << INTEL_PMC_IDX_FIXED_REF_CYCLES)
  
-+sgio_read_filter (RW)
-+---------------------
-+When read, this file will display a list of SCSI commands (i.e. values of
-+the first byte of a CDB) that are always available for unprivileged users
-+(via /dev/bsg, /dev/sgNN, or ioctls such as SG_IO and CDROM_SEND_PACKET).
-+When written, the list of commands will be modified.  By default it
-+will be completely replaced; writing a string that begins with '+' will
-+add new commands, and writing a string that begins with '-' will remove
-+some commands.  Ranges of commands are supported, for example '0x00-0xff'.
+ /*
++ * Create a range of 'special' (fake) fixed purpose counters
++ */
++#define INTEL_PMC_IDX_FIXED_SPECIAL	(INTEL_PMC_IDX_FIXED + 16)
++#define INTEL_PMC_MSK_FIXED_SPECIAL	(1ULL << INTEL_PMC_IDX_FIXED_SPECIAL)
 +
-+sgio_write_filter (RW)
-+----------------------
-+When read, this file will display a list of SCSI commands (i.e. values of
-+the first byte of a CDB) that are available for unprivileged users
-+when the block device is open for writing.  Writing to this file behaves
-+as for sgio_read_filter.
- 
- 
- Jens Axboe <jens.axboe@oracle.com>, February 2009
-diff --git a/block/Kconfig b/block/Kconfig
-index 09acf1b..7c369d9 100644
---- a/block/Kconfig
-+++ b/block/Kconfig
-@@ -65,6 +65,16 @@ config BLK_DEV_BSG
- 
- 	  If unsure, say Y.
- 
-+config BLK_DEV_SG_FILTER_SYSFS
-+	bool "Customizable SG_IO filters in sysfs"
-+	default y
-+	help
-+	  Saying Y here will let you use sysfs to customize the list
-+	  of SCSI commands that are available (via /dev/sg, /dev/bsg or
-+	  ioctls such as SG_IO) to unprivileged users.
-+
-+	  If unsure, say Y.
-+
- config BLK_DEV_BSGLIB
- 	bool "Block layer SG support v4 helper lib"
- 	default n
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 5a0de07..b287d62 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -394,6 +394,43 @@ static struct queue_sysfs_entry queue_random_entry = {
- 	.store = queue_store_random,
- };
- 
-+#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
-+static ssize_t queue_sgio_filter_read_show(struct request_queue *q, char *page)
-+{
-+	return blk_filter_show(q, page, READ);
-+}
-+
-+static ssize_t queue_sgio_filter_write_show(struct request_queue *q,
-+				 char *page)
-+{
-+	return blk_filter_show(q, page, WRITE);
-+}
-+
-+static ssize_t queue_sgio_filter_read_store(struct request_queue *q,
-+				    const char *page, size_t count)
-+{
-+	return blk_filter_store(q, page, count, READ);
-+}
-+
-+static ssize_t queue_sgio_filter_write_store(struct request_queue *q,
-+				     const char *page, size_t count)
-+{
-+	return blk_filter_store(q, page, count, WRITE);
-+}
-+
-+static struct queue_sysfs_entry queue_sgio_filter_read_entry = {
-+	.attr = { .name = "sgio_filter_read", .mode = S_IRUGO | S_IWUSR },
-+	.show = queue_sgio_filter_read_show,
-+	.store = queue_sgio_filter_read_store,
-+};
-+
-+static struct queue_sysfs_entry queue_sgio_filter_write_entry = {
-+	.attr = {.name = "sgio_filter_write", .mode = S_IRUGO | S_IWUSR },
-+	.show = queue_sgio_filter_write_show,
-+	.store = queue_sgio_filter_write_store,
-+};
-+#endif
-+
- static struct attribute *default_attrs[] = {
- 	&queue_requests_entry.attr,
- 	&queue_ra_entry.attr,
-@@ -416,6 +453,10 @@ static struct attribute *default_attrs[] = {
- 	&queue_rq_affinity_entry.attr,
- 	&queue_iostats_entry.attr,
- 	&queue_random_entry.attr,
-+#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
-+	&queue_sgio_filter_read_entry.attr,
-+	&queue_sgio_filter_write_entry.attr,
-+#endif
- 	NULL,
- };
- 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index c8862e9..61a43a6 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -18,6 +18,7 @@
++/*
+  * We model BTS tracing as another fixed-mode PMC.
+  *
+  * We choose a value in the middle of the fixed event range, since lower
+  * values are used by actual fixed events and higher values are used
+  * to indicate other overflow conditions in the PERF_GLOBAL_STATUS msr.
   */
- #include <linux/kernel.h>
- #include <linux/errno.h>
-+#include <linux/ctype.h>
- #include <linux/string.h>
- #include <linux/module.h>
- #include <linux/blkdev.h>
-@@ -110,6 +111,8 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
+-#define INTEL_PMC_IDX_FIXED_BTS				(INTEL_PMC_IDX_FIXED + 16)
++#define INTEL_PMC_IDX_FIXED_BTS		(INTEL_PMC_IDX_FIXED_SPECIAL + 0)
++#define INTEL_PMC_MSK_FIXED_BTS		(1ULL << INTEL_PMC_IDX_FIXED_BTS)
++
++/*
++ * We model the SMI_COUNT as another fixed-mode PMC.
++ *
++ * This MSR (34h) is a free running counter of SMIs
++ */
++#define MSR_ARCH_SMI_COUNT		0x34
++#define INTEL_PMC_IDX_FIXED_SMI_COUNT	(INTEL_PMC_IDX_FIXED_SPECIAL + 1)
++#define INTEL_PMC_MSK_FIXED_SMI_COUNT	(1ULL << INTEL_PMC_IDX_FIXED_SMI_COUNT)
  
- static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ /*
+  * IBS cpuid feature detection
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -52,22 +52,14 @@ u64 __read_mostly hw_cache_extra_regs
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+ 
+-/*
+- * Propagate event elapsed time into the generic event.
+- * Can only be executed on the CPU where the event is active.
+- * Returns the delta events processed.
+- */
+-u64 x86_perf_event_update(struct perf_event *event)
++static inline u64 __perf_event_update(struct perf_event *event,
++		u64 (*read)(struct hw_perf_event *hwc), int width)
  {
-+	memset(filter, 0, sizeof(*filter));
-+
- 	/* Basic read-only commands */
- 	__set_bit(TEST_UNIT_READY, filter->read_ok);
- 	__set_bit(REQUEST_SENSE, filter->read_ok);
-@@ -738,6 +741,103 @@ int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
- }
- EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
+ 	struct hw_perf_event *hwc = &event->hw;
+-	int shift = 64 - x86_pmu.cntval_bits;
++	int shift = 64 - width;
+ 	u64 prev_raw_count, new_raw_count;
+-	int idx = hwc->idx;
+ 	s64 delta;
  
-+#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
-+ssize_t blk_filter_show(struct request_queue *q, char *page, int rw)
+-	if (idx == INTEL_PMC_IDX_FIXED_BTS)
+-		return 0;
+-
+ 	/*
+ 	 * Careful: an NMI might modify the previous event value.
+ 	 *
+@@ -77,7 +69,7 @@ u64 x86_perf_event_update(struct perf_ev
+ 	 */
+ again:
+ 	prev_raw_count = local64_read(&hwc->prev_count);
+-	rdpmcl(hwc->event_base_rdpmc, new_raw_count);
++	new_raw_count = read(hwc);
+ 
+ 	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
+ 					new_raw_count) != prev_raw_count)
+@@ -100,6 +92,37 @@ u64 x86_perf_event_update(struct perf_ev
+ 	return new_raw_count;
+ }
+ 
++static inline u64 x86_rdpmc(struct hw_perf_event *hwc)
 +{
-+	struct blk_cmd_filter *filter;
-+	char *p = page;
-+	unsigned long *okbits;
-+	int i;
++	u64 count;
 +
-+	filter = q->cmd_filter;
-+	if (!filter)
-+		filter = &blk_default_cmd_filter;
++	rdpmcl(hwc->event_base_rdpmc, count);
 +
-+	if (rw == READ)
-+		okbits = filter->read_ok;
-+	else
-+		okbits = filter->write_ok;
-+
-+	for (i = 0; i < BLK_SCSI_MAX_CMDS; i++)
-+		if (test_bit(i, okbits))
-+			p += sprintf(p, "0x%02x ", i);
-+
-+	if (p > page)
-+		p[-1] = '\n';
-+
-+	return p - page;
-+}
-+EXPORT_SYMBOL_GPL(blk_filter_show);
-+
-+ssize_t blk_filter_store(struct request_queue *q,
-+			 const char *page, size_t count, int rw)
-+{
-+	unsigned long okbits[BLK_SCSI_CMD_PER_LONG], *target_okbits;
-+	bool set;
-+	const char *p = page;
-+	char *endp;
-+	int start = -1, cmd;
-+
-+	if (!q->cmd_filter) {
-+		q->cmd_filter = kmalloc(sizeof(struct blk_cmd_filter),
-+					GFP_KERNEL);
-+		blk_set_cmd_filter_defaults(q->cmd_filter);
-+	}
-+
-+	if (rw == READ)
-+		target_okbits = q->cmd_filter->read_ok;
-+	else
-+		target_okbits = q->cmd_filter->write_ok;
-+
-+	set = (p[0] != '-');
-+	if (p[0] != '-' && p[0] != '+')
-+		memset(okbits, 0, sizeof(okbits));
-+	else {
-+		memcpy(okbits, target_okbits, sizeof(okbits));
-+		p++;
-+	}
-+
-+	while (p < page + count) {
-+		if (start == -1 && isspace(*p)) {
-+			p++;
-+			continue;
-+		}
-+
-+		cmd = simple_strtol(p, &endp, 0);
-+
-+		/* all of these cases means invalid input, so do nothing. */
-+		if (endp == p || cmd < 0 || cmd >= BLK_SCSI_MAX_CMDS ||
-+		    (start != -1 && endp < page + count && !isspace(*endp)))
-+			return -EINVAL;
-+
-+		p = endp;
-+		if (p < page + count && *p == '-') {
-+			BUG_ON(start != -1);
-+			start = cmd;
-+			p++;
-+			continue;
-+		}
-+
-+		if (start == -1)
-+			start = cmd;
-+
-+		for (; start <= cmd; start++)
-+			if (set)
-+				__set_bit(start, okbits);
-+			else
-+				__clear_bit(start, okbits);
-+		start = -1;
-+	}
-+
-+	if (start != -1)
-+		return -EINVAL;
-+
-+	memcpy(target_okbits, okbits, sizeof(okbits));
 +	return count;
 +}
-+EXPORT_SYMBOL_GPL(blk_filter_store);
-+#endif
 +
- static int __init blk_scsi_ioctl_init(void)
- {
- 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index b5c5f8a..18e7c25 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1012,9 +1012,30 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
- 				    gfp_mask);
++/*
++ * Propagate event elapsed time into the generic event.
++ * Can only be executed on the CPU where the event is active.
++ * Returns the delta events processed.
++ */
++u64 x86_perf_event_update(struct perf_event *event)
++{
++	int idx = event->hw.idx;
++
++	if (unlikely(idx >= INTEL_PMC_IDX_FIXED_SPECIAL)) {
++		switch (idx) {
++		case INTEL_PMC_IDX_FIXED_BTS:
++			return 0;
++
++		case INTEL_PMC_IDX_FIXED_SMI_COUNT:
++			return __perf_event_update(event, x86_rdsmi, 32);
++		}
++	}
++
++	return __perf_event_update(event, x86_rdpmc, x86_pmu.cntval_bits);
++}
++
+ /*
+  * Find and validate any extra registers to set up.
+  */
+@@ -437,8 +460,22 @@ int x86_pmu_hw_config(struct perf_event 
+ 	if (!event->attr.exclude_kernel)
+ 		event->hw.config |= ARCH_PERFMON_EVENTSEL_OS;
+ 
+-	if (event->attr.type == PERF_TYPE_RAW)
++	if (event->attr.type == PERF_TYPE_RAW) {
++		/*
++		 * SMI_COUNT can only count..
++		 */
++		if (event->attr.config == 0x0400) {
++			if (event->attr.exclude_user ||
++			    event->attr.exclude_kernel ||
++			    event->attr.exclude_hv ||
++			    event->attr.exclude_idle ||
++			    event->attr.exclude_host ||
++			    event->attr.exclude_guest ||
++			    event->attr.sample_period)
++				return -EINVAL;
++		}
+ 		event->hw.config |= event->attr.config & X86_RAW_EVENT_MASK;
++	}
+ 
+ 	return x86_setup_perfctr(event);
+ }
+@@ -817,9 +854,10 @@ static inline void x86_assign_hw_event(s
+ 	hwc->last_cpu = smp_processor_id();
+ 	hwc->last_tag = ++cpuc->tags[i];
+ 
+-	if (hwc->idx == INTEL_PMC_IDX_FIXED_BTS) {
++	if (hwc->idx >= INTEL_PMC_IDX_FIXED_SPECIAL) {
+ 		hwc->config_base = 0;
+ 		hwc->event_base	= 0;
++		hwc->event_base_rdpmc = 0;
+ 	} else if (hwc->idx >= INTEL_PMC_IDX_FIXED) {
+ 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
+ 		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - INTEL_PMC_IDX_FIXED);
+@@ -925,7 +963,7 @@ int x86_perf_event_set_period(struct per
+ 	s64 period = hwc->sample_period;
+ 	int ret = 0, idx = hwc->idx;
+ 
+-	if (idx == INTEL_PMC_IDX_FIXED_BTS)
++	if (unlikely(idx >= INTEL_PMC_IDX_FIXED_SPECIAL))
+ 		return 0;
+ 
+ 	/*
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -536,6 +536,15 @@ static inline void set_linear_ip(struct 
+ 	regs->ip = ip;
  }
  
-+/*
-+ * command filter functions
-+ */
- extern int blk_verify_command(struct blk_cmd_filter *filter,
- 			      unsigned char *cmd, fmode_t has_write_perm);
++static inline u64 x86_rdsmi(struct hw_perf_event *hwc)
++{
++	u64 count;
++
++	rdmsrl(MSR_ARCH_SMI_COUNT, count);
++
++	return count;
++}
++
+ #ifdef CONFIG_CPU_SUP_AMD
  
-+#ifdef CONFIG_BLK_DEV_SG_FILTER_SYSFS
-+ssize_t blk_filter_show(struct request_queue *q, char *page, int rw);
-+ssize_t blk_filter_store(struct request_queue *q,
-+			 const char *page, size_t count, int rw);
-+#else
-+static inline ssize_t blk_filter_show(struct request_queue *q, char *page, int rw)
-+{
-+	return -EINVAL;
-+}
+ int amd_pmu_init(void);
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -89,6 +89,7 @@ static struct event_constraint intel_wes
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	FIXED_EVENT_CONSTRAINT(0x0400, 17), /* SMI_COUNT */
+ 	INTEL_EVENT_CONSTRAINT(0x51, 0x3), /* L1D */
+ 	INTEL_EVENT_CONSTRAINT(0x60, 0x1), /* OFFCORE_REQUESTS_OUTSTANDING */
+ 	INTEL_EVENT_CONSTRAINT(0x63, 0x3), /* CACHE_LOCK_CYCLES */
+@@ -966,10 +967,16 @@ static void intel_pmu_disable_event(stru
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
+-		intel_pmu_disable_bts();
+-		intel_pmu_drain_bts_buffer();
+-		return;
++	if (unlikely(hwc->idx >= INTEL_PMC_IDX_FIXED_SPECIAL)) {
++		switch (hwc->idx) {
++		case INTEL_PMC_IDX_FIXED_BTS:
++			intel_pmu_disable_bts();
++			intel_pmu_drain_bts_buffer();
++			return;
 +
-+static inline ssize_t blk_filter_store(struct request_queue *q,
-+				       const char *page, size_t count, int rw);
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_BLK_DEV_SG_FILTER_SYSFS */
++		case INTEL_PMC_IDX_FIXED_SMI_COUNT:
++			return;
++		}
+ 	}
+ 
+ 	cpuc->intel_ctrl_guest_mask &= ~(1ull << hwc->idx);
+@@ -1029,13 +1036,21 @@ static void intel_pmu_enable_event(struc
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
+-		if (!__this_cpu_read(cpu_hw_events.enabled))
++	if (unlikely(hwc->idx >= INTEL_PMC_IDX_FIXED_SPECIAL)) {
++		switch (hwc->idx) {
++		case INTEL_PMC_IDX_FIXED_BTS:
++			if (!__this_cpu_read(cpu_hw_events.enabled))
++				return;
 +
++			intel_pmu_enable_bts(hwc->config);
+ 			return;
+ 
+-		intel_pmu_enable_bts(hwc->config);
+-		return;
++		case INTEL_PMC_IDX_FIXED_SMI_COUNT:
++			local64_set(&hwc->prev_count, x86_rdsmi(hwc));
++			return;
++		}
+ 	}
 +
- enum blk_default_limits {
- 	BLK_MAX_SEGMENTS	= 128,
- 	BLK_SAFE_MAX_SECTORS	= 255,
--- 
-1.7.1
+ 	/*
+ 	 * must enabled before any actual event
+ 	 * because any event may be combined with LBR
+@@ -2107,12 +2122,15 @@ __init int intel_pmu_init(void)
+ 
+ 	if (x86_pmu.event_constraints) {
+ 		/*
+-		 * event on fixed counter2 (REF_CYCLES) only works on this
+-		 * counter, so do not extend mask to generic counters
++		 * Events on fixed counter2 (REF_CYCLES) only works on this
++		 * counter, similar for the special fixed counters.
++		 *
++		 * So do not extend mask to generic counters.
+ 		 */
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if (c->cmask != X86_RAW_EVENT_MASK
+-			    || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
++			if (c->cmask != X86_RAW_EVENT_MASK ||
++			    c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES ||
++			    c->idxmsk64 >= INTEL_PMC_MSK_FIXED_SPECIAL) {
+ 				continue;
+ 			}
+ 
 
