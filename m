@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab2ILXif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:35 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1757278Ab2IMANw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:13:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620Ab2ILXia (ORCPT
+	with ESMTP id S932646Ab2ILXie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:30 -0400
+	Wed, 12 Sep 2012 19:38:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 06/85] ARM: 7488/1: mm: use 5 bits for swapfile type encoding
-Date: Wed, 12 Sep 2012 16:35:49 -0700
-Message-Id: <20120912233542.399235646@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 31/85] Bluetooth: Fix using NULL inquiry entry
+Date: Wed, 12 Sep 2012 16:36:14 -0700
+Message-Id: <20120912233545.002443697@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,48 +28,33 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Ram Malovany <ramm@ti.com>
 
-commit f5f2025ef3e2cdb593707cbf87378761f17befbe upstream.
+commit c810089c27e48b816181b454fcc493d19fdbc2ba upstream.
 
-Page migration encodes the pfn in the offset field of a swp_entry_t.
-For LPAE, we support physical addresses of up to 36 bits (due to
-sparsemem limitations with the size of page flags), requiring 24 bits
-to represent a pfn. A further 3 bits are used to encode a swp_entry into
-a pte, leaving 5 bits for the type field. Furthermore, the core code
-defines MAX_SWAPFILES_SHIFT as 5, so the additional type bit does not
-get used.
+If entry wasn't found in the hci_inquiry_cache_lookup_resolve do not
+resolve the name.This will fix a kernel crash when trying to use NULL
+pointer.
 
-This patch reduces the width of the type field to 5 bits, allowing us
-to create up to 31 swapfiles of 64GB each.
-
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Ram Malovany <ramm@ti.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/bluetooth/hci_event.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -253,13 +253,13 @@ static inline pte_t pte_modify(pte_t pte
-  *
-  *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
-  *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-- *   <--------------- offset --------------------> <- type --> 0 0 0
-+ *   <--------------- offset ----------------------> < type -> 0 0 0
-  *
-- * This gives us up to 63 swap files and 32GB per swap file.  Note that
-+ * This gives us up to 31 swap files and 64GB per swap file.  Note that
-  * the offset field is always non-zero.
-  */
- #define __SWP_TYPE_SHIFT	3
--#define __SWP_TYPE_BITS		6
-+#define __SWP_TYPE_BITS		5
- #define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
- #define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1357,6 +1357,9 @@ static bool hci_resolve_next_name(struct
+ 		return false;
  
+ 	e = hci_inquiry_cache_lookup_resolve(hdev, BDADDR_ANY, NAME_NEEDED);
++	if (!e)
++		return false;
++
+ 	if (hci_resolve_name(hdev, e) == 0) {
+ 		e->name_state = NAME_PENDING;
+ 		return true;
 
 
