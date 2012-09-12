@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab2ILGHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:07:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47521 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab2ILGHb (ORCPT
+	id S1755964Ab2ILGIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:08:16 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55074 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab2ILGIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:07:31 -0400
-Date: Wed, 12 Sep 2012 16:07:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jonathan Cameron <jic23@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20120912160719.4377f041ac76ddfa13be7df1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Sep_2012_16_07_19_+1000_OheyccgV3SavDqX7"
+	Wed, 12 Sep 2012 02:08:13 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [v2 PATCH 1/2] netprio_cgroup: Remove update_netdev_tables() since it
+ is unnecessary
+To: davem@davemloft.net, nhorman@tuxdriver.com
+Cc: David.Laight@aculab.com, john.r.fastabend@intel.com,
+        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
+        mark.d.rustad@intel.com, lizefan@huawei.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Wed, 12 Sep 2012 11:37:42 +0530
+Message-ID: <20120912060741.11037.37347.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091206-5564-0000-0000-0000046D0E8B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Sep_2012_16_07_19_+1000_OheyccgV3SavDqX7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The update_netdev_tables() function appears to be unnecessary, since the
+write_update_netdev_table() function will adjust the priomaps as and when
+required anyway. So drop the usage of update_netdev_tables() entirely.
 
-Hi Greg,
-
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/hid/hid-sensor-hub.c: In function 'sensor_hub_probe':
-drivers/hid/hid-sensor-hub.c:599:3: error: too few arguments to function 'm=
-fd_add_devices'
-
-Caused by commit 401ca24fb34a ("HID: sensors: introduce sensor
-framework") interacting with commit 6607bad3d763 ("mfd: core: Push
-irqdomain mapping out into devices") from the mfd tree.
-
-I have added the following merge fix patch and can carry it as necessary
-(no action is required).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 12 Sep 2012 16:03:55 +1000
-Subject: [PATCH] HID: sensors: fix up for mfd_add_devices() API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- drivers/hid/hid-sensor-hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index 34a35ba..4ac759c 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -596,7 +596,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 		}
+ net/core/netprio_cgroup.c |   32 --------------------------------
+ 1 files changed, 0 insertions(+), 32 deletions(-)
+
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index c75e3f9..fd339bb0 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -109,32 +109,6 @@ static int write_update_netdev_table(struct net_device *dev)
+ 	return ret;
+ }
+ 
+-static int update_netdev_tables(void)
+-{
+-	int ret = 0;
+-	struct net_device *dev;
+-	u32 max_len;
+-	struct netprio_map *map;
+-
+-	rtnl_lock();
+-	max_len = atomic_read(&max_prioidx) + 1;
+-	for_each_netdev(&init_net, dev) {
+-		map = rtnl_dereference(dev->priomap);
+-		/*
+-		 * don't allocate priomap if we didn't
+-		 * change net_prio.ifpriomap (map == NULL),
+-		 * this will speed up skb_update_prio.
+-		 */
+-		if (map && map->priomap_len < max_len) {
+-			ret = extend_netdev_table(dev, max_len);
+-			if (ret < 0)
+-				break;
+-		}
+-	}
+-	rtnl_unlock();
+-	return ret;
+-}
+-
+ static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+@@ -153,12 +127,6 @@ static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+ 		goto out;
  	}
- 	ret =3D mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs,
--		sd->hid_sensor_client_cnt, NULL, 0);
-+		sd->hid_sensor_client_cnt, NULL, 0, NULL);
- 	if (ret < 0)
- 		goto err_free_names;
-=20
---=20
-1.7.10.280.gaa39
+ 
+-	ret = update_netdev_tables();
+-	if (ret < 0) {
+-		put_prioidx(cs->prioidx);
+-		goto out;
+-	}
+-
+ 	return &cs->css;
+ out:
+ 	kfree(cs);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__12_Sep_2012_16_07_19_+1000_OheyccgV3SavDqX7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUCaXAAoJEECxmPOUX5FE5jgP/iPMS+Ej/mzCSEyLlOlQ9e88
-RghKzNoXVLpzOCj8NrrdPlwOEAYk1aqY45a1p6XGVRfgQh+fjCpMz+bnQESkKnhV
-kew06t6Drxtpp0w9dJc8VVqehb+NbQVqpQvXZ36L7AL7Z8A8P4SjMzrjFf0K2qJY
-3sgjRD+MrTkkT1pYyHP2P2fElmvMDNYBkbZXOGpPOYXmbCSiRGTSsvtZpLcl9ZCj
-oEdjzulit65SjbsSrKWdaBx/puFHo7haLc5sgfhjBtVvsC/7DS/LReELmPWdFTaV
-eYLH6HFv7evMtdS7gaCGFQnvVXRetkwqAarbNyI+ath9rV5kSJity/nwyJ8RpGqh
-UFhFTDm9uaZ9rF4d8Jj4Q5RTzWIAJ4iYKDnKAz2dxH+D2Nod9V7+w/lP693PGIzi
-R6I7MEy+LO3STG0nuXbWtI6VTSWXrXSyXJdM7UnG8t4vpRjv96Vdnfe7jpBJK2hH
-WzYgAwhMbSgvTBG9fKzDXyFI3yApys5edPCw4472/NC+GdCNnTKHg+5dqe0IohHB
-5gE9va3jklz0mD11VfLSDcyHrxbcPqvrVzHKMTN2Sc3Al2l09FZxx6pFMR7XYAiu
-oYqAUb/tKy5ZQ1uUxxWYZ3FC5FMXx9IuiFiuONGU2Ufrt0QtGyi/IdTGUM6OiP5M
-AfFEQPLwvgz2kEqdJDry
-=QV+m
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Sep_2012_16_07_19_+1000_OheyccgV3SavDqX7--
