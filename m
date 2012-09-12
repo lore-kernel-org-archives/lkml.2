@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab2IMAWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:22:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S932600Ab2IMAWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:22:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025Ab2ILXfq (ORCPT
+	with ESMTP id S1756500Ab2ILXfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:46 -0400
+	Wed, 12 Sep 2012 19:35:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 084/108] Fix order of arguments to compat_put_time[spec|val]
-Date: Wed, 12 Sep 2012 16:29:22 -0700
-Message-Id: <20120912232459.310121042@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 097/108] UBI: fix a horrible memory deallocation bug
+Date: Wed, 12 Sep 2012 16:29:35 -0700
+Message-Id: <20120912232500.686066341@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,51 +30,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit ed6fe9d614fc1bca95eb8c0ccd0e92db00ef9d5d upstream.
+commit 78b495c39add820ab66ab897af9bd77a5f2e91f6 upstream.
 
-Commit 644595f89620 ("compat: Handle COMPAT_USE_64BIT_TIME in
-net/socket.c") introduced a bug where the helper functions to take
-either a 64-bit or compat time[spec|val] got the arguments in the wrong
-order, passing the kernel stack pointer off as a user pointer (and vice
-versa).
+UBI was mistakingly using 'kfree()' instead of 'kmem_cache_free()' when
+freeing "attach eraseblock" structures in vtbl.c. Thankfully, this happened
+only when we were doing auto-format, so many systems were unaffected. However,
+there are still many users affected.
 
-Because of the user address range check, that in turn then causes an
-EFAULT due to the user pointer range checking failing for the kernel
-address.  Incorrectly resuling in a failed system call for 32-bit
-processes with a 64-bit kernel.
+It is strange, but the system did not crash and nothing bad happened when
+the SLUB memory allocator was used. However, in case of SLOB we observed an
+crash right away.
 
-On odder architectures like HP-PA (with separate user/kernel address
-spaces), it can be used read kernel memory.
+This problem was introduced in 2.6.39 by commit
+"6c1e875 UBI: add slab cache for ubi_scan_leb objects"
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+A note for stable trees:
+  Because variable were renamed, this won't cleanly apply to older kernels.
+  Changing names like this should help:
+	1. ai -> si
+	2. aeb_slab_cache -> seb_slab_cache
+	3. new_aeb -> new_seb
+
+Reported-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/socket.c |    4 ++--
+ drivers/mtd/ubi/vtbl.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2605,7 +2605,7 @@ static int do_siocgstamp(struct net *net
- 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&ktv);
- 	set_fs(old_fs);
- 	if (!err)
--		err = compat_put_timeval(up, &ktv);
-+		err = compat_put_timeval(&ktv, up);
- 
+--- a/drivers/mtd/ubi/vtbl.c
++++ b/drivers/mtd/ubi/vtbl.c
+@@ -340,7 +340,7 @@ retry:
+ 	 * of this LEB as it will be deleted and freed in 'ubi_add_to_av()'.
+ 	 */
+ 	err = ubi_add_to_av(ubi, ai, new_aeb->pnum, new_aeb->ec, vid_hdr, 0);
+-	kfree(new_aeb);
++	kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
  	return err;
- }
-@@ -2621,7 +2621,7 @@ static int do_siocgstampns(struct net *n
- 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&kts);
- 	set_fs(old_fs);
- 	if (!err)
--		err = compat_put_timespec(up, &kts);
-+		err = compat_put_timespec(&kts, up);
  
+@@ -353,7 +353,7 @@ write_error:
+ 		list_add(&new_aeb->u.list, &ai->erase);
+ 		goto retry;
+ 	}
+-	kfree(new_aeb);
++	kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ out_free:
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
  	return err;
- }
 
 
