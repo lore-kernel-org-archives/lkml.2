@@ -1,173 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab2ILKXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:23:25 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:49724 "EHLO mail.gnudd.com"
+	id S1756756Ab2ILK1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:27:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29596 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab2ILKXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:23:23 -0400
-From: ciminaghi@gnudd.com
-To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com
-Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH 3/8] sta2x11-mfd : use defines for platform devices' names
-Date: Wed, 12 Sep 2012 12:22:49 +0200
-Message-Id: <1347445374-32140-4-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
-References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
+	id S1756070Ab2ILK1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:27:18 -0400
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH v2 1/1] digsig: add hash size comparision on signature verification
+Date: Wed, 12 Sep 2012 13:26:55 +0300
+Message-Id: <a686758774e2817d1ff7fced54a6a08f85e66062.1347445596.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+Commit b35e286a640f31d619a637332972498b51f3fd90 introduced the bug.
 
-Since there are now many sta2x11-mfd platform devices, using defines
-for their names looks like a better solution.
+When pkcs_1_v1_5_decode_emsa() returns without error and hash sizes do not
+match, hash comparision is not done and digsig_verify_rsa() returns no error.
+This is a bug and this patch fixes it.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- drivers/mfd/sta2x11-mfd.c       |   42 ++++++++++++++++++++------------------
- include/linux/mfd/sta2x11-mfd.h |    8 +++++++
- 2 files changed, 30 insertions(+), 20 deletions(-)
+ lib/digsig.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 905b184..a9eeba1 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -258,9 +258,9 @@ static struct debugfs_regset32 *sta2x11_mfd_regset[sta2x11_n_mfd_plat_devs] = {
- };
+diff --git a/lib/digsig.c b/lib/digsig.c
+index 286d558..8c0e629 100644
+--- a/lib/digsig.c
++++ b/lib/digsig.c
+@@ -163,9 +163,11 @@ static int digsig_verify_rsa(struct key *key,
+ 	memcpy(out1 + head, p, l);
  
- static const char *sta2x11_mfd_names[sta2x11_n_mfd_plat_devs] = {
--	[sta2x11_sctl] = "sta2x11-sctl",
--	[sta2x11_apbreg] = "sta2x11-apbreg",
--	[sta2x11_apb_soc_regs] = "sta2x11-apb-soc-regs",
-+	[sta2x11_sctl] = STA2X11_MFD_SCTL_NAME,
-+	[sta2x11_apbreg] = STA2X11_MFD_APBREG_NAME,
-+	[sta2x11_apb_soc_regs] = STA2X11_MFD_APB_SOC_REGS_NAME,
- };
+ 	err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
++	if (err)
++		goto err;
  
- /* Probe for the three platform devices */
-@@ -316,7 +316,7 @@ static int sta2x11_apb_soc_regs_probe(struct platform_device *dev)
- /* The three platform drivers */
- static struct platform_driver sta2x11_sctl_platform_driver = {
- 	.driver = {
--		.name	= "sta2x11-sctl",
-+		.name	= STA2X11_MFD_SCTL_NAME,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= sta2x11_sctl_probe,
-@@ -330,7 +330,7 @@ static int __init sta2x11_sctl_init(void)
+-	if (!err && len == hlen)
+-		err = memcmp(out2, h, hlen);
++	if (len != hlen || memcmp(out2, h, hlen))
++		err = -EINVAL;
  
- static struct platform_driver sta2x11_platform_driver = {
- 	.driver = {
--		.name	= "sta2x11-apbreg",
-+		.name	= STA2X11_MFD_APBREG_NAME,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= sta2x11_apbreg_probe,
-@@ -344,7 +344,7 @@ static int __init sta2x11_apbreg_init(void)
- 
- static struct platform_driver sta2x11_apb_soc_regs_platform_driver = {
- 	.driver = {
--		.name	= "sta2x11-apb-soc-regs",
-+		.name	= STA2X11_MFD_APB_SOC_REGS_NAME,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= sta2x11_apb_soc_regs_probe,
-@@ -385,38 +385,40 @@ enum mfd0_bar1_cells {
- 
- static const __devinitconst struct resource gpio_resources[] = {
- 	{
--		.name = "sta2x11_gpio", /* 4 consecutive cells, 1 driver */
-+		/* 4 consecutive cells, 1 driver */
-+		.name = STA2X11_MFD_GPIO_NAME,
- 		.start = 0,
- 		.end = (4 * 4096) - 1,
- 		.flags = IORESOURCE_MEM,
- 	}
- };
- static const __devinitconst struct resource sctl_resources[] = {
--	CELL_4K("sta2x11-sctl", STA2X11_SCTL),
-+	CELL_4K(STA2X11_MFD_SCTL_NAME, STA2X11_SCTL),
- };
- static const __devinitconst struct resource scr_resources[] = {
--	CELL_4K("sta2x11-scr", STA2X11_SCR),
-+	CELL_4K(STA2X11_MFD_SCR_NAME, STA2X11_SCR),
- };
- static const __devinitconst struct resource time_resources[] = {
--	CELL_4K("sta2x11-time", STA2X11_TIME),
-+	CELL_4K(STA2X11_MFD_TIME_NAME, STA2X11_TIME),
- };
- 
- static const __devinitconst struct resource apbreg_resources[] = {
--	CELL_4K("sta2x11-apbreg", STA2X11_APBREG),
-+	CELL_4K(STA2X11_MFD_APBREG_NAME, STA2X11_APBREG),
- };
- 
- #define DEV(_name, _r) \
- 	{ .name = _name, .num_resources = ARRAY_SIZE(_r), .resources = _r, }
- 
- static __devinitdata struct mfd_cell sta2x11_mfd0_bar0[] = {
--	DEV("sta2x11-gpio", gpio_resources), /* offset 0: we add pdata later */
--	DEV("sta2x11-sctl", sctl_resources),
--	DEV("sta2x11-scr", scr_resources),
--	DEV("sta2x11-time", time_resources),
-+	/* offset 0: we add pdata later */
-+	DEV(STA2X11_MFD_GPIO_NAME, gpio_resources),
-+	DEV(STA2X11_MFD_SCTL_NAME, sctl_resources),
-+	DEV(STA2X11_MFD_SCR_NAME,  scr_resources),
-+	DEV(STA2X11_MFD_TIME_NAME, time_resources),
- };
- 
- static __devinitdata struct mfd_cell sta2x11_mfd0_bar1[] = {
--	DEV("sta2x11-apbreg", apbreg_resources),
-+	DEV(STA2X11_MFD_APBREG_NAME, apbreg_resources),
- };
- 
- /* Mfd 1 devices */
-@@ -432,19 +434,19 @@ enum mfd1_bar1_cells {
- };
- 
- static const __devinitconst struct resource vic_resources[] = {
--	CELL_4K("sta2x11-vic", STA2X11_VIC),
-+	CELL_4K(STA2X11_MFD_VIC_NAME, STA2X11_VIC),
- };
- 
- static const __devinitconst struct resource apb_soc_regs_resources[] = {
--	CELL_4K("sta2x11-apb-soc-regs", STA2X11_APB_SOC_REGS),
-+	CELL_4K(STA2X11_MFD_APB_SOC_REGS_NAME, STA2X11_APB_SOC_REGS),
- };
- 
- static __devinitdata struct mfd_cell sta2x11_mfd1_bar0[] = {
--	DEV("sta2x11-vic", vic_resources),
-+	DEV(STA2X11_MFD_VIC_NAME, vic_resources),
- };
- 
- static __devinitdata struct mfd_cell sta2x11_mfd1_bar1[] = {
--	DEV("sta2x11-apb-soc-regs", apb_soc_regs_resources),
-+	DEV(STA2X11_MFD_APB_SOC_REGS_NAME, apb_soc_regs_resources),
- };
- 
- 
-diff --git a/include/linux/mfd/sta2x11-mfd.h b/include/linux/mfd/sta2x11-mfd.h
-index 9ba6127..9de20fd 100644
---- a/include/linux/mfd/sta2x11-mfd.h
-+++ b/include/linux/mfd/sta2x11-mfd.h
-@@ -37,6 +37,14 @@ enum sta2x11_mfd_plat_dev {
- 	sta2x11_n_mfd_plat_devs,
- };
- 
-+#define STA2X11_MFD_SCTL_NAME	       "sta2x11-sctl"
-+#define STA2X11_MFD_GPIO_NAME	       "sta2x11-gpio"
-+#define STA2X11_MFD_SCR_NAME	       "sta2x11-scr"
-+#define STA2X11_MFD_TIME_NAME	       "sta2x11-time"
-+#define STA2X11_MFD_APBREG_NAME	       "sta2x11-apbreg"
-+#define STA2X11_MFD_APB_SOC_REGS_NAME  "sta2x11-apb-soc-regs"
-+#define STA2X11_MFD_VIC_NAME	       "sta2x11-vic"
-+
- extern u32
- __sta2x11_mfd_mask(struct pci_dev *, u32, u32, u32, enum sta2x11_mfd_plat_dev);
- 
+ err:
+ 	mpi_free(in);
 -- 
-1.7.9.1
+1.7.9.5
 
