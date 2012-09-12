@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759834Ab2ILPQp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:16:45 -0400
+	id S1759498Ab2ILPQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:16:42 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:42734 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759456Ab2ILPQm (ORCPT
+	with ESMTP id S1751780Ab2ILPQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:16:42 -0400
+	Wed, 12 Sep 2012 11:16:38 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
         peterz@infradead.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 3/3 v2] perf tool: give user better message if precise is not supported
-Date: Wed, 12 Sep 2012 09:16:30 -0600
-Message-Id: <1347462990-29481-4-git-send-email-dsahern@gmail.com>
+        Robert Richter <robert.richter@amd.com>,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [PATCH 1/3] perf tool: precise mode requires exclude_guest
+Date: Wed, 12 Sep 2012 09:16:28 -0600
+Message-Id: <1347462990-29481-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1347462990-29481-1-git-send-email-dsahern@gmail.com>
 References: <1347462990-29481-1-git-send-email-dsahern@gmail.com>
@@ -22,67 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms (e.g., VM's) without support for precise mode get a confusing
-error message. e.g.,
-$ perf record -e cycles:p -a -- sleep 1
+Summary of events per Peter:
 
-  Error: sys_perf_event_open() syscall returned with 95 (Operation not
-  supported).  /bin/dmesg may provide additional information.
+  "Intel PEBS in VT-x context uses the DS address as a guest linear address,
+  even though its programmed by the host as a host linear address. This
+  either results in guest memory corruption and or the hardware faulting and
+  'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
+  enter and re-enable on VT-x exit, enforcing a strict exclude_guest.
 
-  No hardware sampling interrupt available. No APIC? If so then you can
-  boot the kernel with the "lapic" boot parameter to force-enable it.
-  sleep: Terminated
+  AMB IBS does work but doesn't currently support exclude_* at all,
+  setting an exclude_* bit will make it fail."
 
-which is not clear that precise mode might be the root problem. With this
-patch:
+This patch handles userspace perf command, setting the exclude_guest
+attribute if precise mode is requested, but only if a user has not
+specified a request for guest or host only profiling (G or H attribute).
 
-$ perf record -e cycles:p -fo /tmp/perf.data -- sleep 1
-  Error:
-  'precise' request may not be supported. Try removing 'p' modifier
-  sleep: Terminated
-
-v2: softened message to 'may not be' supported per Robert's suggestion
+Kernel side AMD currently ignores all exclude_* bits, so there is no impact
+to existing IBS code paths. Robert Richter has a patch where IBS code will
+return EINVAL if an exclude_* bit is set. When this goes in it means use
+of :p on AMD with IBS will first fail with EINVAL (because exclude_guest
+will be set). Then the existing fallback code within perf will unset
+exclude_guest and try again. The second attempt will succeed if the CPU
+supports IBS profiling.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Robert Richter <robert.richter@amd.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>
+Link: https://lkml.org/lkml/2012/7/9/264
 ---
- tools/perf/builtin-record.c |    5 +++++
- tools/perf/builtin-top.c    |    4 ++++
- 2 files changed, 9 insertions(+)
+ tools/perf/util/parse-events.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index c643ed6..385e272 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -294,6 +294,11 @@ try_again:
- 					  perf_evsel__name(pos));
- 				rc = -err;
- 				goto out;
-+			} else if ((err == EOPNOTSUPP) && (attr->precise_ip)) {
-+				ui__error("\'precise\' request may not be supported. "
-+					  "Try removing 'p' modifier\n");
-+				rc = -err;
-+				goto out;
- 			}
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 44afcf4..696cc7e 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -694,6 +694,9 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 			eH = 0;
+ 		} else if (*str == 'p') {
+ 			precise++;
++			/* use of precise requires exclude_guest */
++			if (!exclude_GH)
++				eG = 1;
+ 		} else
+ 			break;
  
- 			printf("\n");
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 5550754..1d1c98c 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -976,6 +976,10 @@ try_again:
- 				ui__error("Too many events are opened.\n"
- 					    "Try again after reducing the number of events\n");
- 				goto out_err;
-+			} else if ((err == EOPNOTSUPP) && (attr->precise_ip)) {
-+				ui__error("\'precise\' request may not be supported. "
-+					  "Try removing 'p' modifier\n");
-+				goto out_err;
- 			}
- 
- 			ui__error("The sys_perf_event_open() syscall "
 -- 
 1.7.10.1
 
