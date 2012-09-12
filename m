@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab2ILXbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:31:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1755854Ab2ILXby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:31:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab2ILXb3 (ORCPT
+	with ESMTP id S1755776Ab2ILXbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:29 -0400
+	Wed, 12 Sep 2012 19:31:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Boaz Harrosh <bharrosh@panasas.com>,
-        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 032/108] NFSv4.1: Remove a bogus BUG_ON() in nfs4_layoutreturn_done
-Date: Wed, 12 Sep 2012 16:28:30 -0700
-Message-Id: <20120912232453.906962533@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Cree <mcree@orcon.net.nz>,
+        Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 023/108] alpha: Dont export SOCK_NONBLOCK to user space.
+Date: Wed, 12 Sep 2012 16:28:21 -0700
+Message-Id: <20120912232452.956840166@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,47 +30,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Michael Cree <mcree@orcon.net.nz>
 
-commit 47fbf7976e0b7d9dcdd799e2a1baba19064d9631 upstream.
+commit a2fa3ccd7b43665fe14cb562761a6c3d26a1d13f upstream.
 
-Ever since commit 0a57cdac3f (NFSv4.1 send layoutreturn to fence
-disconnected data server) we've been sending layoutreturn calls
-while there is potentially still outstanding I/O to the data
-servers. The reason we do this is to avoid races between replayed
-writes to the MDS and the original writes to the DS.
+Currently we export SOCK_NONBLOCK to user space but that conflicts with
+the definition from glibc leading to compilation errors in user programs
+(e.g.  see Debian bug #658460).
 
-When this happens, the BUG_ON() in nfs4_layoutreturn_done can
-be triggered because it assumes that we would never call
-layoutreturn without knowing that all I/O to the DS is
-finished. The fix is to remove the BUG_ON() now that the
-assumptions behind the test are obsolete.
+The generic socket.h restricts the definition of SOCK_NONBLOCK to the
+kernel, as does the MIPS specific socket.h, so let's do the same on
+Alpha.
 
-Reported-by: Boaz Harrosh <bharrosh@panasas.com>
-Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/alpha/include/asm/socket.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6300,12 +6300,8 @@ static void nfs4_layoutreturn_done(struc
- 		return;
- 	}
- 	spin_lock(&lo->plh_inode->i_lock);
--	if (task->tk_status == 0) {
--		if (lrp->res.lrs_present) {
--			pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
--		} else
--			BUG_ON(!list_empty(&lo->plh_segs));
--	}
-+	if (task->tk_status == 0 && lrp->res.lrs_present)
-+		pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
- 	lo->plh_block_lgets--;
- 	spin_unlock(&lo->plh_inode->i_lock);
- 	dprintk("<-- %s\n", __func__);
+--- a/arch/alpha/include/asm/socket.h
++++ b/arch/alpha/include/asm/socket.h
+@@ -76,9 +76,11 @@
+ /* Instruct lower device to use last 4-bytes of skb data as FCS */
+ #define SO_NOFCS		43
+ 
++#ifdef __KERNEL__
+ /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
+  * have to define SOCK_NONBLOCK to a different value here.
+  */
+ #define SOCK_NONBLOCK	0x40000000
++#endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_SOCKET_H */
 
 
