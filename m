@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2ILPx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:53:29 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:49580 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab2ILPx1 (ORCPT
+	id S1760072Ab2ILPxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:53:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53439 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759773Ab2ILPxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:53:27 -0400
+	Wed, 12 Sep 2012 11:53:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH 04/16] ARM: imx: move platform_data definitions
+Date: Wed, 12 Sep 2012 15:52:25 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Chris Ball <cjb@laptop.org>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alan Cox <alan@linux.intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <201209111410.05698.arnd@arndb.de> <Pine.LNX.4.64.1209111624240.22084@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1209111624240.22084@axis700.grange>
 MIME-Version: 1.0
-In-Reply-To: <50505959020000780009AC53@nat28.tlf.novell.com>
-References: <504DF63A020000780009A30B@nat28.tlf.novell.com>
-	<CACRpkdbCmou3wTXJjPhSaCH0kH1VrU5n-9t7NTJOjFQs1xH+cA@mail.gmail.com>
-	<50505959020000780009AC53@nat28.tlf.novell.com>
-Date: Wed, 12 Sep 2012 17:53:26 +0200
-Message-ID: <CACRpkdZ6me3t4oUNg2QNjVgFw_gfJvgR4PZzE+vX+7W8PTgcNg@mail.gmail.com>
-Subject: Re: [PATCH] allow gpiolib to be a module
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209121552.26004.arnd@arndb.de>
+X-Provags-ID: V02:K0:cMpqFPCJcSvMYFiZZVj0mG78zG7nuSwM5+Nn1agep38
+ near0ru8weO7NUZ6wOYUGAYfhqjsFVaHlmDy0Sg6vqJOz57ul6
+ +wnM69Ch0sZWdDIi9wjZm1/IkFeFv1dIdWJrC++ObflNoGhlXN
+ sgyFAcJ/UEnqk0Pd7wEX6mJ+fnjDLsHiyJB4uand4ZS2yC6yKF
+ GX6Wjz/2Ou9Fhu+v2fASh26F0RKCDhWV5f0L1wnHAuS7zMb6iz
+ 1kpvzLB9FeM3RtZKg9/Qv5bpi2edSrgNkiySjczAcNaE21zSjj
+ TgFEXuFp/XAFFjZXFuM6aoW2T81LLraOynXeDAx6H3WC3gOM9i
+ B8O4PxSVe1WngMYQtk04=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 9:43 AM, Jan Beulich <JBeulich@suse.com> wrote:
+On Tuesday 11 September 2012, Guennadi Liakhovetski wrote:
+> ipu.h is used by the dmaengine and IRQ driver under drivers/dma/ipu/, and 
+> by its users drivers/media/platform/soc_camera/mx3_camera.c and 
+> drivers/video/mx3fb.c. It has been placed under arch/arm/... because it's 
+> arch-specific, but in principle I don't see any reason why it cannot 
+> happily live anywhere under include/...
 
->> I can't parse this, sorry the gpio subsystem maintainer is too bad coder.
->> What about something more readable?
->>
->> int ret;
->>
->> ret = gpiolib_sysfs_init();
->> if (ret)
->>    return ret;
->> return gpiolib_debugfs_init();
->>
->> I know it doesn't look as cool but it's easier for me to understand.
->
-> Okay, since you're the second one to complain despite there
-> being other uses of the construct in the same source file, I'll
-> replace it, ...
+Right. We can do that as the next step, after the pure platform data is
+out of the way.
 
-Sorry about that, but two wrongs does not make one right.
-I'd be happy if you patch the other constructs too...
-
-Yours,
-Linus Walleij
+	Arnd
