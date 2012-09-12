@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760881Ab2ILRIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:08:10 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35999 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760603Ab2ILRIA (ORCPT
+	id S1760855Ab2ILRH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:07:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53754 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760761Ab2ILRDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:08:00 -0400
-X-IronPort-AV: E=Sophos;i="4.80,410,1344211200"; 
-   d="scan'208";a="14502526"
-Date: Wed, 12 Sep 2012 18:07:16 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Rob Herring <robherring2@gmail.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Tim (Xen.org)" <tim@xen.org>, David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
-In-Reply-To: <503BFCD8.5090804@gmail.com>
-Message-ID: <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com> <503BFCD8.5090804@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 12 Sep 2012 13:03:36 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: trivial@kernel.org, kernel-janitors@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/15] drivers/sbus/char: removes unnecessary semicolon
+Date: Wed, 12 Sep 2012 19:03:12 +0200
+Message-Id: <1347469402-27557-5-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Aug 2012, Rob Herring wrote:
-> On 08/16/2012 10:35 AM, Stefano Stabellini wrote:
-> > Add a doc to describe the Xen ARM device tree bindings
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > CC: devicetree-discuss@lists.ozlabs.org
-> > CC: David Vrabel <david.vrabel@citrix.com>
-> > ---
-> >  Documentation/devicetree/bindings/arm/xen.txt |   22 ++++++++++++++++++++++
-> >  1 files changed, 22 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
-> > new file mode 100644
-> > index 0000000..ec6d884
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/arm/xen.txt
-> > @@ -0,0 +1,22 @@
-> > +* Xen hypervisor device tree bindings
-> > +
-> > +Xen ARM virtual platforms shall have the following properties:
-> > +
-> > +- compatible:
-> > +	compatible = "xen,xen", "xen,xen-<version>";
-> > +  where <version> is the version of the Xen ABI of the platform.
-> > +
-> > +- reg: specifies the base physical address and size of a region in
-> > +  memory where the grant table should be mapped to, using an
-> > +  HYPERVISOR_memory_op hypercall. 
-> > +
-> > +- interrupts: the interrupt used by Xen to inject event notifications.
-> 
-> You should look at ePAPR 1.1 which defines hypervisor related bindings.
-> While it is a PPC doc, we should reuse or extend what makes sense.
-> 
-> See section 7.5:
-> 
-> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Thanks for the link, I wasn't aware of ePAPR.
+removes unnecessary semicolon
 
-The hypervisor node defined by ePAPR is not very different from what I
-am proposing. Should I try to be compatible with the hypervisor
-specification above (as in compatible = "epapr,hypervisor-1.1")?
-Or should I just use it as a reference for my own specification?
+Found by Coccinelle: http://coccinelle.lip6.fr/
 
-Personally I would rather avoid full compatibility with ePAPR.
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/sbus/char/display7seg.c |    2 +-
+ drivers/sbus/char/envctrl.c     |    8 ++++----
+ drivers/sbus/char/openprom.c    |    4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
+index 4b99397..b160073 100644
+--- a/drivers/sbus/char/display7seg.c
++++ b/drivers/sbus/char/display7seg.c
+@@ -150,7 +150,7 @@ static long d7s_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			regs |= D7S_FLIP;
+ 		writeb(regs, p->regs);
+ 		break;
+-	};
++	}
+ 	mutex_unlock(&d7s_mutex);
+ 
+ 	return error;
+diff --git a/drivers/sbus/char/envctrl.c b/drivers/sbus/char/envctrl.c
+index 339fd6f..0bc1856 100644
+--- a/drivers/sbus/char/envctrl.c
++++ b/drivers/sbus/char/envctrl.c
+@@ -353,7 +353,7 @@ static int envctrl_i2c_data_translate(unsigned char data, int translate_type,
+ 
+ 	default:
+ 		break;
+-	};
++	}
+ 
+ 	return len;
+ }
+@@ -644,7 +644,7 @@ envctrl_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	default:
+ 		break;
+ 
+-	};
++	}
+ 
+ 	return ret;
+ }
+@@ -687,7 +687,7 @@ envctrl_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 	default:
+ 		return -EINVAL;
+-	};
++	}
+ 
+ 	return 0;
+ }
+@@ -947,7 +947,7 @@ static void envctrl_init_i2c_child(struct device_node *dp,
+ 
+ 		default:
+ 			break;
+-		};
++		}
+ 	}
+ }
+ 
+diff --git a/drivers/sbus/char/openprom.c b/drivers/sbus/char/openprom.c
+index 2236aea..5843288 100644
+--- a/drivers/sbus/char/openprom.c
++++ b/drivers/sbus/char/openprom.c
+@@ -222,7 +222,7 @@ static int opromnext(void __user *argp, unsigned int cmd, struct device_node *dp
+ 		case OPROMSETCUR:
+ 		default:
+ 			break;
+-		};
++		}
+ 	} else {
+ 		/* Sibling of node zero is the root node.  */
+ 		if (cmd != OPROMNEXT)
+@@ -588,7 +588,7 @@ static int openprom_bsd_ioctl(struct file * file,
+ 	default:
+ 		err = -EINVAL;
+ 		break;
+-	};
++	}
+ 	mutex_unlock(&openprom_mutex);
+ 
+ 	return err;
+
