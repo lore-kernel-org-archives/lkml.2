@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab2ILMsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:48:11 -0400
-Received: from [205.233.59.134] ([205.233.59.134]:44985 "EHLO
-	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757913Ab2ILMsI convert rfc822-to-8bit (ORCPT
+	id S1757991Ab2ILMtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:49:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57242 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757887Ab2ILMtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:48:08 -0400
-Message-ID: <1347453696.15764.24.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
- preemption
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Date: Wed, 12 Sep 2012 14:41:36 +0200
-In-Reply-To: <20120912120627.GA14705@somewhere>
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
-	 <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1346950959.18408.47.camel@twins> <1346951591.18408.48.camel@twins>
-	 <20120910202611.GB19268@somewhere> <1347442413.2124.70.camel@twins>
-	 <20120912120627.GA14705@somewhere>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 12 Sep 2012 08:49:41 -0400
+Date: Wed, 12 Sep 2012 20:49:34 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
+Message-ID: <20120912124932.GC19055@opensource.wolfsonmicro.com>
+References: <1347375823.12329.14.camel@matrix>
+ <20120912025709.GD9162@opensource.wolfsonmicro.com>
+ <1347454578.23366.305.camel@matrix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347454578.23366.305.camel@matrix>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-12 at 14:06 +0200, Frederic Weisbecker wrote:
-> 
-> 1) This can happen if something calls set_need_resched() while no other task is
-> on the runqueue.
+On Wed, Sep 12, 2012 at 06:26:18PM +0530, Ashish Chavan wrote:
+> On Wed, 2012-09-12 at 10:57 +0800, Mark Brown wrote:
 
-People really shouldn't be doing that... I think I know why RCU does
-this, but yuck. I also think RCU can avoid doing this, but its a toss up
-if that's worth the trouble.
+> > Why is any of this being exposed to userspace?  If this should be
+> > configured I'd expect it to be static platform data, not something that
+> > gets changed at runtime.
 
-> 2) Remote wake up done but we haven't yet received the schedule IPI.
-> 
-> 3) Non IPI remote wakeup you're referring above, I'm not sure
-> what you mean though.
+> These parameters are exposed considering the fact that DMIC itself is
+> not part of the codec. Codec only provides DMIC interface using which an
+> external DMIC can be attached. These parameters depend on the actual
+> DMIC hardware and hence kept configurable to allow runtime plug in of
+> any DMIC hardware. Doesn't it make sense to keep them runtime
+> configurable?
 
-Well there's two ways of doing remote wakeups, one is doing the wakeup
-from the waking cpu and sending an IPI over to reschedule iff you need
-wakeup-preemption, the other is queueing the task remotely and sending
-an IPI to do the wakeup on the remote cpu.
+No.  The only realistic way to attach a new DMIC to a board is to solder
+it down, that's not something people are going to do while the system is
+actve.  It's something that's fixed at PCB design time.
 
-The former has the problem, the latter not. 
+> > > +	/* In slave mode, there is only one set of divisors */
+> > > +	if (!da9055->master)
+> > > +		fout = 2822400;
 
-See ttwu_queue().
+> > Should check the user supplied this value
 
-We could of course mandate that all remote wakeups to special nohz cpus
-get queued. That would just leave us with RCU and it would simply not
-send resched IPIs to extended quiescent CPUs anyway, right?
+> Can you explain which value / user supplied value you are referring to?
+> It is not quite clear to me.
 
-So at that point all return to user schedule() calls have nr_running > 1
-and the tick is running and RCU is not in extended quiescent state.
-Since either we had nr_running > 1 and pre and post state are the same,
-or we had nr_running == 1 and we just got a fresh wakeup pushing it to
-2, the wakeup will have executed on our cpu and have re-started the tick
-and kicked RCU into active gear again.
+The specified output frequency, you just totally ignore it.
 
-We cannot hit return to user schedule() with nr_running == 0, simply
-because in that case there's no userspace to return to, only the idle
-thread and that's very much not userspace :-)
+> For other things like input mixers, Headphone and Lineouts, DAPM is
+> already used to control power specific bits. The confusion is because
+> there are two separate control bits for these blocks. One bit is for
+> "Enabling" that block and other is for "Enabling Amplifier" of that
+> block.
+> e.g for headphone, one bit is for "output enable" while other is for
+> "output amplifier enable".
 
-Hmm ?
+So document this.
