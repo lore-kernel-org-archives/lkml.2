@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab2ILMwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:52:18 -0400
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:34853 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754863Ab2ILMwR (ORCPT
+	id S1758019Ab2ILMxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:53:13 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:48238 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757819Ab2ILMxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:52:17 -0400
-Message-ID: <5050857F.5060207@akamai.com>
-Date: Wed, 12 Sep 2012 07:52:15 -0500
-From: Josh Hunt <johunt@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 12 Sep 2012 08:53:11 -0400
+Message-ID: <505085DB.5000407@ti.com>
+Date: Wed, 12 Sep 2012 15:53:47 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-References: <1347403947-20187-1-git-send-email-johunt@akamai.com> <504FC2E9.4010708@akamai.com> <20120912085140.GA12277@aftab.osrc.amd.com> <5050824B.9050006@akamai.com>
-In-Reply-To: <5050824B.9050006@akamai.com>
-X-Enigmail-Version: 1.5pre
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>
+Subject: Re: [PATCH 11/11] ASoC: omap-pcm: Convert to use dmaengine
+References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com> <1347450427-27627-12-git-send-email-peter.ujfalusi@ti.com> <20120912120028.GC28448@n2100.arm.linux.org.uk>
+In-Reply-To: <20120912120028.GC28448@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 07:38 AM, Josh Hunt wrote:
-> On 09/12/2012 03:51 AM, Borislav Petkov wrote:
->> On Tue, Sep 11, 2012 at 06:02:01PM -0500, Josh Hunt wrote:
->>> On 09/11/2012 05:52 PM, Josh Hunt wrote:
->>>> With recent kernels we noticed that edac was reporting double the memory size on
->>>> systems running with AMD family 0Fh processors. I'm not very familiar with the
->>>> code, but this resolves it from what I can see on my systems. At least in
->>>> amd64_debug_display_dimm_sizes() and k8_dbam_to_chip_select() there appeared
->>>> to be redundant shifts to the left by 1 when WIDTH_128 is present.
->>
->> Any chance you could enable CONFIG_EDAC_DEBUG, boot and send me your
->> whole dmesg? Privately is fine too.
->>
->> Thanks.
->>
+On 09/12/2012 03:00 PM, Russell King - ARM Linux wrote:
+> On Wed, Sep 12, 2012 at 02:47:07PM +0300, Peter Ujfalusi wrote:
+>> 2. Pause/Resume
+>>    OMAP DMA engine backend does not support pausing and resuming
+>>    an in-progress transfer.  It is unclear from the specs what
+>>    effect clearing the enable bit has on the DMA position of a
+>>    destination synchronized transfer, and whether the transfer
+>>    can be restarted from the exact point that it was paused (or
+>>    whether the data in the FIFO read from memory is simply
+>>    discarded.)
 > 
-> Sure. Attached. This is booting with latest git.
+> It's worth noting that this comment (which was in my original patch)
+> is there to spark _comment_ and _discussion_ and should not make its
+> way into the final version of these patches.
 > 
-> Josh
+> Given that suspend/resume is important on OMAP platforms, it's something
+> that needs to be resolved - in a way that complies with what ALSA expects.
+> I do not believe that the way the existing drivers do this is compliant
+> as the manuals imply that stopping memory->peripheral transfers results
+> in data being discarded from the DMA's FIFOs.  As I understand it, ALSA
+> requires no data to be discarded.
+> 
+> As we have no way to know how much data may be discarded from the DMA
+> FIFO...
 
-I wanted to add that we started seeing this back in 3.0. I didn't go
-back any farther, but know it was not occurring in 2.6.38. The issue in
-3.0 appeared to be that we shift left k8_dbam_to_chip_select() and there
-was also another shift in amd64_csrow_nr_pages(). It looks like that
-second shift has been replaced by a more recent patch, which actually
-checks to see if the csrow is enabled and then counts nr_pages again
-adding that to the first calculation, still resulting in the size being
-double.
+I need to look at this, but at first look we do wait for the drain in
+omap_stop_dma(). We used to use omap_stop_dma/omap_start_dma for pause/resume
+operations.
+But sDMA also have a bit: CDPi: PAUSE_LINK_LIST which should do what we are
+looking for.
+Need to read the relevant parts of the TRM, but AFAIK we are using normal mode
+with linked list (self linking).
+I already have the patch for this, I just need to test it on HW.
 
-Josh
+-- 
+Péter
