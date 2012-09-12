@@ -1,42 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab2ILVbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 17:31:06 -0400
-Received: from nm2-vm9.bullet.mail.sg3.yahoo.com ([106.10.148.98]:40223 "HELO
-	nm2-vm9.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753263Ab2ILVbF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 17:31:05 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 762031.47198.bm@omp1010.mail.sg3.yahoo.com
-X-YMail-OSG: HkJKV74VM1nFdH_Zxyi6ghocSX2.CRrVXfZ06mBeExwhWWh
- ogX_spDHYcl_IyhVYOy7g1e.T9tfYJrlRzR2mjzVGCyExkDpTSRs8ESaZINf
- czc0eyYOAxo2DhGGrizZiHe_EtigQdy_M6fM5ufXhW4813zX5me5k6jib7VY
- MIu24aw4Zc2.iQq_eD_NOji_6VPTyMPCl62dwmD6RlK6JqiRwwbSgNRVtDax
- bfHmx.QNTSGI2u3VH3za7u93Q3CPyxTt39EjNtkud.xrvBBxrNa5NUI968yA
- wiGtXnED7PALtmikeNxEFqcR7B1m1_Zc3kJgPBRvyVzHyMQoVX7bXoVRm70p
- M8Fbo2TBx_kmf0B2_uglWIkuxkgf8yLMpO_FuJBqqRdQb76u_HPg8ghXC3lp
- f4Nn48bitbgB7IM8fxU8erdsr.LAbmnHOVcI5_LWi4o5uyF1wDxk1B___5Gd
- 2orsIVKHB90WFzwAhoH9oBf7Zp7sCcWsiINpjIM_c915feupG1W4DlK2pg8N
- Q0SES1gjf4WNmW.nvV60DKYvFKzue0KU2EwI1lbIGrPCRbxQvT.0SGv1YCJ8
- TE0SB0veZtyMm6uA-
-X-RocketYMMF: anir82
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.121.416
-Message-ID: <1347485461.18260.YahooMailClassic@web193105.mail.sg3.yahoo.com>
-Date: Thu, 13 Sep 2012 05:31:01 +0800 (SGT)
-From: Ruth Yoda <ruth_y2@qq.com>
-Reply-To: ruth_y1@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1754483Ab2ILVcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 17:32:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40134 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab2ILVcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 17:32:41 -0400
+Date: Wed, 12 Sep 2012 14:32:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] memory-hotplug: don't replace lowmem pages with
+ highmem
+Message-Id: <20120912143239.65fa8b58.akpm@linux-foundation.org>
+In-Reply-To: <1347414231-31451-2-git-send-email-minchan@kernel.org>
+References: <1347414231-31451-1-git-send-email-minchan@kernel.org>
+	<1347414231-31451-2-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+On Wed, 12 Sep 2012 10:43:51 +0900
+Minchan Kim <minchan@kernel.org> wrote:
+
+> [1] reporeted that lowmem pages could be replaced by
+> highmem pages during migration of CMA and fixed.
+> 
+> Quote from [1]'s description
+> "
+>     The filesystem layer expects pages in the block device's mapping to not
+>     be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
+>     currently replace lowmem pages with highmem pages, leading to crashes in
+>     filesystem code such as the one below:
+> 
+>       Unable to handle kernel NULL pointer dereference at virtual address 00000400
+>       pgd = c0c98000
+>       [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
+>       Internal error: Oops: 817 [#1] PREEMPT SMP ARM
+>       CPU: 0    Not tainted  (3.5.0-rc5+ #80)
+>       PC is at __memzero+0x24/0x80
+>       ...
+>       Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
+>       Backtrace:
+>       [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
+>       [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
+>        r4:c15337f0
+>       [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
+>       [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
+>        r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
+>       [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
+>        r6:beccdcf0 r5:00074000 r4:beccdbbc
+>       [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
+> "
+> 
+> Memory-hotplug has same problem with CMA so [1]'s fix could be applied
+> with memory-hotplug, too.
+> 
+> Fix it by reusing.
+
+Do we think this issue should be fixed in 3.6?  Earlier?
+
+> @@ -809,8 +802,12 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+>  			putback_lru_pages(&source);
+>  			goto out;
+>  		}
+> -		/* this function returns # of failed pages */
+> -		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
+> +
+> +		/*
+> +		 * alloc_migrate_target should be improooooved!!
+
+Not a helpful comment!  If you've identified some improvement then
+please do provide all the details.
+
+> +		 * migrate_pages returns # of failed pages.
+> +		 */
+> +		ret = migrate_pages(&source, alloc_migrate_target, 0,
+>  							true, MIGRATE_SYNC);
+>  		if (ret)
+>  			putback_lru_pages(&source);
+
