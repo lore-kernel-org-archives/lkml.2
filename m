@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab2ILHG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:06:26 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:46460 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2ILHGY (ORCPT
+	id S1754016Ab2ILHQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:16:50 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:48538 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750726Ab2ILHQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:06:24 -0400
-From: "Zhang, Lin-Bao (ESSN-MCXS-Linux Kernel R&D)" <linbao.zhang@hp.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Croxon, Nigel" <nigel.croxon@hp.com>
-Subject: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries
-Thread-Topic: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries
-Thread-Index: Ac2QszzoAvNse2b0TNGUNPrbhE0QOw==
-Date: Wed, 12 Sep 2012 07:02:51 +0000
-Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F9095637@G1W3648.americas.hpqcorp.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.193.232.11]
-Content-Type: text/plain; charset="gb2312"
+	Wed, 12 Sep 2012 03:16:49 -0400
 MIME-Version: 1.0
+In-Reply-To: <1347368390-31252-13-git-send-email-arnd@arndb.de>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
+	<1347368390-31252-1-git-send-email-arnd@arndb.de>
+	<1347368390-31252-13-git-send-email-arnd@arndb.de>
+Date: Wed, 12 Sep 2012 09:16:46 +0200
+Message-ID: <CAN5iSWqnyA0VNDkaCb7bcZOhQxOxJ8xUy4RXWgt+xukSUmHnAA@mail.gmail.com>
+Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
+From: "Pihet-XID, Jean" <j-pihet@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        J Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8C76U8C027833
 
-Hi all, 
-This defect can be observed when the x2apic setting in BIOS is set to "auto" and the BIOS has virtual wire mode enabled on a power up. This defect was found on a 2.6.32 based kernel.
+Hi Arnd,
 
-The kernel code (smpboot.c, apic.c) does not mask 8259A interrupts before changing and initializing the new VT-d table when x2apic virtual wire mode is enable on power up. The Linux Kernel expects virtual wire mode to be disabled when booting and enables it when interrupts are masked.
+On Tue, Sep 11, 2012 at 2:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Platform data for device drivers should be defined in
+> include/linux/platform_data/*.h, not in the architecture
+> and platform specific directories.
+>
+> This moves such data out of the omap include directories
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-The BIOS code builds a simple VT-d table on power up. While the Linux Kernel boots, it first builds an empty VT-d table and use it. After some time, the Linux Kernel then initializes the IO-APIC redirect table, and then initializes the VT-d entries. The window between initializing the redirect table and the VT-d entries, the 8259A interrupts are not masked. If an interrupt occurs in this window, the Linux Kernel will not find a valid entry for this interrupt. The kernel treats it to be a fatal error and panics. If the error never gets cleared, the Linux kernel continuously print this error:
-"NMI: IOCK error (debug interrupt?) for reason"
+...
 
-The fix to this defect, the code change is to mask 8259A interrupts before changing VT-d table and initializing VT-d entries. Then unmask interrupts after completing the redirect table entries.
+> diff --git a/arch/arm/mach-omap2/voltage.h b/arch/arm/mach-omap2/voltage.h
+> index 0ac2caf..7abf1c0 100644
+> --- a/arch/arm/mach-omap2/voltage.h
+> +++ b/arch/arm/mach-omap2/voltage.h
+> @@ -16,7 +16,7 @@
+>
+>  #include <linux/err.h>
+>
+> -#include <plat/voltage.h>
+> +#include <linux/platform_data/smartreflex-omap.h>
+>
+>  #include "vc.h"
+>  #include "vp.h"
+...
+> diff --git a/arch/arm/plat-omap/include/plat/voltage.h b/include/linux/platform_data/smartreflex-omap.h
+> similarity index 100%
+> rename from arch/arm/plat-omap/include/plat/voltage.h
+> rename to include/linux/platform_data/smartreflex-omap.h
+The filename should be voltage-omap.h. The header file is for a
+voltage layer which is used by other layers, one of them is the
+smartreflex driver code (in drivers/power/avs).
+The header file for the smartreflex driver is in
+include/linux/power/smartreflex.h.
 
+> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
+> index 3101e62..e376f94 100644
+> --- a/include/linux/power/smartreflex.h
+> +++ b/include/linux/power/smartreflex.h
+> @@ -23,7 +23,7 @@
+>  #include <linux/types.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/delay.h>
+> -#include <plat/voltage.h>
+> +#include <linux/platform_data/smartreflex-omap.h>
+>
+>  /*
+>   * Different Smartreflex IPs version. The v1 is the 65nm version used in
 
-Signed-off-by: Zhang, Lin-Bao <linbao.zhang@hp.com>
-Tested-by: Nigel Croxon <nigel.croxon@hp.com>
+Thanks for the clean-up!
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c index 24deb30..299172c 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1556,7 +1556,6 @@ void __init enable_IR_x2apic(void)
-        }
-
-        local_irq_save(flags);
--       legacy_pic->mask_all();
-        mask_ioapic_entries();
-
-        if (x2apic_preenabled && nox2apic) @@ -1603,7 +1602,6 @@ void __init enable_IR_x2apic(void)
- skip_x2apic:
-        if (ret < 0) /* IR enabling failed */
-                restore_ioapic_entries();
--       legacy_pic->restore_mask();
-        local_irq_restore(flags);
- }
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c index 7c5a8c3..95fee01 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1000,7 +1000,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
-                zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
-        }
-        set_cpu_sibling_map(0);
--
-+       mask_8259A();
-
-        if (smp_sanity_check(max_cpus) < 0) {
-                pr_info("SMP disabled\n"); @@ -1037,6 +1037,8 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
-                apic->setup_portio_remap();
-
-        smpboot_setup_io_apic();
-+       unmask_8259A();
-+
-        /*
-         * Set up local APIC timer on boot CPU.
-         */
-
-
-
--- Bob(Zhang LinBao)
-×ÓÔ»£º¡±²»»¼ÈËÖª²»¼ºÖª,»¼²»ÖªÈËÒ²¡±
-"If not us, who ? if not now, when ?"
-ESSN-MCBS linux kernel enginner
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+Jean
