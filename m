@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442Ab2ILQ3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:29:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34014 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760432Ab2ILQ3I (ORCPT
+	id S1760430Ab2ILQbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:31:31 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48385 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755983Ab2ILQba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:29:08 -0400
-Message-ID: <5050B850.807@wwwdotorg.org>
-Date: Wed, 12 Sep 2012 10:29:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 12 Sep 2012 12:31:30 -0400
+Date: Wed, 12 Sep 2012 22:00:54 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: <marc.zyngier@arm.com>
+Cc: <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>
+Subject: Re: Fwd: [PATCH v9 07/13] ARM: SoC: convert ux500 to SoC descriptor
+Message-ID: <20120912163053.GA10988@bnru02>
+References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
+ <1347461906-13527-8-git-send-email-arnd@arndb.de>
+ <CAE2-_9o5gEpEddGLvRRA=pe=vroTnBXmGmoBO1Ojos-hOJXQAQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Gyungoh Yoo <jack.yoo@maxim-ic.com>, devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 REPOST] mfd: add MAX8907 core driver
-References: <1346973015-7252-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1346973015-7252-1-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAE2-_9o5gEpEddGLvRRA=pe=vroTnBXmGmoBO1Ojos-hOJXQAQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2012 05:10 PM, Stephen Warren wrote:
-> From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
+[...]
+
 > 
-> The MAX8907 is an I2C-based power-management IC containing voltage
-> regulators, a reset controller, a real-time clock, and a touch-screen
-> controller.
+> From: Marc Zyngier <marc.zyngier@arm.com>
+> 
+> Convert ux500 platforms to use the SoC descriptor to provide
+> their SMP and CPU hotplug operations.
+> 
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/mach-ux500/board-mop500.c       |    4 ++++
+>  arch/arm/mach-ux500/hotplug.c            |   36 ++++++++----------------------
+>  arch/arm/mach-ux500/include/mach/setup.h |    3 +++
+>  arch/arm/mach-ux500/platsmp.c            |   18 +++++++++++----
+>  4 files changed, 30 insertions(+), 31 deletions(-)
+> 
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index a534d88..1c6f74b 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -694,6 +694,7 @@ static void __init hrefv60_init_machine(void)
+>  MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
+>         /* Maintainer: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com> */
+>         .atag_offset    = 0x100,
+> +       .smp            = smp_ops(ux500_smp_ops),
+>         .map_io         = u8500_map_io,
+>         .init_irq       = ux500_init_irq,
+>         /* we re-use nomadik timer here */
+> @@ -705,6 +706,7 @@ MACHINE_END
 
-Samuel,
+This looks like mips way doing smp operations.
 
-This patch as-is won't compile due to the mfd_add_devices() API change.
-Do you want to fix this up when you apply (simply add an extra parameter
-"NULL" to the mfd_add_devices() call), or should I send an updated V5
-for this?
+I have not tested the patch series, will do later.
 
-Thanks.
+Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+
+/srinidhi
