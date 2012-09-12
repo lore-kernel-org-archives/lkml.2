@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760632Ab2ILQ7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:59:55 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40192 "EHLO
+	id S1760613Ab2ILQ7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:59:53 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40226 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab2ILQ7k (ORCPT
+	with ESMTP id S932230Ab2ILQ7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Sep 2012 12:59:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521455"
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521457"
 From: David Brown <davidb@codeaurora.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH 13/24] ARM: msm: Add DT support to msm_timer
-Date: Wed, 12 Sep 2012 09:58:49 -0700
-Message-Id: <1347469140-25069-14-git-send-email-davidb@codeaurora.org>
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 15/24] ARM: msm: Make 8660 a DT only target
+Date: Wed, 12 Sep 2012 09:58:51 -0700
+Message-Id: <1347469140-25069-16-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
@@ -29,180 +26,263 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-Add support to setup the MSM timer via information obtained from
-the devicetree.
+We don't plan to support anything besides devicetree on these
+targets so remove all other machine support.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-[davidb@codeaurora.org: Remove leading zeros]
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- .../devicetree/bindings/arm/msm/timer.txt          | 38 ++++++++++
- arch/arm/mach-msm/common.h                         |  1 +
- arch/arm/mach-msm/timer.c                          | 87 ++++++++++++++++++++++
- 3 files changed, 126 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/msm/timer.txt
+ arch/arm/mach-msm/Kconfig         |  27 +---------
+ arch/arm/mach-msm/board-msm8x60.c | 106 ++------------------------------------
+ arch/arm/mach-msm/common.h        |   1 -
+ arch/arm/mach-msm/timer.c         |  12 -----
+ 4 files changed, 6 insertions(+), 140 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/msm/timer.txt b/Documentation/devicetree/bindings/arm/msm/timer.txt
-new file mode 100644
-index 0000000..8c5907b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/msm/timer.txt
-@@ -0,0 +1,38 @@
-+* MSM Timer
-+
-+Properties:
-+
-+- compatible : Should at least contain "qcom,msm-timer". More specific
-+  properties such as "qcom,msm-gpt" and "qcom,msm-dgt" specify a general
-+  purpose timer and a debug timer respectively.
-+
-+- interrupts : Interrupt indicating a match event.
-+
-+- reg : Specifies the base address of the timer registers. The second region
-+  specifies an optional register used to configure the clock divider.
-+
-+- clock-frequency : The frequency of the timer in Hz.
-+
-+Optional:
-+
-+- cpu-offset : per-cpu offset used when the timer is accessed without the
-+  CPU remapping facilities. The offset is cpu-offset * cpu-nr.
-+
-+Example:
-+
-+       timer@200a004 {
-+               compatible = "qcom,msm-gpt", "qcom,msm-timer";
-+               interrupts = <1 2 0x301>;
-+               reg = <0x0200a004 0x10>;
-+               clock-frequency = <32768>;
-+               cpu-offset = <0x40000>;
-+       };
-+
-+       timer@200a024 {
-+               compatible = "qcom,msm-dgt", "qcom,msm-timer";
-+               interrupts = <1 3 0x301>;
-+               reg = <0x0200a024 0x10>,
-+                     <0x0200a034 0x4>;
-+               clock-frequency = <6750000>;
-+               cpu-offset = <0x40000>;
-+       };
-diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
-index 4c2dd16..7d57fb0 100644
---- a/arch/arm/mach-msm/common.h
-+++ b/arch/arm/mach-msm/common.h
-@@ -16,6 +16,7 @@ extern struct sys_timer msm7x01_timer;
- extern struct sys_timer msm7x30_timer;
- extern struct sys_timer msm8x60_timer;
- extern struct sys_timer msm8960_timer;
-+extern struct sys_timer msm_dt_timer;
- extern struct sys_timer qsd8x50_timer;
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 1cd40ad..cd78427 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -38,8 +38,6 @@ config ARCH_QSD8X50
  
- #endif
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index e0b237b..9f9157a 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -20,6 +20,9 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
+ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+-	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM \
+-				  && !MACH_MSM8X60_FFA)
+ 	select ARCH_MSM_SCORPIONMP
+ 	select ARM_GIC
+ 	select CPU_V7
+@@ -47,6 +45,7 @@ config ARCH_MSM8X60
+ 	select GPIO_MSM_V2
+ 	select MSM_GPIOMUX
+ 	select MSM_SCM if SMP
++	select USE_OF
  
- #include <asm/mach/time.h>
+ config ARCH_MSM8960
+ 	bool "MSM8960"
+@@ -112,30 +111,6 @@ config MACH_QSD8X50A_ST1_5
+ 	help
+ 	  Support for the Qualcomm ST1.5.
+ 
+-config MACH_MSM8X60_RUMI3
+-	depends on ARCH_MSM8X60
+-	bool "MSM8x60 RUMI3"
+-	help
+-	  Support for the Qualcomm MSM8x60 RUMI3 emulator.
+-
+-config MACH_MSM8X60_SURF
+-	depends on ARCH_MSM8X60
+-	bool "MSM8x60 SURF"
+-	help
+-	  Support for the Qualcomm MSM8x60 SURF eval board.
+-
+-config MACH_MSM8X60_SIM
+-	depends on ARCH_MSM8X60
+-	bool "MSM8x60 Simulator"
+-	help
+-	  Support for the Qualcomm MSM8x60 simulator.
+-
+-config MACH_MSM8X60_FFA
+-	depends on ARCH_MSM8X60
+-	bool "MSM8x60 FFA"
+-	help
+-	  Support for the Qualcomm MSM8x60 FFA eval board.
+-
+ config MACH_MSM8960_SIM
+ 	depends on ARCH_MSM8960
+ 	bool "MSM8960 Simulator"
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 64c981d..0d32464 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2010, 2011, Code Aurora Forum. All rights reserved.
++/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -10,73 +10,26 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#include <linux/kernel.h>
+-#include <linux/platform_device.h>
+-#include <linux/io.h>
+-#include <linux/irq.h>
+-#include <linux/irqdomain.h>
++#include <linux/init.h>
+ #include <linux/of.h>
+-#include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+-#include <linux/memblock.h>
+ 
+-#include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
  #include <asm/hardware/gic.h>
-@@ -216,6 +219,90 @@ err:
- 	setup_sched_clock(msm_sched_clock_read, sched_bits, dgt_hz);
+-#include <asm/setup.h>
+ 
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ #include "common.h"
+ 
+-static void __init msm8x60_fixup(struct tag *tag, char **cmdline,
+-		struct meminfo *mi)
+-{
+-	for (; tag->hdr.size; tag = tag_next(tag))
+-		if (tag->hdr.tag == ATAG_MEM &&
+-				tag->u.mem.start == 0x40200000) {
+-			tag->u.mem.start = 0x40000000;
+-			tag->u.mem.size += SZ_2M;
+-		}
+-}
+-
+-static void __init msm8x60_reserve(void)
+-{
+-	memblock_remove(0x40000000, SZ_2M);
+-}
+-
+-static void __init msm8x60_map_io(void)
+-{
+-	msm_map_msm8x60_io();
+-}
+-
+-#ifdef CONFIG_OF
+-static struct of_device_id msm_dt_gic_match[] __initdata = {
++static const struct of_device_id msm_dt_gic_match[] __initconst = {
+ 	{ .compatible = "qcom,msm-8660-qgic", .data = gic_of_init },
+ 	{}
+ };
+-#endif
+ 
+ static void __init msm8x60_init_irq(void)
+ {
+-	if (!of_have_populated_dt())
+-		gic_init(0, GIC_PPI_START, MSM_QGIC_DIST_BASE,
+-			 (void *)MSM_QGIC_CPU_BASE);
+-#ifdef CONFIG_OF
+-	else
+-		of_irq_init(msm_dt_gic_match);
+-#endif
+-
+-	/* RUMI does not adhere to GIC spec by enabling STIs by default.
+-	 * Enable/clear is supposed to be RO for STIs, but is RW on RUMI.
+-	 */
+-	if (!machine_is_msm8x60_sim())
+-		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
+-}
+-
+-static void __init msm8x60_init(void)
+-{
++	of_irq_init(msm_dt_gic_match);
  }
  
-+#ifdef CONFIG_OF
-+static const struct of_device_id msm_dgt_match[] __initconst = {
-+	{ .compatible = "qcom,msm-dgt" },
-+	{ },
-+};
-+
-+static const struct of_device_id msm_gpt_match[] __initconst = {
-+	{ .compatible = "qcom,msm-gpt" },
-+	{ },
-+};
-+
-+static void __init msm_dt_timer_init(void)
-+{
-+	struct device_node *np;
-+	u32 freq;
-+	int irq;
-+	struct resource res;
-+	u32 percpu_offset;
-+	void __iomem *dgt_clk_ctl;
-+
-+	np = of_find_matching_node(NULL, msm_gpt_match);
-+	if (!np) {
-+		pr_err("Can't find GPT DT node\n");
-+		return;
-+	}
-+
-+	event_base = of_iomap(np, 0);
-+	if (!event_base) {
-+		pr_err("Failed to map event base\n");
-+		return;
-+	}
-+
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (irq <= 0) {
-+		pr_err("Can't get irq\n");
-+		return;
-+	}
-+	of_node_put(np);
-+
-+	np = of_find_matching_node(NULL, msm_dgt_match);
-+	if (!np) {
-+		pr_err("Can't find DGT DT node\n");
-+		return;
-+	}
-+
-+	if (of_property_read_u32(np, "cpu-offset", &percpu_offset))
-+		percpu_offset = 0;
-+
-+	if (of_address_to_resource(np, 0, &res)) {
-+		pr_err("Failed to parse DGT resource\n");
-+		return;
-+	}
-+
-+	source_base = ioremap(res.start + percpu_offset, resource_size(&res));
-+	if (!source_base) {
-+		pr_err("Failed to map source base\n");
-+		return;
-+	}
-+
-+	if (!of_address_to_resource(np, 1, &res)) {
-+		dgt_clk_ctl = ioremap(res.start + percpu_offset,
-+				      resource_size(&res));
-+		if (!dgt_clk_ctl) {
-+			pr_err("Failed to map DGT control base\n");
-+			return;
-+		}
-+		writel_relaxed(DGT_CLK_CTL_DIV_4, dgt_clk_ctl);
-+		iounmap(dgt_clk_ctl);
-+	}
-+
-+	if (of_property_read_u32(np, "clock-frequency", &freq)) {
-+		pr_err("Unknown frequency\n");
-+		return;
-+	}
-+	of_node_put(np);
-+
-+	msm_timer_init(freq, 32, irq, !!percpu_offset);
-+}
-+
-+struct sys_timer msm_dt_timer = {
-+	.init = msm_dt_timer_init
-+};
-+#endif
-+
- static int __init msm_timer_map(phys_addr_t event, phys_addr_t source)
+ static void __init msm8x60_init_late(void)
+@@ -84,7 +37,6 @@ static void __init msm8x60_init_late(void)
+ 	smd_debugfs_init();
+ }
+ 
+-#ifdef CONFIG_OF
+ static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
+ 	{}
+ };
+@@ -100,56 +52,9 @@ static const char *msm8x60_fluid_match[] __initdata = {
+ 	"qcom,msm8660-surf",
+ 	NULL
+ };
+-#endif /* CONFIG_OF */
+-
+-MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+-	.fixup = msm8x60_fixup,
+-	.reserve = msm8x60_reserve,
+-	.map_io = msm8x60_map_io,
+-	.init_irq = msm8x60_init_irq,
+-	.handle_irq = gic_handle_irq,
+-	.init_machine = msm8x60_init,
+-	.init_late = msm8x60_init_late,
+-	.timer = &msm8x60_timer,
+-MACHINE_END
+-
+-MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
+-	.fixup = msm8x60_fixup,
+-	.reserve = msm8x60_reserve,
+-	.map_io = msm8x60_map_io,
+-	.init_irq = msm8x60_init_irq,
+-	.handle_irq = gic_handle_irq,
+-	.init_machine = msm8x60_init,
+-	.init_late = msm8x60_init_late,
+-	.timer = &msm8x60_timer,
+-MACHINE_END
+-
+-MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
+-	.fixup = msm8x60_fixup,
+-	.reserve = msm8x60_reserve,
+-	.map_io = msm8x60_map_io,
+-	.init_irq = msm8x60_init_irq,
+-	.handle_irq = gic_handle_irq,
+-	.init_machine = msm8x60_init,
+-	.init_late = msm8x60_init_late,
+-	.timer = &msm8x60_timer,
+-MACHINE_END
+-
+-MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
+-	.fixup = msm8x60_fixup,
+-	.reserve = msm8x60_reserve,
+-	.map_io = msm8x60_map_io,
+-	.init_irq = msm8x60_init_irq,
+-	.handle_irq = gic_handle_irq,
+-	.init_machine = msm8x60_init,
+-	.init_late = msm8x60_init_late,
+-	.timer = &msm8x60_timer,
+-MACHINE_END
+ 
+-#ifdef CONFIG_OF
+-/* TODO: General device tree support for all MSM. */
+ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+-	.map_io = msm8x60_map_io,
++	.map_io = msm_map_msm8x60_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.handle_irq = gic_handle_irq,
+ 	.init_machine = msm8x60_dt_init,
+@@ -157,4 +62,3 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.timer = &msm_dt_timer,
+ 	.dt_compat = msm8x60_fluid_match,
+ MACHINE_END
+-#endif /* CONFIG_OF */
+diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
+index 7d57fb0..a20e78e 100644
+--- a/arch/arm/mach-msm/common.h
++++ b/arch/arm/mach-msm/common.h
+@@ -14,7 +14,6 @@
+ 
+ extern struct sys_timer msm7x01_timer;
+ extern struct sys_timer msm7x30_timer;
+-extern struct sys_timer msm8x60_timer;
+ extern struct sys_timer msm8960_timer;
+ extern struct sys_timer msm_dt_timer;
+ extern struct sys_timer qsd8x50_timer;
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 9f9157a..ac1276c 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -346,18 +346,6 @@ struct sys_timer msm7x30_timer = {
+ 	.init = msm7x30_timer_init
+ };
+ 
+-static void __init msm8x60_timer_init(void)
+-{
+-	if (msm_timer_map(0x02000004, 0x02040024))
+-		return;
+-	writel_relaxed(DGT_CLK_CTL_DIV_4, event_base + DGT_CLK_CTL);
+-	msm_timer_init(27000000 / 4, 32, 17, true);
+-}
+-
+-struct sys_timer msm8x60_timer = {
+-	.init = msm8x60_timer_init
+-};
+-
+ static void __init msm8960_timer_init(void)
  {
- 	event_base = ioremap(event, SZ_64);
+ 	if (msm_timer_map(0x0200A004, 0x0208A024))
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
