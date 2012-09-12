@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab2ILXoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:44:07 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933359Ab2ILXoB (ORCPT
+	id S1756505Ab2ILXoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:44:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933381Ab2ILXoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:01 -0400
+	Wed, 12 Sep 2012 19:44:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 17/46] NFS: Alias the nfs module to nfs4
-Date: Wed, 12 Sep 2012 16:39:07 -0700
-Message-Id: <20120912233819.470980208@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 19/46] audit: fix refcounting in audit-tree
+Date: Wed, 12 Sep 2012 16:39:09 -0700
+Message-Id: <20120912233819.675862459@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -30,28 +29,87 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-This allows distros to remove the line from their modprobe
-configuration.
+commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Refcounting of fsnotify_mark in audit tree is broken.  E.g:
+
+                              refcount
+create_chunk
+  alloc_chunk                 1
+  fsnotify_add_mark           2
+
+untag_chunk
+  fsnotify_get_mark           3
+  fsnotify_destroy_mark
+    audit_tree_freeing_mark   2
+  fsnotify_put_mark           1
+  fsnotify_put_mark           0
+  via destroy_list
+    fsnotify_mark_destroy    -1
+
+This was reported by various people as triggering Oops when stopping auditd.
+
+We could just remove the put_mark from audit_tree_freeing_mark() but that would
+break freeing via inode destruction.  So this patch simply omits a put_mark
+after calling destroy_mark or adds a get_mark before.
+
+The additional get_mark is necessary where there's no other put_mark after
+fsnotify_destroy_mark() since it assumes that the caller is holding a reference
+(or the inode is keeping the mark pinned, not the case here AFAICS).
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reported-by: Valentin Avram <aval13@gmail.com>
+Reported-by: Peter Moody <pmoody@google.com>
+Acked-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/super.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -3096,4 +3096,6 @@ static struct dentry *nfs4_referral_moun
- 	return res;
+---
+ kernel/audit_tree.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -256,7 +256,6 @@ static void untag_chunk(struct node *p)
+ 		spin_unlock(&hash_lock);
+ 		spin_unlock(&entry->lock);
+ 		fsnotify_destroy_mark(entry);
+-		fsnotify_put_mark(entry);
+ 		goto out;
+ 	}
+ 
+@@ -299,7 +298,6 @@ static void untag_chunk(struct node *p)
+ 	spin_unlock(&hash_lock);
+ 	spin_unlock(&entry->lock);
+ 	fsnotify_destroy_mark(entry);
+-	fsnotify_put_mark(entry);
+ 	goto out;
+ 
+ Fallback:
+@@ -338,6 +336,7 @@ static int create_chunk(struct inode *in
+ 		spin_unlock(&hash_lock);
+ 		chunk->dead = 1;
+ 		spin_unlock(&entry->lock);
++		fsnotify_get_mark(entry);
+ 		fsnotify_destroy_mark(entry);
+ 		fsnotify_put_mark(entry);
+ 		return 0;
+@@ -418,6 +417,7 @@ static int tag_chunk(struct inode *inode
+ 		spin_unlock(&chunk_entry->lock);
+ 		spin_unlock(&old_entry->lock);
+ 
++		fsnotify_get_mark(chunk_entry);
+ 		fsnotify_destroy_mark(chunk_entry);
+ 
+ 		fsnotify_put_mark(chunk_entry);
+@@ -451,7 +451,6 @@ static int tag_chunk(struct inode *inode
+ 	spin_unlock(&old_entry->lock);
+ 	fsnotify_destroy_mark(old_entry);
+ 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+-	fsnotify_put_mark(old_entry); /* and kill it */
+ 	return 0;
  }
  
-+MODULE_ALIAS("nfs4");
-+
- #endif /* CONFIG_NFS_V4 */
 
 
