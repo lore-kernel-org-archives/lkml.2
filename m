@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2ILBHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 21:07:35 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:57220 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809Ab2ILBHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 21:07:33 -0400
-Date: Tue, 11 Sep 2012 18:07:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
- from interrupt context
-Message-ID: <20120912010720.GM4257@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120904230834.GB11494@jtriplet-mobl1>
- <1346801031.27919.39.camel@gandalf.local.home>
- <20120904233344.GB11855@jtriplet-mobl1>
- <20120904234307.GY2593@linux.vnet.ibm.com>
- <20120906185402.GB5738@jtriplet-mobl1>
- <1346961244.1680.46.camel@gandalf.local.home>
- <20120907060940.GA21166@leaf>
- <20120907142441.GD2462@linux.vnet.ibm.com>
- <20120907144717.GA22059@leaf>
- <1347030967.8178.15.camel@gandalf.local.home>
+	id S1757444Ab2ILBLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 21:11:39 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62605 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab2ILBLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 21:11:38 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-c5-504fe147ee66
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 15/18] perf sched: Use perf_tool as ancestor
+References: <1347407590-30960-1-git-send-email-acme@infradead.org>
+	<1347407590-30960-16-git-send-email-acme@infradead.org>
+Date: Wed, 12 Sep 2012 10:04:43 +0900
+In-Reply-To: <1347407590-30960-16-git-send-email-acme@infradead.org> (Arnaldo
+	Carvalho de Melo's message of "Tue, 11 Sep 2012 20:53:07 -0300")
+Message-ID: <87wr009hlg.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347030967.8178.15.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091201-3534-0000-0000-00000C905AF2
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 11:16:07AM -0400, Steven Rostedt wrote:
-> On Fri, 2012-09-07 at 07:47 -0700, Josh Triplett wrote:
-> > On Fri, Sep 07, 2012 at 07:24:41AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Sep 06, 2012 at 11:09:40PM -0700, Josh Triplett wrote:
-> > > > On Thu, Sep 06, 2012 at 03:54:04PM -0400, Steven Rostedt wrote:
-> > > > > On Thu, 2012-09-06 at 11:54 -0700, Josh Triplett wrote:
-> > > > > > Not sure I see much difference in aesthetics between the three approaches,
-> > > > > > > but am willing to switch over to a generally agreed-upon scheme.
-> > > > > > 
-> > > > > > Steve, could I get an ack from you on the patch I sent?
-> > > > > 
-> > > > > I acked it, but do you just want me to take the patch? I'm getting ready
-> > > > > for another 3.7 push to tip.
-> > > > 
-> > > > Up to Paul.  What would make it easiest to coordinate that patch and the
-> > > > corresponding bits in the RCU patch series?
-> > > 
-> > > All I need to do is to eventually remove the exports, correct?
-> > > If so, full speed ahead!
-> > 
-> > Sounds like you could go ahead and remove the exports now, and just make
-> > sure Steve's push goes in before yours.
-> > 
-> 
-> Is there any rush to do this? I just plan on pushing it for 3.7.
-> 
-> Paul, you just push your changes through tip, right? Then we can just
-> let Ingo know. I could even make the patch a separate branch, that Ingo
-> can pull into the RCU branch too.
+On Tue, 11 Sep 2012 20:53:07 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+> So that we can remove all the globals.
+>
+> Before:
+>
+>    text	   data	    bss	    dec	    hex	filename
+> 1586833	 110368	1438600	3135801	 2fd939	/tmp/oldperf
+>
+> After:
+>
+>    text	   data	    bss	    dec	    hex	filename
+> 1629329	  93568	 848328	2571225	 273bd9	/root/bin/perf
+>
 
-Yep!  But we also need to worry about -next and -fengguang.
+Just a nitpick below.
 
-How about if you push your change into 3.7 and I push mine into 3.8?
+[snip]
+> -static void print_bad_events(void)
+> +static void print_bad_events(struct perf_sched *sched)
+>  {
+> -	if (nr_unordered_timestamps && nr_timestamps) {
+> +	if (sched->nr_unordered_timestamps && sched->nr_timestamps) {
+>  		printf("  INFO: %.3f%% unordered timestamps (%ld out of %ld)\n",
+> -			(double)nr_unordered_timestamps/(double)nr_timestamps*100.0,
+> -			nr_unordered_timestamps, nr_timestamps);
+> +			(double)sched->nr_unordered_timestamps/(double)sched->nr_timestamps*100.0,
 
-							Thanx, Paul
+Isn't it sufficient to use this?
 
+			100.0 * sched->nr_unordered_timestamps / sched->nr_timestamps;
+
+Ditto for belows.
+
+Thanks,
+Namhyung
+
+
+> +			sched->nr_unordered_timestamps, sched->nr_timestamps);
+>  	}
+> -	if (nr_lost_events && nr_events) {
+> +	if (sched->nr_lost_events && sched->nr_events) {
+>  		printf("  INFO: %.3f%% lost events (%ld out of %ld, in %ld chunks)\n",
+> -			(double)nr_lost_events/(double)nr_events*100.0,
+> -			nr_lost_events, nr_events, nr_lost_chunks);
+> +			(double)sched->nr_lost_events/(double)sched->nr_events * 100.0,
+> +			sched->nr_lost_events, sched->nr_events, sched->nr_lost_chunks);
+>  	}
+> -	if (nr_state_machine_bugs && nr_timestamps) {
+> +	if (sched->nr_state_machine_bugs && sched->nr_timestamps) {
+>  		printf("  INFO: %.3f%% state machine bugs (%ld out of %ld)",
+> -			(double)nr_state_machine_bugs/(double)nr_timestamps*100.0,
+> -			nr_state_machine_bugs, nr_timestamps);
+> -		if (nr_lost_events)
+> +			(double)sched->nr_state_machine_bugs/(double)sched->nr_timestamps*100.0,
+> +			sched->nr_state_machine_bugs, sched->nr_timestamps);
+> +		if (sched->nr_lost_events)
+>  			printf(" (due to lost events?)");
+>  		printf("\n");
+>  	}
+> -	if (nr_context_switch_bugs && nr_timestamps) {
+> +	if (sched->nr_context_switch_bugs && sched->nr_timestamps) {
+>  		printf("  INFO: %.3f%% context switch bugs (%ld out of %ld)",
+> -			(double)nr_context_switch_bugs/(double)nr_timestamps*100.0,
+> -			nr_context_switch_bugs, nr_timestamps);
+> -		if (nr_lost_events)
+> +			(double)sched->nr_context_switch_bugs/(double)sched->nr_timestamps*100.0,
+> +			sched->nr_context_switch_bugs, sched->nr_timestamps);
+> +		if (sched->nr_lost_events)
+>  			printf(" (due to lost events?)");
+>  		printf("\n");
+>  	}
+>  }
