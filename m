@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab2ILHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:49:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53741 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab2ILHtH (ORCPT
+	id S1752220Ab2ILH5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:57:17 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:32991 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab2ILH5Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:49:07 -0400
-Date: Wed, 12 Sep 2012 03:49:01 -0400 (EDT)
-Message-Id: <20120912.034901.184817520125489015.davem@davemloft.net>
-To: srivatsa.bhat@linux.vnet.ibm.com
-Cc: nhorman@tuxdriver.com, David.Laight@aculab.com, john.r.fastabend@intel.com,
-        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
-        mark.d.rustad@intel.com, lizefan@huawei.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 PATCH 2/2] netprio_cgroup: Use memcpy instead of the
- for-loop to copy priomap
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120912060747.11037.42623.stgit@srivatsabhat.in.ibm.com>
-References: <20120912060741.11037.37347.stgit@srivatsabhat.in.ibm.com>
-	<20120912060747.11037.42623.stgit@srivatsabhat.in.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Sep 2012 03:57:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <505038E8.6010309@televes.com>
+References: <505038E8.6010309@televes.com>
+Date: Wed, 12 Sep 2012 09:57:15 +0200
+X-Google-Sender-Auth: Y1d229Ds4jjIkCI0rXYDAZiBgrY
+Message-ID: <CAMuHMdXCffH84uqkcuS=Njc0JNGPowN3f7Kwi_32=D7r8OTL9A@mail.gmail.com>
+Subject: Re: Linux based bootloader
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jorge Dominguez <jmadom@televes.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 12 Sep 2012 11:37:47 +0530
+Hi Jorge,
 
-> +		memcpy(new_priomap->priomap, old_priomap->priomap,
-> +			old_priomap->priomap_len *
-> +					sizeof(old_priomap->priomap[0]));
+On Wed, Sep 12, 2012 at 9:25 AM, Jorge Dominguez <jmadom@televes.com> wrote:
+> I find link on Web that describes a module to load other linux kernel or
+> bootloader with a commandline params inside a linux.
+>
+> Works are perform by bootloader kernel module that get kernel, initrd and
+> command line params.
+>
+> http://www.embeddedarm.com/software/arm-linux-bootloader.php
+>
+> Unfortunately, this module has been developed by a private company and
+> payment.
+>
+> All embedded developers are waiting for a module of its kind in the kernel
+> but open source and would greatly facilitate the development of the kernel
+> for these systems without having to flash the kernel or loaded via nfs or
+> other boot method.
+>
+> Send this email after looking at some kernel module that can do this work.
+> Would be very grateful if you could tell me something about it.
+>
+> I don´t subscribe to linux-kernel mailing list, Please send me a CC'ed
+> response
 
-This argument indentation is ridiculous.  Try:
+What about kexec and kboot/petitboot?
 
-		memcpy(new_priomap->priomap, old_priomap->priomap,
-		       old_priomap->priomap_len *
-		       sizeof(old_priomap->priomap[0]));
+Gr{oetje,eeting}s,
 
-Using TABs exclusively for argumentat indentation is not the goal.
+                        Geert
 
-Rather, lining the arguments up properly so that they sit at the first
-column after the first line's openning parenthesis is what you should
-be trying to achieve.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-And ignoring whatever stylistic convention we may or may not have, I
-find it impossibly hard to believe that the code quoted above looks
-good even to you.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
