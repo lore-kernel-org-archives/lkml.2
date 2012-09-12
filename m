@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2IMAcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:32:47 -0400
+	id S1756425Ab2IMAdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:33:18 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab2ILXdY (ORCPT
+	with ESMTP id S932263Ab2ILXdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:24 -0400
+	Wed, 12 Sep 2012 19:33:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 062/108] [media] uvcvideo: Reset the bytesused field when recycling an erroneous buffer
-Date: Wed, 12 Sep 2012 16:29:00 -0700
-Message-Id: <20120912232457.032194488@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 044/108] audit: fix refcounting in audit-tree
+Date: Wed, 12 Sep 2012 16:28:42 -0700
+Message-Id: <20120912232455.150432793@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -31,37 +30,87 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 8a3f0ede2b3f5477122060af1a816c6bbf09fcd2 upstream.
+commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
 
-Buffers marked as erroneous are recycled immediately by the driver if
-the nodrop module parameter isn't set. The buffer payload size is reset
-to 0, but the buffer bytesused field isn't. This results in the buffer
-being immediately considered as complete, leading to an infinite loop in
-interrupt context.
+Refcounting of fsnotify_mark in audit tree is broken.  E.g:
 
-Fix the problem by resetting the bytesused field when recycling the
-buffer.
+                              refcount
+create_chunk
+  alloc_chunk                 1
+  fsnotify_add_mark           2
 
-Signed-off-by: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+untag_chunk
+  fsnotify_get_mark           3
+  fsnotify_destroy_mark
+    audit_tree_freeing_mark   2
+  fsnotify_put_mark           1
+  fsnotify_put_mark           0
+  via destroy_list
+    fsnotify_mark_destroy    -1
+
+This was reported by various people as triggering Oops when stopping auditd.
+
+We could just remove the put_mark from audit_tree_freeing_mark() but that would
+break freeing via inode destruction.  So this patch simply omits a put_mark
+after calling destroy_mark or adds a get_mark before.
+
+The additional get_mark is necessary where there's no other put_mark after
+fsnotify_destroy_mark() since it assumes that the caller is holding a reference
+(or the inode is keeping the mark pinned, not the case here AFAICS).
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reported-by: Valentin Avram <aval13@gmail.com>
+Reported-by: Peter Moody <pmoody@google.com>
+Acked-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/uvc/uvc_queue.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/audit_tree.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_queue.c
-+++ b/drivers/media/video/uvc/uvc_queue.c
-@@ -338,6 +338,7 @@ struct uvc_buffer *uvc_queue_next_buffer
- 	if ((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) {
- 		buf->error = 0;
- 		buf->state = UVC_BUF_STATE_QUEUED;
-+		buf->bytesused = 0;
- 		vb2_set_plane_payload(&buf->buf, 0, 0);
- 		return buf;
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
+ 		spin_unlock(&hash_lock);
+ 		spin_unlock(&entry->lock);
+ 		fsnotify_destroy_mark(entry);
+-		fsnotify_put_mark(entry);
+ 		goto out;
  	}
+ 
+@@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
+ 	spin_unlock(&hash_lock);
+ 	spin_unlock(&entry->lock);
+ 	fsnotify_destroy_mark(entry);
+-	fsnotify_put_mark(entry);
+ 	goto out;
+ 
+ Fallback:
+@@ -332,6 +330,7 @@ static int create_chunk(struct inode *in
+ 		spin_unlock(&hash_lock);
+ 		chunk->dead = 1;
+ 		spin_unlock(&entry->lock);
++		fsnotify_get_mark(entry);
+ 		fsnotify_destroy_mark(entry);
+ 		fsnotify_put_mark(entry);
+ 		return 0;
+@@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode
+ 		spin_unlock(&chunk_entry->lock);
+ 		spin_unlock(&old_entry->lock);
+ 
++		fsnotify_get_mark(chunk_entry);
+ 		fsnotify_destroy_mark(chunk_entry);
+ 
+ 		fsnotify_put_mark(chunk_entry);
+@@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode
+ 	spin_unlock(&old_entry->lock);
+ 	fsnotify_destroy_mark(old_entry);
+ 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+-	fsnotify_put_mark(old_entry); /* and kill it */
+ 	return 0;
+ }
+ 
 
 
