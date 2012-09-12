@@ -1,82 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab2ILJEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:04:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab2ILJEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:04:22 -0400
-Date: Wed, 12 Sep 2012 11:03:59 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] perf tool: Allow wildcard in PMU name
-Message-ID: <20120912090359.GA2882@krava.brq.redhat.com>
-References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
- <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
- <20120911140549.GC3800@krava.brq.redhat.com>
- <504FE5AB.4060406@intel.com>
+	id S1753237Ab2ILJFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:05:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41808 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab2ILJFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 05:05:35 -0400
+Date: Wed, 12 Sep 2012 11:04:58 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-15?Q?Beno=EEt_Th=E9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH 5/7] pwm: i.MX: add devicetree support
+Message-ID: <20120912090458.GN6180@pengutronix.de>
+References: <1347267577-3296-1-git-send-email-s.hauer@pengutronix.de>
+ <1347267577-3296-6-git-send-email-s.hauer@pengutronix.de>
+ <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <504FE5AB.4060406@intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:02:40 up 81 days, 14 min, 58 users,  load average: 0.87, 3.31,
+ 2.48
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 09:30:19AM +0800, Yan, Zheng wrote:
-> On 09/11/2012 10:05 PM, Jiri Olsa wrote:
-> > On Mon, Sep 10, 2012 at 03:53:51PM +0800, Yan, Zheng wrote:
-> >> From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> >>
+On Tue, Sep 11, 2012 at 04:40:43PM +0200, Thierry Reding wrote:
+> On Mon, Sep 10, 2012 at 10:59:35AM +0200, Sascha Hauer wrote:
+> > From: Philipp Zabel <p.zabel@pengutronix.de>
 > > 
-> > SNIP
+> > At the same time remove platform based support. No user for
+> > this driver has made it into mainline so far, so all we break
+> > is out of tree stuff.
 > > 
-> >> +int parse_events_add_pmu(struct list_head **_list, int *idx,
-> >>  			 char *name, struct list_head *head_config)
-> >>  {
-> >>  	struct perf_event_attr attr;
-> >> -	struct perf_pmu *pmu;
-> >> +	struct list_head *list;
-> >> +	struct perf_pmu *pmu = NULL;
-> >> +	struct perf_evsel *evsel, *first = NULL;
-> >> +	int orig_idx = *idx;
-> >>  
-> >> -	pmu = perf_pmu__find(name);
-> >> -	if (!pmu)
-> >> -		return -EINVAL;
-> >> +	list = malloc(sizeof(*list));
-> >> +	if (!list)
-> >> +		return -ENOMEM;
-> >> +	INIT_LIST_HEAD(list);
-> > 
-> > list should be allocated only if (!*_list)) same as in add_event function
-> > 
-> > I haven't test, but I think you'll leak/loose events if there's another pmu
-> > event defined after ','
-> > 
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> > Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+> [...]
 > 
-> I think *_list is always NULL, because the code in parse-event.y is:
+> I was just doing some build tests on the series and noticed that it
+> fails with this:
 > 
-> ---
-> PE_NAME '/' event_config '/'
-> {
-> 	struct parse_events_data__events *data = _data;
-> 	struct list_head *list = NULL;
+> 	  CC [M]  drivers/pwm/pwm-imx.o
+> 	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c: In function 'imx_pwm_config_v2':
+> 	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c:140:2: error: implicit declaration of function 'cpu_is_mx25' [-Werror=implicit-function-declaration]
 > 
-> 	ABORT_ON(parse_events_add_pmu(&list, &data->idx, $1, $3));
-> 	parse_events__free_terms($3);
-> 	$$ = list;
-> }
+> This breaks bisection in the middle of the series. It seems to be
+> related to this change.
 > 
-> ---
+> > diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> > index a1e799e..b4e0ad3 100644
+> > --- a/drivers/pwm/pwm-imx.c
+> > +++ b/drivers/pwm/pwm-imx.c
+> > @@ -16,8 +16,7 @@
+> >  #include <linux/clk.h>
+> >  #include <linux/io.h>
+> >  #include <linux/pwm.h>
+> > -#include <mach/hardware.h>
 > 
-> Regards
-> Yan, Zheng
+> This probably needs to be postponed to the next patch, until the final
+> reference to cpu_is_mx25() is removed.
 
-ouch, we update it in parse_events_update_lists.. then the '!list' check
-is not needed.. I haven't realized we changed that, sry.
+Oops, you are right. I updated the tag accordingly, and did a full
+compile test over this series, so please pull again:
 
-jirka
+
+The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+
+  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+
+are available in the git repository at:
+
+  git://git.pengutronix.de/git/imx/linux-2.6.git tags/imx-pwm-oftree
+
+for you to fetch changes up to a1d38ca9e249e670aa9f608e1cc7491fb4ca45af:
+
+  pwm: i.MX: fix clock lookup (2012-09-12 11:00:55 +0200)
+
+----------------------------------------------------------------
+Cleanup i.MX PWM driver and add devicetree support
+
+----------------------------------------------------------------
+Philipp Zabel (2):
+      pwm: i.MX: add devicetree support
+      pwm: i.MX: fix clock lookup
+
+Sascha Hauer (5):
+      pwm: i.MX: factor out SoC specific functions
+      pwm: i.MX: remove unnecessary if in pwm_[en|dis]able
+      pwm: i.MX: add functions to enable/disable pwm.
+      pwm: i.MX: Use module_platform_driver
+      pwm: i.MX: use per clock unconditionally
+
+ Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++
+ drivers/pwm/pwm-imx.c                             |  278 ++++++++++++++-------
+ 2 files changed, 199 insertions(+), 96 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
