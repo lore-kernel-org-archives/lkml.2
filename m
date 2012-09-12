@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2ILGn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:43:29 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62072 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2ILGnZ (ORCPT
+	id S1757591Ab2ILGn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:43:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49749 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757372Ab2ILGn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:43:25 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-2f-50502f091ab6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/2] perf ui/browser: Fix first column printing
-Date: Wed, 12 Sep 2012 15:35:06 +0900
-Message-Id: <1347431706-7839-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347431706-7839-1-git-send-email-namhyung@kernel.org>
-References: <1347431706-7839-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 12 Sep 2012 02:43:56 -0400
+Date: Wed, 12 Sep 2012 16:43:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, Greg KH <greg@kroah.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: linux-next: manual merge of the tegra tree with the  tree
+Message-Id: <20120912164353.6fb8b35ff534088a79792acd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Sep_2012_16_43_53_+1000_wr_Wy+9NET0Zp+jW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+--Signature=_Wed__12_Sep_2012_16_43_53_+1000_wr_Wy+9NET0Zp+jW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As a side effect of commit f5951d56a2ab ("perf hists browser: Use
-perf_hpp__format functions") perf report TUI got a problem of not
-refreshing the first character.
+Hi all,
 
-Since the previous patch restores the column width of "overhead" to 7
-we can start at column 0 now.
+Today's linux-next merge of the tegra tree got a conflict in
+arch/arm/mach-tegra/devices.c arch/arm/mach-tegra/devices.h between
+commits 2db4ddfe6e23 ("ARM: pmu: remove arm_pmu_type enumeration") from
+the arm-perf tree and 1ba8216f0bc0 ("usb: move phy driver from mach-tegra
+to drivers/usb") from the usb tree and commit ba07ee57d4bc ("ARM: tegra:
+remove dead code") from the tegra tree.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The latter removed the files, so I did that (no action is required).
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 11783170ac62..a21f40bebbac 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -605,7 +605,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	char s[256];
- 	double percent;
- 	int i, printed = 0;
--	int width = browser->b.width - 1;
-+	int width = browser->b.width;
- 	char folded_sign = ' ';
- 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
- 	off_t row_offset = entry->row_offset;
-@@ -627,7 +627,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 			.total_period	= browser->hists->stats.total_period,
- 		};
- 
--		ui_browser__gotorc(&browser->b, row, 1);
-+		ui_browser__gotorc(&browser->b, row, 0);
- 
- 		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
- 			if (!perf_hpp__format[i].cond)
--- 
-1.7.11.4
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__12_Sep_2012_16_43_53_+1000_wr_Wy+9NET0Zp+jW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUC8pAAoJEECxmPOUX5FElxkP/jnZRIx75PNZEQ6HmZ9OrPdq
+CIntP85QBbYVO3VbpBRGpIPntPSb/vpn6xsZ7NtB3khPpkQ6LsFTl5zZJlq4AAiU
+CPxi43706eB3txY1QGeFXY1UT4oHA45tdwWZj8teBZdzcApcPXBQJbe2152+KwiE
++1bUY+aEk1Geg+9rcrGdQANbecNXNHKypTuMYfFY6MQmmW0dtSjuYN4NQBwW/bpa
+5Mml7+pgyYsDcjX9HzO5vvvDXdtmuPzPkTMALK4wTHa7SyJc8cupZenF3o+QZp5e
+EmFOh3iS9VAwlxAP/iIY4qdyJpYOAypZ1AOMs3BvHORxv5nXWd7foI4XfsT+jqkD
+tikyNId/UqFXCa6ttEO4aFmkLuYzqATOxfx+RQQNRWG5IiL/+dsm8zuOrJZR4CGL
+RyMDJjq0MCtbmERWBDjErW1siLk5fqCpoH36PtsBQcOJM+QfSttTHokVcWFZ/Ah4
+NtsgT4EfEv7ERsracqcpDk77upLd9Eiykx7Xa4JoLtgyDxbYwfR0k6Tj8AmSqj1L
+Bwu0cG2Vn6uo7YOmJGH44WX/A5p5/Jf88Y6tymxXxtJyVZFCvZgrXbFUiUl2B8bW
+bJqyoeqWV1fP4T6As4A4CQbUm/LE9Mv8+0Wx7iX9G/GLAUL7tDsIYSmECZfhZd/O
+Rx5BFXspwsleKuTliTk4
+=vb6Y
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Sep_2012_16_43_53_+1000_wr_Wy+9NET0Zp+jW--
