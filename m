@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab2ILESq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 00:18:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54161 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2ILESp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 00:18:45 -0400
-Message-ID: <50500D04.6030907@zytor.com>
-Date: Tue, 11 Sep 2012 21:18:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1751357Ab2ILE02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 00:26:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56353 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab2ILE0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 00:26:25 -0400
+Date: Wed, 12 Sep 2012 12:36:47 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Hugh Dickins <hughd@google.com>, Arvydas Sidorenko <asido4@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, linux-kernel@vger.kernel.org,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Storage related regression in linux-next 20120824
+Message-ID: <20120912043647.GA3084@gmail.com>
+Mail-Followup-To: Jeff Garzik <jgarzik@pobox.com>,
+	Hugh Dickins <hughd@google.com>,
+	Arvydas Sidorenko <asido4@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, linux-kernel@vger.kernel.org,
+	IDE/ATA development list <linux-ide@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com>
+ <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com>
+ <503BA2DB.9080704@gmail.com>
+ <503BB4BB.4080307@gmail.com>
+ <alpine.LSU.2.00.1209090012390.2416@eggly.anvils>
+ <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com>
+ <504CFBE3.401@pobox.com>
+ <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
+ <504D0127.5080807@pobox.com>
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [Resend][PATCH V3] trace,x86: add x86 irq vector tracepoints
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41384F5FD@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41384F5FD@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504D0127.5080807@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2012 05:00 PM, Seiji Aguchi wrote:
-> Thomas,
->
-> Please review my patch as we talked in Plumbers.
->
+On Sun, Sep 09, 2012 at 04:50:47PM -0400, Jeff Garzik wrote:
+> On 09/09/2012 04:36 PM, Hugh Dickins wrote:
+> >On Sun, Sep 9, 2012 at 1:28 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
+> >>I'll send Linus a patch to disable.
+> >
+> >Thanks, but no, the change in question hasn't reached Linus yet, it's
+> >just a linux-next or mmotm thing - isn't it?
+> 
+> Yep, libata-dev#upstream.  Sorry, got my own branches confused for a
+> second there.
 
-Is there any measurable latency added here?  These are some of the most 
-performance- (or at least latency-)critical paths in the kernel.
+Sorry for delay reply.  In our product system, we tested a lot of
+different brands of SATA disks, and it is OK after fua is enabled on
+default.  Certainly we can't test all disks. :-(
 
-	-hpa
+So I think we quite have to revert my patch now, and try to fix the
+current problem.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Regards,
+Zheng
