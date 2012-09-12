@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab2IMAa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:30:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58860 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab2IMAa4 (ORCPT
+	id S932414Ab2ILXd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:33:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab2ILXdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 20:30:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1209091424580.13346@chino.kir.corp.google.com>
-References: <1347137279-17568-1-git-send-email-elezegarcia@gmail.com>
-	<alpine.DEB.2.00.1209091424580.13346@chino.kir.corp.google.com>
-Date: Wed, 12 Sep 2012 21:30:55 -0300
-Message-ID: <CALF0-+WiEz40qbVbCskuc3TfRcMQUr7wJA20_FfnQmGctG3FXQ@mail.gmail.com>
-Subject: Re: [PATCH 01/10] Makefile: Add option CONFIG_DISABLE_GCC_AUTOMATIC_INLINING
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: David Rientjes <rientjes@google.com>, sam@ravnborg.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Sep 2012 19:33:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 055/108] PCI: EHCI: Fix crash during hibernation on ASUS computers
+Date: Wed, 12 Sep 2012 16:28:53 -0700
+Message-Id: <20120912232456.312189147@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
+References: <20120912232816.GA1655@kroah.com>
+ <20120912232450.500619493@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Sun, Sep 9, 2012 at 6:25 PM, David Rientjes <rientjes@google.com> wrote:
-> On Sat, 8 Sep 2012, Ezequiel Garcia wrote:
->
->> diff --git a/Makefile b/Makefile
->> index ddf5be9..df6045a 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -561,6 +561,10 @@ else
->>  KBUILD_CFLAGS        += -O2
->>  endif
->>
->> +ifdef CONFIG_DISABLE_GCC_AUTOMATIC_INLINING
->> +KBUILD_CFLAGS        += -fno-inline-small-functions
->
-> This isn't the only option that controls automatic inlining of functions,
-> see indirect-inlining, inline-functions, and inline-functions-called-once.
->
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-I'll check about this gcc options and re-send, renamed as:
-CONFIG_DISABLE_CC_AUTOMATIC_INLINING
+------------------
 
-Thanks for both your feedback,
-Ezequiel.
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+
+commit 0b68c8e2c3afaf9807eb1ebe0ccfb3b809570aa4 upstream.
+
+Commit dbf0e4c (PCI: EHCI: fix crash during suspend on ASUS
+computers) added a workaround for an ASUS suspend issue related to
+USB EHCI and a bug in a number of ASUS BIOSes that attempt to shut
+down the EHCI controller during system suspend if its PCI command
+register doesn't contain 0 at that time.
+
+It turns out that the same workaround is necessary in the analogous
+hibernation code path, so add it.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45811
+Reported-and-tested-by: Oleksij Rempel <bug-track@fisher-privat.net>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/pci-driver.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -958,6 +958,13 @@ static int pci_pm_poweroff_noirq(struct
+ 	if (!pci_dev->state_saved && !pci_is_bridge(pci_dev))
+ 		pci_prepare_to_sleep(pci_dev);
+ 
++	/*
++	 * The reason for doing this here is the same as for the analogous code
++	 * in pci_pm_suspend_noirq().
++	 */
++	if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
++		pci_write_config_word(pci_dev, PCI_COMMAND, 0);
++
+ 	return 0;
+ }
+ 
+
+
