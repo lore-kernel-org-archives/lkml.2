@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab2ILX6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:58:48 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S1757497Ab2ILX7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:59:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033Ab2ILXmG (ORCPT
+	with ESMTP id S933019Ab2ILXmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:06 -0400
+	Wed, 12 Sep 2012 19:42:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
-Subject: [ 73/85] ext3: Fix fdatasync() for files with only i_size changes
-Date: Wed, 12 Sep 2012 16:36:56 -0700
-Message-Id: <20120912233549.345361741@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ian Abbott <abbotti@mev.co.uk>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 72/85] udf: Fix data corruption for files in ICB
+Date: Wed, 12 Sep 2012 16:36:55 -0700
+Message-Id: <20120912233549.257239297@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,70 +30,93 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Jan Kara <jack@suse.cz>
 
-commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
+commit 9c2fc0de1a6e638fe58c354a463f544f42a90a09 upstream.
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+When a file is stored in ICB (inode), we overwrite part of the file, and
+the page containing file's data is not in page cache, we end up corrupting
+file's data by overwriting them with zeros. The problem is we use
+simple_write_begin() which simply zeroes parts of the page which are not
+written to. The problem has been introduced by be021ee4 (udf: convert to
+new aops).
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
+Fix the problem by providing a ->write_begin function which makes the page
+properly uptodate.
 
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Reported-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/inode.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ fs/udf/file.c |   35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
 
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -3068,6 +3068,8 @@ static int ext3_do_update_inode(handle_t
- 	struct ext3_inode_info *ei = EXT3_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
-+	__le32 disksize;
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -39,20 +39,24 @@
+ #include "udf_i.h"
+ #include "udf_sb.h"
  
- again:
- 	/* we can't allow multiple procs in here at once, its a bit racey */
-@@ -3105,7 +3107,11 @@ again:
- 		raw_inode->i_gid_high = 0;
- 	}
- 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
--	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
-+	disksize = cpu_to_le32(ei->i_disksize);
-+	if (disksize != raw_inode->i_size) {
-+		need_datasync = 1;
-+		raw_inode->i_size = disksize;
-+	}
- 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
- 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
- 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
-@@ -3121,8 +3127,11 @@ again:
- 	if (!S_ISREG(inode->i_mode)) {
- 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
- 	} else {
--		raw_inode->i_size_high =
--			cpu_to_le32(ei->i_disksize >> 32);
-+		disksize = cpu_to_le32(ei->i_disksize >> 32);
-+		if (disksize != raw_inode->i_size_high) {
-+			raw_inode->i_size_high = disksize;
-+			need_datasync = 1;
-+		}
- 		if (ei->i_disksize > 0x7fffffffULL) {
- 			struct super_block *sb = inode->i_sb;
- 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
-@@ -3175,6 +3184,8 @@ again:
- 	ext3_clear_inode_state(inode, EXT3_STATE_NEW);
+-static int udf_adinicb_readpage(struct file *file, struct page *page)
++static void __udf_adinicb_readpage(struct page *page)
+ {
+ 	struct inode *inode = page->mapping->host;
+ 	char *kaddr;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
  
- 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
-+	if (need_datasync)
-+		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
- out_brelse:
- 	brelse (bh);
- 	ext3_std_error(inode->i_sb, err);
+-	BUG_ON(!PageLocked(page));
+-
+ 	kaddr = kmap(page);
+-	memset(kaddr, 0, PAGE_CACHE_SIZE);
+ 	memcpy(kaddr, iinfo->i_ext.i_data + iinfo->i_lenEAttr, inode->i_size);
++	memset(kaddr + inode->i_size, 0, PAGE_CACHE_SIZE - inode->i_size);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	kunmap(page);
++}
++
++static int udf_adinicb_readpage(struct file *file, struct page *page)
++{
++	BUG_ON(!PageLocked(page));
++	__udf_adinicb_readpage(page);
+ 	unlock_page(page);
+ 
+ 	return 0;
+@@ -77,6 +81,25 @@ static int udf_adinicb_writepage(struct
+ 	return 0;
+ }
+ 
++static int udf_adinicb_write_begin(struct file *file,
++			struct address_space *mapping, loff_t pos,
++			unsigned len, unsigned flags, struct page **pagep,
++			void **fsdata)
++{
++	struct page *page;
++
++	if (WARN_ON_ONCE(pos >= PAGE_CACHE_SIZE))
++		return -EIO;
++	page = grab_cache_page_write_begin(mapping, 0, flags);
++	if (!page)
++		return -ENOMEM;
++	*pagep = page;
++
++	if (!PageUptodate(page) && len != PAGE_CACHE_SIZE)
++		__udf_adinicb_readpage(page);
++	return 0;
++}
++
+ static int udf_adinicb_write_end(struct file *file,
+ 			struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned copied,
+@@ -98,8 +121,8 @@ static int udf_adinicb_write_end(struct
+ const struct address_space_operations udf_adinicb_aops = {
+ 	.readpage	= udf_adinicb_readpage,
+ 	.writepage	= udf_adinicb_writepage,
+-	.write_begin = simple_write_begin,
+-	.write_end = udf_adinicb_write_end,
++	.write_begin	= udf_adinicb_write_begin,
++	.write_end	= udf_adinicb_write_end,
+ };
+ 
+ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 
