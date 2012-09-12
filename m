@@ -1,36 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760342Ab2ILQQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:16:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52764 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab2ILQQO (ORCPT
+	id S1760329Ab2ILQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:17:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45446 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760117Ab2ILQRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:16:14 -0400
-Date: Wed, 12 Sep 2012 18:16:09 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Zdenek Kaspar <zkaspar82@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Kbuild: use normal compression settings for tar*-pkg
-Message-ID: <20120912161609.GX16230@one.firstfloor.org>
-References: <1347133679-14641-1-git-send-email-andi@firstfloor.org> <5050B1CA.7090208@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5050B1CA.7090208@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Wed, 12 Sep 2012 12:17:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120912180154.3e620d18@skate>
+References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347266386-16229-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20120911164409.4c030bd8@skate>
+	<504FB869.60201@wwwdotorg.org>
+	<20120912085423.21af58d5@skate>
+	<CACRpkdYVMTbfA++eqRrq6JM0phjN-X-f3N==oXbyVxCyYUVOOA@mail.gmail.com>
+	<20120912180154.3e620d18@skate>
+Date: Wed, 12 Sep 2012 18:17:23 +0200
+Message-ID: <CACRpkdaKFNbgure6ZVfBktQobAv4RJAJXd37wBAeTY19jKqtPw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/9] pinctrl: mvebu: pinctrl driver core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Rob Landley <rob@landley.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maybe add new default compression options or rename actual ones to -hc-
-> (high compression) if users dont like it much?
+On Wed, Sep 12, 2012 at 6:01 PM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
 
-Doesn't sound useful to me. The normal ones are good enough.
+> See for example
+> http://www.marvell.com/embedded-processors/kirkwood/assets/HW_88F6281_OpenSource.pdf,
+> which is the hardware datasheet for the 88F6281 Marvell SoC (Kirkwood
+> family). Table 26 on page 53 of the PDF is a good example. It lists all
+> the pins, on per row, and then has columns for each function identifier
+> (from 0x0 to 0x7). Then each cell says when pin X is muxed in function
+> Y, it provides this functionality.
+>
+> So clearly, this representation is a list of pins, and for each pin, a
+> list of possible functions that this pin can take.
 
--Andi
+OK the ux500 datasheet looks more or less the same. What I did was
+to define the groups that made sense for each column (our columns are
+named a,b,c), so you can see the result in
+drivers/pinctrl/pinctrl-nomadik-db8500.c
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+In your case I would have defined groups like this:
+
+#define PIN_MPP18 18
+#define PIN_MPP19 19
+(...)
+static const struct pinctrl_pin_desc nmk_db8500_pins[] = {
+        PINCTRL_PIN(PIN_MPP18, "MPP[18]"),
+        PINCTRL_PIN(PIN_MPP19, "MPP[19]"),
+(...)
+};
+static const unsigned mpp_1_pins[] = { PIN_MPP18, PIN_MPP19);
+
+Then I'd register this as a group, then map the groups to
+functions.
+
+But maybe this is just stupid in your case, you'd have to tell.
+(Maybe it's my driver that sucks, I don't know.)
+
+Linus Walleij
+
+Yours,
+Linus Walleij
