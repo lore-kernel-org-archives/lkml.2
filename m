@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab2ILP2N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:28:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755389Ab2ILP2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:28:10 -0400
-Date: Wed, 12 Sep 2012 12:27:56 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 12/12] KVM: indicate readonly access fault
-Message-ID: <20120912152756.GA18155@amt.cnet>
-References: <5032F8FD.2020306@linux.vnet.ibm.com>
- <5032FA78.9040405@linux.vnet.ibm.com>
- <5034CB60.30107@redhat.com>
- <5034D4E3.2080801@linux.vnet.ibm.com>
- <5048AE96.3050909@redhat.com>
- <5049C4D7.50101@linux.vnet.ibm.com>
- <20120910223140.GA24275@amt.cnet>
- <504F01DE.20505@redhat.com>
- <20120911143901.GA11792@amt.cnet>
+	id S1759456Ab2ILPaD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:30:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36029 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab2ILPaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:30:00 -0400
+Message-ID: <5050AA74.6050408@wwwdotorg.org>
+Date: Wed, 12 Sep 2012 09:29:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911143901.GA11792@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: Venu Byravarasu <vbyravarasu@nvidia.com>, linux-kernel@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] usb: move phy driver from mach-tegra to drivers/usb
+References: <1346851223-29180-1-git-send-email-vbyravarasu@nvidia.com> <504F681E.4070402@wwwdotorg.org> <20120912134919.GR5732@arwen.pp.htv.fi>
+In-Reply-To: <20120912134919.GR5732@arwen.pp.htv.fi>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:39:01AM -0300, Marcelo Tosatti wrote:
-> On Tue, Sep 11, 2012 at 12:18:22PM +0300, Avi Kivity wrote:
-> > > The same can happen with slot deletion, for example. 
-> > > 
-> > > Userspace (which performed the modification which can result in faults
-> > > to non-existant/read-only/.../new-tag memslot), must handle the faults 
-> > > properly or avoid the possibility for reference to memslot information 
-> > > from the past.
-> > > 
-> > > I think its worthwhile to add a note about this in the API
-> > > documentation: "The user of this interface is responsible for handling 
-> > > references to stale memslot information, either by handling
-> > > exit notifications which reference stale memslot information or not
-> > > allowing these notifications to exist by stopping all vcpus in userspace
-> > > before performing modifications to the memslots map".
-> > 
-> > Or we can drop the new interface and rely on userspace to perform the
-> > lookup under its own locking rules.
-> > 
-> > It's slow, but writes to ROM or ROM/device are rare anyway.
+On 09/12/2012 07:49 AM, Felipe Balbi wrote:
+> On Tue, Sep 11, 2012 at 10:34:38AM -0600, Stephen Warren wrote:
+>> On 09/05/2012 07:20 AM, Venu Byravarasu wrote:
+>>> As part of this patch: 1. Moved existing tegra phy driver to
+>>> drivers/USB directory. 2. Added standard USB phy driver APIs to
+>>> tegra phy driver.
+>>> 
+>>> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+>> 
+>> Felipe,
+>> 
+>> I see this patch hasn't been applied yet. Can I ask that it be
+>> deferred to 3.8 rather than being applied for 3.7. The reason is
+>> that in 3.7, I want to add a new include of the header that this
+>> patch moves, and without merging the Tegra and USB PHY trees
+>> together, the two patches together would cause a build break.
+>> Now, it's a little late to merge the branches, since I need to
+>> send my pull requests in about 3 days, so they hit arm-soc by
+>> 3.6-rc6.
 > 
-> Lookup what information? 
+> According to git I've applied this on September 5th:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/balbi/usb.git;a=commit;h=1ba8216f0bc02af6ba70d1108d60eb1b064395e4
 
-Ping? 
+Sorry,
+> 
+I had not noticed that; that branch isn't in linux-next, and I
+didn't see any email notification that the patch was applied.
 
-
+As discussed off-list, I'll resolve this by rebasing the relevant
+Tegra branch on top of your xceiv branch's pull request tag. Sorry for
+the confusion.
