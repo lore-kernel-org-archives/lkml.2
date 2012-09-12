@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab2ILXpX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:45:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933421Ab2ILXpP (ORCPT
+	id S933454Ab2ILXp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:45:27 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933437Ab2ILXpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:45:15 -0400
+	Wed, 12 Sep 2012 19:45:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        Adam Radford <aradford@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 36/46] SCSI: megaraid_sas: Move poll_aen_lock initializer
-Date: Wed, 12 Sep 2012 16:39:26 -0700
-Message-Id: <20120912233821.443691723@linuxfoundation.org>
+Subject: [ 44/46] PARISC: Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Wed, 12 Sep 2012 16:39:34 -0700
+Message-Id: <20120912233822.280525638@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -30,42 +29,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kashyap Desai <Kashyap.Desai@lsi.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
+commit bba3d8c3b3c0f2123be5bc687d1cddc13437c923 upstream.
 
-The following patch moves the poll_aen_lock initializer from
-megasas_probe_one() to megasas_init().  This prevents a crash when a user
-loads the driver and tries to issue a poll() system call on the ioctl
-interface with no adapters present.
+The following build error occured during a parisc build with
+swap-over-NFS patches applied.
 
-Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
-Signed-off-by: Adam Radford <aradford@gmail.com>
+net/core/sock.c:274:36: error: initializer element is not constant
+net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+net/core/sock.c:274:36: error: initializer element is not constant
+
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
+
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/parisc/include/asm/atomic.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4052,7 +4052,6 @@ megasas_probe_one(struct pci_dev *pdev,
- 	spin_lock_init(&instance->cmd_pool_lock);
- 	spin_lock_init(&instance->hba_lock);
- 	spin_lock_init(&instance->completion_lock);
--	spin_lock_init(&poll_aen_lock);
+--- a/arch/parisc/include/asm/atomic.h
++++ b/arch/parisc/include/asm/atomic.h
+@@ -248,7 +248,7 @@ static __inline__ int atomic_add_unless(
  
- 	mutex_init(&instance->aen_mutex);
- 	mutex_init(&instance->reset_mutex);
-@@ -5380,6 +5379,8 @@ static int __init megasas_init(void)
- 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
- 	       MEGASAS_EXT_VERSION);
+ #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
  
-+	spin_lock_init(&poll_aen_lock);
-+
- 	support_poll_for_event = 2;
- 	support_device_change = 1;
+-#define ATOMIC_INIT(i)	((atomic_t) { (i) })
++#define ATOMIC_INIT(i)	{ (i) }
  
+ #define smp_mb__before_atomic_dec()	smp_mb()
+ #define smp_mb__after_atomic_dec()	smp_mb()
+@@ -257,7 +257,7 @@ static __inline__ int atomic_add_unless(
+ 
+ #ifdef CONFIG_64BIT
+ 
+-#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
++#define ATOMIC64_INIT(i) { (i) }
+ 
+ static __inline__ s64
+ __atomic64_add_return(s64 i, atomic64_t *v)
 
 
