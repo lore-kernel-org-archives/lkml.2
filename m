@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab2IMATT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:19:19 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
+	id S932678Ab2IMATR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:19:17 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50843 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab2ILXgg (ORCPT
+	with ESMTP id S1756693Ab2ILXgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:36:36 -0400
+	Wed, 12 Sep 2012 19:36:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Ronny Hegewald <ronny.hegewald@online.de>,
-        Stefano Panella <stefano.panella@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 102/108] xen: Use correct masking in xen_swiotlb_alloc_coherent.
-Date: Wed, 12 Sep 2012 16:29:40 -0700
-Message-Id: <20120912232501.199743008@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>, William Cohen <wcohen@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 105/108] uprobes: Fix mmap_region()s mm->mm_rb corruption if uprobe_mmap() fails
+Date: Wed, 12 Sep 2012 16:29:43 -0700
+Message-Id: <20120912232501.510809318@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -32,56 +32,78 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ronny Hegewald <ronny.hegewald@online.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit b5031ed1be0aa419250557123633453753181643 upstream.
+commit c7a3a88c938fbe3d70c2278e082b80eb830d1c58 upstream.
 
-When running 32-bit pvops-dom0 and a driver tries to allocate a coherent
-DMA-memory the xen swiotlb-implementation returned memory beyond 4GB.
+This patch fixes:
 
-The underlaying reason is that if the supplied driver passes in a
-DMA_BIT_MASK(64) ( hwdev->coherent_dma_mask is set to 0xffffffffffffffff)
-our dma_mask will be u64 set to 0xffffffffffffffff even if we set it to
-DMA_BIT_MASK(32) previously. Meaning we do not reset the upper bits.
-By using the dma_alloc_coherent_mask function - it does the proper casting
-and we get 0xfffffffff.
+  https://bugzilla.redhat.com/show_bug.cgi?id=843640
 
-This caused not working sound on a system with 4 GB and a 64-bit
-compatible sound-card with sets the DMA-mask to 64bit.
+If mmap_region()->uprobe_mmap() fails, unmap_and_free_vma path
+does unmap_region() but does not remove the soon-to-be-freed vma
+from rb tree. Actually there are more problems but this is how
+William noticed this bug.
 
-On bare-metal and the forward-ported xen-dom0 patches from OpenSuse a coherent
-DMA-memory is always allocated inside the 32-bit address-range by calling
-dma_alloc_coherent_mask.
+Perhaps we could do do_munmap() + return in this case, but in
+fact it is simply wrong to abort if uprobe_mmap() fails. Until
+at least we move the !UPROBE_COPY_INSN code from
+install_breakpoint() to uprobe_register().
 
-This patch adds the same functionality to xen swiotlb and is a rebase of the
-original patch from Ronny Hegewald which never got upstream b/c the
-underlaying reason was not understood until now.
+For example, uprobe_mmap()->install_breakpoint() can fail if the
+probed insn is not supported (remember, uprobe_register()
+succeeds if nobody mmaps inode/offset), mmap() should not fail
+in this case.
 
-The original email with the original patch is in:
-http://old-list-archives.xen.org/archives/html/xen-devel/2010-02/msg00038.html
-the original thread from where the discussion started is in:
-http://old-list-archives.xen.org/archives/html/xen-devel/2010-01/msg00928.html
+dup_mmap()->uprobe_mmap() is wrong too by the same reason,
+fork() can race with uprobe_register() and fail for no reason if
+it wins the race and does install_breakpoint() first.
 
-Signed-off-by: Ronny Hegewald <ronny.hegewald@online.de>
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-Acked-By: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+And, if nothing else, both mmap_region() and dup_mmap() return
+success if uprobe_mmap() fails. Change them to ignore the error
+code from uprobe_mmap().
+
+Reported-and-tested-by: William Cohen <wcohen@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: William Cohen <wcohen@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20120819171042.GB26957@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/swiotlb-xen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/fork.c |    4 ++--
+ mm/mmap.c     |    5 ++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -232,7 +232,7 @@ xen_swiotlb_alloc_coherent(struct device
- 		return ret;
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -459,8 +459,8 @@ static int dup_mmap(struct mm_struct *mm
+ 		if (retval)
+ 			goto out;
  
- 	if (hwdev && hwdev->coherent_dma_mask)
--		dma_mask = hwdev->coherent_dma_mask;
-+		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
+-		if (file && uprobe_mmap(tmp))
+-			goto out;
++		if (file)
++			uprobe_mmap(tmp);
+ 	}
+ 	/* a new mm has just been created */
+ 	arch_dup_mmap(oldmm, mm);
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1355,9 +1355,8 @@ out:
+ 	} else if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
+ 		make_pages_present(addr, addr + len);
  
- 	phys = virt_to_phys(ret);
- 	dev_addr = xen_phys_to_bus(phys);
+-	if (file && uprobe_mmap(vma))
+-		/* matching probes but cannot insert */
+-		goto unmap_and_free_vma;
++	if (file)
++		uprobe_mmap(vma);
+ 
+ 	return addr;
+ 
 
 
