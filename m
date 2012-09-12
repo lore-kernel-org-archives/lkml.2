@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2ILXvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:51:04 -0400
+	id S933119Ab2ILXve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:51:34 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756955Ab2ILXoY (ORCPT
+	with ESMTP id S933384Ab2ILXoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:24 -0400
+	Wed, 12 Sep 2012 19:44:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Sreekanth Reddy <sreekanth.reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 37/46] SCSI: mpt2sas: Fix for Driver oops, when loading driver with max_queue_depth command line option to a very small value
-Date: Wed, 12 Sep 2012 16:39:27 -0700
-Message-Id: <20120912233821.552343377@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 20/46] svcrpc: fix BUG() in svc_tcp_clear_pages
+Date: Wed, 12 Sep 2012 16:39:10 -0700
+Message-Id: <20120912233819.777174328@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -29,60 +28,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
+commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
 
-If the specified max_queue_depth setting is less than the
-expected number of internal commands, then driver will calculate
-the queue depth size to a negitive number. This negitive number
-is actually a very large number because variable is unsigned
-16bit integer. So, the driver will ask for a very large amount of
-memory for message frames and resulting into oops as memory
-allocation routines will not able to handle such a large request.
+Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
+consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
+sk_tcplen would lead us to expect n pages of data).
 
-So, in order to limit this kind of oops, The driver need to set
-the max_queue_depth to a scsi mid layer's can_queue value. Then
-the overall message frames required for IO is minimum of either
-(max_queue_depth plus internal commands) or the IOC global
-credits.
+svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
+This is OK, since both functions are serialized by XPT_BUSY.  However,
+that means the inconsistency must be repaired before dropping XPT_BUSY.
 
-Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Therefore we should be ensuring that svc_tcp_save_pages repairs the
+problem before exiting svc_tcp_recv_record on error.
+
+Symptoms were a BUG() in svc_tcp_clear_pages.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/sunrpc/svcsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2140,10 +2140,13 @@ _base_allocate_memory_pools(struct MPT2S
- 	}
- 
- 	/* command line tunables  for max controller queue depth */
--	if (max_queue_depth != -1)
--		max_request_credit = (max_queue_depth < facts->RequestCredit)
--		    ? max_queue_depth : facts->RequestCredit;
--	else
-+	if (max_queue_depth != -1 && max_queue_depth != 0) {
-+		max_request_credit = min_t(u16, max_queue_depth +
-+			ioc->hi_priority_depth + ioc->internal_depth,
-+			facts->RequestCredit);
-+		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
-+			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
-+	} else
- 		max_request_credit = min_t(u16, facts->RequestCredit,
- 		    MAX_HBA_QUEUE_DEPTH);
- 
-@@ -2218,7 +2221,7 @@ _base_allocate_memory_pools(struct MPT2S
- 	/* set the scsi host can_queue depth
- 	 * with some internal commands that could be outstanding
- 	 */
--	ioc->shost->can_queue = ioc->scsiio_depth - (2);
-+	ioc->shost->can_queue = ioc->scsiio_depth;
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
- 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
- 
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1122,9 +1122,9 @@ static int svc_tcp_recvfrom(struct svc_r
+ 	if (len >= 0)
+ 		svsk->sk_tcplen += len;
+ 	if (len != want) {
++		svc_tcp_save_pages(svsk, rqstp);
+ 		if (len < 0 && len != -EAGAIN)
+ 			goto err_other;
+-		svc_tcp_save_pages(svsk, rqstp);
+ 		dprintk("svc: incomplete TCP record (%d of %d)\n",
+ 			svsk->sk_tcplen, svsk->sk_reclen);
+ 		goto err_noclose;
 
 
