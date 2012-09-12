@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab2ILJ5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:57:42 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:54006 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755633Ab2ILJ5i (ORCPT
+	id S1755707Ab2ILKE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:04:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56582 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab2ILKE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:57:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120912094648.GX13739@n2100.arm.linux.org.uk>
-References: <1347434328-7207-1-git-send-email-wzch@marvell.com>
- <CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
- <20120912085445.GW13739@n2100.arm.linux.org.uk> <CAMQu2gx_Wk259F2PNY-T5H1N04i-JwseO5mPNw7xZ__tjonw1A@mail.gmail.com>
- <20120912094648.GX13739@n2100.arm.linux.org.uk>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Wed, 12 Sep 2012 15:27:16 +0530
-Message-ID: <CAMQu2gwN6XFfuuRnZgyaETx1qi6KSHVL+0gHHLgWL-s3kxJ4-Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: suspend: use flush range instead of flush all
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: wzch <wzch@marvell.com>, Dave Martin <dave.martin@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Sep 2012 06:04:56 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@avionic-design.de, sachin.kamat@linaro.org,
+        patches@linaro.org
+Subject: [PATCH v4] pwm: Fix compilation error when CONFIG_PWM is not defined
+Date: Wed, 12 Sep 2012 15:31:46 +0530
+Message-Id: <1347444106-30509-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 3:16 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Sep 12, 2012 at 02:40:45PM +0530, Shilimkar, Santosh wrote:
->> On Wed, Sep 12, 2012 at 2:24 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > On Wed, Sep 12, 2012 at 01:13:33PM +0530, Shilimkar, Santosh wrote:
->> >> On Wed, Sep 12, 2012 at 12:48 PM, wzch <wzch@marvell.com> wrote:
->> >> >  void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
->> >> >  {
->> >> > +       u32 *ptr_orig = ptr;
->> >> >         *save_ptr = virt_to_phys(ptr);
->> >> >
->> >> >         /* This must correspond to the LDM in cpu_resume() assembly */
->> >> > @@ -26,7 +27,8 @@ void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
->> >> >
->> >> >         cpu_do_suspend(ptr);
->> >> >
->> >> > -       flush_cache_all();
->> >> Lorenzo's patch was limiting above flush to local cache (LOUs) instead
->> >> of dropping it completely.
->> >
->> > Err, that is wrong.  Normally, when CPUs go into suspend, the L1 cache is
->> > lost entirely.  This is the only flush which many CPUs see of the L1
->> > cache.
->> >
->> > So removing this flush _will_ break suspend to RAM on existing CPUs.
->>
->> As mentioned, keeping that flush till inner shareability domain(L1) should be
->> enough. In fact if that part gets pushed down to the finisher() which any
->> way needs to take care of the cache maintenance, we can get rid of completely.
->
-> It is difficult to call the cache maintenance functions from assembly.
-> Why not have the generic code do the inner shareability flush, and then
-> leave the responsibility for any further cache maintenance caused by the
-> actions of the finisher to the finisher to deal with - as it is now.
->
-> That way we end up with more generic code, and don't go back to the
-> rediculous situation where we had everyone implementing this crap in
-> their own broken way time and time again in their platform code.
+Add dummy implemention of public symbols for compilation-safe inclusion
+of include/linux/pwm.h file when CONFIG_PWM is not defined.
 
-Fully agree with you.
-Leaving the local cache flush should be better choice and that
-is the additional bit Lorenzo's patch(yet to be posted) is doing on top
-of the $subject patch. If the platform has special need like secure
-cache maintenance, they can take care of that additionally in the
-finisher.
+Reported-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+Changes since v3:
+* Nitpicks
 
-Regards
-Santosh
+Changes since v2:
+* #if condition for legacy functions modified
+* Reverted layout changes, can be taken up when HAVE_PWM is no longer
+required.
+
+Changes since v1:
+* Incorporated Thierry's suggestions regarding adding dummy function
+implemention for all global functions
+* Reorganized header file to have structure definitions first and then the
+function definitions.
+
+ include/linux/pwm.h |   71 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 69 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 21d076c..946651d 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -6,6 +6,7 @@
+ struct pwm_device;
+ struct seq_file;
+ 
++#if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
+ /*
+  * pwm_request - request a PWM device
+  */
+@@ -30,8 +31,31 @@ int pwm_enable(struct pwm_device *pwm);
+  * pwm_disable - stop a PWM output toggling
+  */
+ void pwm_disable(struct pwm_device *pwm);
++#else
++static inline struct pwm_device *pwm_request(int pwm_id, const char *label)
++{
++	return NULL;
++}
++
++static inline void pwm_free(struct pwm_device *pwm)
++{
++}
++
++static inline int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
++{
++	return -EINVAL;
++}
++
++static inline int pwm_enable(struct pwm_device *pwm)
++{
++	return -EINVAL;
++}
++
++static inline void pwm_disable(struct pwm_device *pwm)
++{
++}
++#endif
+ 
+-#ifdef CONFIG_PWM
+ struct pwm_chip;
+ 
+ enum {
+@@ -113,6 +137,7 @@ struct pwm_chip {
+ 	unsigned int		of_pwm_n_cells;
+ };
+ 
++#if IS_ENABLED(CONFIG_PWM)
+ int pwm_set_chip_data(struct pwm_device *pwm, void *data);
+ void *pwm_get_chip_data(struct pwm_device *pwm);
+ 
+@@ -124,6 +149,44 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ 
+ struct pwm_device *pwm_get(struct device *dev, const char *consumer);
+ void pwm_put(struct pwm_device *pwm);
++#else
++static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
++{
++	return -EINVAL;
++}
++
++static inline void *pwm_get_chip_data(struct pwm_device *pwm)
++{
++	return NULL;
++}
++
++static inline int pwmchip_add(struct pwm_chip *chip)
++{
++	return -EINVAL;
++}
++
++static inline int pwmchip_remove(struct pwm_chip *chip)
++{
++	return -EINVAL;
++}
++
++static inline struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
++						       unsigned int index,
++						       const char *label)
++{
++	return NULL;
++}
++
++static inline struct pwm_device *pwm_get(struct device *dev,
++					 const char *consumer)
++{
++	return NULL;
++}
++
++static inline void pwm_put(struct pwm_device *pwm)
++{
++}
++#endif
+ 
+ struct pwm_lookup {
+ 	struct list_head list;
+@@ -141,8 +204,12 @@ struct pwm_lookup {
+ 		.con_id = _con_id,			\
+ 	}
+ 
++#if IS_ENABLED(CONFIG_PWM)
+ void pwm_add_table(struct pwm_lookup *table, size_t num);
+-
++#else
++static inline void pwm_add_table(struct pwm_lookup *table, size_t num)
++{
++}
+ #endif
+ 
+ #endif /* __LINUX_PWM_H */
+-- 
+1.7.4.1
+
