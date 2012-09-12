@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2ILWIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 18:08:36 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42142 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab2ILWIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 18:08:34 -0400
-Message-ID: <505107DF.5020105@gmail.com>
-Date: Wed, 12 Sep 2012 17:08:31 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754795Ab2ILWL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 18:11:27 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:50603 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753837Ab2ILWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 18:11:26 -0400
+Date: Thu, 13 Sep 2012 00:11:16 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Cc: horms@verge.net.au, magnus.damm@gmail.com, hjk@hansjkoch.de,
+        linux-sh@vger.kernel.org, hdk@igel.co.jp, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH 0/2] Add UIO device supporting dynamic memory
+ allocation
+Message-ID: <20120912221116.GB5097@local>
+References: <1347427785-9767-1-git-send-email-dhobsong@igel.co.jp>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Cyril Chemparathy <cyril@ti.com>, linux-mips@linux-mips.org,
-        x86@kernel.org, a-jacquiot@ti.com, mahesh@linux.vnet.ibm.com,
-        linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        paul.gortmaker@windriver.com, paulus@samba.org, hpa@zytor.com,
-        m.szyprowski@samsung.com, jonas@southpole.se, linux@arm.linux.org.uk,
-        linux-c6x-dev@linux-c6x.org, nico@linaro.org, david.daney@cavium.com,
-        mingo@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        benh@kernel.crashing.org, suzuki@in.ibm.com, linux@openrisc.net,
-        arnd@arndb.de, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, msalter@redhat.com,
-        rob.herring@calxeda.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        dhowells@redhat.com, monstr@monstr.eu, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, tj@kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] of: specify initrd location using 64-bit
-References: <1347465937-7056-1-git-send-email-cyril@ti.com> <CAMuHMdUuQzD0bq8PifBea2-0Pk7RhmPA0-GAFprsk+vMxMGjGw@mail.gmail.com> <5050CE33.9060909@ti.com> <5050E965.5080405@linutronix.de>
-In-Reply-To: <5050E965.5080405@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347427785-9767-1-git-send-email-dhobsong@igel.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 02:58 PM, Sebastian Andrzej Siewior wrote:
-> On 09/12/2012 08:02 PM, Cyril Chemparathy wrote:
->>>> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
->>>> unsigned long end)
->>>> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
->>>
->>> Why not phys_addr_t?
->>>
->>
->> The rest of the memory specific bits of the device-tree code use u64 for
->> addresses, and I kept it the same for consistency.
+On Wed, Sep 12, 2012 at 02:29:43PM +0900, Damian Hobson-Garcia wrote:
+> Reposting: I realized that this series should have gone out to a broader list.
+
+You forgot GregKH, I added him.
+
+> My apologies to those who those who will recieve a duplicate post. 
 > 
-> Geert is right here. If it is a physical address, it should be
-> phys_addr_t.
+> Hello all,
+> 
+> I've been using this UIO driver for allocation/deallocation
+> of memory regions through an IOMMU via the dma-mapping API, but
+> it seems that it would be more generally useful for userspace drivers
+> to access CMA memory regions. I don't know if it's useful to try to add
+> this functionality into the core uio driver or not, so for now I've kept
+> all dynamic memory handling in the specific device driver.
+> 
+> The number and size of the dynamically allocatable regions is defined
+> statically in the device platform data, and the actually memory is
+> allocated and deallocated when the device is opened/closed.
+> 
+> Details of the dynamically allocated regions are available from sysfs in
+> exactly the same was as for static regions. The total number of
+> dynamic and static regions combined cannot exceed MAX_UIO_MAPS.
+> 
+> Any comments, especially with regard to exposing the dma-mapping API to
+> userspace in this way, would be greatly appreciated.
+> 
+> Damian Hobson-Garcia (2):
+>   Add new uio device for dynamic memory allocation
+>   ARM: shmobile: sh7372: Change VPU UIO to uio_dmem_genirq
+> 
+>  arch/arm/mach-shmobile/setup-sh7372.c         |   19 +-
+>  drivers/uio/Kconfig                           |   16 ++
+>  drivers/uio/Makefile                          |    1 +
+>  drivers/uio/uio_dmem_genirq.c                 |  356 +++++++++++++++++++++++++
+>  include/linux/platform_data/uio_dmem_genirq.h |   26 ++
+>  5 files changed, 413 insertions(+), 5 deletions(-)
+>  create mode 100644 drivers/uio/uio_dmem_genirq.c
+>  create mode 100644 include/linux/platform_data/uio_dmem_genirq.h
 
-While generally true, for the DT specific code I think it should be a
-fixed u64. The size of the address is defined by the FDT, not the
-kernel. It is very likely we could have a FDT that specifies addresses
-in 64-bit values, but then we boot a kernel is compiled for !LPAE.
-phys_addr_t is currently sized based on LPAE setting.
+Please add a third patch with a few words for Documentation/DocBook/uio-howto.tmpl
+since this driver could be useful for other people, too.
 
-Also, this is how the memory and reserved nodes are handled currently,
-so we should be consistent.
+Otherwise, looks good to me.
 
-Rob
-
+Thanks,
+Hans
