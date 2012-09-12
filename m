@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2ILIS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:18:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab2ILIS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:18:56 -0400
-Message-ID: <5050454E.5020301@redhat.com>
-Date: Wed, 12 Sep 2012 10:18:22 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1755357Ab2ILIUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:20:33 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36964 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab2ILIUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:20:30 -0400
+Message-ID: <505045CA.7080504@suse.cz>
+Date: Wed, 12 Sep 2012 10:20:26 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-References: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>  <20120911165953.GK7677@google.com> <504F7B65.9090603@redhat.com> <1347437141.2793.2.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1347437141.2793.2.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
+To: Avi Kivity <avi@redhat.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: qemu-kvm loops after kernel udpate
+References: <504F7ED8.1030702@suse.cz> <20120911190303.GA3626@amt.cnet> <504F93F1.2060005@suse.cz> <50504299.2050205@redhat.com> <50504439.3050700@suse.cz> <5050453B.6040702@redhat.com>
+In-Reply-To: <5050453B.6040702@redhat.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/09/2012 10:05, James Bottomley ha scritto:
-> This is why the whole filter thing was mutable via sysfs.  That way the
-> admin could set this up per device.  It sounds like this is what you
-> want to fix, rather than opening up more holes in an already leaky
-> security apparatus.
+On 09/12/2012 10:18 AM, Avi Kivity wrote:
+> On 09/12/2012 11:13 AM, Jiri Slaby wrote:
+>> kvm statistics
+>>
+>>  exits                                      6778198  615942
+>>  host_state_reload                             1988     187
+>>  irq_exits                                     1523     138
+>>  mmu_cache_miss                                   4       0
+>>  fpu_reload                                       1       0
+> 
+> Please run this as root so we get the tracepoint based output; and press
+> 'x' when it's running so we get more detailed output.
 
-It is, thanks for the useful history lesson!
+I need to build a kernel with trace points enabled first... I will
+return later today.
 
-Paolo
+thanks,
+-- 
+js
+suse labs
