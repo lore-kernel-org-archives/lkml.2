@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760800Ab2ILRG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:06:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52901 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760768Ab2ILRDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:03:39 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: trivial@kernel.org, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/15] drivers/usb/host/xhci-ring.c: removes unnecessary semicolon
-Date: Wed, 12 Sep 2012 19:03:17 +0200
-Message-Id: <1347469402-27557-10-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1760827Ab2ILRGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:06:33 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:56406 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760768Ab2ILRGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 13:06:30 -0400
+Date: Wed, 12 Sep 2012 19:06:29 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
+ family 0Fh
+Message-ID: <20120912170629.GD12103@aftab.osrc.amd.com>
+References: <504FC2E9.4010708@akamai.com>
+ <20120912085140.GA12277@aftab.osrc.amd.com>
+ <5050824B.9050006@akamai.com>
+ <5050857F.5060207@akamai.com>
+ <20120912153016.GA12103@aftab.osrc.amd.com>
+ <5050AC2E.3050408@akamai.com>
+ <20120912154943.GB12103@aftab.osrc.amd.com>
+ <5050B708.5020308@akamai.com>
+ <20120912164843.GC12103@aftab.osrc.amd.com>
+ <5050BF1F.1080503@akamai.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5050BF1F.1080503@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+On Wed, Sep 12, 2012 at 11:58:07AM -0500, Josh Hunt wrote:
+> Actually my apologies. I was looking at the 3.0 code. This issue is
+> fixed in the latest kernel.
+>
+> Sorry for the noise on that.
 
-removes unnecessary semicolon
+That's fine. I'm happy you guys are testing this and reporting issues so
+thanks anyway.
 
-Found by Coccinelle: http://coccinelle.lip6.fr/
+I'll ping you when I have something ready to test for the number of
+pages per csrow reporting.
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Thanks.
 
----
- drivers/usb/host/xhci-ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-- 
+Regards/Gruss,
+Boris.
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 643c2f3..ecd6946 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2580,7 +2580,7 @@ static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
- 			xhci_err(xhci, "Ring expansion failed\n");
- 			return -ENOMEM;
- 		}
--	};
-+	}
- 
- 	if (enqueue_is_link_trb(ep_ring)) {
- 		struct xhci_ring *ring = ep_ring;
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
