@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab2ILXi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932767Ab2ILXjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:39:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932735Ab2ILXiw (ORCPT
+	with ESMTP id S932750Ab2ILXi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:52 -0400
+	Wed, 12 Sep 2012 19:38:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 36/85] audit: dont free_chunk() after fsnotify_add_mark()
-Date: Wed, 12 Sep 2012 16:36:19 -0700
-Message-Id: <20120912233545.516580826@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Larry Woodman <lwoodman@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 22/85] mm: hugetlbfs: correctly populate shared pmd
+Date: Wed, 12 Sep 2012 16:36:05 -0700
+Message-Id: <20120912233544.051461857@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,49 +34,170 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 0fe33aae0e94b4097dd433c9399e16e17d638cd8 upstream.
+commit eb48c071464757414538c68a6033c8f8c15196f8 upstream.
 
-Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
-via the destroy list and this results in use-after-free.
+Each page mapped in a process's address space must be correctly
+accounted for in _mapcount.  Normally the rules for this are
+straightforward but hugetlbfs page table sharing is different.  The page
+table pages at the PMD level are reference counted while the mapcount
+remains the same.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Acked-by: Eric Paris <eparis@redhat.com>
+If this accounting is wrong, it causes bugs like this one reported by
+Larry Woodman:
+
+  kernel BUG at mm/filemap.c:135!
+  invalid opcode: 0000 [#1] SMP
+  CPU 22
+  Modules linked in: bridge stp llc sunrpc binfmt_misc dcdbas microcode pcspkr acpi_pad acpi]
+  Pid: 18001, comm: mpitest Tainted: G        W    3.3.0+ #4 Dell Inc. PowerEdge R620/07NDJ2
+  RIP: 0010:[<ffffffff8112cfed>]  [<ffffffff8112cfed>] __delete_from_page_cache+0x15d/0x170
+  Process mpitest (pid: 18001, threadinfo ffff880428972000, task ffff880428b5cc20)
+  Call Trace:
+    delete_from_page_cache+0x40/0x80
+    truncate_hugepages+0x115/0x1f0
+    hugetlbfs_evict_inode+0x18/0x30
+    evict+0x9f/0x1b0
+    iput_final+0xe3/0x1e0
+    iput+0x3e/0x50
+    d_kill+0xf8/0x110
+    dput+0xe2/0x1b0
+    __fput+0x162/0x240
+
+During fork(), copy_hugetlb_page_range() detects if huge_pte_alloc()
+shared page tables with the check dst_pte == src_pte.  The logic is if
+the PMD page is the same, they must be shared.  This assumes that the
+sharing is between the parent and child.  However, if the sharing is
+with a different process entirely then this check fails as in this
+diagram:
+
+  parent
+    |
+    ------------>pmd
+                 src_pte----------> data page
+                                        ^
+  other--------->pmd--------------------|
+                  ^
+  child-----------|
+                 dst_pte
+
+For this situation to occur, it must be possible for Parent and Other to
+have faulted and failed to share page tables with each other.  This is
+possible due to the following style of race.
+
+  PROC A                                          PROC B
+  copy_hugetlb_page_range                         copy_hugetlb_page_range
+    src_pte == huge_pte_offset                      src_pte == huge_pte_offset
+    !src_pte so no sharing                          !src_pte so no sharing
+
+  (time passes)
+
+  hugetlb_fault                                   hugetlb_fault
+    huge_pte_alloc                                  huge_pte_alloc
+      huge_pmd_share                                 huge_pmd_share
+        LOCK(i_mmap_mutex)
+        find nothing, no sharing
+        UNLOCK(i_mmap_mutex)
+                                                      LOCK(i_mmap_mutex)
+                                                      find nothing, no sharing
+                                                      UNLOCK(i_mmap_mutex)
+      pmd_alloc                                       pmd_alloc
+      LOCK(instantiation_mutex)
+      fault
+      UNLOCK(instantiation_mutex)
+                                                  LOCK(instantiation_mutex)
+                                                  fault
+                                                  UNLOCK(instantiation_mutex)
+
+These two processes are not poing to the same data page but are not
+sharing page tables because the opportunity was missed.  When either
+process later forks, the src_pte == dst pte is potentially insufficient.
+As the check falls through, the wrong PTE information is copied in
+(harmless but wrong) and the mapcount is bumped for a page mapped by a
+shared page table leading to the BUG_ON.
+
+This patch addresses the issue by moving pmd_alloc into huge_pmd_share
+which guarantees that the shared pud is populated in the same critical
+section as pmd.  This also means that huge_pte_offset test in
+huge_pmd_share is serialized correctly now which in turn means that the
+success of the sharing will be higher as the racing tasks see the pud
+and pmd populated together.
+
+Race identified and changelog written mostly by Mel Gorman.
+
+{akpm@linux-foundation.org: attempt to make the huge_pmd_share() comment comprehensible, clean up coding style]
+Reported-by: Larry Woodman <lwoodman@redhat.com>
+Tested-by: Larry Woodman <lwoodman@redhat.com>
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Ken Chen <kenchen@google.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit_tree.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/mm/hugetlbpage.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -56,9 +56,16 @@ static int vma_shareable(struct vm_area_
+ }
  
- 	fsnotify_duplicate_mark(&new->mark, entry);
- 	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
--		free_chunk(new);
-+		fsnotify_put_mark(&new->mark);
- 		goto Fallback;
+ /*
+- * search for a shareable pmd page for hugetlb.
++ * Search for a shareable pmd page for hugetlb. In any case calls pmd_alloc()
++ * and returns the corresponding pte. While this is not necessary for the
++ * !shared pmd case because we can allocate the pmd later as well, it makes the
++ * code much cleaner. pmd allocation is essential for the shared case because
++ * pud has to be populated inside the same i_mmap_mutex section - otherwise
++ * racing tasks could either miss the sharing (see huge_pte_offset) or select a
++ * bad pmd for sharing.
+  */
+-static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
++static pte_t *
++huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ {
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
+ 	struct address_space *mapping = vma->vm_file->f_mapping;
+@@ -68,9 +75,10 @@ static void huge_pmd_share(struct mm_str
+ 	struct vm_area_struct *svma;
+ 	unsigned long saddr;
+ 	pte_t *spte = NULL;
++	pte_t *pte;
+ 
+ 	if (!vma_shareable(vma, addr))
+-		return;
++		return (pte_t *)pmd_alloc(mm, pud, addr);
+ 
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
+@@ -97,7 +105,9 @@ static void huge_pmd_share(struct mm_str
+ 		put_page(virt_to_page(spte));
+ 	spin_unlock(&mm->page_table_lock);
+ out:
++	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
++	return pte;
+ }
+ 
+ /*
+@@ -142,8 +152,9 @@ pte_t *huge_pte_alloc(struct mm_struct *
+ 		} else {
+ 			BUG_ON(sz != PMD_SIZE);
+ 			if (pud_none(*pud))
+-				huge_pmd_share(mm, addr, pud);
+-			pte = (pte_t *) pmd_alloc(mm, pud, addr);
++				pte = huge_pmd_share(mm, addr, pud);
++			else
++				pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 		}
  	}
- 
-@@ -322,7 +322,7 @@ static int create_chunk(struct inode *in
- 
- 	entry = &chunk->mark;
- 	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
--		free_chunk(chunk);
-+		fsnotify_put_mark(entry);
- 		return -ENOSPC;
- 	}
- 
-@@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode
- 	fsnotify_duplicate_mark(chunk_entry, old_entry);
- 	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
- 		spin_unlock(&old_entry->lock);
--		free_chunk(chunk);
-+		fsnotify_put_mark(chunk_entry);
- 		fsnotify_put_mark(old_entry);
- 		return -ENOSPC;
- 	}
+ 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
 
 
