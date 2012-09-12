@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2IMAFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:05:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S932950Ab2IMAF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:05:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab2ILXkQ (ORCPT
+	with ESMTP id S1756615Ab2ILXkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:16 -0400
+	Wed, 12 Sep 2012 19:40:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 44/85] ACPI: export symbol acpi_get_table_with_size
-Date: Wed, 12 Sep 2012 16:36:27 -0700
-Message-Id: <20120912233546.374732884@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Malahal Naineni <malahal@us.ibm.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 42/85] svcrpc: sends on closed socket should stop immediately
+Date: Wed, 12 Sep 2012 16:36:25 -0700
+Message-Id: <20120912233546.165115856@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,29 +28,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 4f81f986761a7663db7d24d24cd6ae68008f1fc2 upstream.
+commit f06f00a24d76e168ecb38d352126fd203937b601 upstream.
 
-We need it in the radeon drm module to fetch
-and verify the vbios image on UEFI systems.
+svc_tcp_sendto sets XPT_CLOSE if we fail to transmit the entire reply.
+However, the XPT_CLOSE won't be acted on immediately.  Meanwhile other
+threads could send further replies before the socket is really shut
+down.  This can manifest as data corruption: for example, if a truncated
+read reply is followed by another rpc reply, that second reply will look
+to the client like further read data.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Symptoms were data corruption preceded by svc_tcp_sendto logging
+something like
+
+	kernel: rpc-srv/tcp: nfsd: sent only 963696 when sending 1048708 bytes - shutting down socket
+
+Reported-by: Malahal Naineni <malahal@us.ibm.com>
+Tested-by: Malahal Naineni <malahal@us.ibm.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/tbxface.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sunrpc/svc_xprt.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/acpica/tbxface.c
-+++ b/drivers/acpi/acpica/tbxface.c
-@@ -436,6 +436,7 @@ acpi_get_table_with_size(char *signature
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -794,7 +794,8 @@ int svc_send(struct svc_rqst *rqstp)
  
- 	return (AE_NOT_FOUND);
- }
-+ACPI_EXPORT_SYMBOL(acpi_get_table_with_size)
- 
- acpi_status
- acpi_get_table(char *signature,
+ 	/* Grab mutex to serialize outgoing data. */
+ 	mutex_lock(&xprt->xpt_mutex);
+-	if (test_bit(XPT_DEAD, &xprt->xpt_flags))
++	if (test_bit(XPT_DEAD, &xprt->xpt_flags)
++			|| test_bit(XPT_CLOSE, &xprt->xpt_flags))
+ 		len = -ENOTCONN;
+ 	else
+ 		len = xprt->xpt_ops->xpo_sendto(rqstp);
 
 
