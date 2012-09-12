@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2ILXch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:32:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1756035Ab2ILXcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:32:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206Ab2ILXcb (ORCPT
+	with ESMTP id S1755939Ab2ILXcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:31 -0400
+	Wed, 12 Sep 2012 19:32:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 048/108] svcrpc: fix BUG() in svc_tcp_clear_pages
-Date: Wed, 12 Sep 2012 16:28:46 -0700
-Message-Id: <20120912232455.582012381@linuxfoundation.org>
+Subject: [ 049/108] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
+Date: Wed, 12 Sep 2012 16:28:47 -0700
+Message-Id: <20120912232455.680838960@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -31,40 +31,69 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
+commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
 
-Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
-consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
-sk_tcplen would lead us to expect n pages of data).
+The rpc server tries to ensure that there will be room to send a reply
+before it receives a request.
 
-svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
-This is OK, since both functions are serialized by XPT_BUSY.  However,
-that means the inconsistency must be repaired before dropping XPT_BUSY.
+It does this by tracking, in xpt_reserved, an upper bound on the total
+size of the replies that is has already committed to for the socket.
 
-Therefore we should be ensuring that svc_tcp_save_pages repairs the
-problem before exiting svc_tcp_recv_record on error.
+Currently it is adding in the estimate for a new reply *before* it
+checks whether there is space available.  If it finds that there is not
+space, it then subtracts the estimate back out.
 
-Symptoms were a BUG() in svc_tcp_clear_pages.
+This may lead the subsequent svc_xprt_enqueue to decide that there is
+space after all.
 
+The results is a svc_recv() that will repeatedly return -EAGAIN, causing
+server threads to loop without doing any actual work.
+
+Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+Tested-by: Michael Tokarev <mjt@tls.msk.ru>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcsock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/svc_xprt.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1129,9 +1129,9 @@ static int svc_tcp_recvfrom(struct svc_r
- 	if (len >= 0)
- 		svsk->sk_tcplen += len;
- 	if (len != want) {
-+		svc_tcp_save_pages(svsk, rqstp);
- 		if (len < 0 && len != -EAGAIN)
- 			goto err_other;
--		svc_tcp_save_pages(svsk, rqstp);
- 		dprintk("svc: incomplete TCP record (%d of %d)\n",
- 			svsk->sk_tcplen, svsk->sk_reclen);
- 		goto err_noclose;
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -316,7 +316,6 @@ static bool svc_xprt_has_something_to_do
+  */
+ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ {
+-	struct svc_serv	*serv = xprt->xpt_server;
+ 	struct svc_pool *pool;
+ 	struct svc_rqst	*rqstp;
+ 	int cpu;
+@@ -362,8 +361,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
+ 				rqstp, rqstp->rq_xprt);
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 		pool->sp_stats.threads_woken++;
+ 		wake_up(&rqstp->rq_wait);
+ 	} else {
+@@ -640,8 +637,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 	if (xprt) {
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 
+ 		/* As there is a shortage of threads and this request
+ 		 * had to be queued, don't allow the thread to wait so
+@@ -738,6 +733,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 		else
+ 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
+ 		dprintk("svc: got len=%d\n", len);
++		rqstp->rq_reserved = serv->sv_max_mesg;
++		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 	}
+ 	svc_xprt_received(xprt);
+ 
 
 
