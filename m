@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2ILXiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606Ab2ILXiS (ORCPT
+	id S932639Ab2ILXi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:27 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932620Ab2ILXiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:18 -0400
+	Wed, 12 Sep 2012 19:38:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 13/85] ARM: imx6: spin the cpu until hardware takes it down
-Date: Wed, 12 Sep 2012 16:35:56 -0700
-Message-Id: <20120912233543.122007874@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Yong Shen <yong.shen@linaro.org>
+Subject: [ 14/85] ARM: imx: select CPU_FREQ_TABLE when needed
+Date: Wed, 12 Sep 2012 16:35:57 -0700
+Message-Id: <20120912233543.223348363@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -27,68 +30,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit c944b0b9354ea06ffb0c8a7178949f1185f9f499 upstream.
+commit f637c4c9405e21f44cf0045eaf77eddd3a79ca5a upstream.
 
-Though commit 602bf40 (ARM: imx6: exit coherency when shutting down
-a cpu) improves the stability of imx6q cpu hotplug a lot, there are
-still hangs seen with a more stressful hotplug testing.
+The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
+so it needs to select that code to be built. This problem has
+apparently existed since the i.MX cpufreq code was first merged
+in v2.6.37.
 
-It's expected that once imx_enable_cpu(cpu, false) is called, the cpu
-will be taken down by hardware immediately, and the code after that
-will not get any chance to execute.  However, this is not always the
-case from the testing.  The cpu could possibly be alive for a few
-cycles before hardware actually takes it down.  So rather than letting
-cpu execute some code that could cause a hang in these cycles, let's
-make the cpu spin there and wait for hardware to take it down.
+Building IMX without CPU_FREQ_TABLE results in:
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
+arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
+arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
+arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
+arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
+arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
+arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
+arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Yong Shen <yong.shen@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/hotplug.c |   23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-imx/hotplug.c
-+++ b/arch/arm/mach-imx/hotplug.c
-@@ -42,22 +42,6 @@ static inline void cpu_enter_lowpower(vo
- 	  : "cc");
- }
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2113,6 +2113,7 @@ source "drivers/cpufreq/Kconfig"
+ config CPU_FREQ_IMX
+ 	tristate "CPUfreq driver for i.MX CPUs"
+ 	depends on ARCH_MXC && CPU_FREQ
++	select CPU_FREQ_TABLE
+ 	help
+ 	  This enables the CPUfreq driver for i.MX CPUs.
  
--static inline void cpu_leave_lowpower(void)
--{
--	unsigned int v;
--
--	asm volatile(
--		"mrc	p15, 0, %0, c1, c0, 0\n"
--	"	orr	%0, %0, %1\n"
--	"	mcr	p15, 0, %0, c1, c0, 0\n"
--	"	mrc	p15, 0, %0, c1, c0, 1\n"
--	"	orr	%0, %0, %2\n"
--	"	mcr	p15, 0, %0, c1, c0, 1\n"
--	  : "=&r" (v)
--	  : "Ir" (CR_C), "Ir" (0x40)
--	  : "cc");
--}
--
- /*
-  * platform-specific code to shutdown a CPU
-  *
-@@ -67,11 +51,10 @@ void platform_cpu_die(unsigned int cpu)
- {
- 	cpu_enter_lowpower();
- 	imx_enable_cpu(cpu, false);
--	cpu_do_idle();
--	cpu_leave_lowpower();
- 
--	/* We should never return from idle */
--	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
-+	/* spin here until hardware takes it down */
-+	while (1)
-+		;
- }
- 
- int platform_cpu_disable(unsigned int cpu)
 
 
