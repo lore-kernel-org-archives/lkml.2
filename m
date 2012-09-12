@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2ILDoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 23:44:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35257 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab2ILDn6 (ORCPT
+	id S1753958Ab2ILDsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 23:48:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18624 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab2ILDsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 23:43:58 -0400
-Date: Wed, 12 Sep 2012 13:43:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: manual merge of the trivial tree with the mfd tree
-Message-Id: <20120912134349.f1dd0f4d050dd4834623e57b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 11 Sep 2012 23:48:07 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1Hyl1JrvWn0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=fyrVzdcL7noA:10 a=1XWaLZrsAAAA:8 a=rHC3xS6RNNlwCVeF0joA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347421685.10751.34.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/3] tracing,x86: add a TSC trace_clock; reset buffer on
+ clock change
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Tue, 11 Sep 2012 23:48:05 -0400
+In-Reply-To: <1347417671-22998-2-git-send-email-dhsharp@google.com>
+References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
+	 <1347417671-22998-2-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Sep_2012_13_43_49_+1000_5x.8th+EQw57xQ5n"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Sep_2012_13_43_49_+1000_5x.8th+EQw57xQ5n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-09-11 at 19:41 -0700, David Sharp wrote:
+> In order to promote interoperability between userspace tracers and ftrace,
+> add a trace_clock that reports raw TSC values which will then be recorded
+> in the ring buffer. Userspace tracers that also record TSCs are then on
+> exactly the same time base as the kernel and events can be unambiguously
+> interlaced.
+> 
+> Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+> timestamp values.
+> 
+> Google-Bug-Id: 6980623
+> Signed-off-by: David Sharp <dhsharp@google.com>
+> ---
+>  include/linux/trace_clock.h |    3 +++
+>  kernel/trace/trace.c        |    3 +++
+>  kernel/trace/trace_clock.c  |   16 ++++++++++++++++
+>  3 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+> index 4eb4902..b86c7363 100644
+> --- a/include/linux/trace_clock.h
+> +++ b/include/linux/trace_clock.h
+> @@ -16,5 +16,8 @@ extern u64 notrace trace_clock_local(void);
+>  extern u64 notrace trace_clock(void);
+>  extern u64 notrace trace_clock_global(void);
+>  extern u64 notrace trace_clock_counter(void);
+> +#ifdef CONFIG_X86_TSC
+> +extern u64 notrace trace_clock_tsc(void);
+> +#endif
+>  
+>  #endif /* _LINUX_TRACE_CLOCK_H */
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 5c38c81..dc1f1fa 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -480,6 +480,9 @@ static struct {
+>  	{ trace_clock_local,	"local" },
+>  	{ trace_clock_global,	"global" },
+>  	{ trace_clock_counter,	"counter" },
+> +#ifdef CONFIG_X86_TSC
+> +	{ trace_clock_tsc,	"tsc" },
+> +#endif
+>  };
 
-Hi Jiri,
+I really hate adding arch defs in generic code. Perhaps what we could do
+is add a define here. Something like:
 
-Today's linux-next merge of the trivial tree got a conflict in
-drivers/video/backlight/88pm860x_bl.c between commit a6ccdcd98c39 ("mfd:
-88pm860x: Use REG resource for backlight") from the mfd tree and commit
-e1c9ac420ef1 ("Revert "backlight: fix memory leak on obscure error
-path"") from the trivial tree.
+#ifndef ARCH_TRACE_CLOCKS
+# define ARCH_TRACE_CLOCKS
+#endif
 
-I just used the version from the mfd tree and can carry the fix as
-necessary (no action is required).
+[...]
+	{ trace_clock_counter, "counter" },
+	ARCH_TRACE_CLOCKS
+};
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+and have ARCH_TRACE_CLOCKS defined somewhere in an arch specific header.
+Not sure what header we could use though :-/
 
---Signature=_Wed__12_Sep_2012_13_43_49_+1000_5x.8th+EQw57xQ5n
-Content-Type: application/pgp-signature
+That is, in a header have:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+#define ARCH_TRACE_CLOCKS \
+	{ trace_clock_x86_tsc,	"tsc" },
 
-iQIcBAEBCAAGBQJQUAT1AAoJEECxmPOUX5FETQUP/03Qtr3w6f+vX8sEMtDu/woa
-6mjYgOmk5tODbYiaw1Vc0ORtefv9MlQkjHFx2qqHoXqaUgcZqI7sg9VlWpWeo2RQ
-WwbSFj4LIiRSNkAlcCLjKDQiI9R88l9Eq21BKbLyzU8F1re0YF82pj1REWnKjcIx
-2Lzn0TBJfC36Ec/IqyT1DLL+FvsDRIJAQIG5YAxPC0MILB3wiiRYrwlqcPOFlpFF
-oR7Xq48bBPjIVQ45LiXEOtcbiz1DbDhGNFzdmBBGNnJPHRgw9sCAveEKK+Wz0dLM
-V14ncFe4jH1SGF7NfrQoqDzGFZcDK7qMLCcYb4haBFW/3HqLtYVdnZ39Dd3SBxge
-yHR9D1gd0nESq3tTP/8VYwIJAd5VjF66bJScqTd16M+Q61XjhdrC6NtVlI/Wp3rE
-yz2IDNJJZoktViYeVmaXnwkEtWZFqev+M8kCNwgUWkc51B5DTsQ++lEyr4JLqW9A
-EFGP/Aa5AEmVS/0/PqXmZF84ZVaCDZLlgJRBGPrIyE2/zPdmIKg/ftXp1E83J53I
-YOqwxp+GFcfrE3ThUODIE8+Vxp25On85KvN3JBybXSU/dHgvUt1TndY+m6ZTidZ+
-iqzRcPh/jcr9HhyMEt3Q4FyKc+ZjGUJ7prva9SqugkMp22yvYeUCa6luKOwB00wD
-YCVpAab4C0Bagk8xcEbL
-=2hXX
------END PGP SIGNATURE-----
+and also define trace_clock_x86_tsc in arch/x86/kernel...
 
---Signature=_Wed__12_Sep_2012_13_43_49_+1000_5x.8th+EQw57xQ5n--
+-- Steve
+
+
+>  
+>  int trace_clock_id;
+> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+> index 3947835..1770737 100644
+> --- a/kernel/trace/trace_clock.c
+> +++ b/kernel/trace/trace_clock.c
+> @@ -125,3 +125,19 @@ u64 notrace trace_clock_counter(void)
+>  {
+>  	return atomic64_add_return(1, &trace_counter);
+>  }
+> +
+> +#ifdef CONFIG_X86_TSC
+> +/*
+> + * trace_clock_tsc(): A clock that is just the cycle counter.
+> + *
+> + * Unlike the other clocks, this is not in nanoseconds.
+> + */
+> +u64 notrace trace_clock_tsc(void)
+> +{
+> +	u64 ret;
+> +	rdtsc_barrier();
+> +	rdtscll(ret);
+> +
+> +	return ret;
+> +}
+> +#endif
+
+
