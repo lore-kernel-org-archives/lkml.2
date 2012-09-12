@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab2IMAh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:37:59 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:45723 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab2ILXcH (ORCPT
+	id S1751997Ab2IMAh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:37:57 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:51064 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2ILXcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:07 -0400
+	Wed, 12 Sep 2012 19:32:08 -0400
 From: David Sharp <dhsharp@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 1/3] tracing,x86: add a TSC trace_clock; reset buffer on clock change
-Date: Wed, 12 Sep 2012 16:31:57 -0700
-Message-Id: <1347492720-26078-2-git-send-email-dhsharp@google.com>
+Subject: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
+Date: Wed, 12 Sep 2012 16:31:58 -0700
+Message-Id: <1347492720-26078-3-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1347492720-26078-1-git-send-email-dhsharp@google.com>
 References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
@@ -31,57 +31,75 @@ interlaced.
 Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
 timestamp values.
 
-Google-Bug-Id: 6980623
-Signed-off-by: David Sharp <dhsharp@google.com>
----
- include/linux/trace_clock.h |    3 +++
- kernel/trace/trace.c        |    3 +++
- kernel/trace/trace_clock.c  |   16 ++++++++++++++++
- 3 files changed, 22 insertions(+), 0 deletions(-)
+v2:
+Move arch-specific bits out of generic code.
 
-diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
-index 4eb4902..b86c7363 100644
---- a/include/linux/trace_clock.h
-+++ b/include/linux/trace_clock.h
-@@ -16,5 +16,8 @@ extern u64 notrace trace_clock_local(void);
- extern u64 notrace trace_clock(void);
- extern u64 notrace trace_clock_global(void);
- extern u64 notrace trace_clock_counter(void);
-+#ifdef CONFIG_X86_TSC
-+extern u64 notrace trace_clock_tsc(void);
-+#endif
- 
- #endif /* _LINUX_TRACE_CLOCK_H */
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5c38c81..dc1f1fa 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -480,6 +480,9 @@ static struct {
- 	{ trace_clock_local,	"local" },
- 	{ trace_clock_global,	"global" },
- 	{ trace_clock_counter,	"counter" },
-+#ifdef CONFIG_X86_TSC
-+	{ trace_clock_tsc,	"tsc" },
-+#endif
- };
- 
- int trace_clock_id;
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 3947835..1770737 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -125,3 +125,19 @@ u64 notrace trace_clock_counter(void)
- {
- 	return atomic64_add_return(1, &trace_counter);
- }
+Google-Bug-Id: 6980623
+---
+ arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/trace_clock.c      |   20 ++++++++++++++++++++
+ include/asm-generic/trace_clock.h  |   15 +++++++++++++++
+ include/linux/trace_clock.h        |    2 ++
+ kernel/trace/trace.c               |    1 +
+ 6 files changed, 55 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace_clock.h
+ create mode 100644 arch/x86/kernel/trace_clock.c
+ create mode 100644 include/asm-generic/trace_clock.h
+
+diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..0b1f391
+--- /dev/null
++++ b/arch/x86/include/asm/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_X86_TRACE_CLOCK_H
++#define _ASM_X86_TRACE_CLOCK_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
 +
 +#ifdef CONFIG_X86_TSC
++
++extern u64 notrace trace_clock_x86_tsc(void);
++
++# define ARCH_TRACE_CLOCKS \
++	{ trace_clock_x86_tsc,	"tsc" },
++
++#endif
++
++#endif  /* _ASM_X86_TRACE_CLOCK_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..0ee9344 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
++obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+new file mode 100644
+index 0000000..b8959f8
+--- /dev/null
++++ b/arch/x86/kernel/trace_clock.c
+@@ -0,0 +1,20 @@
 +/*
-+ * trace_clock_tsc(): A clock that is just the cycle counter.
++ * X86 trace clocks
++ */
++#include <asm/trace_clock.h>
++#include <asm/barrier.h>
++#include <asm/msr.h>
++
++/*
++ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
 + *
 + * Unlike the other clocks, this is not in nanoseconds.
 + */
-+u64 notrace trace_clock_tsc(void)
++u64 notrace trace_clock_x86_tsc(void)
 +{
 +	u64 ret;
 +	rdtsc_barrier();
@@ -89,7 +107,52 @@ index 3947835..1770737 100644
 +
 +	return ret;
 +}
+diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+new file mode 100644
+index 0000000..648cdcd
+--- /dev/null
++++ b/include/asm-generic/trace_clock.h
+@@ -0,0 +1,15 @@
++/*
++ * Arch-specific trace clocks.
++ */
++#ifndef _ASM_GENERIC_TRACE_CLOCK_H
++#define _ASM_GENERIC_TRACE_CLOCK_H
++
++/*
++ * Additional trace clocks added to the trace_clocks
++ * array in kernel/trace/trace.c
++ */
++#ifndef ARCH_TRACE_CLOCKS
++# define ARCH_TRACE_CLOCKS
 +#endif
++
++#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index 4eb4902..d563f37 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -12,6 +12,8 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ 
++#include <asm/trace_clock.h>
++
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
+ extern u64 notrace trace_clock_global(void);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..92fb08e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -480,6 +480,7 @@ static struct {
+ 	{ trace_clock_local,	"local" },
+ 	{ trace_clock_global,	"global" },
+ 	{ trace_clock_counter,	"counter" },
++	ARCH_TRACE_CLOCKS
+ };
+ 
+ int trace_clock_id;
 -- 
 1.7.7.3
 
