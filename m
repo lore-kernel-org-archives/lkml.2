@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab2ILMtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:49:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57242 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757887Ab2ILMtl (ORCPT
+	id S1757967Ab2ILMwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:52:18 -0400
+Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:34853 "EHLO
+	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754863Ab2ILMwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:49:41 -0400
-Date: Wed, 12 Sep 2012 20:49:34 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
-Message-ID: <20120912124932.GC19055@opensource.wolfsonmicro.com>
-References: <1347375823.12329.14.camel@matrix>
- <20120912025709.GD9162@opensource.wolfsonmicro.com>
- <1347454578.23366.305.camel@matrix>
+	Wed, 12 Sep 2012 08:52:17 -0400
+Message-ID: <5050857F.5060207@akamai.com>
+Date: Wed, 12 Sep 2012 07:52:15 -0500
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347454578.23366.305.camel@matrix>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
+ family 0Fh
+References: <1347403947-20187-1-git-send-email-johunt@akamai.com> <504FC2E9.4010708@akamai.com> <20120912085140.GA12277@aftab.osrc.amd.com> <5050824B.9050006@akamai.com>
+In-Reply-To: <5050824B.9050006@akamai.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 06:26:18PM +0530, Ashish Chavan wrote:
-> On Wed, 2012-09-12 at 10:57 +0800, Mark Brown wrote:
+On 09/12/2012 07:38 AM, Josh Hunt wrote:
+> On 09/12/2012 03:51 AM, Borislav Petkov wrote:
+>> On Tue, Sep 11, 2012 at 06:02:01PM -0500, Josh Hunt wrote:
+>>> On 09/11/2012 05:52 PM, Josh Hunt wrote:
+>>>> With recent kernels we noticed that edac was reporting double the memory size on
+>>>> systems running with AMD family 0Fh processors. I'm not very familiar with the
+>>>> code, but this resolves it from what I can see on my systems. At least in
+>>>> amd64_debug_display_dimm_sizes() and k8_dbam_to_chip_select() there appeared
+>>>> to be redundant shifts to the left by 1 when WIDTH_128 is present.
+>>
+>> Any chance you could enable CONFIG_EDAC_DEBUG, boot and send me your
+>> whole dmesg? Privately is fine too.
+>>
+>> Thanks.
+>>
+> 
+> Sure. Attached. This is booting with latest git.
+> 
+> Josh
 
-> > Why is any of this being exposed to userspace?  If this should be
-> > configured I'd expect it to be static platform data, not something that
-> > gets changed at runtime.
+I wanted to add that we started seeing this back in 3.0. I didn't go
+back any farther, but know it was not occurring in 2.6.38. The issue in
+3.0 appeared to be that we shift left k8_dbam_to_chip_select() and there
+was also another shift in amd64_csrow_nr_pages(). It looks like that
+second shift has been replaced by a more recent patch, which actually
+checks to see if the csrow is enabled and then counts nr_pages again
+adding that to the first calculation, still resulting in the size being
+double.
 
-> These parameters are exposed considering the fact that DMIC itself is
-> not part of the codec. Codec only provides DMIC interface using which an
-> external DMIC can be attached. These parameters depend on the actual
-> DMIC hardware and hence kept configurable to allow runtime plug in of
-> any DMIC hardware. Doesn't it make sense to keep them runtime
-> configurable?
-
-No.  The only realistic way to attach a new DMIC to a board is to solder
-it down, that's not something people are going to do while the system is
-actve.  It's something that's fixed at PCB design time.
-
-> > > +	/* In slave mode, there is only one set of divisors */
-> > > +	if (!da9055->master)
-> > > +		fout = 2822400;
-
-> > Should check the user supplied this value
-
-> Can you explain which value / user supplied value you are referring to?
-> It is not quite clear to me.
-
-The specified output frequency, you just totally ignore it.
-
-> For other things like input mixers, Headphone and Lineouts, DAPM is
-> already used to control power specific bits. The confusion is because
-> there are two separate control bits for these blocks. One bit is for
-> "Enabling" that block and other is for "Enabling Amplifier" of that
-> block.
-> e.g for headphone, one bit is for "output enable" while other is for
-> "output amplifier enable".
-
-So document this.
+Josh
