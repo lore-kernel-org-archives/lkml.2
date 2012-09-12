@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2ILXcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:32:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932220Ab2ILXcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:32:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab2ILXcf (ORCPT
+	with ESMTP id S1755635Ab2ILXcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:35 -0400
+	Wed, 12 Sep 2012 19:32:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 049/108] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
-Date: Wed, 12 Sep 2012 16:28:47 -0700
-Message-Id: <20120912232455.680838960@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 039/108] Bluetooth: Fix using a NULL inquiry cache entry
+Date: Wed, 12 Sep 2012 16:28:37 -0700
+Message-Id: <20120912232454.628376821@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,71 +29,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Ram Malovany <ramm@ti.com>
 
-commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
+commit 7cc8380eb10347016d95bf6f9d842c2ae6d12932 upstream.
 
-The rpc server tries to ensure that there will be room to send a reply
-before it receives a request.
+If the device was not found in a list of found devices names of which
+are pending.This may happen in a case when HCI Remote Name Request
+was sent as a part of incoming connection establishment procedure.
+Hence there is no need to continue resolving a next name as it will
+be done upon receiving another Remote Name Request Complete Event.
+This will fix a kernel crash when trying to use this entry to resolve
+the next name.
 
-It does this by tracking, in xpt_reserved, an upper bound on the total
-size of the replies that is has already committed to for the socket.
-
-Currently it is adding in the estimate for a new reply *before* it
-checks whether there is space available.  If it finds that there is not
-space, it then subtracts the estimate back out.
-
-This may lead the subsequent svc_xprt_enqueue to decide that there is
-space after all.
-
-The results is a svc_recv() that will repeatedly return -EAGAIN, causing
-server threads to loop without doing any actual work.
-
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Ram Malovany <ramm@ti.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc_xprt.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ net/bluetooth/hci_event.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -316,7 +316,6 @@ static bool svc_xprt_has_something_to_do
-  */
- void svc_xprt_enqueue(struct svc_xprt *xprt)
- {
--	struct svc_serv	*serv = xprt->xpt_server;
- 	struct svc_pool *pool;
- 	struct svc_rqst	*rqstp;
- 	int cpu;
-@@ -362,8 +361,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
- 				rqstp, rqstp->rq_xprt);
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 		pool->sp_stats.threads_woken++;
- 		wake_up(&rqstp->rq_wait);
- 	} else {
-@@ -640,8 +637,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 	if (xprt) {
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1406,12 +1406,18 @@ static void hci_check_pending_name(struc
+ 		return;
  
- 		/* As there is a shortage of threads and this request
- 		 * had to be queued, don't allow the thread to wait so
-@@ -738,6 +733,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 		else
- 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
- 		dprintk("svc: got len=%d\n", len);
-+		rqstp->rq_reserved = serv->sv_max_mesg;
-+		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 	e = hci_inquiry_cache_lookup_resolve(hdev, bdaddr, NAME_PENDING);
+-	if (e) {
++	/* If the device was not found in a list of found devices names of which
++	 * are pending. there is no need to continue resolving a next name as it
++	 * will be done upon receiving another Remote Name Request Complete
++	 * Event */
++	if (!e)
++		return;
++
++	list_del(&e->list);
++	if (name) {
+ 		e->name_state = NAME_KNOWN;
+-		list_del(&e->list);
+-		if (name)
+-			mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
+-					 e->data.rssi, name, name_len);
++		mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
++				 e->data.rssi, name, name_len);
  	}
- 	svc_xprt_received(xprt);
  
+ 	if (hci_resolve_next_name(hdev))
 
 
