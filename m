@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab2ILKYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:24:55 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:49728 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab2ILKX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:23:26 -0400
-From: ciminaghi@gnudd.com
-To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com
-Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH 6/8] sta2x11-mfd : use one lock per device instead of one lock per mfd.
-Date: Wed, 12 Sep 2012 12:22:52 +0200
-Message-Id: <1347445374-32140-7-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
-References: <1347445374-32140-1-git-send-email-ciminaghi@gnudd.com>
+	id S1757163Ab2ILKZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:25:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62752 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756566Ab2ILKZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:25:17 -0400
+Date: Wed, 12 Sep 2012 11:24:02 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 11/31] arm64: IRQ handling
+Message-ID: <20120912102402.GB21823@arm.com>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <1347035226-18649-12-git-send-email-catalin.marinas@arm.com>
+ <201209071937.19156.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209071937.19156.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+On Fri, Sep 07, 2012 at 08:37:18PM +0100, Arnd Bergmann wrote:
+> On Friday 07 September 2012, Catalin Marinas wrote:
+> 
+> > +#define __inc_irq_stat(cpu, member)	__IRQ_STAT(cpu, member)++
+> > +#define __get_irq_stat(cpu, member)	__IRQ_STAT(cpu, member)
+> 
+> Isn't this something that the IRQ core code already keeps track of?
 
-The lock is used to implement atomic operations on each platform
-device's registers, so it looks reasonable having one lock per
-device instead of one common lock for all the devices belonging
-to the same sta2x11 instance.
+That's for the IPIs which are handled directly by the arch code. We
+don't even allocate irq descriptors for them.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
----
- drivers/mfd/sta2x11-mfd.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+> > +#endif /* __ASM_HARDIRQ_H */
+> > diff --git a/arch/arm64/include/asm/irq.h b/arch/arm64/include/asm/irq.h
+> > new file mode 100644
+> > index 0000000..a4e1cad
+> > --- /dev/null
+> > +++ b/arch/arm64/include/asm/irq.h
+> > @@ -0,0 +1,8 @@
+> > +#ifndef __ASM_IRQ_H
+> > +#define __ASM_IRQ_H
+> > +
+> > +#include <asm-generic/irq.h>
+> > +
+> > +extern void (*handle_arch_irq)(struct pt_regs *);
+> > +
+> > +#endif
+> 
+> Is this one still needed?
 
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 88bc8d5..2c6f777 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -38,7 +38,7 @@
- /* This describes STA2X11 MFD chip for us, we may have several */
- struct sta2x11_mfd {
- 	struct sta2x11_instance *instance;
--	spinlock_t lock;
-+	spinlock_t lock[sta2x11_n_mfd_plat_devs];
- 	struct list_head list;
- 	void __iomem *regs[sta2x11_n_mfd_plat_devs];
- };
-@@ -70,6 +70,7 @@ static struct sta2x11_mfd *sta2x11_mfd_find(struct pci_dev *pdev)
- 
- static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
- {
-+	int i;
- 	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
- 	struct sta2x11_instance *instance;
- 
-@@ -82,7 +83,8 @@ static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
- 	if (!mfd)
- 		return -ENOMEM;
- 	INIT_LIST_HEAD(&mfd->list);
--	spin_lock_init(&mfd->lock);
-+	for (i = 0; i < ARRAY_SIZE(mfd->lock); i++)
-+		spin_lock_init(&mfd->lock[i]);
- 	mfd->instance = instance;
- 	list_add(&mfd->list, &sta2x11_mfd_list);
- 	return 0;
-@@ -116,13 +118,13 @@ u32 __sta2x11_mfd_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val,
- 		dev_warn(&pdev->dev, ": system ctl not initialized\n");
- 		return 0;
- 	}
--	spin_lock_irqsave(&mfd->lock, flags);
-+	spin_lock_irqsave(&mfd->lock[index], flags);
- 	r = readl(regs + reg);
- 	r &= ~mask;
- 	r |= val;
- 	if (mask)
- 		writel(r, regs + reg);
--	spin_unlock_irqrestore(&mfd->lock, flags);
-+	spin_unlock_irqrestore(&mfd->lock[index], flags);
- 	return r;
- }
- EXPORT_SYMBOL(__sta2x11_mfd_mask);
+Yes. It's initialised by the GIC code (called via of_irq_init) and we
+want to allow different GIC versions (GICv2 used by the model currently
+but we would expect GICv3 with hardware).
+
 -- 
-1.7.9.1
-
+Catalin
