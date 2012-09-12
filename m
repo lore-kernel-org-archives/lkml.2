@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2IMAc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:32:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab2ILXdc (ORCPT
+	id S1756209Ab2IMAcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:32:47 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932302Ab2ILXdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:32 -0400
+	Wed, 12 Sep 2012 19:33:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 064/108] rapidio/tsi721: fix unused variable compiler warning
-Date: Wed, 12 Sep 2012 16:29:02 -0700
-Message-Id: <20120912232457.246667866@linuxfoundation.org>
+        Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 062/108] [media] uvcvideo: Reset the bytesused field when recycling an erroneous buffer
+Date: Wed, 12 Sep 2012 16:29:00 -0700
+Message-Id: <20120912232457.032194488@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -32,51 +31,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
 
-commit 9a9a9a7adafe62a34de8b4fb48936c1c5f9bafa5 upstream.
+commit 8a3f0ede2b3f5477122060af1a816c6bbf09fcd2 upstream.
 
-Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
-option off.
+Buffers marked as erroneous are recycled immediately by the driver if
+the nodrop module parameter isn't set. The buffer payload size is reset
+to 0, but the buffer bytesused field isn't. This results in the buffer
+being immediately considered as complete, leading to an infinite loop in
+interrupt context.
 
-This patch is applicable to kernel versions starting from v3.2
+Fix the problem by resetting the bytesused field when recycling the
+buffer.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/media/video/uvc/uvc_queue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2219,7 +2219,7 @@ static int __devinit tsi721_probe(struct
- 				  const struct pci_device_id *id)
- {
- 	struct tsi721_device *priv;
--	int i, cap;
-+	int cap;
- 	int err;
- 	u32 regval;
- 
-@@ -2239,12 +2239,15 @@ static int __devinit tsi721_probe(struct
- 	priv->pdev = pdev;
- 
- #ifdef DEBUG
-+	{
-+	int i;
- 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
- 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
- 			i, (unsigned long long)pci_resource_start(pdev, i),
- 			(unsigned long)pci_resource_len(pdev, i),
- 			pci_resource_flags(pdev, i));
+--- a/drivers/media/video/uvc/uvc_queue.c
++++ b/drivers/media/video/uvc/uvc_queue.c
+@@ -338,6 +338,7 @@ struct uvc_buffer *uvc_queue_next_buffer
+ 	if ((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) {
+ 		buf->error = 0;
+ 		buf->state = UVC_BUF_STATE_QUEUED;
++		buf->bytesused = 0;
+ 		vb2_set_plane_payload(&buf->buf, 0, 0);
+ 		return buf;
  	}
-+	}
- #endif
- 	/*
- 	 * Verify BAR configuration
 
 
