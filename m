@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab2ILXeY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:34:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2ILXeR (ORCPT
+	id S1756169Ab2ILXea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:34:30 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab2ILXeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:34:17 -0400
+	Wed, 12 Sep 2012 19:34:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 076/108] ALSA: snd-usb: fix calls to next_packet_size
-Date: Wed, 12 Sep 2012 16:29:14 -0700
-Message-Id: <20120912232458.479428556@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 078/108] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
+Date: Wed, 12 Sep 2012 16:29:16 -0700
+Message-Id: <20120912232458.687292206@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,113 +29,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 245baf983cc39524cce39c24d01b276e6e653c9e upstream.
+commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
 
-In order to support devices with implicit feedback streaming models,
-packet sizes are now stored with each individual urb, and the PCM
-handling code which fills the buffers purely relies on the size fields
-now.
+Writing to dscr_default in sysfs doesn't actually change the DSCR -
+we rely on a context switch on each CPU to do the work. There is no
+guarantee we will get a context switch in a reasonable amount of time
+so fire off an IPI to force an immediate change.
 
-However, calling snd_usb_audio_next_packet_size() for all possible
-packets in an URB at once, prior to letting the PCM code do its job
-does in fact not lead to the same behaviour than what the old code did:
-The PCM code will break its loop once a period boundary is reached,
-consequently using up less packets that it really could.
+This issue was found with the following test case:
 
-As snd_usb_audio_next_packet_size() implements a feedback mechanism to
-the endpoints phase accumulator, the number of calls to that function
-matters, and when called too often, the data rate runs out of bounds.
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
 
-Fix this by making the next_packet function public, and call it from the
-PCM code as before if the packet data sizes are not defined.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/endpoint.c |   13 +------------
- sound/usb/endpoint.h |    1 +
- sound/usb/pcm.c      |    7 ++++++-
- 3 files changed, 8 insertions(+), 13 deletions(-)
+ arch/powerpc/kernel/sysfs.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -141,7 +141,7 @@ int snd_usb_endpoint_implict_feedback_si
-  *
-  * For implicit feedback, next_packet_size() is unused.
-  */
--static int next_packet_size(struct snd_usb_endpoint *ep)
-+int snd_usb_endpoint_next_packet_size(struct snd_usb_endpoint *ep)
- {
- 	unsigned long flags;
- 	int ret;
-@@ -177,15 +177,6 @@ static void retire_inbound_urb(struct sn
- 		ep->retire_data_urb(ep->data_subs, urb);
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -194,6 +194,12 @@ static ssize_t show_dscr_default(struct
+ 	return sprintf(buf, "%lx\n", dscr_default);
  }
  
--static void prepare_outbound_urb_sizes(struct snd_usb_endpoint *ep,
--				       struct snd_urb_ctx *ctx)
--{
--	int i;
--
--	for (i = 0; i < ctx->packets; ++i)
--		ctx->packet_size[i] = next_packet_size(ep);
--}
--
- /*
-  * Prepare a PLAYBACK urb for submission to the bus.
-  */
-@@ -370,7 +361,6 @@ static void snd_complete_urb(struct urb
- 			goto exit_clear;
- 		}
- 
--		prepare_outbound_urb_sizes(ep, ctx);
- 		prepare_outbound_urb(ep, ctx);
- 	} else {
- 		retire_inbound_urb(ep, ctx);
-@@ -857,7 +847,6 @@ int snd_usb_endpoint_start(struct snd_us
- 			goto __error;
- 
- 		if (usb_pipeout(ep->pipe)) {
--			prepare_outbound_urb_sizes(ep, urb->context);
- 			prepare_outbound_urb(ep, urb->context);
- 		} else {
- 			prepare_inbound_urb(ep, urb->context);
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -21,6 +21,7 @@ int  snd_usb_endpoint_deactivate(struct
- void snd_usb_endpoint_free(struct list_head *head);
- 
- int snd_usb_endpoint_implict_feedback_sink(struct snd_usb_endpoint *ep);
-+int snd_usb_endpoint_next_packet_size(struct snd_usb_endpoint *ep);
- 
- void snd_usb_handle_sync_urb(struct snd_usb_endpoint *ep,
- 			     struct snd_usb_endpoint *sender,
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1029,6 +1029,7 @@ static void prepare_playback_urb(struct
- 				 struct urb *urb)
- {
- 	struct snd_pcm_runtime *runtime = subs->pcm_substream->runtime;
-+	struct snd_usb_endpoint *ep = subs->data_endpoint;
- 	struct snd_urb_ctx *ctx = urb->context;
- 	unsigned int counts, frames, bytes;
- 	int i, stride, period_elapsed = 0;
-@@ -1040,7 +1041,11 @@ static void prepare_playback_urb(struct
- 	urb->number_of_packets = 0;
- 	spin_lock_irqsave(&subs->lock, flags);
- 	for (i = 0; i < ctx->packets; i++) {
--		counts = ctx->packet_size[i];
-+		if (ctx->packet_size[i])
-+			counts = ctx->packet_size[i];
-+		else
-+			counts = snd_usb_endpoint_next_packet_size(ep);
++static void update_dscr(void *dummy)
++{
++	if (!current->thread.dscr_inherit)
++		mtspr(SPRN_DSCR, dscr_default);
++}
 +
- 		/* set up descriptor */
- 		urb->iso_frame_desc[i].offset = frames * stride;
- 		urb->iso_frame_desc[i].length = counts * stride;
+ static ssize_t __used store_dscr_default(struct device *dev,
+ 		struct device_attribute *attr, const char *buf,
+ 		size_t count)
+@@ -206,6 +212,8 @@ static ssize_t __used store_dscr_default
+ 		return -EINVAL;
+ 	dscr_default = val;
+ 
++	on_each_cpu(update_dscr, NULL, 1);
++
+ 	return count;
+ }
+ 
 
 
