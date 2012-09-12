@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750852Ab2ILEJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 00:09:41 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40372 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2ILEJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 00:09:38 -0400
-Date: Tue, 11 Sep 2012 21:06:57 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [RFC] tty/serial/kgdboc: Add and wire up clear_irqs callback
-Message-ID: <20120912040657.GA3880@lizard>
-References: <20120911093042.GA12471@lizard>
- <1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
- <20120911151540.362001c6@pyramind.ukuu.org.uk>
- <20120912033209.GA32156@lizard>
- <CAMbhsRTmZyxFE-vAa-UvNE8KJ2f0cfXP7mncXKcpUiNF6C9PUQ@mail.gmail.com>
+	id S1751112Ab2ILEPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 00:15:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54142 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab2ILEPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 00:15:40 -0400
+Message-ID: <50500C5C.8060006@zytor.com>
+Date: Tue, 11 Sep 2012 21:15:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTmZyxFE-vAa-UvNE8KJ2f0cfXP7mncXKcpUiNF6C9PUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/2] module: add syscall to load module from fd
+References: <1346955201-8926-1-git-send-email-keescook@chromium.org>
+In-Reply-To: <1346955201-8926-1-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 08:42:46PM -0700, Colin Cross wrote:
-[...]
-> > The "problem" is in the last step. If we exit NMI without making UART
-> > know that we're done with the interrupt, we will reenter the NMI
-> > immediately, even without any new characters from the UART.
-> 
-> The UART irq line should go low when you read the character out of the
+On 09/06/2012 11:13 AM, Kees Cook wrote:
+> Instead of (or in addition to) kernel module signing, being able to reason
+> about the origin of a kernel module would be valuable in situations
+> where an OS already trusts a specific file system, file, etc, due to
+> things like security labels or an existing root of trust to a partition
+> through things like dm-verity.
+>
+> This introduces a new syscall (currently only on x86), similar to
+> init_module, that has only two arguments. The first argument is used as
+> a file descriptor to the module and the second argument is a pointer to
+> the NULL terminated string of module arguments.
+>
 
-Probably some controllers may lower the line by themselves, but not
-all, and probably most of them need an explicit clear.
+Please use the standard naming convention, which is an f- prefix (i.e. 
+finit_module()).
 
-> receive buffer, or the polling rx function should clear the interrupt
-> for you.
+	-hpa
 
-Yes, that's an option. But that way we add a new semantic for the
-polling routines, and effecitvely we just merge the two callbacks.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Of course, if Alan is OK with this, I'm more than OK too. :-)
-
-(But the polling routines would need to clear all interrupts, not
-just rx/tx. For example, if the controller indicated some error, and
-nobody clears it, then we'll start reentering infinitely.)
-
-> If you use a clear_irqs callback, you can drop characters if
-> one arrives between the last character buffer read and calling
-> clear_irqs.
-
-Only if we call clear_irqs() after reading the characters, but we do
-it before. So if new characters are available, we will reenter NMI,
-which is OK.
-
-But if used incorrectly, it truly can cause dropping (or staling) of
-characters, so I'd better add some comments about this.
-
-Thanks!
-
-Anton.
