@@ -1,23 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab2ILXld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:41:33 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932929Ab2ILXl1 (ORCPT
+	id S932910Ab2ILXlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:41:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757Ab2ILXlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:27 -0400
+	Wed, 12 Sep 2012 19:41:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 61/85] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
-Date: Wed, 12 Sep 2012 16:36:44 -0700
-Message-Id: <20120912233548.130986523@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Herton Ronaldo Krzesinski <herton@canonical.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: =?UTF-8?q?=5B=2058/85=5D=20USB=3A=20rtl8187=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
+Date: Wed, 12 Sep 2012 16:36:41 -0700
+Message-Id: <20120912233547.827487228@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,50 +36,38 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
+commit a3433179d0822ccfa8e80aa4d1d52843bd2dcc63 upstream.
 
-Writing to dscr_default in sysfs doesn't actually change the DSCR -
-we rely on a context switch on each CPU to do the work. There is no
-guarantee we will get a context switch in a reasonable amount of time
-so fire off an IPI to force an immediate change.
+This structure needs to always stick around, even if CONFIG_HOTPLUG
+is disabled, otherwise we can oops when trying to probe a device that
+was added after the structure is thrown away.
 
-This issue was found with the following test case:
+Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
 
-http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+CC: Herton Ronaldo Krzesinski <herton@canonical.com>
+CC: Hin-Tak Leung <htl10@users.sourceforge.net>
+CC: Larry Finger <Larry.Finger@lwfinger.net>
+CC: "John W. Linville" <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/sysfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/wireless/rtl818x/rtl8187/dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -194,6 +194,12 @@ static ssize_t show_dscr_default(struct
- 	return sprintf(buf, "%lx\n", dscr_default);
- }
+--- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
++++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+@@ -44,7 +44,7 @@ MODULE_AUTHOR("Larry Finger <Larry.Finge
+ MODULE_DESCRIPTION("RTL8187/RTL8187B USB wireless driver");
+ MODULE_LICENSE("GPL");
  
-+static void update_dscr(void *dummy)
-+{
-+	if (!current->thread.dscr_inherit)
-+		mtspr(SPRN_DSCR, dscr_default);
-+}
-+
- static ssize_t __used store_dscr_default(struct device *dev,
- 		struct device_attribute *attr, const char *buf,
- 		size_t count)
-@@ -206,6 +212,8 @@ static ssize_t __used store_dscr_default
- 		return -EINVAL;
- 	dscr_default = val;
- 
-+	on_each_cpu(update_dscr, NULL, 1);
-+
- 	return count;
- }
- 
+-static struct usb_device_id rtl8187_table[] __devinitdata = {
++static struct usb_device_id rtl8187_table[] = {
+ 	/* Asus */
+ 	{USB_DEVICE(0x0b05, 0x171d), .driver_info = DEVICE_RTL8187},
+ 	/* Belkin */
 
 
