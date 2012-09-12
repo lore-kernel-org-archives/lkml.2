@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab2IMAHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:07:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1757333Ab2IMAH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:07:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab2ILXjo (ORCPT
+	with ESMTP id S1754587Ab2ILXjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:44 -0400
+	Wed, 12 Sep 2012 19:39:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 49/85] sched: fix divide by zero at {thread_group,task}_times
-Date: Wed, 12 Sep 2012 16:36:32 -0700
-Message-Id: <20120912233546.883856587@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 47/85] block: replace __getblk_slow misfix by grow_dev_page fix
+Date: Wed, 12 Sep 2012 16:36:30 -0700
+Message-Id: <20120912233546.673296113@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,111 +28,201 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e upstream.
+commit 676ce6d5ca3098339c028d44fe0427d1566a4d2d upstream.
 
-On architectures where cputime_t is 64 bit type, is possible to trigger
-divide by zero on do_div(temp, (__force u32) total) line, if total is a
-non zero number but has lower 32 bit's zeroed. Removing casting is not
-a good solution since some do_div() implementations do cast to u32
-internally.
+Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
+is not good: a successful call to grow_buffers() cannot guarantee
+that the page won't be reclaimed before the immediate next call to
+__find_get_block(), which is why there was always a loop there.
 
-This problem can be triggered in practice on very long lived processes:
+Yesterday I got "EXT4-fs error (device loop0): __ext4_get_inode_loc:3595:
+inode #19278: block 664: comm cc1: unable to read itable block" on console,
+which pointed to this commit.
 
-  PID: 2331   TASK: ffff880472814b00  CPU: 2   COMMAND: "oraagent.bin"
-   #0 [ffff880472a51b70] machine_kexec at ffffffff8103214b
-   #1 [ffff880472a51bd0] crash_kexec at ffffffff810b91c2
-   #2 [ffff880472a51ca0] oops_end at ffffffff814f0b00
-   #3 [ffff880472a51cd0] die at ffffffff8100f26b
-   #4 [ffff880472a51d00] do_trap at ffffffff814f03f4
-   #5 [ffff880472a51d60] do_divide_error at ffffffff8100cfff
-   #6 [ffff880472a51e00] divide_error at ffffffff8100be7b
-      [exception RIP: thread_group_times+0x56]
-      RIP: ffffffff81056a16  RSP: ffff880472a51eb8  RFLAGS: 00010046
-      RAX: bc3572c9fe12d194  RBX: ffff880874150800  RCX: 0000000110266fad
-      RDX: 0000000000000000  RSI: ffff880472a51eb8  RDI: 001038ae7d9633dc
-      RBP: ffff880472a51ef8   R8: 00000000b10a3a64   R9: ffff880874150800
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: ffff880472a51f08
-      R13: ffff880472a51f10  R14: 0000000000000000  R15: 0000000000000007
-      ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-   #7 [ffff880472a51f00] do_sys_times at ffffffff8108845d
-   #8 [ffff880472a51f40] sys_times at ffffffff81088524
-   #9 [ffff880472a51f80] system_call_fastpath at ffffffff8100b0f2
-      RIP: 0000003808caac3a  RSP: 00007fcba27ab6d8  RFLAGS: 00000202
-      RAX: 0000000000000064  RBX: ffffffff8100b0f2  RCX: 0000000000000000
-      RDX: 00007fcba27ab6e0  RSI: 000000000076d58e  RDI: 00007fcba27ab6e0
-      RBP: 00007fcba27ab700   R8: 0000000000000020   R9: 000000000000091b
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: 00007fff9ca41940
-      R13: 0000000000000000  R14: 00007fcba27ac9c0  R15: 00007fff9ca41940
-      ORIG_RAX: 0000000000000064  CS: 0033  SS: 002b
+I've been trying to bisect for weeks, why kbuild-on-ext4-on-loop-on-tmpfs
+sometimes fails from a missing header file, under memory pressure on
+ppc G5.  I've never seen this on x86, and I've never seen it on 3.5-rc7
+itself, despite that commit being in there: bisection pointed to an
+irrelevant pinctrl merge, but hard to tell when failure takes between
+18 minutes and 38 hours (but so far it's happened quicker on 3.6-rc2).
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120808092714.GA3580@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+(I've since found such __ext4_get_inode_loc errors in /var/log/messages
+from previous weeks: why the message never appeared on console until
+yesterday morning is a mystery for another day.)
+
+Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
+a checkpatch nitfix).  Simplify the interface between grow_buffers()
+and grow_dev_page(), and avoid the infinite loop beyond end of device
+by instead checking init_page_buffers()'s end_block there (I presume
+that's more efficient than a repeated call to blkdev_max_block()),
+returning -ENXIO to __getblk_slow() in that case.
+
+And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
+comment, but that is worrying: are all users of __getblk() really
+now prepared for a NULL bh beyond end of device, or will some oops??
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ fs/buffer.c |   66 +++++++++++++++++++++++++++---------------------------------
+ 1 file changed, 30 insertions(+), 36 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3084,6 +3084,20 @@ void thread_group_times(struct task_stru
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
-+static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+{
-+	u64 temp = (__force u64) rtime;
-+
-+	temp *= (__force u64) utime;
-+
-+	if (sizeof(cputime_t) == 4)
-+		temp = div_u64(temp, (__force u32) total);
-+	else
-+		temp = div64_u64(temp, (__force u64) total);
-+
-+	return (__force cputime_t) temp;
-+}
-+
- void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -914,7 +914,7 @@ link_dev_buffers(struct page *page, stru
+ /*
+  * Initialise the state of a blockdev page's buffers.
+  */ 
+-static void
++static sector_t
+ init_page_buffers(struct page *page, struct block_device *bdev,
+ 			sector_t block, int size)
  {
- 	cputime_t rtime, utime = p->utime, total = utime + p->stime;
-@@ -3093,13 +3107,9 @@ void task_times(struct task_struct *p, c
+@@ -936,33 +936,41 @@ init_page_buffers(struct page *page, str
+ 		block++;
+ 		bh = bh->b_this_page;
+ 	} while (bh != head);
++
++	/*
++	 * Caller needs to validate requested block against end of device.
++	 */
++	return end_block;
+ }
+ 
+ /*
+  * Create the page-cache page that contains the requested block.
+  *
+- * This is user purely for blockdev mappings.
++ * This is used purely for blockdev mappings.
+  */
+-static struct page *
++static int
+ grow_dev_page(struct block_device *bdev, sector_t block,
+-		pgoff_t index, int size)
++		pgoff_t index, int size, int sizebits)
+ {
+ 	struct inode *inode = bdev->bd_inode;
+ 	struct page *page;
+ 	struct buffer_head *bh;
++	sector_t end_block;
++	int ret = 0;		/* Will call free_more_memory() */
+ 
+ 	page = find_or_create_page(inode->i_mapping, index,
+ 		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
+ 	if (!page)
+-		return NULL;
++		return ret;
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+ 	if (page_has_buffers(page)) {
+ 		bh = page_buffers(page);
+ 		if (bh->b_size == size) {
+-			init_page_buffers(page, bdev, block, size);
+-			return page;
++			end_block = init_page_buffers(page, bdev,
++						index << sizebits, size);
++			goto done;
+ 		}
+ 		if (!try_to_free_buffers(page))
+ 			goto failed;
+@@ -982,14 +990,14 @@ grow_dev_page(struct block_device *bdev,
  	 */
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
- 
--	if (total) {
--		u64 temp = (__force u64) rtime;
+ 	spin_lock(&inode->i_mapping->private_lock);
+ 	link_dev_buffers(page, bh);
+-	init_page_buffers(page, bdev, block, size);
++	end_block = init_page_buffers(page, bdev, index << sizebits, size);
+ 	spin_unlock(&inode->i_mapping->private_lock);
+-	return page;
 -
--		temp *= (__force u64) utime;
--		do_div(temp, (__force u32) total);
--		utime = (__force cputime_t) temp;
--	} else
-+	if (total)
-+		utime = scale_utime(utime, rtime, total);
-+	else
- 		utime = rtime;
++done:
++	ret = (block < end_block) ? 1 : -ENXIO;
+ failed:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+-	return NULL;
++	return ret;
+ }
  
- 	/*
-@@ -3126,13 +3136,9 @@ void thread_group_times(struct task_stru
- 	total = cputime.utime + cputime.stime;
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ /*
+@@ -999,7 +1007,6 @@ failed:
+ static int
+ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ {
+-	struct page *page;
+ 	pgoff_t index;
+ 	int sizebits;
  
--	if (total) {
--		u64 temp = (__force u64) rtime;
+@@ -1023,22 +1030,14 @@ grow_buffers(struct block_device *bdev,
+ 			bdevname(bdev, b));
+ 		return -EIO;
+ 	}
+-	block = index << sizebits;
++
+ 	/* Create a page with the proper size buffers.. */
+-	page = grow_dev_page(bdev, block, index, size);
+-	if (!page)
+-		return 0;
+-	unlock_page(page);
+-	page_cache_release(page);
+-	return 1;
++	return grow_dev_page(bdev, block, index, size, sizebits);
+ }
+ 
+ static struct buffer_head *
+ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ {
+-	int ret;
+-	struct buffer_head *bh;
 -
--		temp *= (__force u64) cputime.utime;
--		do_div(temp, (__force u32) total);
--		utime = (__force cputime_t) temp;
--	} else
-+	if (total)
-+		utime = scale_utime(cputime.utime, rtime, total);
-+	else
- 		utime = rtime;
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+ 			(size < 512 || size > PAGE_SIZE))) {
+@@ -1051,21 +1050,20 @@ __getblk_slow(struct block_device *bdev,
+ 		return NULL;
+ 	}
  
- 	sig->prev_utime = max(sig->prev_utime, utime);
+-retry:
+-	bh = __find_get_block(bdev, block, size);
+-	if (bh)
+-		return bh;
++	for (;;) {
++		struct buffer_head *bh;
++		int ret;
+ 
+-	ret = grow_buffers(bdev, block, size);
+-	if (ret == 0) {
+-		free_more_memory();
+-		goto retry;
+-	} else if (ret > 0) {
+ 		bh = __find_get_block(bdev, block, size);
+ 		if (bh)
+ 			return bh;
++
++		ret = grow_buffers(bdev, block, size);
++		if (ret < 0)
++			return NULL;
++		if (ret == 0)
++			free_more_memory();
+ 	}
+-	return NULL;
+ }
+ 
+ /*
+@@ -1321,10 +1319,6 @@ EXPORT_SYMBOL(__find_get_block);
+  * which corresponds to the passed block_device, block and size. The
+  * returned buffer has its reference count incremented.
+  *
+- * __getblk() cannot fail - it just keeps trying.  If you pass it an
+- * illegal block number, __getblk() will happily return a buffer_head
+- * which represents the non-existent block.  Very weird.
+- *
+  * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
+  * attempt is failing.  FIXME, perhaps?
+  */
 
 
