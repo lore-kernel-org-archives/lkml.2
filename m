@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760049Ab2ILPIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:08:40 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:65276 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759898Ab2ILPHQ (ORCPT
+	id S1760092Ab2ILPJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:09:18 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34173 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759752Ab2ILPHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:07:16 -0400
+	Wed, 12 Sep 2012 11:07:15 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+To: Luca Tettamanti <kronos.it@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] drivers/staging/gdm72xx/gdm_sdio.c: Remove useless kfree
-Date: Wed, 12 Sep 2012 17:06:44 +0200
-Message-Id: <1347462407-13499-6-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 4/9] drivers/hwmon/asus_atk0110.c: Remove useless kfree
+Date: Wed, 12 Sep 2012 17:06:42 +0200
+Message-Id: <1347462407-13499-4-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -72,31 +73,19 @@ expression x;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/staging/gdm72xx/gdm_sdio.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/hwmon/asus_atk0110.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index f824290..a0621d9 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -94,17 +94,14 @@ static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
- 	struct sdio_rx *r = NULL;
+diff --git a/drivers/hwmon/asus_atk0110.c b/drivers/hwmon/asus_atk0110.c
+index 4ee5789..cccb0e9 100644
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -962,7 +962,6 @@ static int atk_add_sensor(struct atk_data *data, union acpi_object *obj)
  
- 	r = kmalloc(sizeof(*r), GFP_ATOMIC);
--	if (r == NULL)
--		goto out;
-+	if (!r)
-+		return NULL;
- 
- 	memset(r, 0, sizeof(*r));
- 
- 	r->rx_cxt = rx;
- 
- 	return r;
--out:
--	kfree(r);
--	return NULL;
+ 	return 1;
+ out:
+-	kfree(sensor->acpi_name);
+ 	kfree(sensor);
+ 	return err;
  }
- 
- static void free_rx_struct(struct sdio_rx *r)
 
