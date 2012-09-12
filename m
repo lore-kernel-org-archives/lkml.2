@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab2ILTMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 15:12:19 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:57257 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab2ILTMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 15:12:17 -0400
+	id S1751698Ab2ILTTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 15:19:40 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:17856 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab2ILTTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 15:19:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,411,1344236400"; 
+   d="scan'208";a="688877432"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "Linux NFS mailing list" <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
+Thread-Index: AQHNkRuMUodL8rhL7kKXqOczsvcH5w==
+Date: Wed, 12 Sep 2012 19:19:37 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F9F0CD@SACEXCMBX04-PRD.hq.netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <09C662CF58114E4A9BF7D8451BABA6D6@tahoe.netapp.com>
 MIME-Version: 1.0
-Date: Wed, 12 Sep 2012 12:12:16 -0700
-Message-ID: <CA+HUmGiXkMtLG84KiXZiuuQnSOseY7R5ykHq8226YaTnuzp=Qw@mail.gmail.com>
-Subject: PATCH [1/1] fs/proc: unregister_sysctl_table hanging forever
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8CJK3RF031359
 
-unregister_sysctl_table hangs forever if all references to its
-ctl_table_header structure are not dropped.
-This happens sometimes because of a leak in proc_sys_lookup().
-proc_sys_lookup() gets a reference to the table via lookup_entry(), but it
-does not release it when a subsequent call to sysctl_follow_link() fails.
-This patch fixes this leak by making sure the reference is always dropped
-on return.
-See also 076c3eed2c31773200b082568957fd8852ae93d7 which reorganized this
-code in 3.4.
+Hi Linus,
 
-Tested in Linux 3.4.4.
+The following changes since commit 086600430493e04b802bee6e5b3ce0458e4eb77f:
 
-Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
+  NFSv3: Ensure that do_proc_get_root() reports errors correctly (2012-08-20 12:52:42 -0400)
 
-Index: linux-3.4.x86_64/fs/proc/proc_sysctl.c
-===================================================================
---- linux-3.4.x86_64.orig/fs/proc/proc_sysctl.c
-+++ linux-3.4.x86_64/fs/proc/proc_sysctl.c
-@@ -462,9 +462,6 @@ static struct dentry *proc_sys_lookup(st
+are available in the git repository at:
 
- 	err = ERR_PTR(-ENOMEM);
- 	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
--	if (h)
--		sysctl_head_finish(h);
--
- 	if (!inode)
- 		goto out;
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.6-4
 
-@@ -473,6 +470,8 @@ static struct dentry *proc_sys_lookup(st
- 	d_add(dentry, inode);
+for you to fetch changes up to 7b281ee026552f10862b617a2a51acf49c829554:
 
- out:
-+	if (h)
-+		sysctl_head_finish(h);
- 	sysctl_head_finish(head);
- 	return err;
- }
+  NFS: fsync() must exit with an error if page writeback failed (2012-09-11 15:38:32 -0400)
+
+----------------------------------------------------------------
+NFS client bugfixes for Linux 3.6
+
+- Final (hopefully) fix for the range checking code in NFSv4 getacl. This
+  should fix the Oopses being seen when the acl size is close to PAGE_SIZE.
+- Fix a regression with the legacy binary mount code
+- Fix a regression in the readdir cookieverf initialisation
+- Fix an RPC over UDP regression
+- Ensure that we report all errors in the NFSv4 open code
+- Ensure that fsync() reports all relevant synchronisation errors.
+
+----------------------------------------------------------------
+Trond Myklebust (6):
+      NFS: Fix the initialisation of the readdir 'cookieverf' array
+      NFS: Fix a problem with the legacy binary mount code
+      NFSv4: Fix range checking in __nfs4_get_acl_uncached and __nfs4_proc_set_acl
+      NFSv4: Fix buffer overflow checking in __nfs4_get_acl_uncached
+      SUNRPC: Fix a UDP transport regression
+      NFS: fsync() must exit with an error if page writeback failed
+
+Weston Andros Adamson (1):
+      NFS: return error from decode_getfh in decode open
+
+ fs/nfs/file.c                   |  4 ++-
+ fs/nfs/inode.c                  |  2 +-
+ fs/nfs/nfs3proc.c               |  2 +-
+ fs/nfs/nfs4file.c               |  4 ++-
+ fs/nfs/nfs4proc.c               | 55 +++++++++++++++++++----------------------
+ fs/nfs/nfs4xdr.c                | 17 ++++++-------
+ fs/nfs/super.c                  |  2 ++
+ include/linux/nfs_fs.h          |  5 ----
+ include/linux/nfs_xdr.h         |  2 +-
+ include/linux/sunrpc/xprt.h     |  3 +++
+ net/sunrpc/xprt.c               | 34 ++++++++++++++-----------
+ net/sunrpc/xprtrdma/transport.c |  1 +
+ net/sunrpc/xprtsock.c           |  3 +++
+ 13 files changed, 70 insertions(+), 64 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
