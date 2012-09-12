@@ -1,70 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760971Ab2ILSED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 14:04:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51463 "EHLO bear.ext.ti.com"
+	id S1760989Ab2ILSG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 14:06:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51631 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab2ILSEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 14:04:00 -0400
-Message-ID: <5050CE33.9060909@ti.com>
-Date: Wed, 12 Sep 2012 14:02:27 -0400
+	id S1753378Ab2ILSGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 14:06:23 -0400
 From: Cyril Chemparathy <cyril@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
+To: <linux-arm-kernel@lists.infradead.org>, <linux-ia64@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
+CC: <arnd@arndb.de>, <cyril@ti.com>, <dhowells@redhat.com>,
+        <fenghua.yu@intel.com>, <gregkh@linuxfoundation.org>,
+        <lethal@linux-sh.org>, <linux@arm.linux.org.uk>, <nico@linaro.org>,
+        <rob.herring@calxeda.com>, <tony.luck@intel.com>, <tony@atomide.com>,
+        <will.deacon@arm.com>
+Subject: [PATCH v2] /dev/mem: use phys_addr_t for physical addresses
+Date: Wed, 12 Sep 2012 14:05:58 -0400
+Message-ID: <1347473158-7219-1-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-c6x-dev@linux-c6x.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <linux@openrisc.net>, <linuxppc-dev@lists.ozlabs.org>,
-        <microblaze-uclinux@itee.uq.edu.au>, <a-jacquiot@ti.com>,
-        <arnd@arndb.de>, <benh@kernel.crashing.org>, <bigeasy@linutronix.de>,
-        <blogic@openwrt.org>, <david.daney@cavium.com>, <dhowells@redhat.com>,
-        <grant.likely@secretlab.ca>, <hpa@zytor.com>, <jonas@southpole.se>,
-        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
-        <m.szyprowski@samsung.com>, <mahesh@linux.vnet.ibm.com>,
-        <mingo@redhat.com>, <monstr@monstr.eu>, <msalter@redhat.com>,
-        <nico@linaro.org>, <paul.gortmaker@windriver.com>, <paulus@samba.org>,
-        <ralf@linux-mips.org>, <rob.herring@calxeda.com>, <suzuki@in.ibm.com>,
-        <tglx@linutronix.de>, <tj@kernel.org>, <x86@kernel.org>
-Subject: Re: [PATCH] of: specify initrd location using 64-bit
-References: <1347465937-7056-1-git-send-email-cyril@ti.com> <CAMuHMdUuQzD0bq8PifBea2-0Pk7RhmPA0-GAFprsk+vMxMGjGw@mail.gmail.com>
-In-Reply-To: <CAMuHMdUuQzD0bq8PifBea2-0Pk7RhmPA0-GAFprsk+vMxMGjGw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/12/2012 12:16 PM, Geert Uytterhoeven wrote:
-> On Wed, Sep 12, 2012 at 6:05 PM, Cyril Chemparathy <cyril@ti.com> wrote:
->> On some PAE architectures, the entire range of physical memory could reside
->> outside the 32-bit limit.  These systems need the ability to specify the
->> initrd location using 64-bit numbers.
->>
->> This patch globally modifies the early_init_dt_setup_initrd_arch() function to
->> use 64-bit numbers instead of the current unsigned long.
->
->> -void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
->> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
->
-> Why not phys_addr_t?
->
+This patch fixes the /dev/mem driver to use phys_addr_t for physical
+addresses.  This is required on PAE systems, especially those that run
+entirely out of >4G physical memory space.
 
-The rest of the memory specific bits of the device-tree code use u64 for 
-addresses, and I kept it the same for consistency.
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+---
+ arch/arm/include/asm/io.h  |    2 +-
+ arch/arm/mm/mmap.c         |    2 +-
+ arch/ia64/include/asm/io.h |    2 +-
+ arch/ia64/kernel/efi.c     |    2 +-
+ arch/sh/include/asm/io.h   |    2 +-
+ arch/sh/mm/mmap.c          |    2 +-
+ drivers/char/mem.c         |   10 +++++-----
+ 7 files changed, 11 insertions(+), 11 deletions(-)
 
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
-
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index 35c1ed8..f52a93d 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -374,7 +374,7 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
+ 
+ #ifdef CONFIG_MMU
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+-extern int valid_phys_addr_range(unsigned long addr, size_t size);
++extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+ extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+ extern int devmem_is_allowed(unsigned long pfn);
+ #endif
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index ce8cb19..89f2b7f 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -279,7 +279,7 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+  * You really shouldn't be using read() or write() on /dev/mem.  This
+  * might go away in the future.
+  */
+-int valid_phys_addr_range(unsigned long addr, size_t size)
++int valid_phys_addr_range(phys_addr_t addr, size_t size)
+ {
+ 	if (addr < PHYS_OFFSET)
+ 		return 0;
+diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
+index 2c26321..74a7cc3 100644
+--- a/arch/ia64/include/asm/io.h
++++ b/arch/ia64/include/asm/io.h
+@@ -90,7 +90,7 @@ phys_to_virt (unsigned long address)
+ 
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+ extern u64 kern_mem_attribute (unsigned long phys_addr, unsigned long size);
+-extern int valid_phys_addr_range (unsigned long addr, size_t count); /* efi.c */
++extern int valid_phys_addr_range (phys_addr_t addr, size_t count); /* efi.c */
+ extern int valid_mmap_phys_addr_range (unsigned long pfn, size_t count);
+ 
+ /*
+diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+index d37bbd4..f034563 100644
+--- a/arch/ia64/kernel/efi.c
++++ b/arch/ia64/kernel/efi.c
+@@ -870,7 +870,7 @@ kern_mem_attribute (unsigned long phys_addr, unsigned long size)
+ EXPORT_SYMBOL(kern_mem_attribute);
+ 
+ int
+-valid_phys_addr_range (unsigned long phys_addr, unsigned long size)
++valid_phys_addr_range (phys_addr_t phys_addr, unsigned long size)
+ {
+ 	u64 attr;
+ 
+diff --git a/arch/sh/include/asm/io.h b/arch/sh/include/asm/io.h
+index 0cf60a6..c4302a5 100644
+--- a/arch/sh/include/asm/io.h
++++ b/arch/sh/include/asm/io.h
+@@ -382,7 +382,7 @@ static inline int iounmap_fixed(void __iomem *addr) { return -EINVAL; }
+ #define xlate_dev_kmem_ptr(p)	p
+ 
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+-int valid_phys_addr_range(unsigned long addr, size_t size);
++int valid_phys_addr_range(phys_addr_t addr, size_t size);
+ int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/sh/mm/mmap.c b/arch/sh/mm/mmap.c
+index afeb710..80bf494 100644
+--- a/arch/sh/mm/mmap.c
++++ b/arch/sh/mm/mmap.c
+@@ -238,7 +238,7 @@ bottomup:
+  * You really shouldn't be using read() or write() on /dev/mem.  This
+  * might go away in the future.
+  */
+-int valid_phys_addr_range(unsigned long addr, size_t count)
++int valid_phys_addr_range(phys_addr_t addr, size_t count)
+ {
+ 	if (addr < __MEMORY_START)
+ 		return 0;
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 0537903..c6fa3bc 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -48,7 +48,7 @@ static inline unsigned long size_inside_page(unsigned long start,
+ }
+ 
+ #ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE
+-static inline int valid_phys_addr_range(unsigned long addr, size_t count)
++static inline int valid_phys_addr_range(phys_addr_t addr, size_t count)
+ {
+ 	return addr + count <= __pa(high_memory);
+ }
+@@ -96,7 +96,7 @@ void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
+ static ssize_t read_mem(struct file *file, char __user *buf,
+ 			size_t count, loff_t *ppos)
+ {
+-	unsigned long p = *ppos;
++	phys_addr_t p = *ppos;
+ 	ssize_t read, sz;
+ 	char *ptr;
+ 
+@@ -153,7 +153,7 @@ static ssize_t read_mem(struct file *file, char __user *buf,
+ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 			 size_t count, loff_t *ppos)
+ {
+-	unsigned long p = *ppos;
++	phys_addr_t p = *ppos;
+ 	ssize_t written, sz;
+ 	unsigned long copied;
+ 	void *ptr;
+@@ -226,7 +226,7 @@ int __weak phys_mem_access_prot_allowed(struct file *file,
+  *
+  */
+ #ifdef pgprot_noncached
+-static int uncached_access(struct file *file, unsigned long addr)
++static int uncached_access(struct file *file, phys_addr_t addr)
+ {
+ #if defined(CONFIG_IA64)
+ 	/*
+@@ -258,7 +258,7 @@ static pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+ 				     unsigned long size, pgprot_t vma_prot)
+ {
+ #ifdef pgprot_noncached
+-	unsigned long offset = pfn << PAGE_SHIFT;
++	phys_addr_t offset = pfn << PAGE_SHIFT;
+ 
+ 	if (uncached_access(file, offset))
+ 		return pgprot_noncached(vma_prot);
 -- 
-Thanks
-- Cyril
+1.7.9.5
+
