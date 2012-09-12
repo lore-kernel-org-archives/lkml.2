@@ -1,110 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2ILREH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:04:07 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38019 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab2ILRD6 (ORCPT
+	id S932321Ab2ILREX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:04:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54888 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212Ab2ILREC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:03:58 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <1347020137.2223.13.camel@iscandar.digidescorp.com>
-	<87oblfpmnb.fsf@devron.myhome.or.jp>
-	<87k3w3ph8d.fsf@devron.myhome.or.jp>
-	<CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
-	<87har6kmfx.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-	<87oblc4u6f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
-	<871ui84l4l.fsf@devron.myhome.or.jp>
-	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
-	<20120912143227.GE3009@fieldses.org>
-Date: Thu, 13 Sep 2012 02:03:51 +0900
-In-Reply-To: <20120912143227.GE3009@fieldses.org> (J. Bruce Fields's message
-	of "Wed, 12 Sep 2012 10:32:27 -0400")
-Message-ID: <87vcfjfa14.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Wed, 12 Sep 2012 13:04:02 -0400
+Date: Wed, 12 Sep 2012 10:03:57 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
+ hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120912170357.GN7677@google.com>
+References: <20120910223125.GC7677@google.com>
+ <505055E5.90903@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505055E5.90903@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+Hello, Glauber.
 
->> > Supposing, the server/client state is after cold boot, and client try to
->> > rename at first without any cache on client/server.
->> >
->> > Even if this state, does the server return ESTALE? If it doesn't return
->> > ESTALE, I can't understand why it is really unfixable.
->> Hi OGAWA.
->> Server will not return ESTALE in this case. because the client does
->> not have any information for files yet.
->
-> It does if the client mounted before the server rebooted.  NFS is
-> designed so that servers can reboot without causing clients to fail.
-> (Applications will just see a delay during the reboot.)
->
-> It probably isn't possible to this work in the case of fat.
->
-> But from fat's point of view there probably isn't much difference
-> between a filehandle lookup after a reboot and a filehandle lookup after
-> the inode's gone from cache.
+On Wed, Sep 12, 2012 at 01:29:09PM +0400, Glauber Costa wrote:
+> Haven't gone through the whole patch yet, and not sure how you actually
+> touch memcg in here. And I absolutely know we have discussed this
+> before, but I still stand that for the memcg case, in which hierarchy
+> can be enabled by a crazy boolean, we should be enabling it somehow. It
+> is fine if we don't want to change the default without warning first,
+> but a Kconfig option to make this default would really help. We should
+> tell everybody with a well defined lifecycle to just enable it.
 
-This is talking about to retry by client side, not server side solution.
-What happens if client retry after got ESTALE? (Yes, this would not be
-the solution for all NFS clients. But, I guess this solution can be for
-linux NFS client.)
+I'm not really sure how useful the Kconfig would be.  I'm not gonna
+nack it but am not sure it's useful either.  Michal seems to be in the
+same boat, so I suppose there's no strong opposition.
 
-> I really don't see what you can do to help here.  Won't anything that
-> allows looking up an uncached inode by filehandle also risk finding the
-> wrong file?
+I don't think it would make life easier for distros.  It could differ
+depending on distros but in my experience with SUSE trivial patches
+flipping the default aren't big deals especially if upstream has
+transition plan in place.  The difficulty here is that somebody needs
+to assess the situation and preferably make that decision conciously -
+the mechanism to do so be it a one liner patch or Kconfig option
+doesn't really matter and across the transition period we would want
+to keep the memcg behavior consistent regardless which kernel is in
+use.
 
-On other view (as server side solution), we are thinking there is
-possible to make the stable filehandle on FAT if we disabled some
-operations (e.g. rename(), unlink()) which change inode location in FAT.
+The problem with Kconfig is that we shouldn't enable the new behavior
+by default as that would change the behavior silently and if we can't
+do that it's just something which is buried under the sea of config
+options.  Kconfig or no, we need to coordinate with the distros.
 
-Yes, it would be stable, but supporting limited operations.
+>From upstream, my current plan for .use_hierarchy is
 
-This is server side solution, and we comparing it with client solution.
+* Warn about broken hierarchy usage in increasing verbosity.
 
->> > If it returns ESTALE, why does it return? I'm assuming the previous code
->> > path is the cached FH path.
->> The main point for observation is the file handle-which is used for
->> all the NFS operation.
->> So for all the NFS operation(read/write....) which makes use of the
->> NFS file handle in between if there is a change in inode number
->> It will result in ESTALE.
->> Changing inode number on rename happened at NFS server by inode cache
->> eviction with memory pressure.
->> 
->> lookupcache is used at NFS client to reduce number of LOOKUP operations.
->> But , we can still get ESTALE if inode number at NFS Server change
->> after LOOKUP, although lookupcache is disable.
->> 
->> LOOKUP return NFS FH->[inode number changed at NFS Server] ->
->> But we still use old NFS FH returned from LOOKUP for any file
->> operation(write,read,etc..)
->> -> ESTALE will be returned.
+* After a couple releases, warn about creating any mem cgroup if
+  .use_hierarchy == 0 at root.
 
-Yes.  And I'm expecting as client side solution,
+* After a couple releases, switch .use_hierarchy to 1 by default and
+  loudly warn on any attempts to set it to zero.
 
--> ESTALE will be returned -> discard old FH -> restart from LOOKUP ->
-make cached inode -> use returned new FH.
+* Rip out flat hierarchy support and fail any attempt to set
+  .use_hierarchy to 0.
 
-Yeah, I know this is unstable (there is no perfect solution for now),
-but if this works, this doesn't limit any operations.
+It'll take some months but I don't think it's too crazy and I think
+the whole process should take longer than eight months to ensure any
+active distro notices it.
 
-We would want to compare client solution (-mm) and server solution
-(stable ino). Or I'd like to know which my knowledges/understanding are
-wrong here.
+Distros should set .use_hierarchy to 1 on mounting memcg.  This
+probably should happen on a new release w/ accompanying release note.
+I'll try to coordinate it at least for the popular ones.
+
+> > +	 * It's now diallowed to create nested cgroups if the subsystem is
+> typo, disallowed.
+
+Ooh, will fix.
+
+> > +	 * broken and cgroup core will emit a warning message on such
+> > +	 * cases.  Eventually, all subsystems will be made properly
+> > +	 * hierarchical and this will go away.
+> > +	 */
+> > +	bool broken_hierarchy;
+> > +	bool warned_broken_hierarchy;
+> > +
+> 
+> why do we need the extra bool? Isn't WARN_ON_ONCE() suitable here?
+
+We want to warn once per subsys instead of once for the whole system.
+
+> > +	/*
+> > +	 * net_prio has artificial limit on the number of cgroups and
+> > +	 * disallows nesting making it impossible to co-mount it with other
+> > +	 * hierarchical subsystems.  Remove the artificially low PRIOIDX_SZ
+> > +	 * limit and properly nest configuration such that children follow
+> > +	 * their parents' configurations by default and are allowed to
+> > +	 * override and remove the following.
+> > +	 */
+> > +	.broken_hierarchy = trye,
+> >  };
+> 
+> "trye" doesn't seem to be a recognized word.
+
+Yeah, fixed.
+
+> >  static int netprio_device_event(struct notifier_block *unused,
+> > --- a/net/sched/cls_cgroup.c
+> > +++ b/net/sched/cls_cgroup.c
+> > @@ -82,6 +82,15 @@ struct cgroup_subsys net_cls_subsys = {
+> >  #endif
+> >  	.base_cftypes	= ss_files,
+> >  	.module		= THIS_MODULE,
+> > +
+> > +	/*
+> > +	 * While net_cls cgroup has the rudimentary hierarchy support of
+> > +	 * inheriting the parent's classid on cgroup creation, it doesn't
+> > +	 * properly propagates config changes in ancestors to their
+> > +	 * descendents.  A child should follow the parent's configuration
+> > +	 * but be allowed to override it.  Fix it and remove the following.
+> > +	 */
+> > +	.broken_hierarchy = true,
+> >  };
+> >  
+> 
+> Since all this cgroup provides is a marking, it is not terribly obvious
+> to me what "proper hierarchy" would mean. Input from the authors would
+> be strongly advisable here.
+
+Setting mark on a parent should be reflected on all its children w/o
+their own explicit settings.
+
+Thanks.
+
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+tejun
