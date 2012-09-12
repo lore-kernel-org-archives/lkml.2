@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab2ILPGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:06:47 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:32801 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab2ILPGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:06:45 -0400
-Date: Wed, 12 Sep 2012 08:06:16 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH] module: report -EFAULT on bytes remaining
-Message-ID: <20120912150616.GA27343@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+	id S1760012Ab2ILPHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:07:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59171 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab2ILPHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:07:14 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: David Airlie <airlied@linux.ie>
+Cc: kernel-janitors@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] drivers/gpu/drm/ttm/ttm_page_alloc_dma.c: Remove useless kfree
+Date: Wed, 12 Sep 2012 17:06:41 +0200
+Message-Id: <1347462407-13499-3-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caught by smatch:
-kernel/module.c:2450 copy_module_from_user() warn: maybe return -EFAULT instead of the bytes remaining?  
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Clean up the copy_from_user() call to not report a positive value.
-With this patch, init_module() will report errors from copy_from_user
-(before it would always only report -EFAULT when err != 0).
+Remove useless kfree() and clean up code related to the removal.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+The semantic patch that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r exists@
+position p1,p2;
+expression x;
+@@
+
+if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
+
+@unchanged exists@
+position r.p1,r.p2;
+expression e <= r.x,x,e1;
+iterator I;
+statement S;
+@@
+
+if (x@p1 == NULL) { ... when != I(x,...) S
+                        when != e = e1
+                        when != e += e1
+                        when != e -= e1
+                        when != ++e
+                        when != --e
+                        when != e++
+                        when != e--
+                        when != &e
+   kfree@p2(x); ... return ...; }
+
+@ok depends on unchanged exists@
+position any r.p1;
+position r.p2;
+expression x;
+@@
+
+... when != true x@p1 == NULL
+kfree@p2(x);
+
+@depends on !ok && unchanged@
+position r.p2;
+expression x;
+@@
+
+*kfree@p2(x);
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
 ---
-This change is on top of the finit_module patch series.
----
- kernel/module.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 0ad03c4..05b8dde 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2441,8 +2441,11 @@ int copy_module_from_user(const void __user *umod, unsigned long len,
- 		return -ENOMEM;
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index 4f9e548..969d765 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1060,7 +1060,7 @@ int ttm_dma_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
  
- 	err = copy_from_user(info->hdr, umod, info->len);
--	if (err)
-+	if (err) {
-+		if (err > 0)
-+			err = -EFAULT;
- 		goto free_hdr;
-+	}
+ 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
+ 	if (!_manager)
+-		goto err_manager;
++		goto err;
  
- 	err = check_info(info);
- 	if (err)
--- 
-1.7.0.4
+ 	mutex_init(&_manager->lock);
+ 	INIT_LIST_HEAD(&_manager->pools);
+@@ -1078,9 +1078,6 @@ int ttm_dma_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ 	}
+ 	ttm_dma_pool_mm_shrink_init(_manager);
+ 	return 0;
+-err_manager:
+-	kfree(_manager);
+-	_manager = NULL;
+ err:
+ 	return ret;
+ }
 
-
--- 
-Kees Cook
-Chrome OS Security
