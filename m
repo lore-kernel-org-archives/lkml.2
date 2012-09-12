@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab2IMALn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:11:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778Ab2ILXjR (ORCPT
+	id S1757433Ab2IMAMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:12:25 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718Ab2ILXis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:17 -0400
+	Wed, 12 Sep 2012 19:38:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Boaz Harrosh <bharrosh@panasas.com>,
-        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 27/85] NFSv4.1: Remove a bogus BUG_ON() in nfs4_layoutreturn_done
-Date: Wed, 12 Sep 2012 16:36:10 -0700
-Message-Id: <20120912233544.582125931@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 35/85] NFS: Alias the nfs module to nfs4
+Date: Wed, 12 Sep 2012 16:36:18 -0700
+Message-Id: <20120912233545.415421386@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,47 +30,28 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
 
-commit 47fbf7976e0b7d9dcdd799e2a1baba19064d9631 upstream.
+This allows distros to remove the line from their modprobe
+configuration.
 
-Ever since commit 0a57cdac3f (NFSv4.1 send layoutreturn to fence
-disconnected data server) we've been sending layoutreturn calls
-while there is potentially still outstanding I/O to the data
-servers. The reason we do this is to avoid races between replayed
-writes to the MDS and the original writes to the DS.
-
-When this happens, the BUG_ON() in nfs4_layoutreturn_done can
-be triggered because it assumes that we would never call
-layoutreturn without knowing that all I/O to the DS is
-finished. The fix is to remove the BUG_ON() now that the
-assumptions behind the test are obsolete.
-
-Reported-by: Boaz Harrosh <bharrosh@panasas.com>
-Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/nfs4proc.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ fs/nfs/super.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6102,12 +6102,8 @@ static void nfs4_layoutreturn_done(struc
- 		return;
- 	}
- 	spin_lock(&lo->plh_inode->i_lock);
--	if (task->tk_status == 0) {
--		if (lrp->res.lrs_present) {
--			pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
--		} else
--			BUG_ON(!list_empty(&lo->plh_segs));
--	}
-+	if (task->tk_status == 0 && lrp->res.lrs_present)
-+		pnfs_set_layout_stateid(lo, &lrp->res.stateid, true);
- 	lo->plh_block_lgets--;
- 	spin_unlock(&lo->plh_inode->i_lock);
- 	dprintk("<-- %s\n", __func__);
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -3146,4 +3146,6 @@ static struct dentry *nfs4_referral_moun
+ 	return res;
+ }
+ 
++MODULE_ALIAS("nfs4");
++
+ #endif /* CONFIG_NFS_V4 */
 
 
