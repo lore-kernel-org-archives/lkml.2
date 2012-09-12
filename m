@@ -1,101 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab2ILPJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:09:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60432 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab2ILPHO (ORCPT
+	id S1754576Ab2ILPPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:15:11 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:34699 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2ILPPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:07:14 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] block/blk-tag.c: Remove useless kfree
-Date: Wed, 12 Sep 2012 17:06:40 +0200
-Message-Id: <1347462407-13499-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 12 Sep 2012 11:15:08 -0400
+X-AuditID: b753bd60-900c0ba0000047ca-f0-5050a6fa9325
+X-AuditID: b753bd60-900c0ba0000047ca-f0-5050a6fa9325
+Message-ID: <5050A6FA.1080503@hitachi.com>
+Date: Thu, 13 Sep 2012 00:15:06 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Hyeoncheol Lee <hyc.lee@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip/perf/core] perf probe: Add union member access
+ support
+References: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
+In-Reply-To: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+(2012/09/12 16:57), Hyeoncheol Lee wrote:
+> Union members can be accessed with '.' or '->' like data structure
+> member access
 
-Remove useless kfree() and clean up code related to the removal.
+This seems good to me :)
 
-The semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-// <smpl>
-@r exists@
-position p1,p2;
-expression x;
-@@
+Thank you!
 
-if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Hyunchul Lee <hyc.lee@gmail.com>
+> ---
+>  tools/perf/util/probe-finder.c |   24 ++++++++++++++++--------
+>  1 file changed, 16 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index 94a00de..cc2b856 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -525,8 +525,10 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  			return -ENOENT;
+>  		}
+>  		/* Verify it is a data structure  */
+> -		if (dwarf_tag(&type) != DW_TAG_structure_type) {
+> -			pr_warning("%s is not a data structure.\n", varname);
+> +		tag = dwarf_tag(&type);
+> +		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
+> +			pr_warning("%s is not a data structure nor an union.\n",
+> +				   varname);
+>  			return -EINVAL;
+>  		}
+> 
+> @@ -539,8 +541,9 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  			*ref_ptr = ref;
+>  	} else {
+>  		/* Verify it is a data structure  */
+> -		if (tag != DW_TAG_structure_type) {
+> -			pr_warning("%s is not a data structure.\n", varname);
+> +		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
+> +			pr_warning("%s is not a data structure nor an union.\n",
+> +				   varname);
+>  			return -EINVAL;
+>  		}
+>  		if (field->name[0] == '[') {
+> @@ -567,10 +570,15 @@ static int convert_variable_fields(Dwarf_Die
+> *vr_die, const char *varname,
+>  	}
+> 
+>  	/* Get the offset of the field */
+> -	ret = die_get_data_member_location(die_mem, &offs);
+> -	if (ret < 0) {
+> -		pr_warning("Failed to get the offset of %s.\n", field->name);
+> -		return ret;
+> +	if (tag == DW_TAG_union_type) {
+> +		offs = 0;
+> +	} else {
+> +		ret = die_get_data_member_location(die_mem, &offs);
+> +		if (ret < 0) {
+> +			pr_warning("Failed to get the offset of %s.\n",
+> +				   field->name);
+> +			return ret;
+> +		}
+>  	}
+>  	ref->offset += (long)offs;
+> 
 
-@unchanged exists@
-position r.p1,r.p2;
-expression e <= r.x,x,e1;
-iterator I;
-statement S;
-@@
 
-if (x@p1 == NULL) { ... when != I(x,...) S
-                        when != e = e1
-                        when != e += e1
-                        when != e -= e1
-                        when != ++e
-                        when != --e
-                        when != e++
-                        when != e--
-                        when != &e
-   kfree@p2(x); ... return ...; }
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-@ok depends on unchanged exists@
-position any r.p1;
-position r.p2;
-expression x;
-@@
-
-... when != true x@p1 == NULL
-kfree@p2(x);
-
-@depends on !ok && unchanged@
-position r.p2;
-expression x;
-@@
-
-*kfree@p2(x);
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
----
- block/blk-tag.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index 4af6f5c..cc345e1 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -186,7 +186,8 @@ int blk_queue_init_tags(struct request_queue *q, int depth,
- 		tags = __blk_queue_init_tags(q, depth);
- 
- 		if (!tags)
--			goto fail;
-+			return -ENOMEM;
-+
- 	} else if (q->queue_tags) {
- 		rc = blk_queue_resize_tags(q, depth);
- 		if (rc)
-@@ -203,9 +204,6 @@ int blk_queue_init_tags(struct request_queue *q, int depth,
- 	queue_flag_set_unlocked(QUEUE_FLAG_QUEUED, q);
- 	INIT_LIST_HEAD(&q->tag_busy_list);
- 	return 0;
--fail:
--	kfree(tags);
--	return -ENOMEM;
- }
- EXPORT_SYMBOL(blk_queue_init_tags);
- 
 
