@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab2ILOOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:14:07 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64725 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759164Ab2ILONq (ORCPT
+	id S1759133Ab2ILOOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:14:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61686 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759109Ab2ILONk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:13:46 -0400
+	Wed, 12 Sep 2012 10:13:40 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
         zheng.z.yan@intel.com, robert.richter@amd.com
-Subject: [PATCH v2 3/3] perf: add sysfs entry to adjust multiplexing interval per PMU
-Date: Wed, 12 Sep 2012 16:13:15 +0200
-Message-Id: <1347459195-5491-4-git-send-email-eranian@google.com>
+Subject: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
+Date: Wed, 12 Sep 2012 16:13:13 +0200
+Message-Id: <1347459195-5491-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347459195-5491-1-git-send-email-eranian@google.com>
 References: <1347459195-5491-1-git-send-email-eranian@google.com>
@@ -21,108 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds /sys/device/xxx/mux_interval_ms to ajust the
-multiplexing interval per PMU. The unit is milliseconds. Value
-has to be >= 1.
+hrtimer_init() assumes it is called for the current CPU
+as it accesses per-cpu variables (hrtimer_bases).
+
+However, there can be cases where a hrtimer is initialized
+from a different CPU, so add an entry point to make this
+more explicit.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/perf_event.h |    1 +
- kernel/events/core.c       |   54 ++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 51 insertions(+), 4 deletions(-)
+ include/linux/hrtimer.h |    3 +++
+ kernel/hrtimer.c        |   17 ++++++++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f299fc8..e439034 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -784,6 +784,7 @@ struct pmu {
- 	int * __percpu			pmu_disable_count;
- 	struct perf_cpu_context * __percpu pmu_cpu_context;
- 	int				task_ctx_nr;
-+	int				hrtimer_interval_ms;
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index cc07d27..9d07e93 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -337,6 +337,9 @@ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ /* Initialize timers: */
+ extern void hrtimer_init(struct hrtimer *timer, clockid_t which_clock,
+ 			 enum hrtimer_mode mode);
++extern void hrtimer_init_cpu(int cpu, struct hrtimer *timer,
++			     clockid_t which_clock,
++			     enum hrtimer_mode mode);
  
- 	/*
- 	 * Fully disable/enable this PMU, can be used to protect from the PMI
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index cf1aec4..681eca2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -690,15 +690,22 @@ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
- {
- 	struct hrtimer *hr = &cpuctx->hrtimer;
- 	struct pmu *pmu = cpuctx->ctx.pmu;
-+	int timer;
- 
- 	cpuctx->hrtimer_active = 0;
- 
- 	/* no multiplexing needed for SW PMU */
- 	if (pmu->task_ctx_nr == perf_sw_context)
- 		return;
-+	/*
-+	 * check default is sane, if not set then force to
-+	 * default interval (1/tick)
-+	 */
-+	timer = pmu->hrtimer_interval_ms;
-+	if (timer < 1)
-+		timer = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
- 
--	cpuctx->hrtimer_interval =
--		ns_to_ktime(NSEC_PER_MSEC * PERF_CPU_HRTIMER);
-+	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
- 
- 	hrtimer_init_cpu(cpu, hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	hr->function = perf_cpu_hrtimer_handler;
-@@ -5999,9 +6006,48 @@ type_show(struct device *dev, struct device_attribute *attr, char *page)
- 	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->type);
+ #ifdef CONFIG_DEBUG_OBJECTS_TIMERS
+ extern void hrtimer_init_on_stack(struct hrtimer *timer, clockid_t which_clock,
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6db7a5e..cde7fc4 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -440,14 +440,14 @@ static inline void debug_hrtimer_free(struct hrtimer *timer)
+ 	debug_object_free(timer, &hrtimer_debug_descr);
  }
  
-+static ssize_t
-+mux_interval_ms_show(struct device *dev, struct device_attribute *attr,
-+		     char *page)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+
-+	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->hrtimer_interval_ms);
-+}
-+
-+static ssize_t
-+mux_interval_ms_store(struct device *dev, struct device_attribute *attr,
-+		      const char *buf, size_t count)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+	char *end = NULL;
-+	int timer, cpu;
-+
-+	timer = kstrtoul(buf, &end, 0);
-+	if (end && *end != '\n' && *end != '\0')
-+		return -EINVAL;
-+
-+	if (timer < 1)
-+		return -EINVAL;
-+
-+	pmu->hrtimer_interval_ms = timer;
-+
-+	/* update all cpuctx for this PMU */
-+	for_each_possible_cpu(cpu) {
-+		struct perf_cpu_context *cpuctx;
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+		cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
-+	}
-+
-+	return count;
-+}
-+
-+#define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
-+
- static struct device_attribute pmu_dev_attrs[] = {
--       __ATTR_RO(type),
--       __ATTR_NULL,
-+	__ATTR_RO(type),
-+	__ATTR_RW(mux_interval_ms),
-+	__ATTR_NULL,
- };
+-static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
++static void __hrtimer_init(int cpu, struct hrtimer *timer, clockid_t clock_id,
+ 			   enum hrtimer_mode mode);
  
- static int pmu_bus_running;
+ void hrtimer_init_on_stack(struct hrtimer *timer, clockid_t clock_id,
+ 			   enum hrtimer_mode mode)
+ {
+ 	debug_object_init_on_stack(timer, &hrtimer_debug_descr);
+-	__hrtimer_init(timer, clock_id, mode);
++	__hrtimer_init(smp_processor_id(), timer, clock_id, mode);
+ }
+ EXPORT_SYMBOL_GPL(hrtimer_init_on_stack);
+ 
+@@ -1146,7 +1146,7 @@ ktime_t hrtimer_get_next_event(void)
+ }
+ #endif
+ 
+-static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
++static void __hrtimer_init(int cpu, struct hrtimer *timer, clockid_t clock_id,
+ 			   enum hrtimer_mode mode)
+ {
+ 	struct hrtimer_cpu_base *cpu_base;
+@@ -1154,7 +1154,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 
+ 	memset(timer, 0, sizeof(struct hrtimer));
+ 
+-	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
++	cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 
+ 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
+ 		clock_id = CLOCK_MONOTONIC;
+@@ -1180,10 +1180,17 @@ void hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 		  enum hrtimer_mode mode)
+ {
+ 	debug_init(timer, clock_id, mode);
+-	__hrtimer_init(timer, clock_id, mode);
++	__hrtimer_init(smp_processor_id(), timer, clock_id, mode);
+ }
+ EXPORT_SYMBOL_GPL(hrtimer_init);
+ 
++void hrtimer_init_cpu(int cpu, struct hrtimer *timer, clockid_t clock_id,
++		  enum hrtimer_mode mode)
++{
++	debug_init(timer, clock_id, mode);
++	__hrtimer_init(cpu, timer, clock_id, mode);
++}
++
+ /**
+  * hrtimer_get_res - get the timer resolution for a clock
+  * @which_clock: which clock to query
 -- 
 1.7.5.4
 
