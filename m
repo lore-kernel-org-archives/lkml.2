@@ -1,158 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab2IMAh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:37:57 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:51064 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2ILXcI (ORCPT
+	id S1752537Ab2IMAjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:39:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab2ILXcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:08 -0400
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
-Date: Wed, 12 Sep 2012 16:31:58 -0700
-Message-Id: <1347492720-26078-3-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1347492720-26078-1-git-send-email-dhsharp@google.com>
-References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
- <1347492720-26078-1-git-send-email-dhsharp@google.com>
+	Wed, 12 Sep 2012 19:32:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 026/108] ALSA: hda - dont create dysfunctional mixer controls for ca0132
+Date: Wed, 12 Sep 2012 16:28:24 -0700
+Message-Id: <20120912232453.290221972@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
+References: <20120912232816.GA1655@kroah.com>
+ <20120912232450.500619493@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to promote interoperability between userspace tracers and ftrace,
-add a trace_clock that reports raw TSC values which will then be recorded
-in the ring buffer. Userspace tracers that also record TSCs are then on
-exactly the same time base as the kernel and events can be unambiguously
-interlaced.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
-timestamp values.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-v2:
-Move arch-specific bits out of generic code.
+------------------
 
-Google-Bug-Id: 6980623
+From: David Henningsson <david.henningsson@canonical.com>
+
+commit c41999a23929f30808bae6009d8065052d4d73fd upstream.
+
+It's possible that these amps are settable somehow, e g through
+secret codec verbs, but for now, don't create the controls (as
+they won't be working anyway, and cause errors in amixer).
+
+BugLink: https://bugs.launchpad.net/bugs/1038651
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
- arch/x86/kernel/Makefile           |    1 +
- arch/x86/kernel/trace_clock.c      |   20 ++++++++++++++++++++
- include/asm-generic/trace_clock.h  |   15 +++++++++++++++
- include/linux/trace_clock.h        |    2 ++
- kernel/trace/trace.c               |    1 +
- 6 files changed, 55 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/trace_clock.h
- create mode 100644 arch/x86/kernel/trace_clock.c
- create mode 100644 include/asm-generic/trace_clock.h
+ sound/pci/hda/patch_ca0132.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
-new file mode 100644
-index 0000000..0b1f391
---- /dev/null
-+++ b/arch/x86/include/asm/trace_clock.h
-@@ -0,0 +1,16 @@
-+#ifndef _ASM_X86_TRACE_CLOCK_H
-+#define _ASM_X86_TRACE_CLOCK_H
-+
-+#include <linux/compiler.h>
-+#include <linux/types.h>
-+
-+#ifdef CONFIG_X86_TSC
-+
-+extern u64 notrace trace_clock_x86_tsc(void);
-+
-+# define ARCH_TRACE_CLOCKS \
-+	{ trace_clock_x86_tsc,	"tsc" },
-+
-+#endif
-+
-+#endif  /* _ASM_X86_TRACE_CLOCK_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 8215e56..0ee9344 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
- obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
- obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
-+obj-$(CONFIG_X86_TSC)		+= trace_clock.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
-diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
-new file mode 100644
-index 0000000..b8959f8
---- /dev/null
-+++ b/arch/x86/kernel/trace_clock.c
-@@ -0,0 +1,20 @@
-+/*
-+ * X86 trace clocks
-+ */
-+#include <asm/trace_clock.h>
-+#include <asm/barrier.h>
-+#include <asm/msr.h>
-+
-+/*
-+ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
-+ *
-+ * Unlike the other clocks, this is not in nanoseconds.
-+ */
-+u64 notrace trace_clock_x86_tsc(void)
-+{
-+	u64 ret;
-+	rdtsc_barrier();
-+	rdtscll(ret);
-+
-+	return ret;
-+}
-diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
-new file mode 100644
-index 0000000..648cdcd
---- /dev/null
-+++ b/include/asm-generic/trace_clock.h
-@@ -0,0 +1,15 @@
-+/*
-+ * Arch-specific trace clocks.
-+ */
-+#ifndef _ASM_GENERIC_TRACE_CLOCK_H
-+#define _ASM_GENERIC_TRACE_CLOCK_H
-+
-+/*
-+ * Additional trace clocks added to the trace_clocks
-+ * array in kernel/trace/trace.c
-+ */
-+#ifndef ARCH_TRACE_CLOCKS
-+# define ARCH_TRACE_CLOCKS
-+#endif
-+
-+#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
-diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
-index 4eb4902..d563f37 100644
---- a/include/linux/trace_clock.h
-+++ b/include/linux/trace_clock.h
-@@ -12,6 +12,8 @@
- #include <linux/compiler.h>
- #include <linux/types.h>
- 
-+#include <asm/trace_clock.h>
-+
- extern u64 notrace trace_clock_local(void);
- extern u64 notrace trace_clock(void);
- extern u64 notrace trace_clock_global(void);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5c38c81..92fb08e 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -480,6 +480,7 @@ static struct {
- 	{ trace_clock_local,	"local" },
- 	{ trace_clock_global,	"global" },
- 	{ trace_clock_counter,	"counter" },
-+	ARCH_TRACE_CLOCKS
- };
- 
- int trace_clock_id;
--- 
-1.7.7.3
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -275,6 +275,10 @@ static int _add_switch(struct hda_codec
+ 	int type = dir ? HDA_INPUT : HDA_OUTPUT;
+ 	struct snd_kcontrol_new knew =
+ 		HDA_CODEC_MUTE_MONO(namestr, nid, chan, 0, type);
++	if ((query_amp_caps(codec, nid, type) & AC_AMPCAP_MUTE) == 0) {
++		snd_printdd("Skipping '%s %s Switch' (no mute on node 0x%x)\n", pfx, dirstr[dir], nid);
++		return 0;
++	}
+ 	sprintf(namestr, "%s %s Switch", pfx, dirstr[dir]);
+ 	return snd_hda_ctl_add(codec, nid, snd_ctl_new1(&knew, codec));
+ }
+@@ -286,6 +290,10 @@ static int _add_volume(struct hda_codec
+ 	int type = dir ? HDA_INPUT : HDA_OUTPUT;
+ 	struct snd_kcontrol_new knew =
+ 		HDA_CODEC_VOLUME_MONO(namestr, nid, chan, 0, type);
++	if ((query_amp_caps(codec, nid, type) & AC_AMPCAP_NUM_STEPS) == 0) {
++		snd_printdd("Skipping '%s %s Volume' (no amp on node 0x%x)\n", pfx, dirstr[dir], nid);
++		return 0;
++	}
+ 	sprintf(namestr, "%s %s Volume", pfx, dirstr[dir]);
+ 	return snd_hda_ctl_add(codec, nid, snd_ctl_new1(&knew, codec));
+ }
+
 
