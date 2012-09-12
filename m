@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab2ILKc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:32:59 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52766 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab2ILKc5 (ORCPT
+	id S1757181Ab2ILKem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:34:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42422 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755877Ab2ILKek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:32:57 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] mm: refactor out __alloc_contig_migrate_alloc
-In-Reply-To: <1347414231-31451-1-git-send-email-minchan@kernel.org>
-Organization: http://mina86.com/
-References: <1347414231-31451-1-git-send-email-minchan@kernel.org>
-User-Agent: Notmuch/0.14+22~g8bdc16b (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Wed, 12 Sep 2012 12:32:48 +0200
-Message-ID: <xa1tmx0vh6pb.fsf@mina86.com>
+	Wed, 12 Sep 2012 06:34:40 -0400
+Date: Wed, 12 Sep 2012 03:32:05 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [RFC] tty/serial/kgdboc: Add and wire up clear_irqs callback
+Message-ID: <20120912103202.GA26690@lizard>
+References: <20120911093042.GA12471@lizard>
+ <1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
+ <20120911151540.362001c6@pyramind.ukuu.org.uk>
+ <20120912033209.GA32156@lizard>
+ <CAMbhsRTmZyxFE-vAa-UvNE8KJ2f0cfXP7mncXKcpUiNF6C9PUQ@mail.gmail.com>
+ <20120912040657.GA3880@lizard>
+ <20120912104420.06a88957@bob.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120912104420.06a88957@bob.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 12, 2012 at 10:44:20AM +0100, Alan Cox wrote:
+> > Of course, if Alan is OK with this, I'm more than OK too. :-)
+> 
+> It may well be better.
+> 
+> > (But the polling routines would need to clear all interrupts, not
+> > just rx/tx. For example, if the controller indicated some error, and
+> > nobody clears it, then we'll start reentering infinitely.)
+> 
+> For a lot of devices and platforms you'd probably mask them instead ?
 
-On Wed, Sep 12 2012, Minchan Kim <minchan@kernel.org> wrote:
-> __alloc_contig_migrate_alloc can be used by memory-hotplug so
-> refactor out(move + rename as a common name) it into
-> page_isolation.c.
->
-> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
+If there is no way to clear them, yes, we obviously would want to
+mask them before using the port for NMI debugger. Then we'd need
+three callbacks:
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+- mask_all_irqs_but_rx() -- used before we want to start using the port
+  for the NMI debugger;
+- clear_rx_irq() -- (optional) clears rx IRQ for controllers that need
+  it;
+- restore_irqs() -- unmasks interrupts that were previously masked.
 
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+If we ever encounter a case when just clearing interrupts doesn't work,
+we can surely implement the above scheme... It's just so far I don't
+see any need to over-design this, but again, it's your call, I told my
+opinion on this, but I'll do whatever you guys like more. :-)
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+> > > If you use a clear_irqs callback, you can drop characters if
+> > > one arrives between the last character buffer read and calling
+> > > clear_irqs.
+> > 
+> > Only if we call clear_irqs() after reading the characters, but we do
+> > it before. So if new characters are available, we will reenter NMI,
+> > which is OK.
+> 
+> Recursively or not... again you get platform specific magic in places
+> we don't want.
 
---==-=-=
-Content-Type: text/plain
+I really really don't see how this is platform-specific. All we ask the
+serial driver is to quiesce its interrupt. Whether we can handle
+NMIs/IRQs recursively or not is not serial driver's worry, since its
+IRQ handler is not going to fire anyway. The polling routines already
+gave us the power to steal/inject the data, so now we're stealing the
+interrupt too.
 
+How we use the callback is indeed platform-specific, but so is the
+whole KGDB, and that knowledge is hidden there.
 
---==-=-=
-Content-Type: application/pgp-signature
+For serial driver it's all pretty much clear: lower the interrupt, but
+don't turn off rx detection.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Thanks!
 
-iQIcBAEBAgAGBQJQUGTQAAoJECBgQBJQdR/0+XEP/icziRPERoSNxQUvAculm9F5
-5jEvNJaKkvk//kp+wJQvR2+5SWvc9rrsRD//cgONGgBqbu2uFlkinsE0kn4sxjIh
-w6hLPRi6BvOfmepfCz6tw4lVHlCU3ilgK39Cm/cN6vObYk8kY/b2LMGpRLWJQ16o
-+ZSJhiirLZetGCqzt0JVbibSxWnhf4/P99f6WJ2xw0ukeYdv8Y4nWkzG3b3Z/mjo
-F/cFegMqGxzVfa3YZPERMufF7e9L6jysW+9T37BXtDd6Hz0JRfWjMN5sUHXyyT79
-auRLHylTBs3X/ekxS5Z0sjtCh0tdYjhFbrkNiU3M5fQysomoorYULWG5zMNt4dS7
-jjR+RYk7kN1HBcUQwdk7+NWkly9O8/2VCUeP+zggLxSsJTAATf0ngiFPks5g/D2k
-A7DLaWxdoPnpALxlVdv47Q0qGCV76GsitB8m9vVI9Ou/AZCO9qzpQLjN5KbTYqx+
-NtvypcpOtr54cqColTg+U4ShCPMYP0xoocMQIaKy/se8iRMguBw6ScOAlpFx0cOy
-n25u+0jf95IopF4mEQcceMdqzEtjSH92rWT8HgKYqP8G/zlJW5IGjbsSKog/Kqsw
-VeIhJ/CjPFXm9vzyXv3+tD0EYdClPS+93AW01yURPa7NAk12xaGj8PvlFDs/PN9V
-0wFbTPY2V7NBY+1eihNY
-=xAm+
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+Anton.
