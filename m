@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab2IMAGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:06:43 -0400
+	id S1757091Ab2IMAHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:07:09 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932770Ab2ILXjz (ORCPT
+	with ESMTP id S1756305Ab2ILXjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:55 -0400
+	Wed, 12 Sep 2012 19:39:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Alan Cox <alan@linux.intel.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 38/85] drm: stop vmgfx driver explosion
-Date: Wed, 12 Sep 2012 16:36:21 -0700
-Message-Id: <20120912233545.729783932@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 50/85] [media] uvcvideo: Reset the bytesused field when recycling an erroneous buffer
+Date: Wed, 12 Sep 2012 16:36:33 -0700
+Message-Id: <20120912233546.981440284@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,51 +30,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
 
-commit f5869a8308f77e3dfdc2e3640842b285aa788ff8 upstream.
+commit 8a3f0ede2b3f5477122060af1a816c6bbf09fcd2 upstream.
 
-If you do a page flip with no flags set then event is NULL. If event is
-NULL then the vmw_gfx driver likes to go digging into NULL and extracts
-NULL->base.file_priv.
+Buffers marked as erroneous are recycled immediately by the driver if
+the nodrop module parameter isn't set. The buffer payload size is reset
+to 0, but the buffer bytesused field isn't. This results in the buffer
+being immediately considered as complete, leading to an infinite loop in
+interrupt context.
 
-On a modern kernel with NULL mapping protection it's just another oops,
-without it there are some "intriguing" possibilities.
+Fix the problem by resetting the bytesused field when recycling the
+buffer.
 
-What it should do is an open question but that for the driver owners to
-sort out.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jayakrishnan Memana <jayakrishnan.memana@maxim-ic.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/media/video/uvc/uvc_queue.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -1688,15 +1688,19 @@ int vmw_du_page_flip(struct drm_crtc *cr
- 	struct vmw_private *dev_priv = vmw_priv(crtc->dev);
- 	struct drm_framebuffer *old_fb = crtc->fb;
- 	struct vmw_framebuffer *vfb = vmw_framebuffer_to_vfb(fb);
--	struct drm_file *file_priv = event->base.file_priv;
-+	struct drm_file *file_priv ;
- 	struct vmw_fence_obj *fence = NULL;
- 	struct drm_clip_rect clips;
- 	int ret;
- 
-+	if (event == NULL)
-+		return -EINVAL;
-+
- 	/* require ScreenObject support for page flipping */
- 	if (!dev_priv->sou_priv)
- 		return -ENOSYS;
- 
-+	file_priv = event->base.file_priv;
- 	if (!vmw_kms_screen_object_flippable(dev_priv, crtc))
- 		return -EINVAL;
- 
+--- a/drivers/media/video/uvc/uvc_queue.c
++++ b/drivers/media/video/uvc/uvc_queue.c
+@@ -355,6 +355,7 @@ struct uvc_buffer *uvc_queue_next_buffer
+ 	if ((queue->flags & UVC_QUEUE_DROP_CORRUPTED) && buf->error) {
+ 		buf->error = 0;
+ 		buf->state = UVC_BUF_STATE_QUEUED;
++		buf->bytesused = 0;
+ 		vb2_set_plane_payload(&buf->buf, 0, 0);
+ 		return buf;
+ 	}
 
 
