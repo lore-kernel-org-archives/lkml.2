@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2ILI0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:26:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:17584 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab2ILI0t (ORCPT
+	id S1755630Ab2ILI1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:27:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56387 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2ILI1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:26:49 -0400
-Date: Wed, 12 Sep 2012 11:26:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, b-cousson@ti.com,
-        j-keerthy@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/4] staging: omap-thermal: Correct checkpatch.pl warnings
-Message-ID: <20120912082639.GI19410@mwanda>
-References: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
- <1347379615-6881-2-git-send-email-eduardo.valentin@ti.com>
- <20120912081127.GB19396@mwanda>
+	Wed, 12 Sep 2012 04:27:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912081127.GB19396@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1344587555-8454-1-git-send-email-linus.walleij@stericsson.com>
+References: <1344587555-8454-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 12 Sep 2012 10:27:13 +0200
+Message-ID: <CACRpkdasO8ZCunW_J3_CGT1D3t4NK5ZsDL8EXRBWz=htfims1A@mail.gmail.com>
+Subject: Re: [PATCH] mfd/ab3100: split ab3100 headers out of abx500.h
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Marcus Cooper <marcus.xm.cooper@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 11:11:27AM +0300, Dan Carpenter wrote:
-> On Tue, Sep 11, 2012 at 07:06:52PM +0300, Eduardo Valentin wrote:
-> > From: J Keerthy <j-keerthy@ti.com>
-> > 
-> > Removes checkpatch warnings on omap-bandgap.c.
-> > 
-> 
-> Which checkpatch.pl warnings?
-> 
-> > +				omap_bandgap_writel(bg_ptr,
-> > +					rval->tshut_threshold,
-> > +						   tsr->tshut_threshold);
-> 
-> That's just whacky.
-> 
-> Personally, I've never cared much about long lines, so I'd prefer
-> to leave these as is until someone can break the functions up and
-> remove them in a proper way instead of just shifting everything
-> randomly to the left.
-> 
+On Fri, Aug 10, 2012 at 10:32 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
 
-Sorry, that was my default response without looking at the code.
+> From: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+>
+> The U8500 has its own set of separate header, so the abx500
+> becomes completely abstract. Do the same split for the AB3100
+> legacy ASIC.
+>
+> Signed-off-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-This is already broken up into small functions pretty nicely.  You
-might want to consider using shorter names.  For example
-omap_bandgap_writel() could be changed to "obg_writel()" and "bg_ptr"
-could be changed to just "bg" because it's obviously a pointer.
+Sam, are you picking this to the MFD tree?
 
-regards,
-dan carpenter
+Yours,
+Linus Walleij
