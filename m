@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760295Ab2ILSsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 14:48:54 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58895 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2ILSsu (ORCPT
+	id S1758069Ab2ILSt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 14:49:59 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:38054 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab2ILSt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 14:48:50 -0400
+	Wed, 12 Sep 2012 14:49:57 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Namjae Jeon <linkinjeon@gmail.com>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+References: <87har6kmfx.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
+	<87oblc4u6f.fsf@devron.myhome.or.jp>
+	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
+	<871ui84l4l.fsf@devron.myhome.or.jp>
+	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
+	<20120912143227.GE3009@fieldses.org>
+	<87vcfjfa14.fsf@devron.myhome.or.jp>
+	<20120912171128.GG3009@fieldses.org>
+	<87r4q7f8fw.fsf@devron.myhome.or.jp>
+	<20120912174556.GH3009@fieldses.org>
+Date: Thu, 13 Sep 2012 03:49:52 +0900
+In-Reply-To: <20120912174556.GH3009@fieldses.org> (J. Bruce Fields's message
+	of "Wed, 12 Sep 2012 13:45:56 -0400")
+Message-ID: <87ipbjf54f.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1347421685.10751.34.camel@gandalf.local.home>
-References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
- <1347417671-22998-2-git-send-email-dhsharp@google.com> <1347421685.10751.34.camel@gandalf.local.home>
-From: David Sharp <dhsharp@google.com>
-Date: Wed, 12 Sep 2012 11:48:29 -0700
-Message-ID: <CAJL_ekvGkVpK_v2ztZPoES_R+odjEJXbxuR7LZs6Q_dTNJJpfg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] tracing,x86: add a TSC trace_clock; reset buffer on
- clock change
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 8:48 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2012-09-11 at 19:41 -0700, David Sharp wrote:
->> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> index 5c38c81..dc1f1fa 100644
->> --- a/kernel/trace/trace.c
->> +++ b/kernel/trace/trace.c
->> @@ -480,6 +480,9 @@ static struct {
->>       { trace_clock_local,    "local" },
->>       { trace_clock_global,   "global" },
->>       { trace_clock_counter,  "counter" },
->> +#ifdef CONFIG_X86_TSC
->> +     { trace_clock_tsc,      "tsc" },
->> +#endif
->>  };
->
-> I really hate adding arch defs in generic code. Perhaps what we could do
-> is add a define here. Something like:
->
-> #ifndef ARCH_TRACE_CLOCKS
-> # define ARCH_TRACE_CLOCKS
-> #endif
->
-> [...]
->         { trace_clock_counter, "counter" },
->         ARCH_TRACE_CLOCKS
-> };
->
-> and have ARCH_TRACE_CLOCKS defined somewhere in an arch specific header.
-> Not sure what header we could use though :-/
->
-> That is, in a header have:
->
-> #define ARCH_TRACE_CLOCKS \
->         { trace_clock_x86_tsc,  "tsc" },
->
-> and also define trace_clock_x86_tsc in arch/x86/kernel...
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-Good point. I'll figure out somewhere better to put it...
+> As another server-side workaround: maybe they could try tuning the inode
+> caching to make eviction less likely?
+>
+> Grepping around...  Documentation/sysctl/vm.txt mentions a
+> vfs_cache_pressure parameter.
+
+Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
