@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab2ILXcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:32:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1755958Ab2ILXch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:32:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894Ab2ILXcY (ORCPT
+	with ESMTP id S932206Ab2ILXcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:24 -0400
+	Wed, 12 Sep 2012 19:32:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 046/108] Revert "drm/radeon: fix bo creation retry path"
-Date: Wed, 12 Sep 2012 16:28:44 -0700
-Message-Id: <20120912232455.357472620@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 048/108] svcrpc: fix BUG() in svc_tcp_clear_pages
+Date: Wed, 12 Sep 2012 16:28:46 -0700
+Message-Id: <20120912232455.582012381@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,41 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 676bc2e1e4f9072f7a640d5b7c99ffdf9709a6e7 upstream.
+commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
 
-This reverts commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c.
+Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
+consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
+sk_tcplen would lead us to expect n pages of data).
 
-ttm_bo_init() destroys the BO on failure. So this patch makes
-the retry path work with freed memory.  This ends up causing
-kernel panics when this path is hit.
+svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
+This is OK, since both functions are serialized by XPT_BUSY.  However,
+that means the inconsistency must be repaired before dropping XPT_BUSY.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Therefore we should be ensuring that svc_tcp_save_pages repairs the
+problem before exiting svc_tcp_recv_record on error.
+
+Symptoms were a BUG() in svc_tcp_clear_pages.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_object.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/sunrpc/svcsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -138,6 +138,7 @@ int radeon_bo_create(struct radeon_devic
- 	acc_size = ttm_bo_dma_acc_size(&rdev->mman.bdev, size,
- 				       sizeof(struct radeon_bo));
- 
-+retry:
- 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
- 	if (bo == NULL)
- 		return -ENOMEM;
-@@ -151,8 +152,6 @@ int radeon_bo_create(struct radeon_devic
- 	bo->surface_reg = -1;
- 	INIT_LIST_HEAD(&bo->list);
- 	INIT_LIST_HEAD(&bo->va);
--
--retry:
- 	radeon_ttm_placement_from_domain(bo, domain);
- 	/* Kernel allocation are uninterruptible */
- 	mutex_lock(&rdev->vram_mutex);
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1129,9 +1129,9 @@ static int svc_tcp_recvfrom(struct svc_r
+ 	if (len >= 0)
+ 		svsk->sk_tcplen += len;
+ 	if (len != want) {
++		svc_tcp_save_pages(svsk, rqstp);
+ 		if (len < 0 && len != -EAGAIN)
+ 			goto err_other;
+-		svc_tcp_save_pages(svsk, rqstp);
+ 		dprintk("svc: incomplete TCP record (%d of %d)\n",
+ 			svsk->sk_tcplen, svsk->sk_reclen);
+ 		goto err_noclose;
 
 
