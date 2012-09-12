@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab2ILGxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:53:50 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:43324 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790Ab2ILGxs (ORCPT
+	id S1756246Ab2ILGy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:54:57 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:39820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab2ILGyx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:53:48 -0400
-Message-ID: <1347432846.4293.0.camel@jlt4.sipsolutions.net>
-Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Marc MERLIN <marc@merlins.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        David Rientjes <rientjes@google.com>, sgruszka@redhat.com,
-        linux-wireless@vger.kernel.org, wey-yi.w.guy@intel.com,
-        ilw@linux.intel.com, Andrew Morton <akpm@osdl.org>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Wed, 12 Sep 2012 08:54:06 +0200
-In-Reply-To: <20120912055712.GE11613@merlins.org> (sfid-20120912_075811_640589_74AB6505)
-References: <20120909213228.GA5538@elf.ucw.cz>
-	 <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
-	 <20120910111113.GA25159@elf.ucw.cz>
-	 <20120911162536.bd5171a1.akpm@linux-foundation.org>
-	 <1347426988.13103.684.camel@edumazet-glaptop>
-	 <20120912055712.GE11613@merlins.org> (sfid-20120912_075811_640589_74AB6505)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 12 Sep 2012 02:54:53 -0400
+Date: Wed, 12 Sep 2012 08:54:23 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Rob Landley <rob@landley.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/9] pinctrl: mvebu: pinctrl driver core
+Message-ID: <20120912085423.21af58d5@skate>
+In-Reply-To: <504FB869.60201@wwwdotorg.org>
+References: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347266386-16229-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1347266386-16229-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20120911164409.4c030bd8@skate>
+	<504FB869.60201@wwwdotorg.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-11 at 22:57 -0700, Marc MERLIN wrote:
-> On Wed, Sep 12, 2012 at 07:16:28AM +0200, Eric Dumazet wrote:
-> > On Tue, 2012-09-11 at 16:25 -0700, Andrew Morton wrote:
-> > 
-> > > Asking for a 256k allocation is pretty crazy - this is an operating
-> > > system kernel, not a userspace application.
-> > > 
-> > > I'm wondering if this is due to a recent change, but I'm having trouble
-> > > working out where the allocation call site is.
-> > > --
-> > 
-> > (Adding Marc Merlin to CC, since he reported same problem)
-> > 
-> > Thats the firmware loading in iwlwifi driver. Not sure if it can use SG.
-> > 
-> > drivers/net/wireless/iwlwifi/iwl-drv.c
-> > 
-> > iwl_alloc_ucode() -> iwl_alloc_fw_desc() -> dma_alloc_coherent()
-> > 
-> > It seems some sections of /lib/firmware/iwlwifi*.ucode files are above
-> > 128 Kbytes, so dma_alloc_coherent() try order-5 allocations
+Le Tue, 11 Sep 2012 16:17:13 -0600,
+Stephen Warren <swarren@wwwdotorg.org> a écrit :
+
 > 
-> Thanks for looping me in, yes, this looks very familiar to me :)
+> +static struct mvebu_mpp_mode dove_mpp_modes[] = {
+> +	MPP_MODE(0,
+> +		MPP_FUNCTION(0x00, "gpio", NULL),
+> +		MPP_FUNCTION(0x02, "uart2", "rts"),
+> +		MPP_FUNCTION(0x03, "sdio0", "cd"),
+> +		MPP_FUNCTION(0x0f, "lcd0", "pwm"),
+> +		MPP_FUNCTION(0x10, "pmu", NULL)),
 > 
-> In the other thread, Johannes Berg gave me this patch which is supposed to
-> help: http://p.sipsolutions.net/11ea33b376a5bac5.txt
+> it's defining the functions within the context of a particular group
+> ("mode" in the drivers terminology, I think...) rather than defining
+> functions and groups as separate top-level tables.
 
-Yes, but that patch won't apply to iwlegacy as is. However, I'm pretty
-sure that it should be possible to solve the issue in the same way in
-iwlegacy.
+This data structure really reflects what the datasheet says. Typically,
+for SoCs where each pin is independently muxable (AT91, i.MX23/28,
+Marvell, and probably many more), the datasheet has a big array, with
+one line per pin, and then several columns which tell for a given pin,
+what is "function 0", "function 1", "function 2", "function 3", etc.
 
-johannes
+So the data structure that Sebastian has implemented in the mvebu
+driver immediately reflects this. In fact, the pinctrl table code for
+Armada 370 and Armada XP was semi-automatically generated from CSV data
+of the pinmux functions, directly coming from the datasheets. Having to
+create a global list of all possible functions seems useless and
+painful, since the functions only make sense in the context of one
+particular pin.
 
+Could you be more specific as to what representation you're looking
+after? You're proposing to "define functions and groups as separate
+top-level tables", but then how to you map which functions are
+available for which group, and what is the number of that function is
+this group (which we need to actually configure the mapping). I'd
+really like to see (with a short code example) what is your view of how
+pinmux should be handled for SoCs having independently muxable pins.
+
+I really don't understand how a global list of functions make sense:
+the functions make sense on a per-group basis, and this is how the
+hardwaredatasheet defines them. If we could keep this representation,
+it would really be useful.
+
+Thanks!
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
