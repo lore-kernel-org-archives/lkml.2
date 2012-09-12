@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231Ab2ILXtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:49:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757040Ab2ILXol (ORCPT
+	id S1757201Ab2ILXuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:50:15 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007Ab2ILXof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:41 -0400
+	Wed, 12 Sep 2012 19:44:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 42/46] Input: i8042 - add Gigabyte T1005 series netbooks to noloop table
-Date: Wed, 12 Sep 2012 16:39:32 -0700
-Message-Id: <20120912233822.070036003@linuxfoundation.org>
+        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
+Subject: [ 40/46] ext3: Fix fdatasync() for files with only i_size changes
+Date: Wed, 12 Sep 2012 16:39:30 -0700
+Message-Id: <20120912233821.857578372@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,44 +28,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 7b125b94ca16b7e618c6241cb02c4c8060cea5e3 upstream.
+commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
 
-They all define their chassis type as "Other" and therefore are not
-categorized as "laptops" by the driver, which tries to perform AUX IRQ
-delivery test which fails and causes touchpad not working.
+Code tracking when transaction needs to be committed on fdatasync(2) forgets
+to handle a situation when only inode's i_size is changed. Thus in such
+situations fdatasync(2) doesn't force transaction with new i_size to disk
+and that can result in wrong i_size after a crash.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42620
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fix the issue by updating inode's i_datasync_tid whenever its size is
+updated.
+
+Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/ext3/inode.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -177,6 +177,20 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Gigabyte T1005 - defines wrong chassis type ("Other") */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "T1005"),
-+		},
-+	},
-+	{
-+		/* Gigabyte T1005M/P - defines wrong chassis type ("Other") */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "T1005M/P"),
-+		},
-+	},
-+	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -3013,6 +3013,8 @@ static int ext3_do_update_inode(handle_t
+ 	struct ext3_inode_info *ei = EXT3_I(inode);
+ 	struct buffer_head *bh = iloc->bh;
+ 	int err = 0, rc, block;
++	int need_datasync = 0;
++	__le32 disksize;
+ 
+ again:
+ 	/* we can't allow multiple procs in here at once, its a bit racey */
+@@ -3050,7 +3052,11 @@ again:
+ 		raw_inode->i_gid_high = 0;
+ 	}
+ 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
+-	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
++	disksize = cpu_to_le32(ei->i_disksize);
++	if (disksize != raw_inode->i_size) {
++		need_datasync = 1;
++		raw_inode->i_size = disksize;
++	}
+ 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
+ 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
+ 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
+@@ -3066,8 +3072,11 @@ again:
+ 	if (!S_ISREG(inode->i_mode)) {
+ 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
+ 	} else {
+-		raw_inode->i_size_high =
+-			cpu_to_le32(ei->i_disksize >> 32);
++		disksize = cpu_to_le32(ei->i_disksize >> 32);
++		if (disksize != raw_inode->i_size_high) {
++			raw_inode->i_size_high = disksize;
++			need_datasync = 1;
++		}
+ 		if (ei->i_disksize > 0x7fffffffULL) {
+ 			struct super_block *sb = inode->i_sb;
+ 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
+@@ -3120,6 +3129,8 @@ again:
+ 	ext3_clear_inode_state(inode, EXT3_STATE_NEW);
+ 
+ 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
++	if (need_datasync)
++		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
+ out_brelse:
+ 	brelse (bh);
+ 	ext3_std_error(inode->i_sb, err);
 
 
