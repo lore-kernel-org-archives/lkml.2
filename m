@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290Ab2ILQTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:19:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33987 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2ILQTV (ORCPT
+	id S1760347Ab2ILQT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:19:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49725 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab2ILQTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:19:21 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH 2/6] fuse: categorize fuse_get_req()
-References: <20120907172536.1343.80497.stgit@maximpc.sw.ru>
-	<20120907174112.1343.95512.stgit@maximpc.sw.ru>
-Date: Wed, 12 Sep 2012 18:20:57 +0200
-In-Reply-To: <20120907174112.1343.95512.stgit@maximpc.sw.ru> (Maxim Patlasov's
-	message of "Fri, 07 Sep 2012 21:41:19 +0400")
-Message-ID: <87392nxlee.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 12 Sep 2012 12:19:24 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 12 Sep 2012 09:19:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Luca Tettamanti <kronos.it@gmail.com>, kernel-janitors@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] drivers/hwmon/asus_atk0110.c: Remove useless kfree
+Message-ID: <20120912161925.GA22539@roeck-us.net>
+References: <1347462407-13499-4-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347462407-13499-4-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim Patlasov <mpatlasov@parallels.com> writes:
+On Wed, Sep 12, 2012 at 05:06:42PM +0200, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Remove useless kfree() and clean up code related to the removal.
+> 
 
-> The patch categorizes all fuse_get_req() invocations into three categories:
->  - fuse_get_req_nopages() - when caller doesn't care about req->pages
->  - fuse_get_req_onepage() - when caller need exactly one page
->  - fuse_get_req_multipage() - in other cases.
-
-I think you are overcomplicating this.
-
-Just have two functions: fuse_get_req_nopages() and fuse_get_req().
-
-I don't think the _onepage variant deserves a separate helper.
+Queued for -next.
 
 Thanks,
-Miklos
+Guenter
