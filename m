@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2ILJFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:05:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41808 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab2ILJFf (ORCPT
+	id S1753631Ab2ILJFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:05:46 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49164 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab2ILJFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:05:35 -0400
-Date: Wed, 12 Sep 2012 11:04:58 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org,
-        =?iso-8859-15?Q?Beno=EEt_Th=E9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH 5/7] pwm: i.MX: add devicetree support
-Message-ID: <20120912090458.GN6180@pengutronix.de>
-References: <1347267577-3296-1-git-send-email-s.hauer@pengutronix.de>
- <1347267577-3296-6-git-send-email-s.hauer@pengutronix.de>
- <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
+	Wed, 12 Sep 2012 05:05:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50504F47.80909@jp.fujitsu.com>
+Date: Wed, 12 Sep 2012 18:00:55 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:02:40 up 81 days, 14 min, 58 users,  load average: 0.87, 3.31,
- 2.48
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: vgoyal@redhat.com
+CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <501BB4EF.7080909@jp.fujitsu.com> <20120803114643.GA28330@redhat.com> <501F4877.5050605@jp.fujitsu.com> <20120806203902.GH25559@redhat.com> <50473306.1070803@jp.fujitsu.com> <20120910143604.GB639@redhat.com> <504F1343.7030607@jp.fujitsu.com> <20120911144323.GF12039@redhat.com>
+In-Reply-To: <20120911144323.GF12039@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 04:40:43PM +0200, Thierry Reding wrote:
-> On Mon, Sep 10, 2012 at 10:59:35AM +0200, Sascha Hauer wrote:
-> > From: Philipp Zabel <p.zabel@pengutronix.de>
-> > 
-> > At the same time remove platform based support. No user for
-> > this driver has made it into mainline so far, so all we break
-> > is out of tree stuff.
-> > 
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
-> > Reviewed-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
-> [...]
-> 
-> I was just doing some build tests on the series and noticed that it
-> fails with this:
-> 
-> 	  CC [M]  drivers/pwm/pwm-imx.o
-> 	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c: In function 'imx_pwm_config_v2':
-> 	/home/thierry.reding/src/kernel/linux-pwm.git/drivers/pwm/pwm-imx.c:140:2: error: implicit declaration of function 'cpu_is_mx25' [-Werror=implicit-function-declaration]
-> 
-> This breaks bisection in the middle of the series. It seems to be
-> related to this change.
-> 
-> > diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-> > index a1e799e..b4e0ad3 100644
-> > --- a/drivers/pwm/pwm-imx.c
-> > +++ b/drivers/pwm/pwm-imx.c
-> > @@ -16,8 +16,7 @@
-> >  #include <linux/clk.h>
-> >  #include <linux/io.h>
-> >  #include <linux/pwm.h>
-> > -#include <mach/hardware.h>
-> 
-> This probably needs to be postponed to the next patch, until the final
-> reference to cpu_is_mx25() is removed.
+(2012/09/11 23:43), Vivek Goyal wrote:
+> On Tue, Sep 11, 2012 at 07:32:35PM +0900, Takao Indoh wrote:
+>
+> [..]
+>> I'll post new patch which clears bus master bit and resets devices in
+>> second kernel.
+>>
+>> As to the boot parameter to enable this function, you suggested using
+>> reset_devices. I found that on a certain platform resetting devices
+>> caused PCIe error due to a hardware bug. Therefore I think we need
+>> new parameter apart from reset_devices to disable this function on
+>> such a machine.
+>
+> Can you explain a bit more how the error happens. I still don't think
+> that because of a bug in a platform somewhere we should be introducing
+> a separate command line parameter and not reuse the exisiting one. Also
+> you have not explained what's the bug and how a new parameter will
+> avoid the bug.
 
-Oops, you are right. I updated the tag accordingly, and did a full
-compile test over this series, so please pull again:
+The bug I mentioned is that ACS Violation occurs at PCIe switch when
+reading PCI configuration after device reset. I got information that
+this violation is caused by PCIe switch bug. The machine becomes fatal
+status by this error.
 
+The reason why I try to introduce new parameter is that I want to avoid
+regression by this patch. Let's say this patch was included in kernel
+and its reset function was enabled by reset_devices as you said. AFAIK
+reset_devices is always needed for kdump, so it means that devices are
+always reset at kdump boot time. It causes a regression that system
+always becomes abnormal status when we run kdump on the machine which has
+a bug I mentioned.
 
-The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+To avoid this regression, I want to separate reset_devices from this
+reset function. Or how about this?
+- if user specify reset_devices, devices are reset by this patch, as you
+   said.
+- To avoid a regression I said, add new parameter like "pci=noreset".
+   If this parameter is specified, the reset function I add is disabled
+   and we can avoid regression.
 
-  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+Thanks,
+Takao Indoh
 
-are available in the git repository at:
-
-  git://git.pengutronix.de/git/imx/linux-2.6.git tags/imx-pwm-oftree
-
-for you to fetch changes up to a1d38ca9e249e670aa9f608e1cc7491fb4ca45af:
-
-  pwm: i.MX: fix clock lookup (2012-09-12 11:00:55 +0200)
-
-----------------------------------------------------------------
-Cleanup i.MX PWM driver and add devicetree support
-
-----------------------------------------------------------------
-Philipp Zabel (2):
-      pwm: i.MX: add devicetree support
-      pwm: i.MX: fix clock lookup
-
-Sascha Hauer (5):
-      pwm: i.MX: factor out SoC specific functions
-      pwm: i.MX: remove unnecessary if in pwm_[en|dis]able
-      pwm: i.MX: add functions to enable/disable pwm.
-      pwm: i.MX: Use module_platform_driver
-      pwm: i.MX: use per clock unconditionally
-
- Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++
- drivers/pwm/pwm-imx.c                             |  278 ++++++++++++++-------
- 2 files changed, 199 insertions(+), 96 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
