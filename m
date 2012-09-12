@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab2ILXrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:47:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757095Ab2ILXpM (ORCPT
+	id S1757213Ab2ILXsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:48:00 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757084Ab2ILXpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:45:12 -0400
+	Wed, 12 Sep 2012 19:45:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 35/46] Remove user-triggerable BUG from mpol_to_str
-Date: Wed, 12 Sep 2012 16:39:25 -0700
-Message-Id: <20120912233821.338551227@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 33/46] powerpc: Fix DSCR inheritance in copy_thread()
+Date: Wed, 12 Sep 2012 16:39:23 -0700
+Message-Id: <20120912233821.138175191@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,42 +28,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
+commit 1021cb268b3025573c4811f1dee4a11260c4507b upstream.
 
-Trivially triggerable, found by trinity:
+If the default DSCR is non zero we set thread.dscr_inherit in
+copy_thread() meaning the new thread and all its children will ignore
+future updates to the default DSCR. This is not intended and is
+a change in behaviour that a number of our users have hit.
 
-  kernel BUG at mm/mempolicy.c:2546!
-  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
-  Call Trace:
-    show_numa_map+0xd5/0x450
-    show_pid_numa_map+0x13/0x20
-    traverse+0xf2/0x230
-    seq_read+0x34b/0x3e0
-    vfs_read+0xac/0x180
-    sys_pread64+0xa2/0xc0
-    system_call_fastpath+0x1a/0x1f
-  RIP: mpol_to_str+0x156/0x360
+We just need to inherit thread.dscr and thread.dscr_inherit from
+the parent which ends up being much simpler.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This was found with the following test case:
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/process.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2500,7 +2500,7 @@ int mpol_to_str(char *buffer, int maxlen
- 		break;
- 
- 	default:
--		BUG();
-+		return -EINVAL;
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -794,16 +794,8 @@ int copy_thread(unsigned long clone_flag
+ #endif /* CONFIG_PPC_STD_MMU_64 */
+ #ifdef CONFIG_PPC64 
+ 	if (cpu_has_feature(CPU_FTR_DSCR)) {
+-		if (current->thread.dscr_inherit) {
+-			p->thread.dscr_inherit = 1;
+-			p->thread.dscr = current->thread.dscr;
+-		} else if (0 != dscr_default) {
+-			p->thread.dscr_inherit = 1;
+-			p->thread.dscr = dscr_default;
+-		} else {
+-			p->thread.dscr_inherit = 0;
+-			p->thread.dscr = 0;
+-		}
++		p->thread.dscr_inherit = current->thread.dscr_inherit;
++		p->thread.dscr = current->thread.dscr;
  	}
+ #endif
  
- 	l = strlen(policy_modes[mode]);
 
 
