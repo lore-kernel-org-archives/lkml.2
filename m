@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759376Ab2ILBq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 21:46:57 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44728 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab2ILBq4 (ORCPT
+	id S1758145Ab2ILCEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 22:04:21 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65044 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab2ILCEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 21:46:56 -0400
-X-AuditID: 9c93016f-b7bffae000003557-f6-504fe98cbfce
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 16/18] perf evsel: Introduce perf_evsel__{str,int}val methods
-References: <1347407590-30960-1-git-send-email-acme@infradead.org>
-	<1347407590-30960-17-git-send-email-acme@infradead.org>
-Date: Wed, 12 Sep 2012 10:40:00 +0900
-In-Reply-To: <1347407590-30960-17-git-send-email-acme@infradead.org> (Arnaldo
-	Carvalho de Melo's message of "Tue, 11 Sep 2012 20:53:08 -0300")
-Message-ID: <87oblc9fyn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 11 Sep 2012 22:04:20 -0400
+Date: Tue, 11 Sep 2012 19:03:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 09/12] thp: introduce khugepaged_prealloc_page and
+ khugepaged_alloc_page
+In-Reply-To: <5028E20C.3080607@linux.vnet.ibm.com>
+Message-ID: <alpine.LSU.2.00.1209111807030.21798@eggly.anvils>
+References: <5028E12C.70101@linux.vnet.ibm.com> <5028E20C.3080607@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012 20:53:08 -0300, Arnaldo Carvalho de Melo wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
->
-> Wrappers to the libtraceevent routines, so that we can further reduce
-> the surface contact perf builtins have with it.
-[snip]
-> +char *perf_evsel__strval(struct perf_evsel *evsel, struct perf_sample *sample,
-> +			 const char *name)
-> +{
-> +	struct format_field *field = pevent_find_field(evsel->tp_format, name);
-> +	int offset;
-> +
-> +        if (!field)
-> +                return NULL;
+On Mon, 13 Aug 2012, Xiao Guangrong wrote:
 
-Whitespace problem?
+> They are used to abstract the difference between NUMA enabled and NUMA disabled
+> to make the code more readable
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  mm/huge_memory.c |  166 ++++++++++++++++++++++++++++++++----------------------
+>  1 files changed, 98 insertions(+), 68 deletions(-)
 
-Btw, as a generic wrapper shouldn't it handle common fields also?  If
-you care about performance, how about switching the order of finding
-fields in question, i.e.:
+Hmm, that in itself is not necessarily an improvement.
 
-	struct format_field *field = pevent_find_field(evsel->tp_format, name);
+I'm a bit sceptical about this patch,
+thp-introduce-khugepaged_prealloc_page-and-khugepaged_alloc_page.patch
+in last Thursday's mmotm 2012-09-06-16-46.
 
-	if (!field) {
-		field = pevent_find_common_field(evsel->tp_format, name);
-		if (!field)
-			return NULL;
-	}
+What brought me to look at it was hitting "BUG at mm/huge_memory.c:1842!"
+running tmpfs kbuild swapping load (with memcg's memory.limit_in_bytes
+forcing out to swap), while I happened to have CONFIG_NUMA=y.
 
-> +
-> +	offset = field->offset;
-> +
-> +	if (field->flags & FIELD_IS_DYNAMIC) {
-> +		offset = *(int *)(sample->raw_data + field->offset);
-> +		offset &= 0xffff;
-> +	}
-> +
-> +	return sample->raw_data + offset;
-> +}
-> +
-> +u64 perf_evsel__intval(struct perf_evsel *evsel, struct perf_sample *sample,
-> +		       const char *name)
-> +{
-> +	struct format_field *field = pevent_find_field(evsel->tp_format, name);
-> +	u64 val;
-> +
-> +        if (!field)
-> +                return 0;
+That's the VM_BUG_ON(*hpage) on entry to khugepaged_alloc_page().
 
-Ditto.
+(If I'm honest, I'll admit I have Michel's "interval trees for anon rmap"
+patches in on top, and so the line number was actually shifted to 1839:
+but I don't believe his patches were in any way involved here, and
+indeed I've not yet found a problem with them: they look very good.)
 
-Thanks,
-Namhyung
+I expect the BUG could quite easily be fixed up by making another call
+to khugepaged_prealloc_page() from somewhere to free up the hpage;
+but forgive me if I dislike using "prealloc" to free.
 
-> +
-> +	val = pevent_read_number(evsel->tp_format->pevent,
-> +				 sample->raw_data + field->offset, field->size);
-> +	return val;
-> +
-> +}
+I do agree with you that the several CONFIG_NUMA ifdefs dotted around
+mm/huge_memory.c are regrettable, but I'm not at all sure that you're
+improving the situation with this patch, which gives misleading names
+to functions and moves the mmap_sem upping out of line.
+
+I think you need to revisit it: maybe not go so far (leaving a few
+CONFIG_NUMAs behind, if they're not too bad), or maybe go further
+(add a separate function for freeing in the NUMA case, instead of
+using "prealloc").  I don't know what's best: have a play and see.
+
+That's what I was intending to write yesterday.  But overnight I
+was running with this 9/12 backed out (I think 10,11,12 should be
+independent), and found "BUG at mm/huge_memory.c:1835!" this morning.
+
+That's the VM_BUG_ON(*hpage) below #else in collapse_huge_page()
+when 9/12 is reverted.
+
+So maybe 9/12 is just obscuring what was already a BUG, either earlier
+in your series or elsewhere in mmotm (I've never seen it on 3.6-rc or
+earlier releases, nor without CONFIG_NUMA).  I've not spent any time
+looking for it, maybe it's obvious - can you spot and fix it?
+
+Hugh
