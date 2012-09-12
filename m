@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab2IMAEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:04:12 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab2ILXkb (ORCPT
+	id S933068Ab2IMAEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:04:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab2ILXkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:31 -0400
+	Wed, 12 Sep 2012 19:40:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 52/85] rapidio/tsi721: fix unused variable compiler warning
-Date: Wed, 12 Sep 2012 16:36:35 -0700
-Message-Id: <20120912233547.182687031@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 46/85] PCI: EHCI: Fix crash during hibernation on ASUS computers
+Date: Wed, 12 Sep 2012 16:36:29 -0700
+Message-Id: <20120912233546.574257678@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -31,51 +28,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 9a9a9a7adafe62a34de8b4fb48936c1c5f9bafa5 upstream.
+commit 0b68c8e2c3afaf9807eb1ebe0ccfb3b809570aa4 upstream.
 
-Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
-option off.
+Commit dbf0e4c (PCI: EHCI: fix crash during suspend on ASUS
+computers) added a workaround for an ASUS suspend issue related to
+USB EHCI and a bug in a number of ASUS BIOSes that attempt to shut
+down the EHCI controller during system suspend if its PCI command
+register doesn't contain 0 at that time.
 
-This patch is applicable to kernel versions starting from v3.2
+It turns out that the same workaround is necessary in the analogous
+hibernation code path, so add it.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45811
+Reported-and-tested-by: Oleksij Rempel <bug-track@fisher-privat.net>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/pci/pci-driver.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2162,7 +2162,7 @@ static int __devinit tsi721_probe(struct
- 				  const struct pci_device_id *id)
- {
- 	struct tsi721_device *priv;
--	int i, cap;
-+	int cap;
- 	int err;
- 	u32 regval;
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -952,6 +952,13 @@ static int pci_pm_poweroff_noirq(struct
+ 	if (!pci_dev->state_saved && !pci_is_bridge(pci_dev))
+ 		pci_prepare_to_sleep(pci_dev);
  
-@@ -2182,12 +2182,15 @@ static int __devinit tsi721_probe(struct
- 	priv->pdev = pdev;
++	/*
++	 * The reason for doing this here is the same as for the analogous code
++	 * in pci_pm_suspend_noirq().
++	 */
++	if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
++		pci_write_config_word(pci_dev, PCI_COMMAND, 0);
++
+ 	return 0;
+ }
  
- #ifdef DEBUG
-+	{
-+	int i;
- 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
- 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
- 			i, (unsigned long long)pci_resource_start(pdev, i),
- 			(unsigned long)pci_resource_len(pdev, i),
- 			pci_resource_flags(pdev, i));
- 	}
-+	}
- #endif
- 	/*
- 	 * Verify BAR configuration
 
 
