@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2ILH5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:57:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:32991 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab2ILH5Q convert rfc822-to-8bit (ORCPT
+	id S1753171Ab2ILH5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:57:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52332 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab2ILH5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:57:16 -0400
+	Wed, 12 Sep 2012 03:57:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <505038E8.6010309@televes.com>
-References: <505038E8.6010309@televes.com>
-Date: Wed, 12 Sep 2012 09:57:15 +0200
-X-Google-Sender-Auth: Y1d229Ds4jjIkCI0rXYDAZiBgrY
-Message-ID: <CAMuHMdXCffH84uqkcuS=Njc0JNGPowN3f7Kwi_32=D7r8OTL9A@mail.gmail.com>
-Subject: Re: Linux based bootloader
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jorge Dominguez <jmadom@televes.com>
+Date: Wed, 12 Sep 2012 16:57:45 +0900
+Message-ID: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
+Subject: [PATCH -tip/perf/core] perf probe: Add union member access support
+From: Hyeoncheol Lee <hyc.lee@gmail.com>
+To: acme@ghostprotocols.net
 Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jorge,
+Union members can be accessed with '.' or '->' like data structure
+member access
 
-On Wed, Sep 12, 2012 at 9:25 AM, Jorge Dominguez <jmadom@televes.com> wrote:
-> I find link on Web that describes a module to load other linux kernel or
-> bootloader with a commandline params inside a linux.
->
-> Works are perform by bootloader kernel module that get kernel, initrd and
-> command line params.
->
-> http://www.embeddedarm.com/software/arm-linux-bootloader.php
->
-> Unfortunately, this module has been developed by a private company and
-> payment.
->
-> All embedded developers are waiting for a module of its kind in the kernel
-> but open source and would greatly facilitate the development of the kernel
-> for these systems without having to flash the kernel or loaded via nfs or
-> other boot method.
->
-> Send this email after looking at some kernel module that can do this work.
-> Would be very grateful if you could tell me something about it.
->
-> I don´t subscribe to linux-kernel mailing list, Please send me a CC'ed
-> response
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Hyunchul Lee <hyc.lee@gmail.com>
+---
+ tools/perf/util/probe-finder.c |   24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
-What about kexec and kboot/petitboot?
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 94a00de..cc2b856 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -525,8 +525,10 @@ static int convert_variable_fields(Dwarf_Die
+*vr_die, const char *varname,
+ 			return -ENOENT;
+ 		}
+ 		/* Verify it is a data structure  */
+-		if (dwarf_tag(&type) != DW_TAG_structure_type) {
+-			pr_warning("%s is not a data structure.\n", varname);
++		tag = dwarf_tag(&type);
++		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
++			pr_warning("%s is not a data structure nor an union.\n",
++				   varname);
+ 			return -EINVAL;
+ 		}
 
-Gr{oetje,eeting}s,
+@@ -539,8 +541,9 @@ static int convert_variable_fields(Dwarf_Die
+*vr_die, const char *varname,
+ 			*ref_ptr = ref;
+ 	} else {
+ 		/* Verify it is a data structure  */
+-		if (tag != DW_TAG_structure_type) {
+-			pr_warning("%s is not a data structure.\n", varname);
++		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
++			pr_warning("%s is not a data structure nor an union.\n",
++				   varname);
+ 			return -EINVAL;
+ 		}
+ 		if (field->name[0] == '[') {
+@@ -567,10 +570,15 @@ static int convert_variable_fields(Dwarf_Die
+*vr_die, const char *varname,
+ 	}
 
-                        Geert
+ 	/* Get the offset of the field */
+-	ret = die_get_data_member_location(die_mem, &offs);
+-	if (ret < 0) {
+-		pr_warning("Failed to get the offset of %s.\n", field->name);
+-		return ret;
++	if (tag == DW_TAG_union_type) {
++		offs = 0;
++	} else {
++		ret = die_get_data_member_location(die_mem, &offs);
++		if (ret < 0) {
++			pr_warning("Failed to get the offset of %s.\n",
++				   field->name);
++			return ret;
++		}
+ 	}
+ 	ref->offset += (long)offs;
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+1.7.10
