@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab2IMAXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:23:19 -0400
+	id S932704Ab2IMAXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:23:45 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab2ILXfc (ORCPT
+	with ESMTP id S1756416Ab2ILXf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:32 -0400
+	Wed, 12 Sep 2012 19:35:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Laurent Bigonville <l.bigonville@edpnet.be>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 095/108] HID: add NOGET quirk for Eaton Ellipse MAX UPS
-Date: Wed, 12 Sep 2012 16:29:33 -0700
-Message-Id: <20120912232500.468858779@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 094/108] i2c-i801: Add Device IDs for Intel Lynx Point-LP PCH
+Date: Wed, 12 Sep 2012 16:29:32 -0700
+Message-Id: <20120912232500.364473892@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -31,32 +30,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 67ddbb3e6568fb1820b2cc45b00c50702b114801 upstream.
+commit 4a8f1ddde942e232387e6129ce4f4c412e43802f upstream.
 
-This patch (as1603) adds a NOGET quirk for the Eaton Ellipse MAX UPS
-device.  (The USB IDs were already present in hid-ids.h, apparently
-under a different name.)
+Add the SMBus Device IDs for the Intel Lynx Point-LP PCH.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Laurent Bigonville <l.bigonville@edpnet.be>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+)
 
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -21,6 +21,7 @@ Supported adapters:
+   * Intel DH89xxCC (PCH)
+   * Intel Panther Point (PCH)
+   * Intel Lynx Point (PCH)
++  * Intel Lynx Point-LP (PCH)
+    Datasheets: Publicly available at the Intel website
+ 
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -104,6 +104,7 @@ config I2C_I801
+ 	    DH89xxCC (PCH)
+ 	    Panther Point (PCH)
+ 	    Lynx Point (PCH)
++	    Lynx Point-LP (PCH)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -52,6 +52,7 @@
+   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
++  Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -147,6 +148,7 @@
+ #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
++#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
+ 
+ struct i801_priv {
+ 	struct i2c_adapter adapter;
+@@ -636,6 +638,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
+ 	{ 0, }
+ };
+ 
 
 
