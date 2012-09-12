@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab2ILVVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 17:21:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36283 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab2ILVV3 (ORCPT
+	id S1753902Ab2ILVVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 17:21:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51182 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab2ILVVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 17:21:29 -0400
+	Wed, 12 Sep 2012 17:21:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347016499-29354-19-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1347016499-29354-20-git-send-email-lee.jones@linaro.org>
 References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
-	<1347016499-29354-19-git-send-email-lee.jones@linaro.org>
-Date: Wed, 12 Sep 2012 23:21:28 +0200
-Message-ID: <CACRpkdZKrvU3s+f+nVXOPkcFUWnq9KaFtPNCcs+fP8POGQ1Lvg@mail.gmail.com>
-Subject: Re: [PATCH 18/19] gpio: Provide the tc3589x GPIO expander driver with
- an IRQ domain
+	<1347016499-29354-20-git-send-email-lee.jones@linaro.org>
+Date: Wed, 12 Sep 2012 23:21:52 +0200
+Message-ID: <CACRpkdYVP_rseFOzxUS+pDnG3mfpNm4nExG7DH7sawZVVjUcig@mail.gmail.com>
+Subject: Re: [PATCH 19/19] gpio: Enable the tc3298x GPIO expander driver for
+ Device Tree
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,19 +27,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> In preparation for Device Tree enablement all IRQ controllers
-> should control their own IRQ domain. This patch provides just
-> that for the tc3589x GPIO expander.
+> Here we provide a means to probe and extract vital information
+> from Device Tree when booting with it enabled. Without this
+> patch sub-devices wouldn't be able to reference the tc3589x-gpio
+> expander from Device Tree.
 >
 > CC: Grant Likely <grant.likely@secretlab.ca>
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I've applied this to my GPIO tree, I couldn't resist. It's just such
-a nice patch nicing up the code and I wanted it tested so it can
-go into the next merge window.
-
-If you need to send patches to the ARM SoC tree, just state
-the devel branch from my tree as dependency.
+Applied as well.
 
 Yours,
 Linus Walleij
