@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751112Ab2ILXk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:40:57 -0400
+	id S932756Ab2ILXlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:41:15 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab2ILXkf (ORCPT
+	with ESMTP id S1754159Ab2ILXlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:35 -0400
+	Wed, 12 Sep 2012 19:41:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 62/85] powerpc: Keep thread.dscr and thread.dscr_inherit in sync
-Date: Wed, 12 Sep 2012 16:36:45 -0700
-Message-Id: <20120912233548.235075276@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Mads <mads@ab3.no>,
+        Mike Frysinger <vapier@gentoo.org>, "H. J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 54/85] x32: Use compat shims for {g,s}etsockopt
+Date: Wed, 12 Sep 2012 16:36:37 -0700
+Message-Id: <20120912233547.389692918@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,58 +29,93 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit 00ca0de02f80924dfff6b4f630e1dff3db005e35 upstream.
+commit 515c7af85ed92696c311c53d53cb4898ff32d784 upstream.
 
-When we update the DSCR either via emulation of mtspr(DSCR) or via
-a change to dscr_default in sysfs we don't update thread.dscr.
-We will eventually update it at context switch time but there is
-a period where thread.dscr is incorrect.
+Some of the arguments to {g,s}etsockopt are passed in userland pointers.
+If we try to use the 64bit entry point, we end up sometimes failing.
 
-If we fork at this point we will copy the old value of thread.dscr
-into the child. To avoid this, always keep thread.dscr in sync with
-reality.
+For example, dhcpcd doesn't run in x32:
+	# dhcpcd eth0
+	dhcpcd[1979]: version 5.5.6 starting
+	dhcpcd[1979]: eth0: broadcasting for a lease
+	dhcpcd[1979]: eth0: open_socket: Invalid argument
+	dhcpcd[1979]: eth0: send_raw_packet: Bad file descriptor
 
-This issue was found with the following testcase:
+The code in particular is getting back EINVAL when doing:
+	struct sock_fprog pf;
+	setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &pf, sizeof(pf));
 
-http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
+Diving into the kernel code, we can see:
+include/linux/filter.h:
+	struct sock_fprog {
+		unsigned short len;
+		struct sock_filter __user *filter;
+	};
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+net/core/sock.c:
+	case SO_ATTACH_FILTER:
+		ret = -EINVAL;
+		if (optlen == sizeof(struct sock_fprog)) {
+			struct sock_fprog fprog;
+
+			ret = -EFAULT;
+			if (copy_from_user(&fprog, optval, sizeof(fprog)))
+				break;
+
+			ret = sk_attach_filter(&fprog, sk);
+		}
+		break;
+
+arch/x86/syscalls/syscall_64.tbl:
+	54 common setsockopt sys_setsockopt
+	55 common getsockopt sys_getsockopt
+
+So for x64, sizeof(sock_fprog) is 16 bytes.  For x86/x32, it's 8 bytes.
+This comes down to the pointer being 32bit for x32, which means we need
+to do structure size translation.  But since x32 comes in directly to
+sys_setsockopt, it doesn't get translated like x86.
+
+After changing the syscall table and rebuilding glibc with the new kernel
+headers, dhcp runs fine in an x32 userland.
+
+Oddly, it seems like Linus noted the same thing during the initial port,
+but I guess that was missed/lost along the way:
+	https://lkml.org/lkml/2011/8/26/452
+
+[ hpa: tagging for -stable since this is an ABI fix. ]
+
+Bugzilla: https://bugs.gentoo.org/423649
+Reported-by: Mads <mads@ab3.no>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Link: http://lkml.kernel.org/r/1345320697-15713-1-git-send-email-vapier@gentoo.org
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/sysfs.c |    4 +++-
- arch/powerpc/kernel/traps.c |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/syscalls/syscall_64.tbl |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -196,8 +196,10 @@ static ssize_t show_dscr_default(struct
- 
- static void update_dscr(void *dummy)
- {
--	if (!current->thread.dscr_inherit)
-+	if (!current->thread.dscr_inherit) {
-+		current->thread.dscr = dscr_default;
- 		mtspr(SPRN_DSCR, dscr_default);
-+	}
- }
- 
- static ssize_t __used store_dscr_default(struct device *dev,
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -972,8 +972,9 @@ static int emulate_instruction(struct pt
- 			cpu_has_feature(CPU_FTR_DSCR)) {
- 		PPC_WARN_EMULATED(mtdscr, regs);
- 		rd = (instword >> 21) & 0x1f;
--		mtspr(SPRN_DSCR, regs->gpr[rd]);
-+		current->thread.dscr = regs->gpr[rd];
- 		current->thread.dscr_inherit = 1;
-+		mtspr(SPRN_DSCR, current->thread.dscr);
- 		return 0;
- 	}
- #endif
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -60,8 +60,8 @@
+ 51	common	getsockname		sys_getsockname
+ 52	common	getpeername		sys_getpeername
+ 53	common	socketpair		sys_socketpair
+-54	common	setsockopt		sys_setsockopt
+-55	common	getsockopt		sys_getsockopt
++54	64	setsockopt		sys_setsockopt
++55	64	getsockopt		sys_getsockopt
+ 56	common	clone			stub_clone
+ 57	common	fork			stub_fork
+ 58	common	vfork			stub_vfork
+@@ -351,3 +351,5 @@
+ 538	x32	sendmmsg		compat_sys_sendmmsg
+ 539	x32	process_vm_readv	compat_sys_process_vm_readv
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
++541	x32	setsockopt		compat_sys_setsockopt
++542	x32	getsockopt		compat_sys_getsockopt
 
 
