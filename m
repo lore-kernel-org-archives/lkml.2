@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab2ILWfM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 18:35:12 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41298 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab2ILWfJ (ORCPT
+	id S1752057Ab2ILWpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 18:45:34 -0400
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:36753 "EHLO
+	homiemail-a37.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751055Ab2ILWpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 18:35:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120912160306.GA16482@x1.osrc.amd.com>
-References: <CAHVxiJCv+tzx4rtL2Mu0zAYEurrSwHANwvL_bpDUR7ZMXJdAyg@mail.gmail.com>
-	<20120912160306.GA16482@x1.osrc.amd.com>
-Date: Thu, 13 Sep 2012 06:35:08 +0800
-Message-ID: <CAHVxiJCmxe5Cg1PAO4-XFYvN637jZ=Ox_LGOD6aDFABxy=Fvdw@mail.gmail.com>
-Subject: Re: [PATCH]URL is unavailable
-From: Leonard Tse <xiehao5@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Leonard Tse <xiehao5@gmail.com>,
-        ftpadmin@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
-        leoli@freescale.com, triplex@zh-kernel.org, tshibata@ab.jp.nec.com,
-        k-keiichi@bx.jp.nec.com, minchan.kim@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 Sep 2012 18:45:33 -0400
+Message-ID: <1347489929.9103.3.camel@offbook>
+Subject: [PATCH] staging: keucr: remove String func prototypes
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Al Cho <acho@novell.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org
+Date: Thu, 13 Sep 2012 00:45:29 +0200
+Organization: GNU
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/13 Borislav Petkov <bp@alien8.de>:
-> On Wed, Sep 12, 2012 at 11:51:35PM +0800, Leonard Tse wrote:
->> I found this URL "http://userweb.kernel.org/~akpm/stuff/tpp.txt" which in
->>
->> Documentation/HOWTO
->>
->> at Line 115
->> at Line 582
->>
->> is just unavailable.
->
-> Dear KORG admins, what are the chances of userweb.kernel.org coming back
-> online?
->
-> Thanks.
->
-> --
-> Regards/Gruss,
-> Boris.
+Commit 1b9f644dfeb638e0146ce54f4e48c87a2841a603 already got rid of
+StringCopy and StringCmp, so remove the left over prototypes.
 
-More unavailable URLs :
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ drivers/staging/keucr/smcommon.h |    2 --
+ 1 file changed, 2 deletions(-)
 
-grep "userweb.kernel.org" . -r
-./drivers/input/mouse/Kconfig:
-http://userweb.kernel.org/~dtor/synaptics-no-abspressure.patch
-./drivers/input/evdev.c:
-"http://userweb.kernel.org/~dtor/eviocgbit-bug.html\n",
-./Documentation/HOWTO:          http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/HOWTO:      http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/ja_JP/HOWTO:
-http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/ja_JP/HOWTO:      http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/ja_JP/SubmittingPatches:http://userweb.kernel.org/~akpm/stuff/patch-scripts.tar.gz
-./Documentation/ja_JP/SubmittingPatches:
-<http://userweb.kernel.org/~akpm/stuff/tpp.txt>
-./Documentation/SubmittingPatches:http://userweb.kernel.org/~akpm/stuff/patch-scripts.tar.gz
-./Documentation/SubmittingPatches:
-<http://userweb.kernel.org/~akpm/stuff/tpp.txt>
-./Documentation/zh_CN/HOWTO:
-http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/zh_CN/HOWTO:     http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/zh_CN/SubmittingPatches:http://userweb.kernel.org/~akpm/stuff/patch-scripts.tar.gz
-./Documentation/zh_CN/SubmittingPatches:
-<http://userweb.kernel.org/~akpm/stuff/tpp.txt>
-./Documentation/ko_KR/HOWTO:
-http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/ko_KR/HOWTO:    http://userweb.kernel.org/~akpm/stuff/tpp.txt
-./Documentation/development-process/2.Process:
-http://userweb.kernel.org/~akpm/mmotm/
+diff --git a/drivers/staging/keucr/smcommon.h b/drivers/staging/keucr/smcommon.h
+index 278bdb8..4d57203 100644
+--- a/drivers/staging/keucr/smcommon.h
++++ b/drivers/staging/keucr/smcommon.h
+@@ -25,7 +25,5 @@ Define Difinetion
+ #define ERR_NoSmartMedia    0x003A /* Medium Not Present */
+ 
+ /***************************************************************************/
+-void StringCopy(char *, char *, int);
+-int  StringCmp(char *, char *, int);
+ 
+ #endif
+-- 
+1.7.9.5
 
-Please check and update them, thanks.
+
+
