@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab2ILXil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:41 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672Ab2ILXii (ORCPT
+	id S932733Ab2ILXiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:50 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:41747 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694Ab2ILXim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 32/85] Bluetooth: Fix using a NULL inquiry cache entry
-Date: Wed, 12 Sep 2012 16:36:15 -0700
-Message-Id: <20120912233545.105190562@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
-References: <20120912233541.747973832@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 12 Sep 2012 19:38:42 -0400
+Date: Wed, 12 Sep 2012 23:38:42 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tony Lindgren <tony@atomide.com>
+cc: Vaibhav Hiremath <hvaibhav@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: AM33XX: hwmod: Add OMAP_INTC_START offset to
+ all module int nos
+In-Reply-To: <20120912215232.GE5997@atomide.com>
+Message-ID: <alpine.DEB.2.00.1209122330580.7275@utopia.booyaka.com>
+References: <1347484551-11775-1-git-send-email-hvaibhav@ti.com> <1347484551-11775-3-git-send-email-hvaibhav@ti.com> <20120912215232.GE5997@atomide.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Hi
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 12 Sep 2012, Tony Lindgren wrote:
 
-------------------
+> * Vaibhav Hiremath <hvaibhav@ti.com> [120912 14:17]:
+> > With recent migration of omap architectures to SPARSE_IRQ framework,
+> > it is important to add OMAP_INTC_START to all interrupt numbers
+> > which will be eventually requested by drivers.
+> > 
+> > This is required in order to get AM33XX boot functionality.
+> > 
+> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> > Cc: Paul Walmsley <paul@pwsan.com>
+> > ---
+> >  arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  168 ++++++++++++++--------------
+> >  1 files changed, 84 insertions(+), 84 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+> > index 7b7ed08..3c320f4 100644
+> > --- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+> > +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+> 
+> You should just have on top of this file:
+> 
+> #define OMAP_INTC_START		0
+> 
+> Then Paul can apply this, and while merging with the sparseirq
+> changes, the above can be removed.
 
-From: Ram Malovany <ramm@ti.com>
+This change has been made.
 
-commit 7cc8380eb10347016d95bf6f9d842c2ae6d12932 upstream.
+> Then these should be fixed up to have trailing commas
+> as requested by Russell earlier on several occasions.
 
-If the device was not found in a list of found devices names of which
-are pending.This may happen in a case when HCI Remote Name Request
-was sent as a part of incoming connection establishment procedure.
-Hence there is no need to continue resolving a next name as it will
-be done upon receiving another Remote Name Request Complete Event.
-This will fix a kernel crash when trying to use this entry to resolve
-the next name.
-
-Signed-off-by: Ram Malovany <ramm@ti.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/bluetooth/hci_event.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
-
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1388,12 +1388,18 @@ static void hci_check_pending_name(struc
- 		return;
- 
- 	e = hci_inquiry_cache_lookup_resolve(hdev, bdaddr, NAME_PENDING);
--	if (e) {
-+	/* If the device was not found in a list of found devices names of which
-+	 * are pending. there is no need to continue resolving a next name as it
-+	 * will be done upon receiving another Remote Name Request Complete
-+	 * Event */
-+	if (!e)
-+		return;
-+
-+	list_del(&e->list);
-+	if (name) {
- 		e->name_state = NAME_KNOWN;
--		list_del(&e->list);
--		if (name)
--			mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
--					 e->data.rssi, name, name_len);
-+		mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
-+				 e->data.rssi, name, name_len);
- 	}
- 
- 	if (hci_resolve_next_name(hdev))
+I've taken the script you sent and run it on the data file - thanks for 
+the script - and will send the updated pull request shortly.  Sounds like 
+Russell should send patches for Documentation/CodingStyle and 
+scripts/checkpatch.pl so it can be agreed as a kernel-wide policy.
 
 
+- Paul
