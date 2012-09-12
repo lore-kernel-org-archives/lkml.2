@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab2ILXju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:39:50 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932866Ab2ILXj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:39:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab2ILXjk (ORCPT
+	with ESMTP id S1756132Ab2ILXjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:40 -0400
+	Wed, 12 Sep 2012 19:39:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 48/85] sched,cgroup: Fix up task_groups list
-Date: Wed, 12 Sep 2012 16:36:31 -0700
-Message-Id: <20120912233546.776750627@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 51/85] rapidio/tsi721: fix inbound doorbell interrupt handling
+Date: Wed, 12 Sep 2012 16:36:34 -0700
+Message-Id: <20120912233547.083807018@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,47 +31,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mike Galbraith <efault@gmx.de>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 35cf4e50b16331def6cfcbee11e49270b6db07f5 upstream.
+commit 3670e7e12e582c6d67761275d148171feb7a9004 upstream.
 
-With multiple instances of task_groups, for_each_rt_rq() is a noop,
-no task groups having been added to the rt.c list instance.  This
-renders __enable/disable_runtime() and print_rt_stats() noop, the
-user (non) visible effect being that rt task groups are missing in
-/proc/sched_debug.
+Make sure that there is no doorbell messages left behind due to disabled
+interrupts during inbound doorbell processing.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344308413.6846.7.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The most common case for this bug is loss of rionet JOIN messages in
+systems with three or more rionet participants and MSI or MSI-X enabled.
+As result, requests for packet transfers may finish with "destination
+unreachable" error message.
+
+This patch is applicable to kernel versions starting from v3.2.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c  |    1 +
- kernel/sched/sched.h |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7011,6 +7011,7 @@ int in_sched_functions(unsigned long add
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -439,6 +439,9 @@ static void tsi721_db_dpc(struct work_st
+ 				" info %4.4x\n", DBELL_SID(idb.bytes),
+ 				DBELL_TID(idb.bytes), DBELL_INF(idb.bytes));
+ 		}
++
++		wr_ptr = ioread32(priv->regs +
++				  TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
+ 	}
  
- #ifdef CONFIG_CGROUP_SCHED
- struct task_group root_task_group;
-+LIST_HEAD(task_groups);
- #endif
+ 	iowrite32(rd_ptr & (IDB_QSIZE - 1),
+@@ -449,6 +452,10 @@ static void tsi721_db_dpc(struct work_st
+ 	regval |= TSI721_SR_CHINT_IDBQRCV;
+ 	iowrite32(regval,
+ 		priv->regs + TSI721_SR_CHINTE(IDB_QUEUE));
++
++	wr_ptr = ioread32(priv->regs + TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
++	if (wr_ptr != rd_ptr)
++		schedule_work(&priv->idb_work);
+ }
  
- DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -80,7 +80,7 @@ extern struct mutex sched_domains_mutex;
- struct cfs_rq;
- struct rt_rq;
- 
--static LIST_HEAD(task_groups);
-+extern struct list_head task_groups;
- 
- struct cfs_bandwidth {
- #ifdef CONFIG_CFS_BANDWIDTH
+ /**
 
 
