@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2ILXkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:40:05 -0400
+	id S932889Ab2ILXkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:40:12 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932871Ab2ILXj6 (ORCPT
+	with ESMTP id S932878Ab2ILXkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:58 -0400
+	Wed, 12 Sep 2012 19:40:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 39/85] Revert "drm/radeon: fix bo creation retry path"
-Date: Wed, 12 Sep 2012 16:36:22 -0700
-Message-Id: <20120912233545.842346087@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 41/85] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
+Date: Wed, 12 Sep 2012 16:36:24 -0700
+Message-Id: <20120912233546.065553076@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,41 +28,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 676bc2e1e4f9072f7a640d5b7c99ffdf9709a6e7 upstream.
+commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
 
-This reverts commit d1c7871ddb1f588b8eb35affd9ee1a3d5e11cd0c.
+The rpc server tries to ensure that there will be room to send a reply
+before it receives a request.
 
-ttm_bo_init() destroys the BO on failure. So this patch makes
-the retry path work with freed memory.  This ends up causing
-kernel panics when this path is hit.
+It does this by tracking, in xpt_reserved, an upper bound on the total
+size of the replies that is has already committed to for the socket.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Currently it is adding in the estimate for a new reply *before* it
+checks whether there is space available.  If it finds that there is not
+space, it then subtracts the estimate back out.
+
+This may lead the subsequent svc_xprt_enqueue to decide that there is
+space after all.
+
+The results is a svc_recv() that will repeatedly return -EAGAIN, causing
+server threads to loop without doing any actual work.
+
+Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+Tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_object.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/sunrpc/svc_xprt.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -136,6 +136,7 @@ int radeon_bo_create(struct radeon_devic
- 	acc_size = ttm_bo_dma_acc_size(&rdev->mman.bdev, size,
- 				       sizeof(struct radeon_bo));
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -316,7 +316,6 @@ static bool svc_xprt_has_something_to_do
+  */
+ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ {
+-	struct svc_serv	*serv = xprt->xpt_server;
+ 	struct svc_pool *pool;
+ 	struct svc_rqst	*rqstp;
+ 	int cpu;
+@@ -362,8 +361,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
+ 				rqstp, rqstp->rq_xprt);
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 		pool->sp_stats.threads_woken++;
+ 		wake_up(&rqstp->rq_wait);
+ 	} else {
+@@ -643,8 +640,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 	if (xprt) {
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
  
-+retry:
- 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
- 	if (bo == NULL)
- 		return -ENOMEM;
-@@ -149,8 +150,6 @@ int radeon_bo_create(struct radeon_devic
- 	bo->surface_reg = -1;
- 	INIT_LIST_HEAD(&bo->list);
- 	INIT_LIST_HEAD(&bo->va);
--
--retry:
- 	radeon_ttm_placement_from_domain(bo, domain);
- 	/* Kernel allocation are uninterruptible */
- 	mutex_lock(&rdev->vram_mutex);
+ 		/* As there is a shortage of threads and this request
+ 		 * had to be queued, don't allow the thread to wait so
+@@ -741,6 +736,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 		else
+ 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
+ 		dprintk("svc: got len=%d\n", len);
++		rqstp->rq_reserved = serv->sv_max_mesg;
++		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 	}
+ 	svc_xprt_received(xprt);
+ 
 
 
