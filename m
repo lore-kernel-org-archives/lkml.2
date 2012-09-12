@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2ILJbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:31:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60908 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754476Ab2ILJbM (ORCPT
+	id S1755178Ab2ILJbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:31:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56854 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab2ILJbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:31:12 -0400
-Date: Wed, 12 Sep 2012 10:29:54 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Simon Baatz <gmbnomis@gmail.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3 09/31] arm64: Cache maintenance routines
-Message-ID: <20120912092954.GA21823@arm.com>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
- <1347035226-18649-10-git-send-email-catalin.marinas@arm.com>
- <20120907193542.GA22806@schnuecks.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907193542.GA22806@schnuecks.de>
-Thread-Topic: [PATCH v3 09/31] arm64: Cache maintenance routines
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 Sep 2012 05:31:35 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mmarek@suse.cz, patches@linaro.org
+Subject: [PATCH v2] kbuild: setlocalversion: ignore private tags while reporting local version
+Date: Wed, 12 Sep 2012 14:58:30 +0530
+Message-Id: <1347442110-26569-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1347424996-15569-1-git-send-email-tushar.behera@linaro.org>
+References: <1347424996-15569-1-git-send-email-tushar.behera@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+The output of 'git describe' is relative to the immediate preceding tag.
+When the immediate tag preceding or at the HEAD is a private tag,
+setlocalversion extracts information with respect to the private tag and
+wrongly reports them with respect to Linux tag.
 
-On Fri, Sep 07, 2012 at 08:35:42PM +0100, Simon Baatz wrote:
-> On Fri, Sep 07, 2012 at 05:26:44PM +0100, Catalin Marinas wrote:
-> > +#define ARCH_HAS_FLUSH_ANON_PAGE
-> > +static inline void flush_anon_page(struct vm_area_struct *vma,
-> > +                      struct page *page, unsigned long vmaddr)
-> > +{
-> > +     extern void __flush_anon_page(struct vm_area_struct *vma,
-> > +                             struct page *, unsigned long);
-> > +     if (PageAnon(page))
-> > +             __flush_anon_page(vma, page, vmaddr);
-> 
-> 
-> __flush_anon_page() does nothing. Shouldn't this be removed as well?
+Fixing this to extract information with respect to Linux tags.
 
-Yes, good point.
+CC: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+Changes since v1:
+* Extend the fix when the HEAD is a private tagged commit
 
-> > +void __flush_dcache_page(struct address_space *mapping, struct page *page)
-> > +{
-> > +     __flush_dcache_area(page_address(page), PAGE_SIZE);
-> > +}
-> > +
-> > +void __sync_icache_dcache(pte_t pte)
-> > +{
-> > +     unsigned long pfn;
-> > +     struct page *page;
-> > +
-> > +     pfn = pte_pfn(pte);
-> > +     if (!pfn_valid(pfn))
-> > +             return;
-> > +
-> > +     page = pfn_to_page(pfn);
-> > +     if (!test_and_set_bit(PG_dcache_clean, &page->flags))
-> > +             __flush_dcache_page(NULL, page);
-> > +     __flush_icache_all();
-> > +}
-> > +
-> > +/*
-> > + * Ensure cache coherency between kernel mapping and userspace mapping of this
-> > + * page.
-> > + */
-> > +void flush_dcache_page(struct page *page)
-> > +{
-> > +     struct address_space *mapping;
-> > +
-> > +     /*
-> > +      * The zero page is never written to, so never has any dirty cache
-> > +      * lines, and therefore never needs to be flushed.
-> > +      */
-> > +     if (page == ZERO_PAGE(0))
-> > +             return;
-> > +
-> > +     mapping = page_mapping(page);
-> > +
-> > +     if (mapping && !mapping_mapped(mapping))
-> > +             clear_bit(PG_dcache_clean, &page->flags);
-> > +     else {
-> > +             __flush_dcache_page(mapping, page);
-> > +             if (mapping)
-> > +                     __flush_icache_all();
-> 
-> 
-> Is this necessary to ensure I/D coherency? Then, I would have
-> expected
-> 
->                 if (mapping) {
->                         __flush_dcache_page(mapping, page);
->                         __flush_icache_all();
->                 }
-> 
-> similar to __sync_icache_dcache() above.
+ scripts/setlocalversion |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-We don't want to do additional flushing if !mapping_mapped() as the page
-isn't mapped in user space. In this case we defer the flushing until
-__sync_icache_dcache().
-
-The other case is for anonymous pages where mapping == NULL. Here we
-don't defer the D-cache flush and do it directly. The I-cache, if
-needed, is handled later in __sync_icache_dcache(). This was based on
-the idea that this case is mainly for the args/env page which is mapped
-shortly after anyway, so not worth deferring. On AArch64, I don't think
-it makes any difference. Maybe a slight improvement (at least in
-clarity) in flush_dcache_page():
-
-	if (mapping && mapping_mapped(mapping)) {
-		__flush_dcache_page(page);
-		__flush_icache_all();
-		set_bit(PG_dcache_clean, &page->flags);
-	} else {
-		clear_bit(PG_dcache_clean, &page->flags);
-	}
-
-In this case the anonymous page flushing is deferred to
-__sync_icache_dcache().
-
-> What is the reason why the D-cache flush is done in different
-> cases than the following I-cache flush?
-
-For __sync_icache_dcache(), we need to handle the situation where the
-page mapped into user space has been cleaned (D-cache) but there may be
-stale data in the I-cache. I think this can only happen with an
-ASID-tagged VIVT I-cache configuration (which is allowed on AArch64) if
-an existing page has been unmapped and the same virtual address remapped
-(withing the same mm context) to a different page that had been cleaned
-previously. We could optimise the __sync_icache_dcache() as below:
-
-	if (!test_and_set_bit(PG_dcache_clean, &page->flags)) {
-		__flush_dcache_page(page);
-		__flush_icache_all();
-	} else if (icache_is_aivivt()) {
-		__flush_icache_all();
-	}
-
-> > +             set_bit(PG_dcache_clean, &page->flags);
-> > +     }
-> > +}
-> > +EXPORT_SYMBOL(flush_dcache_page);
-> > +
-> > +void __flush_anon_page(struct vm_area_struct *vma, struct page *page, unsigned long vmaddr)
-> > +{
-> > +}
-> 
-> Note that the __flush_dcache_page(mapping, page) in
-> flush_dcache_page() above is called when page is an anonymous page
-> (since mapping == NULL in this case).  If the call to
-> __flush_dcache_page() is right above, it should be needed
-> here as well?
-
-flush_anon_page() is called when the kernel needs to access an anonymous
-page. Given that the D-cache behaves like a PIPT, there is no need for
-additional flushing here. The flush_dcache_page() call was based on the
-assumption that such page needs flushing anyway and it's not worth
-deferring. But the code may be easier to understand as I suggested above
-(and slightly more optimal for the VIPT I-cache case).
-
-It looks like any other architecture does something different here.
-
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index bd6dca8..b65e8a9 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -47,7 +47,7 @@ scm_version()
+ 
+ 		# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore
+ 		# it, because this version is defined in the top level Makefile.
+-		if [ -z "`git describe --exact-match 2>/dev/null`" ]; then
++		if [ -z "`git describe --exact-match --match v[2-9].* 2>/dev/null`" ]; then
+ 
+ 			# If only the short version is requested, don't bother
+ 			# running further git commands
+@@ -57,7 +57,8 @@ scm_version()
+ 			fi
+ 			# If we are past a tagged commit (like
+ 			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
+-			if atag="`git describe 2>/dev/null`"; then
++			# Also match linux tags pattern to discard private tags
++			if atag="`git describe --match v[2-9].* 2>/dev/null`"; then
+ 				echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
+ 
+ 			# If we don't have a tag at all we print -g{commitish}.
 -- 
-Catalin
+1.7.4.1
+
