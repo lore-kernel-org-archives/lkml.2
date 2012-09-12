@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759754Ab2ILOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:51:27 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39887 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758854Ab2ILOvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:51:24 -0400
+	id S1759710Ab2ILOxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:53:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758854Ab2ILOxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 10:53:22 -0400
+Message-ID: <5050A1D8.5080104@redhat.com>
+Date: Wed, 12 Sep 2012 10:53:12 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1347461351.15764.47.camel@twins>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
-	<1347459195-5491-2-git-send-email-eranian@google.com>
-	<1347459984.15764.34.camel@twins>
-	<CABPqkBSnhjgAhn5+gOuBWWPrxKojKW1hKPJEn7zvvYhiw-LPLg@mail.gmail.com>
-	<1347460719.15764.42.camel@twins>
-	<CABPqkBSCY1N8Zc9ZxRYmQykqg+hiukxW4ZRMWkp9wfaOSzgGrA@mail.gmail.com>
-	<1347461351.15764.47.camel@twins>
-Date: Wed, 12 Sep 2012 16:51:23 +0200
-Message-ID: <CABPqkBRiDjaCw9CEpWgjxeOu4ybgv=-ieRZwZLberiU9m9vHOg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>,
+To: John Stultz <john.stultz@linaro.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] time: Fix timeekeping_get_ns overflow on 32bit systems
+References: <1347405963-35715-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1347405963-35715-1-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 4:49 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-09-12 at 16:46 +0200, Stephane Eranian wrote:
->
->> I am fine with dropping this patch. I just found it odd there was a per-cpu
->> data reference embedded deep into the call. I wanted things to be more
->> explicit. I know it works without the proposed change.
->
-> Ah the reason its there is to make sure the base pointer is a valid base
-> pointer, this avoids an extra conditional in a number of places. Note
-> that it uses raw_get_cpu_var(), so it doesn't even actually know which
-> specific pointer goes in.
->
->
-Ok, fine. Then let's drop this patch then.
-Thanks for the explanations.
+
+
+On 09/11/2012 07:26 PM, John Stultz wrote:
+> Thomas: Please queue this in tip/timers/urgent for 3.6.
+> 
+> Daniel Lezcano reported seeing multi-second stalls from
+> keyboard input on his T61 laptop when NOHZ and CPU_IDLE
+> were enabled on a 32bit kernel.
+> 
+> He bisected the problem down to
+> 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1 (time: Condense
+> timekeeper.xtime into xtime_sec).
+> 
+> After reproducing this issue, I narrowed the problem down
+> to the fact that timekeeping_get_ns() returns a 64bit
+> nsec value that hasn't been accumulated. In some cases
+> this value was being then stored in timespec.tv_nsec
+> (which is a long).
+> 
+> On 32bit systems, With idle times larger then 4 seconds
+> (or less, depending on the value of xtime_nsec), the
+> returned nsec value would overflow 32bits. This limited
+> kept time from increasing, causing timers to not expire.
+> 
+> The fix is to make sure we don't directly store the
+> result of timekeeping_get_ns() into a tv_nsec field,
+> instead using a 64bit nsec value which can then be
+> added into the timespec via timespec_add_ns().
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Richard Cochran <richardcochran@gmail.com>
+> Cc: Prarit Bhargava <prarit@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Reported-and-bisected-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Tested-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+
+P.
