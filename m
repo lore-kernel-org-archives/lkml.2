@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab2ILFrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 01:47:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32429 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2ILFrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 01:47:09 -0400
-X-IronPort-AV: E=Sophos;i="4.80,408,1344182400"; 
-   d="scan'208";a="5827175"
-Message-ID: <50501B9C.7000200@cn.fujitsu.com>
-Date: Wed, 12 Sep 2012 13:20:28 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
-References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com> <20120831134956.fec0f681.akpm@linux-foundation.org> <504D467D.2080201@jp.fujitsu.com> <504D4A08.7090602@cn.fujitsu.com> <20120910135213.GA1550@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20120910135213.GA1550@dhcp-192-168-178-175.profitbricks.localdomain>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/12 13:14:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/12 13:14:15,
-	Serialize complete at 2012/09/12 13:14:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754732Ab2ILFwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 01:52:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42506 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab2ILFwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 01:52:40 -0400
+Date: Wed, 12 Sep 2012 15:52:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: linux-next: manual merge of the staging tree with the thermal tree
+Message-Id: <20120912155231.716530c364bb20bd43efec0d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/10/2012 09:52 PM, Vasilis Liaskovitis Wrote:
-> Hi,
-> 
-> On Mon, Sep 10, 2012 at 10:01:44AM +0800, Wen Congyang wrote:
->> At 09/10/2012 09:46 AM, Yasuaki Ishimatsu Wrote:
->>> Hi Wen,
->>>
->>> 2012/09/01 5:49, Andrew Morton wrote:
->>>> On Tue, 28 Aug 2012 18:00:07 +0800
->>>> wency@cn.fujitsu.com wrote:
->>>>
->>>>> This patch series aims to support physical memory hot-remove.
->>>>
->>>> I doubt if many people have hardware which permits physical memory
->>>> removal?  How would you suggest that people with regular hardware can
->>>> test these chagnes?
->>>
->>> How do you test the patch? As Andrew says, for hot-removing memory,
->>> we need a particular hardware. I think so too. So many people may want
->>> to know how to test the patch.
->>> If we apply following patch to kvm guest, can we hot-remove memory on
->>> kvm guest?
->>>
->>> http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
->>
->> Yes, if we apply this patchset, we can test hot-remove memory on kvm guest.
->> But that patchset doesn't implement _PS3, so there is some restriction.
-> 
-> the following repos contain the patchset above, plus 2 more patches that add
-> PS3 support to the dimm devices in qemu/seabios:
-> 
-> https://github.com/vliaskov/seabios/commits/memhp-v2
-> https://github.com/vliaskov/qemu-kvm/commits/memhp-v2
-> 
-> I have not posted the PS3 patches yet in the qemu list, but will post them
-> soon for v3 of the memory hotplug series. If you have issues testing, let me
-> know.
+--Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, seabios doesn't support ACPI table SLIT. We can specify node it for dimm
-device, so I think we should support SLIT in seabios. Otherwise we may meet
-the following kernel messages:
-[  325.016769] init_memory_mapping: [mem 0x40000000-0x5fffffff]
-[  325.018060]  [mem 0x40000000-0x5fffffff] page 2M
-[  325.019168] [ffffea0001000000-ffffea00011fffff] potential offnode page_structs
-[  325.024172] [ffffea0001200000-ffffea00013fffff] potential offnode page_structs
-[  325.028596]  [ffffea0001400000-ffffea00017fffff] PMD -> [ffff880035000000-ffff8800353fffff] on node 1
-[  325.031775] [ffffea0001600000-ffffea00017fffff] potential offnode page_structs
+Hi Greg,
 
-Do you have plan to do it?
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/omap-thermal/omap-thermal-common.c between commit
+76f726fb24bd ("Thermal: Remove tc1/tc2 in generic thermal layer") from
+the thermal tree and commit 765a1939a364 ("staging: omap-thermal: fix
+polling period settings") from the staging tree.
 
-Thanks
-Wen Congyang
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-> 
-> thanks,
-> 
-> - Vasilis
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/staging/omap-thermal/omap-thermal-common.c
+index b4cd6cc,46ee0a9..0000000
+--- a/drivers/staging/omap-thermal/omap-thermal-common.c
++++ b/drivers/staging/omap-thermal/omap-thermal-common.c
+@@@ -248,7 -268,9 +270,8 @@@ int omap_thermal_expose_sensor(struct o
+  	/* Create thermal zone */
+  	data->omap_thermal =3D thermal_zone_device_register(domain,
+  				OMAP_TRIP_NUMBER, 0, data, &omap_thermal_ops,
+- 				0, FAST_TEMP_MONITORING_RATE);
+ -				1, 2, /*TODO: remove this when FW allows */
++ 				FAST_TEMP_MONITORING_RATE,
++ 				FAST_TEMP_MONITORING_RATE);
+  	if (IS_ERR_OR_NULL(data->omap_thermal)) {
+  		dev_err(bg_ptr->dev, "thermal zone device is NULL\n");
+  		return PTR_ERR(data->omap_thermal);
+
+--Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUCMfAAoJEECxmPOUX5FE1SUP/RrlYm39+7uJD5rdCdpMUHhG
+PfMwbWeETJo889WP9r1XHt4DWUO5g0RaxFQ985O4TsPfxTZRe24dgF8zNHchXExQ
+V82Pe//3jEM+R8VaY/BXb/ycczGnom1VyFBpgo4y1f5qg09kljnwrOFCMT7ozhYW
+6XghhGkuET7vwo+/8G6bzVrKa4jlDC6k/VrfWeIPplIjRzEUxRrwJwB9Pg4xihsz
+DFDXnhbNmYSMvYd7wHQw8NPYtz2LCa4Ca+A7k2uvtQOMTWEtCok86MHkjRAa8pGI
+yQwFP4ISqwzoS5aBwoEhbdeBk80Gmk0jPA7dpisoV0NVc95dGC5bvCHIXO9i+nad
+1IgWGpxki2O1NKUGwZPVd5vNNxMdEuzHf5FlDZyR7TpT44QVaxPUGrhzddd38cGZ
+e/yDT8xwIUdlZX5tmze/1+KwAg6E+5cj/QORwBePcENmuttE7ST5jv+3aqq1wvVU
+pKLKYXtez653/gkoHi9ZM3PvkWw2njz4naJupCOwadIvrB1zuU3Sog+t0sOL9Kxa
+0GOPgPwReMqiZ2f0PWZ/OtXun16wk0EeGwjDYhTHZ7kerH6uN4zumIZqLDSU1wmH
+5vKu9OL+MTC1Q9au7ekviniv9cBiboI4EMdooQBojBGIM+h9mfLKRVkbkqGvlNQ0
+uGTHDKjp1zWLIjTA0sHa
+=8JIB
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb--
