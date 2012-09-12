@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760777Ab2ILRHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:07:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34282 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760763Ab2ILRDh (ORCPT
+	id S1760741Ab2ILRD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:03:28 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40226 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932220Ab2ILQ7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:03:37 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: trivial@kernel.org, kernel-janitors@vger.kernel.org,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/15] drivers/s390/net: removes unnecessary semicolon
-Date: Wed, 12 Sep 2012 19:03:14 +0200
-Message-Id: <1347469402-27557-7-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 12 Sep 2012 12:59:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521337"
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 08/24] ARM: msm: Add msm8660-surf.dts to Makefile.boot
+Date: Wed, 12 Sep 2012 09:58:44 -0700
+Message-Id: <1347469140-25069-9-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
+References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-removes unnecessary semicolon
+Add this entry to the Makefile so that we can build the dtb
+automatically with 'make dtbs'.
 
-Found by Coccinelle: http://coccinelle.lip6.fr/
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- drivers/s390/net/ctcm_fsms.c      |    2 +-
- drivers/s390/net/qeth_core_main.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-msm/Makefile.boot | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
-index d4ade9e..fb92524 100644
---- a/drivers/s390/net/ctcm_fsms.c
-+++ b/drivers/s390/net/ctcm_fsms.c
-@@ -1523,7 +1523,7 @@ static void ctcmpc_chx_firstio(fsm_instance *fi, int event, void *arg)
- 				goto done;
- 	default:
- 		break;
--	};
-+	}
- 
- 	fsm_newstate(fi, (CHANNEL_DIRECTION(ch->flags) == CTCM_READ)
- 		     ? CTC_STATE_RXINIT : CTC_STATE_TXINIT);
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index cf6da7f..0bd86b8 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -489,7 +489,7 @@ static struct qeth_reply *qeth_alloc_reply(struct qeth_card *card)
- 		atomic_set(&reply->refcnt, 1);
- 		atomic_set(&reply->received, 0);
- 		reply->card = card;
--	};
-+	}
- 	return reply;
- }
- 
-@@ -2029,7 +2029,7 @@ int qeth_send_control_data(struct qeth_card *card, int len,
- 			if (time_after(jiffies, timeout))
- 				goto time_err;
- 			cpu_relax();
--		};
-+		}
- 	}
- 
- 	if (reply->rc == -EIO)
+diff --git a/arch/arm/mach-msm/Makefile.boot b/arch/arm/mach-msm/Makefile.boot
+index 9b803a5..8de0678 100644
+--- a/arch/arm/mach-msm/Makefile.boot
++++ b/arch/arm/mach-msm/Makefile.boot
+@@ -1,3 +1,5 @@
+   zreladdr-y		+= 0x10008000
+ params_phys-y		:= 0x10000100
+ initrd_phys-y		:= 0x10800000
++
++dtb-$(CONFIG_ARCH_MSM8X60) += msm8660-surf.dtb
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
