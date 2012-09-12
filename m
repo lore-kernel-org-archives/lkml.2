@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2ILJWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:22:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44455 "EHLO mx1.redhat.com"
+	id S1754626Ab2ILJ0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:26:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45212 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2ILJWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:22:13 -0400
-Date: Wed, 12 Sep 2012 11:22:12 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Machek <pavel@ucw.cz>, David Rientjes <rientjes@google.com>,
-        linux-wireless@vger.kernel.org, johannes.berg@intel.com,
-        wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        Andrew Morton <akpm@osdl.org>, Mel Gorman <mgorman@suse.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
-Message-ID: <20120912092211.GA3146@redhat.com>
-References: <20120909213228.GA5538@elf.ucw.cz>
- <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
- <20120910111113.GA25159@elf.ucw.cz>
- <20120911162536.bd5171a1.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911162536.bd5171a1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752014Ab2ILJ03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 05:26:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,408,1344236400"; 
+   d="scan'208";a="220964789"
+Date: Wed, 12 Sep 2012 10:44:20 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Colin Cross <ccross@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arve =?ISO-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [RFC] tty/serial/kgdboc: Add and wire up clear_irqs callback
+Message-ID: <20120912104420.06a88957@bob.linux.org.uk>
+In-Reply-To: <20120912040657.GA3880@lizard>
+References: <20120911093042.GA12471@lizard>
+	<1347356106-25368-6-git-send-email-anton.vorontsov@linaro.org>
+	<20120911151540.362001c6@pyramind.ukuu.org.uk>
+	<20120912033209.GA32156@lizard>
+	<CAMbhsRTmZyxFE-vAa-UvNE8KJ2f0cfXP7mncXKcpUiNF6C9PUQ@mail.gmail.com>
+	<20120912040657.GA3880@lizard>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 04:25:36PM -0700, Andrew Morton wrote:
-> On Mon, 10 Sep 2012 13:11:13 +0200
-> Pavel Machek <pavel@ucw.cz> wrote:
-> 
-> > On Sun 2012-09-09 15:40:55, David Rientjes wrote:
-> > > On Sun, 9 Sep 2012, Pavel Machek wrote:
-> > > 
-> > > > On 3.6.0-rc2+, I tried to turn on the wireless, but got
-> > > > 
-> > > > root@amd:~# ifconfig wlan0 10.0.0.6 up
-> > > > SIOCSIFFLAGS: Cannot allocate memory
-> > > > SIOCSIFFLAGS: Cannot allocate memory
-> > > > root@amd:~# 
-> > > > 
-> > > > It looks like it uses "a bit too big" allocations to allocate
-> > > > firmware...? Order five allocation....
-> > > > 
-> > > > Hmm... then I did "echo 3  > /proc/sys/vm/drop_caches" and now the
-> > > > network works. Is it VM problem that it failed to allocate memory when
-> > > > it was freeable?
-> > > > 
-> > > 
-> > > Do you have CONFIG_COMPACTION enabled?
-> > 
-> > Yes:
-> > 
-> > pavel@amd:/data/l/linux-good$ zgrep CONFIG_COMPACTION /proc/config.gz 
-> > CONFIG_COMPACTION=y
-> 
-> Asking for a 256k allocation is pretty crazy - this is an operating
-> system kernel, not a userspace application.
-> 
-> I'm wondering if this is due to a recent change, but I'm having trouble
-> working out where the allocation call site is.
+> Of course, if Alan is OK with this, I'm more than OK too. :-)
 
-iwlwifi/iwlegacy do such kind of allocation for ages, since iwlwifi driver
-inclusion in 2.6.24 (however firmware was smaller then).
+It may well be better.
 
-I can fix that in iwlegacy similar as Johannes did it in iwlwifi, but this
-actually seems to be allocator regression. We use GFP_KERNEL allocation,
-kernel can wait for free memory and/or swap out pages, I do not understand
-why this fail.
+> (But the polling routines would need to clear all interrupts, not
+> just rx/tx. For example, if the controller indicated some error, and
+> nobody clears it, then we'll start reentering infinitely.)
 
-Stanislaw
+For a lot of devices and platforms you'd probably mask them instead ?
+
+> 
+> > If you use a clear_irqs callback, you can drop characters if
+> > one arrives between the last character buffer read and calling
+> > clear_irqs.
+> 
+> Only if we call clear_irqs() after reading the characters, but we do
+> it before. So if new characters are available, we will reenter NMI,
+> which is OK.
+
+Recursively or not... again you get platform specific magic in places
+we don't want.
+
+In the driver poll method for most uarts is going to be at least buried
+in what is usually arch specific uarts.
+
