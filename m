@@ -1,97 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2ILHQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:16:50 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:48538 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750726Ab2ILHQt (ORCPT
+	id S1757557Ab2ILHSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:18:18 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8430 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab2ILHSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:16:49 -0400
+	Wed, 12 Sep 2012 03:18:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 12 Sep 2012 00:18:16 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: host: tegra: code clean up
+Date: Wed, 12 Sep 2012 12:32:42 +0530
+Message-ID: <1347433362-4669-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <1347368390-31252-13-git-send-email-arnd@arndb.de>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
-	<1347368390-31252-1-git-send-email-arnd@arndb.de>
-	<1347368390-31252-13-git-send-email-arnd@arndb.de>
-Date: Wed, 12 Sep 2012 09:16:46 +0200
-Message-ID: <CAN5iSWqnyA0VNDkaCb7bcZOhQxOxJ8xUy4RXWgt+xukSUmHnAA@mail.gmail.com>
-Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
-From: "Pihet-XID, Jean" <j-pihet@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        J Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+As part of code clean up, used devm counterparts for the APIs
+possible.
 
-On Tue, Sep 11, 2012 at 2:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
->
-> This moves such data out of the omap include directories
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/usb/host/ehci-tegra.c |   46 ++++++++++++++--------------------------
+ 1 files changed, 16 insertions(+), 30 deletions(-)
 
-...
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index c0d4732..532db04 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -634,7 +634,8 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	setup_vbus_gpio(pdev, pdata);
+ 
+-	tegra = kzalloc(sizeof(struct tegra_ehci_hcd), GFP_KERNEL);
++	tegra = devm_kzalloc(&pdev->dev, sizeof(struct tegra_ehci_hcd),
++			     GFP_KERNEL);
+ 	if (!tegra)
+ 		return -ENOMEM;
+ 
+@@ -642,13 +643,12 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 					dev_name(&pdev->dev));
+ 	if (!hcd) {
+ 		dev_err(&pdev->dev, "Unable to create HCD\n");
+-		err = -ENOMEM;
+-		goto fail_hcd;
++		return -ENOMEM;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, tegra);
+ 
+-	tegra->clk = clk_get(&pdev->dev, NULL);
++	tegra->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(tegra->clk)) {
+ 		dev_err(&pdev->dev, "Can't get ehci clock\n");
+ 		err = PTR_ERR(tegra->clk);
+@@ -657,9 +657,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	err = clk_prepare_enable(tegra->clk);
+ 	if (err)
+-		goto fail_clken;
++		goto fail_clk;
+ 
+-	tegra->emc_clk = clk_get(&pdev->dev, "emc");
++	tegra->emc_clk = devm_clk_get(&pdev->dev, "emc");
+ 	if (IS_ERR(tegra->emc_clk)) {
+ 		dev_err(&pdev->dev, "Can't get emc clock\n");
+ 		err = PTR_ERR(tegra->emc_clk);
+@@ -677,7 +677,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	}
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
+-	hcd->regs = ioremap(res->start, resource_size(res));
++	hcd->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+ 	if (!hcd->regs) {
+ 		dev_err(&pdev->dev, "Failed to remap I/O memory\n");
+ 		err = -ENOMEM;
+@@ -701,8 +701,8 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 			break;
+ 		default:
+ 			err = -ENODEV;
+-			dev_err(&pdev->dev, "unknown usb instance\n");
+-			goto fail_phy;
++			dev_err(&pdev->dev, "unknown usb inst:%d\n", instance);
++			goto fail_io;
+ 		}
+ 	}
+ 
+@@ -712,7 +712,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	if (IS_ERR(tegra->phy)) {
+ 		dev_err(&pdev->dev, "Failed to open USB phy\n");
+ 		err = -ENXIO;
+-		goto fail_phy;
++		goto fail_io;
+ 	}
+ 
+ 	usb_phy_init(&tegra->phy->u_phy);
+@@ -735,7 +735,8 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ #ifdef CONFIG_USB_OTG_UTILS
+ 	if (pdata->operating_mode == TEGRA_USB_OTG) {
+-		tegra->transceiver = usb_get_phy(USB_PHY_TYPE_USB2);
++		tegra->transceiver =
++			devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+ 		if (!IS_ERR_OR_NULL(tegra->transceiver))
+ 			otg_set_host(tegra->transceiver->otg, &hcd->self);
+ 	}
+@@ -743,7 +744,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err) {
+-		dev_err(&pdev->dev, "Failed to add USB HCD\n");
++		dev_err(&pdev->dev, "usb_add_hcd failed with err 0x%x\n", err);
+ 		goto fail;
+ 	}
+ 
+@@ -752,32 +753,23 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 
+ 	/* Don't skip the pm_runtime_forbid call if wakeup isn't working */
+ 	/* if (!pdata->power_down_on_bus_suspend) */
+-		pm_runtime_forbid(&pdev->dev);
++	pm_runtime_forbid(&pdev->dev);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	return err;
+ 
+ fail:
+ #ifdef CONFIG_USB_OTG_UTILS
+-	if (!IS_ERR_OR_NULL(tegra->transceiver)) {
++	if (!IS_ERR_OR_NULL(tegra->transceiver))
+ 		otg_set_host(tegra->transceiver->otg, NULL);
+-		usb_put_phy(tegra->transceiver);
+-	}
+ #endif
+ 	usb_phy_shutdown(&tegra->phy->u_phy);
+-fail_phy:
+-	iounmap(hcd->regs);
+ fail_io:
+ 	clk_disable_unprepare(tegra->emc_clk);
+-	clk_put(tegra->emc_clk);
+ fail_emc_clk:
+ 	clk_disable_unprepare(tegra->clk);
+-fail_clken:
+-	clk_put(tegra->clk);
+ fail_clk:
+ 	usb_put_hcd(hcd);
+-fail_hcd:
+-	kfree(tegra);
+ 	return err;
+ }
+ 
+@@ -794,26 +786,20 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+ 	pm_runtime_put_noidle(&pdev->dev);
+ 
+ #ifdef CONFIG_USB_OTG_UTILS
+-	if (!IS_ERR_OR_NULL(tegra->transceiver)) {
++	if (!IS_ERR_OR_NULL(tegra->transceiver))
+ 		otg_set_host(tegra->transceiver->otg, NULL);
+-		usb_put_phy(tegra->transceiver);
+-	}
+ #endif
+ 
+ 	usb_remove_hcd(hcd);
+ 
+ 	usb_phy_shutdown(&tegra->phy->u_phy);
+-	iounmap(hcd->regs);
+ 
+ 	usb_put_hcd(hcd);
+ 
+ 	clk_disable_unprepare(tegra->clk);
+-	clk_put(tegra->clk);
+ 
+ 	clk_disable_unprepare(tegra->emc_clk);
+-	clk_put(tegra->emc_clk);
+ 
+-	kfree(tegra);
+ 	return 0;
+ }
+ 
+-- 
+1.7.1.1
 
-> diff --git a/arch/arm/mach-omap2/voltage.h b/arch/arm/mach-omap2/voltage.h
-> index 0ac2caf..7abf1c0 100644
-> --- a/arch/arm/mach-omap2/voltage.h
-> +++ b/arch/arm/mach-omap2/voltage.h
-> @@ -16,7 +16,7 @@
->
->  #include <linux/err.h>
->
-> -#include <plat/voltage.h>
-> +#include <linux/platform_data/smartreflex-omap.h>
->
->  #include "vc.h"
->  #include "vp.h"
-...
-> diff --git a/arch/arm/plat-omap/include/plat/voltage.h b/include/linux/platform_data/smartreflex-omap.h
-> similarity index 100%
-> rename from arch/arm/plat-omap/include/plat/voltage.h
-> rename to include/linux/platform_data/smartreflex-omap.h
-The filename should be voltage-omap.h. The header file is for a
-voltage layer which is used by other layers, one of them is the
-smartreflex driver code (in drivers/power/avs).
-The header file for the smartreflex driver is in
-include/linux/power/smartreflex.h.
-
-> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
-> index 3101e62..e376f94 100644
-> --- a/include/linux/power/smartreflex.h
-> +++ b/include/linux/power/smartreflex.h
-> @@ -23,7 +23,7 @@
->  #include <linux/types.h>
->  #include <linux/platform_device.h>
->  #include <linux/delay.h>
-> -#include <plat/voltage.h>
-> +#include <linux/platform_data/smartreflex-omap.h>
->
->  /*
->   * Different Smartreflex IPs version. The v1 is the 65nm version used in
-
-Thanks for the clean-up!
-
-Regards,
-Jean
