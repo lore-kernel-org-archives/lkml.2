@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759178Ab2ILPBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:01:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54290 "EHLO
+	id S1756856Ab2ILPB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:01:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57870 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2ILO6i (ORCPT
+	with ESMTP id S1751511Ab2ILO6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Sep 2012 10:58:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Marc Zyngier <marc.zyngier@arm.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v9 02/13] ARM: SoC: convert VExpress/RealView to SoC descriptor
-Date: Wed, 12 Sep 2012 16:58:15 +0200
-Message-Id: <1347461906-13527-3-git-send-email-arnd@arndb.de>
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v9 05/13] ARM: SoC: convert Exynos4 to SoC descriptor
+Date: Wed, 12 Sep 2012 16:58:18 +0200
+Message-Id: <1347461906-13527-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1347461906-13527-1-git-send-email-arnd@arndb.de>
 References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:816MGOGb9uRFWfT9D5syZYa+imlgNXcYyMpKie5LpA7
- WL5OHHCSI7RbTIXdrAAKvgM/GSH4xL1e6M6Wy02bhr7RTGHVHc
- N1F07IbXkxyvFpmAS3aZsUvpX3E1A987xSd5hiaPrBfVqVQqYf
- i0dNunTx8atyhyITAupNcnCNj+zr0BE0PJ3OAWRYjbqPri51Mh
- 8WwEstyVy3g6S+Uke7osdBm2KS8eQaDcvF2nLWW5ajdUu8KFfQ
- wKgsrbMB7eYzkukNXerO9OkOWaI53uKVaUGzqbE/qWZtHlX75s
- 9iOvhCTaD2V0Yo5dq4s6cxJJtqSlYxd+ZV6cQqJZz8J/CZ0uzu
- hswPqcDtfDCyMGrZB7ZuJ6wdEAzl0pAA832Z+S4YyM8bX+Fa90
- +SXGVoWPZMbt5iQepBQ8LUv/mOVq5j61GM=
+X-Provags-ID: V02:K0:sqOi9YOdTh7hNvEgQOz4+YvdD/MWWapKaVXJPKgZeSy
+ 7yghNdB/SAsKkIHVrtCLsluS+rotKleeetjXwccXJfsNE9vl5r
+ +jGgdYNLgpzyWZLd1c5m9IiwShVutSRqe38Q1lWlzEKPwSE6fu
+ KDytwIzMQN+qkLBQrUHBcCOpbUgyp7xPll3rZQ5vJ8roB0geP8
+ kr3GGEonBEEj16NVir9RFzWsrlxLNwd0tl5m51IfVIq7Lm5+T7
+ XNA4nOSR6DOBQgwxtOnr4Z3swz6nn/cihRzfbT1RxlXTgdFchr
+ l1ilpOwmY0J3TETijG+WMyXseJQ2JEAI+ofyaL9SD6b82bAytJ
+ AwyC0xfGltndhFgnV7KFmtW+Aehr50JWQpMhX953iY19v6RcCh
+ mWbknXxmSRM414kKP8C53lAgt00mrENFMg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Zyngier <marc.zyngier@arm.com>
 
-Convert both Realview and VExpress to use the SoC descriptor to
-provide their SMP and CPU hotplug operation.
+Convert Exynos4 to use the SoC descriptor to provide its SMP
+and CPU hotplug operations.
 
-Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Tested-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-realview/core.h                  |    3 +++
- arch/arm/mach-realview/hotplug.c               |   16 +---------------
- arch/arm/mach-realview/platsmp.c               |   18 ++++++++++++++----
- arch/arm/mach-realview/realview_pb11mp.c       |    1 +
- arch/arm/mach-realview/realview_pbx.c          |    1 +
- arch/arm/mach-vexpress/core.h                  |    4 ++++
- arch/arm/mach-vexpress/hotplug.c               |   16 +---------------
- arch/arm/mach-vexpress/platsmp.c               |   18 ++++++++++++++----
- arch/arm/mach-vexpress/v2m.c                   |    4 ++++
- arch/arm/plat-versatile/include/plat/platsmp.h |   14 ++++++++++++++
- arch/arm/plat-versatile/platsmp.c              |    4 ++--
- 11 files changed, 59 insertions(+), 40 deletions(-)
- create mode 100644 arch/arm/plat-versatile/include/plat/platsmp.h
+ arch/arm/mach-exynos/common.h              |    5 +++++
+ arch/arm/mach-exynos/hotplug.c             |   18 +++---------------
+ arch/arm/mach-exynos/mach-armlex4210.c     |    1 +
+ arch/arm/mach-exynos/mach-exynos5-dt.c     |    1 +
+ arch/arm/mach-exynos/mach-nuri.c           |    1 +
+ arch/arm/mach-exynos/mach-origen.c         |    1 +
+ arch/arm/mach-exynos/mach-smdk4x12.c       |    2 ++
+ arch/arm/mach-exynos/mach-smdkv310.c       |    2 ++
+ arch/arm/mach-exynos/mach-universal_c210.c |    1 +
+ arch/arm/mach-exynos/platsmp.c             |   20 ++++++++++++++++----
+ 10 files changed, 33 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/mach-realview/core.h b/arch/arm/mach-realview/core.h
-index f8f2c0a..78cd970 100644
---- a/arch/arm/mach-realview/core.h
-+++ b/arch/arm/mach-realview/core.h
-@@ -56,4 +56,7 @@ extern void realview_init_early(void);
- extern void realview_fixup(struct tag *tags, char **from,
- 			   struct meminfo *meminfo);
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index aed2eeb..dac146d 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -14,6 +14,7 @@
  
-+extern struct smp_operations realview_smp_ops;
-+extern void realview_cpu_die(unsigned int cpu);
-+
+ extern struct sys_timer exynos4_timer;
+ 
++struct map_desc;
+ void exynos_init_io(struct map_desc *mach_desc, int size);
+ void exynos4_init_irq(void);
+ void exynos5_init_irq(void);
+@@ -59,4 +60,8 @@ void exynos4212_register_clocks(void);
+ #define exynos4212_register_clocks()
  #endif
-diff --git a/arch/arm/mach-realview/hotplug.c b/arch/arm/mach-realview/hotplug.c
-index 57d9efb..81a2a58 100644
---- a/arch/arm/mach-realview/hotplug.c
-+++ b/arch/arm/mach-realview/hotplug.c
-@@ -89,17 +89,12 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+ 
++extern struct smp_operations exynos_smp_ops;
++
++extern void exynos_cpu_die(unsigned int cpu);
++
+ #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index 9c17a0a..d0a5a70 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -21,6 +21,8 @@
+ 
+ #include <mach/regs-pmu.h>
+ 
++#include "common.h"
++
+ extern volatile int pen_release;
+ 
+ static inline void cpu_enter_lowpower(void)
+@@ -95,17 +97,12 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
  	}
  }
  
@@ -84,11 +101,11 @@ index 57d9efb..81a2a58 100644
   * Called with IRQs disabled
   */
 -void platform_cpu_die(unsigned int cpu)
-+void realview_cpu_die(unsigned int cpu)
++void __cpuinit exynos_cpu_die(unsigned int cpu)
  {
  	int spurious = 0;
  
-@@ -118,12 +113,3 @@ void platform_cpu_die(unsigned int cpu)
+@@ -124,12 +121,3 @@ void platform_cpu_die(unsigned int cpu)
  	if (spurious)
  		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
  }
@@ -101,252 +118,169 @@ index 57d9efb..81a2a58 100644
 -	 */
 -	return cpu == 0 ? -EPERM : 0;
 -}
-diff --git a/arch/arm/mach-realview/platsmp.c b/arch/arm/mach-realview/platsmp.c
-index 17c878d..300f706 100644
---- a/arch/arm/mach-realview/platsmp.c
-+++ b/arch/arm/mach-realview/platsmp.c
-@@ -22,9 +22,9 @@
- #include <mach/board-pb11mp.h>
- #include <mach/board-pbx.h>
- 
--#include "core.h"
-+#include <plat/platsmp.h>
- 
--extern void versatile_secondary_startup(void);
-+#include "core.h"
- 
- static void __iomem *scu_base_addr(void)
- {
-@@ -43,7 +43,7 @@ static void __iomem *scu_base_addr(void)
-  * Initialise the CPU possible map early - this describes the CPUs
-  * which may be present or become present in the system.
-  */
--void __init smp_init_cpus(void)
-+static void __init realview_smp_init_cpus(void)
- {
- 	void __iomem *scu_base = scu_base_addr();
- 	unsigned int i, ncores;
-@@ -63,7 +63,7 @@ void __init smp_init_cpus(void)
- 	set_smp_cross_call(gic_raise_softirq);
- }
- 
--void __init platform_smp_prepare_cpus(unsigned int max_cpus)
-+static void __init realview_smp_prepare_cpus(unsigned int max_cpus)
- {
- 
- 	scu_enable(scu_base_addr());
-@@ -77,3 +77,13 @@ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- 	__raw_writel(virt_to_phys(versatile_secondary_startup),
- 		     __io_address(REALVIEW_SYS_FLAGSSET));
- }
-+
-+struct smp_operations realview_smp_ops __initdata = {
-+	.smp_init_cpus		= realview_smp_init_cpus,
-+	.smp_prepare_cpus	= realview_smp_prepare_cpus,
-+	.smp_secondary_init	= versatile_secondary_init,
-+	.smp_boot_secondary	= versatile_boot_secondary,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_die		= realview_cpu_die,
-+#endif
-+};
-diff --git a/arch/arm/mach-realview/realview_pb11mp.c b/arch/arm/mach-realview/realview_pb11mp.c
-index a98c536..2eacda1 100644
---- a/arch/arm/mach-realview/realview_pb11mp.c
-+++ b/arch/arm/mach-realview/realview_pb11mp.c
-@@ -366,6 +366,7 @@ static void __init realview_pb11mp_init(void)
- MACHINE_START(REALVIEW_PB11MP, "ARM-RealView PB11MPCore")
- 	/* Maintainer: ARM Ltd/Deep Blue Solutions Ltd */
+diff --git a/arch/arm/mach-exynos/mach-armlex4210.c b/arch/arm/mach-exynos/mach-armlex4210.c
+index 5a3daa0..3f37a5e 100644
+--- a/arch/arm/mach-exynos/mach-armlex4210.c
++++ b/arch/arm/mach-exynos/mach-armlex4210.c
+@@ -199,6 +199,7 @@ static void __init armlex4210_machine_init(void)
+ MACHINE_START(ARMLEX4210, "ARMLEX4210")
+ 	/* Maintainer: Alim Akhtar <alim.akhtar@samsung.com> */
  	.atag_offset	= 0x100,
-+	.smp		= smp_ops(realview_smp_ops),
- 	.fixup		= realview_fixup,
- 	.map_io		= realview_pb11mp_map_io,
- 	.init_early	= realview_init_early,
-diff --git a/arch/arm/mach-realview/realview_pbx.c b/arch/arm/mach-realview/realview_pbx.c
-index 3f2f605..2cd4f15 100644
---- a/arch/arm/mach-realview/realview_pbx.c
-+++ b/arch/arm/mach-realview/realview_pbx.c
-@@ -403,6 +403,7 @@ static void __init realview_pbx_init(void)
- MACHINE_START(REALVIEW_PBX, "ARM-RealView PBX")
- 	/* Maintainer: ARM Ltd/Deep Blue Solutions Ltd */
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= armlex4210_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index ef770bc..8833060 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -79,6 +79,7 @@ static char const *exynos5250_dt_compat[] __initdata = {
+ DT_MACHINE_START(EXYNOS5_DT, "SAMSUNG EXYNOS5 (Flattened Device Tree)")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	.init_irq	= exynos5_init_irq,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.map_io		= exynos5250_dt_map_io,
+ 	.handle_irq	= gic_handle_irq,
+ 	.init_machine	= exynos5250_dt_machine_init,
+diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+index ea785fc..ffaa355 100644
+--- a/arch/arm/mach-exynos/mach-nuri.c
++++ b/arch/arm/mach-exynos/mach-nuri.c
+@@ -1383,6 +1383,7 @@ static void __init nuri_machine_init(void)
+ MACHINE_START(NURI, "NURI")
+ 	/* Maintainer: Kyungmin Park <kyungmin.park@samsung.com> */
  	.atag_offset	= 0x100,
-+	.smp		= smp_ops(realview_smp_ops),
- 	.fixup		= realview_pbx_fixup,
- 	.map_io		= realview_pbx_map_io,
- 	.init_early	= realview_init_early,
-diff --git a/arch/arm/mach-vexpress/core.h b/arch/arm/mach-vexpress/core.h
-index a3a4980..f134cd4 100644
---- a/arch/arm/mach-vexpress/core.h
-+++ b/arch/arm/mach-vexpress/core.h
-@@ -5,3 +5,7 @@
- #define V2T_PERIPH 0xf8200000
- 
- void vexpress_dt_smp_map_io(void);
-+
-+extern struct smp_operations	vexpress_smp_ops;
-+
-+extern void vexpress_cpu_die(unsigned int cpu);
-diff --git a/arch/arm/mach-vexpress/hotplug.c b/arch/arm/mach-vexpress/hotplug.c
-index c504a72..e2a960f 100644
---- a/arch/arm/mach-vexpress/hotplug.c
-+++ b/arch/arm/mach-vexpress/hotplug.c
-@@ -84,17 +84,12 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- 	}
- }
- 
--int platform_cpu_kill(unsigned int cpu)
--{
--	return 1;
--}
--
- /*
-  * platform-specific code to shutdown a CPU
-  *
-  * Called with IRQs disabled
-  */
--void platform_cpu_die(unsigned int cpu)
-+void __cpuinit vexpress_cpu_die(unsigned int cpu)
- {
- 	int spurious = 0;
- 
-@@ -113,12 +108,3 @@ void platform_cpu_die(unsigned int cpu)
- 	if (spurious)
- 		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
- }
--
--int platform_cpu_disable(unsigned int cpu)
--{
--	/*
--	 * we don't allow CPU 0 to be shutdown (it is still too special
--	 * e.g. clock tick interrupts)
--	 */
--	return cpu == 0 ? -EPERM : 0;
--}
-diff --git a/arch/arm/mach-vexpress/platsmp.c b/arch/arm/mach-vexpress/platsmp.c
-index 14ba112..7db27c8 100644
---- a/arch/arm/mach-vexpress/platsmp.c
-+++ b/arch/arm/mach-vexpress/platsmp.c
-@@ -20,9 +20,9 @@
- 
- #include <mach/motherboard.h>
- 
--#include "core.h"
-+#include <plat/platsmp.h>
- 
--extern void versatile_secondary_startup(void);
-+#include "core.h"
- 
- #if defined(CONFIG_OF)
- 
-@@ -167,7 +167,7 @@ void __init vexpress_dt_smp_prepare_cpus(unsigned int max_cpus)
-  * Initialise the CPU possible map early - this describes the CPUs
-  * which may be present or become present in the system.
-  */
--void __init smp_init_cpus(void)
-+static void __init vexpress_smp_init_cpus(void)
- {
- 	if (ct_desc)
- 		ct_desc->init_cpu_map();
-@@ -176,7 +176,7 @@ void __init smp_init_cpus(void)
- 
- }
- 
--void __init platform_smp_prepare_cpus(unsigned int max_cpus)
-+static void __init vexpress_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
-@@ -195,3 +195,13 @@ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- 	 */
- 	v2m_flags_set(virt_to_phys(versatile_secondary_startup));
- }
-+
-+struct smp_operations __initdata vexpress_smp_ops = {
-+	.smp_init_cpus		= vexpress_smp_init_cpus,
-+	.smp_prepare_cpus	= vexpress_smp_prepare_cpus,
-+	.smp_secondary_init	= versatile_secondary_init,
-+	.smp_boot_secondary	= versatile_boot_secondary,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_die		= vexpress_cpu_die,
-+#endif
-+};
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index 37608f2..722ef33 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -5,6 +5,7 @@
- #include <linux/amba/bus.h>
- #include <linux/amba/mmci.h>
- #include <linux/io.h>
-+#include <linux/smp.h>
- #include <linux/init.h>
- #include <linux/of_address.h>
- #include <linux/of_fdt.h>
-@@ -38,6 +39,7 @@
- #include <mach/motherboard.h>
- 
- #include <plat/sched_clock.h>
-+#include <plat/platsmp.h>
- 
- #include "core.h"
- 
-@@ -530,6 +532,7 @@ static void __init v2m_init(void)
- 
- MACHINE_START(VEXPRESS, "ARM-Versatile Express")
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= nuri_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+index 4e574c2..abd0e60 100644
+--- a/arch/arm/mach-exynos/mach-origen.c
++++ b/arch/arm/mach-exynos/mach-origen.c
+@@ -806,6 +806,7 @@ static void __init origen_machine_init(void)
+ MACHINE_START(ORIGEN, "ORIGEN")
+ 	/* Maintainer: JeongHyeon Kim <jhkim@insignal.co.kr> */
  	.atag_offset	= 0x100,
-+	.smp		= smp_ops(vexpress_smp_ops),
- 	.map_io		= v2m_map_io,
- 	.init_early	= v2m_init_early,
- 	.init_irq	= v2m_init_irq,
-@@ -663,6 +666,7 @@ const static char *v2m_dt_match[] __initconst = {
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= origen_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/mach-smdk4x12.c b/arch/arm/mach-exynos/mach-smdk4x12.c
+index b26beb1..964693b 100644
+--- a/arch/arm/mach-exynos/mach-smdk4x12.c
++++ b/arch/arm/mach-exynos/mach-smdk4x12.c
+@@ -370,6 +370,7 @@ static void __init smdk4x12_machine_init(void)
+ MACHINE_START(SMDK4212, "SMDK4212")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdk4x12_map_io,
+ 	.handle_irq	= gic_handle_irq,
+@@ -383,6 +384,7 @@ MACHINE_START(SMDK4412, "SMDK4412")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	/* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdk4x12_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/mach-smdkv310.c b/arch/arm/mach-exynos/mach-smdkv310.c
+index 73f2bce..69b858c 100644
+--- a/arch/arm/mach-exynos/mach-smdkv310.c
++++ b/arch/arm/mach-exynos/mach-smdkv310.c
+@@ -417,6 +417,7 @@ MACHINE_START(SMDKV310, "SMDKV310")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	/* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdkv310_map_io,
+ 	.handle_irq	= gic_handle_irq,
+@@ -429,6 +430,7 @@ MACHINE_END
+ MACHINE_START(SMDKC210, "SMDKC210")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdkv310_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
+index 4d1f40d..922ca0f 100644
+--- a/arch/arm/mach-exynos/mach-universal_c210.c
++++ b/arch/arm/mach-exynos/mach-universal_c210.c
+@@ -1155,6 +1155,7 @@ static void __init universal_machine_init(void)
+ MACHINE_START(UNIVERSAL_C210, "UNIVERSAL_C210")
+ 	/* Maintainer: Kyungmin Park <kyungmin.park@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= universal_map_io,
+ 	.handle_irq	= gic_handle_irq,
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 36c3984..3fad8ad 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -32,6 +32,8 @@
  
- DT_MACHINE_START(VEXPRESS_DT, "ARM-Versatile Express")
- 	.dt_compat	= v2m_dt_match,
-+	.smp		= smp_ops(vexpress_smp_ops),
- 	.map_io		= v2m_dt_map_io,
- 	.init_early	= v2m_dt_init_early,
- 	.init_irq	= v2m_dt_init_irq,
-diff --git a/arch/arm/plat-versatile/include/plat/platsmp.h b/arch/arm/plat-versatile/include/plat/platsmp.h
-new file mode 100644
-index 0000000..50fb830
---- /dev/null
-+++ b/arch/arm/plat-versatile/include/plat/platsmp.h
-@@ -0,0 +1,14 @@
-+/*
-+ *  linux/arch/arm/plat-versatile/include/plat/platsmp.h
-+ *
-+ *  Copyright (C) 2011 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+ #include <plat/cpu.h>
+ 
++#include "common.h"
 +
-+extern void versatile_secondary_startup(void);
-+extern void versatile_secondary_init(unsigned int cpu);
-+extern int  versatile_boot_secondary(unsigned int cpu, struct task_struct *idle);
-diff --git a/arch/arm/plat-versatile/platsmp.c b/arch/arm/plat-versatile/platsmp.c
-index d7c5c17..39e60ac 100644
---- a/arch/arm/plat-versatile/platsmp.c
-+++ b/arch/arm/plat-versatile/platsmp.c
-@@ -40,7 +40,7 @@ static void __cpuinit write_pen_release(int val)
+ extern void exynos4_secondary_startup(void);
+ 
+ #define CPU1_BOOT_REG		(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+@@ -64,7 +66,7 @@ static void __iomem *scu_base_addr(void)
  
  static DEFINE_SPINLOCK(boot_lock);
  
 -void __cpuinit platform_secondary_init(unsigned int cpu)
-+void __cpuinit versatile_secondary_init(unsigned int cpu)
++static void __cpuinit exynos_secondary_init(unsigned int cpu)
  {
  	/*
  	 * if any interrupts are already enabled for the primary
-@@ -62,7 +62,7 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
+@@ -86,7 +88,7 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
  	spin_unlock(&boot_lock);
  }
  
 -int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-+int __cpuinit versatile_boot_secondary(unsigned int cpu, struct task_struct *idle)
++static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
  {
  	unsigned long timeout;
  
+@@ -161,7 +163,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+  * which may be present or become present in the system.
+  */
+ 
+-void __init smp_init_cpus(void)
++static void __init exynos_smp_init_cpus(void)
+ {
+ 	void __iomem *scu_base = scu_base_addr();
+ 	unsigned int i, ncores;
+@@ -184,7 +186,7 @@ void __init smp_init_cpus(void)
+ 	set_smp_cross_call(gic_raise_softirq);
+ }
+ 
+-void __init platform_smp_prepare_cpus(unsigned int max_cpus)
++static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	if (!soc_is_exynos5250())
+ 		scu_enable(scu_base_addr());
+@@ -198,3 +200,13 @@ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ 	__raw_writel(virt_to_phys(exynos4_secondary_startup),
+ 			CPU1_BOOT_REG);
+ }
++
++struct smp_operations exynos_smp_ops __initdata = {
++	.smp_init_cpus		= exynos_smp_init_cpus,
++	.smp_prepare_cpus	= exynos_smp_prepare_cpus,
++	.smp_secondary_init	= exynos_secondary_init,
++	.smp_boot_secondary	= exynos_boot_secondary,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_die		= exynos_cpu_die,
++#endif
++};
 -- 
 1.7.10
 
