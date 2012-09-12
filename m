@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab2IMAVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:21:47 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756612Ab2ILXgC (ORCPT
+	id S1756691Ab2IMAWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:22:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025Ab2ILXfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:36:02 -0400
+	Wed, 12 Sep 2012 19:35:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Sreekanth Reddy <sreekanth.reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 088/108] SCSI: mpt2sas: Fix for Driver oops, when loading driver with max_queue_depth command line option to a very small value
-Date: Wed, 12 Sep 2012 16:29:26 -0700
-Message-Id: <20120912232459.730393981@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 084/108] Fix order of arguments to compat_put_time[spec|val]
+Date: Wed, 12 Sep 2012 16:29:22 -0700
+Message-Id: <20120912232459.310121042@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,60 +30,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
+commit ed6fe9d614fc1bca95eb8c0ccd0e92db00ef9d5d upstream.
 
-If the specified max_queue_depth setting is less than the
-expected number of internal commands, then driver will calculate
-the queue depth size to a negitive number. This negitive number
-is actually a very large number because variable is unsigned
-16bit integer. So, the driver will ask for a very large amount of
-memory for message frames and resulting into oops as memory
-allocation routines will not able to handle such a large request.
+Commit 644595f89620 ("compat: Handle COMPAT_USE_64BIT_TIME in
+net/socket.c") introduced a bug where the helper functions to take
+either a 64-bit or compat time[spec|val] got the arguments in the wrong
+order, passing the kernel stack pointer off as a user pointer (and vice
+versa).
 
-So, in order to limit this kind of oops, The driver need to set
-the max_queue_depth to a scsi mid layer's can_queue value. Then
-the overall message frames required for IO is minimum of either
-(max_queue_depth plus internal commands) or the IOC global
-credits.
+Because of the user address range check, that in turn then causes an
+EFAULT due to the user pointer range checking failing for the kernel
+address.  Incorrectly resuling in a failed system call for 32-bit
+processes with a 64-bit kernel.
 
-Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+On odder architectures like HP-PA (with separate user/kernel address
+spaces), it can be used read kernel memory.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/socket.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2424,10 +2424,13 @@ _base_allocate_memory_pools(struct MPT2S
- 	}
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2605,7 +2605,7 @@ static int do_siocgstamp(struct net *net
+ 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&ktv);
+ 	set_fs(old_fs);
+ 	if (!err)
+-		err = compat_put_timeval(up, &ktv);
++		err = compat_put_timeval(&ktv, up);
  
- 	/* command line tunables  for max controller queue depth */
--	if (max_queue_depth != -1)
--		max_request_credit = (max_queue_depth < facts->RequestCredit)
--		    ? max_queue_depth : facts->RequestCredit;
--	else
-+	if (max_queue_depth != -1 && max_queue_depth != 0) {
-+		max_request_credit = min_t(u16, max_queue_depth +
-+			ioc->hi_priority_depth + ioc->internal_depth,
-+			facts->RequestCredit);
-+		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
-+			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
-+	} else
- 		max_request_credit = min_t(u16, facts->RequestCredit,
- 		    MAX_HBA_QUEUE_DEPTH);
+ 	return err;
+ }
+@@ -2621,7 +2621,7 @@ static int do_siocgstampns(struct net *n
+ 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&kts);
+ 	set_fs(old_fs);
+ 	if (!err)
+-		err = compat_put_timespec(up, &kts);
++		err = compat_put_timespec(&kts, up);
  
-@@ -2502,7 +2505,7 @@ _base_allocate_memory_pools(struct MPT2S
- 	/* set the scsi host can_queue depth
- 	 * with some internal commands that could be outstanding
- 	 */
--	ioc->shost->can_queue = ioc->scsiio_depth - (2);
-+	ioc->shost->can_queue = ioc->scsiio_depth;
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
- 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
- 
+ 	return err;
+ }
 
 
