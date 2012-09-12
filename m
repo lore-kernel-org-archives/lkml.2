@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab2ILXnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:43:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S933184Ab2ILXy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:54:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562Ab2ILXnH (ORCPT
+	with ESMTP id S932562Ab2ILXnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:43:07 -0400
+	Wed, 12 Sep 2012 19:43:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 06/46] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP systems
-Date: Wed, 12 Sep 2012 16:38:56 -0700
-Message-Id: <20120912233818.327937152@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Christop Fritz <chf.fritz@googlemail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 09/46] ASoC: wm9712: Fix microphone source selection
+Date: Wed, 12 Sep 2012 16:38:59 -0700
+Message-Id: <20120912233818.633847169@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,44 +29,73 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
+commit ccf795847a38235ee4a56a24129ce75147d6ba8f upstream.
 
-Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
- #720789") added workarounds for erratum #720789 to the range TLB
-invalidation functions with the observation that the erratum only
-affects SMP platforms. However, when running an SMP_ON_UP kernel on a
-uniprocessor platform we must take care to preserve the ASID as the
-workaround is not required.
+Currently the microphone input source is not selectable as while there is
+a DAPM widget it's not connected to anything so it won't be properly
+instantiated. Add something more correct for the input structure to get
+things going, even though it's not hooked into the rest of the routing
+map and so won't actually achieve anything except allowing the relevant
+register bits to be written.
 
-This patch ensures that we don't set the ASID to 0 when flushing the TLB
-on such a system, preserving the original behaviour with the workaround
-disabled.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Christop Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/tlb-v7.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/soc/codecs/wm9712.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mm/tlb-v7.S
-+++ b/arch/arm/mm/tlb-v7.S
-@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
- 	dsb
- 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
- 	mov	r1, r1, lsr #PAGE_SHIFT
--#ifdef CONFIG_ARM_ERRATA_720789
--	mov	r3, #0
--#else
- 	asid	r3, r3				@ mask ASID
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(W(mov)	r3, #0	)
-+	ALT_UP(W(nop)		)
- #endif
- 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
- 	mov	r1, r1, lsl #PAGE_SHIFT
+--- a/sound/soc/codecs/wm9712.c
++++ b/sound/soc/codecs/wm9712.c
+@@ -270,7 +270,7 @@ SOC_DAPM_ENUM("Route", wm9712_enum[9]);
+ 
+ /* Mic select */
+ static const struct snd_kcontrol_new wm9712_mic_src_controls =
+-SOC_DAPM_ENUM("Route", wm9712_enum[7]);
++SOC_DAPM_ENUM("Mic Source Select", wm9712_enum[7]);
+ 
+ /* diff select */
+ static const struct snd_kcontrol_new wm9712_diff_sel_controls =
+@@ -289,7 +289,9 @@ SND_SOC_DAPM_MUX("Left Capture Select",
+ 	&wm9712_capture_selectl_controls),
+ SND_SOC_DAPM_MUX("Right Capture Select", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_capture_selectr_controls),
+-SND_SOC_DAPM_MUX("Mic Select Source", SND_SOC_NOPM, 0, 0,
++SND_SOC_DAPM_MUX("Left Mic Select Source", SND_SOC_NOPM, 0, 0,
++	&wm9712_mic_src_controls),
++SND_SOC_DAPM_MUX("Right Mic Select Source", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_mic_src_controls),
+ SND_SOC_DAPM_MUX("Differential Source", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_diff_sel_controls),
+@@ -317,6 +319,7 @@ SND_SOC_DAPM_PGA("Out 3 PGA", AC97_INT_P
+ SND_SOC_DAPM_PGA("Line PGA", AC97_INT_PAGING, 2, 1, NULL, 0),
+ SND_SOC_DAPM_PGA("Phone PGA", AC97_INT_PAGING, 1, 1, NULL, 0),
+ SND_SOC_DAPM_PGA("Mic PGA", AC97_INT_PAGING, 0, 1, NULL, 0),
++SND_SOC_DAPM_PGA("Differential Mic", SND_SOC_NOPM, 0, 0, NULL, 0),
+ SND_SOC_DAPM_MICBIAS("Mic Bias", AC97_INT_PAGING, 10, 1),
+ SND_SOC_DAPM_OUTPUT("MONOOUT"),
+ SND_SOC_DAPM_OUTPUT("HPOUTL"),
+@@ -377,6 +380,18 @@ static const struct snd_soc_dapm_route w
+ 	{"Mic PGA", NULL, "MIC1"},
+ 	{"Mic PGA", NULL, "MIC2"},
+ 
++	/* microphones */
++	{"Differential Mic", NULL, "MIC1"},
++	{"Differential Mic", NULL, "MIC2"},
++	{"Left Mic Select Source", "Mic 1", "MIC1"},
++	{"Left Mic Select Source", "Mic 2", "MIC2"},
++	{"Left Mic Select Source", "Stereo", "MIC1"},
++	{"Left Mic Select Source", "Differential", "Differential Mic"},
++	{"Right Mic Select Source", "Mic 1", "MIC1"},
++	{"Right Mic Select Source", "Mic 2", "MIC2"},
++	{"Right Mic Select Source", "Stereo", "MIC2"},
++	{"Right Mic Select Source", "Differential", "Differential Mic"},
++
+ 	/* left capture selector */
+ 	{"Left Capture Select", "Mic", "MIC1"},
+ 	{"Left Capture Select", "Speaker Mixer", "Speaker Mixer"},
 
 
