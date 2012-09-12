@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760475Ab2ILQmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:42:51 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4043 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186Ab2ILQms convert rfc822-to-8bit (ORCPT
+	id S1760533Ab2ILQnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:43:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35974 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760498Ab2ILQnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:42:48 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Chris Brand" <chris.brand@broadcom.com>
-To: "Arnd Bergmann" <arnd@arndb.de>, "Chris Ball" <cjb@laptop.org>
-cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross" <ccross@android.com>, "Olof Johansson" <olof@lixom.net>,
-        "Liam Girdwood" <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 09/16] ARM: tegra: move platform_data definitions
-Thread-Topic: [PATCH 09/16] ARM: tegra: move platform_data definitions
-Thread-Index: AQHNkB7G1DY5ejREz0GkV8meIYAqzpeFSc8lgACKn4CAARYoAA==
-Date: Wed, 12 Sep 2012 16:42:31 +0000
-Message-ID: <4EE5B48738DDED408878C97C8E050A8B0FAF5C@SJEXCHMB05.corp.ad.broadcom.com>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
- <1347368390-31252-9-git-send-email-arnd@arndb.de>
- <871ui8y3at.fsf@octavius.laptop.org> <201209111705.37490.arnd@arndb.de>
-In-Reply-To: <201209111705.37490.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.136.4.246]
+	Wed, 12 Sep 2012 12:43:04 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH 5/6] fuse: rework fuse_perform_write()
+References: <20120907172536.1343.80497.stgit@maximpc.sw.ru>
+	<20120907174145.1343.35017.stgit@maximpc.sw.ru>
+Date: Wed, 12 Sep 2012 18:44:33 +0200
+In-Reply-To: <20120907174145.1343.35017.stgit@maximpc.sw.ru> (Maxim Patlasov's
+	message of "Fri, 07 Sep 2012 21:41:49 +0400")
+Message-ID: <87oblbw5qm.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-X-WSS-ID: 7C4E64B53MK32026017-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You'll want to check that you don't have any cases where two files use the same guard, I'd think.
+Maxim Patlasov <mpatlasov@parallels.com> writes:
 
-Chris
+> The patch allocates as many page pointers in fuse_req as needed to cover
+> interval [pos .. pos+len-1]. FUSE_WR_PAGES macro is introduced to hide this
+> cumbersome arithmetics.
 
------Original Message-----
-From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-bounces@lists.infradead.org] On Behalf Of Arnd Bergmann
-Sent: September 11, 2012 10:06 AM
-To: Chris Ball
-Cc: Mark Brown; Russell King; Stephen Warren; Dmitry Torokhov; linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; Colin Cross; Olof Johansson; Liam Girdwood; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/16] ARM: tegra: move platform_data definitions
+Please don't ever use a macro for something which you can use an inline
+function.
 
-On Tuesday 11 September 2012, Chris Ball wrote:
-> On Tue, Sep 11 2012, Arnd Bergmann wrote:
-> > diff --git a/arch/arm/mach-tegra/include/mach/sdhci.h
-> > b/include/linux/platform_data/mmc-sdhci-tegra.h
-> > similarity index 100%
-> > rename from arch/arm/mach-tegra/include/mach/sdhci.h
-> > rename to include/linux/platform_data/mmc-sdhci-tegra.h
-> 
-> Looks like you aren't renaming the idempotency guards, so e.g.
-> include/linux/platform_data/mmc-sdhci-tegra.h will contain:
-> 
-> #ifndef __ASM_ARM_ARCH_TEGRA_SDHCI_H
-> #define __ASM_ARM_ARCH_TEGRA_SDHCI_H
-> 
-> Is that intentional?  Thanks,
-> 
-
-No, it's not intentional. We actually have a lot of instances that
-are already wrong. Do we care enough to change the ones I'm moving here?
-
-	Arnd
-
-_______________________________________________
-linux-arm-kernel mailing list
-linux-arm-kernel@lists.infradead.org
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
+> ---
+>  fs/fuse/file.c |   15 +++++++++++----
+>  1 files changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 9a6dcc6..84cc83c 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -815,7 +815,8 @@ static size_t fuse_send_write_pages(struct fuse_req *req, struct file *file,
+>  
+>  static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+>  			       struct address_space *mapping,
+> -			       struct iov_iter *ii, loff_t pos)
+> +			       struct iov_iter *ii, loff_t pos,
+> +			       unsigned nr_pages)
+>  {
+>  	struct fuse_conn *fc = get_fuse_conn(mapping->host);
+>  	unsigned offset = pos & (PAGE_CACHE_SIZE - 1);
+> @@ -875,11 +876,16 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+>  		if (!fc->big_writes)
+>  			break;
+>  	} while (iov_iter_count(ii) && count < fc->max_write &&
+> -		 req->num_pages < FUSE_MAX_PAGES_PER_REQ && offset == 0);
+> +		 req->num_pages < nr_pages && offset == 0);
+>  
+>  	return count > 0 ? count : err;
+>  }
+>  
+> +#define FUSE_WR_PAGES(pos, len) min_t(unsigned,				      \
+> +				      ((pos + len - 1) >> PAGE_CACHE_SHIFT) - \
+> +				      (pos >> PAGE_CACHE_SHIFT) + 1,	      \
+> +				      FUSE_MAX_PAGES_PER_REQ)
+> +
+>  static ssize_t fuse_perform_write(struct file *file,
+>  				  struct address_space *mapping,
+>  				  struct iov_iter *ii, loff_t pos)
+> @@ -895,14 +901,15 @@ static ssize_t fuse_perform_write(struct file *file,
+>  	do {
+>  		struct fuse_req *req;
+>  		ssize_t count;
+> +		unsigned nr_pages = FUSE_WR_PAGES(pos, iov_iter_count(ii));
+>  
+> -		req = fuse_get_req_multipage(fc, FUSE_MAX_PAGES_PER_REQ);
+> +		req = fuse_get_req_multipage(fc, nr_pages);
+>  		if (IS_ERR(req)) {
+>  			err = PTR_ERR(req);
+>  			break;
+>  		}
+>  
+> -		count = fuse_fill_write_pages(req, mapping, ii, pos);
+> +		count = fuse_fill_write_pages(req, mapping, ii, pos, nr_pages);
+>  		if (count <= 0) {
+>  			err = count;
+>  		} else {
