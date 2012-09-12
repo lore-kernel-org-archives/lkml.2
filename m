@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab2ILXf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:35:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab2ILXfy (ORCPT
+	id S1756638Ab2ILXgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:36:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50843 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756601Ab2ILXf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:54 -0400
+	Wed, 12 Sep 2012 19:35:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        Adam Radford <aradford@gmail.com>,
+Cc: Greg KH <gregkh@linuxfoundation.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Babu Moger <babu.moger@netapp.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 086/108] SCSI: megaraid_sas: Move poll_aen_lock initializer
-Date: Wed, 12 Sep 2012 16:29:24 -0700
-Message-Id: <20120912232459.518558119@linuxfoundation.org>
+Subject: [ 087/108] SCSI: scsi_lib: fix scsi_io_completions SG_IO error propagation
+Date: Wed, 12 Sep 2012 16:29:25 -0700
+Message-Id: <20120912232459.626724650@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -31,42 +30,83 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kashyap Desai <Kashyap.Desai@lsi.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
+commit 27c419739b67decced4650440829b8d51bef954b upstream.
 
-The following patch moves the poll_aen_lock initializer from
-megasas_probe_one() to megasas_init().  This prevents a crash when a user
-loads the driver and tries to issue a poll() system call on the ioctl
-interface with no adapters present.
+The following v3.4-rc1 commit unmasked an existing bug in scsi_io_completion's
+SG_IO error handling: 47ac56d [SCSI] scsi_error: classify some ILLEGAL_REQUEST
+sense as a permanent TARGET_ERROR
 
-Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
-Signed-off-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Given that certain ILLEGAL_REQUEST are now properly categorized as
+TARGET_ERROR the host_byte is being set (before host_byte wasn't ever
+set for these ILLEGAL_REQUEST).
+
+In scsi_io_completion, initialize req->errors with cmd->result _after_
+the SG_IO block that calls __scsi_error_from_host_byte (which may
+modify the host_byte).
+
+Before this fix:
+
+    cdb to send: 12 01 01 00 00 00
+ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
+    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
+    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
+    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0x10,
+    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
+SCSI Status: Check Condition
+
+Sense Information:
+sense buffer empty
+
+After:
+
+    cdb to send: 12 01 01 00 00 00
+ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
+    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
+    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
+    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0,
+    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
+SCSI Status: Check Condition
+
+Sense Information:
+ Fixed format, current;  Sense key: Illegal Request
+ Additional sense: Invalid field in cdb
+ Raw sense data (in hex):
+        70 00 05 00 00 00 00 0b  00 00 00 00 24 00 00 00
+        00 00 00
+
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Tested-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reviewed-by: Babu Moger <babu.moger@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_lib.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4066,7 +4066,6 @@ megasas_probe_one(struct pci_dev *pdev,
- 	spin_lock_init(&instance->cmd_pool_lock);
- 	spin_lock_init(&instance->hba_lock);
- 	spin_lock_init(&instance->completion_lock);
--	spin_lock_init(&poll_aen_lock);
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -760,7 +760,6 @@ void scsi_io_completion(struct scsi_cmnd
+ 	}
  
- 	mutex_init(&instance->aen_mutex);
- 	mutex_init(&instance->reset_mutex);
-@@ -5392,6 +5391,8 @@ static int __init megasas_init(void)
- 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
- 	       MEGASAS_EXT_VERSION);
+ 	if (req->cmd_type == REQ_TYPE_BLOCK_PC) { /* SG_IO ioctl from block level */
+-		req->errors = result;
+ 		if (result) {
+ 			if (sense_valid && req->sense) {
+ 				/*
+@@ -776,6 +775,10 @@ void scsi_io_completion(struct scsi_cmnd
+ 			if (!sense_deferred)
+ 				error = __scsi_error_from_host_byte(cmd, result);
+ 		}
++		/*
++		 * __scsi_error_from_host_byte may have reset the host_byte
++		 */
++		req->errors = cmd->result;
  
-+	spin_lock_init(&poll_aen_lock);
-+
- 	support_poll_for_event = 2;
- 	support_device_change = 1;
+ 		req->resid_len = scsi_get_resid(cmd);
  
 
 
