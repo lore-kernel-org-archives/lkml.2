@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab2ILXbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:31:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	id S1753882Ab2IMAlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:41:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755668Ab2ILXbd (ORCPT
+	with ESMTP id S1755680Ab2ILXbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:33 -0400
+	Wed, 12 Sep 2012 19:31:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
         Bryan Schumaker <bjschuma@netapp.com>,
         William Dauchy <wdauchy@gmail.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 033/108] NFS: Clear key construction data if the idmap upcall fails
-Date: Wed, 12 Sep 2012 16:28:31 -0700
-Message-Id: <20120912232454.016533928@linuxfoundation.org>
+Subject: [ 034/108] NFS: return -ENOKEY when the upcall fails to map the name
+Date: Wed, 12 Sep 2012 16:28:32 -0700
+Message-Id: <20120912232454.120363936@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -33,13 +33,10 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit c5066945b7ea346a11424dbeb7830b7d7d00c206 upstream.
+commit 12dfd080556124088ed61a292184947711b46cbe upstream.
 
-idmap_pipe_downcall already clears this field if the upcall succeeds,
-but if it fails (rpc.idmapd isn't running) the field will still be set
-on the next call triggering a BUG_ON().  This patch tries to handle all
-possible ways that the upcall could fail and clear the idmap key data
-for each one.
+This allows the normal error-paths to handle the error, rather than
+making a special call to complete_request_key() just for this instance.
 
 Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
 Tested-by: William Dauchy <wdauchy@gmail.com>
@@ -47,135 +44,30 @@ Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/idmap.c |   56 ++++++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 42 insertions(+), 14 deletions(-)
+ fs/nfs/idmap.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
 --- a/fs/nfs/idmap.c
 +++ b/fs/nfs/idmap.c
-@@ -63,6 +63,12 @@ struct idmap {
- 	struct mutex		idmap_mutex;
- };
- 
-+struct idmap_legacy_upcalldata {
-+	struct rpc_pipe_msg pipe_msg;
-+	struct idmap_msg idmap_msg;
-+	struct idmap *idmap;
-+};
-+
- /**
-  * nfs_fattr_init_names - initialise the nfs_fattr owner_name/group_name fields
-  * @fattr: fully initialised struct nfs_fattr
-@@ -326,6 +332,7 @@ static ssize_t nfs_idmap_get_key(const c
- 		ret = nfs_idmap_request_key(&key_type_id_resolver_legacy,
- 					    name, namelen, type, data,
- 					    data_size, idmap);
-+		idmap->idmap_key_cons = NULL;
- 		mutex_unlock(&idmap->idmap_mutex);
+@@ -763,9 +763,8 @@ idmap_pipe_downcall(struct file *filp, c
  	}
- 	return ret;
-@@ -383,11 +390,13 @@ static const match_table_t nfs_idmap_tok
- static int nfs_idmap_legacy_upcall(struct key_construction *, const char *, void *);
- static ssize_t idmap_pipe_downcall(struct file *, const char __user *,
- 				   size_t);
-+static void idmap_release_pipe(struct inode *);
- static void idmap_pipe_destroy_msg(struct rpc_pipe_msg *);
  
- static const struct rpc_pipe_ops idmap_upcall_ops = {
- 	.upcall		= rpc_pipe_generic_upcall,
- 	.downcall	= idmap_pipe_downcall,
-+	.release_pipe	= idmap_release_pipe,
- 	.destroy_msg	= idmap_pipe_destroy_msg,
- };
+ 	if (!(im.im_status & IDMAP_STATUS_SUCCESS)) {
+-		ret = mlen;
+-		complete_request_key(cons, -ENOKEY);
+-		goto out_incomplete;
++		ret = -ENOKEY;
++		goto out;
+ 	}
  
-@@ -619,7 +628,8 @@ void nfs_idmap_quit(void)
- 	nfs_idmap_quit_keyring();
- }
+ 	namelen_in = strnlen(im.im_name, IDMAP_NAMESZ);
+@@ -782,7 +781,6 @@ idmap_pipe_downcall(struct file *filp, c
  
--static int nfs_idmap_prepare_message(char *desc, struct idmap_msg *im,
-+static int nfs_idmap_prepare_message(char *desc, struct idmap *idmap,
-+				     struct idmap_msg *im,
- 				     struct rpc_pipe_msg *msg)
- {
- 	substring_t substr;
-@@ -662,6 +672,7 @@ static int nfs_idmap_legacy_upcall(struc
- 				   const char *op,
- 				   void *aux)
- {
-+	struct idmap_legacy_upcalldata *data;
- 	struct rpc_pipe_msg *msg;
- 	struct idmap_msg *im;
- 	struct idmap *idmap = (struct idmap *)aux;
-@@ -669,15 +680,15 @@ static int nfs_idmap_legacy_upcall(struc
- 	int ret = -ENOMEM;
- 
- 	/* msg and im are freed in idmap_pipe_destroy_msg */
--	msg = kmalloc(sizeof(*msg), GFP_KERNEL);
--	if (!msg)
--		goto out0;
--
--	im = kmalloc(sizeof(*im), GFP_KERNEL);
--	if (!im)
-+	data = kmalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
- 		goto out1;
- 
--	ret = nfs_idmap_prepare_message(key->description, im, msg);
-+	msg = &data->pipe_msg;
-+	im = &data->idmap_msg;
-+	data->idmap = idmap;
-+
-+	ret = nfs_idmap_prepare_message(key->description, idmap, im, msg);
- 	if (ret < 0)
- 		goto out2;
- 
-@@ -686,15 +697,15 @@ static int nfs_idmap_legacy_upcall(struc
- 
- 	ret = rpc_queue_upcall(idmap->idmap_pipe, msg);
- 	if (ret < 0)
--		goto out2;
-+		goto out3;
- 
- 	return ret;
- 
-+out3:
-+	idmap->idmap_key_cons = NULL;
- out2:
--	kfree(im);
-+	kfree(data);
- out1:
--	kfree(msg);
--out0:
+ out:
  	complete_request_key(cons, ret);
+-out_incomplete:
  	return ret;
  }
-@@ -778,9 +789,26 @@ out_incomplete:
- static void
- idmap_pipe_destroy_msg(struct rpc_pipe_msg *msg)
- {
-+	struct idmap_legacy_upcalldata *data = container_of(msg,
-+			struct idmap_legacy_upcalldata,
-+			pipe_msg);
-+	struct idmap *idmap = data->idmap;
-+	struct key_construction *cons;
-+	if (msg->errno) {
-+		cons = ACCESS_ONCE(idmap->idmap_key_cons);
-+		idmap->idmap_key_cons = NULL;
-+		complete_request_key(cons, msg->errno);
-+	}
- 	/* Free memory allocated in nfs_idmap_legacy_upcall() */
--	kfree(msg->data);
--	kfree(msg);
-+	kfree(data);
-+}
-+
-+static void
-+idmap_release_pipe(struct inode *inode)
-+{
-+	struct rpc_inode *rpci = RPC_I(inode);
-+	struct idmap *idmap = (struct idmap *)rpci->private;
-+	idmap->idmap_key_cons = NULL;
- }
  
- int nfs_map_name_to_uid(const struct nfs_server *server, const char *name, size_t namelen, __u32 *uid)
 
 
