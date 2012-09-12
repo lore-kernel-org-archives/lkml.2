@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759302Ab2ILOkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:40:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:32150 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758123Ab2ILOke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:40:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,410,1344236400"; 
-   d="scan'208";a="144223851"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Stop perf stat -p when profiled process exits v2
-Date: Wed, 12 Sep 2012 07:40:32 -0700
-Message-Id: <1347460832-32118-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1759490Ab2ILOk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:40:59 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52210 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758899Ab2ILOk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 10:40:57 -0400
+MIME-Version: 1.0
+Date: Wed, 12 Sep 2012 16:40:55 +0200
+Message-ID: <CABPqkBSemt4hsoFfGkm3pac+R+aUJ6Kd9LBTWM-JtKMOF4VM9Q@mail.gmail.com>
+Subject: [BUG] perf: multiplexing and hotplug CPU problem
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi,
 
-When counting a process with perf stat -p check if the process died
-and exit collection if yes.
+As I was debugging my hrtimer patch, I ran a few tests
+with hotplug CPU. In others words, I offline a CPU while
+there is an active monitoring session which causes multiplexing.
 
-v2: Add more checks, handle non -p again. Handle /proc not there.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/builtin-stat.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+When the CPU goes down, all is well. But when it comes back,
+things go wrong. No kernel crashes but wrong results and multiplexing
+does not work anymore.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 861f0ae..2e5b4b3 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -536,7 +536,15 @@ static int run_perf_stat(int argc __used, const char **argv)
- 		if (WIFSIGNALED(status))
- 			psignal(WTERMSIG(status), argv[0]);
- 	} else {
--		while(!done) sleep(1);
-+		char piddir[40];
-+		if (target.pid && access("/proc", X_OK) == 0)
-+			snprintf(piddir, sizeof piddir, "/proc/%d", atoi(target.pid));
-+
-+		while(!done) {
-+			sleep(1);
-+			if (target.pid && access(piddir, X_OK) < 0 && errno == ENOENT)
-+				break;
-+		}
- 	}
- 
- 	t1 = rdclock();
--- 
-1.7.7.6
+I investigated this some more and found out there is an issue
+on re-activation.
 
+During shutdown, system-wide events are scheduled out AND removed
+from the event lists. Consequently, ctx->nr_events and ctx->nr_active
+go to zero.
+
+When the CPU is brought back online and tools do start/stop on the events
+they can be scheduled back in, and therefore increment ctx->nr_active.
+Because list_add_event() is not called again, you may end up with
+ctx->nr_events < ctx->nr_active which is wrong. Events may not
+be a lists and therefore they cannot get multiplexed again.
+
+It is not clear to me why we need to remove the events from any
+list (list_del_event) when the CPU goes down.
+
+Why isn't calling event_sched_out() enough?
+If events are kept on lists, why not try to schedule them back in when
+the CPU is brought back online?
