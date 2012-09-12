@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab2IMAnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:43:13 -0400
+	id S1754207Ab2IMAnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:43:37 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205Ab2ILXav (ORCPT
+	with ESMTP id S1755141Ab2ILXao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:30:51 -0400
+	Wed, 12 Sep 2012 19:30:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jon Hunter <jon-hunter@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [ 008/108] ARM: OMAP2+: Fix dmtimer set source clock failure
-Date: Wed, 12 Sep 2012 16:28:06 -0700
-Message-Id: <20120912232451.310834782@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 006/108] ARM: 7488/1: mm: use 5 bits for swapfile type encoding
+Date: Wed, 12 Sep 2012 16:28:04 -0700
+Message-Id: <20120912232451.108679781@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,50 +31,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jon Hunter <jon-hunter@ti.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 54f32a35f4d3a653a18a2c8c239f19ae060bd803 upstream.
+commit f5f2025ef3e2cdb593707cbf87378761f17befbe upstream.
 
-Calling the dmtimer function omap_dm_timer_set_source() fails if following a
-call to pm_runtime_put() to disable the timer. For example the following
-sequence would fail to set the parent clock ...
+Page migration encodes the pfn in the offset field of a swp_entry_t.
+For LPAE, we support physical addresses of up to 36 bits (due to
+sparsemem limitations with the size of page flags), requiring 24 bits
+to represent a pfn. A further 3 bits are used to encode a swp_entry into
+a pte, leaving 5 bits for the type field. Furthermore, the core code
+defines MAX_SWAPFILES_SHIFT as 5, so the additional type bit does not
+get used.
 
-	omap_dm_timer_stop(gptimer);
-	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_32_KHZ);
+This patch reduces the width of the type field to 5 bits, allowing us
+to create up to 31 swapfiles of 64GB each.
 
-The following error message would be seen ...
-
-omap_dm_timer_set_source: failed to set timer_32k_ck as parent
-
-The problem is that, by design, pm_runtime_put() simply decrements the usage
-count and returns before the timer has actually been disabled. Therefore,
-setting the parent clock failed because the timer was still active when the
-trying to set the parent clock. Setting a parent clock will fail if the clock
-you are setting the parent of has a non-zero usage count. To ensure that this
-does not fail use pm_runtime_put_sync() when disabling the timer.
-
-Note that this will not be seen on OMAP1 devices, because these devices do
-not use the clock framework for dmtimers.
-
-Signed-off-by: Jon Hunter <jon-hunter@ti.com>
-Acked-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-omap/dmtimer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/pgtable.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -236,7 +236,7 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
- 
- void omap_dm_timer_disable(struct omap_dm_timer *timer)
- {
--	pm_runtime_put(&timer->pdev->dev);
-+	pm_runtime_put_sync(&timer->pdev->dev);
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_disable);
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -253,13 +253,13 @@ static inline pte_t pte_modify(pte_t pte
+  *
+  *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+  *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+- *   <--------------- offset --------------------> <- type --> 0 0 0
++ *   <--------------- offset ----------------------> < type -> 0 0 0
+  *
+- * This gives us up to 63 swap files and 32GB per swap file.  Note that
++ * This gives us up to 31 swap files and 64GB per swap file.  Note that
+  * the offset field is always non-zero.
+  */
+ #define __SWP_TYPE_SHIFT	3
+-#define __SWP_TYPE_BITS		6
++#define __SWP_TYPE_BITS		5
+ #define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
+ #define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
  
 
 
