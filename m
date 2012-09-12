@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759048Ab2ILONi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:13:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17301 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758949Ab2ILONd (ORCPT
+	id S1759153Ab2ILONn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:13:43 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52886 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759095Ab2ILONi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:13:33 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=jUoZk2RAzk0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xkD7W5DCUvkA:10 a=CelUsDXF5JJlFZLyqW0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347459210.10751.48.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
- from interrupt context
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Wed, 12 Sep 2012 10:13:30 -0400
-In-Reply-To: <20120912010720.GM4257@linux.vnet.ibm.com>
-References: <20120904230834.GB11494@jtriplet-mobl1>
-	 <1346801031.27919.39.camel@gandalf.local.home>
-	 <20120904233344.GB11855@jtriplet-mobl1>
-	 <20120904234307.GY2593@linux.vnet.ibm.com>
-	 <20120906185402.GB5738@jtriplet-mobl1>
-	 <1346961244.1680.46.camel@gandalf.local.home> <20120907060940.GA21166@leaf>
-	 <20120907142441.GD2462@linux.vnet.ibm.com> <20120907144717.GA22059@leaf>
-	 <1347030967.8178.15.camel@gandalf.local.home>
-	 <20120912010720.GM4257@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Sep 2012 10:13:38 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com, robert.richter@amd.com
+Subject: [PATCH v2 0/3] perf: use hrtimer for event multiplexing
+Date: Wed, 12 Sep 2012 16:13:12 +0200
+Message-Id: <1347459195-5491-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-11 at 18:07 -0700, Paul E. McKenney wrote:
->  
-> > Paul, you just push your changes through tip, right? Then we can just
-> > let Ingo know. I could even make the patch a separate branch, that Ingo
-> > can pull into the RCU branch too.
-> 
-> Yep!  But we also need to worry about -next and -fengguang.
-> 
-> How about if you push your change into 3.7 and I push mine into 3.8?
+The current scheme of using the timer tick was fine
+for per-thread events. However, it was causing
+bias issues in system-wide mode (including for
+uncore PMUs). Event groups would not get their
+fair share of runtime on the PMU. With tickless
+kernels, if a core is idle there is no timer tick,
+and thus no event rotation (multiplexing). However,
+there are events (especially uncore events) which do
+count even though cores are asleep.
 
-Bah, this is what Linus said not to do. Although he's more about not
-having this happen in a single merge window, but this isn't the "git
-way".
+This patch changes the timer source for multiplexing.
+It introduces a per-cpu hrtimer. The advantage is that
+even when the core goes idle, it will come back to
+service the hrtimer, thus multiplexing on system-wide
+events works much better.
 
-There should be no problem in pushing the patch based off of Linus's
-tree and have it be pulled into two branches. This is what Linus said he
-wanted. The change will go in via one of the branches, whichever is
-pulled first. And as the change will have the same SHA1 in both
-branches, git will merge it nicely. This is what Linus said at kernel
-summit that he wants people to do.
+In order to minimize the impact of the hrtimer, it
+is turned on and off on demand. When the PMU on
+a CPU is overcommited, the hrtimer is activated.
+It is stopped when the PMU is not overcommitted.
 
-Note, this will also get into -next and -fengguang's tree as well,
-without issue.
+In order for this to work properly with HOTPLUG_CPU,
+we had to change the order of initialization in
+start_kernel() such that hrtimer_init() is run
+before perf_event_init().
 
--- Steve
+The second patch provide a sysctl control to
+adjust the multiplexing interval. Unit is
+milliseconds.
 
+Here is a simple before/after example with
+two event groups which do require multiplexing.
+This is done in system-wide mode on an idle
+system. What matters here is the scaling factor
+in [] in not the total counts.
+
+Before:
+
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 34,319,545 ref-cycles  [56.51%]
+ 31,917,229 ref-cycles  [43.50%]
+
+ 10.000827569 seconds time elapsed
+
+After:
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 11,144,822,193 ref-cycles [50.00%]
+ 11,103,760,513 ref-cycles [50.00%]
+
+ 10.000672946 seconds time elapsed
+
+In this second version of the patchset, we now
+have the hrtimer_interval per PMU instance. The
+tunable is in /sys/devices/XXX/mux_interval_ms,
+where XXX is the name of the PMU instance. Due
+to initialization changes of each hrtimer, we
+had to introduce hrtimer_init_cpu() to initialize
+a hrtimer from another CPU.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (3):
+  hrtimer: add hrtimer_init_cpu()
+  perf: use hrtimer for event multiplexing
+  perf: add sysfs entry to adjust multiplexing interval per PMU
+
+ include/linux/hrtimer.h    |    2 +
+ include/linux/perf_event.h |    5 +-
+ init/main.c                |    2 +-
+ kernel/events/core.c       |  166 +++++++++++++++++++++++++++++++++++++++++---
+ kernel/hrtimer.c           |   17 +++--
+ 5 files changed, 176 insertions(+), 16 deletions(-)
+
+-- 
+1.7.5.4
 
