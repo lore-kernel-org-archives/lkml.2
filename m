@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566Ab2ILOon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:44:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759456Ab2ILOol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:44:41 -0400
-Date: Wed, 12 Sep 2012 16:45:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] uprobes: Xol should send SIGTRAP if X86_EFLAGS_TF
-	was set
-Message-ID: <20120912144532.GA1786@redhat.com>
-References: <20120903152525.GA9028@redhat.com> <20120903152616.GA9081@redhat.com> <20120912120857.GA9582@linux.vnet.ibm.com>
+	id S1759528Ab2ILOrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:47:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40780 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759363Ab2ILOq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 10:46:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912120857.GA9582@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1347460719.15764.42.camel@twins>
+References: <1347459195-5491-1-git-send-email-eranian@google.com>
+	<1347459195-5491-2-git-send-email-eranian@google.com>
+	<1347459984.15764.34.camel@twins>
+	<CABPqkBSnhjgAhn5+gOuBWWPrxKojKW1hKPJEn7zvvYhiw-LPLg@mail.gmail.com>
+	<1347460719.15764.42.camel@twins>
+Date: Wed, 12 Sep 2012 16:46:57 +0200
+Message-ID: <CABPqkBSCY1N8Zc9ZxRYmQykqg+hiukxW4ZRMWkp9wfaOSzgGrA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12, Srikar Dronamraju wrote:
+On Wed, Sep 12, 2012 at 4:38 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-09-12 at 16:33 +0200, Stephane Eranian wrote:
 >
-> * Oleg Nesterov <oleg@redhat.com> [2012-09-03 17:26:16]:
+>>
+>> If I do:
+>>   for_each_possible_cpu(cpu) {
+>>        cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+>>        hr = &cpuctx->hrtimer;
+>>        hrtimer_init(hr)
+>> }
+>> I don't understand why I would have to refer to per-cpu data
+>> (hrtimer_bases) from
+>> a CPU that is not equal to "cpu" here. Unless you're telling me it's
+>> read-only data.
 >
-> > Note: send_sig(SIGTRAP) is not actually right, we need send_sigtrap().
+> No its not read only, but it is unused until you do *hrtimer_start*(),
+> which will test and fix.
 >
-> Are you pointing to the info field not being filled? or are there other
-> problems?
-
-Yes.
-
-Also, I am not sure but I feel we should move this into generic code
-somehow. We will see.
-
-> > But this needs more changes, handle_swbp() does the same and this is
-> > equally wrong.
+>> But still if it's per-cpu why not initialize with the correct CPU from
+>> the start?
 >
-> send_sigtrap() is arch specific and defined for only few archs.
-> we would have to force.
+> To keep the interface simpler I guess. There's no great harm in your
+> proposal, but it is strictly speaking superfluous. I'm not sure the max
+> one time avoidance of a base swizzle is worth the extra interface, I'll
+> leave that up to Thomas.
+>
+> Also, what Eric said ;-)
 
-Yes, but we have user_single_step_siginfo(), probably this is enough.
-
-> But these are not related to the patch.
-
-Agreed, lets do this later.
-
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-Thanks!
-
-Oleg.
-
+I am fine with dropping this patch. I just found it odd there was a per-cpu
+data reference embedded deep into the call. I wanted things to be more
+explicit. I know it works without the proposed change.
