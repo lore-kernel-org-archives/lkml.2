@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2ILHgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:36:21 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39656 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab2ILHgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:36:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120911190829.GA3327@kroah.com>
-References: <20120904202053.GA23449@kroah.com>
-	<1347347775-9282-1-git-send-email-yamanetoshi@gmail.com>
-	<20120911190829.GA3327@kroah.com>
-Date: Wed, 12 Sep 2012 16:36:19 +0900
-Message-ID: <CAOTypNRQn+yTH8jkDf2u+DAV42HM-igrxS4JO2NLu2U2PgS_7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging/vme: Use pr_ printks in vme_user.c
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Manohar Vanga <manohar.vanga@gmail.com>,
-        linux-kernel@vger.kernel.org, Martyn Welch <martyn.welch@ge.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753060Ab2ILHnC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:43:02 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60180 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab2ILHnA convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 12 Sep 2012 03:43:00 -0400
+Message-Id: <50505959020000780009AC53@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 12 Sep 2012 08:43:53 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Linus Walleij" <linus.walleij@linaro.org>
+Cc: "Grant Likely" <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] allow gpiolib to be a module
+References: <504DF63A020000780009A30B@nat28.tlf.novell.com>
+ <CACRpkdbCmou3wTXJjPhSaCH0kH1VrU5n-9t7NTJOjFQs1xH+cA@mail.gmail.com>
+In-Reply-To: <CACRpkdbCmou3wTXJjPhSaCH0kH1VrU5n-9t7NTJOjFQs1xH+cA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 4:08 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Sep 11, 2012 at 04:16:14PM +0900, Toshiaki Yamane wrote:
->> The below checkpatch warnings was fixed,
+>>> On 11.09.12 at 19:38, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Sep 10, 2012 at 2:16 PM, Jan Beulich <JBeulich@suse.com> wrote:
+>> +#ifndef MODULE
+>>  subsys_initcall(gpiolib_debugfs_init);
+>> +#endif
 >>
->> -WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
->> -WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
->> -WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
->
-> A lot of these can be using dev_* instead of the pr_* functions, right?
-> Please convert to using them wherever possible.
->
-> Because of that, I can't take this patch, sorry.  Care to redo it?
+>>  #endif /* DEBUG_FS */
+>> +
+>> +#ifdef MODULE
+>> +int __init gpiolib_init(void)
+>> +{
+>> +       return gpiolib_sysfs_init() ?: gpiolib_debugfs_init();
+> 
+> I can't parse this, sorry the gpio subsystem maintainer is too bad coder.
+> What about something more readable?
+> 
+> int ret;
+> 
+> ret = gpiolib_sysfs_init();
+> if (ret)
+>    return ret;
+> return gpiolib_debugfs_init();
+> 
+> I know it doesn't look as cool but it's easier for me to understand.
 
-Yes. Is this collect?
+Okay, since you're the second one to complain despite there
+being other uses of the construct in the same source file, I'll
+replace it, ...
 
-I must use dev_* procedure when the following conditions are met:
-- If I have access to struct device object by the argument of the procedure
-- Except for the right: struct net_device, etc.
+> There is a bug too: I don't think this compiles if you compile as
+> a module but disable debugfs. Try it out.
 
-Otherwise, I must use pr_* procedure.
+... the more to get this one fixed. Will re-submit.
 
+>> +}
+>> +module_init(gpiolib_init);
+>> +
+>> +MODULE_DESCRIPTION("GPIO library");
+>> +MODULE_LICENSE("GPL");
+> 
+> These two things don't really need to be inside an #ifdef
+> right?
 
-Regards,
+They don't need to be, but since we need a conditional now
+anyway, it seemed reasonable to include these in there too.
 
-YAMANE Toshiaki
+Jan
+
