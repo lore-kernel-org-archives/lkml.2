@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab2ILXUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:20:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33912 "EHLO
+	id S1753242Ab2ILXZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:25:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50078 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab2ILXUX (ORCPT
+	with ESMTP id S1751137Ab2ILXZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:20:23 -0400
-Date: Wed, 12 Sep 2012 16:20:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Cc: NeilBrown <neilb@suse.de>, Kent Overstreet <koverstreet@google.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Vivek Goyal <vgoyal@redhat.com>, drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
-Message-ID: <20120912232019.GW7677@google.com>
-References: <20120905100724.GA27527@soda.linbit>
- <20120906212952.GP29092@google.com>
- <20120907084221.GD7028@soda.linbit>
- <20120910225442.GE7677@google.com>
- <20120910230654.GF7677@google.com>
- <20120910233159.GE19739@google.com>
- <20120911155820.74f1f918@notabene.brown>
- <20120911082501.GH7028@soda.linbit>
- <20120912185824.GS7677@google.com>
- <CAOzFzEjCf7ZPbheq-tfhts-E=Ep1kvn0muksaaTFqJ=cMm772w@mail.gmail.com>
+	Wed, 12 Sep 2012 19:25:27 -0400
+Date: Wed, 12 Sep 2012 16:25:23 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Hugh Dickins <hughd@google.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        mm-commits@vger.kernel.org, bhalevy@tonian.com, dhillf@gmail.com
+Subject: Re: + mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
+ added to -mm tree
+In-Reply-To: <alpine.LSU.2.00.1209121133210.15274@eggly.anvils>
+Message-ID: <alpine.DEB.2.00.1209121618520.12415@chino.kir.corp.google.com>
+References: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1209111054510.30962@chino.kir.corp.google.com> <alpine.LSU.2.00.1209111110330.2575@eggly.anvils> <alpine.DEB.2.00.1209111843010.19285@chino.kir.corp.google.com>
+ <alpine.LSU.2.00.1209121133210.15274@eggly.anvils>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOzFzEjCf7ZPbheq-tfhts-E=Ep1kvn0muksaaTFqJ=cMm772w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 09:12:25AM +1000, Joseph Glanville wrote:
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 4b4dbdf..68b5671 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1809,6 +1809,9 @@ EXPORT_SYMBOL(generic_make_request);
->   * uses that function to do most of the work. Both are fairly rough
->   * interfaces; @bio must be presetup and ready for I/O.
->   *
-> + * Ordering of requests is not guaranteed, callers should drain the queue
-> + * and issue a flush before submission of any dependent bios.
+On Wed, 12 Sep 2012, Hugh Dickins wrote:
 
-I think using "requests" here is confusing given that struct request
-means something else in the block layer.  Also, the caller doesn't
-have to drain the whole queue but just the ones involved in the
-dependency and flush doesn't really matter here although mentioning
-that flush too doesn't have any ordering guarantee would be nice.
-Also, updating submit_bio() comment too would be nice - something
-simple about lack of ordering and then reference to
-generic_make_request().
+> > that we can't fix it all up to use 
+> > uninitialized_var() so this is handled the proper way?
+> 
+> I do prefer to avoid it when we can, some reasons given below.
+> 
 
-Thanks.
+It's easily silenced with __maybe_unused.  I advocated for using that 
+attribute for unusued labels in mm/slab_common.c as well where we now do 
+things like
 
--- 
-tejun
+	#ifdef CONFIG_DEBUG_SLAB
+	out:
+	#endif
+
+repeatedly, but others felt this was better than simply doing
+
+	out: __maybe_unused
+
+Not sure what your preferences are for just adding __maybe_unused to the 
+declaration.
+
+> > If CONFIG_BUG exists, then we should support it, right?
+> 
+> Up to a point, yes: we don't encourage switching it off ("Just say Y").
+> I'm reluctant to add a notation just for this discouraged case, but how
+> how about this patch - does it actually fix the warning you see, David?
+> 
+> 
+> [PATCH mmotm] mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links fix
+> 
+> Strangely, I can no longer get an uninitialized variable warning out of
+> copy_vma(), with or without the BUG() there; but David Rientjes gets it
+> when he builds with CONFIG_BUG off, which is understandable.
+> 
+> uninitialized_var() can be a useful tool, but I do prefer to avoid it:
+> partly because it might hide future errors, partly because I misspell
+> it, but mainly because the need for it comes and goes so mysteriously.
+> 
+> Given David's preference for no warning, mine for no uninitialized_var,
+> and Linus's for renaming BUG() to I_AM_A_MORON() to discourage its use
+> in the first place: copy_vma() seems a prime candidate for returning
+> failure to mremap instead of crashing the system.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+
+Tested-by: David Rientjes <rientjes@google.com>
