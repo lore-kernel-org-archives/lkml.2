@@ -1,601 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab2ILMGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:06:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64801 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756676Ab2ILMGR (ORCPT
+	id S1757734Ab2ILMGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:06:54 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:45788 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757673Ab2ILMGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:06:17 -0400
-From: "G.Shark Jeong" <gshark.jeong@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>
-Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
-        "G.Shark Jeong" <gshark.jeong@gmail.com>
-Subject: [PATCH 1/1] leds: Add new LED driver for lm3642 chips
-Date: Wed, 12 Sep 2012 21:05:50 +0900
-Message-Id: <1347451550-7785-2-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347451550-7785-1-git-send-email-gshark.jeong@gmail.com>
-References: <1347451550-7785-1-git-send-email-gshark.jeong@gmail.com>
+	Wed, 12 Sep 2012 08:06:49 -0400
+Date: Wed, 12 Sep 2012 14:06:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        sbw@mit.edu, patches@linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
+ preemption
+Message-ID: <20120912120627.GA14705@somewhere>
+References: <20120830210520.GA2824@linux.vnet.ibm.com>
+ <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1346950959.18408.47.camel@twins>
+ <1346951591.18408.48.camel@twins>
+ <20120910202611.GB19268@somewhere>
+ <1347442413.2124.70.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347442413.2124.70.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+On Wed, Sep 12, 2012 at 11:33:33AM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-09-10 at 22:26 +0200, Frederic Weisbecker wrote:
+> 
+> > > > OK, so colour me unconvinced.. why are we doing this?
+> > > > 
+> > > > Typically when we call schedule nr_running != 1 (we need current to be
+> > > > running and a possible target to switch to).
+> > > > 
+> > > > So I'd prefer to simply have schedule() disable all this adaptive tick
+> > > > nonsense and leave it at that.
+> > > 
+> > > In fact, the only way to get here is through ttwu(), which would have
+> > > done the nr_running increment and should have disabled all this adaptive
+> > > stuff.
+> > > 
+> > > So again,.. why?
+> > 
+> > Ok, indeed if the ttwu happened locally or even remotely through an IPI, the
+> > tick engine would stop the tick and exit that RCU extended quiescent state
+> > before we reach that place.
+> > 
+> > I just want to be sure I'm covering every case. There are some places
+> > around that call set_need_resched() even if no task is waiting for the CPU
+> > (RCU is such an example). In this case the nohz engine won't exit the RCU
+> > user mode before schedule().
+> > 
+> > Another example: a CPU does a remote wake up so it does set_need_resched()
+> > and sends the IPI. The target CPU could see the TIF_RESCHED before resuming
+> > userspace and call schedule_user() -> schedule() while the IPI has not
+> > yet arrived. In this case we need that rcu_user_exit() before schedule might
+> > make any use of RCU.
+> > 
+> > Also when the task returns from schedule(), if it's alone in the runqueue,
+> > the rcu_user_enter() that follows can be helpful to stop the tick and
+> > enter our RCU quiescent state.
+> 
+> So all that should have been in the Changelog.
 
-This driver is a general version for LM642 led chip of TI.
+Right, I'm fixing that.
 
-LM3642 :
-The LM3642 is a 4MHz fixed-frequency synchronous boost
-converter plus 1.5A constant current driver for a high-current
-white LED.
-The LM3642 is controlled via an I2C-compatible interface.
+> 
+> So the only real problem I see is non IPI remote wakeups, those cannot
+> actually restart the tick on the target cpu like we want.
 
-Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
----
- drivers/leds/Kconfig                      |   11 +
- drivers/leds/Makefile                     |    1 +
- drivers/leds/leds-lm3642.c                |  471 +++++++++++++++++++++++++++++
- include/linux/platform_data/leds-lm3642.h |   38 +++
- 4 files changed, 521 insertions(+), 0 deletions(-)
- create mode 100644 drivers/leds/leds-lm3642.c
- create mode 100644 include/linux/platform_data/leds-lm3642.h
+Ok so let identify and validate the corner cases so that I can report them confidently
+in the changelog:
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index c96bbaa..bdc05cb 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -63,6 +63,17 @@ config LEDS_LM3533
- 	  hardware-accelerated blinking with maximum on and off periods of 9.8
- 	  and 77 seconds respectively.
- 
-+config LEDS_LM3642
-+	tristate "LED support for LM3642 Chip"
-+	depends on LEDS_CLASS && I2C
-+	select REGMAP_I2C
-+	help
-+	  This option enables support for LEDs connected to LM3642.
-+	  The LM3642 is a 4MHz fixed-frequency synchronous boost
-+	  converter plus 1.5A constant current driver for a high-current
-+	  white LED.
-+
-+
- config LEDS_LOCOMO
- 	tristate "LED Support for Locomo device"
- 	depends on LEDS_CLASS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index a4429a9..9a01111 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_LEDS_BD2802)		+= leds-bd2802.o
- obj-$(CONFIG_LEDS_LOCOMO)		+= leds-locomo.o
- obj-$(CONFIG_LEDS_LM3530)		+= leds-lm3530.o
- obj-$(CONFIG_LEDS_LM3533)		+= leds-lm3533.o
-+obj-$(CONFIG_LEDS_LM3642)		+= leds-lm3642.o
- obj-$(CONFIG_LEDS_MIKROTIK_RB532)	+= leds-rb532.o
- obj-$(CONFIG_LEDS_S3C24XX)		+= leds-s3c24xx.o
- obj-$(CONFIG_LEDS_NET48XX)		+= leds-net48xx.o
-diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
-new file mode 100644
-index 0000000..924853b
---- /dev/null
-+++ b/drivers/leds/leds-lm3642.c
-@@ -0,0 +1,471 @@
-+/*
-+* Simple driver for Texas Instruments LM3642 LED Flash driver chip
-+* Copyright (C) 2012 Texas Instruments
-+*
-+* This program is free software; you can redistribute it and/or modify
-+* it under the terms of the GNU General Public License version 2 as
-+* published by the Free Software Foundation.
-+*
-+*/
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/leds.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/fs.h>
-+#include <linux/regmap.h>
-+#include <linux/workqueue.h>
-+#include <linux/platform_data/leds-lm3642.h>
-+
-+#define	REG_FILT_TIME			(0x0)
-+#define	REG_IVFM_MODE			(0x1)
-+#define	REG_TORCH_TIME			(0x6)
-+#define	REG_FLASH			(0x8)
-+#define	REG_I_CTRL			(0x9)
-+#define	REG_ENABLE			(0xA)
-+#define	REG_FLAG			(0xB)
-+#define	REG_MAX				(0xB)
-+
-+#define	UVLO_EN_SHIFT			(7)
-+#define	IVM_D_TH_SHIFT			(2)
-+#define	TORCH_RAMP_UP_TIME_SHIFT	(3)
-+#define	TORCH_RAMP_DN_TIME_SHIFT	(0)
-+#define	INDUCTOR_I_LIMIT_SHIFT		(6)
-+#define	FLASH_RAMP_TIME_SHIFT		(3)
-+#define	FLASH_TOUT_TIME_SHIFT		(0)
-+#define	TORCH_I_SHIFT			(4)
-+#define	FLASH_I_SHIFT			(0)
-+#define	IVFM_SHIFT			(7)
-+#define	TX_PIN_EN_SHIFT			(6)
-+#define	STROBE_PIN_EN_SHIFT		(5)
-+#define	TORCH_PIN_EN_SHIFT		(4)
-+#define	MODE_BITS_SHIFT			(0)
-+
-+#define	UVLO_EN_MASK			(0x1)
-+#define	IVM_D_TH_MASK			(0x7)
-+#define	TORCH_RAMP_UP_TIME_MASK		(0x7)
-+#define	TORCH_RAMP_DN_TIME_MASK		(0x7)
-+#define	INDUCTOR_I_LIMIT_MASK		(0x1)
-+#define	FLASH_RAMP_TIME_MASK		(0x7)
-+#define	FLASH_TOUT_TIME_MASK		(0x7)
-+#define	TORCH_I_MASK			(0x7)
-+#define	FLASH_I_MASK			(0xF)
-+#define	IVFM_MASK			(0x1)
-+#define	TX_PIN_EN_MASK			(0x1)
-+#define	STROBE_PIN_EN_MASK		(0x1)
-+#define	TORCH_PIN_EN_MASK		(0x1)
-+#define	MODE_BITS_MASK			(0x73)
-+#define EX_PIN_CONTROL_MASK		(0x71)
-+#define EX_PIN_ENABLE_MASK		(0x70)
-+
-+enum lm3642_mode {
-+	MODES_STASNDBY = 0,
-+	MODES_INDIC,
-+	MODES_TORCH,
-+	MODES_FLASH
-+};
-+
-+struct lm3642_chip_data {
-+	struct device *dev;
-+
-+	struct led_classdev cdev_flash;
-+	struct led_classdev cdev_torch;
-+	struct led_classdev cdev_indicator;
-+
-+	struct work_struct work_flash;
-+	struct work_struct work_torch;
-+	struct work_struct work_indicator;
-+
-+	u8 br_flash;
-+	u8 br_torch;
-+	u8 br_indicator;
-+
-+	enum lm3642_torch_pin_enable torch_pin;
-+	enum lm3642_strobe_pin_enable strobe_pin;
-+	enum lm3642_tx_pin_enable tx_pin;
-+
-+	struct lm3642_platform_data *pdata;
-+	struct regmap *regmap;
-+	struct mutex lock;
-+
-+	unsigned int last_flag;
-+};
-+
-+/* chip initialize */
-+static int __devinit lm3642_chip_init(struct lm3642_chip_data *chip)
-+{
-+	unsigned int reg_val;
-+	int ret;
-+	struct lm3642_platform_data *pdata = chip->pdata;
-+
-+	/* set enable register */
-+	ret = regmap_read(chip->regmap, REG_ENABLE, &reg_val);
-+	if (ret < 0)
-+		goto out;
-+
-+	reg_val &= (~EX_PIN_ENABLE_MASK);
-+	reg_val |= pdata->tx_pin;
-+	ret = regmap_write(chip->regmap, REG_ENABLE, reg_val);
-+	if (ret < 0)
-+		goto out;
-+
-+out:
-+	dev_err(chip->dev, "Failed to read REG_ENABLE Register\n");
-+	return ret;
-+}
-+
-+/* chip control */
-+static int lm3642_control(struct lm3642_chip_data *chip,
-+			  u8 brightness, enum lm3642_mode opmode)
-+{
-+	int ret;
-+
-+	ret = regmap_read(chip->regmap, REG_FLAG, &chip->last_flag);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to read REG_FLAG Register\n");
-+		goto out;
-+	}
-+
-+	if (chip->last_flag)
-+		dev_info(chip->dev, "Last FLAG is 0x%x\n", chip->last_flag);
-+
-+	/* brightness 0 means off-state */
-+	if (!brightness)
-+		opmode = MODES_STASNDBY;
-+
-+	switch (opmode) {
-+	case MODES_TORCH:
-+		ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-+					 TORCH_I_MASK << TORCH_I_SHIFT,
-+					 (brightness - 1) << TORCH_I_SHIFT);
-+
-+		if (chip->torch_pin)
-+			opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
-+		break;
-+
-+	case MODES_FLASH:
-+		ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-+					 FLASH_I_MASK << FLASH_I_SHIFT,
-+					 (brightness - 1) << FLASH_I_SHIFT);
-+
-+		if (chip->strobe_pin)
-+			opmode |= (STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT);
-+		break;
-+
-+	case MODES_INDIC:
-+		ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-+					 TORCH_I_MASK << TORCH_I_SHIFT,
-+					 (brightness - 1) << TORCH_I_SHIFT);
-+		break;
-+
-+	case MODES_STASNDBY:
-+
-+		break;
-+
-+	default:
-+		return ret;
-+	}
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to write REG_I_CTRL Register\n");
-+		goto out;
-+	}
-+
-+	if (chip->tx_pin)
-+		opmode |= (TX_PIN_EN_MASK << TX_PIN_EN_SHIFT);
-+
-+	ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-+				 MODE_BITS_MASK << MODE_BITS_SHIFT,
-+				 opmode << MODE_BITS_SHIFT);
-+out:
-+	return ret;
-+}
-+
-+/* torch */
-+
-+/* torch pin config for lm3642*/
-+static ssize_t lm3642_torch_pin_store(struct device *dev,
-+				      struct device_attribute *devAttr,
-+				      const char *buf, size_t size)
-+{
-+	ssize_t ret;
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct lm3642_chip_data *chip =
-+	    container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
-+	unsigned int state;
-+
-+	ret = kstrtouint(buf, 10, &state);
-+	if (ret)
-+		goto out_strtoint;
-+	if (state != 0)
-+		state = 0x01 << TORCH_PIN_EN_SHIFT;
-+
-+	chip->torch_pin = state;
-+	ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-+				 TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT,
-+				 state);
-+	if (ret < 0)
-+		goto out;
-+
-+	return size;
-+out:
-+	dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
-+	return size;
-+out_strtoint:
-+	dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
-+	return size;
-+}
-+
-+static DEVICE_ATTR(torch_pin, 0666, NULL, lm3642_torch_pin_store);
-+
-+static void lm3642_deferred_torch_brightness_set(struct work_struct *work)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(work, struct lm3642_chip_data, work_torch);
-+
-+	mutex_lock(&chip->lock);
-+	lm3642_control(chip, chip->br_torch, MODES_TORCH);
-+	mutex_unlock(&chip->lock);
-+}
-+
-+static void lm3642_torch_brightness_set(struct led_classdev *cdev,
-+					enum led_brightness brightness)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(cdev, struct lm3642_chip_data, cdev_torch);
-+
-+	chip->br_torch = brightness;
-+	schedule_work(&chip->work_torch);
-+}
-+
-+/* flash */
-+
-+/* strobe pin config for lm3642*/
-+static ssize_t lm3642_strobe_pin_store(struct device *dev,
-+				       struct device_attribute *devAttr,
-+				       const char *buf, size_t size)
-+{
-+	ssize_t ret;
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct lm3642_chip_data *chip =
-+	    container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
-+	unsigned int state;
-+
-+	ret = kstrtouint(buf, 10, &state);
-+	if (ret)
-+		goto out_strtoint;
-+	if (state != 0)
-+		state = 0x01 << STROBE_PIN_EN_SHIFT;
-+
-+	chip->strobe_pin = state;
-+	ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-+				 STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT,
-+				 state);
-+	if (ret < 0)
-+		goto out;
-+
-+	return size;
-+out:
-+	dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
-+	return size;
-+out_strtoint:
-+	dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
-+	return size;
-+}
-+
-+static DEVICE_ATTR(strobe_pin, 0666, NULL, lm3642_strobe_pin_store);
-+
-+static void lm3642_deferred_strobe_brightness_set(struct work_struct *work)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(work, struct lm3642_chip_data, work_flash);
-+
-+	mutex_lock(&chip->lock);
-+	lm3642_control(chip, chip->br_flash, MODES_FLASH);
-+	mutex_unlock(&chip->lock);
-+}
-+
-+static void lm3642_strobe_brightness_set(struct led_classdev *cdev,
-+					 enum led_brightness brightness)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(cdev, struct lm3642_chip_data, cdev_flash);
-+
-+	chip->br_flash = brightness;
-+	schedule_work(&chip->work_flash);
-+}
-+
-+/* indicator */
-+static void lm3642_deferred_indicator_brightness_set(struct work_struct *work)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(work, struct lm3642_chip_data, work_indicator);
-+
-+	mutex_lock(&chip->lock);
-+	lm3642_control(chip, chip->br_indicator, MODES_INDIC);
-+	mutex_unlock(&chip->lock);
-+}
-+
-+static void lm3642_indicator_brightness_set(struct led_classdev *cdev,
-+					    enum led_brightness brightness)
-+{
-+	struct lm3642_chip_data *chip =
-+	    container_of(cdev, struct lm3642_chip_data, cdev_indicator);
-+
-+	chip->br_indicator = brightness;
-+	schedule_work(&chip->work_indicator);
-+}
-+
-+static const struct regmap_config lm3642_regmap = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = REG_MAX,
-+};
-+
-+static int __devinit lm3642_probe(struct i2c_client *client,
-+				  const struct i2c_device_id *id)
-+{
-+	struct lm3642_platform_data *pdata = client->dev.platform_data;
-+	struct lm3642_chip_data *chip;
-+
-+	int err;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		dev_err(&client->dev, "i2c functionality check fail.\n");
-+		return -EOPNOTSUPP;
-+	}
-+
-+	if (pdata == NULL) {
-+		dev_err(&client->dev, "needs Platform Data.\n");
-+		return -ENODATA;
-+	}
-+
-+	chip = devm_kzalloc(&client->dev,
-+			    sizeof(struct lm3642_chip_data), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
-+
-+	chip->dev = &client->dev;
-+	chip->pdata = pdata;
-+
-+	chip->tx_pin = pdata->tx_pin;
-+	chip->torch_pin = pdata->torch_pin;
-+	chip->strobe_pin = pdata->strobe_pin;
-+
-+	chip->regmap = devm_regmap_init_i2c(client, &lm3642_regmap);
-+	if (IS_ERR(chip->regmap)) {
-+		err = PTR_ERR(chip->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			err);
-+		return err;
-+	}
-+
-+	mutex_init(&chip->lock);
-+	i2c_set_clientdata(client, chip);
-+
-+	err = lm3642_chip_init(chip);
-+	if (err < 0)
-+		goto err_out;
-+
-+	/* flash */
-+	INIT_WORK(&chip->work_flash, lm3642_deferred_strobe_brightness_set);
-+	chip->cdev_flash.name = "flash";
-+	chip->cdev_flash.max_brightness = 16;
-+	chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
-+	err = led_classdev_register((struct device *)
-+				    &client->dev, &chip->cdev_flash);
-+	if (err < 0) {
-+		dev_err(chip->dev, "failed to register flash\n");
-+		goto err_out;
-+	}
-+	err = device_create_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-+	if (err < 0) {
-+		dev_err(chip->dev, "failed to create strobe-pin file\n");
-+		goto err_create_flash_pin_file;
-+	}
-+
-+	/* torch */
-+	INIT_WORK(&chip->work_torch, lm3642_deferred_torch_brightness_set);
-+	chip->cdev_torch.name = "torch";
-+	chip->cdev_torch.max_brightness = 8;
-+	chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
-+	err = led_classdev_register((struct device *)
-+				    &client->dev, &chip->cdev_torch);
-+	if (err < 0) {
-+		dev_err(chip->dev, "failed to register torch\n");
-+		goto err_create_torch_file;
-+	}
-+	err = device_create_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-+	if (err < 0) {
-+		dev_err(chip->dev, "failed to create torch-pin file\n");
-+		goto err_create_torch_pin_file;
-+	}
-+
-+	/* indicator */
-+	INIT_WORK(&chip->work_indicator,
-+		  lm3642_deferred_indicator_brightness_set);
-+	chip->cdev_indicator.name = "indicator";
-+	chip->cdev_indicator.max_brightness = 8;
-+	chip->cdev_indicator.brightness_set = lm3642_indicator_brightness_set;
-+	err = led_classdev_register((struct device *)
-+				    &client->dev, &chip->cdev_indicator);
-+	if (err < 0) {
-+		dev_err(chip->dev, "failed to register indicator\n");
-+		goto err_create_indicator_file;
-+	}
-+
-+	dev_info(&client->dev, "LM3642 is initialized\n");
-+	return 0;
-+
-+err_create_indicator_file:
-+	device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-+err_create_torch_pin_file:
-+	led_classdev_unregister(&chip->cdev_torch);
-+err_create_torch_file:
-+	device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-+err_create_flash_pin_file:
-+	led_classdev_unregister(&chip->cdev_flash);
-+err_out:
-+	return err;
-+}
-+
-+static int __devexit lm3642_remove(struct i2c_client *client)
-+{
-+	struct lm3642_chip_data *chip = i2c_get_clientdata(client);
-+
-+	led_classdev_unregister(&chip->cdev_indicator);
-+	flush_work(&chip->work_indicator);
-+	device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-+	led_classdev_unregister(&chip->cdev_torch);
-+	flush_work(&chip->work_torch);
-+	device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-+	led_classdev_unregister(&chip->cdev_flash);
-+	flush_work(&chip->work_flash);
-+	regmap_write(chip->regmap, REG_ENABLE, 0);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id lm3642_id[] = {
-+	{LM3642_NAME, 0},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, lm3642_id);
-+
-+static struct i2c_driver lm3642_i2c_driver = {
-+	.driver = {
-+		   .name = LM3642_NAME,
-+		   .owner = THIS_MODULE,
-+		   .pm = NULL,
-+		   },
-+	.probe = lm3642_probe,
-+	.remove = __devexit_p(lm3642_remove),
-+	.id_table = lm3642_id,
-+};
-+
-+module_i2c_driver(lm3642_i2c_driver);
-+
-+MODULE_DESCRIPTION("Texas Instruments Flash Lighting driver for LM3642");
-+MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
-+MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/platform_data/leds-lm3642.h b/include/linux/platform_data/leds-lm3642.h
-new file mode 100644
-index 0000000..72d6ee6
---- /dev/null
-+++ b/include/linux/platform_data/leds-lm3642.h
-@@ -0,0 +1,38 @@
-+/*
-+* Copyright (C) 2012 Texas Instruments
-+*
-+* License Terms: GNU General Public License v2
-+*
-+* Simple driver for Texas Instruments LM3642 LED driver chip
-+*
-+* Author: G.Shark Jeong <gshark.jeong@gmail.com>
-+*         Daniel Jeong <daniel.jeong@ti.com>
-+*/
-+
-+#ifndef __LINUX_LM3642_H
-+#define __LINUX_LM3642_H
-+
-+#define LM3642_NAME "leds-lm3642"
-+
-+enum lm3642_torch_pin_enable {
-+	LM3642_TORCH_PIN_DISABLE = 0x00,
-+	LM3642_TORCH_PIN_ENABLE = 0x10,
-+};
-+
-+enum lm3642_strobe_pin_enable {
-+	LM3642_STROBE_PIN_DISABLE = 0x00,
-+	LM3642_STROBE_PIN_ENABLE = 0x20,
-+};
-+
-+enum lm3642_tx_pin_enable {
-+	LM3642_TX_PIN_DISABLE = 0x00,
-+	LM3642_TX_PIN_ENABLE = 0x40,
-+};
-+
-+struct lm3642_platform_data {
-+	enum lm3642_torch_pin_enable torch_pin;
-+	enum lm3642_strobe_pin_enable strobe_pin;
-+	enum lm3642_tx_pin_enable tx_pin;
-+};
-+
-+#endif /* __LINUX_LM3642_H */
--- 
-1.7.5.4
+1) This can happen if something calls set_need_resched() while no other task is
+on the runqueue.
 
+2) Remote wake up done but we haven't yet received the schedule IPI.
+
+3) Non IPI remote wakeup you're referring above, I'm not sure
+what you mean though.
+
+> 
+> The rest could all be fixed to not need this.
+> 
+> Hrmm. still don't like the patch, but at least I see why its needed.
+> 
+> > Also I'm considering this RCU user extended quiescent state as a standalone
+> > feature for now. Indeed the only user of it is the adaptive tickless thing.
+> > But I'm treating that RCU part independantly for now so that it makes it
+> > easier to merge, piecewise.
+> 
+> But its semantics are very tightly tied to the requirements of adaptive
+> tick, so arguing about one without the other doesn't really make sense.
+> 
+
+Yeah it's true. Now all of these hooks have been required in practice with
+the adaptive tick code running.
+
+Also keeping these hooks unconditional, until the adaptive tick code comes in
+and drives that conditionally, is also a nice way to runtime selftest that code (check
+there is no missing rcu_user_exit() call for example, easy to check if RCU lockdep
+is enabled).
