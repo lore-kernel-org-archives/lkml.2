@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2ILJbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 05:31:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56854 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab2ILJbf (ORCPT
+	id S1755123Ab2ILJew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:34:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47989 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab2ILJev convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 05:31:35 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mmarek@suse.cz, patches@linaro.org
-Subject: [PATCH v2] kbuild: setlocalversion: ignore private tags while reporting local version
-Date: Wed, 12 Sep 2012 14:58:30 +0530
-Message-Id: <1347442110-26569-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1347424996-15569-1-git-send-email-tushar.behera@linaro.org>
-References: <1347424996-15569-1-git-send-email-tushar.behera@linaro.org>
+	Wed, 12 Sep 2012 05:34:51 -0400
+Message-ID: <1347442413.2124.70.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
+ preemption
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        sbw@mit.edu, patches@linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Date: Wed, 12 Sep 2012 11:33:33 +0200
+In-Reply-To: <20120910202611.GB19268@somewhere>
+References: <20120830210520.GA2824@linux.vnet.ibm.com>
+	 <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346950959.18408.47.camel@twins> <1346951591.18408.48.camel@twins>
+	 <20120910202611.GB19268@somewhere>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The output of 'git describe' is relative to the immediate preceding tag.
-When the immediate tag preceding or at the HEAD is a private tag,
-setlocalversion extracts information with respect to the private tag and
-wrongly reports them with respect to Linux tag.
+On Mon, 2012-09-10 at 22:26 +0200, Frederic Weisbecker wrote:
 
-Fixing this to extract information with respect to Linux tags.
+> > > OK, so colour me unconvinced.. why are we doing this?
+> > > 
+> > > Typically when we call schedule nr_running != 1 (we need current to be
+> > > running and a possible target to switch to).
+> > > 
+> > > So I'd prefer to simply have schedule() disable all this adaptive tick
+> > > nonsense and leave it at that.
+> > 
+> > In fact, the only way to get here is through ttwu(), which would have
+> > done the nr_running increment and should have disabled all this adaptive
+> > stuff.
+> > 
+> > So again,.. why?
+> 
+> Ok, indeed if the ttwu happened locally or even remotely through an IPI, the
+> tick engine would stop the tick and exit that RCU extended quiescent state
+> before we reach that place.
+> 
+> I just want to be sure I'm covering every case. There are some places
+> around that call set_need_resched() even if no task is waiting for the CPU
+> (RCU is such an example). In this case the nohz engine won't exit the RCU
+> user mode before schedule().
+> 
+> Another example: a CPU does a remote wake up so it does set_need_resched()
+> and sends the IPI. The target CPU could see the TIF_RESCHED before resuming
+> userspace and call schedule_user() -> schedule() while the IPI has not
+> yet arrived. In this case we need that rcu_user_exit() before schedule might
+> make any use of RCU.
+> 
+> Also when the task returns from schedule(), if it's alone in the runqueue,
+> the rcu_user_enter() that follows can be helpful to stop the tick and
+> enter our RCU quiescent state.
 
-CC: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
-Changes since v1:
-* Extend the fix when the HEAD is a private tagged commit
+So all that should have been in the Changelog.
 
- scripts/setlocalversion |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+So the only real problem I see is non IPI remote wakeups, those cannot
+actually restart the tick on the target cpu like we want.
 
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-index bd6dca8..b65e8a9 100755
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -47,7 +47,7 @@ scm_version()
- 
- 		# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore
- 		# it, because this version is defined in the top level Makefile.
--		if [ -z "`git describe --exact-match 2>/dev/null`" ]; then
-+		if [ -z "`git describe --exact-match --match v[2-9].* 2>/dev/null`" ]; then
- 
- 			# If only the short version is requested, don't bother
- 			# running further git commands
-@@ -57,7 +57,8 @@ scm_version()
- 			fi
- 			# If we are past a tagged commit (like
- 			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
--			if atag="`git describe 2>/dev/null`"; then
-+			# Also match linux tags pattern to discard private tags
-+			if atag="`git describe --match v[2-9].* 2>/dev/null`"; then
- 				echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
- 
- 			# If we don't have a tag at all we print -g{commitish}.
--- 
-1.7.4.1
+The rest could all be fixed to not need this.
+
+Hrmm. still don't like the patch, but at least I see why its needed.
+
+> Also I'm considering this RCU user extended quiescent state as a standalone
+> feature for now. Indeed the only user of it is the adaptive tickless thing.
+> But I'm treating that RCU part independantly for now so that it makes it
+> easier to merge, piecewise.
+
+But its semantics are very tightly tied to the requirements of adaptive
+tick, so arguing about one without the other doesn't really make sense.
 
