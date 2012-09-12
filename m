@@ -1,121 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab2ILPAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:00:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49265 "EHLO
+	id S1759855Ab2ILPBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:01:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54187 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab2ILO6m (ORCPT
+	with ESMTP id S1751251Ab2ILO6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:58:42 -0400
+	Wed, 12 Sep 2012 10:58:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Marc Zyngier <marc.zyngier@arm.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v9 03/13] ARM: SoC: convert OMAP4 to SoC descriptor
-Date: Wed, 12 Sep 2012 16:58:16 +0200
-Message-Id: <1347461906-13527-4-git-send-email-arnd@arndb.de>
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v9 06/13] ARM: SoC: convert MSM SMP to SoC descriptor
+Date: Wed, 12 Sep 2012 16:58:19 +0200
+Message-Id: <1347461906-13527-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1347461906-13527-1-git-send-email-arnd@arndb.de>
 References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:pVuvNDWSD99gD1SnWDsxhFYrKoBeVAxdT/8NwE3nbDw
- ItFhOH1Jd5EMzb7isJvH3FhXRdwx9NYP4ppAgErR5joXhVpf+u
- jsO9/2xhTWy+fNZRxFKchwriRRumiBgX98+kdSZMiOPrCS/Hnc
- NNENatuvUf1pZuo9bgFr6Jx0nBwh80luhmUGNp/SG1Ct/RK71f
- DSYw/nESo75hUVOKBf3LZ+kFdl5pl6KlkDPboIom7b5ZfkCaIc
- hRLqiVcypc+OMHH/DqxGDtY4mUzZKMWCJ8H0Jo/W+0MLIlTS11
- 1/iaIR4FQdRYuXANH/xrf4r1j3ZIMBSI6+8QOOmCmz0C+V/iLU
- Zy/lluzIfW/Mvl0uK8Q5CVrf1UaV1+W0ymuSwuxHsfHGUZDHmZ
- AiLHsINY79MZb7Aj5OXOZ8nVqRYlEUC3/8=
+X-Provags-ID: V02:K0:1wgZKARiXtf12+d7Msr+P3Icy6dHGkT20CoeyGlCk59
+ PLImdv1c9GpAb1fp9IvfblBU9y0sRN0MroWTgXxt+ziKmA6I//
+ kkvzXbwPMMwjmFo2rvV34mo8FO+Ufey6njsHPD9MclFt7AYM0t
+ r7pQbeLG7Em8wee47tmHz1OGdo5oh3fP3fTSAdYE/cQEMdyfV9
+ 0kmenIDKkDCwF0UMg0a6W75xwZeDLHPjmgVZRyRuhqxl7NTi5l
+ Zi8JziBEJQHotAXQeMVlrd9fmP4oRWaDg0tui0H2o8jaBivff1
+ AGag54Kq1RmRPapQfmezVI2dWwTWGfr/AYIGpA3WnqZs4Hlr+d
+ DteGfxwI0oFmDksWkg+PgSXsAhENGnGxXOIyJ9bNmmCA9616Wn
+ 0aSNWoNKqF0cq5hCB3EH3w9WOQsXqnvKZ8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Zyngier <marc.zyngier@arm.com>
 
-Convert OMAP4 to use the SoC descriptor to provide its SMP
-and CPU hotplug operations.
+Convert MSM SMP platforms to use the SoC descriptor to provide
+their SMP and CPU hotplug operations.
 
-Tested on both Panda and IGEPv2 (MULTI_OMAP kernel)
-
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: David Brown <davidb@codeaurora.org>
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-omap2/board-4430sdp.c    |    1 +
- arch/arm/mach-omap2/board-generic.c    |    2 ++
- arch/arm/mach-omap2/board-omap4panda.c |    1 +
- arch/arm/mach-omap2/common.h           |    5 +++++
- arch/arm/mach-omap2/omap-hotplug.c     |   16 +---------------
- arch/arm/mach-omap2/omap-smp.c         |   18 ++++++++++++++----
- 6 files changed, 24 insertions(+), 19 deletions(-)
+ arch/arm/mach-msm/board-msm8960.c |    3 +++
+ arch/arm/mach-msm/board-msm8x60.c |    7 +++++++
+ arch/arm/mach-msm/core.h          |    2 ++
+ arch/arm/mach-msm/hotplug.c       |   18 +++---------------
+ arch/arm/mach-msm/platsmp.c       |   19 +++++++++++++++----
+ 5 files changed, 30 insertions(+), 19 deletions(-)
+ create mode 100644 arch/arm/mach-msm/core.h
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index ad8a7d9..0e63d80 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -909,6 +909,7 @@ static void __init omap_4430sdp_init(void)
- MACHINE_START(OMAP_4430SDP, "OMAP4430 4430SDP board")
- 	/* Maintainer: Santosh Shilimkar - Texas Instruments Inc */
- 	.atag_offset	= 0x100,
-+	.smp		= smp_ops(omap4_smp_ops),
- 	.reserve	= omap_reserve,
- 	.map_io		= omap4_map_io,
- 	.init_early	= omap4430_init_early,
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 6f93a20..82dcf00 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -127,6 +127,7 @@ static const char *omap4_boards_compat[] __initdata = {
+diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
+index 65f4a1d..a156968 100644
+--- a/arch/arm/mach-msm/board-msm8960.c
++++ b/arch/arm/mach-msm/board-msm8960.c
+@@ -30,6 +30,7 @@
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
  
- DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
- 	.reserve	= omap_reserve,
-+	.smp		= smp_ops(omap4_smp_ops),
- 	.map_io		= omap4_map_io,
- 	.init_early	= omap4430_init_early,
- 	.init_irq	= omap_gic_of_init,
-@@ -147,6 +148,7 @@ static const char *omap5_boards_compat[] __initdata = {
++#include "core.h"
+ #include "devices.h"
  
- DT_MACHINE_START(OMAP5_DT, "Generic OMAP5 (Flattened Device Tree)")
- 	.reserve	= omap_reserve,
-+	.smp		= smp_ops(omap4_smp_ops),
- 	.map_io		= omap5_map_io,
- 	.init_early	= omap5_init_early,
- 	.init_irq	= omap_gic_of_init,
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 70f6d1d..abbf239 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -518,6 +518,7 @@ static void __init omap4_panda_init(void)
- MACHINE_START(OMAP4_PANDA, "OMAP4 Panda board")
- 	/* Maintainer: David Anders - Texas Instruments Inc */
- 	.atag_offset	= 0x100,
-+	.smp		= smp_ops(omap4_smp_ops),
- 	.reserve	= omap_reserve,
- 	.map_io		= omap4_map_io,
- 	.init_early	= omap4430_init_early,
-diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-index 1f65b18..2296106 100644
---- a/arch/arm/mach-omap2/common.h
-+++ b/arch/arm/mach-omap2/common.h
-@@ -278,6 +278,11 @@ extern void omap_secondary_startup(void);
- extern u32 omap_modify_auxcoreboot0(u32 set_mask, u32 clear_mask);
- extern void omap_auxcoreboot_addr(u32 cpu_addr);
- extern u32 omap_read_auxcoreboot0(void);
+ static void __init msm8960_fixup(struct tag *tag, char **cmdline,
+@@ -99,6 +100,7 @@ static void __init msm8960_init_late(void)
+ }
+ 
+ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8960_fixup,
+ 	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+@@ -110,6 +112,7 @@ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8960_fixup,
+ 	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index e37a724..dc2abd3 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -29,6 +29,8 @@
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ 
++#include "core.h"
 +
-+extern void omap4_cpu_die(unsigned int cpu);
-+
-+extern struct smp_operations omap4_smp_ops;
-+
- extern void omap5_secondary_startup(void);
- #endif
+ static void __init msm8x60_fixup(struct tag *tag, char **cmdline,
+ 		struct meminfo *mi)
+ {
+@@ -110,6 +112,7 @@ static const char *msm8x60_fluid_match[] __initdata = {
+ #endif /* CONFIG_OF */
  
-diff --git a/arch/arm/mach-omap2/omap-hotplug.c b/arch/arm/mach-omap2/omap-hotplug.c
-index 414083b..2de71a3 100644
---- a/arch/arm/mach-omap2/omap-hotplug.c
-+++ b/arch/arm/mach-omap2/omap-hotplug.c
-@@ -26,16 +26,11 @@
+ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8x60_fixup,
+ 	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+@@ -121,6 +124,7 @@ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+ MACHINE_END
  
- #include "powerdomain.h"
+ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8x60_fixup,
+ 	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+@@ -132,6 +136,7 @@ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8x60_fixup,
+ 	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+@@ -143,6 +148,7 @@ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
++	.smp = smp_ops(msm_smp_ops),
+ 	.fixup = msm8x60_fixup,
+ 	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+@@ -156,6 +162,7 @@ MACHINE_END
+ #ifdef CONFIG_OF
+ /* TODO: General device tree support for all MSM. */
+ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.smp = smp_ops(msm_smp_ops),
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_dt_init,
+diff --git a/arch/arm/mach-msm/core.h b/arch/arm/mach-msm/core.h
+new file mode 100644
+index 0000000..a9bab53
+--- /dev/null
++++ b/arch/arm/mach-msm/core.h
+@@ -0,0 +1,2 @@
++extern struct smp_operations msm_smp_ops;
++extern void msm_cpu_die(unsigned int cpu);
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
+index a446fc1..d0f79e8 100644
+--- a/arch/arm/mach-msm/hotplug.c
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -13,6 +13,8 @@
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ 
++#include "core.h"
++
+ extern volatile int pen_release;
+ 
+ static inline void cpu_enter_lowpower(void)
+@@ -57,17 +59,12 @@ static inline void platform_do_lowpower(unsigned int cpu)
+ 	}
+ }
  
 -int platform_cpu_kill(unsigned int cpu)
 -{
@@ -124,16 +160,17 @@ index 414083b..2de71a3 100644
 -
  /*
   * platform-specific code to shutdown a CPU
+  *
   * Called with IRQs disabled
   */
--void __ref platform_cpu_die(unsigned int cpu)
-+void __ref omap4_cpu_die(unsigned int cpu)
+-void platform_cpu_die(unsigned int cpu)
++void msm_cpu_die(unsigned int cpu)
  {
- 	unsigned int boot_cpu = 0;
- 	void __iomem *base = omap_get_wakeupgen_base();
-@@ -75,12 +70,3 @@ void __ref platform_cpu_die(unsigned int cpu)
- 		pr_debug("CPU%u: spurious wakeup call\n", cpu);
- 	}
+ 	/*
+ 	 * we're ready for shutdown now, so do it
+@@ -81,12 +78,3 @@ void platform_cpu_die(unsigned int cpu)
+ 	 */
+ 	cpu_leave_lowpower();
  }
 -
 -int platform_cpu_disable(unsigned int cpu)
@@ -144,58 +181,61 @@ index 414083b..2de71a3 100644
 -	 */
 -	return cpu == 0 ? -EPERM : 0;
 -}
-diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
-index 9a35adf..046fa0d 100644
---- a/arch/arm/mach-omap2/omap-smp.c
-+++ b/arch/arm/mach-omap2/omap-smp.c
-@@ -49,7 +49,7 @@ void __iomem *omap4_get_scu_base(void)
- 	return scu_base;
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+index e012dc8..ba3c4b0 100644
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -25,6 +25,7 @@
+ #include <mach/msm_iomap.h>
+ 
+ #include "scm-boot.h"
++#include "core.h"
+ 
+ #define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
+ #define SCSS_CPU1CORE_RESET 0xD80
+@@ -48,7 +49,7 @@ static inline int get_core_count(void)
+ 	return ((read_cpuid_id() >> 4) & 3) + 1;
  }
  
 -void __cpuinit platform_secondary_init(unsigned int cpu)
-+static void __cpuinit omap4_secondary_init(unsigned int cpu)
++static void __cpuinit msm_secondary_init(unsigned int cpu)
  {
- 	/*
- 	 * Configure ACTRL and enable NS SMP bit access on CPU1 on HS device.
-@@ -77,7 +77,7 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
- 	spin_unlock(&boot_lock);
+ 	/* Configure edge-triggered PPIs */
+ 	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
+@@ -93,7 +94,7 @@ static __cpuinit void prepare_cold_cpu(unsigned int cpu)
+ 				  "address\n");
  }
  
 -int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-+static int __cpuinit omap4_boot_secondary(unsigned int cpu, struct task_struct *idle)
++static int __cpuinit msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
  {
- 	static struct clockdomain *cpu1_clkdm;
- 	static bool booted;
-@@ -165,7 +165,7 @@ static void __init wakeup_secondary(void)
-  * Initialise the CPU possible map early - this describes the CPUs
-  * which may be present or become present in the system.
+ 	unsigned long timeout;
+ 	static int cold_boot_done;
+@@ -153,7 +154,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+  * does not support the ARM SCU, so just set the possible cpu mask to
+  * NR_CPUS.
   */
 -void __init smp_init_cpus(void)
-+static void __init omap4_smp_init_cpus(void)
++static void __init msm_smp_init_cpus(void)
  {
- 	unsigned int i = 0, ncores = 1, cpu_id;
+ 	unsigned int i, ncores = get_core_count();
  
-@@ -196,7 +196,7 @@ void __init smp_init_cpus(void)
- 	set_smp_cross_call(gic_raise_softirq);
+@@ -169,6 +170,16 @@ void __init smp_init_cpus(void)
+         set_smp_cross_call(gic_raise_softirq);
  }
  
 -void __init platform_smp_prepare_cpus(unsigned int max_cpus)
-+static void __init omap4_smp_prepare_cpus(unsigned int max_cpus)
++static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
  {
- 
- 	/*
-@@ -207,3 +207,13 @@ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- 		scu_enable(scu_base);
- 	wakeup_secondary();
  }
 +
-+struct smp_operations omap4_smp_ops __initdata = {
-+	.smp_init_cpus		= omap4_smp_init_cpus,
-+	.smp_prepare_cpus	= omap4_smp_prepare_cpus,
-+	.smp_secondary_init	= omap4_secondary_init,
-+	.smp_boot_secondary	= omap4_boot_secondary,
++struct smp_operations msm_smp_ops __initdata = {
++	.smp_init_cpus		= msm_smp_init_cpus,
++	.smp_prepare_cpus	= msm_smp_prepare_cpus,
++	.smp_secondary_init	= msm_secondary_init,
++	.smp_boot_secondary	= msm_boot_secondary,
 +#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_die		= omap4_cpu_die,
++	.cpu_die		= msm_cpu_die,
 +#endif
 +};
 -- 
