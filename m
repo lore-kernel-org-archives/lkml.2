@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab2ILCaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 22:30:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43916 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754799Ab2ILC36 (ORCPT
+	id S1758389Ab2ILCfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 22:35:54 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56297 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754799Ab2ILCfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 22:29:58 -0400
-Message-ID: <1347416977.6699.1.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 34/95] USB: option: add ZTE K5006-Z
-From: Ben Hutchings <ben@decadent.org.uk>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Thomas =?ISO-8859-1?Q?Sch=E4fer?= <tschaefer@t-online.de>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 12 Sep 2012 03:29:37 +0100
-In-Reply-To: <87zk4xm2cd.fsf@nemi.mork.no>
-References: <20120909224155.514234762@decadent.org.uk>
-	 <201209101911.27928.tschaefer@t-online.de> <87zk4xm2cd.fsf@nemi.mork.no>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Bup57fNcRwXgG+ZZW/6a"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 11 Sep 2012 22:35:53 -0400
+Message-ID: <504FF4FA.80409@linux.vnet.ibm.com>
+Date: Wed, 12 Sep 2012 10:35:38 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH 09/12] thp: introduce khugepaged_prealloc_page and khugepaged_alloc_page
+References: <5028E12C.70101@linux.vnet.ibm.com> <5028E20C.3080607@linux.vnet.ibm.com> <alpine.LSU.2.00.1209111807030.21798@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1209111807030.21798@eggly.anvils>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091202-7014-0000-0000-000001E17AE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/12/2012 10:03 AM, Hugh Dickins wrote:
+> On Mon, 13 Aug 2012, Xiao Guangrong wrote:
+> 
+>> They are used to abstract the difference between NUMA enabled and NUMA disabled
+>> to make the code more readable
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  mm/huge_memory.c |  166 ++++++++++++++++++++++++++++++++----------------------
+>>  1 files changed, 98 insertions(+), 68 deletions(-)
+> 
+> Hmm, that in itself is not necessarily an improvement.
+> 
+> I'm a bit sceptical about this patch,
+> thp-introduce-khugepaged_prealloc_page-and-khugepaged_alloc_page.patch
+> in last Thursday's mmotm 2012-09-06-16-46.
+> 
+> What brought me to look at it was hitting "BUG at mm/huge_memory.c:1842!"
+> running tmpfs kbuild swapping load (with memcg's memory.limit_in_bytes
+> forcing out to swap), while I happened to have CONFIG_NUMA=y.
+> 
+> That's the VM_BUG_ON(*hpage) on entry to khugepaged_alloc_page().
 
---=-Bup57fNcRwXgG+ZZW/6a
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I will look into it, thanks for your point it out.
 
-On Tue, 2012-09-11 at 09:43 +0200, Bj=C3=B8rn Mork wrote:
-> Thomas Sch=C3=A4fer <tschaefer@t-online.de> writes:
->=20
-> > Am Montag, 10. September 2012 um 00:42:24 schrieb Ben Hutchings:
-> >> 3.2-stable review patch.  If anyone has any objections, please let me =
-know.
-> >
-> >
-> >
-> > referring to
-> >
-> > http://www.spinics.net/lists/linux-usb/msg70131.html
-> >
-> > it should not be done with ff ff ff
->=20
->=20
-> Yes, sorry about not getting around to fixing that in time.  I've just
-> submitted a proposed fix.  But as my fix removes the bogus entry, you
-> may just as well go ahead and add this patch to stable so that the fixup
-> applies cleanly later. If accepted...
-[...]
+> 
+> (If I'm honest, I'll admit I have Michel's "interval trees for anon rmap"
+> patches in on top, and so the line number was actually shifted to 1839:
+> but I don't believe his patches were in any way involved here, and
+> indeed I've not yet found a problem with them: they look very good.)
+> 
+> I expect the BUG could quite easily be fixed up by making another call
+> to khugepaged_prealloc_page() from somewhere to free up the hpage;
+> but forgive me if I dislike using "prealloc" to free.
+> 
+> I do agree with you that the several CONFIG_NUMA ifdefs dotted around
+> mm/huge_memory.c are regrettable, but I'm not at all sure that you're
+> improving the situation with this patch, which gives misleading names
+> to functions and moves the mmap_sem upping out of line.
+> 
+> I think you need to revisit it: maybe not go so far (leaving a few
+> CONFIG_NUMAs behind, if they're not too bad), or maybe go further
+> (add a separate function for freeing in the NUMA case, instead of
+> using "prealloc").  I don't know what's best: have a play and see.
 
-If this addition is 'bogus' then I'll defer it.
+Sorry for that, i will find a better way to do this.
 
-Ben.
+> 
+> That's what I was intending to write yesterday.  But overnight I
+> was running with this 9/12 backed out (I think 10,11,12 should be
+> independent), and found "BUG at mm/huge_memory.c:1835!" this morning.
+> 
+> That's the VM_BUG_ON(*hpage) below #else in collapse_huge_page()
+> when 9/12 is reverted.
+> 
+> So maybe 9/12 is just obscuring what was already a BUG, either earlier
+> in your series or elsewhere in mmotm (I've never seen it on 3.6-rc or
+> earlier releases, nor without CONFIG_NUMA).  I've not spent any time
+> looking for it, maybe it's obvious - can you spot and fix it?
 
---=20
-Ben Hutchings
-Make three consecutive correct guesses and you will be considered an expert=
-.
+Sure, will fix it as soon as possible. Thanks!
 
---=-Bup57fNcRwXgG+ZZW/6a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUE/zkee/yOyVhhEJAQpQvxAAsM42s0y9OKmOf2KNrM+DJZQ4TgFTcSLo
-r8kei2Ydf2ZAfMWkko7RSrb2O+jshRMkao55/EfOIEFKPLyPNeQLKFG1ijbThA4e
-cOlzh/S4BklPo0wjN6Y7BzgH4b4Yp3+Jqx7Abg4MHIr3cBkyrcvTE3Bvbw1BTWxR
-gQtXqnpdRaRBOH+mqISx+PGaBGzyfPO5zYqTv0TOaILiDlzNyLDBJkRDOiW4gg8q
-dHjTQllXXmj5HfOhKYEzY781zLgw7E6izfDdqkzihBXIDMVlXZtdaq14hVV9R6t0
-suyFXgDUKsoG3gz/IttNwfjO5c/PMGB6LWaRF4r4tGCsklnVVUkh3kdTABkdYx4w
-rYWQu1mczILDfn7qYBnNF2g6oql/cPPXg302faNEoMKEe63ODyLmTKFEE9BAQneO
-vJSJee/sGBoC9krViEq49EwVf0kDxjXlaLZzJTZJtr1jYAzI0CIC6fY/b0jQPpH4
-5mtkpZNnlPeMhSGI/X5vmDrrDr73ao8a/3nglQZpa6NtOtrPJ48tMT3LzxZvAf4i
-UIoamh3XPJpxllI8OQ4gF8fl3S2kvvBPuSqTu38/IjYzfleQkzJfPnZcZgh158lW
-Lg59jDnuuXoSUWbkfJ51S8tWcZXEupgLKFuXZF9S/7tnjqijBvOXoOraJ029ROgX
-LOYh1jdh7k0=
-=9vXD
------END PGP SIGNATURE-----
-
---=-Bup57fNcRwXgG+ZZW/6a--
