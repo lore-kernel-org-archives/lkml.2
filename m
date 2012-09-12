@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2ILIYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:24:42 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:53253 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab2ILIYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:24:39 -0400
-Message-ID: <505046A5.1050009@linux.vnet.ibm.com>
-Date: Wed, 12 Sep 2012 13:54:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754474Ab2ILIZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:25:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12241 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab2ILIZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 04:25:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,408,1344236400"; 
+   d="scan'208";a="221091401"
+Date: Wed, 12 Sep 2012 16:25:17 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: Re: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
+ (0x80000b0e)
+Message-ID: <20120912082517.GA27847@localhost>
+References: <20120912044037.GA23094@localhost>
+ <505044AC.80205@redhat.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nhorman@tuxdriver.com, David.Laight@aculab.com, john.r.fastabend@intel.com,
-        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
-        mark.d.rustad@intel.com, lizefan@huawei.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 PATCH 2/2] netprio_cgroup: Use memcpy instead of the for-loop
- to copy priomap
-References: <20120912060741.11037.37347.stgit@srivatsabhat.in.ibm.com> <20120912060747.11037.42623.stgit@srivatsabhat.in.ibm.com> <20120912.034901.184817520125489015.davem@davemloft.net>
-In-Reply-To: <20120912.034901.184817520125489015.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091208-2000-0000-0000-00000915A36C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <505044AC.80205@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 01:19 PM, David Miller wrote:
-> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> Date: Wed, 12 Sep 2012 11:37:47 +0530
+On Wed, Sep 12, 2012 at 11:15:40AM +0300, Avi Kivity wrote:
+> On 09/12/2012 07:40 AM, Fengguang Wu wrote:
+> > Hi,
+> > 
+> > 3 of my test boxes running v3.5 kernel become unaccessible and I find
+> > two of them kept emitting this dmesg:
+> > 
+> > vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
+> > 
+> > The other one has froze and the above lines are the last dmesg.
+> > Any ideas?
 > 
->> +		memcpy(new_priomap->priomap, old_priomap->priomap,
->> +			old_priomap->priomap_len *
->> +					sizeof(old_priomap->priomap[0]));
+> First, that printk should be rate-limited.
 > 
-> This argument indentation is ridiculous.  Try:
+> Second, we should add EXIT_REASON_EPT_MISCONFIG (0x31) to 
 > 
-> 		memcpy(new_priomap->priomap, old_priomap->priomap,
-> 		       old_priomap->priomap_len *
-> 		       sizeof(old_priomap->priomap[0]));
+> 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
+> 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
+> 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
+> 			exit_reason != EXIT_REASON_TASK_SWITCH))
+> 		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
+> 		       "(0x%x) and exit reason is 0x%x\n",
+> 		       __func__, vectoring_info, exit_reason);
 > 
-> Using TABs exclusively for argumentat indentation is not the goal.
+> since it's easily caused by the guest.
 > 
-> Rather, lining the arguments up properly so that they sit at the first
-> column after the first line's openning parenthesis is what you should
-> be trying to achieve.
+> Third, it's really unexpected.  It seems the guest was attempting to deliver a page fault exception (0x0e) but encountered an mmio page during delivery (in the IDT, TSS, stack, or page tables).  Is this reproducible?  If so it's easy to patch kvm to halt in that case and allow examining the guest via qemu.
 
-OK, will fix it, thanks!
+It's the first time I see such errors.  For now I've upgraded the host
+kernel to 3.6-rc5.  Let's check whether it will happen again.
 
-> 
-> And ignoring whatever stylistic convention we may or may not have, I
-> find it impossibly hard to believe that the code quoted above looks
-> good even to you.
->
+> Maybe we should do so regardless (return a KVM_EXIT_INTERNAL_ERROR).
 
-On second thoughts, I think the memcpy in this case will actually be worse
-since it will copy the contents in chunks of smaller size than the for-loop.
+I can test your changes either way.
 
-Or, did you mean to say that this code is plain wrong for some reason?
-
-Regards,
-Srivatsa S. Bhat
-
+Thanks,
+Fengguang
