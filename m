@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab2ILPhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:37:46 -0400
-Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:34889 "EHLO
-	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758856Ab2ILPhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:37:20 -0400
-Message-ID: <5050AC2E.3050408@akamai.com>
-Date: Wed, 12 Sep 2012 10:37:18 -0500
-From: Josh Hunt <johunt@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1760176Ab2ILPkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:40:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57250 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755650Ab2ILPkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:40:39 -0400
+Date: Wed, 12 Sep 2012 17:40:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
+ passing in mm/huge_memory.c
+Message-ID: <20120912154037.GU21579@dhcp22.suse.cz>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+ <1347382036-18455-3-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-References: <1347403947-20187-1-git-send-email-johunt@akamai.com> <504FC2E9.4010708@akamai.com> <20120912085140.GA12277@aftab.osrc.amd.com> <5050824B.9050006@akamai.com> <5050857F.5060207@akamai.com> <20120912153016.GA12103@aftab.osrc.amd.com>
-In-Reply-To: <20120912153016.GA12103@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347382036-18455-3-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 10:30 AM, Borislav Petkov wrote:
-> Yes, you're basically right. Here's what I see from here:
->
-> In 2009 I added
->
-> commit 603adaf6b3e37450235f0ddb5986b961b3146a79
-> Author: Borislav Petkov <borislav.petkov@amd.com>
-> Date:   Mon Dec 21 14:52:53 2009 +0100
->
->      amd64_edac: fix K8 chip select reporting
->
->      Fix the case when amd64_debug_display_dimm_sizes() reports only half the
->      amount of DRAM on it because it doesn't account for when the single DCT
->      operates in 128-bit mode and merges chip selects from different DIMMs.
->
-> which was supposed to fix a bug-report of DRAM chip selects being halved
-> in reporting.
->
-> But,
->
-> commit 41d8bfaba70311c2fa0666554ef160ea8ffc9daf
-> Author: Borislav Petkov <borislav.petkov@amd.com>
-> Date:   Tue Jan 18 19:16:08 2011 +0100
->
->      amd64_edac: Improve DRAM address mapping
->
->      Drop static tables which map the bits in F2x80 to a chip select size in
->      favor of functions doing the mapping with some bit fiddling. Also, add
->      F15 support.
->
->
-> two years later reworked the whole DBAM to chip select sizes mapping for
-> all families. But it left in the clumsy workaround above for K8 only,
-> thus the double shifting.
->
-> So, long story short, reverting 603adaf6b3e37450235f0ddb5986b961b3146a79
-> should probably fix the issue since it is not needed anymore.
->
-> Let me run it here to make sure I'm not missing anything else.
->
-> Thanks.
->
+On Tue 11-09-12 17:47:15, Will Deacon wrote:
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> The update_mmu_cache() takes a pointer (to pte_t by default) as the last
+> argument but the huge_memory.c passes a pmd_t value. The patch changes
+> the argument to the pmd_t * pointer.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  mm/huge_memory.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 57c4b93..4aa6d02 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -934,7 +934,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		entry = pmd_mkyoung(orig_pmd);
+>  		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+>  		if (pmdp_set_access_flags(vma, haddr, pmd, entry,  1))
+> -			update_mmu_cache(vma, address, entry);
+> +			update_mmu_cache(vma, address, pmd);
 
-Well from what I see 603ad... would only fix the case of printing the 
-values correctly on boot, by removing the factor=1 shift. However, that 
-is merely cosmetic as it does not affect the actual calculation of 
-nr_pages. I guess maybe I wasn't completely clear before, but I see the 
-doubling of the amount of memory both on boot via dmesg, but also in 
-/sys/devices/system/edac/mc/mc0/size_mb and all of the csrow* subdirs 
-therein.
+I am not sure but shouldn't we use the new entry rather than the given
+pmd?
 
-Josh
+>  		ret |= VM_FAULT_WRITE;
+>  		goto out_unlock;
+>  	}
+> @@ -986,7 +986,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		pmdp_clear_flush_notify(vma, haddr, pmd);
+>  		page_add_new_anon_rmap(new_page, vma, haddr);
+>  		set_pmd_at(mm, haddr, pmd, entry);
+> -		update_mmu_cache(vma, address, entry);
+> +		update_mmu_cache(vma, address, pmd);
+>  		page_remove_rmap(page);
+>  		put_page(page);
+>  		ret |= VM_FAULT_WRITE;
+> @@ -1989,7 +1989,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	BUG_ON(!pmd_none(*pmd));
+>  	page_add_new_anon_rmap(new_page, vma, address);
+>  	set_pmd_at(mm, address, pmd, _pmd);
+> -	update_mmu_cache(vma, address, _pmd);
+> +	update_mmu_cache(vma, address, pmd);
+>  	prepare_pmd_huge_pte(pgtable, mm);
+>  	spin_unlock(&mm->page_table_lock);
+>  
+> -- 
+> 1.7.4.1
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
