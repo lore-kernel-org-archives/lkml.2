@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab2ILXjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:39:41 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932771Ab2ILXjN (ORCPT
+	id S1756504Ab2ILXju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:39:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab2ILXjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:39:13 -0400
+	Wed, 12 Sep 2012 19:39:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Idan Kedar <idank@tonian.com>,
-        Benny Halevy <bhalevy@tonian.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 26/85] pnfs: defer release of pages in layoutget
-Date: Wed, 12 Sep 2012 16:36:09 -0700
-Message-Id: <20120912233544.479801287@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 48/85] sched,cgroup: Fix up task_groups list
+Date: Wed, 12 Sep 2012 16:36:31 -0700
+Message-Id: <20120912233546.776750627@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,204 +29,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Idan Kedar <idank@tonian.com>
+From: Mike Galbraith <efault@gmx.de>
 
-commit 8554116e17eef055d9dd58a94b3427cb2ad1c317 upstream.
+commit 35cf4e50b16331def6cfcbee11e49270b6db07f5 upstream.
 
-we have encountered a bug whereby reading a lot of files (copying
-fedora's /bin) from a pNFS mount and hitting Ctrl+C in the middle caused
-a general protection fault in xdr_shrink_bufhead. this function is
-called when decoding the response from LAYOUTGET. the decoding is done
-by a worker thread, and the caller of LAYOUTGET waits for the worker
-thread to complete.
+With multiple instances of task_groups, for_each_rt_rq() is a noop,
+no task groups having been added to the rt.c list instance.  This
+renders __enable/disable_runtime() and print_rt_stats() noop, the
+user (non) visible effect being that rt task groups are missing in
+/proc/sched_debug.
 
-hitting Ctrl+C caused the synchronous wait to end and the next thing the
-caller does is to free the pages, so when the worker thread calls
-xdr_shrink_bufhead, the pages are gone. therefore, the cleanup of these
-pages has been moved to nfs4_layoutget_release.
-
-Signed-off-by: Idan Kedar <idank@tonian.com>
-Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344308413.6846.7.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/nfs/pnfs.c     |   39 ------------------------------------
- fs/nfs/pnfs.h     |    2 -
- 3 files changed, 58 insertions(+), 40 deletions(-)
+ kernel/sched/core.c  |    1 +
+ kernel/sched/sched.h |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5966,11 +5966,58 @@ static void nfs4_layoutget_done(struct r
- 	dprintk("<-- %s\n", __func__);
- }
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7011,6 +7011,7 @@ int in_sched_functions(unsigned long add
  
-+static size_t max_response_pages(struct nfs_server *server)
-+{
-+	u32 max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
-+	return nfs_page_array_len(0, max_resp_sz);
-+}
-+
-+static void nfs4_free_pages(struct page **pages, size_t size)
-+{
-+	int i;
-+
-+	if (!pages)
-+		return;
-+
-+	for (i = 0; i < size; i++) {
-+		if (!pages[i])
-+			break;
-+		__free_page(pages[i]);
-+	}
-+	kfree(pages);
-+}
-+
-+static struct page **nfs4_alloc_pages(size_t size, gfp_t gfp_flags)
-+{
-+	struct page **pages;
-+	int i;
-+
-+	pages = kcalloc(size, sizeof(struct page *), gfp_flags);
-+	if (!pages) {
-+		dprintk("%s: can't alloc array of %zu pages\n", __func__, size);
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < size; i++) {
-+		pages[i] = alloc_page(gfp_flags);
-+		if (!pages[i]) {
-+			dprintk("%s: failed to allocate page\n", __func__);
-+			nfs4_free_pages(pages, size);
-+			return NULL;
-+		}
-+	}
-+
-+	return pages;
-+}
-+
- static void nfs4_layoutget_release(void *calldata)
- {
- 	struct nfs4_layoutget *lgp = calldata;
-+	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
+ #ifdef CONFIG_CGROUP_SCHED
+ struct task_group root_task_group;
++LIST_HEAD(task_groups);
+ #endif
  
- 	dprintk("--> %s\n", __func__);
-+	nfs4_free_pages(lgp->args.layout.pages, max_pages);
- 	put_nfs_open_context(lgp->args.ctx);
- 	kfree(calldata);
- 	dprintk("<-- %s\n", __func__);
-@@ -5982,9 +6029,10 @@ static const struct rpc_call_ops nfs4_la
- 	.rpc_release = nfs4_layoutget_release,
- };
+ DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -80,7 +80,7 @@ extern struct mutex sched_domains_mutex;
+ struct cfs_rq;
+ struct rt_rq;
  
--int nfs4_proc_layoutget(struct nfs4_layoutget *lgp)
-+int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
- {
- 	struct nfs_server *server = NFS_SERVER(lgp->args.inode);
-+	size_t max_pages = max_response_pages(server);
- 	struct rpc_task *task;
- 	struct rpc_message msg = {
- 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_LAYOUTGET],
-@@ -6002,6 +6050,13 @@ int nfs4_proc_layoutget(struct nfs4_layo
+-static LIST_HEAD(task_groups);
++extern struct list_head task_groups;
  
- 	dprintk("--> %s\n", __func__);
- 
-+	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
-+	if (!lgp->args.layout.pages) {
-+		nfs4_layoutget_release(lgp);
-+		return -ENOMEM;
-+	}
-+	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
-+
- 	lgp->res.layoutp = &lgp->args.layout;
- 	lgp->res.seq_res.sr_slot = NULL;
- 	nfs41_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -574,9 +574,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	struct nfs_server *server = NFS_SERVER(ino);
- 	struct nfs4_layoutget *lgp;
- 	struct pnfs_layout_segment *lseg = NULL;
--	struct page **pages = NULL;
--	int i;
--	u32 max_resp_sz, max_pages;
- 
- 	dprintk("--> %s\n", __func__);
- 
-@@ -585,20 +582,6 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	if (lgp == NULL)
- 		return NULL;
- 
--	/* allocate pages for xdr post processing */
--	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
--	max_pages = nfs_page_array_len(0, max_resp_sz);
--
--	pages = kcalloc(max_pages, sizeof(struct page *), gfp_flags);
--	if (!pages)
--		goto out_err_free;
--
--	for (i = 0; i < max_pages; i++) {
--		pages[i] = alloc_page(gfp_flags);
--		if (!pages[i])
--			goto out_err_free;
--	}
--
- 	lgp->args.minlength = PAGE_CACHE_SIZE;
- 	if (lgp->args.minlength > range->length)
- 		lgp->args.minlength = range->length;
-@@ -607,39 +590,19 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	lgp->args.type = server->pnfs_curr_ld->id;
- 	lgp->args.inode = ino;
- 	lgp->args.ctx = get_nfs_open_context(ctx);
--	lgp->args.layout.pages = pages;
--	lgp->args.layout.pglen = max_pages * PAGE_SIZE;
- 	lgp->lsegpp = &lseg;
- 	lgp->gfp_flags = gfp_flags;
- 
- 	/* Synchronously retrieve layout information from server and
- 	 * store in lseg.
- 	 */
--	nfs4_proc_layoutget(lgp);
-+	nfs4_proc_layoutget(lgp, gfp_flags);
- 	if (!lseg) {
- 		/* remember that LAYOUTGET failed and suspend trying */
- 		set_bit(lo_fail_bit(range->iomode), &lo->plh_flags);
- 	}
- 
--	/* free xdr pages */
--	for (i = 0; i < max_pages; i++)
--		__free_page(pages[i]);
--	kfree(pages);
--
- 	return lseg;
--
--out_err_free:
--	/* free any allocated xdr pages, lgp as it's not used */
--	if (pages) {
--		for (i = 0; i < max_pages; i++) {
--			if (!pages[i])
--				break;
--			__free_page(pages[i]);
--		}
--		kfree(pages);
--	}
--	kfree(lgp);
--	return NULL;
- }
- 
- /* Initiates a LAYOUTRETURN(FILE) */
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -161,7 +161,7 @@ extern int nfs4_proc_getdevicelist(struc
- 				   struct pnfs_devicelist *devlist);
- extern int nfs4_proc_getdeviceinfo(struct nfs_server *server,
- 				   struct pnfs_device *dev);
--extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp);
-+extern int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags);
- extern int nfs4_proc_layoutreturn(struct nfs4_layoutreturn *lrp);
- 
- /* pnfs.c */
+ struct cfs_bandwidth {
+ #ifdef CONFIG_CFS_BANDWIDTH
 
 
