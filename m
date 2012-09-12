@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab2ILPtp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:49:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40313 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab2ILPtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:49:43 -0400
+	id S1755090Ab2ILPt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:49:56 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:55626 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab2ILPto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 11:49:44 -0400
+Date: Wed, 12 Sep 2012 17:49:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
+ family 0Fh
+Message-ID: <20120912154943.GB12103@aftab.osrc.amd.com>
+References: <1347403947-20187-1-git-send-email-johunt@akamai.com>
+ <504FC2E9.4010708@akamai.com>
+ <20120912085140.GA12277@aftab.osrc.amd.com>
+ <5050824B.9050006@akamai.com>
+ <5050857F.5060207@akamai.com>
+ <20120912153016.GA12103@aftab.osrc.amd.com>
+ <5050AC2E.3050408@akamai.com>
 MIME-Version: 1.0
-In-Reply-To: <CABPqkBQw=Y-V9+QsBxG_=sRwt=eO3wZ+p+KvC6PbA+S-AJpG-A@mail.gmail.com>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
-	<1347459195-5491-3-git-send-email-eranian@google.com>
-	<1347459764.15764.32.camel@twins>
-	<CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
-	<CABPqkBQw=Y-V9+QsBxG_=sRwt=eO3wZ+p+KvC6PbA+S-AJpG-A@mail.gmail.com>
-Date: Wed, 12 Sep 2012 17:49:41 +0200
-Message-ID: <CABPqkBTAU2uHVUpsBqHE46aw8OhVRDPVr3vjdksUbhwTZdT37g@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] perf: use hrtimer for event multiplexing
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5050AC2E.3050408@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 5:37 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Wed, Sep 12, 2012 at 4:43 PM, Stephane Eranian <eranian@google.com> wrote:
->> On Wed, Sep 12, 2012 at 4:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> On Wed, 2012-09-12 at 16:13 +0200, Stephane Eranian wrote:
->>>> +static DEFINE_PER_CPU(struct list_head, rotation_list);
->>>
->>> Why do you keep the rotation list? The only use seems to be:
->>>
->>>
->>>> +void perf_cpu_hrtimer_cancel(int cpu)
->>>> +{
->>>> +       struct list_head *head = &__get_cpu_var(rotation_list);
->>>> +       struct perf_cpu_context *cpuctx, *tmp;
->>>> +       unsigned long flags;
->>>> +
->>>> +       if (WARN_ON(cpu != smp_processor_id()))
->>>> +               return;
->>>> +
->>>> +       local_irq_save(flags);
->>>> +
->>>> +       list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
->>>> +               if (cpuctx->hrtimer_active) {
->>>> +                       hrtimer_cancel(&cpuctx->hrtimer);
->>>> +                       cpuctx->hrtimer_active = 0;
->>>> +               }
->>>> +       }
->>>> +
->>>> +       local_irq_restore(flags);
->>>> +}
->>>
->>> Which is weird, why not use the existing for-each-pmu loop in
->>> perf_event_exit_cpu_context() ? Or something similar to iterate all
->>> extant PMUs and thus their cpuctxs?
->>>
->> True. That would probably work too.
->>
-> Note however that the rotation_list is still used in perf_event_task_tick()
-> to iterate over the ctx which needs unthrottling. We would have to switch
-> that loop over to a for-each-pmu() which would necessary incur more
-> iterations as it would include all the SW PMUs.
+On Wed, Sep 12, 2012 at 10:37:18AM -0500, Josh Hunt wrote:
+> Well from what I see 603ad... would only fix the case of printing the
+> values correctly on boot, by removing the factor=1 shift. However,
+> that is merely cosmetic as it does not affect the actual calculation
+> of nr_pages. I guess maybe I wasn't completely clear before, but I
+> see the doubling of the amount of memory both on boot via dmesg, but
+> also in /sys/devices/system/edac/mc/mc0/size_mb and all of the csrow*
+> subdirs therein.
 
-That reminds me that dropping sw context from rotation_list causes an
-issue in perf_event_task_tick() because that means the sw PMU are
-not considered anymore for interrupt unthrottling but they should. So
-I think switching to for-each-pmu() in perf_event_task_tick() will solve
-that problem too.
+Yes, that's because the whole init_csrows thing has been b0rked since
+forever. In your case, amd64_csrow_nr_pages() should pay attention to
+the dct (second argument) which on K8 is always 0 (we have only one DCT
+aka Dram ConTroller on K8) and the function should return 0 if dct is 1.
+But the whole loop in init_csrows is fishy too so I'll need to rework
+that properly. Oh well...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
