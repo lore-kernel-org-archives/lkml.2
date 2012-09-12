@@ -1,23 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab2ILXmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:42:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933118Ab2ILXmk (ORCPT
+	id S933155Ab2ILXmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:42:53 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933141Ab2ILXms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:40 -0400
+	Wed, 12 Sep 2012 19:42:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 10/46] vfs: missed source of ->f_pos races
-Date: Wed, 12 Sep 2012 16:39:00 -0700
-Message-Id: <20120912233818.737219549@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jesper Juhl <jj@chaosbits.net>, Jiri Pirko <jpirko@redhat.com>
+Subject: =?UTF-8?q?=5B=2001/46=5D=20USB=3A=20vt6656=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
+Date: Wed, 12 Sep 2012 16:38:51 -0700
+Message-Id: <20120912233817.828400807@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,54 +36,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 0e665d5d1125f9f4ccff56a75e814f10f88861a2 upstream.
+commit 4d088876f24887cd15a29db923f5f37db6a99f21 upstream.
 
-compat_sys_{read,write}v() need the same "pass a copy of file->f_pos" thing
-as sys_{read,write}{,v}().
+This structure needs to always stick around, even if CONFIG_HOTPLUG
+is disabled, otherwise we can oops when trying to probe a device that
+was added after the structure is thrown away.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+CC: Forest Bond <forest@alittletooquiet.net>
+CC: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Jesper Juhl <jj@chaosbits.net>
+CC: Jiri Pirko <jpirko@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/compat.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/staging/vt6656/main_usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1177,11 +1177,14 @@ compat_sys_readv(unsigned long fd, const
- 	struct file *file;
- 	int fput_needed;
- 	ssize_t ret;
-+	loff_t pos;
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -222,7 +222,7 @@ DEVICE_PARAM(b80211hEnable, "802.11h mod
+ // Static vars definitions
+ //
  
- 	file = fget_light(fd, &fput_needed);
- 	if (!file)
- 		return -EBADF;
--	ret = compat_readv(file, vec, vlen, &file->f_pos);
-+	pos = file->f_pos;
-+	ret = compat_readv(file, vec, vlen, &pos);
-+	file->f_pos = pos;
- 	fput_light(file, fput_needed);
- 	return ret;
- }
-@@ -1236,11 +1239,14 @@ compat_sys_writev(unsigned long fd, cons
- 	struct file *file;
- 	int fput_needed;
- 	ssize_t ret;
-+	loff_t pos;
- 
- 	file = fget_light(fd, &fput_needed);
- 	if (!file)
- 		return -EBADF;
--	ret = compat_writev(file, vec, vlen, &file->f_pos);
-+	pos = file->f_pos;
-+	ret = compat_writev(file, vec, vlen, &pos);
-+	file->f_pos = pos;
- 	fput_light(file, fput_needed);
- 	return ret;
- }
+-static struct usb_device_id vt6656_table[] __devinitdata = {
++static struct usb_device_id vt6656_table[] = {
+ 	{USB_DEVICE(VNT_USB_VENDOR_ID, VNT_USB_PRODUCT_ID)},
+ 	{}
+ };
 
 
