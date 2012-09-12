@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab2IMAGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:06:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab2ILXkC (ORCPT
+	id S932919Ab2IMAGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:06:43 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab2ILXjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:02 -0400
+	Wed, 12 Sep 2012 19:39:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 40/85] svcrpc: fix BUG() in svc_tcp_clear_pages
-Date: Wed, 12 Sep 2012 16:36:23 -0700
-Message-Id: <20120912233545.956678410@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Alan Cox <alan@linux.intel.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 38/85] drm: stop vmgfx driver explosion
+Date: Wed, 12 Sep 2012 16:36:21 -0700
+Message-Id: <20120912233545.729783932@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,42 +28,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit be1e44441a560c43c136a562d49a1c9623c91197 upstream.
+commit f5869a8308f77e3dfdc2e3640842b285aa788ff8 upstream.
 
-Examination of svc_tcp_clear_pages shows that it assumes sk_tcplen is
-consistent with sk_pages[] (in particular, sk_pages[n] can't be NULL if
-sk_tcplen would lead us to expect n pages of data).
+If you do a page flip with no flags set then event is NULL. If event is
+NULL then the vmw_gfx driver likes to go digging into NULL and extracts
+NULL->base.file_priv.
 
-svc_tcp_restore_pages zeroes out sk_pages[] while leaving sk_tcplen.
-This is OK, since both functions are serialized by XPT_BUSY.  However,
-that means the inconsistency must be repaired before dropping XPT_BUSY.
+On a modern kernel with NULL mapping protection it's just another oops,
+without it there are some "intriguing" possibilities.
 
-Therefore we should be ensuring that svc_tcp_save_pages repairs the
-problem before exiting svc_tcp_recv_record on error.
+What it should do is an open question but that for the driver owners to
+sort out.
 
-Symptoms were a BUG() in svc_tcp_clear_pages.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcsock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1137,9 +1137,9 @@ static int svc_tcp_recvfrom(struct svc_r
- 	if (len >= 0)
- 		svsk->sk_tcplen += len;
- 	if (len != want) {
-+		svc_tcp_save_pages(svsk, rqstp);
- 		if (len < 0 && len != -EAGAIN)
- 			goto err_other;
--		svc_tcp_save_pages(svsk, rqstp);
- 		dprintk("svc: incomplete TCP record (%d of %d)\n",
- 			svsk->sk_tcplen, svsk->sk_reclen);
- 		goto err_noclose;
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -1688,15 +1688,19 @@ int vmw_du_page_flip(struct drm_crtc *cr
+ 	struct vmw_private *dev_priv = vmw_priv(crtc->dev);
+ 	struct drm_framebuffer *old_fb = crtc->fb;
+ 	struct vmw_framebuffer *vfb = vmw_framebuffer_to_vfb(fb);
+-	struct drm_file *file_priv = event->base.file_priv;
++	struct drm_file *file_priv ;
+ 	struct vmw_fence_obj *fence = NULL;
+ 	struct drm_clip_rect clips;
+ 	int ret;
+ 
++	if (event == NULL)
++		return -EINVAL;
++
+ 	/* require ScreenObject support for page flipping */
+ 	if (!dev_priv->sou_priv)
+ 		return -ENOSYS;
+ 
++	file_priv = event->base.file_priv;
+ 	if (!vmw_kms_screen_object_flippable(dev_priv, crtc))
+ 		return -EINVAL;
+ 
 
 
