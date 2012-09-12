@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab2ILXuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:50:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976Ab2ILXo1 (ORCPT
+	id S1756958Ab2ILXoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:44:24 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab2ILXoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:27 -0400
+	Wed, 12 Sep 2012 19:44:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Matthias Prager <linux@matthiasprager.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 38/46] SCSI: Fix Device not ready issue on mpt2sas
-Date: Wed, 12 Sep 2012 16:39:28 -0700
-Message-Id: <20120912233821.655471412@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 21/46] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
+Date: Wed, 12 Sep 2012 16:39:11 -0700
+Message-Id: <20120912233819.885242313@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -29,108 +28,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 14216561e164671ce147458653b1fea06a4ada1e upstream.
+commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
 
-This is a particularly nasty SCSI ATA Translation Layer (SATL) problem.
+The rpc server tries to ensure that there will be room to send a reply
+before it receives a request.
 
-SAT-2 says (section 8.12.2)
+It does this by tracking, in xpt_reserved, an upper bound on the total
+size of the replies that is has already committed to for the socket.
 
-        if the device is in the stopped state as the result of
-        processing a START STOP UNIT command (see 9.11), then the SATL
-        shall terminate the TEST UNIT READY command with CHECK CONDITION
-        status with the sense key set to NOT READY and the additional
-        sense code of LOGICAL UNIT NOT READY, INITIALIZING COMMAND
-        REQUIRED;
+Currently it is adding in the estimate for a new reply *before* it
+checks whether there is space available.  If it finds that there is not
+space, it then subtracts the estimate back out.
 
-mpt2sas internal SATL seems to implement this.  The result is very confusing
-standby behaviour (using hdparm -y).  If you suspend a drive and then send
-another command, usually it wakes up.  However, if the next command is a TEST
-UNIT READY, the SATL sees that the drive is suspended and proceeds to follow
-the SATL rules for this, returning NOT READY to all subsequent commands.  This
-means that the ordering of TEST UNIT READY is crucial: if you send TUR and
-then a command, you get a NOT READY to both back.  If you send a command and
-then a TUR, you get GOOD status because the preceeding command woke the drive.
+This may lead the subsequent svc_xprt_enqueue to decide that there is
+space after all.
 
-This bit us badly because
+The results is a svc_recv() that will repeatedly return -EAGAIN, causing
+server threads to loop without doing any actual work.
 
-commit 85ef06d1d252f6a2e73b678591ab71caad4667bb
-Author: Tejun Heo <tj@kernel.org>
-Date:   Fri Jul 1 16:17:47 2011 +0200
-
-    block: flush MEDIA_CHANGE from drivers on close(2)
-
-Changed our ordering on TEST UNIT READY commands meaning that SATA drives
-connected to an mpt2sas now suspend and refuse to wake (because the mpt2sas
-SATL sees the suspend *before* the drives get awoken by the next ATA command)
-resulting in lots of failed commands.
-
-The standard is completely nuts forcing this inconsistent behaviour, but we
-have to work around it.
-
-The fix for this is twofold:
-
-   1. Set the allow_restart flag so we wake the drive when we see it has been
-      suspended
-
-   2. Return all TEST UNIT READY status directly to the mid layer without any
-      further error handling which prevents us causing error handling which
-      may offline the device just because of a media check TUR.
-
-Reported-by: Matthias Prager <linux@matthiasprager.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+Tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_error.c |   10 ++++++++++
- drivers/scsi/scsi_scan.c  |   10 ++++++++++
- 2 files changed, 20 insertions(+)
+ net/sunrpc/svc_xprt.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -41,6 +41,8 @@
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -323,7 +323,6 @@ static bool svc_xprt_has_something_to_do
+  */
+ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ {
+-	struct svc_serv	*serv = xprt->xpt_server;
+ 	struct svc_pool *pool;
+ 	struct svc_rqst	*rqstp;
+ 	int cpu;
+@@ -369,8 +368,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
+ 				rqstp, rqstp->rq_xprt);
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 		pool->sp_stats.threads_woken++;
+ 		wake_up(&rqstp->rq_wait);
+ 	} else {
+@@ -650,8 +647,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 	if (xprt) {
+ 		rqstp->rq_xprt = xprt;
+ 		svc_xprt_get(xprt);
+-		rqstp->rq_reserved = serv->sv_max_mesg;
+-		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
  
- #include <trace/events/scsi.h>
+ 		/* As there is a shortage of threads and this request
+ 		 * had to be queued, don't allow the thread to wait so
+@@ -748,6 +743,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
+ 		else
+ 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
+ 		dprintk("svc: got len=%d\n", len);
++		rqstp->rq_reserved = serv->sv_max_mesg;
++		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 	}
+ 	svc_xprt_received(xprt);
  
-+static void scsi_eh_done(struct scsi_cmnd *scmd);
-+
- #define SENSE_TIMEOUT		(10*HZ)
- 
- /*
-@@ -240,6 +242,14 @@ static int scsi_check_sense(struct scsi_
- 	if (! scsi_command_normalize_sense(scmd, &sshdr))
- 		return FAILED;	/* no valid sense data */
- 
-+	if (scmd->cmnd[0] == TEST_UNIT_READY && scmd->scsi_done != scsi_eh_done)
-+		/*
-+		 * nasty: for mid-layer issued TURs, we need to return the
-+		 * actual sense data without any recovery attempt.  For eh
-+		 * issued ones, we need to try to recover and interpret
-+		 */
-+		return SUCCESS;
-+
- 	if (scsi_sense_is_deferred(&sshdr))
- 		return NEEDS_RETRY;
- 
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -776,6 +776,16 @@ static int scsi_add_lun(struct scsi_devi
- 	sdev->model = (char *) (sdev->inquiry + 16);
- 	sdev->rev = (char *) (sdev->inquiry + 32);
- 
-+	if (strncmp(sdev->vendor, "ATA     ", 8) == 0) {
-+		/*
-+		 * sata emulation layer device.  This is a hack to work around
-+		 * the SATL power management specifications which state that
-+		 * when the SATL detects the device has gone into standby
-+		 * mode, it shall respond with NOT READY.
-+		 */
-+		sdev->allow_restart = 1;
-+	}
-+
- 	if (*bflags & BLIST_ISROM) {
- 		sdev->type = TYPE_ROM;
- 		sdev->removable = 1;
 
 
