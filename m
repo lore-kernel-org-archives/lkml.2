@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab2ILXln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:41:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S932994Ab2ILXls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:41:48 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932964Ab2ILXlj (ORCPT
+	with ESMTP id S932976Ab2ILXln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:39 -0400
+	Wed, 12 Sep 2012 19:41:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 80/85] PARISC: Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
-Date: Wed, 12 Sep 2012 16:37:03 -0700
-Message-Id: <20120912233550.064686301@linuxfoundation.org>
+        Ronny Hegewald <ronny.hegewald@online.de>,
+        Stefano Panella <stefano.panella@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 81/85] xen: Use correct masking in xen_swiotlb_alloc_coherent.
+Date: Wed, 12 Sep 2012 16:37:04 -0700
+Message-Id: <20120912233550.167476472@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,59 +31,56 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Ronny Hegewald <ronny.hegewald@online.de>
 
-commit bba3d8c3b3c0f2123be5bc687d1cddc13437c923 upstream.
+commit b5031ed1be0aa419250557123633453753181643 upstream.
 
-The following build error occured during a parisc build with
-swap-over-NFS patches applied.
+When running 32-bit pvops-dom0 and a driver tries to allocate a coherent
+DMA-memory the xen swiotlb-implementation returned memory beyond 4GB.
 
-net/core/sock.c:274:36: error: initializer element is not constant
-net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
-net/core/sock.c:274:36: error: initializer element is not constant
+The underlaying reason is that if the supplied driver passes in a
+DMA_BIT_MASK(64) ( hwdev->coherent_dma_mask is set to 0xffffffffffffffff)
+our dma_mask will be u64 set to 0xffffffffffffffff even if we set it to
+DMA_BIT_MASK(32) previously. Meaning we do not reset the upper bits.
+By using the dma_alloc_coherent_mask function - it does the proper casting
+and we get 0xfffffffff.
 
-Dave Anglin says:
-> Here is the line in sock.i:
->
-> struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> ((atomic_t) { (0) }) });
+This caused not working sound on a system with 4 GB and a 64-bit
+compatible sound-card with sets the DMA-mask to 64bit.
 
-The above line contains two compound literals.  It also uses a designated
-initializer to initialize the field enabled.  A compound literal is not a
-constant expression.
+On bare-metal and the forward-ported xen-dom0 patches from OpenSuse a coherent
+DMA-memory is always allocated inside the 32-bit address-range by calling
+dma_alloc_coherent_mask.
 
-The location of the above statement isn't fully clear, but if a compound
-literal occurs outside the body of a function, the initializer list must
-consist of constant expressions.
+This patch adds the same functionality to xen swiotlb and is a rebase of the
+original patch from Ronny Hegewald which never got upstream b/c the
+underlaying reason was not understood until now.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The original email with the original patch is in:
+http://old-list-archives.xen.org/archives/html/xen-devel/2010-02/msg00038.html
+the original thread from where the discussion started is in:
+http://old-list-archives.xen.org/archives/html/xen-devel/2010-01/msg00928.html
+
+Signed-off-by: Ronny Hegewald <ronny.hegewald@online.de>
+Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+Acked-By: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/atomic.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/atomic.h
-+++ b/arch/parisc/include/asm/atomic.h
-@@ -141,7 +141,7 @@ static __inline__ int __atomic_add_unles
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -232,7 +232,7 @@ xen_swiotlb_alloc_coherent(struct device
+ 		return ret;
  
- #define atomic_sub_and_test(i,v)	(atomic_sub_return((i),(v)) == 0)
+ 	if (hwdev && hwdev->coherent_dma_mask)
+-		dma_mask = hwdev->coherent_dma_mask;
++		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
  
--#define ATOMIC_INIT(i)	((atomic_t) { (i) })
-+#define ATOMIC_INIT(i)	{ (i) }
- 
- #define smp_mb__before_atomic_dec()	smp_mb()
- #define smp_mb__after_atomic_dec()	smp_mb()
-@@ -150,7 +150,7 @@ static __inline__ int __atomic_add_unles
- 
- #ifdef CONFIG_64BIT
- 
--#define ATOMIC64_INIT(i) ((atomic64_t) { (i) })
-+#define ATOMIC64_INIT(i) { (i) }
- 
- static __inline__ s64
- __atomic64_add_return(s64 i, atomic64_t *v)
+ 	phys = virt_to_phys(ret);
+ 	dev_addr = xen_phys_to_bus(phys);
 
 
