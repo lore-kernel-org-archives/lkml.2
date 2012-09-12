@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab2ILX7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:59:06 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab2ILXmC (ORCPT
+	id S1757522Ab2ILX7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:59:35 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996Ab2ILXly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:02 -0400
+	Wed, 12 Sep 2012 19:41:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Ian Abbott <abbotti@mev.co.uk>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 72/85] udf: Fix data corruption for files in ICB
-Date: Wed, 12 Sep 2012 16:36:55 -0700
-Message-Id: <20120912233549.257239297@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Sreekanth Reddy <sreekanth.reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 70/85] SCSI: mpt2sas: Fix for Driver oops, when loading driver with max_queue_depth command line option to a very small value
+Date: Wed, 12 Sep 2012 16:36:53 -0700
+Message-Id: <20120912233549.048646923@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,95 +29,60 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
 
-commit 9c2fc0de1a6e638fe58c354a463f544f42a90a09 upstream.
+commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
 
-When a file is stored in ICB (inode), we overwrite part of the file, and
-the page containing file's data is not in page cache, we end up corrupting
-file's data by overwriting them with zeros. The problem is we use
-simple_write_begin() which simply zeroes parts of the page which are not
-written to. The problem has been introduced by be021ee4 (udf: convert to
-new aops).
+If the specified max_queue_depth setting is less than the
+expected number of internal commands, then driver will calculate
+the queue depth size to a negitive number. This negitive number
+is actually a very large number because variable is unsigned
+16bit integer. So, the driver will ask for a very large amount of
+memory for message frames and resulting into oops as memory
+allocation routines will not able to handle such a large request.
 
-Fix the problem by providing a ->write_begin function which makes the page
-properly uptodate.
+So, in order to limit this kind of oops, The driver need to set
+the max_queue_depth to a scsi mid layer's can_queue value. Then
+the overall message frames required for IO is minimum of either
+(max_queue_depth plus internal commands) or the IOC global
+credits.
 
-Reported-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/file.c |   35 +++++++++++++++++++++++++++++------
- 1 file changed, 29 insertions(+), 6 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -39,20 +39,24 @@
- #include "udf_i.h"
- #include "udf_sb.h"
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2417,10 +2417,13 @@ _base_allocate_memory_pools(struct MPT2S
+ 	}
  
--static int udf_adinicb_readpage(struct file *file, struct page *page)
-+static void __udf_adinicb_readpage(struct page *page)
- {
- 	struct inode *inode = page->mapping->host;
- 	char *kaddr;
- 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	/* command line tunables  for max controller queue depth */
+-	if (max_queue_depth != -1)
+-		max_request_credit = (max_queue_depth < facts->RequestCredit)
+-		    ? max_queue_depth : facts->RequestCredit;
+-	else
++	if (max_queue_depth != -1 && max_queue_depth != 0) {
++		max_request_credit = min_t(u16, max_queue_depth +
++			ioc->hi_priority_depth + ioc->internal_depth,
++			facts->RequestCredit);
++		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
++			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
++	} else
+ 		max_request_credit = min_t(u16, facts->RequestCredit,
+ 		    MAX_HBA_QUEUE_DEPTH);
  
--	BUG_ON(!PageLocked(page));
--
- 	kaddr = kmap(page);
--	memset(kaddr, 0, PAGE_CACHE_SIZE);
- 	memcpy(kaddr, iinfo->i_ext.i_data + iinfo->i_lenEAttr, inode->i_size);
-+	memset(kaddr + inode->i_size, 0, PAGE_CACHE_SIZE - inode->i_size);
- 	flush_dcache_page(page);
- 	SetPageUptodate(page);
- 	kunmap(page);
-+}
-+
-+static int udf_adinicb_readpage(struct file *file, struct page *page)
-+{
-+	BUG_ON(!PageLocked(page));
-+	__udf_adinicb_readpage(page);
- 	unlock_page(page);
+@@ -2495,7 +2498,7 @@ _base_allocate_memory_pools(struct MPT2S
+ 	/* set the scsi host can_queue depth
+ 	 * with some internal commands that could be outstanding
+ 	 */
+-	ioc->shost->can_queue = ioc->scsiio_depth - (2);
++	ioc->shost->can_queue = ioc->scsiio_depth;
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
+ 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
  
- 	return 0;
-@@ -77,6 +81,25 @@ static int udf_adinicb_writepage(struct
- 	return 0;
- }
- 
-+static int udf_adinicb_write_begin(struct file *file,
-+			struct address_space *mapping, loff_t pos,
-+			unsigned len, unsigned flags, struct page **pagep,
-+			void **fsdata)
-+{
-+	struct page *page;
-+
-+	if (WARN_ON_ONCE(pos >= PAGE_CACHE_SIZE))
-+		return -EIO;
-+	page = grab_cache_page_write_begin(mapping, 0, flags);
-+	if (!page)
-+		return -ENOMEM;
-+	*pagep = page;
-+
-+	if (!PageUptodate(page) && len != PAGE_CACHE_SIZE)
-+		__udf_adinicb_readpage(page);
-+	return 0;
-+}
-+
- static int udf_adinicb_write_end(struct file *file,
- 			struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned copied,
-@@ -98,8 +121,8 @@ static int udf_adinicb_write_end(struct
- const struct address_space_operations udf_adinicb_aops = {
- 	.readpage	= udf_adinicb_readpage,
- 	.writepage	= udf_adinicb_writepage,
--	.write_begin = simple_write_begin,
--	.write_end = udf_adinicb_write_end,
-+	.write_begin	= udf_adinicb_write_begin,
-+	.write_end	= udf_adinicb_write_end,
- };
- 
- static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 
