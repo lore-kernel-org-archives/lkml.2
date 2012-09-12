@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab2ILXcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:32:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932145Ab2ILXcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:32:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083Ab2ILXcF (ORCPT
+	with ESMTP id S932114Ab2ILXcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:05 -0400
+	Wed, 12 Sep 2012 19:32:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 027/108] ALSA: hda - Fix leftover codec->power_transition
-Date: Wed, 12 Sep 2012 16:28:25 -0700
-Message-Id: <20120912232453.390527105@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 020/108] vfs: missed source of ->f_pos races
+Date: Wed, 12 Sep 2012 16:28:18 -0700
+Message-Id: <20120912232452.654844257@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -28,31 +29,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 535b6c51fe8293c88ce919cdfc4390c67a1cb6d1 upstream.
+commit 0e665d5d1125f9f4ccff56a75e814f10f88861a2 upstream.
 
-When the codec turn-on operation is canceled by the immediate
-power-on, the driver left the power_transition flag as is.
-This caused the persistent avoidance of power-save behavior.
+compat_sys_{read,write}v() need the same "pass a copy of file->f_pos" thing
+as sys_{read,write}{,v}().
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/compat.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -4422,6 +4422,8 @@ static void __snd_hda_power_up(struct hd
- 	 * then there is no need to go through power up here.
- 	 */
- 	if (codec->power_on) {
-+		if (codec->power_transition < 0)
-+			codec->power_transition = 0;
- 		spin_unlock(&codec->power_lock);
- 		return;
- 	}
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1155,11 +1155,14 @@ compat_sys_readv(unsigned long fd, const
+ 	struct file *file;
+ 	int fput_needed;
+ 	ssize_t ret;
++	loff_t pos;
+ 
+ 	file = fget_light(fd, &fput_needed);
+ 	if (!file)
+ 		return -EBADF;
+-	ret = compat_readv(file, vec, vlen, &file->f_pos);
++	pos = file->f_pos;
++	ret = compat_readv(file, vec, vlen, &pos);
++	file->f_pos = pos;
+ 	fput_light(file, fput_needed);
+ 	return ret;
+ }
+@@ -1221,11 +1224,14 @@ compat_sys_writev(unsigned long fd, cons
+ 	struct file *file;
+ 	int fput_needed;
+ 	ssize_t ret;
++	loff_t pos;
+ 
+ 	file = fget_light(fd, &fput_needed);
+ 	if (!file)
+ 		return -EBADF;
+-	ret = compat_writev(file, vec, vlen, &file->f_pos);
++	pos = file->f_pos;
++	ret = compat_writev(file, vec, vlen, &pos);
++	file->f_pos = pos;
+ 	fput_light(file, fput_needed);
+ 	return ret;
+ }
 
 
