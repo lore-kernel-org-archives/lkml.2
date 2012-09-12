@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932991Ab2ILXyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:54:38 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:38165 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab2ILXye (ORCPT
+	id S933196Ab2ILXnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:43:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932562Ab2ILXnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:54:34 -0400
-Date: Wed, 12 Sep 2012 16:53:54 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mm-commits@vger.kernel.org, bhalevy@tonian.com, dhillf@gmail.com
-Subject: Re: + mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links.patch
- added to -mm tree
-In-Reply-To: <alpine.DEB.2.00.1209121618520.12415@chino.kir.corp.google.com>
-Message-ID: <alpine.LSU.2.00.1209121649430.15738@eggly.anvils>
-References: <20120816200105.C14EA1E0048@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1209111054510.30962@chino.kir.corp.google.com> <alpine.LSU.2.00.1209111110330.2575@eggly.anvils> <alpine.DEB.2.00.1209111843010.19285@chino.kir.corp.google.com>
- <alpine.LSU.2.00.1209121133210.15274@eggly.anvils> <alpine.DEB.2.00.1209121618520.12415@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 12 Sep 2012 19:43:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 06/46] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP systems
+Date: Wed, 12 Sep 2012 16:38:56 -0700
+Message-Id: <20120912233818.327937152@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
+References: <20120912233817.662663809@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Sep 2012, David Rientjes wrote:
-> On Wed, 12 Sep 2012, Hugh Dickins wrote:
-> > > that we can't fix it all up to use 
-> > > uninitialized_var() so this is handled the proper way?
-> > 
-> > I do prefer to avoid it when we can, some reasons given below.
-> 
-> It's easily silenced with __maybe_unused.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-I'm not necessarily against __maybe_unused, but I am surprised that it
-should have an effect here: I think of that as a tool for a different
-job, and would be misleading in this context.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> > Given David's preference for no warning, mine for no uninitialized_var,
-> > and Linus's for renaming BUG() to I_AM_A_MORON() to discourage its use
-> > in the first place: copy_vma() seems a prime candidate for returning
-> > failure to mremap instead of crashing the system.
-> > 
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> 
-> Tested-by: David Rientjes <rientjes@google.com>
+------------------
 
-Thanks!
+From: Will Deacon <will.deacon@arm.com>
 
-Hugh
+commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
+
+Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
+ #720789") added workarounds for erratum #720789 to the range TLB
+invalidation functions with the observation that the erratum only
+affects SMP platforms. However, when running an SMP_ON_UP kernel on a
+uniprocessor platform we must take care to preserve the ASID as the
+workaround is not required.
+
+This patch ensures that we don't set the ASID to 0 when flushing the TLB
+on such a system, preserving the original behaviour with the workaround
+disabled.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mm/tlb-v7.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/arm/mm/tlb-v7.S
++++ b/arch/arm/mm/tlb-v7.S
+@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
+ 	dsb
+ 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
+ 	mov	r1, r1, lsr #PAGE_SHIFT
+-#ifdef CONFIG_ARM_ERRATA_720789
+-	mov	r3, #0
+-#else
+ 	asid	r3, r3				@ mask ASID
++#ifdef CONFIG_ARM_ERRATA_720789
++	ALT_SMP(W(mov)	r3, #0	)
++	ALT_UP(W(nop)		)
+ #endif
+ 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
+ 	mov	r1, r1, lsl #PAGE_SHIFT
+
+
