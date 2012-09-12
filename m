@@ -1,203 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab2ILLqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 07:46:14 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:9243 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab2ILLqL (ORCPT
+	id S1753965Ab2ILLqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 07:46:43 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:38323 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295Ab2ILLql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 07:46:11 -0400
-X-IronPort-AV: E=Sophos;i="4.80,408,1344211200"; 
-   d="scan'208";a="14493878"
-Date: Wed, 12 Sep 2012 12:44:30 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, <ben@guthro.net>,
-        <robert.phillips@citrix.com>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen/m2p: do not reuse kmap_op->dev_bus_addr
-Message-ID: <alpine.DEB.2.02.1209121229590.15568@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 12 Sep 2012 07:46:41 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>
+Subject: [PATCH 00/11] ASoC: OMAP: Convert to use dmaengine
+Date: Wed, 12 Sep 2012 14:46:56 +0300
+Message-Id: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the caller passes a valid kmap_op to m2p_add_override, we use
-kmap_op->dev_bus_addr to store the original mfn, but dev_bus_addr is
-part of the interface with Xen and if we are batching the hypercalls it
-might not have been written by the hypervisor yet. That means that later
-on Xen will write to it and we'll think that the original mfn is
-actually what Xen has written to it.
+Hello,
 
-Rather than "stealing" struct members from kmap_op, keep using
-page->index to store the original mfn and add another parameter to
-m2p_remove_override to get the corresponding kmap_op instead.
-It is now responsibility of the caller to keep track of which kmap_op
-corresponds to a particular page in the m2p_override (gntdev, the only
-user of this interface that passes a valid kmap_op, is already doing that).
+This series will switch the OMAP audio to use dmaengine.
+The final patch which does the switch was based on Russell King's earlier patch.
 
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+The first 10 patch is to prepare the OMAP audio drivers for a smooth change to
+dmaengine:
+- sDMA FRAME sync mode is removed and replaced with PACKET mode
+- dai drivers no longer need to configure sDMA sync mode
+- dai drivers does not need to specify the DMA word length - with the exception
+  of the omap-hdmi driver which requires 32bit word length regardless of the
+  audio format in use
+- the McPDM driver used (to my surprise) hackish way of getting the DMA channel
+  and address - via defines from some header files
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 93971e8..472b9b7 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -51,7 +51,8 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
- 
- extern int m2p_add_override(unsigned long mfn, struct page *page,
- 			    struct gnttab_map_grant_ref *kmap_op);
--extern int m2p_remove_override(struct page *page, bool clear_pte);
-+extern int m2p_remove_override(struct page *page,
-+				struct gnttab_map_grant_ref *kmap_op);
- extern struct page *m2p_find_override(unsigned long mfn);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 64effdc..2825594 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -734,9 +734,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 
- 			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 		}
--		/* let's use dev_bus_addr to record the old mfn instead */
--		kmap_op->dev_bus_addr = page->index;
--		page->index = (unsigned long) kmap_op;
- 	}
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
-@@ -763,7 +760,8 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(m2p_add_override);
--int m2p_remove_override(struct page *page, bool clear_pte)
-+int m2p_remove_override(struct page *page,
-+		struct gnttab_map_grant_ref *kmap_op)
- {
- 	unsigned long flags;
- 	unsigned long mfn;
-@@ -793,10 +791,8 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 	WARN_ON(!PagePrivate(page));
- 	ClearPagePrivate(page);
- 
--	if (clear_pte) {
--		struct gnttab_map_grant_ref *map_op =
--			(struct gnttab_map_grant_ref *) page->index;
--		set_phys_to_machine(pfn, map_op->dev_bus_addr);
-+	set_phys_to_machine(pfn, page->index);
-+	if (kmap_op != NULL) {
- 		if (!PageHighMem(page)) {
- 			struct multicall_space mcs;
- 			struct gnttab_unmap_grant_ref *unmap_op;
-@@ -808,13 +804,13 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 			 * issued. In this case handle is going to -1 because
- 			 * it hasn't been modified yet.
- 			 */
--			if (map_op->handle == -1)
-+			if (kmap_op->handle == -1)
- 				xen_mc_flush();
- 			/*
--			 * Now if map_op->handle is negative it means that the
-+			 * Now if kmap_op->handle is negative it means that the
- 			 * hypercall actually returned an error.
- 			 */
--			if (map_op->handle == GNTST_general_error) {
-+			if (kmap_op->handle == GNTST_general_error) {
- 				printk(KERN_WARNING "m2p_remove_override: "
- 						"pfn %lx mfn %lx, failed to modify kernel mappings",
- 						pfn, mfn);
-@@ -824,8 +820,8 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 			mcs = xen_mc_entry(
- 					sizeof(struct gnttab_unmap_grant_ref));
- 			unmap_op = mcs.args;
--			unmap_op->host_addr = map_op->host_addr;
--			unmap_op->handle = map_op->handle;
-+			unmap_op->host_addr = kmap_op->host_addr;
-+			unmap_op->handle = kmap_op->handle;
- 			unmap_op->dev_bus_addr = 0;
- 
- 			MULTI_grant_table_op(mcs.mc,
-@@ -836,10 +832,9 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 			set_pte_at(&init_mm, address, ptep,
- 					pfn_pte(pfn, PAGE_KERNEL));
- 			__flush_tlb_single(address);
--			map_op->host_addr = 0;
-+			kmap_op->host_addr = 0;
- 		}
--	} else
--		set_phys_to_machine(pfn, page->index);
-+	}
- 
- 	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
- 	 * somewhere in this domain, even before being added to the
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 73f196c..c6decb9 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -337,7 +337,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
- 		invcount++;
- 	}
- 
--	ret = gnttab_unmap_refs(unmap, pages, invcount, false);
-+	ret = gnttab_unmap_refs(unmap, NULL, pages, invcount);
- 	BUG_ON(ret);
- }
- 
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 1ffd03b..7f12416 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -314,8 +314,9 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
- 		}
- 	}
- 
--	err = gnttab_unmap_refs(map->unmap_ops + offset, map->pages + offset,
--				pages, true);
-+	err = gnttab_unmap_refs(map->unmap_ops + offset,
-+			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
-+			pages);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 0bfc1ef..0067266 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -870,7 +870,8 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- EXPORT_SYMBOL_GPL(gnttab_map_refs);
- 
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
--		      struct page **pages, unsigned int count, bool clear_pte)
-+		      struct gnttab_map_grant_ref *kmap_ops,
-+		      struct page **pages, unsigned int count)
- {
- 	int i, ret;
- 	bool lazy = false;
-@@ -888,7 +889,8 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	}
- 
- 	for (i = 0; i < count; i++) {
--		ret = m2p_remove_override(pages[i], clear_pte);
-+		ret = m2p_remove_override(pages[i], kmap_ops ?
-+				       &kmap_ops[i] : NULL);
- 		if (ret)
- 			return ret;
- 	}
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 11e27c3..f19fff8 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -187,6 +187,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 		    struct gnttab_map_grant_ref *kmap_ops,
- 		    struct page **pages, unsigned int count);
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
--		      struct page **pages, unsigned int count, bool clear_pte);
-+		      struct gnttab_map_grant_ref *kunmap_ops,
-+		      struct page **pages, unsigned int count);
- 
- #endif /* __ASM_GNTTAB_H__ */
+I have tested the series on:
+- BeagleBoard (audio via McBSP) with aplay/arecord. In element mode and in
+  threshold mode with different period sizes
+- OMAP4 Blaze (audio via McPDM and DMIC)
+
+With this conversion the NO_PERIOD_WAKEUP is not supported at the moment. I'll
+be looking at the dmaengine core and omap parts to add this feature back.
+
+The patches has been generated against:
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git for-3.7
+
+Janusz: Can you retest this series on OMAP1 to be sure I have not broken it?
+Ricardo: Can you test the omap-hmdi if it is still working?
+
+Regards,
+Peter
+---
+Peter Ujfalusi (11):
+  dmaengine: omap: Support for element mode in cyclic DMA
+  ASoC: omap-mcbsp: Use sDMA packet mode instead of frame mode
+  ASoC: omap-pcm: Select sDMA synchronization based on packet_size
+  ASoC: OMAP: Remove sync_mode from omap_pcm_dma_data struct
+  ASoC: omap-pcm: Prepare to configure the DMA data_type based on
+    stream properties
+  ARM: OMAP4: hwmod_data: Add resource names to McPDM memory ranges
+  ASoC: omap-mcpdm: Use platform_get_resource_* to get resources
+  ASoC: OMAP: mcbsp, mcpdm, dmic: Let omap-pcm to pick the dma_type
+  ASoC: omap-pcm, omap-hdmi: Change the use of
+    omap_pcm_dma_data->data_type
+  ASoC: OMAP: mcbsp, mcpdm, dmic, hdmi: Set dma_data at startup time
+  ASoC: omap-pcm: Convert to use dmaengine
+
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   2 +
+ drivers/dma/omap-dma.c                     |   5 +-
+ sound/soc/omap/Kconfig                     |   3 +-
+ sound/soc/omap/omap-dmic.c                 |   9 +-
+ sound/soc/omap/omap-hdmi.c                 |  17 +-
+ sound/soc/omap/omap-mcbsp.c                |  60 +++----
+ sound/soc/omap/omap-mcpdm.c                |  41 +++--
+ sound/soc/omap/omap-pcm.c                  | 246 ++++++++---------------------
+ sound/soc/omap/omap-pcm.h                  |   4 +-
+ 9 files changed, 136 insertions(+), 251 deletions(-)
+
+-- 
+1.7.12
+
