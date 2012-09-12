@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab2IMA3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:29:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S1757768Ab2IMA3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:29:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab2ILXeN (ORCPT
+	with ESMTP id S1756054Ab2ILXeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:34:13 -0400
+	Wed, 12 Sep 2012 19:34:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Roel van Meer <roel.vanmeer@bokxing.nl>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 051/108] cciss: fix incorrect scsi status reporting
-Date: Wed, 12 Sep 2012 16:28:49 -0700
-Message-Id: <20120912232455.889795807@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 060/108] sched,cgroup: Fix up task_groups list
+Date: Wed, 12 Sep 2012 16:28:58 -0700
+Message-Id: <20120912232456.829171545@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -32,46 +30,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Mike Galbraith <efault@gmx.de>
 
-commit b0cf0b118c90477d1a6811f2cd2307f6a5578362 upstream.
+commit 35cf4e50b16331def6cfcbee11e49270b6db07f5 upstream.
 
-Delete code which sets SCSI status incorrectly as it's already been set
-correctly above this incorrect code.  The bug was introduced in 2009 by
-commit b0e15f6db111 ("cciss: fix typo that causes scsi status to be
-lost.")
+With multiple instances of task_groups, for_each_rt_rq() is a noop,
+no task groups having been added to the rt.c list instance.  This
+renders __enable/disable_runtime() and print_rt_stats() noop, the
+user (non) visible effect being that rt task groups are missing in
+/proc/sched_debug.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-by: Roel van Meer <roel.vanmeer@bokxing.nl>
-Tested-by: Roel van Meer <roel.vanmeer@bokxing.nl>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344308413.6846.7.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/cciss_scsi.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ kernel/sched/core.c  |    1 +
+ kernel/sched/sched.h |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -763,16 +763,7 @@ static void complete_scsi_command(Comman
- 		{
- 			case CMD_TARGET_STATUS:
- 				/* Pass it up to the upper layers... */
--				if( ei->ScsiStatus)
--                		{
--#if 0
--                    			printk(KERN_WARNING "cciss: cmd %p "
--						"has SCSI Status = %x\n",
--						c, ei->ScsiStatus);
--#endif
--					cmd->result |= (ei->ScsiStatus << 1);
--                		}
--				else {  /* scsi status is zero??? How??? */
-+				if (!ei->ScsiStatus) {
- 					
- 	/* Ordinarily, this case should never happen, but there is a bug
- 	   in some released firmware revisions that allows it to happen
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7179,6 +7179,7 @@ int in_sched_functions(unsigned long add
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+ struct task_group root_task_group;
++LIST_HEAD(task_groups);
+ #endif
+ 
+ DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -80,7 +80,7 @@ extern struct mutex sched_domains_mutex;
+ struct cfs_rq;
+ struct rt_rq;
+ 
+-static LIST_HEAD(task_groups);
++extern struct list_head task_groups;
+ 
+ struct cfs_bandwidth {
+ #ifdef CONFIG_CFS_BANDWIDTH
 
 
