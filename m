@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab2ILXi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:27 -0400
+	id S932692Ab2ILXil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:41 -0400
 Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
 	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620Ab2ILXiW (ORCPT
+	with ESMTP id S932672Ab2ILXii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:22 -0400
+	Wed, 12 Sep 2012 19:38:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Yong Shen <yong.shen@linaro.org>
-Subject: [ 14/85] ARM: imx: select CPU_FREQ_TABLE when needed
-Date: Wed, 12 Sep 2012 16:35:57 -0700
-Message-Id: <20120912233543.223348363@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ram Malovany <ramm@ti.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 32/85] Bluetooth: Fix using a NULL inquiry cache entry
+Date: Wed, 12 Sep 2012 16:36:15 -0700
+Message-Id: <20120912233545.105190562@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,46 +28,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Ram Malovany <ramm@ti.com>
 
-commit f637c4c9405e21f44cf0045eaf77eddd3a79ca5a upstream.
+commit 7cc8380eb10347016d95bf6f9d842c2ae6d12932 upstream.
 
-The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
-so it needs to select that code to be built. This problem has
-apparently existed since the i.MX cpufreq code was first merged
-in v2.6.37.
+If the device was not found in a list of found devices names of which
+are pending.This may happen in a case when HCI Remote Name Request
+was sent as a part of incoming connection establishment procedure.
+Hence there is no need to continue resolving a next name as it will
+be done upon receiving another Remote Name Request Complete Event.
+This will fix a kernel crash when trying to use this entry to resolve
+the next name.
 
-Building IMX without CPU_FREQ_TABLE results in:
-
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
-arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
-arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
-arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
-arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
-arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
-arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
-arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Yong Shen <yong.shen@linaro.org>
+Signed-off-by: Ram Malovany <ramm@ti.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ net/bluetooth/hci_event.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2113,6 +2113,7 @@ source "drivers/cpufreq/Kconfig"
- config CPU_FREQ_IMX
- 	tristate "CPUfreq driver for i.MX CPUs"
- 	depends on ARCH_MXC && CPU_FREQ
-+	select CPU_FREQ_TABLE
- 	help
- 	  This enables the CPUfreq driver for i.MX CPUs.
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1388,12 +1388,18 @@ static void hci_check_pending_name(struc
+ 		return;
  
+ 	e = hci_inquiry_cache_lookup_resolve(hdev, bdaddr, NAME_PENDING);
+-	if (e) {
++	/* If the device was not found in a list of found devices names of which
++	 * are pending. there is no need to continue resolving a next name as it
++	 * will be done upon receiving another Remote Name Request Complete
++	 * Event */
++	if (!e)
++		return;
++
++	list_del(&e->list);
++	if (name) {
+ 		e->name_state = NAME_KNOWN;
+-		list_del(&e->list);
+-		if (name)
+-			mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
+-					 e->data.rssi, name, name_len);
++		mgmt_remote_name(hdev, bdaddr, ACL_LINK, 0x00,
++				 e->data.rssi, name, name_len);
+ 	}
+ 
+ 	if (hci_resolve_next_name(hdev))
 
 
