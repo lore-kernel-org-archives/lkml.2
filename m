@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2ILXcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:32:12 -0400
-Received: from mail-yw0-f74.google.com ([209.85.213.74]:37953 "EHLO
-	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab2ILXcG (ORCPT
+	id S1752995Ab2IMAhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:37:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755874Ab2ILXcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:32:06 -0400
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH v2 2/3] tracing: reset ring buffer when changing trace_clocks
-Date: Wed, 12 Sep 2012 16:31:59 -0700
-Message-Id: <1347492720-26078-4-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1347492720-26078-1-git-send-email-dhsharp@google.com>
-References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
- <1347492720-26078-1-git-send-email-dhsharp@google.com>
+	Wed, 12 Sep 2012 19:32:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Yuanming Chen <hikvision_linux@163.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 029/108] NFSv3: Ensure that do_proc_get_root() reports errors correctly
+Date: Wed, 12 Sep 2012 16:28:27 -0700
+Message-Id: <20120912232453.594129802@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
+References: <20120912232816.GA1655@kroah.com>
+ <20120912232450.500619493@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the "tsc" clock isn't in nanoseconds, the ring buffer must be
-reset when changing clocks so that incomparable timestamps don't end up
-in the same trace.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Tested: Confirmed switching clocks resets the trace buffer.
+3.5-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 086600430493e04b802bee6e5b3ce0458e4eb77f upstream.
+
+If the rpc call to NFS3PROC_FSINFO fails, then we need to report that
+error so that the mount fails. Otherwise we can end up with a
+superblock with completely unusable values for block sizes, maxfilesize,
+etc.
+
+Reported-by: Yuanming Chen <hikvision_linux@163.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/trace/trace.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ fs/nfs/nfs3proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 92fb08e..4e26df3 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4012,6 +4012,14 @@ static ssize_t tracing_clock_write(struct file *filp, const char __user *ubuf,
- 	if (max_tr.buffer)
- 		ring_buffer_set_clock(max_tr.buffer, trace_clocks[i].func);
- 
-+	/*
-+	 * New clock may not be consistent with the previous clock.
-+	 * Reset the buffer so that it doesn't have incomparable timestamps.
-+	 */
-+	tracing_reset_online_cpus(&global_trace);
-+	if (max_tr.buffer)
-+		tracing_reset_online_cpus(&max_tr);
-+
- 	mutex_unlock(&trace_types_lock);
- 
- 	*fpos += cnt;
--- 
-1.7.7.3
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -69,7 +69,7 @@ do_proc_get_root(struct rpc_clnt *client
+ 	nfs_fattr_init(info->fattr);
+ 	status = rpc_call_sync(client, &msg, 0);
+ 	dprintk("%s: reply fsinfo: %d\n", __func__, status);
+-	if (!(info->fattr->valid & NFS_ATTR_FATTR)) {
++	if (status == 0 && !(info->fattr->valid & NFS_ATTR_FATTR)) {
+ 		msg.rpc_proc = &nfs3_procedures[NFS3PROC_GETATTR];
+ 		msg.rpc_resp = info->fattr;
+ 		status = rpc_call_sync(client, &msg, 0);
+
 
