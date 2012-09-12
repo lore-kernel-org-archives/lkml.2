@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2ILXgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:36:07 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50843 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756601Ab2ILXf6 (ORCPT
+	id S1755937Ab2ILXgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:36:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756601Ab2ILXgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:58 -0400
+	Wed, 12 Sep 2012 19:36:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Babu Moger <babu.moger@netapp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 087/108] SCSI: scsi_lib: fix scsi_io_completions SG_IO error propagation
-Date: Wed, 12 Sep 2012 16:29:25 -0700
-Message-Id: <20120912232459.626724650@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Ian Abbott <abbotti@mev.co.uk>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 090/108] udf: Fix data corruption for files in ICB
+Date: Wed, 12 Sep 2012 16:29:28 -0700
+Message-Id: <20120912232459.933773883@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,83 +29,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 27c419739b67decced4650440829b8d51bef954b upstream.
+commit 9c2fc0de1a6e638fe58c354a463f544f42a90a09 upstream.
 
-The following v3.4-rc1 commit unmasked an existing bug in scsi_io_completion's
-SG_IO error handling: 47ac56d [SCSI] scsi_error: classify some ILLEGAL_REQUEST
-sense as a permanent TARGET_ERROR
+When a file is stored in ICB (inode), we overwrite part of the file, and
+the page containing file's data is not in page cache, we end up corrupting
+file's data by overwriting them with zeros. The problem is we use
+simple_write_begin() which simply zeroes parts of the page which are not
+written to. The problem has been introduced by be021ee4 (udf: convert to
+new aops).
 
-Given that certain ILLEGAL_REQUEST are now properly categorized as
-TARGET_ERROR the host_byte is being set (before host_byte wasn't ever
-set for these ILLEGAL_REQUEST).
+Fix the problem by providing a ->write_begin function which makes the page
+properly uptodate.
 
-In scsi_io_completion, initialize req->errors with cmd->result _after_
-the SG_IO block that calls __scsi_error_from_host_byte (which may
-modify the host_byte).
-
-Before this fix:
-
-    cdb to send: 12 01 01 00 00 00
-ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
-    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
-    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
-    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0x10,
-    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-SCSI Status: Check Condition
-
-Sense Information:
-sense buffer empty
-
-After:
-
-    cdb to send: 12 01 01 00 00 00
-ioctl(3, SG_IO, {'S', SG_DXFER_NONE, cmd[6]=[12, 01, 01, 00, 00, 00],
-    mx_sb_len=32, iovec_count=0, dxfer_len=0, timeout=20000, flags=0,
-    status=02, masked_status=01, sb[19]=[70, 00, 05, 00, 00, 00, 00, 0b,
-    00, 00, 00, 00, 24, 00, 00, 00, 00, 00, 00], host_status=0,
-    driver_status=0x8, resid=0, duration=0, info=0x1}) = 0
-SCSI Status: Check Condition
-
-Sense Information:
- Fixed format, current;  Sense key: Illegal Request
- Additional sense: Invalid field in cdb
- Raw sense data (in hex):
-        70 00 05 00 00 00 00 0b  00 00 00 00 24 00 00 00
-        00 00 00
-
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Tested-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Reviewed-by: Babu Moger <babu.moger@netapp.com>
+Reported-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/scsi/scsi_lib.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/udf/file.c |   35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -760,7 +760,6 @@ void scsi_io_completion(struct scsi_cmnd
- 	}
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -39,20 +39,24 @@
+ #include "udf_i.h"
+ #include "udf_sb.h"
  
- 	if (req->cmd_type == REQ_TYPE_BLOCK_PC) { /* SG_IO ioctl from block level */
--		req->errors = result;
- 		if (result) {
- 			if (sense_valid && req->sense) {
- 				/*
-@@ -776,6 +775,10 @@ void scsi_io_completion(struct scsi_cmnd
- 			if (!sense_deferred)
- 				error = __scsi_error_from_host_byte(cmd, result);
- 		}
-+		/*
-+		 * __scsi_error_from_host_byte may have reset the host_byte
-+		 */
-+		req->errors = cmd->result;
+-static int udf_adinicb_readpage(struct file *file, struct page *page)
++static void __udf_adinicb_readpage(struct page *page)
+ {
+ 	struct inode *inode = page->mapping->host;
+ 	char *kaddr;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
  
- 		req->resid_len = scsi_get_resid(cmd);
+-	BUG_ON(!PageLocked(page));
+-
+ 	kaddr = kmap(page);
+-	memset(kaddr, 0, PAGE_CACHE_SIZE);
+ 	memcpy(kaddr, iinfo->i_ext.i_data + iinfo->i_lenEAttr, inode->i_size);
++	memset(kaddr + inode->i_size, 0, PAGE_CACHE_SIZE - inode->i_size);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	kunmap(page);
++}
++
++static int udf_adinicb_readpage(struct file *file, struct page *page)
++{
++	BUG_ON(!PageLocked(page));
++	__udf_adinicb_readpage(page);
+ 	unlock_page(page);
  
+ 	return 0;
+@@ -77,6 +81,25 @@ static int udf_adinicb_writepage(struct
+ 	return 0;
+ }
+ 
++static int udf_adinicb_write_begin(struct file *file,
++			struct address_space *mapping, loff_t pos,
++			unsigned len, unsigned flags, struct page **pagep,
++			void **fsdata)
++{
++	struct page *page;
++
++	if (WARN_ON_ONCE(pos >= PAGE_CACHE_SIZE))
++		return -EIO;
++	page = grab_cache_page_write_begin(mapping, 0, flags);
++	if (!page)
++		return -ENOMEM;
++	*pagep = page;
++
++	if (!PageUptodate(page) && len != PAGE_CACHE_SIZE)
++		__udf_adinicb_readpage(page);
++	return 0;
++}
++
+ static int udf_adinicb_write_end(struct file *file,
+ 			struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned copied,
+@@ -98,8 +121,8 @@ static int udf_adinicb_write_end(struct
+ const struct address_space_operations udf_adinicb_aops = {
+ 	.readpage	= udf_adinicb_readpage,
+ 	.writepage	= udf_adinicb_writepage,
+-	.write_begin = simple_write_begin,
+-	.write_end = udf_adinicb_write_end,
++	.write_begin	= udf_adinicb_write_begin,
++	.write_end	= udf_adinicb_write_end,
+ };
+ 
+ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 
