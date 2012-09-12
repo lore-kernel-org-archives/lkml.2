@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab2IMA25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:28:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63788 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757705Ab2IMA2t (ORCPT
+	id S1756087Ab2ILXeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:34:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2ILXeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 20:28:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
-References: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
-Date: Wed, 12 Sep 2012 21:28:47 -0300
-Message-ID: <CALF0-+W10VNUxm5oT+kmiSUwRqwdZhxgDu5jQjD5ao_w1b7dNA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/10] mm: SLxB cleaning and trace accuracy improvement
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: JoonSoo Kim <js1304@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Glauber Costa <glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Sep 2012 19:34:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jan Kara <jack@suse.cz>
+Subject: [ 058/108] jbd: dont write superblock when unmounting an ro filesystem
+Date: Wed, 12 Sep 2012 16:28:56 -0700
+Message-Id: <20120912232456.628040019@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
+References: <20120912232816.GA1655@kroah.com>
+ <20120912232450.500619493@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Sat, Sep 8, 2012 at 5:49 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> Hi everyone,
->
-> This is the second spin of my patchset to clean SLxB and improve kmem
-> trace events accuracy.
->
-> For this v2, the most relevant stuff is:
->
-> I've dropped two patches that were not very well received:
-> Namely this two are now gone:
->   mm, slob: Use only 'ret' variable for both slob object and returned pointer
->   mm, slob: Trace allocation failures consistently
-> I believe consistency is important but perhaps this is just me being paranoid.
->
-> There's a lot of dumb movement and renaming. This might seem stupid
-> (and maybe it is) but it's necessary to create some common code between SLAB
-> and SLUB, and then factor it out.
->
-> Also, there's a patch to add a new option to disable gcc auto-inlining.
-> I know we hate to add new options, but this is necessary to get
-> accurate call site
-> traces. Plus, the option is in "Kernel Hacking", so it's for kernel
-> developers only.
->
-> This work is part of CELF Workgroup Project:
-> "Kernel_dynamic_memory_allocation_tracking_and_reduction" [1]
->
-> Feedback, comments, suggestions are very welcome.
->
-> Ezequiel Garcia (10):
->  mm: Factor SLAB and SLUB common code
->  mm, slub: Rename slab_alloc() -> slab_alloc_node() to match SLAB
->  mm, slab: Rename __cache_alloc() -> slab_alloc()
->  mm, slab: Match SLAB and SLUB kmem_cache_alloc_xxx_trace() prototype
->  mm, slab: Replace 'caller' type, void* -> unsigned long
->  mm, util: Use dup_user to duplicate user memory
->  mm, slob: Add support for kmalloc_track_caller()
->  mm, slab: Remove silly function slab_buffer_size()
->  mm, slob: Use NUMA_NO_NODE instead of -1
->  Makefile: Add option CONFIG_DISABLE_GCC_AUTOMATIC_INLINING
->
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Can you pick patches 2, 3, 4, and 5?
-Namely only those related to SLOB and to simple cleanups.
+------------------
 
-I'll redo SLAB/SLUB commonization, as Christoph requested.
+From: Jan Kara <jack@suse.cz>
 
-Thanks,
-Ezequiel.
+commit 2e84f2641ea91a730642ead558a4ee3bd52310c9 upstream.
+
+This sequence:
+
+results in an IO error when unmounting the RO filesystem. The bug was
+introduced by:
+
+commit 9754e39c7bc51328f145e933bfb0df47cd67b6e9
+Author: Jan Kara <jack@suse.cz>
+Date:   Sat Apr 7 12:33:03 2012 +0200
+
+    jbd: Split updating of journal superblock and marking journal empty
+
+which lost some of the magic in journal_update_superblock() which
+used to test for a journal with no outstanding transactions.
+
+This is a port of a jbd2 fix by Eric Sandeen.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/jbd/journal.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -1113,6 +1113,11 @@ static void mark_journal_empty(journal_t
+ 
+ 	BUG_ON(!mutex_is_locked(&journal->j_checkpoint_mutex));
+ 	spin_lock(&journal->j_state_lock);
++	/* Is it already empty? */
++	if (sb->s_start == 0) {
++		spin_unlock(&journal->j_state_lock);
++		return;
++	}
+ 	jbd_debug(1, "JBD: Marking journal as empty (seq %d)\n",
+         	  journal->j_tail_sequence);
+ 
+
+
