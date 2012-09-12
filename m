@@ -1,217 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab2ILTsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 15:48:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58001 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2ILTqE (ORCPT
+	id S1752269Ab2ILTux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 15:50:53 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:58515 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2ILTuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 15:46:04 -0400
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joerg.roedel@amd.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [PATCH v2 2/9] ARM: OMAP3: hwmod data: add mmu data for iva and isp
-Date: Wed, 12 Sep 2012 14:45:45 -0500
-Message-Id: <1347479152-588-3-git-send-email-omar.luna@linaro.org>
+	Wed, 12 Sep 2012 15:50:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=lagarcavilla.org; h=from:to:cc
+	:subject:date:message-id; q=dns; s=lagarcavilla.org; b=X/OoKhZvy
+	1UFBCQc+uBx7O6+NJmQum8SnWJoUw6UtTmBnuQlMJ6X1fsWmzoqz5SPUAiD4k9yd
+	cLqbabj1r/86AskN6S6BhgOfFI1Ldvq1uOGHdPhTha7cRJlOVC63+tscQt8epc+A
+	Ep7PabBOBsvJlmaa5HFrbeHjNHtCzaupZQ=
+From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+To: xen-devel@xen.lists.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Andres Lagar-Cavilla <andres@lagarcavilla.org>
+Subject: [PATCH] Xen backend support for paged out grant targets.
+Date: Wed, 12 Sep 2012 15:50:07 -0400
+Message-Id: <1347479407-479-1-git-send-email-andres@lagarcavilla.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347479152-588-1-git-send-email-omar.luna@linaro.org>
-References: <1347479152-588-1-git-send-email-omar.luna@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mmu hwmod data for iva and isp.
+Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
+foreign domain (such as dom0) attempts to map these frames, the map will
+initially fail. The hypervisor returns a suitable errno, and kicks an
+asynchronous page-in operation carried out by a helper. The foreign domain is
+expected to retry the mapping operation until it eventually succeeds. The
+foreign domain is not put to sleep because itself could be the one running the
+pager assist (typical scenario for dom0).
 
-Due to compatibility an ifdef CONFIG_OMAP_IOMMU_IVA2 needs to be
-propagated (previously on iommu resource info) to hwmod data in OMAP3,
-so users of iommu and tidspbridge can avoid issues of two modules
-managing mmu data/irqs/resets; this until tidspbridge can be migrated
-to iommu framework.
+This patch adds support for this mechanism for backend drivers using grant
+mapping and copying operations. Specifically, this covers the blkback and
+gntdev drivers (which map foregin grants), and the netback driver (which copies
+foreign grants).
 
-Cc: Benoit Cousson <b-cousson@ti.com>
-Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+* Add GNTST_eagain, already exposed by Xen, to the grant interface.
+* Add a retry method for grants that fail with GNTST_eagain (i.e. because the
+  target foregin frame is paged out).
+* Insert hooks with appropriate macro decorators in the aforementioned drivers.
+
+The retry loop is only invoked if the grant operation status is GNTST_eagain.
+It guarantees to leave a new status code different from GNTST_eagain. Any other
+status code results in identical code execution as before.
+
+The retry loop performs 256 attempts with increasing time intervals through a
+32 second period. It uses msleep to yield while waiting for the next retry.
+
+V2 after feedback from David Vrabel:
+* Explicit MAX_DELAY instead of wrap-around delay into zero
+* Abstract GNTST_eagain check into core grant table code for netback module.
+
+Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  121 ++++++++++++++++++++++++++++
- arch/arm/plat-omap/include/plat/iommu.h    |   13 +++
- 2 files changed, 134 insertions(+)
+ drivers/net/xen-netback/netback.c   |   11 +++-------
+ drivers/xen/grant-table.c           |   26 ++++++++++++++++++++++++
+ drivers/xen/xenbus/xenbus_client.c  |    6 ++----
+ include/xen/grant_table.h           |   38 +++++++++++++++++++++++++++++++++++
+ include/xen/interface/grant_table.h |    2 ++
+ 5 files changed, 71 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index c9e3820..70f14f9 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -29,6 +29,7 @@
- #include <plat/mcbsp.h>
- #include <plat/mcspi.h>
- #include <plat/dmtimer.h>
-+#include <plat/iommu.h>
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 682633b..fc40258 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -635,9 +635,7 @@ static void xen_netbk_rx_action(struct xen_netbk *netbk)
+ 		return;
  
- #include "omap_hwmod_common_data.h"
- #include "prm-regbits-34xx.h"
-@@ -2814,6 +2815,122 @@ static struct omap_hwmod_ocp_if omap3xxx_l4_per__gpio3 = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
+ 	BUG_ON(npo.copy_prod > ARRAY_SIZE(netbk->grant_copy_op));
+-	ret = HYPERVISOR_grant_table_op(GNTTABOP_copy, &netbk->grant_copy_op,
+-					npo.copy_prod);
+-	BUG_ON(ret != 0);
++	gnttab_batch_copy_retry_eagain(netbk->grant_copy_op, npo.copy_prod);
  
-+/*
-+ * 'mmu' class
-+ * The memory management unit performs virtual to physical address translation
-+ * for its requestors.
-+ */
-+
-+static struct omap_hwmod_class_sysconfig mmu_sysc = {
-+	.rev_offs	= 0x000,
-+	.sysc_offs	= 0x010,
-+	.syss_offs	= 0x014,
-+	.sysc_flags	= (SYSC_HAS_CLOCKACTIVITY | SYSC_HAS_SIDLEMODE |
-+			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
-+};
-+
-+static struct omap_hwmod_class omap3xxx_mmu_hwmod_class = {
-+	.name = "mmu",
-+	.sysc = &mmu_sysc,
-+};
-+
-+/* mmu isp */
-+
-+static struct omap_mmu_dev_attr mmu_isp_dev_attr = {
-+	.da_start = 0x0,
-+	.da_end = 0xfffff000,
-+	.nr_tlb_entries = 8,
-+};
-+
-+static struct omap_hwmod omap3xxx_mmu_isp_hwmod;
-+static struct omap_hwmod_irq_info omap3xxx_mmu_isp_irqs[] = {
-+	{ .irq = 24 },
-+	{ .irq = -1 }
-+};
-+
-+static struct omap_hwmod_addr_space omap3xxx_mmu_isp_addrs[] = {
-+	{
-+		.pa_start	= 0x480bd400,
-+		.pa_end		= 0x480bd47f,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{ }
-+};
-+
-+/* l4_core -> mmu isp */
-+static struct omap_hwmod_ocp_if omap3xxx_l4_core__mmu_isp = {
-+	.master		= &omap3xxx_l4_core_hwmod,
-+	.slave		= &omap3xxx_mmu_isp_hwmod,
-+	.addr		= omap3xxx_mmu_isp_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod omap3xxx_mmu_isp_hwmod = {
-+	.name		= "mmu_isp",
-+	.class		= &omap3xxx_mmu_hwmod_class,
-+	.mpu_irqs	= omap3xxx_mmu_isp_irqs,
-+	.main_clk	= "cam_ick",
-+	.dev_attr	= &mmu_isp_dev_attr,
-+	.flags		= HWMOD_NO_IDLEST,
-+};
-+
-+#ifdef CONFIG_OMAP_IOMMU_IVA2
-+
-+/* mmu iva */
-+
-+static struct omap_mmu_dev_attr mmu_iva_dev_attr = {
-+	.da_start = 0x11000000,
-+	.da_end = 0xfffff000,
-+	.nr_tlb_entries = 32,
-+};
-+
-+static struct omap_hwmod omap3xxx_mmu_iva_hwmod;
-+static struct omap_hwmod_irq_info omap3xxx_mmu_iva_irqs[] = {
-+	{ .irq = 28 },
-+	{ .irq = -1 }
-+};
-+
-+static struct omap_hwmod_rst_info omap3xxx_mmu_iva_resets[] = {
-+	{ .name = "mmu", .rst_shift = 1, .st_shift = 9 },
-+};
-+
-+static struct omap_hwmod_addr_space omap3xxx_mmu_iva_addrs[] = {
-+	{
-+		.pa_start	= 0x5d000000,
-+		.pa_end		= 0x5d00007f,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{ }
-+};
-+
-+/* l3_main -> iva mmu */
-+static struct omap_hwmod_ocp_if omap3xxx_l3_main__mmu_iva = {
-+	.master		= &omap3xxx_l3_main_hwmod,
-+	.slave		= &omap3xxx_mmu_iva_hwmod,
-+	.addr		= omap3xxx_mmu_iva_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod omap3xxx_mmu_iva_hwmod = {
-+	.name		= "mmu_iva",
-+	.class		= &omap3xxx_mmu_hwmod_class,
-+	.mpu_irqs	= omap3xxx_mmu_iva_irqs,
-+	.rst_lines	= omap3xxx_mmu_iva_resets,
-+	.rst_lines_cnt	= ARRAY_SIZE(omap3xxx_mmu_iva_resets),
-+	.main_clk	= "iva2_ck",
-+	.prcm = {
-+		.omap2 = {
-+			.module_offs = OMAP3430_IVA2_MOD,
-+		},
-+	},
-+	.dev_attr	= &mmu_iva_dev_attr,
-+	.flags		= HWMOD_NO_IDLEST,
-+};
-+
-+#endif
-+
- /* l4_per -> gpio4 */
- static struct omap_hwmod_addr_space omap3xxx_gpio4_addrs[] = {
- 	{
-@@ -3312,6 +3429,10 @@ static struct omap_hwmod_ocp_if *omap3xxx_hwmod_ocp_ifs[] __initdata = {
- 	&omap34xx_l4_core__mcspi2,
- 	&omap34xx_l4_core__mcspi3,
- 	&omap34xx_l4_core__mcspi4,
-+	&omap3xxx_l4_core__mmu_isp,
-+#ifdef CONFIG_OMAP_IOMMU_IVA2
-+	&omap3xxx_l3_main__mmu_iva,
-+#endif
- 	&omap3xxx_l4_wkup__counter_32k,
- 	NULL,
- };
-diff --git a/arch/arm/plat-omap/include/plat/iommu.h b/arch/arm/plat-omap/include/plat/iommu.h
-index e58d571..44518cc 100644
---- a/arch/arm/plat-omap/include/plat/iommu.h
-+++ b/arch/arm/plat-omap/include/plat/iommu.h
-@@ -103,6 +103,19 @@ struct iommu_functions {
- 	ssize_t (*dump_ctx)(struct omap_iommu *obj, char *buf, ssize_t len);
- };
+ 	while ((skb = __skb_dequeue(&rxq)) != NULL) {
+ 		sco = (struct skb_cb_overlay *)skb->cb;
+@@ -1460,18 +1458,15 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
+ static void xen_netbk_tx_action(struct xen_netbk *netbk)
+ {
+ 	unsigned nr_gops;
+-	int ret;
  
-+/**
-+ * omap_mmu_dev_attr - OMAP mmu device attributes for omap_hwmod
-+ * @da_start:		device address where the va space starts.
-+ * @da_end:		device address where the va space ends.
-+ * @nr_tlb_entries:	number of entries supported by the translation
-+ *			look-aside buffer (TLB).
-+ */
-+struct omap_mmu_dev_attr {
-+	u32 da_start;
-+	u32 da_end;
-+	int nr_tlb_entries;
-+};
+ 	nr_gops = xen_netbk_tx_build_gops(netbk);
+ 
+ 	if (nr_gops == 0)
+ 		return;
+-	ret = HYPERVISOR_grant_table_op(GNTTABOP_copy,
+-					netbk->tx_copy_ops, nr_gops);
+-	BUG_ON(ret);
+ 
+-	xen_netbk_tx_submit(netbk);
++	gnttab_batch_copy_retry_eagain(netbk->tx_copy_ops, nr_gops);
+ 
++	xen_netbk_tx_submit(netbk);
+ }
+ 
+ static void xen_netbk_idx_release(struct xen_netbk *netbk, u16 pending_idx)
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index eea81cf..96543b2 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -38,6 +38,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
++#include <linux/delay.h>
+ #include <linux/hardirq.h>
+ 
+ #include <xen/xen.h>
+@@ -823,6 +824,26 @@ unsigned int gnttab_max_grant_frames(void)
+ }
+ EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
+ 
++#define MAX_DELAY 256
++void
++gnttab_retry_eagain_gop(unsigned int cmd, void *gop, int16_t *status,
++						const char *func)
++{
++	unsigned delay = 1;
 +
- struct iommu_platform_data {
- 	const char *name;
- 	const char *clk_name;
++	do {
++		BUG_ON(HYPERVISOR_grant_table_op(cmd, gop, 1));
++		if (*status == GNTST_eagain)
++			msleep(delay++);
++	} while ((*status == GNTST_eagain) && (delay < MAX_DELAY));
++
++	if (delay >= MAX_DELAY) {
++		printk(KERN_ERR "%s: %s eagain grant\n", func, current->comm);
++		*status = GNTST_bad_page;
++	}
++}
++EXPORT_SYMBOL_GPL(gnttab_retry_eagain_gop);
++
+ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		    struct gnttab_map_grant_ref *kmap_ops,
+ 		    struct page **pages, unsigned int count)
+@@ -836,6 +857,11 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 	if (ret)
+ 		return ret;
+ 
++	/* Retry eagain maps */
++	for (i = 0; i < count; i++)
++		if (map_ops[i].status == GNTST_eagain)
++			gnttab_retry_eagain_map(map_ops + i);
++
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return ret;
+ 
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index b3e146e..a6e07ea 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -490,8 +490,7 @@ static int xenbus_map_ring_valloc_pv(struct xenbus_device *dev,
+ 
+ 	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
+ 
+-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
+-		BUG();
++	gnttab_map_grant_retry_eagain(&op);
+ 
+ 	if (op.status != GNTST_okay) {
+ 		free_vm_area(area);
+@@ -572,8 +571,7 @@ int xenbus_map_ring(struct xenbus_device *dev, int gnt_ref,
+ 	gnttab_set_map_op(&op, (unsigned long)vaddr, GNTMAP_host_map, gnt_ref,
+ 			  dev->otherend_id);
+ 
+-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
+-		BUG();
++	gnttab_map_grant_retry_eagain(&op);
+ 
+ 	if (op.status != GNTST_okay) {
+ 		xenbus_dev_fatal(dev, op.status,
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index 11e27c3..c829c83 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -43,6 +43,7 @@
+ #include <xen/interface/grant_table.h>
+ 
+ #include <asm/xen/hypervisor.h>
++#include <asm/xen/hypercall.h>
+ 
+ #include <xen/features.h>
+ 
+@@ -183,6 +184,43 @@ unsigned int gnttab_max_grant_frames(void);
+ 
+ #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+ 
++/* Retry a grant map/copy operation when the hypervisor returns GNTST_eagain.
++ * This is typically due to paged out target frames.
++ * Generic entry-point, use macro decorators below for specific grant
++ * operations.
++ * Will retry for 1, 2, ... 255 ms, i.e. 256 times during 32 seconds.
++ * Return value in *status guaranteed to no longer be GNTST_eagain. */
++void gnttab_retry_eagain_gop(unsigned int cmd, void *gop, int16_t *status,
++                             const char *func);
++
++#define gnttab_retry_eagain_map(_gop)                       \
++    gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, (_gop), \
++                            &(_gop)->status, __func__)
++
++#define gnttab_retry_eagain_copy(_gop)                  \
++    gnttab_retry_eagain_gop(GNTTABOP_copy, (_gop),      \
++                            &(_gop)->status, __func__)
++
++static inline void
++gnttab_map_grant_retry_eagain(struct gnttab_map_grant_ref *op)
++{
++    BUG_ON((HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, op, 1)));
++    if (op->status == GNTST_eagain)
++        gnttab_retry_eagain_map(op);
++}
++
++static inline void
++gnttab_batch_copy_retry_eagain(struct gnttab_copy *batch, unsigned count)
++{
++    unsigned i;
++    struct gnttab_copy *op;
++
++    BUG_ON(HYPERVISOR_grant_table_op(GNTTABOP_copy, batch, count));
++    for (i = 0, op = batch; i < count; i++, op++)
++        if (op->status == GNTST_eagain)
++            gnttab_retry_eagain_copy(op);
++}
++
+ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		    struct gnttab_map_grant_ref *kmap_ops,
+ 		    struct page **pages, unsigned int count);
+diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
+index 7da811b..66cb734 100644
+--- a/include/xen/interface/grant_table.h
++++ b/include/xen/interface/grant_table.h
+@@ -520,6 +520,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+ #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
+ #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
+ #define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary */
++#define GNTST_eagain          (-12) /* Retry.                                */
+ 
+ #define GNTTABOP_error_msgs {                   \
+     "okay",                                     \
+@@ -533,6 +534,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+     "permission denied",                        \
+     "bad page",                                 \
+     "copy arguments cross page boundary"        \
++    "retry"                                     \
+ }
+ 
+ #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */
 -- 
 1.7.9.5
 
