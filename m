@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab2ILEdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 00:33:43 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40158 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2ILEdl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 00:33:41 -0400
-Date: Wed, 12 Sep 2012 14:33:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jamie Iles <jamie@jamieiles.com>, Gleb Natapov <gleb@redhat.com>
-Subject: linux-next: manual merge of the kvm tree with Linus' tree
-Message-Id: <20120912143331.beed6ad11cfc753f3c33f5a3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD"
+	id S1753075Ab2ILEk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 00:40:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44641 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab2ILEkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 00:40:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,407,1344236400"; 
+   d="scan'208";a="221025654"
+Date: Wed, 12 Sep 2012 12:40:37 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
+ (0x80000b0e)
+Message-ID: <20120912044037.GA23094@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+3 of my test boxes running v3.5 kernel become unaccessible and I find
+two of them kept emitting this dmesg:
 
-Today's linux-next merge of the kvm tree got a conflict in
-arch/x86/kvm/i8259.c between commit 749c59fd15b2 ("KVM: PIC: fix use of
-uninitialised variable") from Linus' tree and commit ec798660cf72 ("KVM:
-cleanup pic reset") from the kvm tree.
+vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
 
-The latter removed the code fixed by the former, so I just did that (no
-action is required).
+The other one has froze and the above lines are the last dmesg.
+Any ideas?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUBCbAAoJEECxmPOUX5FEPx0P/ihX48AKb/J1m5Ka9Clv0OS7
-cNF6yYZR17XoejSwyevjaWTMe7KKyTUvQA/hED7iVcc071VScN5P3CLhhj5fIP4o
-+NQCkgFIUhIm9q9s/vqWEyQnQFtUy8I8Pct1Zv60vtAkdfYEcrpXUqhOTZPf4B7n
-+EJ/FV7sDSereZRjWlvurraznb0n2linipNbm8B8a/UDP9UKCjhX6vvWfyQtwTYJ
-IgdY3KP7u7cKnHEiXLDazhV1zuFF5Jw9GyQjQ7u60YeV3oNBvHuUutCNJOZ9E6L2
-b4sWRVhq8A4Cj2Z/v2hOXTfWMkZThTEUCnzNDu0KpTYI8zYSSW4IZF33Ps8W0Hh4
-7jvlJL9R0PXDIbKWZuZYYAhW/zTqrfNEDNWtd2JoVuAejHVqjS/kXfAkt2bFjIho
-PHkfXMAxxZDEpBBq0s3+pqi0NKz6i77I8MGn8riPkcYj7BnnqbiXUWe8wf5siW6N
-GXDse/UrlksHjCtHdr//fw+Kh/v5CgxFI2YKQCjLezF55EHcBEib/Wf3upOOE+M1
-K8zvY5yXINUcjRp6MMNZ7yO9u5DaNCXVFxaBGA372meqTGujvFlyEAVhDy2DNB48
-2vIIr0iYUzU6V/hq6XUdJyfaNprdlomG05rCadDMTJxfngpoOxnz7vjXeBfmZWpR
-H3VwT9Muf6Um3VWalGYB
-=EpOU
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD--
+Thanks,
+Fengguang
