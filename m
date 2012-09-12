@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab2ILX6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:58:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1757472Ab2ILX6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:58:48 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab2ILXmS (ORCPT
+	with ESMTP id S933033Ab2ILXmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:18 -0400
+	Wed, 12 Sep 2012 19:42:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        James Ralston <james.d.ralston@intel.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 76/85] i2c-i801: Add Device IDs for Intel Lynx Point-LP PCH
-Date: Wed, 12 Sep 2012 16:36:59 -0700
-Message-Id: <20120912233549.658499485@linuxfoundation.org>
+        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
+Subject: [ 73/85] ext3: Fix fdatasync() for files with only i_size changes
+Date: Wed, 12 Sep 2012 16:36:56 -0700
+Message-Id: <20120912233549.345361741@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,67 +28,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 4a8f1ddde942e232387e6129ce4f4c412e43802f upstream.
+commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
 
-Add the SMBus Device IDs for the Intel Lynx Point-LP PCH.
+Code tracking when transaction needs to be committed on fdatasync(2) forgets
+to handle a situation when only inode's i_size is changed. Thus in such
+situations fdatasync(2) doesn't force transaction with new i_size to disk
+and that can result in wrong i_size after a crash.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Fix the issue by updating inode's i_datasync_tid whenever its size is
+updated.
+
+Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+)
+ fs/ext3/inode.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -21,6 +21,7 @@ Supported adapters:
-   * Intel DH89xxCC (PCH)
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-+  * Intel Lynx Point-LP (PCH)
-    Datasheets: Publicly available at the Intel website
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -3068,6 +3068,8 @@ static int ext3_do_update_inode(handle_t
+ 	struct ext3_inode_info *ei = EXT3_I(inode);
+ 	struct buffer_head *bh = iloc->bh;
+ 	int err = 0, rc, block;
++	int need_datasync = 0;
++	__le32 disksize;
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -104,6 +104,7 @@ config I2C_I801
- 	    DH89xxCC (PCH)
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
-+	    Lynx Point-LP (PCH)
+ again:
+ 	/* we can't allow multiple procs in here at once, its a bit racey */
+@@ -3105,7 +3107,11 @@ again:
+ 		raw_inode->i_gid_high = 0;
+ 	}
+ 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
+-	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
++	disksize = cpu_to_le32(ei->i_disksize);
++	if (disksize != raw_inode->i_size) {
++		need_datasync = 1;
++		raw_inode->i_size = disksize;
++	}
+ 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
+ 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
+ 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
+@@ -3121,8 +3127,11 @@ again:
+ 	if (!S_ISREG(inode->i_mode)) {
+ 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
+ 	} else {
+-		raw_inode->i_size_high =
+-			cpu_to_le32(ei->i_disksize >> 32);
++		disksize = cpu_to_le32(ei->i_disksize >> 32);
++		if (disksize != raw_inode->i_size_high) {
++			raw_inode->i_size_high = disksize;
++			need_datasync = 1;
++		}
+ 		if (ei->i_disksize > 0x7fffffffULL) {
+ 			struct super_block *sb = inode->i_sb;
+ 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
+@@ -3175,6 +3184,8 @@ again:
+ 	ext3_clear_inode_state(inode, EXT3_STATE_NEW);
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -52,6 +52,7 @@
-   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-+  Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -147,6 +148,7 @@
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
- 
- struct i801_priv {
- 	struct i2c_adapter adapter;
-@@ -636,6 +638,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
- 	{ 0, }
- };
- 
+ 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
++	if (need_datasync)
++		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
+ out_brelse:
+ 	brelse (bh);
+ 	ext3_std_error(inode->i_sb, err);
 
 
