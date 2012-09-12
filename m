@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2ILX56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:57:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S1757432Ab2ILX6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:58:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083Ab2ILXmZ (ORCPT
+	with ESMTP id S933065Ab2ILXmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:25 -0400
+	Wed, 12 Sep 2012 19:42:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        Adam Radford <aradford@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 68/85] SCSI: megaraid_sas: Move poll_aen_lock initializer
-Date: Wed, 12 Sep 2012 16:36:51 -0700
-Message-Id: <20120912233548.840974778@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 76/85] i2c-i801: Add Device IDs for Intel Lynx Point-LP PCH
+Date: Wed, 12 Sep 2012 16:36:59 -0700
+Message-Id: <20120912233549.658499485@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -30,42 +29,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Kashyap Desai <Kashyap.Desai@lsi.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
+commit 4a8f1ddde942e232387e6129ce4f4c412e43802f upstream.
 
-The following patch moves the poll_aen_lock initializer from
-megasas_probe_one() to megasas_init().  This prevents a crash when a user
-loads the driver and tries to issue a poll() system call on the ioctl
-interface with no adapters present.
+Add the SMBus Device IDs for the Intel Lynx Point-LP PCH.
 
-Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
-Signed-off-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4066,7 +4066,6 @@ megasas_probe_one(struct pci_dev *pdev,
- 	spin_lock_init(&instance->cmd_pool_lock);
- 	spin_lock_init(&instance->hba_lock);
- 	spin_lock_init(&instance->completion_lock);
--	spin_lock_init(&poll_aen_lock);
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -21,6 +21,7 @@ Supported adapters:
+   * Intel DH89xxCC (PCH)
+   * Intel Panther Point (PCH)
+   * Intel Lynx Point (PCH)
++  * Intel Lynx Point-LP (PCH)
+    Datasheets: Publicly available at the Intel website
  
- 	mutex_init(&instance->aen_mutex);
- 	mutex_init(&instance->reset_mutex);
-@@ -5392,6 +5391,8 @@ static int __init megasas_init(void)
- 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
- 	       MEGASAS_EXT_VERSION);
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -104,6 +104,7 @@ config I2C_I801
+ 	    DH89xxCC (PCH)
+ 	    Panther Point (PCH)
+ 	    Lynx Point (PCH)
++	    Lynx Point-LP (PCH)
  
-+	spin_lock_init(&poll_aen_lock);
-+
- 	support_poll_for_event = 2;
- 	support_device_change = 1;
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -52,6 +52,7 @@
+   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
++  Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -147,6 +148,7 @@
+ #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
++#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
+ 
+ struct i801_priv {
+ 	struct i2c_adapter adapter;
+@@ -636,6 +638,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
+ 	{ 0, }
+ };
  
 
 
