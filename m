@@ -1,156 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760478Ab2ILQvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:51:32 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64466 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753083Ab2ILQv3 (ORCPT
+	id S1760529Ab2ILQ6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:58:08 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49197 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2ILQ6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:51:29 -0400
+	Wed, 12 Sep 2012 12:58:04 -0400
+Date: Wed, 12 Sep 2012 09:57:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 04/15] rcu: Permit RCU_NONIDLE() to be used
+ from interrupt context
+Message-ID: <20120912165721.GR4257@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120906185402.GB5738@jtriplet-mobl1>
+ <1346961244.1680.46.camel@gandalf.local.home>
+ <20120907060940.GA21166@leaf>
+ <20120907142441.GD2462@linux.vnet.ibm.com>
+ <20120907144717.GA22059@leaf>
+ <1347030967.8178.15.camel@gandalf.local.home>
+ <20120912010720.GM4257@linux.vnet.ibm.com>
+ <1347459210.10751.48.camel@gandalf.local.home>
+ <20120912150328.GN4257@linux.vnet.ibm.com>
+ <1347463120.10751.63.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <5050AD65.1000801@gmail.com>
-References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
- <1344355862-2726-7-git-send-email-jiang.liu@huawei.com> <CAErSpo5ixjvv3r9wzCXFrDZ790u9_K5KCuQ7GQO3fFuFuiVJZg@mail.gmail.com>
- <5050AD65.1000801@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 12 Sep 2012 10:51:05 -0600
-Message-ID: <CAErSpo4=cakjCQ_Z_nUa2xZQr9KV72kxtsgrW0cjeFN=ktb8zQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 06/22] PCI: use a global lock to serialize PCI root
- bridge hotplug operations
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347463120.10751.63.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091216-6148-0000-0000-000009962CD6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 9:42 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> On 09/12/2012 06:57 AM, Bjorn Helgaas wrote:
->> On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> Currently there's no mechanism to protect the global pci_root_buses list
->>> from dynamic change at runtime. That means, PCI root bridge hotplug
->>> operations, which dynamically change the pci_root_buses list, may cause
->>> invalid memory accesses.
->>>
->>> So introduce a global lock to serialize accesses to the pci_root_buses
->>> list and serialize PCI host bridge hotplug operations.
+On Wed, Sep 12, 2012 at 11:18:40AM -0400, Steven Rostedt wrote:
+> [ Added Linus to verify what I'm talking about ]
+> 
+> On Wed, 2012-09-12 at 08:03 -0700, Paul E. McKenney wrote:
+> 
+> > Doesn't Fengguang pull branches individually?  And won't that mean
+> > that as soon as I push my export-removal commit, that he will see
+> > build failures?
+> > 
+> > Or are you suggesting that we both send both commits?
+> 
+> No, what I could do is to push the branch out to my repository on
+> kernel.org (I'm currently running it under my test suite), and then both
+> you and Ingo can pull from it.
+> 
+> It is based off of v3.6-rc5 and only has Josh's change in it. This way,
+> when Ingo pulls it into the perf/core branch, I can work against that,
+> and you could either pull the same branch directly from me (as you need
+> it to work too), or you could have Ingo pull it into the rcu branches in
+> tip, and you could work against that.
+> 
+> The trick is that the branch I push is against Linus's tree (something
+> that we all should be working against) and contains only the one change.
+> Then everyone that needs this change can just pull it directly, and git
+> will sort it all out without any conflicts. This is the method that
+> Linus was talking about at Kernel Summit.
 
->>> @@ -463,6 +463,8 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
->>>         if (!root)
->>>                 return -ENOMEM;
->>>
->>> +       pci_host_bridge_hotplug_lock();
->>
->> Here's where I get lost.  This is an ACPI driver's .add() routine,
->> which is analogous to a PCI driver's .probe() routine.  PCI driver
->> .probe() routines don't need to be concerned with PCI device hotplug.
->> All the hotplug-related locking is handled by the PCI core, not by
->> individual drivers.  So why do we need it here?
->>
->> I'm not suggesting that the existing locking is correct.  I'm just not
->> convinced this is the right way to fix it.
->>
->> The commit log says we need protection for the global pci_root_buses
->> list.  But even with this whole series, we still traverse the list
->> without protection in places like pcibios_resource_survey() and
->> pci_assign_unassigned_resources().
->>
->> Maybe we can make progress on this by identifying specific failures
->> that can happen in a couple of these paths, e.g., acpi_pci_root_add()
->> and i7core_xeon_pci_fixup().  If we look at those paths, we might a
->> way to fix this in a more general fashion than throwing in lock/unlock
->> pairs.
->>
->> It might also help to know what the rule is for when we need to use
->> pci_host_bridge_hotplug_lock() and pci_host_bridge_hotplug_unlock().
->> Apparently it is not as simple as protecting every reference to the
->> pci_root_buses list.
-> Hi Bjorn,
->         It's really a challenge work to protect the pci_root_buses list:)
+Works for me!
 
-Yes.  IIRC, your last patch was to unexport pci_root_buses, which I
-think is a great idea.
+							Thanx, Paul
 
-> All evils are caused by the pci_find_next_bus() interface, which is designed
-> to be called at boot time only. I have tried several other solutions but
-> failed.
->         First I tried "pci_get_next_bus()" which holds a reference to the
-> returned root bus "pci_bus". But that doesn't help because pci_bus could
-> be removed from the pci_root_buses list even you hold a reference to
-> pci_bus. And it will cause trouble when you call pci_get_next_bus(pci_bus)
-> again because pci_bus->node.next is invalid now.
-
-That sounds like a bug.  If an interface returns a structure after
-acquiring a reference, the caller should be able to rely on the
-structure remaining valid.  Adding extra locks doesn't feel like the
-right solution for that problem.
-
-In the big picture, I'm not sure how much sense all the
-pci_find_bus(), pci_find_next_bus(), pci_get_bus(),
-pci_get_next_bus(), etc., interfaces really make.  There really aren't
-very many callers, and most of them look a bit hacky to me.  Usually
-they're quirks trying to locate a device or drivers for device A
-trying to locate companion device B or something similar.  I wonder if
-we could figure out some entirely new interface that wouldn't involve
-traversing so much of the hierarchy and therefore could be safer.
-
->         Then I tried RCU and also failed because caller of pci_get_next_bus()
-> may sleep.
->         And at last the global host bridge hotplug lock solution. The rules
-> for locking are:
->         1) No need for locking when accessing the pci_root_buses list at
-> system initialization stages. (It's system initialization instead of driver
-> initialization here because driver's initialization code may be called
-> at runtime when loading the driver.) It's single-threaded and no hotplug
-> during system initialization stages.
->         2) Should acquire the global lock when accessing the pci_root_buses
-> list at runtime.
->
->         I have done several rounds of scanning to identify accessing to
-> the pci_root_buses list at runtime. But there may still be something missed:(
-
-That's part of what makes me uneasy.  We have to look at a lot of code
-outside drivers/pci to analyze correctness, which is difficult.  It
-would be much better if we could do something in the core, where we
-only have to analyze drivers/pci.  I know this is probably much harder
-and probably involves replacing or removing some of these interfaces
-that cause problems.
-
->         I think the best solution is to get rid of the pci_find_next_bus().
-> but not sure whether we could achieve that.
-
->> Actually, I looked at the callers of pci_find_next_bus(), and most of
->> them are unsafe in an even deeper way: they're doing device setup in
->> initcalls, so that setup won't be done for hot-added devices.  For
->> example, I can pick on sba_init() because I think I wrote it back in
->> the dark ages.  sba_init() is a subsys_initcall that calls
->> sba_connect_bus() for every bus we know about at boot-time, and it
->> sets the host bridge's iommu pointer.  If we were to hot-add a host
->> bridge, we would never set the iommu pointer.
-
-> That's a more fundamental issue, another big topic for us:(
-
->> I'm not sure why you didn't add a pci_host_bridge_hotplug_lock() in
->> the sba_init() path, since it looks similar to the drm_open_helper()
->> path above.  But in any case, I think that would be the wrong thing to
->> do because it would fix the superficial problem while leaving the
->> deeper problem of host bridge hot-add not setting the iommu pointer.
-
-> sba_init is called during system initialization stages through subsys_initcall,
-> so no extra protection for it.
-
-OK, I see your reasoning.  But I don't agree :)  All the users of an
-interface should use the same locking scheme, even if they're at
-boot-time where we "know" we don't need it.  It's too hard to analyze
-differences, and code gets copied from one place to somewhere else
-where it might not be appropriate.
-
-Bjorn
