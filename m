@@ -1,43 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2ILKuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:50:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43936 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941Ab2ILKuE (ORCPT
+	id S1757371Ab2ILKwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:52:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56828 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937Ab2ILKwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:50:04 -0400
-Message-ID: <505068F4.4080309@gmail.com>
-Date: Wed, 12 Sep 2012 12:50:28 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
+	Wed, 12 Sep 2012 06:52:05 -0400
+Date: Wed, 12 Sep 2012 12:52:02 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 12/19] i2c-nomadik: Register sub-devices when passed
+ via Device Tree
+Message-ID: <20120912105202.GD2624@pengutronix.de>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-13-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
 MIME-Version: 1.0
-To: suresh.b.siddha@intel.com
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, dwmw2@infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-mm <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mtd: kernel BUG at arch/x86/mm/pat.c:279!
-References: <1340959739.2936.28.camel@lappy>  <CA+1xoqdgKV_sEWvUbuxagL9JEc39ZFa6X9-acP7j-M7wvW6qbQ@mail.gmail.com>  <CA+55aFzJCLxVP+WYJM-gq=aXx5gmdgwC7=_Gr2Tooj8q+Dz4dw@mail.gmail.com>  <1347057778.26695.68.camel@sbsiddha-desk.sc.intel.com>  <CA+55aFwW9Q+DM2gZy7r3JQJbrbMNR6sN+jewc2CY0i1wD_X=Tw@mail.gmail.com>  <1347062045.26695.82.camel@sbsiddha-desk.sc.intel.com>  <CA+55aFzeKcV5hROLJE31dNi3SEs+s6o0LL=96Kh8QGHPx=aZnA@mail.gmail.com> <1347202600.5876.7.camel@sbsiddha-ivb>
-In-Reply-To: <1347202600.5876.7.camel@sbsiddha-ivb>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2012 04:56 PM, Suresh Siddha wrote:
-> On Sat, 2012-09-08 at 12:57 -0700, Linus Torvalds wrote:
->> > Whatever. Something like this (TOTALLY UNTESTED) attached patch should
->> > get the mtdchar overflows to go away, 
-> It looks good to me. Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> 
-> Sasha, can you please give this a try?
 
-Sorry for the delay. It looks good here.
+--KdquIMZPjGJQvRdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Sep 10, 2012 at 04:42:36AM -0700, Linus Walleij wrote:
+> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>=20
+> > Each I2C device can be correctly probed already using Device Tree,
+> > but the sub-devices still have to be registered by calls to
+> > i2c_register_board_info(). After this patch, each sub-device can
+> > be registered directly from Device Tree instead, removing the
+> > requirement for the aforementioned calls from platform code.
+> >
+> > CC: linux-i2c@vger.kernel.org
+> > CC: Wolfram Sang <w.sang@pengutronix.de>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>=20
+> The patch as such is fine.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>=20
+> ...but there will be merge issues (of the type I'm
+> discussing with Arnd in another thread).
+>=20
+> > ---
+> >  drivers/i2c/busses/i2c-nomadik.c |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> >
+> > diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-=
+nomadik.c
+> > index 5d1a970..01231c2 100644
+> > --- a/drivers/i2c/busses/i2c-nomadik.c
+> > +++ b/drivers/i2c/busses/i2c-nomadik.c
+> > @@ -26,6 +26,7 @@
+> >  #include <linux/pm_runtime.h>
+> >  #include <linux/platform_data/i2c-nomadik.h>
+> >  #include <linux/of.h>
+> > +#include <linux/of_i2c.h>
+>=20
+> This is clearly dependent on the other patches to I2C to
+> be merged first (the include above is not yet there in
+> linux-next even), so this patch should go into Wolfram's
+> tree right? Else we have to rip out all the patches to the
+> I2C driver from his tree and funnel it all through ARM SoC.
+
+First, I'd like to have this patch squashed with "i2c: nomadik: Add
+Device Tree support to the Nomadik I2C driver". I wanted to do this on
+my own, but the patches do not apply to 3.6-rc5 (with or without
+regulator removal patch from Linus)?
+
+I can also take the I2C related changes to the devicetrees via my tree.
+This is not uncommon. Some people prefer to do this via their soc-trees,
+though. I don't care much since this is not really a hard dependency
+causing build failures or merge conflicts, but just needs a little extra
+time until the patches are all there...
 
 Thanks,
-Sasha
 
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--KdquIMZPjGJQvRdI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlBQaVIACgkQD27XaX1/VRtFaACgoh39FHUnKUPV5kp+0b/v4dJ8
+sCoAoKZ+cztQxIEszGwClG27oICXHZ6H
+=Hc56
+-----END PGP SIGNATURE-----
+
+--KdquIMZPjGJQvRdI--
