@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab2IMAdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:33:18 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab2ILXdI (ORCPT
+	id S1756267Ab2IMAdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:33:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279Ab2ILXdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:08 -0400
+	Wed, 12 Sep 2012 19:33:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Valentin Avram <aval13@gmail.com>, Peter Moody <pmoody@google.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 044/108] audit: fix refcounting in audit-tree
-Date: Wed, 12 Sep 2012 16:28:42 -0700
-Message-Id: <20120912232455.150432793@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 036/108] UBIFS: fix crash on error path
+Date: Wed, 12 Sep 2012 16:28:34 -0700
+Message-Id: <20120912232454.322374429@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,86 +29,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit a2140fc0cb0325bb6384e788edd27b9a568714e2 upstream.
+commit 11e3be0be2a1314e0861304857e7efcaed5d3e54 upstream.
 
-Refcounting of fsnotify_mark in audit tree is broken.  E.g:
+This patch fixes a regression introduced by
+"4994297 UBIFS: make ubifs_lpt_init clean-up in case of failure" which
+I've hit while running the 'integck -p' test. When remount the file-system
+from R/O mode to R/W mode and 'lpt_init_wr()' fails, we free _all_ LPT
+resources by calling 'ubifs_lpt_free(c, 0)', even those needed for R/O
+mode. This leads to subsequent crashes, e.g., if we try to unmount
+the file-system.
 
-                              refcount
-create_chunk
-  alloc_chunk                 1
-  fsnotify_add_mark           2
-
-untag_chunk
-  fsnotify_get_mark           3
-  fsnotify_destroy_mark
-    audit_tree_freeing_mark   2
-  fsnotify_put_mark           1
-  fsnotify_put_mark           0
-  via destroy_list
-    fsnotify_mark_destroy    -1
-
-This was reported by various people as triggering Oops when stopping auditd.
-
-We could just remove the put_mark from audit_tree_freeing_mark() but that would
-break freeing via inode destruction.  So this patch simply omits a put_mark
-after calling destroy_mark or adds a get_mark before.
-
-The additional get_mark is necessary where there's no other put_mark after
-fsnotify_destroy_mark() since it assumes that the caller is holding a reference
-(or the inode is keeping the mark pinned, not the case here AFAICS).
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reported-by: Valentin Avram <aval13@gmail.com>
-Reported-by: Peter Moody <pmoody@google.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit_tree.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/ubifs/lpt.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
- 		spin_unlock(&hash_lock);
- 		spin_unlock(&entry->lock);
- 		fsnotify_destroy_mark(entry);
--		fsnotify_put_mark(entry);
- 		goto out;
- 	}
- 
-@@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
- 	spin_unlock(&hash_lock);
- 	spin_unlock(&entry->lock);
- 	fsnotify_destroy_mark(entry);
--	fsnotify_put_mark(entry);
- 	goto out;
- 
- Fallback:
-@@ -332,6 +330,7 @@ static int create_chunk(struct inode *in
- 		spin_unlock(&hash_lock);
- 		chunk->dead = 1;
- 		spin_unlock(&entry->lock);
-+		fsnotify_get_mark(entry);
- 		fsnotify_destroy_mark(entry);
- 		fsnotify_put_mark(entry);
- 		return 0;
-@@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode
- 		spin_unlock(&chunk_entry->lock);
- 		spin_unlock(&old_entry->lock);
- 
-+		fsnotify_get_mark(chunk_entry);
- 		fsnotify_destroy_mark(chunk_entry);
- 
- 		fsnotify_put_mark(chunk_entry);
-@@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode
- 	spin_unlock(&old_entry->lock);
- 	fsnotify_destroy_mark(old_entry);
- 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
--	fsnotify_put_mark(old_entry); /* and kill it */
+--- a/fs/ubifs/lpt.c
++++ b/fs/ubifs/lpt.c
+@@ -1749,7 +1749,10 @@ int ubifs_lpt_init(struct ubifs_info *c,
  	return 0;
+ 
+ out_err:
+-	ubifs_lpt_free(c, 0);
++	if (wr)
++		ubifs_lpt_free(c, 1);
++	if (rd)
++		ubifs_lpt_free(c, 0);
+ 	return err;
  }
  
 
