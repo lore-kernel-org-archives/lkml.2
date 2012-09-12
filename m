@@ -1,35 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab2ILDVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 23:21:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40286 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759868Ab2ILDVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 23:21:43 -0400
-Date: Wed, 12 Sep 2012 11:21:37 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: Cleanup the omap2_mcspi_txrx_dma
- function
-Message-ID: <20120912032135.GJ9162@opensource.wolfsonmicro.com>
-References: <1347345800-4116-1-git-send-email-shubhrajyoti@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347345800-4116-1-git-send-email-shubhrajyoti@ti.com>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760035Ab2ILDWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 23:22:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45174 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759868Ab2ILDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 23:22:40 -0400
+Message-ID: <1347420159.2456.15.camel@joe2Laptop>
+Subject: Re: [PATCH 1/3] Add ratelimited printk for different alert levels
+From: Joe Perches <joe@perches.com>
+To: raghu.prabhu13@gmail.com
+Cc: xfs@oss.sgi.com, david@fromorbit.com,
+        Raghavendra D Prabhu <rprabhu@wnohang.net>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Sep 2012 20:22:39 -0700
+In-Reply-To: <ef779779fdfb84c7c1216b374216246d4de83233.1347396641.git.rprabhu@wnohang.net>
+References: <cover.1347396641.git.rprabhu@wnohang.net>
+	 <ef779779fdfb84c7c1216b374216246d4de83233.1347396641.git.rprabhu@wnohang.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 12:13:20PM +0530, Shubhrajyoti D wrote:
-> Currently in omap2_mcspi_txrx_dma the tx and the rx support is
-> interleaved. Make the rx related code in omap2_mcspi_rx_dma
-> and the tx related code omap2_mcspi_tx_dma and call the functions.
+On Wed, 2012-09-12 at 03:43 +0530, raghu.prabhu13@gmail.com wrote:
+> Ratelimited printk will be useful in printing xfs messages which are otherwise
+> not required to be printed always due to their high rate (to prevent kernel ring
+> buffer from overflowing), while at the same time required to be printed.
+[]
+> diff --git a/fs/xfs/xfs_message.h b/fs/xfs/xfs_message.h
+[]
+> @@ -30,6 +32,32 @@ void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
+>  }
+>  #endif
+>  
+> +#define xfs_printk_ratelimited(xfs_printk, dev, fmt, ...)		\
+> +do {									\
+> +	static DEFINE_RATELIMIT_STATE(_rs,				\
+> +				      DEFAULT_RATELIMIT_INTERVAL,	\
+> +				      DEFAULT_RATELIMIT_BURST);		\
+> +	if (__ratelimit(&_rs))						\
+> +		xfs_printk(dev, fmt, ##__VA_ARGS__);			\
+> +} while (0)
 
-I'd ideally like some testing from the OMAP side before applying this -
-is there someone who can give a Tested-by?
+It might be better to use an xfs singleton RATELIMIT_STATE
+
+DEFINE_RATELIMIT_STATE(xfs_rs);
+...
+#define xfs_printk_ratelimited(xfs_printk, dev, fmt, ...)		\
+do {									\
+	if (__ratelimit(&xfs_rs))					\
+		xfs_printk(dev, fmt, ##__VA_ARGS__);			\
+} while (0)
+
+
