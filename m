@@ -1,159 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab2ILKE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 06:04:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56582 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab2ILKE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 06:04:56 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@avionic-design.de, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH v4] pwm: Fix compilation error when CONFIG_PWM is not defined
-Date: Wed, 12 Sep 2012 15:31:46 +0530
-Message-Id: <1347444106-30509-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755861Ab2ILKHl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 06:07:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50613 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754987Ab2ILKHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 06:07:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,408,1344236400"; 
+   d="scan'208";a="220978558"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH v3 10/10] thp: implement refcounting for huge zero page
+Date: Wed, 12 Sep 2012 13:07:53 +0300
+Message-Id: <1347444473-26468-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dummy implemention of public symbols for compilation-safe inclusion
-of include/linux/pwm.h file when CONFIG_PWM is not defined.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Reported-by: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+H. Peter Anvin doesn't like huge zero page which sticks in memory forever
+after the first allocation. Here's implementation of lockless refcounting
+for huge zero page.
+
+We have two basic primitives: {get,put}_huge_zero_page(). They
+manipulate reference counter.
+
+If counter is 0, get_huge_zero_page() allocates a new huge page and
+takes two references: one for caller and one for shrinker. We free the
+page only in shrinker callback if counter is 1 (only shrinker has the
+reference).
+
+put_huge_zero_page() only decrements counter. Counter is never zero
+in put_huge_zero_page() since shrinker holds on reference.
+
+Freeing huge zero page in shrinker callback helps to avoid frequent
+allocate-free.
+
+Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
+parallel (40 processes) read page faulting comparing to lazy huge page
+allocation.  I think it's pretty reasonable for synthetic benchmark.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-Changes since v3:
-* Nitpicks
+ mm/huge_memory.c |  111 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 87 insertions(+), 24 deletions(-)
 
-Changes since v2:
-* #if condition for legacy functions modified
-* Reverted layout changes, can be taken up when HAVE_PWM is no longer
-required.
-
-Changes since v1:
-* Incorporated Thierry's suggestions regarding adding dummy function
-implemention for all global functions
-* Reorganized header file to have structure definitions first and then the
-function definitions.
-
- include/linux/pwm.h |   71 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 69 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 21d076c..946651d 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -6,6 +6,7 @@
- struct pwm_device;
- struct seq_file;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 0981b09..23d9634 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -17,6 +17,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/freezer.h>
+ #include <linux/mman.h>
++#include <linux/shrinker.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -46,7 +47,6 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
+ /* during fragmentation poll the hugepage allocator once every minute */
+ static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
+ static struct task_struct *khugepaged_thread __read_mostly;
+-static unsigned long huge_zero_pfn __read_mostly;
+ static DEFINE_MUTEX(khugepaged_mutex);
+ static DEFINE_SPINLOCK(khugepaged_mm_lock);
+ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+@@ -168,23 +168,13 @@ out:
+ 	return err;
+ }
  
-+#if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
- /*
-  * pwm_request - request a PWM device
-  */
-@@ -30,8 +31,31 @@ int pwm_enable(struct pwm_device *pwm);
-  * pwm_disable - stop a PWM output toggling
-  */
- void pwm_disable(struct pwm_device *pwm);
-+#else
-+static inline struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	return NULL;
-+}
-+
-+static inline void pwm_free(struct pwm_device *pwm)
-+{
-+}
-+
-+static inline int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int pwm_enable(struct pwm_device *pwm)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void pwm_disable(struct pwm_device *pwm)
-+{
-+}
-+#endif
+-static int init_huge_zero_pfn(void)
+-{
+-	struct page *hpage;
+-	unsigned long pfn;
+-
+-	hpage = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
+-	if (!hpage)
+-		return -ENOMEM;
+-	pfn = page_to_pfn(hpage);
+-	if (cmpxchg(&huge_zero_pfn, 0, pfn))
+-		__free_page(hpage);
+-	return 0;
+-}
++static atomic_t huge_zero_refcount;
++static unsigned long huge_zero_pfn __read_mostly;
  
--#ifdef CONFIG_PWM
- struct pwm_chip;
+ static inline bool is_huge_zero_pfn(unsigned long pfn)
+ {
+-	return huge_zero_pfn && pfn == huge_zero_pfn;
++	unsigned long zero_pfn = ACCESS_ONCE(huge_zero_pfn);
++	return zero_pfn && pfn == zero_pfn;
+ }
  
- enum {
-@@ -113,6 +137,7 @@ struct pwm_chip {
- 	unsigned int		of_pwm_n_cells;
- };
+ static inline bool is_huge_zero_pmd(pmd_t pmd)
+@@ -192,6 +182,59 @@ static inline bool is_huge_zero_pmd(pmd_t pmd)
+ 	return is_huge_zero_pfn(pmd_pfn(pmd));
+ }
  
-+#if IS_ENABLED(CONFIG_PWM)
- int pwm_set_chip_data(struct pwm_device *pwm, void *data);
- void *pwm_get_chip_data(struct pwm_device *pwm);
++static unsigned long get_huge_zero_page(void)
++{
++	struct page *zero_page;
++retry:
++	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
++		return ACCESS_ONCE(huge_zero_pfn);
++
++	zero_page = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
++	if (!zero_page)
++		return 0;
++	preempt_disable();
++	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
++		preempt_enable();
++		__free_page(zero_page);
++		goto retry;
++	}
++
++	/* We take additional reference here. It will be put back by shrinker */
++	atomic_set(&huge_zero_refcount, 2);
++	preempt_enable();
++	return ACCESS_ONCE(huge_zero_pfn);
++}
++
++static void put_huge_zero_page(void)
++{
++	/*
++	 * Counter should never go to zero here. Only shrinker can put
++	 * last reference.
++	 */
++	BUG_ON(atomic_dec_and_test(&huge_zero_refcount));
++}
++
++static int shrink_huge_zero_page(struct shrinker *shrink,
++		struct shrink_control *sc)
++{
++	if (!sc->nr_to_scan)
++		/* we can free zero page only if last reference remains */
++		return atomic_read(&huge_zero_refcount) == 1 ? HPAGE_PMD_NR : 0;
++
++	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
++		unsigned long zero_pfn = xchg(&huge_zero_pfn, 0);
++		BUG_ON(zero_pfn == 0);
++		__free_page(__pfn_to_page(zero_pfn));
++	}
++
++	return 0;
++}
++
++static struct shrinker huge_zero_page_shrinker = {
++	.shrink = shrink_huge_zero_page,
++	.seeks = DEFAULT_SEEKS,
++};
++
+ #ifdef CONFIG_SYSFS
  
-@@ -124,6 +149,44 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
- 
- struct pwm_device *pwm_get(struct device *dev, const char *consumer);
- void pwm_put(struct pwm_device *pwm);
-+#else
-+static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void *pwm_get_chip_data(struct pwm_device *pwm)
-+{
-+	return NULL;
-+}
-+
-+static inline int pwmchip_add(struct pwm_chip *chip)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int pwmchip_remove(struct pwm_chip *chip)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
-+						       unsigned int index,
-+						       const char *label)
-+{
-+	return NULL;
-+}
-+
-+static inline struct pwm_device *pwm_get(struct device *dev,
-+					 const char *consumer)
-+{
-+	return NULL;
-+}
-+
-+static inline void pwm_put(struct pwm_device *pwm)
-+{
-+}
-+#endif
- 
- struct pwm_lookup {
- 	struct list_head list;
-@@ -141,8 +204,12 @@ struct pwm_lookup {
- 		.con_id = _con_id,			\
+ static ssize_t double_flag_show(struct kobject *kobj,
+@@ -585,6 +628,8 @@ static int __init hugepage_init(void)
+ 		goto out;
  	}
  
-+#if IS_ENABLED(CONFIG_PWM)
- void pwm_add_table(struct pwm_lookup *table, size_t num);
--
-+#else
-+static inline void pwm_add_table(struct pwm_lookup *table, size_t num)
-+{
-+}
++	register_shrinker(&huge_zero_page_shrinker);
++
+ 	/*
+ 	 * By default disable transparent hugepages on smaller systems,
+ 	 * where the extra memory used could hurt more than TLB overhead
+@@ -722,10 +767,11 @@ static inline struct page *alloc_hugepage(int defrag)
  #endif
  
- #endif /* __LINUX_PWM_H */
+ static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+-		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
++		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
++		unsigned long zero_pfn)
+ {
+ 	pmd_t entry;
+-	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
++	entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
+ 	entry = pmd_wrprotect(entry);
+ 	entry = pmd_mkhuge(entry);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+@@ -748,15 +794,19 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return VM_FAULT_OOM;
+ 		if (!(flags & FAULT_FLAG_WRITE)) {
+ 			pgtable_t pgtable;
+-			if (unlikely(!huge_zero_pfn && init_huge_zero_pfn())) {
+-				count_vm_event(THP_FAULT_FALLBACK);
+-				goto out;
+-			}
++			unsigned long zero_pfn;
+ 			pgtable = pte_alloc_one(mm, haddr);
+ 			if (unlikely(!pgtable))
+ 				goto out;
++			zero_pfn = get_huge_zero_page();
++			if (unlikely(!zero_pfn)) {
++				pte_free(mm, pgtable);
++				count_vm_event(THP_FAULT_FALLBACK);
++				goto out;
++			}
+ 			spin_lock(&mm->page_table_lock);
+-			set_huge_zero_page(pgtable, mm, vma, haddr, pmd);
++			set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
++					zero_pfn);
+ 			spin_unlock(&mm->page_table_lock);
+ 			return 0;
+ 		}
+@@ -825,7 +875,15 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		goto out_unlock;
+ 	}
+ 	if (is_huge_zero_pmd(pmd)) {
+-		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
++		unsigned long zero_pfn;
++		/*
++		 * get_huge_zero_page() will never allocate a new page here,
++		 * since we already have a zero page to copy. It just takes a
++		 * reference.
++		 */
++		zero_pfn = get_huge_zero_page();
++		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
++				zero_pfn);
+ 		ret = 0;
+ 		goto out_unlock;
+ 	}
+@@ -926,6 +984,7 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
+ 	smp_wmb(); /* make pte visible before pmd */
+ 	pmd_populate(mm, pmd, pgtable);
+ 	spin_unlock(&mm->page_table_lock);
++	put_huge_zero_page();
+ 
+ 	ret |= VM_FAULT_WRITE;
+ out:
+@@ -1110,8 +1169,10 @@ alloc:
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		update_mmu_cache(vma, address, entry);
+-		if (is_huge_zero_pmd(orig_pmd))
++		if (is_huge_zero_pmd(orig_pmd)) {
+ 			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
++			put_huge_zero_page();
++		}
+ 		if (page) {
+ 			VM_BUG_ON(!PageHead(page));
+ 			page_remove_rmap(page);
+@@ -1175,6 +1236,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+ 			tlb->mm->nr_ptes--;
+ 			spin_unlock(&tlb->mm->page_table_lock);
++			put_huge_zero_page();
+ 		} else {
+ 			page = pmd_page(*pmd);
+ 			pmd_clear(pmd);
+@@ -2538,6 +2600,7 @@ static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+ 	}
+ 	smp_wmb(); /* make pte visible before pmd */
+ 	pmd_populate(vma->vm_mm, pmd, pgtable);
++	put_huge_zero_page();
+ }
+ 
+ void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
 -- 
-1.7.4.1
+1.7.7.6
 
