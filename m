@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2ILLqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 07:46:49 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:57922 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754070Ab2ILLqo (ORCPT
+	id S1754347Ab2ILLyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 07:54:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63657 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab2ILLyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 07:46:44 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-Subject: [PATCH 01/11] dmaengine: omap: Support for element mode in cyclic DMA
-Date: Wed, 12 Sep 2012 14:46:57 +0300
-Message-Id: <1347450427-27627-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 12 Sep 2012 07:54:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jon Masters <jonathan@jonmasters.org>
+Subject: Re: [PATCH v3 00/31] AArch64 Linux kernel port
+Date: Wed, 12 Sep 2012 11:54:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <504E4C0E.9030402@jonmasters.org>
+In-Reply-To: <504E4C0E.9030402@jonmasters.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201209121154.20474.arnd@arndb.de>
+X-Provags-ID: V02:K0:iPbhfuc7ikVEH6u1p5+pjJggwX7fyMJgxE59Xede6y/
+ wHX0MHCRi728/7kEQKA1cecSZ+w84s/qnaGWbTxjbYEGRRPjqP
+ DfnP01kvc9KIRwwKPulJKcDq45uGfk6yQ9GQvoNzWnlydws9rm
+ uuaMkc2P81zszXyASfds1842TM03yupWbwGZWGH/gr1oXQHA7G
+ 40vZVTMkYssyRDcnjAxrzGTnpa52iP/Z+HFFLiW1IOhgnnoOD1
+ Bl8jmyvlhhYAAeMoy4tJNotHzq4tk31FXvISrxAq39bj6NTCnU
+ a58RN4PM0u6pY0X/gKIe/ZxFYIVw8Z+3htuXn0dTk7krx23yoq
+ x/s/hMm31MOLWEFvpu+A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When src_maxburst/dst_maxburst is set to 0 by the users of cyclic DMA
-(mostly audio) indicates that we should configure the omap DMA to element
-sync mode instead of packet mode.
+On Monday 10 September 2012, Jon Masters wrote:
+> On 09/07/2012 12:26 PM, Catalin Marinas wrote:
+> > This is the 3rd version of patches implementing Linux kernel support for
+> > the 64-bit ARM architecture.
+> <snip>
+> 
+> > ...but the main goal was to freeze the user ABI.
+> 
+> Is the consensus now that we're good from an ABI viewpoint?
+> 
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/dma/omap-dma.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+>From my point of view, no more changes are needed. I would not give any
+guarantees until we have a first kernel release including this code, but
+I think we can agree that we would consult you about ABI changes if they
+seem necessary before then.
 
-diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index ae05618..b77a40d 100644
---- a/drivers/dma/omap-dma.c
-+++ b/drivers/dma/omap-dma.c
-@@ -413,7 +413,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
- 	d->dev_addr = dev_addr;
- 	d->fi = burst;
- 	d->es = es;
--	d->sync_mode = OMAP_DMA_SYNC_PACKET;
-+	if (burst)
-+		d->sync_mode = OMAP_DMA_SYNC_PACKET;
-+	else
-+		d->sync_mode = OMAP_DMA_SYNC_ELEMENT;
- 	d->sync_type = sync_type;
- 	d->periph_port = OMAP_DMA_PORT_MPUI;
- 	d->sg[0].addr = buf_addr;
--- 
-1.7.12
+If you start (re)building the Fedora packages based on these kernel
+headers, the changes are pretty good that this will keep working.
 
+	Arnd
