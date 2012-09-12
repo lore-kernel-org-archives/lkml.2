@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab2ILHsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 03:48:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58060 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab2ILHsg convert rfc822-to-8bit (ORCPT
+	id S1755569Ab2ILHtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 03:49:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53741 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab2ILHtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 03:48:36 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "S, Venkatraman" <svenkatr@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "cjb@laptop.org" <cjb@laptop.org>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-Subject: RE: [PATCH] mmc: omap_hsmmc: Pass on the suspend failure to the PM
- core
-Thread-Topic: [PATCH] mmc: omap_hsmmc: Pass on the suspend failure to the PM
- core
-Thread-Index: AQHNiqDoryyfomQXhEW/H9a3NyB6nZeET0QAgAIRWhA=
-Date: Wed, 12 Sep 2012 07:48:29 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA7F8B7@DBDE01.ent.ti.com>
-References: <1346764109-21174-1-git-send-email-gururaja.hebbar@ti.com>
- <CANfBPZ93ONzeYj=kD_7pbq=VBQLd98YM9BE9S+sPb3rrrXNFzQ@mail.gmail.com>
-In-Reply-To: <CANfBPZ93ONzeYj=kD_7pbq=VBQLd98YM9BE9S+sPb3rrrXNFzQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 12 Sep 2012 03:49:07 -0400
+Date: Wed, 12 Sep 2012 03:49:01 -0400 (EDT)
+Message-Id: <20120912.034901.184817520125489015.davem@davemloft.net>
+To: srivatsa.bhat@linux.vnet.ibm.com
+Cc: nhorman@tuxdriver.com, David.Laight@aculab.com, john.r.fastabend@intel.com,
+        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
+        mark.d.rustad@intel.com, lizefan@huawei.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v2 PATCH 2/2] netprio_cgroup: Use memcpy instead of the
+ for-loop to copy priomap
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120912060747.11037.42623.stgit@srivatsabhat.in.ibm.com>
+References: <20120912060741.11037.37347.stgit@srivatsabhat.in.ibm.com>
+	<20120912060747.11037.42623.stgit@srivatsabhat.in.ibm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:13:26, S, Venkatraman wrote:
-> On Tue, Sep 4, 2012 at 6:38 PM, Hebbar, Gururaja <gururaja.hebbar@ti.com> wrote:
-> > From: Vaibhav Bedia <vaibhav.bedia@ti.com>
-> >
-> > In some cases mmc_suspend_host() is not able to claim the
-> > host and proceed with the suspend process. The core returns
-> > -EBUSY to the host controller driver. Unfortunately, the
-> > host controller driver does not pass on this information
-> > to the PM core and hence the system suspend process continues.
-> >
-> > In these cases the MMC core gets to an unexpected state
-> > during resume and multiple issues related to MMC crop up.
-> > 1. Host controller driver starts accessing the device registers
-> > before the clocks are enabled which leads to a prefetch abort.
-> > 2. A file copy thread which was launched before suspend gets
-> > stuck due to the host not being reclaimed during resume.
-> >
-> > To avoid such problems pass on the -EBUSY status to the PM core
-> > from the host controller driver. With this change, MMC core
-> > suspend might still fail but it does not end up making the
-> > system unusable. Suspend gets aborted and the user can try
-> > suspending the system again.
-> >
-> 
-> The last time we discussed this, didn't we plan to fix this differently ?
-> Holding the return code of mmc_suspend_host in a separate variable and
-> passing it to the caller
-> of omap_hsmmc_suspend looks more sane to me.
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 12 Sep 2012 11:37:47 +0530
 
-Correct. I missed it. I will reformat the patch and resend it.
+> +		memcpy(new_priomap->priomap, old_priomap->priomap,
+> +			old_priomap->priomap_len *
+> +					sizeof(old_priomap->priomap[0]));
 
-> 
+This argument indentation is ridiculous.  Try:
 
+		memcpy(new_priomap->priomap, old_priomap->priomap,
+		       old_priomap->priomap_len *
+		       sizeof(old_priomap->priomap[0]));
 
-Regards, 
-Gururaja
+Using TABs exclusively for argumentat indentation is not the goal.
+
+Rather, lining the arguments up properly so that they sit at the first
+column after the first line's openning parenthesis is what you should
+be trying to achieve.
+
+And ignoring whatever stylistic convention we may or may not have, I
+find it impossibly hard to believe that the code quoted above looks
+good even to you.
+
