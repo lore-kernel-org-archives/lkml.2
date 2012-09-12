@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759621Ab2ILOuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:50:21 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51891 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755891Ab2ILOuT (ORCPT
+	id S1759674Ab2ILOul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:50:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53905 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759456Ab2ILOuk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:50:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347461232.15764.45.camel@twins>
-References: <CABPqkBSemt4hsoFfGkm3pac+R+aUJ6Kd9LBTWM-JtKMOF4VM9Q@mail.gmail.com>
-	<1347461232.15764.45.camel@twins>
-Date: Wed, 12 Sep 2012 16:50:17 +0200
-Message-ID: <CABPqkBSPVBuKRYkO02O1BgbL5u=EtsRHJdYxqHrj56_H1vtsGQ@mail.gmail.com>
-Subject: Re: [BUG] perf: multiplexing and hotplug CPU problem
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	Wed, 12 Sep 2012 10:50:40 -0400
+Message-ID: <1347461431.15764.49.camel@twins>
+Subject: Re: [PATCH v2 2/3] perf: use hrtimer for event multiplexing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
         "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
         Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Date: Wed, 12 Sep 2012 16:50:31 +0200
+In-Reply-To: <CABPqkBRRS7uz9kt-g8Rjj8K86AE+7U-emqKv1=tqcuRyqEk=Zw@mail.gmail.com>
+References: <1347459195-5491-1-git-send-email-eranian@google.com>
+	 <1347459195-5491-3-git-send-email-eranian@google.com>
+	 <1347459764.15764.32.camel@twins>
+	 <CABPqkBREFbnJb4C3CqXc0RkKZDXZeCG8S75p3h=fUFNz1TWH-Q@mail.gmail.com>
+	 <1347461060.15764.44.camel@twins>
+	 <CABPqkBRRS7uz9kt-g8Rjj8K86AE+7U-emqKv1=tqcuRyqEk=Zw@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 4:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-09-12 at 16:40 +0200, Stephane Eranian wrote:
->> Hi,
->>
->> As I was debugging my hrtimer patch, I ran a few tests
->> with hotplug CPU. In others words, I offline a CPU while
->> there is an active monitoring session which causes multiplexing.
->>
->> When the CPU goes down, all is well. But when it comes back,
->> things go wrong. No kernel crashes but wrong results and multiplexing
->> does not work anymore.
->>
->> I investigated this some more and found out there is an issue
->> on re-activation.
->>
->> During shutdown, system-wide events are scheduled out AND removed
->> from the event lists. Consequently, ctx->nr_events and ctx->nr_active
->> go to zero.
->>
->> When the CPU is brought back online and tools do start/stop on the events
->> they can be scheduled back in, and therefore increment ctx->nr_active.
->> Because list_add_event() is not called again, you may end up with
->> ctx->nr_events < ctx->nr_active which is wrong. Events may not
->> be a lists and therefore they cannot get multiplexed again.
->>
->> It is not clear to me why we need to remove the events from any
->> list (list_del_event) when the CPU goes down.
->>
->> Why isn't calling event_sched_out() enough?
->> If events are kept on lists, why not try to schedule them back in when
->> the CPU is brought back online?
->
-> This might be never, I think we should put the events in error state
-> instead of disabling them, that should avoid the re-activation and
-> provide a stronger hint to userspace that something went funny.
+On Wed, 2012-09-12 at 16:48 +0200, Stephane Eranian wrote:
+> On Wed, Sep 12, 2012 at 4:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2012-09-12 at 16:43 +0200, Stephane Eranian wrote:
+> >> The hrtimer_active is used to prevent activating the timer multiple times
+> >> in a row.
+> >
+> > see hrtimer_active(), this should do what you want I think.
+> 
+> I need something that is true even when the hrtimer is not executing
+> the callback handler. I guess that may be the different between
+> hrtimer_active() vs. hrtimer_running()?
 
-Yeah, that's probably a better approach. Counters should be put
-in error state such that IOC_ENABLE or read() return errors.
+As the comment states, hrtimer_active() returns true if the timer is
+either in the tree (enqueued) or running.
+
+hrtimer_callback_running() is true iff the callback is currently
+executing.
+
+hrtimer_queued() is true iff the timer is queued.
+
+
