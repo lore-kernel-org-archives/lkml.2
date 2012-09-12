@@ -1,168 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2IKQLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 12:11:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46895 "EHLO bear.ext.ti.com"
+	id S1758370Ab2IKQNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 12:13:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59992 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab2IKQLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 12:11:33 -0400
-From: Eduardo Valentin <eduardo.valentin@TI.COM>
-To: <gregkh@linuxfoundation.org>
-CC: <j-keerthy@TI.COM>, <b-cousson@TI.COM>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@TI.COM>
-Subject: [PATCH 2/4] staging: omap-thermal: remove checkpatch.pl warnings on data files
-Date: Tue, 11 Sep 2012 19:06:53 +0300
-Message-ID: <1347379615-6881-3-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
-In-Reply-To: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
-References: <1347379615-6881-1-git-send-email-eduardo.valentin@ti.com>
+	id S1752749Ab2IKQNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 12:13:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,406,1344236400"; 
+   d="scan'208";a="191442267"
+Date: Wed, 12 Sep 2012 00:15:47 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Len Brown <len.brown@intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        ShuoX Liu <shuox.liu@intel.com>, youquan.song@intel.com
+Subject: Re: KS/Plumbers: c-state governor BOF
+Message-ID: <20120912041547.GB23544@linux-youquan.bj.intel.com>
+References: <5037B36A.8000209@redhat.com> <20120912024342.GA23544@linux-youquan.bj.intel.com> <504F5A18.8080701@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <504F5A18.8080701@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple checkpatch.pl clean ups.
+> Your patches could make a lot of sense when integrated with my
+> patches:
+>
+> http://people.redhat.com/riel/cstate/
+> However, we should probably get the tracepoint upstream first,
+> so we can know for sure :)
 
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/staging/omap-thermal/omap4-thermal.c |   54 +++++++++++++-------------
- drivers/staging/omap-thermal/omap5-thermal.c |   38 +++++++++---------
- 2 files changed, 46 insertions(+), 46 deletions(-)
+I can not access the patches at this directory. Can you send it to me?
+I will look at your patches and then integrated with my patches to look
+what will happen tomorrow.
 
-diff --git a/drivers/staging/omap-thermal/omap4-thermal.c b/drivers/staging/omap-thermal/omap4-thermal.c
-index fa9dbcd..04c02b6 100644
---- a/drivers/staging/omap-thermal/omap4-thermal.c
-+++ b/drivers/staging/omap-thermal/omap4-thermal.c
-@@ -77,15 +77,15 @@ const struct omap_bandgap_data omap4430_data = {
- 	.remove_sensor = omap_thermal_remove_sensor,
- 	.sensors = {
- 		{
--			.registers = &omap4430_mpu_temp_sensor_registers,
--			.ts_data = &omap4430_mpu_temp_sensor_data,
--			.domain = "cpu",
--			.slope = 0,
--			.constant = 20000,
--			.slope_pcb = 0,
--			.constant_pcb = 20000,
--			.register_cooling = omap_thermal_register_cpu_cooling,
--			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
-+		.registers = &omap4430_mpu_temp_sensor_registers,
-+		.ts_data = &omap4430_mpu_temp_sensor_data,
-+		.domain = "cpu",
-+		.slope = 0,
-+		.constant = 20000,
-+		.slope_pcb = 0,
-+		.constant_pcb = 20000,
-+		.register_cooling = omap_thermal_register_cpu_cooling,
-+		.unregister_cooling = omap_thermal_unregister_cpu_cooling,
- 		},
- 	},
- 	.sensor_count = 1,
-@@ -215,15 +215,15 @@ const struct omap_bandgap_data omap4460_data = {
- 	.remove_sensor = omap_thermal_remove_sensor,
- 	.sensors = {
- 		{
--			.registers = &omap4460_mpu_temp_sensor_registers,
--			.ts_data = &omap4460_mpu_temp_sensor_data,
--			.domain = "cpu",
--			.slope = OMAP_GRADIENT_SLOPE_4460,
--			.constant = OMAP_GRADIENT_CONST_4460,
--			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4460,
--			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4460,
--			.register_cooling = omap_thermal_register_cpu_cooling,
--			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
-+		.registers = &omap4460_mpu_temp_sensor_registers,
-+		.ts_data = &omap4460_mpu_temp_sensor_data,
-+		.domain = "cpu",
-+		.slope = OMAP_GRADIENT_SLOPE_4460,
-+		.constant = OMAP_GRADIENT_CONST_4460,
-+		.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4460,
-+		.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4460,
-+		.register_cooling = omap_thermal_register_cpu_cooling,
-+		.unregister_cooling = omap_thermal_unregister_cpu_cooling,
- 		},
- 	},
- 	.sensor_count = 1,
-@@ -244,15 +244,15 @@ const struct omap_bandgap_data omap4470_data = {
- 	.remove_sensor = omap_thermal_remove_sensor,
- 	.sensors = {
- 		{
--			.registers = &omap4460_mpu_temp_sensor_registers,
--			.ts_data = &omap4460_mpu_temp_sensor_data,
--			.domain = "cpu",
--			.slope = OMAP_GRADIENT_SLOPE_4470,
--			.constant = OMAP_GRADIENT_CONST_4470,
--			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4470,
--			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4470,
--			.register_cooling = omap_thermal_register_cpu_cooling,
--			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
-+		.registers = &omap4460_mpu_temp_sensor_registers,
-+		.ts_data = &omap4460_mpu_temp_sensor_data,
-+		.domain = "cpu",
-+		.slope = OMAP_GRADIENT_SLOPE_4470,
-+		.constant = OMAP_GRADIENT_CONST_4470,
-+		.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4470,
-+		.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4470,
-+		.register_cooling = omap_thermal_register_cpu_cooling,
-+		.unregister_cooling = omap_thermal_unregister_cpu_cooling,
- 		},
- 	},
- 	.sensor_count = 1,
-diff --git a/drivers/staging/omap-thermal/omap5-thermal.c b/drivers/staging/omap-thermal/omap5-thermal.c
-index 0658af2..2f3a498 100644
---- a/drivers/staging/omap-thermal/omap5-thermal.c
-+++ b/drivers/staging/omap-thermal/omap5-thermal.c
-@@ -268,29 +268,29 @@ const struct omap_bandgap_data omap5430_data = {
- 	.remove_sensor = omap_thermal_remove_sensor,
- 	.sensors = {
- 		{
--			.registers = &omap5430_mpu_temp_sensor_registers,
--			.ts_data = &omap5430_mpu_temp_sensor_data,
--			.domain = "cpu",
--			.register_cooling = omap_thermal_register_cpu_cooling,
--			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
--			.slope = OMAP_GRADIENT_SLOPE_5430_CPU,
--			.constant = OMAP_GRADIENT_CONST_5430_CPU,
--			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_5430_CPU,
--			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_5430_CPU,
-+		.registers = &omap5430_mpu_temp_sensor_registers,
-+		.ts_data = &omap5430_mpu_temp_sensor_data,
-+		.domain = "cpu",
-+		.register_cooling = omap_thermal_register_cpu_cooling,
-+		.unregister_cooling = omap_thermal_unregister_cpu_cooling,
-+		.slope = OMAP_GRADIENT_SLOPE_5430_CPU,
-+		.constant = OMAP_GRADIENT_CONST_5430_CPU,
-+		.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_5430_CPU,
-+		.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_5430_CPU,
- 		},
- 		{
--			.registers = &omap5430_gpu_temp_sensor_registers,
--			.ts_data = &omap5430_gpu_temp_sensor_data,
--			.domain = "gpu",
--			.slope = OMAP_GRADIENT_SLOPE_5430_GPU,
--			.constant = OMAP_GRADIENT_CONST_5430_GPU,
--			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_5430_GPU,
--			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_5430_GPU,
-+		.registers = &omap5430_gpu_temp_sensor_registers,
-+		.ts_data = &omap5430_gpu_temp_sensor_data,
-+		.domain = "gpu",
-+		.slope = OMAP_GRADIENT_SLOPE_5430_GPU,
-+		.constant = OMAP_GRADIENT_CONST_5430_GPU,
-+		.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_5430_GPU,
-+		.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_5430_GPU,
- 		},
- 		{
--			.registers = &omap5430_core_temp_sensor_registers,
--			.ts_data = &omap5430_core_temp_sensor_data,
--			.domain = "core",
-+		.registers = &omap5430_core_temp_sensor_registers,
-+		.ts_data = &omap5430_core_temp_sensor_data,
-+		.domain = "core",
- 		},
- 	},
- 	.sensor_count = 3,
--- 
-1.7.7.1.488.ge8e1c
+Do you have test case share? or ideas how to show the benefit.
+
+I have done many test for my pathes. It show some benefit big or small
+in various cases, but there is no negative effect showed at least. 
+ 
+I have two onviced test cases to show the great benefit
+1.  turbostat v1 (before 3.5)
+2. I write the simple test application which also show greate benefit.
+running it by #./idle_predict -l 8
+
+
+I write a simple application using usleep which it is clear to the
+repeat mode prediction failure will greatly effect the application with
+such repeat pattern.
+
+-----------------------
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/time.h>
+#include <time.h>
+#include <pthread.h>
+
+volatile int * shutdown;
+volatile long * count;
+int delay = 20;
+int loop = 8;
+
+void usage(void)
+{
+	fprintf(stderr,
+		"Usage: idle_predict [options]\n"
+		"  --help	-h  Print this help\n"
+		"  --thread	-n  Thread number\n"
+		"  --loop     	-l  Loop times in shallow Cstate\n"
+		"  --delay	-t  Sleep time (uS)in shallow
+Cstate\n");
+}
+
+void *simple_loop() {
+	int idle_num = 1;
+	while (*shutdown) {
+		*count = *count + 1;
+	
+		if (idle_num % loop)
+			usleep(delay);
+		else {
+			/* sleep 1 second */
+			usleep(1000000);
+			idle_num = 0;
+		}
+		idle_num++;
+	}
+
+}
+
+static void sighand(int sig)
+{
+	*shutdown = 0;
+}
+
+int main(int argc, char *argv[])
+{
+	sigset_t sigset;
+	int signum = SIGALRM;
+	int i, c, er = 0, thread_num = 8;
+	pthread_t pt[1024];
+
+	static char optstr[] = "n:l:t:h:";
+
+	while ((c = getopt(argc, argv, optstr)) != EOF)
+		switch (c) {
+			case 'n':
+				thread_num = atoi(optarg);
+				break;
+			case 'l':
+				loop = atoi(optarg);
+				break;
+			case 't':
+				delay = atoi(optarg);
+				break;
+			case 'h':
+			default:
+				usage();
+				exit(1);
+		}
+
+	printf("thread=%d,loop=%d,delay=%d\n",thread_num,loop,delay);
+	count = malloc(sizeof(long));
+	shutdown = malloc(sizeof(int));
+	*count = 0;
+	*shutdown = 1;
+
+	sigemptyset(&sigset);
+	sigaddset(&sigset, signum);
+	sigprocmask (SIG_BLOCK, &sigset, NULL);
+	signal(SIGINT, sighand);
+	signal(SIGTERM, sighand);
+
+	for(i = 0; i < thread_num ; i++)
+		pthread_create(&pt[i], NULL, simple_loop, NULL);
+
+	for (i = 0; i < thread_num; i++)
+		pthread_join(pt[i], NULL);
+
+	exit(0);
+}
 
