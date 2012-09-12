@@ -1,147 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab2ILRJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:09:26 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:17171 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab2ILRJU (ORCPT
+	id S1760829Ab2ILRJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:09:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54503 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760618Ab2ILRJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:09:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="235820487"
-Date: Wed, 12 Sep 2012 10:09:18 -0700
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] msm-core changes for v3.7
-Message-ID: <20120912170918.GA25366@codeaurora.org>
-References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
- <1347469140-25069-2-git-send-email-davidb@codeaurora.org>
+	Wed, 12 Sep 2012 13:09:37 -0400
+Date: Wed, 12 Sep 2012 10:09:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
+ hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120912170933.GO7677@google.com>
+References: <20120910223125.GC7677@google.com>
+ <20120911145106.GG12039@redhat.com>
+ <20120911171601.GN7677@google.com>
+ <20120911173524.GJ12039@redhat.com>
+ <20120911175515.GP7677@google.com>
+ <50505C39.1050600@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347469140-25069-2-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50505C39.1050600@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sigh.  I appear to have mangled the headers the first time.  So,
-instead of a nice patch series in reply to the pull request, the pull
-request is in reply to the first patch.  Sorry about that.
+Hello, Glauber.
 
-David
+On Wed, Sep 12, 2012 at 01:56:09PM +0400, Glauber Costa wrote:
+> "Being able to provide hierarchical support" is an example of such
+> restrictions. And as Vivek said himself, for the CFQ case should be doable.
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+Yeah, it's mostly that cfq was already a hairy monster before blkcg
+was added to it and unfortunately we didn't make it any cleaner in the
+process and blkcg itself has a lot of other issues including being
+completely broken w.r.t. writeback writes.  In addition there are two
+sub-controllers - the cfq one and blk-throttle.  So, it's just that
+there are too many scary things to do and not enough man power or
+maybe interest.  I hope we could just declare cgroup isn't supported
+on block devices but that doesn't seem feasible at this point either.
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+I might / probably work on it and am hoping to coerce Vivek into it
+too.  If you wanna jump in, please be my guest.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-core-for-3.7
-
-for you to fetch changes up to fe3a47b1c7cd74a7e39cec1fa0d89bd3724f4f65:
-
-  ARM: msm: Allow 8960 and 8660 to compile together (2012-09-12 09:31:56 -0700)
-
-----------------------------------------------------------------
-In addition to some minor fixes, this series fully converts two
-primary MSM targets (8660 and 8960) exclusively to devicetree.  It
-removes a lot of dead code, both from the devicetree conversion, and
-code that has never been compiled.
-
-It is now possible to build both 8660 and 8960 into the same kernel.
-Not quite ready to be part of a single zImage, but at least many of
-the internal issues preventing this are resolved.
-
-----------------------------------------------------------------
-David Brown (1):
-      ARM: msm: Remove call to missing FPGA init on 8660
-
-Rohit Vaswani (2):
-      ARM: msm: io: Remove 7x30 iomap region from 7x00
-      ARM: msm: io: Change the default static iomappings to be shared
-
-Stephen Boyd (20):
-      ARM: msm: Remove msm_hw_reset_hook
-      ARM: msm: clock-pcom: Mark functions static
-      ARM: msm: Remove unused idle.c
-      ARM: msm: Fix early debug uart mapping on some memory configs
-      ARM: msm: Add handle_irq handler for 8660 DT machine
-      ARM: msm: Add msm8660-surf.dts to Makefile.boot
-      ARM: msm: Fix sparse warnings due to incorrect type
-      ARM: msm: Don't touch GIC registers outside of GIC code
-      ARM: msm: Allow timer.c to compile on multiple targets
-      ARM: msm: Add DT support to msm_timer
-      ARM: msm: Move 8660 to DT timer
-      ARM: msm: Make 8660 a DT only target
-      ARM: msm: Rename board-msm8x60 to signify its DT only status
-      ARM: msm: Move io mapping prototypes to common.h
-      ARM: msm: Add DT support for 8960
-      ARM: msm: Remove non-DT targets from 8960
-      ARM: msm: Remove unused acpuclock-arm11
-      ARM: msm: Remove uncompiled board-msm7x27
-      ARM: msm: Allow msm_iomap-8x60 and msm_iomap-8960 to coexist
-      ARM: msm: Allow 8960 and 8660 to compile together
-
-Wei Yongjun (1):
-      ARM: msm: dma: use list_move_tail instead of list_del/list_add_tail
-
- .../devicetree/bindings/arm/msm/timer.txt          |  38 ++
- arch/arm/boot/dts/msm8660-surf.dts                 |  19 +-
- arch/arm/boot/dts/msm8960-cdp.dts                  |  41 ++
- arch/arm/mach-msm/Kconfig                          |  49 +-
- arch/arm/mach-msm/Makefile                         |   8 +-
- arch/arm/mach-msm/Makefile.boot                    |   3 +
- arch/arm/mach-msm/acpuclock-arm11.c                | 525 ---------------------
- arch/arm/mach-msm/acpuclock.h                      |  32 --
- arch/arm/mach-msm/board-dt-8660.c                  |  63 +++
- arch/arm/mach-msm/board-dt-8960.c                  |  49 ++
- arch/arm/mach-msm/board-halibut.c                  |   5 +-
- arch/arm/mach-msm/board-mahimahi.c                 |   1 -
- arch/arm/mach-msm/board-msm7x27.c                  | 170 -------
- arch/arm/mach-msm/board-msm7x30.c                  |   9 +-
- arch/arm/mach-msm/board-msm8960.c                  | 122 -----
- arch/arm/mach-msm/board-msm8x60.c                  | 166 -------
- arch/arm/mach-msm/board-qsd8x50.c                  |   7 +-
- arch/arm/mach-msm/board-sapphire.c                 |   1 -
- arch/arm/mach-msm/board-trout.c                    |   5 +-
- arch/arm/mach-msm/clock-pcom.c                     |  18 +-
- arch/arm/mach-msm/common.h                         |  30 ++
- arch/arm/mach-msm/devices-msm8960.c                |  85 ----
- arch/arm/mach-msm/dma.c                            |   3 +-
- arch/arm/mach-msm/idle.c                           |  49 --
- arch/arm/mach-msm/include/mach/board.h             |  13 -
- arch/arm/mach-msm/include/mach/msm_iomap-7x00.h    |   7 -
- arch/arm/mach-msm/include/mach/msm_iomap-7x30.h    |   4 -
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |   6 +-
- arch/arm/mach-msm/include/mach/msm_iomap-8x50.h    |   4 -
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  17 +-
- arch/arm/mach-msm/include/mach/msm_iomap.h         |   3 +-
- arch/arm/mach-msm/include/mach/system.h            |  19 -
- arch/arm/mach-msm/io.c                             |  32 +-
- arch/arm/mach-msm/platsmp.c                        |   8 -
- arch/arm/mach-msm/proc_comm.c                      |   1 -
- arch/arm/mach-msm/smd.c                            |   7 -
- arch/arm/mach-msm/timer.c                          | 188 ++++++--
- 37 files changed, 443 insertions(+), 1364 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/msm/timer.txt
- create mode 100644 arch/arm/boot/dts/msm8960-cdp.dts
- delete mode 100644 arch/arm/mach-msm/acpuclock-arm11.c
- delete mode 100644 arch/arm/mach-msm/acpuclock.h
- create mode 100644 arch/arm/mach-msm/board-dt-8660.c
- create mode 100644 arch/arm/mach-msm/board-dt-8960.c
- delete mode 100644 arch/arm/mach-msm/board-msm7x27.c
- delete mode 100644 arch/arm/mach-msm/board-msm8960.c
- delete mode 100644 arch/arm/mach-msm/board-msm8x60.c
- create mode 100644 arch/arm/mach-msm/common.h
- delete mode 100644 arch/arm/mach-msm/devices-msm8960.c
- delete mode 100644 arch/arm/mach-msm/idle.c
- delete mode 100644 arch/arm/mach-msm/include/mach/system.h
+Thanks.
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+tejun
