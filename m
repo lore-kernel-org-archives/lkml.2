@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab2IMADW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:03:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49393 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932881Ab2IMADS (ORCPT
+	id S1756849Ab2ILXkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:40:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab2ILXkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 20:03:18 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-e0-505122c0f8c6
-Date: Thu, 13 Sep 2012 09:05:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] memory-hotplug: don't replace lowmem pages with
- highmem
-Message-ID: <20120913000519.GC2766@bbox>
-References: <1347414231-31451-1-git-send-email-minchan@kernel.org>
- <1347414231-31451-2-git-send-email-minchan@kernel.org>
- <20120912143239.65fa8b58.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912143239.65fa8b58.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 12 Sep 2012 19:40:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 64/85] powerpc: Restore correct DSCR in context switch
+Date: Wed, 12 Sep 2012 16:36:47 -0700
+Message-Id: <20120912233548.436072787@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
+References: <20120912233541.747973832@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 02:32:39PM -0700, Andrew Morton wrote:
-> On Wed, 12 Sep 2012 10:43:51 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > [1] reporeted that lowmem pages could be replaced by
-> > highmem pages during migration of CMA and fixed.
-> > 
-> > Quote from [1]'s description
-> > "
-> >     The filesystem layer expects pages in the block device's mapping to not
-> >     be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
-> >     currently replace lowmem pages with highmem pages, leading to crashes in
-> >     filesystem code such as the one below:
-> > 
-> >       Unable to handle kernel NULL pointer dereference at virtual address 00000400
-> >       pgd = c0c98000
-> >       [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
-> >       Internal error: Oops: 817 [#1] PREEMPT SMP ARM
-> >       CPU: 0    Not tainted  (3.5.0-rc5+ #80)
-> >       PC is at __memzero+0x24/0x80
-> >       ...
-> >       Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
-> >       Backtrace:
-> >       [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
-> >       [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
-> >        r4:c15337f0
-> >       [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
-> >       [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
-> >        r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
-> >       [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
-> >        r6:beccdcf0 r5:00074000 r4:beccdbbc
-> >       [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
-> > "
-> > 
-> > Memory-hotplug has same problem with CMA so [1]'s fix could be applied
-> > with memory-hotplug, too.
-> > 
-> > Fix it by reusing.
-> 
-> Do we think this issue should be fixed in 3.6?  Earlier?
+From: Greg KH <gregkh@linuxfoundation.org>
 
-I really wanted to Cced stable but didn't due to a below
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
- - It must fix a real bug that bothers people (not a, "This could be a
-   problem..." type thing).
+------------------
 
-We haven't ever seen at the report of memory-hotplug although it pops up in CMA.
-But I doubt fujitsu guys already saw it.
+From: Anton Blanchard <anton@samba.org>
+
+commit 714332858bfd40dcf8f741498336d93875c23aa7 upstream.
+
+During a context switch we always restore the per thread DSCR value.
+If we aren't doing explicit DSCR management
+(ie thread.dscr_inherit == 0) and the default DSCR changed while
+the process has been sleeping we end up with the wrong value.
+
+Check thread.dscr_inherit and select the default DSCR or per thread
+DSCR as required.
+
+This was found with the following test case, when running with
+more threads than CPUs (ie forcing context switching):
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+
+With the four patches applied I can run a combination of all
+test cases successfully at the same time:
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/kernel/asm-offsets.c |    1 +
+ arch/powerpc/kernel/entry_64.S    |   23 +++++++++++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
+
+--- a/arch/powerpc/kernel/asm-offsets.c
++++ b/arch/powerpc/kernel/asm-offsets.c
+@@ -76,6 +76,7 @@ int main(void)
+ 	DEFINE(SIGSEGV, SIGSEGV);
+ 	DEFINE(NMI_MASK, NMI_MASK);
+ 	DEFINE(THREAD_DSCR, offsetof(struct thread_struct, dscr));
++	DEFINE(THREAD_DSCR_INHERIT, offsetof(struct thread_struct, dscr_inherit));
+ #else
+ 	DEFINE(THREAD_INFO, offsetof(struct task_struct, stack));
+ #endif /* CONFIG_PPC64 */
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -373,6 +373,12 @@ _GLOBAL(ret_from_fork)
+ 	li	r3,0
+ 	b	syscall_exit
+ 
++	.section	".toc","aw"
++DSCR_DEFAULT:
++	.tc dscr_default[TC],dscr_default
++
++	.section	".text"
++
+ /*
+  * This routine switches between two different tasks.  The process
+  * state of one is saved on its kernel stack.  Then the state
+@@ -512,9 +518,6 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_1T_SEG
+ 	mr	r1,r8		/* start using new stack pointer */
+ 	std	r7,PACAKSAVE(r13)
+ 
+-	ld	r6,_CCR(r1)
+-	mtcrf	0xFF,r6
+-
+ #ifdef CONFIG_ALTIVEC
+ BEGIN_FTR_SECTION
+ 	ld	r0,THREAD_VRSAVE(r4)
+@@ -523,14 +526,22 @@ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
+ #endif /* CONFIG_ALTIVEC */
+ #ifdef CONFIG_PPC64
+ BEGIN_FTR_SECTION
++	lwz	r6,THREAD_DSCR_INHERIT(r4)
++	ld	r7,DSCR_DEFAULT@toc(2)
+ 	ld	r0,THREAD_DSCR(r4)
+-	cmpd	r0,r25
+-	beq	1f
++	cmpwi	r6,0
++	bne	1f
++	ld	r0,0(r7)
++1:	cmpd	r0,r25
++	beq	2f
+ 	mtspr	SPRN_DSCR,r0
+-1:	
++2:
+ END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
+ #endif
+ 
++	ld	r6,_CCR(r1)
++	mtcrf	0xFF,r6
++
+ 	/* r3-r13 are destroyed -- Cort */
+ 	REST_8GPRS(14, r1)
+ 	REST_10GPRS(22, r1)
 
 
-> 
-> > @@ -809,8 +802,12 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
-> >  			putback_lru_pages(&source);
-> >  			goto out;
-> >  		}
-> > -		/* this function returns # of failed pages */
-> > -		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
-> > +
-> > +		/*
-> > +		 * alloc_migrate_target should be improooooved!!
-> 
-> Not a helpful comment!  If you've identified some improvement then
-> please do provide all the details.
-
-I have an idea to improve it and hoping send patch soonish.
-I will handle it in my patch.
-
-Thanks Andrew.
-
--- 
-Kind regards,
-Minchan Kim
