@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab2ILX7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:59:35 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab2ILXly (ORCPT
+	id S932762Ab2ILX7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:59:48 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932982Ab2ILXlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:54 -0400
+	Wed, 12 Sep 2012 19:41:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Sreekanth Reddy <sreekanth.reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 70/85] SCSI: mpt2sas: Fix for Driver oops, when loading driver with max_queue_depth command line option to a very small value
-Date: Wed, 12 Sep 2012 16:36:53 -0700
-Message-Id: <20120912233549.048646923@linuxfoundation.org>
+        "Ren, Yongjie" <yongjie.ren@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 82/85] xen/pciback: Fix proper FLR steps.
+Date: Wed, 12 Sep 2012 16:37:05 -0700
+Message-Id: <20120912233550.272400422@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,60 +29,63 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
+commit 80ba77dfbce85f2d1be54847de3c866de1b18a9a upstream.
 
-If the specified max_queue_depth setting is less than the
-expected number of internal commands, then driver will calculate
-the queue depth size to a negitive number. This negitive number
-is actually a very large number because variable is unsigned
-16bit integer. So, the driver will ask for a very large amount of
-memory for message frames and resulting into oops as memory
-allocation routines will not able to handle such a large request.
+When we do FLR and save PCI config we did it in the wrong order.
+The end result was that if a PCI device was unbind from
+its driver, then binded to xen-pciback, and then back to its
+driver we would get:
 
-So, in order to limit this kind of oops, The driver need to set
-the max_queue_depth to a scsi mid layer's can_queue value. Then
-the overall message frames required for IO is minimum of either
-(max_queue_depth plus internal commands) or the IOC global
-credits.
+> lspci -s 04:00.0
+04:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
+13:42:12 # 4 :~/
+> echo "0000:04:00.0" > /sys/bus/pci/drivers/pciback/unbind
+> modprobe e1000e
+e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
+e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
+e1000e 0000:04:00.0: Disabling ASPM L0s L1
+e1000e 0000:04:00.0: enabling device (0000 -> 0002)
+xen: registering gsi 48 triggering 0 polarity 1
+Already setup the GSI :48
+e1000e 0000:04:00.0: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+e1000e: probe of 0000:04:00.0 failed with error -2
 
-Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This fixes it by first saving the PCI configuration space, then
+doing the FLR.
+
+Reported-by: Ren, Yongjie <yongjie.ren@intel.com>
+Reported-and-Tested-by: Tobias Geiger <tobias.geiger@vido.info>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/xen/xen-pciback/pci_stub.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2417,10 +2417,13 @@ _base_allocate_memory_pools(struct MPT2S
- 	}
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -353,16 +353,16 @@ static int __devinit pcistub_init_device
+ 	if (err)
+ 		goto config_release;
  
- 	/* command line tunables  for max controller queue depth */
--	if (max_queue_depth != -1)
--		max_request_credit = (max_queue_depth < facts->RequestCredit)
--		    ? max_queue_depth : facts->RequestCredit;
--	else
-+	if (max_queue_depth != -1 && max_queue_depth != 0) {
-+		max_request_credit = min_t(u16, max_queue_depth +
-+			ioc->hi_priority_depth + ioc->internal_depth,
-+			facts->RequestCredit);
-+		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
-+			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
-+	} else
- 		max_request_credit = min_t(u16, facts->RequestCredit,
- 		    MAX_HBA_QUEUE_DEPTH);
- 
-@@ -2495,7 +2498,7 @@ _base_allocate_memory_pools(struct MPT2S
- 	/* set the scsi host can_queue depth
- 	 * with some internal commands that could be outstanding
+-	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
+-	__pci_reset_function_locked(dev);
+-
+ 	/* We need the device active to save the state. */
+ 	dev_dbg(&dev->dev, "save state of device\n");
+ 	pci_save_state(dev);
+ 	dev_data->pci_saved_state = pci_store_saved_state(dev);
+ 	if (!dev_data->pci_saved_state)
+ 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
+-
++	else {
++		dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
++		__pci_reset_function_locked(dev);
++	}
+ 	/* Now disable the device (this also ensures some private device
+ 	 * data is setup before we export)
  	 */
--	ioc->shost->can_queue = ioc->scsiio_depth - (2);
-+	ioc->shost->can_queue = ioc->scsiio_depth;
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
- 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
- 
 
 
