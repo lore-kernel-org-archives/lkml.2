@@ -1,123 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab2ILMGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:06:54 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:45788 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757673Ab2ILMGt (ORCPT
+	id S1756478Ab2ILMLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:11:39 -0400
+Received: from 2.mo5.mail-out.ovh.net ([178.33.109.111]:56042 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752988Ab2ILMLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:06:49 -0400
-Date: Wed, 12 Sep 2012 14:06:31 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        sbw@mit.edu, patches@linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
- preemption
-Message-ID: <20120912120627.GA14705@somewhere>
-References: <20120830210520.GA2824@linux.vnet.ibm.com>
- <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <1346950959.18408.47.camel@twins>
- <1346951591.18408.48.camel@twins>
- <20120910202611.GB19268@somewhere>
- <1347442413.2124.70.camel@twins>
+	Wed, 12 Sep 2012 08:11:36 -0400
+X-Greylist: delayed 82077 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Sep 2012 08:11:36 EDT
+Date: Wed, 12 Sep 2012 14:08:58 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v3 02/31] arm64: Kernel booting and initialisation
+Message-ID: <20120912120858.GI31430@game.jcrosoft.org>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <1347035226-18649-3-git-send-email-catalin.marinas@arm.com>
+ <20120909172046.GB31430@game.jcrosoft.org>
+ <20120910161159.GH27042@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347442413.2124.70.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120910161159.GH27042@arm.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 8950059835670309699
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrheekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehtddrheekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 11:33:33AM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-09-10 at 22:26 +0200, Frederic Weisbecker wrote:
+On 17:11 Mon 10 Sep     , Catalin Marinas wrote:
+> On Sun, Sep 09, 2012 at 06:20:46PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 17:26 Fri 07 Sep     , Catalin Marinas wrote:
+> > > +The device tree blob (dtb) must be no bigger than 2 megabytes in size
+> > > +and placed at a 2-megabyte boundary within the first 512 megabytes from
+> > > +the start of the kernel image. This is to allow the kernel to map the
+> > > +blob using a single section mapping in the initial page tables.
+> > why do you want to restrict the DT to be less tahn 2MiB?
 > 
-> > > > OK, so colour me unconvinced.. why are we doing this?
-> > > > 
-> > > > Typically when we call schedule nr_running != 1 (we need current to be
-> > > > running and a possible target to switch to).
-> > > > 
-> > > > So I'd prefer to simply have schedule() disable all this adaptive tick
-> > > > nonsense and leave it at that.
-> > > 
-> > > In fact, the only way to get here is through ttwu(), which would have
-> > > done the nr_running increment and should have disabled all this adaptive
-> > > stuff.
-> > > 
-> > > So again,.. why?
-> > 
-> > Ok, indeed if the ttwu happened locally or even remotely through an IPI, the
-> > tick engine would stop the tick and exit that RCU extended quiescent state
-> > before we reach that place.
-> > 
-> > I just want to be sure I'm covering every case. There are some places
-> > around that call set_need_resched() even if no task is waiting for the CPU
-> > (RCU is such an example). In this case the nohz engine won't exit the RCU
-> > user mode before schedule().
-> > 
-> > Another example: a CPU does a remote wake up so it does set_need_resched()
-> > and sends the IPI. The target CPU could see the TIF_RESCHED before resuming
-> > userspace and call schedule_user() -> schedule() while the IPI has not
-> > yet arrived. In this case we need that rcu_user_exit() before schedule might
-> > make any use of RCU.
-> > 
-> > Also when the task returns from schedule(), if it's alone in the runqueue,
-> > the rcu_user_enter() that follows can be helpful to stop the tick and
-> > enter our RCU quiescent state.
+> That's a restriction due on the initial memory map. At some point we may
+> add support in head.S to parse the dtb and extract the size information.
+> Not critical at this stage.
 > 
-> So all that should have been in the Changelog.
-
-Right, I'm fixing that.
-
+> > > +Before jumping into the kernel, the following conditions must be met:
+> > > +
+> > > +- Quiesce all DMA capable devices so that memory does not get
+> > > +  corrupted by bogus network packets or disk data.  This will save
+> > > +  you many hours of debug.
+> > > +
+> > > +- Primary CPU general-purpose register settings
+> > > +  x0 = physical address of device tree blob (dtb) in system RAM.
+> > > +  x1 = 0 (reserved for future use)
+> > > +  x2 = 0 (reserved for future use)
+> > > +  x3 = 0 (reserved for future use)
+> > > +
+> > > +- CPU mode
+> > > +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
+> > > +  IRQ and FIQ).
+> > > +  The CPU must be in either EL2 (RECOMMENDED in order to have access to
+> > > +  the virtualisation extensions) or non-secure EL1.
+> > > +
+> > > +- Caches, MMUs
+> > > +  The MMU must be off.
+> > > +  Instruction cache may be on or off.
+> > > +  Data cache must be off and invalidated.
+> > > +  External caches (if present) must be configured and disabled.
+> > > +
+> > > +- Architected timers
+> > > +  CNTFRQ must be programmed with the timer frequency.
+> > > +  If entering the kernel at EL1, CNTHCTL_EL2 must have EL1PCTEN (bit 0)
+> > > +  set where available.
+> > can you explain why?
 > 
-> So the only real problem I see is non IPI remote wakeups, those cannot
-> actually restart the tick on the target cpu like we want.
+> Otherwise the kernel cannot access the generic timer registers (it is
+> described in the AArch64 exception model which isn't public yet).
+I do not like the idea to do too much in the boot loader
 
-Ok so let identify and validate the corner cases so that I can report them confidently
-in the changelog:
-
-1) This can happen if something calls set_need_resched() while no other task is
-on the runqueue.
-
-2) Remote wake up done but we haven't yet received the schedule IPI.
-
-3) Non IPI remote wakeup you're referring above, I'm not sure
-what you mean though.
+can we drop it and do it the head.S or find an other way
 
 > 
-> The rest could all be fixed to not need this.
+> > > +- The primary CPU must jump directly to the first instruction of the
+> > > +  kernel image.  The device tree blob passed by this CPU must contain
+> > > +  for each CPU node:
+> > > +
+> > > +    1. An 'enable-method' property. Currently, the only supported value
+> > > +       for this field is the string "spin-table".
+> > > +
+> > > +    2. A 'cpu-release-addr' property identifying a 64-bit,
+> > > +       zero-initialised memory location.
+> > > +
+> > > +  It is expected that the bootloader will generate these device tree
+> > > +  properties and insert them into the blob prior to kernel entry.
+> > > +
+> > > +- Any secondary CPUs must spin outside of the kernel in a reserved area
+> > > +  of memory (communicated to the kernel by a /memreserve/ region in the
+> > > +  device tree) polling their cpu-release-addr location, which must be
+> > > +  contained in the reserved region.  A wfe instruction may be inserted
+> > > +  to reduce the overhead of the busy-loop and a sev will be issued by
+> > > +  the primary CPU.  When a read of the location pointed to by the
+> > > +  cpu-release-addr returns a non-zero value, the CPU must jump directly
+> > > +  to this value.
+> > do you plan AMP boot?
 > 
-> Hrmm. still don't like the patch, but at least I see why its needed.
+> What do you mean by AMP?
 > 
-> > Also I'm considering this RCU user extended quiescent state as a standalone
-> > feature for now. Indeed the only user of it is the adaptive tickless thing.
-> > But I'm treating that RCU part independantly for now so that it makes it
-> > easier to merge, piecewise.
-> 
-> But its semantics are very tightly tied to the requirements of adaptive
-> tick, so arguing about one without the other doesn't really make sense.
-> 
+> If you only want to use 3 CPUs out of 4 for example, you change the FDT
+> information that gets passed to the kernel accordingly. So the kernel
+> wouldn't touch the 4th one.
+I mean boot a  different kernel in each core as example
 
-Yeah it's true. Now all of these hooks have been required in practice with
-the adaptive tick code running.
-
-Also keeping these hooks unconditional, until the adaptive tick code comes in
-and drives that conditionally, is also a nice way to runtime selftest that code (check
-there is no missing rcu_user_exit() call for example, easy to check if RCU lockdep
-is enabled).
+Best Regards,
+J.
