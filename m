@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab2ILOtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:49:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53868 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab2ILOtW convert rfc822-to-8bit (ORCPT
+	id S1759621Ab2ILOuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:50:21 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51891 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755891Ab2ILOuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:49:22 -0400
-Message-ID: <1347461351.15764.47.camel@twins>
-Subject: Re: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
+	Wed, 12 Sep 2012 10:50:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347461232.15764.45.camel@twins>
+References: <CABPqkBSemt4hsoFfGkm3pac+R+aUJ6Kd9LBTWM-JtKMOF4VM9Q@mail.gmail.com>
+	<1347461232.15764.45.camel@twins>
+Date: Wed, 12 Sep 2012 16:50:17 +0200
+Message-ID: <CABPqkBSPVBuKRYkO02O1BgbL5u=EtsRHJdYxqHrj56_H1vtsGQ@mail.gmail.com>
+Subject: Re: [BUG] perf: multiplexing and hotplug CPU problem
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
         "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 12 Sep 2012 16:49:11 +0200
-In-Reply-To: <CABPqkBSCY1N8Zc9ZxRYmQykqg+hiukxW4ZRMWkp9wfaOSzgGrA@mail.gmail.com>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
-	 <1347459195-5491-2-git-send-email-eranian@google.com>
-	 <1347459984.15764.34.camel@twins>
-	 <CABPqkBSnhjgAhn5+gOuBWWPrxKojKW1hKPJEn7zvvYhiw-LPLg@mail.gmail.com>
-	 <1347460719.15764.42.camel@twins>
-	 <CABPqkBSCY1N8Zc9ZxRYmQykqg+hiukxW4ZRMWkp9wfaOSzgGrA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-12 at 16:46 +0200, Stephane Eranian wrote:
+On Wed, Sep 12, 2012 at 4:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-09-12 at 16:40 +0200, Stephane Eranian wrote:
+>> Hi,
+>>
+>> As I was debugging my hrtimer patch, I ran a few tests
+>> with hotplug CPU. In others words, I offline a CPU while
+>> there is an active monitoring session which causes multiplexing.
+>>
+>> When the CPU goes down, all is well. But when it comes back,
+>> things go wrong. No kernel crashes but wrong results and multiplexing
+>> does not work anymore.
+>>
+>> I investigated this some more and found out there is an issue
+>> on re-activation.
+>>
+>> During shutdown, system-wide events are scheduled out AND removed
+>> from the event lists. Consequently, ctx->nr_events and ctx->nr_active
+>> go to zero.
+>>
+>> When the CPU is brought back online and tools do start/stop on the events
+>> they can be scheduled back in, and therefore increment ctx->nr_active.
+>> Because list_add_event() is not called again, you may end up with
+>> ctx->nr_events < ctx->nr_active which is wrong. Events may not
+>> be a lists and therefore they cannot get multiplexed again.
+>>
+>> It is not clear to me why we need to remove the events from any
+>> list (list_del_event) when the CPU goes down.
+>>
+>> Why isn't calling event_sched_out() enough?
+>> If events are kept on lists, why not try to schedule them back in when
+>> the CPU is brought back online?
+>
+> This might be never, I think we should put the events in error state
+> instead of disabling them, that should avoid the re-activation and
+> provide a stronger hint to userspace that something went funny.
 
-> I am fine with dropping this patch. I just found it odd there was a per-cpu
-> data reference embedded deep into the call. I wanted things to be more
-> explicit. I know it works without the proposed change.
-
-Ah the reason its there is to make sure the base pointer is a valid base
-pointer, this avoids an extra conditional in a number of places. Note
-that it uses raw_get_cpu_var(), so it doesn't even actually know which
-specific pointer goes in.
-
-
+Yeah, that's probably a better approach. Counters should be put
+in error state such that IOC_ENABLE or read() return errors.
