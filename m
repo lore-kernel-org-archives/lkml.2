@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab2ILXdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:33:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S1756159Ab2IMAc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:32:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab2ILXd2 (ORCPT
+	with ESMTP id S932342Ab2ILXdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:28 -0400
+	Wed, 12 Sep 2012 19:33:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Matt Porter <mporter@kernel.crashing.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 063/108] rapidio/tsi721: fix inbound doorbell interrupt handling
-Date: Wed, 12 Sep 2012 16:29:01 -0700
-Message-Id: <20120912232457.142503371@linuxfoundation.org>
+Subject: [ 064/108] rapidio/tsi721: fix unused variable compiler warning
+Date: Wed, 12 Sep 2012 16:29:02 -0700
+Message-Id: <20120912232457.246667866@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -34,17 +34,12 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 3670e7e12e582c6d67761275d148171feb7a9004 upstream.
+commit 9a9a9a7adafe62a34de8b4fb48936c1c5f9bafa5 upstream.
 
-Make sure that there is no doorbell messages left behind due to disabled
-interrupts during inbound doorbell processing.
+Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
+option off.
 
-The most common case for this bug is loss of rionet JOIN messages in
-systems with three or more rionet participants and MSI or MSI-X enabled.
-As result, requests for packet transfers may finish with "destination
-unreachable" error message.
-
-This patch is applicable to kernel versions starting from v3.2.
+This patch is applicable to kernel versions starting from v3.2
 
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Matt Porter <mporter@kernel.crashing.org>
@@ -53,31 +48,35 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/rapidio/devices/tsi721.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 --- a/drivers/rapidio/devices/tsi721.c
 +++ b/drivers/rapidio/devices/tsi721.c
-@@ -435,6 +435,9 @@ static void tsi721_db_dpc(struct work_st
- 				" info %4.4x\n", DBELL_SID(idb.bytes),
- 				DBELL_TID(idb.bytes), DBELL_INF(idb.bytes));
- 		}
-+
-+		wr_ptr = ioread32(priv->regs +
-+				  TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
+@@ -2219,7 +2219,7 @@ static int __devinit tsi721_probe(struct
+ 				  const struct pci_device_id *id)
+ {
+ 	struct tsi721_device *priv;
+-	int i, cap;
++	int cap;
+ 	int err;
+ 	u32 regval;
+ 
+@@ -2239,12 +2239,15 @@ static int __devinit tsi721_probe(struct
+ 	priv->pdev = pdev;
+ 
+ #ifdef DEBUG
++	{
++	int i;
+ 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
+ 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
+ 			i, (unsigned long long)pci_resource_start(pdev, i),
+ 			(unsigned long)pci_resource_len(pdev, i),
+ 			pci_resource_flags(pdev, i));
  	}
- 
- 	iowrite32(rd_ptr & (IDB_QSIZE - 1),
-@@ -445,6 +448,10 @@ static void tsi721_db_dpc(struct work_st
- 	regval |= TSI721_SR_CHINT_IDBQRCV;
- 	iowrite32(regval,
- 		priv->regs + TSI721_SR_CHINTE(IDB_QUEUE));
-+
-+	wr_ptr = ioread32(priv->regs + TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
-+	if (wr_ptr != rd_ptr)
-+		schedule_work(&priv->idb_work);
- }
- 
- /**
++	}
+ #endif
+ 	/*
+ 	 * Verify BAR configuration
 
 
