@@ -1,168 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761015Ab2ILSnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 14:43:46 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:42362 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab2ILSno (ORCPT
+	id S1754186Ab2ILSrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 14:47:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26279 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab2ILSrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 14:43:44 -0400
-From: Ben Chan <benchan@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sage Ahn <syahn@gctsemi.com>, Ben Chan <benchan@chromium.org>
-Subject: [PATCH] staging: gdm72xx: simplify alloc_tx_struct and alloc_rx_struct
-Date: Wed, 12 Sep 2012 11:43:41 -0700
-Message-Id: <1347475421-1126-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 12 Sep 2012 14:47:05 -0400
+X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=58kWvx2hfm4A:10 a=5SG0PmZfjMsA:10 a=meVymXHHAAAA:8 a=FESrO29vrNYA:10 a=VwQbUJbxAAAA:8 a=UPm3pfgAAAAA:8 a=7d_E57ReAAAA:8 a=VnNF1IyMAAAA:8 a=W_bB3CCIMeGES-C5mZYA:9 a=PUjeQqilurYA:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=D6-X0JM3zdQA:10 a=AKkd25gFMYLUd2OKSyYA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347475616.10751.74.camel@gandalf.local.home>
+Subject: [PATCH][GIT PULL][v3.7] trace: Don't declare trace_*_rcuidle
+ functions in modules
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Wed, 12 Sep 2012 14:46:56 -0400
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-SI7TaOChoNwsIx1DTUfu"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simplifies alloc_tx_struct and alloc_rx_struct in gdm_sdio.c
-and gdm_usb.c by replacing kmalloc+memset with kzalloc and reorganizing
-the code.
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
----
- drivers/staging/gdm72xx/gdm_sdio.c |   30 ++++++++----------------
- drivers/staging/gdm72xx/gdm_usb.c  |   44 ++++++++++++++----------------------
- 2 files changed, 27 insertions(+), 47 deletions(-)
+--=-SI7TaOChoNwsIx1DTUfu
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index a0621d9..ca38d71 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -60,25 +60,20 @@ static void hexdump(char *title, u8 *data, int len)
- 
- static struct sdio_tx *alloc_tx_struct(struct tx_cxt *tx)
- {
--	struct sdio_tx *t = NULL;
-+	struct sdio_tx *t = kzalloc(sizeof(*t), GFP_ATOMIC);
- 
--	t = kzalloc(sizeof(*t), GFP_ATOMIC);
--	if (t == NULL)
--		goto out;
-+	if (!t)
-+		return NULL;
- 
- 	t->buf = kmalloc(TX_BUF_SIZE, GFP_ATOMIC);
--	if (t->buf == NULL)
--		goto out;
-+	if (!t->buf) {
-+		kfree(t);
-+		return NULL;
+
+Ingo,
+
+Josh made a change to the tracing code that affects both the work
+Paul McKenney and I are currently doing. At the last Kernel Summit back
+in August, Linus said when such a case exists, it is best to make a
+separate branch based off of his tree and place the change there. This
+way, the repositories that need to share the change can both pull them
+in and the SHA1 will match for both. Whichever branch is pulled in first
+by Linus will also pull in the necessary change for the other branch as
+well.
+
+I made a separate branch from Linus's v3.6-rc5 (called tip/perf/rcu) and
+applied Josh's change to it. Could you please pull this into perf/core
+and whatever branch that Paul needs it in. Or just have Paul pull this
+change as well.
+
+Feel free to add the above text when merging the changes.
+
+Thanks,
+
+-- Steve
+
+
+Please pull the latest tip/perf/rcu tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/rcu
+
+Head SHA1: 7ece55a4a3a04abe37118b1d4fb0b702eeb1de4c
+
+
+Josh Triplett (1):
+      trace: Don't declare trace_*_rcuidle functions in modules
+
+----
+ include/linux/tracepoint.h |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
+---------------------------
+commit 7ece55a4a3a04abe37118b1d4fb0b702eeb1de4c
+Author: Josh Triplett <josh@joshtriplett.org>
+Date:   Tue Sep 4 23:23:06 2012 -0700
+
+    trace: Don't declare trace_*_rcuidle functions in modules
+   =20
+    Tracepoints declare a static inline trace_*_rcuidle variant of the trac=
+e
+    function, to support safely generating trace events from the idle loop.
+    Module code never actually uses that variant of trace functions, becaus=
+e
+    modules don't run code that needs tracing with RCU idled.  However, the
+    declaration of those otherwise unused functions causes the module to
+    reference rcu_idle_exit and rcu_idle_enter, which RCU does not export t=
+o
+    modules.
+   =20
+    To avoid this, don't generate trace_*_rcuidle functions for tracepoints
+    declared in module code.
+   =20
+    Link: http://lkml.kernel.org/r/20120905062306.GA14756@leaf
+   =20
+    Reported-by: Steven Rostedt <rostedt@goodmis.org>
+    Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+    Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+    Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 802de56..2f322c3 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -136,6 +136,22 @@ static inline void tracepoint_synchronize_unregister(v=
+oid)
+ 		postrcu;						\
+ 	} while (0)
+=20
++#ifndef MODULE
++#define __DECLARE_TRACE_RCU(name, proto, args, cond, data_proto, data_args=
+)	\
++	static inline void trace_##name##_rcuidle(proto)		\
++	{								\
++		if (static_key_false(&__tracepoint_##name.key))		\
++			__DO_TRACE(&__tracepoint_##name,		\
++				TP_PROTO(data_proto),			\
++				TP_ARGS(data_args),			\
++				TP_CONDITION(cond),			\
++				rcu_idle_exit(),			\
++				rcu_idle_enter());			\
 +	}
- 
- 	t->tx_cxt = tx;
- 
- 	return t;
--out:
--	if (t) {
--		kfree(t->buf);
--		kfree(t);
--	}
--	return NULL;
- }
- 
- static void free_tx_struct(struct sdio_tx *t)
-@@ -91,15 +86,10 @@ static void free_tx_struct(struct sdio_tx *t)
- 
- static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
- {
--	struct sdio_rx *r = NULL;
--
--	r = kmalloc(sizeof(*r), GFP_ATOMIC);
--	if (!r)
--		return NULL;
--
--	memset(r, 0, sizeof(*r));
-+	struct sdio_rx *r = kzalloc(sizeof(*r), GFP_ATOMIC);
- 
--	r->rx_cxt = rx;
-+	if (r)
-+		r->rx_cxt = rx;
- 
- 	return r;
- }
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 6d306f7..0c9e895 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -73,27 +73,23 @@ static void hexdump(char *title, u8 *data, int len)
- 
- static struct usb_tx *alloc_tx_struct(struct tx_cxt *tx)
- {
--	struct usb_tx *t = NULL;
-+	struct usb_tx *t = kzalloc(sizeof(*t), GFP_ATOMIC);
- 
--	t = kzalloc(sizeof(*t), GFP_ATOMIC);
--	if (t == NULL)
--		goto out;
-+	if (!t)
-+		return NULL;
- 
- 	t->urb = usb_alloc_urb(0, GFP_ATOMIC);
- 	t->buf = kmalloc(TX_BUF_SIZE, GFP_ATOMIC);
--	if (t->urb == NULL || t->buf == NULL)
--		goto out;
--
--	t->tx_cxt = tx;
--
--	return t;
--out:
--	if (t) {
-+	if (!t->urb || !t->buf) {
- 		usb_free_urb(t->urb);
- 		kfree(t->buf);
- 		kfree(t);
-+		return NULL;
- 	}
--	return NULL;
++#else
++#define __DECLARE_TRACE_RCU(name, proto, args, cond, data_proto, data_args=
+)
++#endif
 +
-+	t->tx_cxt = tx;
-+
-+	return t;
- }
- 
- static void free_tx_struct(struct usb_tx *t)
-@@ -107,28 +103,22 @@ static void free_tx_struct(struct usb_tx *t)
- 
- static struct usb_rx *alloc_rx_struct(struct rx_cxt *rx)
- {
--	struct usb_rx *r = NULL;
-+	struct usb_rx *r = kzalloc(sizeof(*r), GFP_ATOMIC);
- 
--	r = kmalloc(sizeof(*r), GFP_ATOMIC);
--	if (r == NULL)
--		goto out;
--
--	memset(r, 0, sizeof(*r));
-+	if (!r)
-+		return NULL;
- 
- 	r->urb = usb_alloc_urb(0, GFP_ATOMIC);
- 	r->buf = kmalloc(RX_BUF_SIZE, GFP_ATOMIC);
--	if (r->urb == NULL || r->buf == NULL)
--		goto out;
--
--	r->rx_cxt = rx;
--	return r;
--out:
--	if (r) {
-+	if (!r->urb || !r->buf) {
- 		usb_free_urb(r->urb);
- 		kfree(r->buf);
- 		kfree(r);
-+		return NULL;
- 	}
--	return NULL;
-+
-+	r->rx_cxt = rx;
-+	return r;
- }
- 
- static void free_rx_struct(struct usb_rx *r)
--- 
-1.7.7.3
+ /*
+  * Make sure the alignment of the structure in the __tracepoints section w=
+ill
+  * not add unwanted padding between the beginning of the section and the
+@@ -151,16 +167,8 @@ static inline void tracepoint_synchronize_unregister(v=
+oid)
+ 				TP_ARGS(data_args),			\
+ 				TP_CONDITION(cond),,);			\
+ 	}								\
+-	static inline void trace_##name##_rcuidle(proto)		\
+-	{								\
+-		if (static_key_false(&__tracepoint_##name.key))		\
+-			__DO_TRACE(&__tracepoint_##name,		\
+-				TP_PROTO(data_proto),			\
+-				TP_ARGS(data_args),			\
+-				TP_CONDITION(cond),			\
+-				rcu_idle_exit(),			\
+-				rcu_idle_enter());			\
+-	}								\
++	__DECLARE_TRACE_RCU(name, PARAMS(proto), PARAMS(args),		\
++		PARAMS(cond), PARAMS(data_proto), PARAMS(data_args))	\
+ 	static inline int						\
+ 	register_trace_##name(void (*probe)(data_proto), void *data)	\
+ 	{								\
+
+
+--=-SI7TaOChoNwsIx1DTUfu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQUNigAAoJEOdOSU1xswtM1xIIALK3t+iy7nCFw1KbZKtiGHlZ
+3cDoB6QBfWtgwIEG2+l//JdviC4P4dnvhY+ME6QRWNgKbBXIhW63wS9/aRQ/a3/p
+RXZmqP/3e4hV962lZP4bdzyaCSfEwAWH7t2ea6npdFfYj68lCtgiLT3+JDrBJxvI
+GuQ2CS+sUKBmsU5PVewGElt7mYViEUvjxXMW5k1w+8HEoncL1J20ZqljJoA0962P
+xPBJ/tcxzOa94pln4vqvgpoR/DtGRH1za40fjEH+H7oOuYfH0NHtx5oTgcCqbczk
+UBLDHWkTs77AeqedmQUuFmj+mZcUXMRFEIeyqzLkhwbZP40+4XOfV41SvyCpmfU=
+=3Pf6
+-----END PGP SIGNATURE-----
+
+--=-SI7TaOChoNwsIx1DTUfu--
 
