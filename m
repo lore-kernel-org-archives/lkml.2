@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2ILV1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 17:27:33 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53401 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2ILV1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 17:27:30 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        JJ Ding <dgdunix@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] input: gpio_keys_polled: fix dt pdata->nbuttons
-Date: Wed, 12 Sep 2012 18:27:23 -0300
-Message-Id: <1347485243-21173-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	id S1754332Ab2ILVbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 17:31:06 -0400
+Received: from nm2-vm9.bullet.mail.sg3.yahoo.com ([106.10.148.98]:40223 "HELO
+	nm2-vm9.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753263Ab2ILVbF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 17:31:05 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 762031.47198.bm@omp1010.mail.sg3.yahoo.com
+X-YMail-OSG: HkJKV74VM1nFdH_Zxyi6ghocSX2.CRrVXfZ06mBeExwhWWh
+ ogX_spDHYcl_IyhVYOy7g1e.T9tfYJrlRzR2mjzVGCyExkDpTSRs8ESaZINf
+ czc0eyYOAxo2DhGGrizZiHe_EtigQdy_M6fM5ufXhW4813zX5me5k6jib7VY
+ MIu24aw4Zc2.iQq_eD_NOji_6VPTyMPCl62dwmD6RlK6JqiRwwbSgNRVtDax
+ bfHmx.QNTSGI2u3VH3za7u93Q3CPyxTt39EjNtkud.xrvBBxrNa5NUI968yA
+ wiGtXnED7PALtmikeNxEFqcR7B1m1_Zc3kJgPBRvyVzHyMQoVX7bXoVRm70p
+ M8Fbo2TBx_kmf0B2_uglWIkuxkgf8yLMpO_FuJBqqRdQb76u_HPg8ghXC3lp
+ f4Nn48bitbgB7IM8fxU8erdsr.LAbmnHOVcI5_LWi4o5uyF1wDxk1B___5Gd
+ 2orsIVKHB90WFzwAhoH9oBf7Zp7sCcWsiINpjIM_c915feupG1W4DlK2pg8N
+ Q0SES1gjf4WNmW.nvV60DKYvFKzue0KU2EwI1lbIGrPCRbxQvT.0SGv1YCJ8
+ TE0SB0veZtyMm6uA-
+X-RocketYMMF: anir82
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.121.416
+Message-ID: <1347485461.18260.YahooMailClassic@web193105.mail.sg3.yahoo.com>
+Date: Thu, 13 Sep 2012 05:31:01 +0800 (SGT)
+From: Ruth Yoda <ruth_y2@qq.com>
+Reply-To: ruth_y1@qq.com
+Subject: Re:Very Urgent!!!
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pdata->nbuttons should be updated by the dt code.
-
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/input/keyboard/gpio_keys_polled.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 7908952..f2142de 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -129,6 +129,7 @@ gpio_keys_polled_get_devtree_pdata(struct device *dev)
- 	}
+Greetings from BURKINA FASO:
+Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
  
- 	pdata->buttons = (struct gpio_keys_button *)(pdata + 1);
-+	pdata->nbuttons = nbuttons;
- 
- 	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
- 	of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
--- 
-1.7.10
-
+Yours faithful,
+Mrs Ruth Yoda.
