@@ -1,290 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab2ILUVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 16:21:16 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52913 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2ILUVO convert rfc822-to-8bit (ORCPT
+	id S1752680Ab2ILUXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 16:23:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48394 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2ILUXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 16:21:14 -0400
-Subject: Re: [PATCH] Xen backend support for paged out grant targets.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-In-Reply-To: <20120912200641.GB29879@phenom.dumpdata.com>
-Date: Wed, 12 Sep 2012 16:21:10 -0400
-Cc: Andres Lagar-Cavilla <andres@lagarcavilla.org>, xen-devel@xen.lists.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7EF39A37-CC11-4AB8-8B36-F8CD3646F6D3@gridcentric.ca>
-References: <1347479153-441-1-git-send-email-andres@lagarcavilla.org> <20120912200641.GB29879@phenom.dumpdata.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-X-Mailer: Apple Mail (2.1278)
+	Wed, 12 Sep 2012 16:23:32 -0400
+Message-ID: <5050EF3F.6030003@gmail.com>
+Date: Wed, 12 Sep 2012 15:23:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Cyril Chemparathy <cyril@ti.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux@openrisc.net,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        x86@kernel.org, david.daney@cavium.com, benh@kernel.crashing.org,
+        bigeasy@linutronix.de, grant.likely@secretlab.ca,
+        paul.gortmaker@windriver.com, paulus@samba.org, hpa@zytor.com,
+        m.szyprowski@samsung.com, jonas@southpole.se, linux@arm.linux.org.uk,
+        nico@linaro.org, a-jacquiot@ti.com, mingo@redhat.com,
+        suzuki@in.ibm.com, mahesh@linux.vnet.ibm.com, linus.walleij@linaro.org,
+        arnd@arndb.de, msalter@redhat.com, rob.herring@calxeda.com,
+        tglx@linutronix.de, blogic@openwrt.org, dhowells@redhat.com,
+        monstr@monstr.eu, ralf@linux-mips.org, tj@kernel.org
+Subject: Re: [PATCH] of: specify initrd location using 64-bit
+References: <1347465937-7056-1-git-send-email-cyril@ti.com>
+In-Reply-To: <1347465937-7056-1-git-send-email-cyril@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 12, 2012, at 4:06 PM, Konrad Rzeszutek Wilk wrote:
-
-> On Wed, Sep 12, 2012 at 03:45:53PM -0400, Andres Lagar-Cavilla wrote:
->> Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
->> foreign domain (such as dom0) attempts to map these frames, the map will
->> initially fail. The hypervisor returns a suitable errno, and kicks an
->> asynchronous page-in operation carried out by a helper. The foreign domain is
->> expected to retry the mapping operation until it eventually succeeds. The
->> foreign domain is not put to sleep because itself could be the one running the
->> pager assist (typical scenario for dom0).
+On 09/12/2012 11:05 AM, Cyril Chemparathy wrote:
+> On some PAE architectures, the entire range of physical memory could reside
+> outside the 32-bit limit.  These systems need the ability to specify the
+> initrd location using 64-bit numbers.
 > 
-> Looks ok to me. You forgot to put on the CC LKML and netdev mailing list
-> so I did that for you.
-Thanks. I have a concern though (re-posting from xen-devel). I need to bring attention to the following hunk:
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 682633b..5610fd8 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -635,9 +635,7 @@ static void xen_netbk_rx_action(struct xen_netbk *netbk)
-		return;
+> This patch globally modifies the early_init_dt_setup_initrd_arch() function to
+> use 64-bit numbers instead of the current unsigned long.
 
-	BUG_ON(npo.copy_prod > ARRAY_SIZE(netbk->grant_copy_op));
--	ret = HYPERVISOR_grant_table_op(GNTTABOP_copy, &netbk->grant_copy_op,
--					npo.copy_prod);
--	BUG_ON(ret != 0);
-+	gnttab_batch_copy_no_eagain(netbk->grant_copy_op, npo.copy_prod);
+S-o-B?
 
-It seems like the (extant) code passes a struct gnttab_copy ** to the grant table hypercall (&netbk->grant_copy_op, defined as struct gnttab_copy [])
-
-I "fixed" it to pass a struct gnttab_copy * (netbk->grant_copy_op, no '&'). This matches the other invocation of the grant copy hyper call (in netbk_tx_action). Did I fix it, though? I am confused as to how this could have ever worked.
-
-Andres
-
+> ---
+>  arch/arm/mm/init.c            |    2 +-
+>  arch/c6x/kernel/devicetree.c  |    3 +--
+>  arch/microblaze/kernel/prom.c |    3 +--
+>  arch/mips/kernel/prom.c       |    3 +--
+>  arch/openrisc/kernel/prom.c   |    3 +--
+>  arch/powerpc/kernel/prom.c    |    3 +--
+>  arch/x86/kernel/devicetree.c  |    3 +--
+>  drivers/of/fdt.c              |   10 ++++++----
+>  include/linux/of_fdt.h        |    3 +--
+>  9 files changed, 14 insertions(+), 19 deletions(-)
 > 
->> 
->> This patch adds support for this mechanism for backend drivers using grant
->> mapping and copying operations. Specifically, this covers the blkback and
->> gntdev drivers (which map foregin grants), and the netback driver (which copies
->> foreign grants).
->> 
->> * Add GNTST_eagain, already exposed by Xen, to the grant interface.
->> * Add a retry method for grants that fail with GNTST_eagain (i.e. because the
->>  target foregin frame is paged out).
->> * Insert hooks with appropriate macro decorators in the aforementioned drivers.
->> 
->> The retry loop is only invoked if the grant operation status is GNTST_eagain.
->> It guarantees to leave a new status code different from GNTST_eagain. Any other
->> status code results in identical code execution as before.
->> 
->> The retry loop performs 256 attempts with increasing time intervals through a
->> 32 second period. It uses msleep to yield while waiting for the next retry.
->> 
->> V2 after feedback from David Vrabel:
->> * Explicit MAX_DELAY instead of wrap-around delay into zero
->> * Abstract GNTST_eagain check into core grant table code for netback module.
->> 
->> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
->> ---
->> drivers/net/xen-netback/netback.c   |   11 +++-------
->> drivers/xen/grant-table.c           |   26 ++++++++++++++++++++++++
->> drivers/xen/xenbus/xenbus_client.c  |    6 ++----
->> include/xen/grant_table.h           |   38 +++++++++++++++++++++++++++++++++++
->> include/xen/interface/grant_table.h |    2 ++
->> 5 files changed, 71 insertions(+), 12 deletions(-)
->> 
->> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->> index 682633b..fc40258 100644
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -635,9 +635,7 @@ static void xen_netbk_rx_action(struct xen_netbk *netbk)
->> 		return;
->> 
->> 	BUG_ON(npo.copy_prod > ARRAY_SIZE(netbk->grant_copy_op));
->> -	ret = HYPERVISOR_grant_table_op(GNTTABOP_copy, &netbk->grant_copy_op,
->> -					npo.copy_prod);
->> -	BUG_ON(ret != 0);
->> +	gnttab_batch_copy_retry_eagain(netbk->grant_copy_op, npo.copy_prod);
->> 
->> 	while ((skb = __skb_dequeue(&rxq)) != NULL) {
->> 		sco = (struct skb_cb_overlay *)skb->cb;
->> @@ -1460,18 +1458,15 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
->> static void xen_netbk_tx_action(struct xen_netbk *netbk)
->> {
->> 	unsigned nr_gops;
->> -	int ret;
->> 
->> 	nr_gops = xen_netbk_tx_build_gops(netbk);
->> 
->> 	if (nr_gops == 0)
->> 		return;
->> -	ret = HYPERVISOR_grant_table_op(GNTTABOP_copy,
->> -					netbk->tx_copy_ops, nr_gops);
->> -	BUG_ON(ret);
->> 
->> -	xen_netbk_tx_submit(netbk);
->> +	gnttab_batch_copy_retry_eagain(netbk->tx_copy_ops, nr_gops);
->> 
->> +	xen_netbk_tx_submit(netbk);
->> }
->> 
->> static void xen_netbk_idx_release(struct xen_netbk *netbk, u16 pending_idx)
->> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
->> index eea81cf..96543b2 100644
->> --- a/drivers/xen/grant-table.c
->> +++ b/drivers/xen/grant-table.c
->> @@ -38,6 +38,7 @@
->> #include <linux/vmalloc.h>
->> #include <linux/uaccess.h>
->> #include <linux/io.h>
->> +#include <linux/delay.h>
->> #include <linux/hardirq.h>
->> 
->> #include <xen/xen.h>
->> @@ -823,6 +824,26 @@ unsigned int gnttab_max_grant_frames(void)
->> }
->> EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
->> 
->> +#define MAX_DELAY 256
->> +void
->> +gnttab_retry_eagain_gop(unsigned int cmd, void *gop, int16_t *status,
->> +						const char *func)
->> +{
->> +	unsigned delay = 1;
->> +
->> +	do {
->> +		BUG_ON(HYPERVISOR_grant_table_op(cmd, gop, 1));
->> +		if (*status == GNTST_eagain)
->> +			msleep(delay++);
->> +	} while ((*status == GNTST_eagain) && (delay < MAX_DELAY));
->> +
->> +	if (delay >= MAX_DELAY) {
->> +		printk(KERN_ERR "%s: %s eagain grant\n", func, current->comm);
->> +		*status = GNTST_bad_page;
->> +	}
->> +}
->> +EXPORT_SYMBOL_GPL(gnttab_retry_eagain_gop);
->> +
->> int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->> 		    struct gnttab_map_grant_ref *kmap_ops,
->> 		    struct page **pages, unsigned int count)
->> @@ -836,6 +857,11 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->> 	if (ret)
->> 		return ret;
->> 
->> +	/* Retry eagain maps */
->> +	for (i = 0; i < count; i++)
->> +		if (map_ops[i].status == GNTST_eagain)
->> +			gnttab_retry_eagain_map(map_ops + i);
->> +
->> 	if (xen_feature(XENFEAT_auto_translated_physmap))
->> 		return ret;
->> 
->> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
->> index b3e146e..a6e07ea 100644
->> --- a/drivers/xen/xenbus/xenbus_client.c
->> +++ b/drivers/xen/xenbus/xenbus_client.c
->> @@ -490,8 +490,7 @@ static int xenbus_map_ring_valloc_pv(struct xenbus_device *dev,
->> 
->> 	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
->> 
->> -	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
->> -		BUG();
->> +	gnttab_map_grant_retry_eagain(&op);
->> 
->> 	if (op.status != GNTST_okay) {
->> 		free_vm_area(area);
->> @@ -572,8 +571,7 @@ int xenbus_map_ring(struct xenbus_device *dev, int gnt_ref,
->> 	gnttab_set_map_op(&op, (unsigned long)vaddr, GNTMAP_host_map, gnt_ref,
->> 			  dev->otherend_id);
->> 
->> -	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
->> -		BUG();
->> +	gnttab_map_grant_retry_eagain(&op);
->> 
->> 	if (op.status != GNTST_okay) {
->> 		xenbus_dev_fatal(dev, op.status,
->> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
->> index 11e27c3..c829c83 100644
->> --- a/include/xen/grant_table.h
->> +++ b/include/xen/grant_table.h
->> @@ -43,6 +43,7 @@
->> #include <xen/interface/grant_table.h>
->> 
->> #include <asm/xen/hypervisor.h>
->> +#include <asm/xen/hypercall.h>
->> 
->> #include <xen/features.h>
->> 
->> @@ -183,6 +184,43 @@ unsigned int gnttab_max_grant_frames(void);
->> 
->> #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
->> 
->> +/* Retry a grant map/copy operation when the hypervisor returns GNTST_eagain.
->> + * This is typically due to paged out target frames.
->> + * Generic entry-point, use macro decorators below for specific grant
->> + * operations.
->> + * Will retry for 1, 2, ... 255 ms, i.e. 256 times during 32 seconds.
->> + * Return value in *status guaranteed to no longer be GNTST_eagain. */
->> +void gnttab_retry_eagain_gop(unsigned int cmd, void *gop, int16_t *status,
->> +                             const char *func);
->> +
->> +#define gnttab_retry_eagain_map(_gop)                       \
->> +    gnttab_retry_eagain_gop(GNTTABOP_map_grant_ref, (_gop), \
->> +                            &(_gop)->status, __func__)
->> +
->> +#define gnttab_retry_eagain_copy(_gop)                  \
->> +    gnttab_retry_eagain_gop(GNTTABOP_copy, (_gop),      \
->> +                            &(_gop)->status, __func__)
->> +
->> +static inline void
->> +gnttab_map_grant_retry_eagain(struct gnttab_map_grant_ref *op)
->> +{
->> +    BUG_ON((HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, op, 1)));
->> +    if (op->status == GNTST_eagain)
->> +        gnttab_retry_eagain_map(op);
->> +}
->> +
->> +static inline void
->> +gnttab_batch_copy_retry_eagain(struct gnttab_copy *batch, unsigned count)
->> +{
->> +    unsigned i;
->> +    struct gnttab_copy *op;
->> +
->> +    BUG_ON(HYPERVISOR_grant_table_op(GNTTABOP_copy, batch, count));
->> +    for (i = 0, op = batch; i < count; i++, op++)
->> +        if (op->status == GNTST_eagain)
->> +            gnttab_retry_eagain_copy(op);
->> +}
->> +
->> int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->> 		    struct gnttab_map_grant_ref *kmap_ops,
->> 		    struct page **pages, unsigned int count);
->> diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
->> index 7da811b..66cb734 100644
->> --- a/include/xen/interface/grant_table.h
->> +++ b/include/xen/interface/grant_table.h
->> @@ -520,6 +520,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
->> #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
->> #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
->> #define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary */
->> +#define GNTST_eagain          (-12) /* Retry.                                */
->> 
->> #define GNTTABOP_error_msgs {                   \
->>     "okay",                                     \
->> @@ -533,6 +534,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
->>     "permission denied",                        \
->>     "bad page",                                 \
->>     "copy arguments cross page boundary"        \
->> +    "retry"                                     \
->> }
->> 
->> #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */
->> -- 
->> 1.7.9.5
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index ad722f1..579792c 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -76,7 +76,7 @@ static int __init parse_tag_initrd2(const struct tag *tag)
+>  __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+>  
+>  #ifdef CONFIG_OF_FLATTREE
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+
+phys_initrd_start/size need to change too. Not sure about similar things
+on other arches.
+
+Does u-boot need similar fixes?
+
+>  {
+>  	phys_initrd_start = start;
+>  	phys_initrd_size = end - start;
+> diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
+> index bdb56f0..287d0e6 100644
+> --- a/arch/c6x/kernel/devicetree.c
+> +++ b/arch/c6x/kernel/devicetree.c
+> @@ -33,8 +33,7 @@ void __init early_init_devtree(void *params)
+>  
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -		unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+> index 4a764cc..cecd42c 100644
+> --- a/arch/microblaze/kernel/prom.c
+> +++ b/arch/microblaze/kernel/prom.c
+> @@ -136,8 +136,7 @@ void __init early_init_devtree(void *params)
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -		unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+> index 028f6f8..e37e0dc 100644
+> --- a/arch/mips/kernel/prom.c
+> +++ b/arch/mips/kernel/prom.c
+> @@ -41,8 +41,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -					    unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
+> index 5869e3f..150215a 100644
+> --- a/arch/openrisc/kernel/prom.c
+> +++ b/arch/openrisc/kernel/prom.c
+> @@ -96,8 +96,7 @@ void __init early_init_devtree(void *params)
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -		unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+> index 37725e8..ac15f63 100644
+> --- a/arch/powerpc/kernel/prom.c
+> +++ b/arch/powerpc/kernel/prom.c
+> @@ -549,8 +549,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -		unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+> index b158152..2fbad6b 100644
+> --- a/arch/x86/kernel/devicetree.c
+> +++ b/arch/x86/kernel/devicetree.c
+> @@ -52,8 +52,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>  }
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -void __init early_init_dt_setup_initrd_arch(unsigned long start,
+> -					    unsigned long end)
+> +void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+>  {
+>  	initrd_start = (unsigned long)__va(start);
+>  	initrd_end = (unsigned long)__va(end);
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 91a375f..2ff8b7a 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -554,7 +554,8 @@ int __init of_flat_dt_match(unsigned long node, const char *const *compat)
+>   */
+>  void __init early_init_dt_check_for_initrd(unsigned long node)
+>  {
+> -	unsigned long start, end, len;
+> +	u64 start, end;
+> +	unsigned long len;
+>  	__be32 *prop;
+>  
+>  	pr_debug("Looking for initrd properties... ");
+> @@ -562,15 +563,16 @@ void __init early_init_dt_check_for_initrd(unsigned long node)
+>  	prop = of_get_flat_dt_prop(node, "linux,initrd-start", &len);
+>  	if (!prop)
+>  		return;
+> -	start = of_read_ulong(prop, len/4);
+> +	start = of_read_number(prop, len/4);
+>  
+>  	prop = of_get_flat_dt_prop(node, "linux,initrd-end", &len);
+>  	if (!prop)
+>  		return;
+> -	end = of_read_ulong(prop, len/4);
+> +	end = of_read_number(prop, len/4);
+>  
+>  	early_init_dt_setup_initrd_arch(start, end);
+> -	pr_debug("initrd_start=0x%lx  initrd_end=0x%lx\n", start, end);
+> +	pr_debug("initrd_start=0x%llx  initrd_end=0x%llx\n",
+> +		 (unsigned long long)start, (unsigned long long)end);
+>  }
+>  #else
+>  inline void early_init_dt_check_for_initrd(unsigned long node)
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index ed136ad..4a17939 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -106,8 +106,7 @@ extern u64 dt_mem_next_cell(int s, __be32 **cellp);
+>   * physical addresses.
+>   */
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -extern void early_init_dt_setup_initrd_arch(unsigned long start,
+> -					    unsigned long end);
+> +extern void early_init_dt_setup_initrd_arch(u64 start, u64 end);
+>  #endif
+>  
+>  /* Early flat tree scan hooks */
+> 
 
