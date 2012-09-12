@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2ILQ7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:59:40 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40192 "EHLO
+	id S1760757Ab2ILRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:03:29 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40251 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab2ILQ7f (ORCPT
+	with ESMTP id S932212Ab2ILQ7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:59:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521327"
+	Wed, 12 Sep 2012 12:59:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521334"
 From: David Brown <davidb@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 01/24] ARM: msm: Remove msm_hw_reset_hook
-Date: Wed, 12 Sep 2012 09:58:37 -0700
-Message-Id: <1347469140-25069-2-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH 06/24] ARM: msm: io: Change the default static iomappings to be shared
+Date: Wed, 12 Sep 2012 09:58:42 -0700
+Message-Id: <1347469140-25069-7-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
@@ -24,115 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Rohit Vaswani <rvaswani@codeaurora.org>
 
-This reset hook is never assigned and is dead code. Remove it so
-we have one less header file in the mach directory.
+With 3.4 kernel the static iomappings can be shared with the ioremap
+mappings. If ioremap is called with an address for which a static
+mapping already exists, then that mapping should be used instead
+of creating a new one.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+However, the MT_DEVICE_NONSHARED flag prevents this. Hence, get rid
+of this flag. Some targets (7X00) that require the static iomappings
+to be NONSHARED use the MSM_DEVICE_TYPE and MSM_CHIP_DEVICE_TYPE macros.
+
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-msm/board-mahimahi.c      |  1 -
- arch/arm/mach-msm/board-sapphire.c      |  1 -
- arch/arm/mach-msm/include/mach/system.h | 19 -------------------
- arch/arm/mach-msm/proc_comm.c           |  1 -
- arch/arm/mach-msm/smd.c                 |  7 -------
- 5 files changed, 29 deletions(-)
- delete mode 100644 arch/arm/mach-msm/include/mach/system.h
+ arch/arm/mach-msm/io.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-msm/board-mahimahi.c b/arch/arm/mach-msm/board-mahimahi.c
-index cf1f89a..df00bc0 100644
---- a/arch/arm/mach-msm/board-mahimahi.c
-+++ b/arch/arm/mach-msm/board-mahimahi.c
-@@ -30,7 +30,6 @@
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 2409c0b..af43f6a 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -29,27 +29,31 @@
  
  #include <mach/board.h>
- #include <mach/hardware.h>
--#include <mach/system.h>
  
- #include "board-mahimahi.h"
- #include "devices.h"
-diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
-index 2e569ab..b7b0fc7 100644
---- a/arch/arm/mach-msm/board-sapphire.c
-+++ b/arch/arm/mach-msm/board-sapphire.c
-@@ -27,7 +27,6 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/flash.h>
--#include <mach/system.h>
- #include <mach/vreg.h>
- #include <mach/board.h>
+-#define MSM_CHIP_DEVICE(name, chip) {			      \
++#define MSM_CHIP_DEVICE_TYPE(name, chip, mem_type) {			      \
+ 		.virtual = (unsigned long) MSM_##name##_BASE, \
+ 		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
+ 		.length = chip##_##name##_SIZE, \
+-		.type = MT_DEVICE_NONSHARED, \
++		.type = mem_type, \
+ 	 }
  
-diff --git a/arch/arm/mach-msm/include/mach/system.h b/arch/arm/mach-msm/include/mach/system.h
-deleted file mode 100644
-index f5fb2ec..0000000
---- a/arch/arm/mach-msm/include/mach/system.h
-+++ /dev/null
-@@ -1,19 +0,0 @@
--/* arch/arm/mach-msm/include/mach/system.h
-- *
-- * Copyright (C) 2007 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--/* low level hardware reset hook -- for example, hitting the
-- * PSHOLD line on the PMIC to hard reset the system
-- */
--extern void (*msm_hw_reset_hook)(void);
-diff --git a/arch/arm/mach-msm/proc_comm.c b/arch/arm/mach-msm/proc_comm.c
-index 9980dc7..8f1eecd 100644
---- a/arch/arm/mach-msm/proc_comm.c
-+++ b/arch/arm/mach-msm/proc_comm.c
-@@ -19,7 +19,6 @@
- #include <linux/io.h>
- #include <linux/spinlock.h>
- #include <mach/msm_iomap.h>
--#include <mach/system.h>
++#define MSM_DEVICE_TYPE(name, mem_type) \
++		MSM_CHIP_DEVICE_TYPE(name, MSM, mem_type)
++#define MSM_CHIP_DEVICE(name, chip) \
++		MSM_CHIP_DEVICE_TYPE(name, chip, MT_DEVICE)
+ #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
  
- #include "proc_comm.h"
- 
-diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
-index 657be73..84183ed 100644
---- a/arch/arm/mach-msm/smd.c
-+++ b/arch/arm/mach-msm/smd.c
-@@ -30,7 +30,6 @@
- #include <linux/delay.h>
- 
- #include <mach/msm_smd.h>
--#include <mach/system.h>
- 
- #include "smd_private.h"
- #include "proc_comm.h"
-@@ -39,8 +38,6 @@
- #define CONFIG_QDSP6 1
+ #if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
+ 	|| defined(CONFIG_ARCH_MSM7X25)
+ static struct map_desc msm_io_desc[] __initdata = {
+-	MSM_DEVICE(VIC),
+-	MSM_CHIP_DEVICE(CSR, MSM7X00),
+-	MSM_DEVICE(DMOV),
+-	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
+-	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
+-	MSM_DEVICE(CLK_CTL),
++	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_DEVICE_TYPE(DMOV, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
++	MSM_DEVICE_TYPE(CLK_CTL, MT_DEVICE_NONSHARED),
+ #if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+ 	defined(CONFIG_DEBUG_MSM_UART3)
+-	MSM_DEVICE(DEBUG_UART),
++	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
  #endif
- 
--void (*msm_hw_reset_hook)(void);
--
- #define MODULE_NAME "msm_smd"
- 
- enum {
-@@ -101,10 +98,6 @@ static void handle_modem_crash(void)
- 	pr_err("ARM9 has CRASHED\n");
- 	smd_diag();
- 
--	/* hard reboot if possible */
--	if (msm_hw_reset_hook)
--		msm_hw_reset_hook();
--
- 	/* in this case the modem or watchdog should reboot us */
- 	for (;;)
- 		;
+ 	{
+ 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
