@@ -1,250 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760916Ab2ILRLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:11:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56548 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760641Ab2ILRLp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 13:11:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 12/16] ARM: nomadik: move platform_data definitions
-Date: Wed, 12 Sep 2012 16:24:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Alessandro Rubini <rubini@unipv.it>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Andreas Westin <andreas.westin@stericsson.com>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368390-31252-12-git-send-email-arnd@arndb.de> <CACRpkdb5Tkb5xGzuU=Mw9amfG+218dyzQaQsRZKm9cws71Vd9w@mail.gmail.com>
-In-Reply-To: <CACRpkdb5Tkb5xGzuU=Mw9amfG+218dyzQaQsRZKm9cws71Vd9w@mail.gmail.com>
+	id S1760920Ab2ILRMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:12:09 -0400
+Received: from fieldses.org ([174.143.236.118]:41186 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760899Ab2ILRLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 13:11:35 -0400
+Date: Wed, 12 Sep 2012 13:11:28 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Namjae Jeon <linkinjeon@gmail.com>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+Message-ID: <20120912171128.GG3009@fieldses.org>
+References: <87k3w3ph8d.fsf@devron.myhome.or.jp>
+ <CAKYAXd-k4yVV3h8k0kcFMsyGnOVckYRjXi8fkZrLtjuWVi7Eqw@mail.gmail.com>
+ <87har6kmfx.fsf@devron.myhome.or.jp>
+ <CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
+ <87oblc4u6f.fsf@devron.myhome.or.jp>
+ <CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
+ <871ui84l4l.fsf@devron.myhome.or.jp>
+ <CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
+ <20120912143227.GE3009@fieldses.org>
+ <87vcfjfa14.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201209121624.27657.arnd@arndb.de>
-X-Provags-ID: V02:K0:iA+pBoYKuI9MZUIB8SwY24t38NesGrnY+S4jS4/jNGM
- RprEWLBYxKAnjv8uir/ObXUIUhLdYamagHF9m/+OMxC7X6NbyY
- rM2tMzqpnRlxqW5bblwvZeV+i44YI00PA1K8cd56UjLbr4JaPC
- cl7i76SPLjxZqwMujy3A7dvdRWDdo64xnOmOg41oSH/CgJd4Ru
- EuUnsiunRo8DZICitqU6it/z5SAnaiZIzZ3c8LjCK40Xqfuzu1
- gdvbFSOKIuSZT0PpMyhniClzIW63XavktEyI3mkkI0rlFCkXy4
- 6w72HY/r2VIhvACLp0PusPX+TW9JiWkoxiuC47P585OPM48EDw
- z5IC1uC8XluYIbz/06VI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vcfjfa14.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 September 2012, Linus Walleij wrote:
-> I sent a patch for moving gpio-u300.h like this in commit
-> 651728507140246e9cf4e809f1877cb2eddbc84e
-> that is already in linux-next, is this the same patch or
-> another one?
+On Thu, Sep 13, 2012 at 02:03:51AM +0900, OGAWA Hirofumi wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+> >> > Supposing, the server/client state is after cold boot, and client try to
+> >> > rename at first without any cache on client/server.
+> >> >
+> >> > Even if this state, does the server return ESTALE? If it doesn't return
+> >> > ESTALE, I can't understand why it is really unfixable.
+> >> Hi OGAWA.
+> >> Server will not return ESTALE in this case. because the client does
+> >> not have any information for files yet.
+> >
+> > It does if the client mounted before the server rebooted.  NFS is
+> > designed so that servers can reboot without causing clients to fail.
+> > (Applications will just see a delay during the reboot.)
+> >
+> > It probably isn't possible to this work in the case of fat.
+> >
+> > But from fat's point of view there probably isn't much difference
+> > between a filehandle lookup after a reboot and a filehandle lookup after
+> > the inode's gone from cache.
+> 
+> This is talking about to retry by client side, not server side solution.
+> What happens if client retry after got ESTALE? (Yes, this would not be
+> the solution for all NFS clients. But, I guess this solution can be for
+> linux NFS client.)
+> 
+> > I really don't see what you can do to help here.  Won't anything that
+> > allows looking up an uncached inode by filehandle also risk finding the
+> > wrong file?
+> 
+> On other view (as server side solution), we are thinking there is
+> possible to make the stable filehandle on FAT if we disabled some
+> operations (e.g. rename(), unlink()) which change inode location in FAT.
+> 
+> Yes, it would be stable, but supporting limited operations.
+> 
+> This is server side solution, and we comparing it with client solution.
 
-I've dropped that part from my patch now, this is the new version:
+Is that useful to anyone?
 
-	Arnd
+> >> > If it returns ESTALE, why does it return? I'm assuming the previous code
+> >> > path is the cached FH path.
+> >> The main point for observation is the file handle-which is used for
+> >> all the NFS operation.
+> >> So for all the NFS operation(read/write....) which makes use of the
+> >> NFS file handle in between if there is a change in inode number
+> >> It will result in ESTALE.
+> >> Changing inode number on rename happened at NFS server by inode cache
+> >> eviction with memory pressure.
+> >> 
+> >> lookupcache is used at NFS client to reduce number of LOOKUP operations.
+> >> But , we can still get ESTALE if inode number at NFS Server change
+> >> after LOOKUP, although lookupcache is disable.
+> >> 
+> >> LOOKUP return NFS FH->[inode number changed at NFS Server] ->
+> >> But we still use old NFS FH returned from LOOKUP for any file
+> >> operation(write,read,etc..)
+> >> -> ESTALE will be returned.
+> 
+> Yes.  And I'm expecting as client side solution,
+> 
+> -> ESTALE will be returned -> discard old FH -> restart from LOOKUP ->
+> make cached inode -> use returned new FH.
+> 
+> Yeah, I know this is unstable (there is no perfect solution for now),
 
->From bb95f134f891ff75c5eabf740f93d11ff0ea5eca Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 24 Aug 2012 15:19:33 +0200
-Subject: [PATCH 12/16] ARM: nomadik: move platform_data definitions
+You may end up with a totally different file, of course:
 
-Platform data for device drivers should be defined in
-include/linux/platform_data/*.h, not in the architecture
-and platform specific directories.
+	client:			server:
 
-This moves such data out of the nomadik include directories
+	open "/foo/bar"
+				rename "/foo/baz"->"/foo/bar"
+	write to file
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Alessandro Rubini <rubini@unipv.it>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Andreas Westin <andreas.westin@stericsson.com>
----
- arch/arm/mach-nomadik/board-nhk8815.c                                |    2 +-
- arch/arm/mach-u300/core.c                                            |    2 +-
- arch/arm/mach-ux500/board-mop500.c                                   |    2 +-
- arch/arm/mach-ux500/cpu-db8500.c                                     |    2 +-
- arch/arm/mach-ux500/devices-common.h                                 |    2 +-
- arch/arm/mach-ux500/usb.c                                            |    2 +-
- drivers/crypto/ux500/cryp/cryp_core.c                                |    2 +-
- drivers/crypto/ux500/hash/hash_core.c                                |    2 +-
- drivers/input/keyboard/nomadik-ske-keypad.c                          |    2 +-
- drivers/mtd/nand/nomadik_nand.c                                      |    2 +-
- drivers/pinctrl/pinctrl-coh901.c                                     |    2 +-
- drivers/usb/musb/ux500_dma.c                                         |    2 +-
- .../include/mach => include/linux/platform_data}/crypto-ux500.h      |    0
- .../plat/ske.h => include/linux/platform_data/keypad-nomadik-ske.h   |    0
- .../mach/nand.h => include/linux/platform_data/mtd-nomadik-nand.h    |    0
- .../mach/usb.h => include/linux/platform_data/usb-musb-ux500.h       |    0
- 17 files changed, 12 insertions(+), 12 deletions(-)
- rename {arch/arm/mach-ux500/include/mach => include/linux/platform_data}/crypto-ux500.h (100%)
- rename arch/arm/plat-nomadik/include/plat/ske.h => include/linux/platform_data/keypad-nomadik-ske.h (100%)
- rename arch/arm/mach-nomadik/include/mach/nand.h => include/linux/platform_data/mtd-nomadik-nand.h (100%)
- rename arch/arm/mach-ux500/include/mach/usb.h => include/linux/platform_data/usb-musb-ux500.h (100%)
+And now we're writing to the file that was originally named /foo/baz
+when we should have gotten ESTALE.
 
-diff --git a/arch/arm/mach-nomadik/board-nhk8815.c b/arch/arm/mach-nomadik/board-nhk8815.c
-index f4535a7..381c080 100644
---- a/arch/arm/mach-nomadik/board-nhk8815.c
-+++ b/arch/arm/mach-nomadik/board-nhk8815.c
-@@ -34,7 +34,7 @@
- #include <plat/gpio-nomadik.h>
- #include <plat/mtu.h>
- 
--#include <mach/nand.h>
-+#include <linux/platform_data/mtd-nomadik-nand.h>
- #include <mach/fsmc.h>
- 
- #include "cpu-8815.h"
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 8674a89..38854d4 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -48,7 +48,7 @@
- #include <mach/setup.h>
- #include <mach/devices.h>
- #include <mach/irqs.h>
--#include <mach/crypto-ux500.h>
-+#include <linux/platform_data/crypto-ux500.h>
- 
- #include "ste-dma40-db8500.h"
- #include "devices-db8500.h"
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index db3c52d..1bef4c3 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -24,7 +24,7 @@
- #include <mach/hardware.h>
- #include <mach/setup.h>
- #include <mach/devices.h>
--#include <mach/usb.h>
-+#include <linux/platform_data/usb-musb-ux500.h>
- #include <mach/db8500-regs.h>
- 
- #include "devices-db8500.h"
-diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-index ecdd838..7fbf0ba 100644
---- a/arch/arm/mach-ux500/devices-common.h
-+++ b/arch/arm/mach-ux500/devices-common.h
-@@ -13,7 +13,7 @@
- #include <linux/sys_soc.h>
- #include <linux/amba/bus.h>
- #include <linux/platform_data/i2c-nomadik.h>
--#include <mach/crypto-ux500.h>
-+#include <linux/platform_data/crypto-ux500.h>
- 
- struct spi_master_cntlr;
- 
-diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
-index a74af38..145482e 100644
---- a/arch/arm/mach-ux500/usb.c
-+++ b/arch/arm/mach-ux500/usb.c
-@@ -10,7 +10,7 @@
- 
- #include <plat/ste_dma40.h>
- #include <mach/hardware.h>
--#include <mach/usb.h>
-+#include <linux/platform_data/usb-musb-ux500.h>
- 
- #define MUSB_DMA40_RX_CH { \
- 		.mode = STEDMA40_MODE_LOGICAL, \
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index 1c307e1..ef17e38 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -32,7 +32,7 @@
- 
- #include <plat/ste_dma40.h>
- 
--#include <mach/crypto-ux500.h>
-+#include <linux/platform_data/crypto-ux500.h>
- #include <mach/hardware.h>
- 
- #include "cryp_p.h"
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 08d5032..0876507 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -31,7 +31,7 @@
- #include <crypto/scatterwalk.h>
- #include <crypto/algapi.h>
- 
--#include <mach/crypto-ux500.h>
-+#include <linux/platform_data/crypto-ux500.h>
- #include <mach/hardware.h>
- 
- #include "hash_alg.h"
-diff --git a/drivers/input/keyboard/nomadik-ske-keypad.c b/drivers/input/keyboard/nomadik-ske-keypad.c
-index a880e74..49f5fa6 100644
---- a/drivers/input/keyboard/nomadik-ske-keypad.c
-+++ b/drivers/input/keyboard/nomadik-ske-keypad.c
-@@ -20,7 +20,7 @@
- #include <linux/clk.h>
- #include <linux/module.h>
- 
--#include <plat/ske.h>
-+#include <linux/platform_data/keypad-nomadik-ske.h>
- 
- /* SKE_CR bits */
- #define SKE_KPMLT	(0x1 << 6)
-diff --git a/drivers/mtd/nand/nomadik_nand.c b/drivers/mtd/nand/nomadik_nand.c
-index a86aa81..9ee0c4e 100644
---- a/drivers/mtd/nand/nomadik_nand.c
-+++ b/drivers/mtd/nand/nomadik_nand.c
-@@ -31,7 +31,7 @@
- #include <linux/mtd/partitions.h>
- #include <linux/io.h>
- #include <linux/slab.h>
--#include <mach/nand.h>
-+#include <linux/platform_data/mtd-nomadik-nand.h>
- #include <mach/fsmc.h>
- 
- #include <mtd/mtd-abi.h>
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index d05c7fb..f82246d 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -30,7 +30,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/dmaengine.h>
- #include <linux/pfn.h>
--#include <mach/usb.h>
-+#include <linux/platform_data/usb-musb-ux500.h>
- #include "musb_core.h"
- 
- struct ux500_dma_channel {
-diff --git a/arch/arm/mach-ux500/include/mach/crypto-ux500.h b/include/linux/platform_data/crypto-ux500.h
-similarity index 100%
-rename from arch/arm/mach-ux500/include/mach/crypto-ux500.h
-rename to include/linux/platform_data/crypto-ux500.h
-diff --git a/arch/arm/plat-nomadik/include/plat/ske.h b/include/linux/platform_data/keypad-nomadik-ske.h
-similarity index 100%
-rename from arch/arm/plat-nomadik/include/plat/ske.h
-rename to include/linux/platform_data/keypad-nomadik-ske.h
-diff --git a/arch/arm/mach-nomadik/include/mach/nand.h b/include/linux/platform_data/mtd-nomadik-nand.h
-similarity index 100%
-rename from arch/arm/mach-nomadik/include/mach/nand.h
-rename to include/linux/platform_data/mtd-nomadik-nand.h
-diff --git a/arch/arm/mach-ux500/include/mach/usb.h b/include/linux/platform_data/usb-musb-ux500.h
-similarity index 100%
-rename from arch/arm/mach-ux500/include/mach/usb.h
-rename to include/linux/platform_data/usb-musb-ux500.h
--- 
-1.7.10
+--b.
 
+> but if this works, this doesn't limit any operations.
+> 
+> We would want to compare client solution (-mm) and server solution
+> (stable ino). Or I'd like to know which my knowledges/understanding are
+> wrong here.
+> -- 
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
