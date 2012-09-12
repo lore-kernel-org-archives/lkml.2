@@ -1,92 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab2ILQHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:07:54 -0400
-Received: from fieldses.org ([174.143.236.118]:36747 "EHLO fieldses.org"
+	id S1760222Ab2ILQIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:08:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58573 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab2ILQHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:07:50 -0400
-Date: Wed, 12 Sep 2012 12:07:48 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
-Message-ID: <20120912160748.GF3009@fieldses.org>
-References: <1346946994-21286-1-git-send-email-apw@canonical.com>
- <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
- <20120907193825.GA4633@fieldses.org>
- <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
- <20120911214450.GB28418@fieldses.org>
- <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
+	id S1751453Ab2ILQI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 12:08:27 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-c6x-dev@linux-c6x.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        <linux@openrisc.net>, <linuxppc-dev@lists.ozlabs.org>,
+        <microblaze-uclinux@itee.uq.edu.au>
+CC: <a-jacquiot@ti.com>, <arnd@arndb.de>, <benh@kernel.crashing.org>,
+        <bigeasy@linutronix.de>, <blogic@openwrt.org>,
+        <david.daney@cavium.com>, <dhowells@redhat.com>,
+        <grant.likely@secretlab.ca>, <hpa@zytor.com>, <jonas@southpole.se>,
+        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
+        <m.szyprowski@samsung.com>, <mahesh@linux.vnet.ibm.com>,
+        <mingo@redhat.com>, <monstr@monstr.eu>, <msalter@redhat.com>,
+        <nico@linaro.org>, <paul.gortmaker@windriver.com>, <paulus@samba.org>,
+        <ralf@linux-mips.org>, <rob.herring@calxeda.com>, <suzuki@in.ibm.com>,
+        <tglx@linutronix.de>, <tj@kernel.org>, <x86@kernel.org>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH] of: specify initrd location using 64-bit
+Date: Wed, 12 Sep 2012 12:05:37 -0400
+Message-ID: <1347465937-7056-1-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 05:20:17PM +0200, Miklos Szeredi wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
-> 
-> > On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
-> >> "J. Bruce Fields" <bfields@fieldses.org> writes:
-> >> 
-> >> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
-> >> >> > check refuses permission to write to the inode which prevents us from
-> >> >> > copying it up even though we have a writable upper layer.  (With an ext4
-> >> >> > lower layer the inode check will succeed if the inode  is writable even
-> >> >> > if the filesystem is not.)  It is not clear what the right solution is
-> >> >> > here.  One approach is to check the inode permissions only (avoiding the
-> >> >> > filesystem specific permissions op), but it is not clear we can rely on
-> >> >> > these for all underlying filesystems.  Perhaps this check should only be
-> >> >> > used for NFS.
-> >> >
-> >> > Then couldn't you for example end up circumventing ACLs on the
-> >> > underlying file to access data cached by reads from another user on the
-> >> > same system?
-> >> 
-> >> Ignoring ACL's should always give less access, isn't that right?
-> >
-> > Not necessarily.
-> >
-> > (It's up to the server--and if anything servers probably want to err on
-> > the side of returning mode bits that are an upper, not a lower, bound on
-> > the permissions.)
-> 
-> Okay, I looked at the POSIX ACL access check algorithm and now
-> understand things better.
-> 
-> Now i think that enforcing ACL's on the overlay is not possible if ACL's
-> are not copied up together with the data.
+On some PAE architectures, the entire range of physical memory could reside
+outside the 32-bit limit.  These systems need the ability to specify the
+initrd location using 64-bit numbers.
 
-And the NFSv4 case is different (it doesn't use "posix" acls), etc.,
-etc.
+This patch globally modifies the early_init_dt_setup_initrd_arch() function to
+use 64-bit numbers instead of the current unsigned long.
+---
+ arch/arm/mm/init.c            |    2 +-
+ arch/c6x/kernel/devicetree.c  |    3 +--
+ arch/microblaze/kernel/prom.c |    3 +--
+ arch/mips/kernel/prom.c       |    3 +--
+ arch/openrisc/kernel/prom.c   |    3 +--
+ arch/powerpc/kernel/prom.c    |    3 +--
+ arch/x86/kernel/devicetree.c  |    3 +--
+ drivers/of/fdt.c              |   10 ++++++----
+ include/linux/of_fdt.h        |    3 +--
+ 9 files changed, 14 insertions(+), 19 deletions(-)
 
-But forget all that, even mode bits aren't much use since you don't
-understand how the server might be mapping your uid, so you don't know
-whether you're the owner, or a member of the group.
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index ad722f1..579792c 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -76,7 +76,7 @@ static int __init parse_tag_initrd2(const struct tag *tag)
+ __tagtable(ATAG_INITRD2, parse_tag_initrd2);
+ 
+ #ifdef CONFIG_OF_FLATTREE
+-void __init early_init_dt_setup_initrd_arch(unsigned long start, unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	phys_initrd_start = start;
+ 	phys_initrd_size = end - start;
+diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
+index bdb56f0..287d0e6 100644
+--- a/arch/c6x/kernel/devicetree.c
++++ b/arch/c6x/kernel/devicetree.c
+@@ -33,8 +33,7 @@ void __init early_init_devtree(void *params)
+ 
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-		unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+index 4a764cc..cecd42c 100644
+--- a/arch/microblaze/kernel/prom.c
++++ b/arch/microblaze/kernel/prom.c
+@@ -136,8 +136,7 @@ void __init early_init_devtree(void *params)
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-		unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index 028f6f8..e37e0dc 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -41,8 +41,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-					    unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
+index 5869e3f..150215a 100644
+--- a/arch/openrisc/kernel/prom.c
++++ b/arch/openrisc/kernel/prom.c
+@@ -96,8 +96,7 @@ void __init early_init_devtree(void *params)
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-		unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index 37725e8..ac15f63 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -549,8 +549,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-		unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index b158152..2fbad6b 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -52,8 +52,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-void __init early_init_dt_setup_initrd_arch(unsigned long start,
+-					    unsigned long end)
++void __init early_init_dt_setup_initrd_arch(u64 start, u64 end)
+ {
+ 	initrd_start = (unsigned long)__va(start);
+ 	initrd_end = (unsigned long)__va(end);
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 91a375f..2ff8b7a 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -554,7 +554,8 @@ int __init of_flat_dt_match(unsigned long node, const char *const *compat)
+  */
+ void __init early_init_dt_check_for_initrd(unsigned long node)
+ {
+-	unsigned long start, end, len;
++	u64 start, end;
++	unsigned long len;
+ 	__be32 *prop;
+ 
+ 	pr_debug("Looking for initrd properties... ");
+@@ -562,15 +563,16 @@ void __init early_init_dt_check_for_initrd(unsigned long node)
+ 	prop = of_get_flat_dt_prop(node, "linux,initrd-start", &len);
+ 	if (!prop)
+ 		return;
+-	start = of_read_ulong(prop, len/4);
++	start = of_read_number(prop, len/4);
+ 
+ 	prop = of_get_flat_dt_prop(node, "linux,initrd-end", &len);
+ 	if (!prop)
+ 		return;
+-	end = of_read_ulong(prop, len/4);
++	end = of_read_number(prop, len/4);
+ 
+ 	early_init_dt_setup_initrd_arch(start, end);
+-	pr_debug("initrd_start=0x%lx  initrd_end=0x%lx\n", start, end);
++	pr_debug("initrd_start=0x%llx  initrd_end=0x%llx\n",
++		 (unsigned long long)start, (unsigned long long)end);
+ }
+ #else
+ inline void early_init_dt_check_for_initrd(unsigned long node)
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index ed136ad..4a17939 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -106,8 +106,7 @@ extern u64 dt_mem_next_cell(int s, __be32 **cellp);
+  * physical addresses.
+  */
+ #ifdef CONFIG_BLK_DEV_INITRD
+-extern void early_init_dt_setup_initrd_arch(unsigned long start,
+-					    unsigned long end);
++extern void early_init_dt_setup_initrd_arch(u64 start, u64 end);
+ #endif
+ 
+ /* Early flat tree scan hooks */
+-- 
+1.7.9.5
 
-On the other hand, for some cases maybe what you want is to just forget
-all that and trust the file owners and mode bits, so maybe that's useful
-at least as an option.
-
-> > Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
-> > had been mounted readonly on the NFS client.
-> >
-> > If it's a read-write mount of a filesystem that's read-only on the
-> > server side: well, there is at least an error for that case: the server
-> > should return NFSERR_ROFS, and you should see EROFS--could you do the
-> > copy-up only in the case you get that error?
-> 
-> If the server returns EROFS then all you know is that the filesystem is
-> read-only.  But that's not what we are interested in.  We are interested
-> in whether the access would be allowed *if* the filesystem *wasn't*
-> read-only.  The server doesn't tell us that.
-
-Yeah.  I wonder if it would be reasonable in the future to let servers
-tell us that.
-
---b.
