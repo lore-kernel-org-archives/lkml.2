@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760736Ab2ILRCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:02:00 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40251 "EHLO
+	id S1760723Ab2ILRB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:01:59 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40226 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248Ab2ILQ7o (ORCPT
+	with ESMTP id S932254Ab2ILQ7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Sep 2012 12:59:44 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521476"
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233521464"
 From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
+To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
 Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 22/24] ARM: msm: Remove uncompiled board-msm7x27
-Date: Wed, 12 Sep 2012 09:58:58 -0700
-Message-Id: <1347469140-25069-23-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH 18/24] ARM: msm: Add DT support for 8960
+Date: Wed, 12 Sep 2012 09:58:54 -0700
+Message-Id: <1347469140-25069-19-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
 References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
@@ -26,207 +26,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-This board file has never been compiled. Let's just remove it
-along with the one Kconfig reference to it in io.c.
+Add basic support to boot 8960 with device tree. For now just
+support a basic machine with a uart device.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+[davidb@codeaurora.org: Remove leading zeros]
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-msm/board-msm7x27.c | 170 --------------------------------------
- arch/arm/mach-msm/io.c            |   3 +-
- 2 files changed, 1 insertion(+), 172 deletions(-)
- delete mode 100644 arch/arm/mach-msm/board-msm7x27.c
+ arch/arm/boot/dts/msm8960-cdp.dts | 41 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/Kconfig         |  1 +
+ arch/arm/mach-msm/Makefile        |  1 +
+ arch/arm/mach-msm/Makefile.boot   |  1 +
+ arch/arm/mach-msm/board-dt-8960.c | 49 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 93 insertions(+)
+ create mode 100644 arch/arm/boot/dts/msm8960-cdp.dts
+ create mode 100644 arch/arm/mach-msm/board-dt-8960.c
 
-diff --git a/arch/arm/mach-msm/board-msm7x27.c b/arch/arm/mach-msm/board-msm7x27.c
-deleted file mode 100644
-index 451ab1d..0000000
---- a/arch/arm/mach-msm/board-msm7x27.c
-+++ /dev/null
-@@ -1,170 +0,0 @@
--/*
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2008-2009, Code Aurora Forum. All rights reserved.
-- * Author: Brian Swetland <swetland@google.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--#include <linux/gpio.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/input.h>
--#include <linux/io.h>
--#include <linux/delay.h>
--#include <linux/power_supply.h>
--
--#include <mach/hardware.h>
--#include <asm/mach-types.h>
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--#include <asm/mach/flash.h>
--#include <asm/setup.h>
--#ifdef CONFIG_CACHE_L2X0
--#include <asm/hardware/cache-l2x0.h>
--#endif
--
--#include <mach/vreg.h>
--#include <mach/mpp.h>
--#include <mach/board.h>
--#include <mach/msm_iomap.h>
--
--#include <linux/mtd/nand.h>
--#include <linux/mtd/partitions.h>
--
--#include "devices.h"
--#include "socinfo.h"
--#include "clock.h"
--
--static struct resource smc91x_resources[] = {
--	[0] = {
--		.start	= 0x9C004300,
--		.end	= 0x9C0043ff,
--		.flags	= IORESOURCE_MEM,
--	},
--	[1] = {
--		.start	= MSM_GPIO_TO_INT(132),
--		.end	= MSM_GPIO_TO_INT(132),
--		.flags	= IORESOURCE_IRQ,
--	},
--};
--
--static struct platform_device smc91x_device = {
--	.name		= "smc91x",
--	.id		= 0,
--	.num_resources	= ARRAY_SIZE(smc91x_resources),
--	.resource	= smc91x_resources,
--};
--
--static struct platform_device *devices[] __initdata = {
--	&msm_device_uart3,
--	&msm_device_smd,
--	&msm_device_dmov,
--	&msm_device_nand,
--	&smc91x_device,
--};
--
--extern struct sys_timer msm_timer;
--
--static void __init msm7x2x_init_irq(void)
--{
--	msm_init_irq();
--}
--
--static void __init msm7x2x_init(void)
--{
--	if (socinfo_init() < 0)
--		BUG();
--
--	if (machine_is_msm7x25_ffa() || machine_is_msm7x27_ffa()) {
--		smc91x_resources[0].start = 0x98000300;
--		smc91x_resources[0].end = 0x980003ff;
--		smc91x_resources[1].start = MSM_GPIO_TO_INT(85);
--		smc91x_resources[1].end = MSM_GPIO_TO_INT(85);
--		if (gpio_tlmm_config(GPIO_CFG(85, 0,
--					      GPIO_INPUT,
--					      GPIO_PULL_DOWN,
--					      GPIO_2MA),
--				     GPIO_ENABLE)) {
--			printk(KERN_ERR
--			       "%s: Err: Config GPIO-85 INT\n",
--				__func__);
--		}
--	}
--
--	platform_add_devices(devices, ARRAY_SIZE(devices));
--}
--
--static void __init msm7x2x_map_io(void)
--{
--	msm_map_common_io();
--	/* Technically dependent on the SoC but using machine_is
--	 * macros since socinfo is not available this early and there
--	 * are plans to restructure the code which will eliminate the
--	 * need for socinfo.
--	 */
--	if (machine_is_msm7x27_surf() || machine_is_msm7x27_ffa())
--		msm_clock_init(msm_clocks_7x27, msm_num_clocks_7x27);
--
--	if (machine_is_msm7x25_surf() || machine_is_msm7x25_ffa())
--		msm_clock_init(msm_clocks_7x25, msm_num_clocks_7x25);
--
--#ifdef CONFIG_CACHE_L2X0
--	if (machine_is_msm7x27_surf() || machine_is_msm7x27_ffa()) {
--		/* 7x27 has 256KB L2 cache:
--			64Kb/Way and 4-Way Associativity;
--			R/W latency: 3 cycles;
--			evmon/parity/share disabled. */
--		l2x0_init(MSM_L2CC_BASE, 0x00068012, 0xfe000000);
--	}
--#endif
--}
--
--static void __init msm7x2x_init_late(void)
--{
--	smd_debugfs_init();
--}
--
--MACHINE_START(MSM7X27_SURF, "QCT MSM7x27 SURF")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X27_FFA, "QCT MSM7x27 FFA")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X25_SURF, "QCT MSM7x25 SURF")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
--
--MACHINE_START(MSM7X25_FFA, "QCT MSM7x25 FFA")
--	.atag_offset	= 0x100,
--	.map_io		= msm7x2x_map_io,
--	.init_irq	= msm7x2x_init_irq,
--	.init_machine	= msm7x2x_init,
--	.init_late	= msm7x2x_init_late,
--	.timer		= &msm_timer,
--MACHINE_END
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index d908a37..3854f6f 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -44,8 +44,7 @@
- 		MSM_CHIP_DEVICE_TYPE(name, chip, MT_DEVICE)
- #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+new file mode 100644
+index 0000000..9e621b5
+--- /dev/null
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -0,0 +1,41 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++/ {
++	model = "Qualcomm MSM8960 CDP";
++	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller@2000000 {
++		compatible = "qcom,msm-qgic2";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = < 0x02000000 0x1000 >,
++		      < 0x02002000 0x1000 >;
++	};
++
++	timer@200a004 {
++		compatible = "qcom,msm-gpt", "qcom,msm-timer";
++		interrupts = <1 2 0x301>;
++		reg = <0x0200a004 0x10>;
++		clock-frequency = <32768>;
++		cpu-offset = <0x80000>;
++	};
++
++	timer@200a024 {
++		compatible = "qcom,msm-dgt", "qcom,msm-timer";
++		interrupts = <1 1 0x301>;
++		reg = <0x0200a024 0x10>,
++		      <0x0200a034 0x4>;
++		clock-frequency = <6750000>;
++		cpu-offset = <0x80000>;
++	};
++
++	serial@19c400000 {
++		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
++		reg = <0x16440000 0x1000>,
++		      <0x16400000 0x1000>;
++		interrupts = <0 154 0x0>;
++	};
++};
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index cd78427..2e5a27e 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -56,6 +56,7 @@ config ARCH_MSM8960
+ 	select MSM_V2_TLMM
+ 	select MSM_GPIOMUX
+ 	select MSM_SCM if SMP
++	select USE_OF
  
--#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
--	|| defined(CONFIG_ARCH_MSM7X25)
-+#if defined(CONFIG_ARCH_MSM7X00A)
- static struct map_desc msm_io_desc[] __initdata = {
- 	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
- 	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
+ endchoice
+ 
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 8794148..cef0ad4 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+ obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+ obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o devices-msm8960.o
++obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
+ 
+ obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
+diff --git a/arch/arm/mach-msm/Makefile.boot b/arch/arm/mach-msm/Makefile.boot
+index 8de0678..f7d6ae9 100644
+--- a/arch/arm/mach-msm/Makefile.boot
++++ b/arch/arm/mach-msm/Makefile.boot
+@@ -3,3 +3,4 @@ params_phys-y		:= 0x10000100
+ initrd_phys-y		:= 0x10800000
+ 
+ dtb-$(CONFIG_ARCH_MSM8X60) += msm8660-surf.dtb
++dtb-$(CONFIG_ARCH_MSM8960) += msm8960-cdp.dtb
+diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
+new file mode 100644
+index 0000000..8df99b8f
+--- /dev/null
++++ b/arch/arm/mach-msm/board-dt-8960.c
+@@ -0,0 +1,49 @@
++/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++
++#include <asm/hardware/gic.h>
++#include <asm/mach/arch.h>
++
++#include "common.h"
++
++static const struct of_device_id msm_dt_gic_match[] __initconst = {
++	{ .compatible = "qcom,msm-qgic2", .data = gic_of_init },
++	{ }
++};
++
++static void __init msm_dt_init_irq(void)
++{
++	of_irq_init(msm_dt_gic_match);
++}
++
++static void __init msm_dt_init(void)
++{
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char * const msm8960_dt_match[] __initconst = {
++	"qcom,msm8960-cdp",
++	NULL
++};
++
++DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.map_io = msm_map_msm8960_io,
++	.init_irq = msm_dt_init_irq,
++	.timer = &msm_dt_timer,
++	.init_machine = msm_dt_init,
++	.dt_compat = msm8960_dt_match,
++	.handle_irq = gic_handle_irq,
++MACHINE_END
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
