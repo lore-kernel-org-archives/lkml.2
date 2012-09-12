@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab2IMACY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:02:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50638 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2ILXlE (ORCPT
+	id S1757383Ab2IMACo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:02:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab2ILXkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:04 -0400
+	Wed, 12 Sep 2012 19:40:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: =?UTF-8?q?=5B=2055/85=5D=20USB=3A=20spca506=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
-Date: Wed, 12 Sep 2012 16:36:38 -0700
-Message-Id: <20120912233547.492781498@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 67/85] Fix order of arguments to compat_put_time[spec|val]
+Date: Wed, 12 Sep 2012 16:36:50 -0700
+Message-Id: <20120912233548.741078983@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,36 +29,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit e694d518886c7afedcdd1732477832b2e32744e4 upstream.
+commit ed6fe9d614fc1bca95eb8c0ccd0e92db00ef9d5d upstream.
 
-This structure needs to always stick around, even if CONFIG_HOTPLUG
-is disabled, otherwise we can oops when trying to probe a device that
-was added after the structure is thrown away.
+Commit 644595f89620 ("compat: Handle COMPAT_USE_64BIT_TIME in
+net/socket.c") introduced a bug where the helper functions to take
+either a 64-bit or compat time[spec|val] got the arguments in the wrong
+order, passing the kernel stack pointer off as a user pointer (and vice
+versa).
 
-Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
+Because of the user address range check, that in turn then causes an
+EFAULT due to the user pointer range checking failing for the kernel
+address.  Incorrectly resuling in a failed system call for 32-bit
+processes with a 64-bit kernel.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Bjørn Mork <bjorn@mork.no>
-CC: Hans de Goede <hdegoede@redhat.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+On odder architectures like HP-PA (with separate user/kernel address
+spaces), it can be used read kernel memory.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/gspca/spca506.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/socket.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/video/gspca/spca506.c
-+++ b/drivers/media/video/gspca/spca506.c
-@@ -685,7 +685,7 @@ static const struct sd_desc sd_desc = {
- };
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2605,7 +2605,7 @@ static int do_siocgstamp(struct net *net
+ 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&ktv);
+ 	set_fs(old_fs);
+ 	if (!err)
+-		err = compat_put_timeval(up, &ktv);
++		err = compat_put_timeval(&ktv, up);
  
- /* -- module initialisation -- */
--static const struct usb_device_id device_table[] __devinitconst = {
-+static const struct usb_device_id device_table[] = {
- 	{USB_DEVICE(0x06e1, 0xa190)},
- /*fixme: may be IntelPCCameraPro BRIDGE_SPCA505
- 	{USB_DEVICE(0x0733, 0x0430)}, */
+ 	return err;
+ }
+@@ -2621,7 +2621,7 @@ static int do_siocgstampns(struct net *n
+ 	err = sock_do_ioctl(net, sock, cmd, (unsigned long)&kts);
+ 	set_fs(old_fs);
+ 	if (!err)
+-		err = compat_put_timespec(up, &kts);
++		err = compat_put_timespec(&kts, up);
+ 
+ 	return err;
+ }
 
 
