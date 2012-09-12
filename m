@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2ILGgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:36:21 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:42008 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752748Ab2ILGgS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:36:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1209112218440.9444@utopia.booyaka.com>
-References: <1347008955-21310-1-git-send-email-kishon@ti.com>
-	<alpine.DEB.2.00.1209112218440.9444@utopia.booyaka.com>
-Date: Wed, 12 Sep 2012 12:06:16 +0530
-Message-ID: <CAAe_U6+JpyLrK9v3uae+yN1zCigMQc=JaEMAOZgupurCzuWDcA@mail.gmail.com>
-Subject: Re: [PATCH v2] arm: omap: hwmod: make *phy_48m* as the main_clk of ocp2scp
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: b-cousson@ti.com, balbi@ti.com, tony@atomide.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755255Ab2ILGiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:38:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40404 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab2ILGiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 02:38:19 -0400
+Date: Wed, 12 Sep 2012 16:38:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, Greg KH <greg@kroah.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: linux-next: manual merge of the tegra tree with the usb tree
+Message-Id: <20120912163809.bc39832f08b77a0c85dd4289@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 12, 2012 at 3:58 AM, Paul Walmsley <paul@pwsan.com> wrote:
-> Hi Kishon, Benoît,
->
-> On Fri, 7 Sep 2012, Kishon Vijay Abraham I wrote:
->
->> Made *ocp2scp_usb_phy_phy_48m* as the main_clk for ocp2scp. Since this
->> ocp2scp module does not have any fck but does have a single opt_clock,
->> it is added as the main_clk for ocp2scp. Also removed phy_48m as the
->> optional clock since it is now made as the main clock. By this the
->> driver need not enable/disable phy_48m clk separately and
->> runtime_get/runtime_put will take care of that.
->
-> Looking at this patch, it doesn't seem to make sense from a hardware point
-> of view.  If you look at the OMAP4430 TRM Rev. AE, Table 23-1166 "Clocks
-> and Resets", the 48MHz clock input is listed as an "Optional functional
-> clock".  The main functional clock is listed as "INIT_960M_FCLK", which
-> according to the same TRM, Section 3.6.3.9.1 "Overview", is an alias for
-> the clock we call "dpll_usb_clkdcoldo_ck".
->
-> So if any clock should be the main functional clock in the hwmod data,
-> shouldn't it be dpll_usb_clkdcoldo_ck?  The goal with the hwmod data
-> is/was to have it match the hardware.
->
-> ...
->
-> More to the point, I guess I don't see what the problem is with
-> adding a few lines to the ocp2scp driver to control the "phy_48m" optional
+Hi all,
 
-It should be added in omap-usb2 driver rather.
-> clock via the clock framework.  Is there some reason why you
-> couldn't prepare & enable it after the pm_runtime_get_*(),
-> and disable and unprepare it before the pm_runtime_put_*() ?
+Today's linux-next merge of the tegra tree got a conflict in
+drivers/usb/phy/tegra_usb_phy.c between commit 1ba8216f0bc0 ("usb: move
+phy driver from mach-tegra to drivers/usb") from the usb tree and commit
+b0e51927b1e5 ("ARM: tegra: remove useless includes of <mach/*.h>") from
+the tegra tree.
 
-We have omap-usb2 driver that is used for both omap4 and omap5. But
-this 48m clock is used only in omap4. And we dint have any *main_clk*
-in the ocp2scp_usb_phy_hwmod. So in order avoid some checks in the
-omap-usb2 driver, we added 48m clk as the main clock of
-ocp2scp_usb_phy_hwmod.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thanks
-Kishon
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/phy/tegra_usb_phy.c
+index 4739903,34ffebb..0000000
+--- a/drivers/usb/phy/tegra_usb_phy.c
++++ b/drivers/usb/phy/tegra_usb_phy.c
+@@@ -28,8 -30,7 +28,7 @@@
+  #include <linux/usb/otg.h>
+  #include <linux/usb/ulpi.h>
+  #include <asm/mach-types.h>
+- #include <mach/gpio-tegra.h>
+ -#include <mach/usb_phy.h>
+ +#include <linux/usb/tegra_usb_phy.h>
+  #include <mach/iomap.h>
+ =20
+  #define ULPI_VIEWPORT		0x170
+
+--Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUC3RAAoJEECxmPOUX5FEYGMP/jTx5SmWyQJ7M6XHeV1r2WEn
+AJHvMOScf1G5CdjgzXtBjvurKifvCVwi+IpoI0Dx6rF6C9MK8MIjo2QnLMOOUqaG
+UtY3n58jLoPFF4Vac097Pwp7jLfBKxH8HjtOwjA8iRB4C/tI179tNSx7iLDIGquF
+sQb1Ki5yqXjZFV5pg6fmSAJRAkwFDu2TuZWpcF6im/AAv1ylVvlJVYzYf1QMKANp
+p7XMeLwF9pDX7g+CuhT4mlk/i0UJ12FwOYruO9DCrfXWI05Kq8v5DMy/LmpZ7qf/
+qMlu1MKufPlL7BsCkhxlQ21eU/DBjct8+pGtQwMqO/arDdocJJuGaqyHKzjGe6cI
+odULnsdOVXiZXGdw7Pn/OxbmycFQMf+irgIvKaYNP4cY43AgM65dfv8HLrUGz+Dp
+ELWB/2NdLVCeVKGhwr/qIqkM+zrA99/RktfiKeEXgxEOKUMY4YH1yURTGCHot6aH
+lD01LrAyike7bCc1xLwJFeHGFxQxMOKikV06xXUV/6/zAzbNFiY7iFCBlxXL2Irm
+ps545YBVHLSwyJ1ifFiFBUJu7QdInPWWPEPLUE5ff7b9rwdlYgFFRelLA96ZwNQX
+iN9ZliExLZpPaOzwWi0+B6M+rg2JoXXfySK0IMZO0ygSv/sDwL1EwZ9/KVqG+Jkn
+7sWx4rZ7r0S7TGsBMJyp
+=4BUu
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Sep_2012_16_38_09_+1000_P3o3/i7st8mDg=Ac--
