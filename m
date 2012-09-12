@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2ILXvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:51:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933365Ab2ILXoE (ORCPT
+	id S933340Ab2ILXn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:43:57 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933317Ab2ILXnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:44:04 -0400
+	Wed, 12 Sep 2012 19:43:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 18/46] audit: dont free_chunk() after fsnotify_add_mark()
-Date: Wed, 12 Sep 2012 16:39:08 -0700
-Message-Id: <20120912233819.571781974@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Yuanming Chen <hikvision_linux@163.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 15/46] NFSv3: Ensure that do_proc_get_root() reports errors correctly
+Date: Wed, 12 Sep 2012 16:39:05 -0700
+Message-Id: <20120912233819.258768792@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -28,49 +29,33 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0fe33aae0e94b4097dd433c9399e16e17d638cd8 upstream.
+commit 086600430493e04b802bee6e5b3ce0458e4eb77f upstream.
 
-Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
-via the destroy list and this results in use-after-free.
+If the rpc call to NFS3PROC_FSINFO fails, then we need to report that
+error so that the mount fails. Otherwise we can end up with a
+superblock with completely unusable values for block sizes, maxfilesize,
+etc.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Acked-by: Eric Paris <eparis@redhat.com>
+Reported-by: Yuanming Chen <hikvision_linux@163.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit_tree.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfs/nfs3proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -265,7 +265,7 @@ static void untag_chunk(struct node *p)
- 
- 	fsnotify_duplicate_mark(&new->mark, entry);
- 	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
--		free_chunk(new);
-+		fsnotify_put_mark(&new->mark);
- 		goto Fallback;
- 	}
- 
-@@ -328,7 +328,7 @@ static int create_chunk(struct inode *in
- 
- 	entry = &chunk->mark;
- 	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
--		free_chunk(chunk);
-+		fsnotify_put_mark(entry);
- 		return -ENOSPC;
- 	}
- 
-@@ -402,7 +402,7 @@ static int tag_chunk(struct inode *inode
- 	fsnotify_duplicate_mark(chunk_entry, old_entry);
- 	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
- 		spin_unlock(&old_entry->lock);
--		free_chunk(chunk);
-+		fsnotify_put_mark(chunk_entry);
- 		fsnotify_put_mark(old_entry);
- 		return -ENOSPC;
- 	}
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -68,7 +68,7 @@ do_proc_get_root(struct rpc_clnt *client
+ 	nfs_fattr_init(info->fattr);
+ 	status = rpc_call_sync(client, &msg, 0);
+ 	dprintk("%s: reply fsinfo: %d\n", __func__, status);
+-	if (!(info->fattr->valid & NFS_ATTR_FATTR)) {
++	if (status == 0 && !(info->fattr->valid & NFS_ATTR_FATTR)) {
+ 		msg.rpc_proc = &nfs3_procedures[NFS3PROC_GETATTR];
+ 		msg.rpc_resp = info->fattr;
+ 		status = rpc_call_sync(client, &msg, 0);
 
 
