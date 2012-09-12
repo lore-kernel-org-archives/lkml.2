@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2ILXft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:35:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S1756573Ab2ILXfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:35:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab2ILXfm (ORCPT
+	with ESMTP id S1756548Ab2ILXfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:42 -0400
+	Wed, 12 Sep 2012 19:35:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 083/108] Remove user-triggerable BUG from mpol_to_str
-Date: Wed, 12 Sep 2012 16:29:21 -0700
-Message-Id: <20120912232459.203810186@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Oliver Neukum <oneukum@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 085/108] usbnet: fix deadlock in resume
+Date: Wed, 12 Sep 2012 16:29:23 -0700
+Message-Id: <20120912232459.417462728@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,42 +29,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
+commit ab6f148de28261682d300662e87b9477f7efc95b upstream.
 
-Trivially triggerable, found by trinity:
+A usbnet device can share a multifunction device
+with a storage device. If the storage device is autoresumed
+the usbnet devices also needs to be autoresumed. Allocating
+memory with GFP_KERNEL can deadlock in this case.
 
-  kernel BUG at mm/mempolicy.c:2546!
-  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
-  Call Trace:
-    show_numa_map+0xd5/0x450
-    show_pid_numa_map+0x13/0x20
-    traverse+0xf2/0x230
-    seq_read+0x34b/0x3e0
-    vfs_read+0xac/0x180
-    sys_pread64+0xa2/0xc0
-    system_call_fastpath+0x1a/0x1f
-  RIP: mpol_to_str+0x156/0x360
+This should go back into all kernels that have
+commit 65841fd5132c3941cdf5df09e70df3ed28323212
+That is 3.5
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |    2 +-
+ drivers/net/usb/usbnet.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2556,7 +2556,7 @@ int mpol_to_str(char *buffer, int maxlen
- 		break;
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1580,7 +1580,7 @@ int usbnet_resume (struct usb_interface
+ 				netif_device_present(dev->net) &&
+ 				!timer_pending(&dev->delay) &&
+ 				!test_bit(EVENT_RX_HALT, &dev->flags))
+-					rx_alloc_submit(dev, GFP_KERNEL);
++					rx_alloc_submit(dev, GFP_NOIO);
  
- 	default:
--		BUG();
-+		return -EINVAL;
- 	}
- 
- 	l = strlen(policy_modes[mode]);
+ 			if (!(dev->txq.qlen >= TX_QLEN(dev)))
+ 				netif_tx_wake_all_queues(dev->net);
 
 
