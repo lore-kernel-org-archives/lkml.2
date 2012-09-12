@@ -1,228 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab2IMAH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:07:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2ILXjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932854Ab2ILXjg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 12 Sep 2012 19:39:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 47/85] block: replace __getblk_slow misfix by grow_dev_page fix
-Date: Wed, 12 Sep 2012 16:36:30 -0700
-Message-Id: <20120912233546.673296113@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
-References: <20120912233541.747973832@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55969 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab2ILXjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 19:39:12 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>
+Subject: [PATCH 2/2] coredump: add a new elf note with siginfo fields of the signal
+Date: Thu, 13 Sep 2012 01:38:44 +0200
+Message-Id: <1347493124-10661-2-git-send-email-vda.linux@googlemail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1347493124-10661-1-git-send-email-vda.linux@googlemail.com>
+References: <1347493124-10661-1-git-send-email-vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Existing PRSTATUS note contains only si_signo, si_code, si_errno fields
+from the siginfo of the signal which caused core to be dumped.
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+There are tools which try to analyze crashes for possible security
+implications, and they want to use, among other data, si_addr field
+from the SIGSEGV.
 
-------------------
+This patch adds a new elf note, NT_SIGINFO, which contains
+the remaining fields of siginfo_t.
 
-From: Hugh Dickins <hughd@google.com>
-
-commit 676ce6d5ca3098339c028d44fe0427d1566a4d2d upstream.
-
-Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
-is not good: a successful call to grow_buffers() cannot guarantee
-that the page won't be reclaimed before the immediate next call to
-__find_get_block(), which is why there was always a loop there.
-
-Yesterday I got "EXT4-fs error (device loop0): __ext4_get_inode_loc:3595:
-inode #19278: block 664: comm cc1: unable to read itable block" on console,
-which pointed to this commit.
-
-I've been trying to bisect for weeks, why kbuild-on-ext4-on-loop-on-tmpfs
-sometimes fails from a missing header file, under memory pressure on
-ppc G5.  I've never seen this on x86, and I've never seen it on 3.5-rc7
-itself, despite that commit being in there: bisection pointed to an
-irrelevant pinctrl merge, but hard to tell when failure takes between
-18 minutes and 38 hours (but so far it's happened quicker on 3.6-rc2).
-
-(I've since found such __ext4_get_inode_loc errors in /var/log/messages
-from previous weeks: why the message never appeared on console until
-yesterday morning is a mystery for another day.)
-
-Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
-a checkpatch nitfix).  Simplify the interface between grow_buffers()
-and grow_dev_page(), and avoid the infinite loop beyond end of device
-by instead checking init_page_buffers()'s end_block there (I presume
-that's more efficient than a repeated call to blkdev_max_block()),
-returning -ENXIO to __getblk_slow() in that case.
-
-And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
-comment, but that is worrying: are all users of __getblk() really
-now prepared for a NULL bh beyond end of device, or will some oops??
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 ---
- fs/buffer.c |   66 +++++++++++++++++++++++++++---------------------------------
- 1 file changed, 30 insertions(+), 36 deletions(-)
+ fs/binfmt_elf.c     |   52 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/elf.h |    5 ++++
+ 2 files changed, 55 insertions(+), 2 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -914,7 +914,7 @@ link_dev_buffers(struct page *page, stru
- /*
-  * Initialise the state of a blockdev page's buffers.
-  */ 
--static void
-+static sector_t
- init_page_buffers(struct page *page, struct block_device *bdev,
- 			sector_t block, int size)
- {
-@@ -936,33 +936,41 @@ init_page_buffers(struct page *page, str
- 		block++;
- 		bh = bh->b_this_page;
- 	} while (bh != head);
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 41a40de..5125188d 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1371,6 +1371,45 @@ static void fill_auxv_note(struct memelfnote *note, struct mm_struct *mm)
+ 	fill_note(note, "CORE", NT_AUXV, i * sizeof(elf_addr_t), auxv);
+ }
+ 
++struct coredump_siginfo {
++/*	int	csi_signo;	in prstatus.pr_info.si_signo instead */
++/*	int	csi_errno;	in prstatus.pr_info.si_errno */
++/*	int	csi_code;	in prstatus.pr_info.si_code */
++	int	csi_pid;	/* PID of sending process */
++	int	csi_uid;	/* Real UID of sending process */
++/*	int	csi_status;	SIGCHLD never kills, field isn't meaningful */
++/*	clock_t	csi_utime;	SIGCHLD never kills, field isn't meaningful */
++/*	clock_t	csi_stime;	SIGCHLD never kills, field isn't meaningful */
++	void	*csi_ptr;	/* union with si_int */
++	int	csi_tid;	/* POSIX.1b timers */
++	int	csi_overrun;	/* POSIX.1b timers */
++	long	csi_band;	/* SIGIO/POLL: band event */
++	int	csi_fd;		/* SIGIO/POLL: file descriptor */
++	void	*csi_addr;	/* SEGV/BUS: address which caused fault */
++	int	csi_trapno;	/* SEGV/BUS */
++	int	csi_addr_lsb;	/* SEGV/BUS: least significant bit of address */
++	/* Can be extended in the future, if siginfo_t is extended */
++};
 +
-+	/*
-+	 * Caller needs to validate requested block against end of device.
-+	 */
-+	return end_block;
- }
- 
- /*
-  * Create the page-cache page that contains the requested block.
-  *
-- * This is user purely for blockdev mappings.
-+ * This is used purely for blockdev mappings.
-  */
--static struct page *
-+static int
- grow_dev_page(struct block_device *bdev, sector_t block,
--		pgoff_t index, int size)
-+		pgoff_t index, int size, int sizebits)
- {
- 	struct inode *inode = bdev->bd_inode;
- 	struct page *page;
- 	struct buffer_head *bh;
-+	sector_t end_block;
-+	int ret = 0;		/* Will call free_more_memory() */
- 
- 	page = find_or_create_page(inode->i_mapping, index,
- 		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
- 	if (!page)
--		return NULL;
-+		return ret;
- 
- 	BUG_ON(!PageLocked(page));
- 
- 	if (page_has_buffers(page)) {
- 		bh = page_buffers(page);
- 		if (bh->b_size == size) {
--			init_page_buffers(page, bdev, block, size);
--			return page;
-+			end_block = init_page_buffers(page, bdev,
-+						index << sizebits, size);
-+			goto done;
- 		}
- 		if (!try_to_free_buffers(page))
- 			goto failed;
-@@ -982,14 +990,14 @@ grow_dev_page(struct block_device *bdev,
- 	 */
- 	spin_lock(&inode->i_mapping->private_lock);
- 	link_dev_buffers(page, bh);
--	init_page_buffers(page, bdev, block, size);
-+	end_block = init_page_buffers(page, bdev, index << sizebits, size);
- 	spin_unlock(&inode->i_mapping->private_lock);
--	return page;
--
-+done:
-+	ret = (block < end_block) ? 1 : -ENXIO;
- failed:
- 	unlock_page(page);
- 	page_cache_release(page);
--	return NULL;
-+	return ret;
- }
- 
- /*
-@@ -999,7 +1007,6 @@ failed:
- static int
- grow_buffers(struct block_device *bdev, sector_t block, int size)
- {
--	struct page *page;
- 	pgoff_t index;
- 	int sizebits;
- 
-@@ -1023,22 +1030,14 @@ grow_buffers(struct block_device *bdev,
- 			bdevname(bdev, b));
- 		return -EIO;
- 	}
--	block = index << sizebits;
++static void fill_siginfo_note(struct memelfnote *note, struct coredump_siginfo *data, siginfo_t *siginfo)
++{
++	data->csi_pid      = siginfo->si_pid;
++	data->csi_uid      = siginfo->si_uid;
++	data->csi_ptr      = siginfo->si_ptr;
++	data->csi_overrun  = siginfo->si_overrun;
++	data->csi_tid      = siginfo->si_tid;
++	data->csi_band     = siginfo->si_band;
++	data->csi_fd       = siginfo->si_fd;
++	data->csi_addr     = siginfo->si_addr;
++#ifdef __ARCH_SI_TRAPNO
++	data->csi_trapno   = siginfo->si_trapno;
++#endif
++	/* Prevent signed short->int expansion: */
++	data->csi_addr_lsb = (unsigned short)siginfo->si_addr_lsb;
 +
- 	/* Create a page with the proper size buffers.. */
--	page = grow_dev_page(bdev, block, index, size);
--	if (!page)
--		return 0;
--	unlock_page(page);
--	page_cache_release(page);
--	return 1;
-+	return grow_dev_page(bdev, block, index, size, sizebits);
- }
- 
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
--	int ret;
--	struct buffer_head *bh;
--
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1051,21 +1050,20 @@ __getblk_slow(struct block_device *bdev,
- 		return NULL;
- 	}
- 
--retry:
--	bh = __find_get_block(bdev, block, size);
--	if (bh)
--		return bh;
-+	for (;;) {
-+		struct buffer_head *bh;
-+		int ret;
- 
--	ret = grow_buffers(bdev, block, size);
--	if (ret == 0) {
--		free_more_memory();
--		goto retry;
--	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
++	fill_note(note, "CORE", NT_SIGINFO, sizeof(*data), data);
++}
 +
-+		ret = grow_buffers(bdev, block, size);
-+		if (ret < 0)
-+			return NULL;
-+		if (ret == 0)
-+			free_more_memory();
- 	}
--	return NULL;
- }
+ #ifdef CORE_DUMP_USE_REGSET
+ #include <linux/regset.h>
  
- /*
-@@ -1321,10 +1319,6 @@ EXPORT_SYMBOL(__find_get_block);
-  * which corresponds to the passed block_device, block and size. The
-  * returned buffer has its reference count incremented.
-  *
-- * __getblk() cannot fail - it just keeps trying.  If you pass it an
-- * illegal block number, __getblk() will happily return a buffer_head
-- * which represents the non-existent block.  Very weird.
-- *
-  * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
-  * attempt is failing.  FIXME, perhaps?
-  */
-
+@@ -1384,7 +1423,9 @@ struct elf_thread_core_info {
+ struct elf_note_info {
+ 	struct elf_thread_core_info *thread;
+ 	struct memelfnote psinfo;
++	struct memelfnote siginfo;
+ 	struct memelfnote auxv;
++	struct coredump_siginfo csigdata;
+ 	size_t size;
+ 	int thread_notes;
+ };
+@@ -1558,6 +1599,9 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	fill_psinfo(psinfo, dump_task->group_leader, dump_task->mm);
+ 	info->size += notesize(&info->psinfo);
+ 
++	fill_siginfo_note(&info->siginfo, &info->csigdata, siginfo);
++	info->size += notesize(&info->siginfo);
++
+ 	fill_auxv_note(&info->auxv, current->mm);
+ 	info->size += notesize(&info->auxv);
+ 
+@@ -1587,6 +1631,8 @@ static int write_note_info(struct elf_note_info *info,
+ 
+ 		if (first && !writenote(&info->psinfo, file, foffset))
+ 			return 0;
++		if (first && !writenote(&info->siginfo, file, foffset))
++			return 0;
+ 		if (first && !writenote(&info->auxv, file, foffset))
+ 			return 0;
+ 
+@@ -1680,6 +1726,7 @@ struct elf_note_info {
+ #ifdef ELF_CORE_COPY_XFPREGS
+ 	elf_fpxregset_t *xfpu;
+ #endif
++	struct coredump_siginfo csigdata;
+ 	int thread_status_size;
+ 	int numnote;
+ };
+@@ -1689,8 +1736,8 @@ static int elf_note_info_init(struct elf_note_info *info)
+ 	memset(info, 0, sizeof(*info));
+ 	INIT_LIST_HEAD(&info->thread_list);
+ 
+-	/* Allocate space for six ELF notes */
+-	info->notes = kmalloc(6 * sizeof(struct memelfnote), GFP_KERNEL);
++	/* Allocate space for ELF notes */
++	info->notes = kmalloc(7 * sizeof(struct memelfnote), GFP_KERNEL);
+ 	if (!info->notes)
+ 		return 0;
+ 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
+@@ -1762,6 +1809,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 
+ 	info->numnote = 2;
+ 
++	fill_siginfo_note(&info->notes[info->numnote++], &info->csigdata, siginfo);
+ 	fill_auxv_note(&info->notes[info->numnote++], current->mm);
+ 
+ 	/* Try to dump the FPU. */
+diff --git a/include/linux/elf.h b/include/linux/elf.h
+index f930b1a..1e63390 100644
+--- a/include/linux/elf.h
++++ b/include/linux/elf.h
+@@ -372,6 +372,11 @@ typedef struct elf64_shdr {
+ #define NT_PRPSINFO	3
+ #define NT_TASKSTRUCT	4
+ #define NT_AUXV		6
++/*
++ * Note to userspace developers: size of NT_SIGINFO note may increase
++ * in the future to accomodate more fields, don't assume it is fixed!
++ */
++#define NT_SIGINFO      0x53494749
+ #define NT_PRXFPREG     0x46e62b7f      /* copied from gdb5.1/include/elf/common.h */
+ #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
+ #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+-- 
+1.7.7.6
 
