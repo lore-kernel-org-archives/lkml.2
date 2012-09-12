@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab2IMAZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:25:40 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S933001Ab2IMAZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:25:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab2ILXfH (ORCPT
+	with ESMTP id S1756367Ab2ILXfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:07 -0400
+	Wed, 12 Sep 2012 19:35:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Mack <zonque@gmail.com>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 073/108] ALSA: snd-usb: Fix URB cancellation at stream start
-Date: Wed, 12 Sep 2012 16:29:11 -0700
-Message-Id: <20120912232458.173297527@linuxfoundation.org>
+Subject: [ 075/108] ALSA: snd-usb: restore delay information
+Date: Wed, 12 Sep 2012 16:29:13 -0700
+Message-Id: <20120912232458.372832234@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -31,126 +32,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Daniel Mack <zonque@gmail.com>
 
-commit 015618b902ae8e28705b7af9b4668615fea48ddd upstream.
+commit fbcfbf5f673847657ccd98afb4d8e13af7fdc372 upstream.
 
-Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
-PCM capture stream") fixed a scheduling-while-atomic bug that happened
-when snd_usb_endpoint_start was called from the trigger callback, which
-is an atmic context. However, the patch breaks the idea of the endpoints
-reference counting, which is the reason why the driver has been
-refactored lately.
+Parts of commit 294c4fb8 ("ALSA: usb: refine delay information with USB
+frame counter") were unfortunately lost during the refactoring of the
+snd-usb driver in 3.5.
 
-Revert that commit and let snd_usb_endpoint_start() take care of the URB
-cancellation again. As this function is called from both atomic and
-non-atomic context, add a flag to denote whether the function may sleep.
+This patch adds them back, restoring the correct delay information
+behaviour.
 
 Signed-off-by: Daniel Mack <zonque@gmail.com>
+Cc: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/endpoint.c |   11 +++++++++--
- sound/usb/endpoint.h |    2 +-
- sound/usb/pcm.c      |   13 +++++--------
- 3 files changed, 15 insertions(+), 11 deletions(-)
+ sound/usb/pcm.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct s
- /**
-  * snd_usb_endpoint_start: start an snd_usb_endpoint
-  *
-- * @ep: the endpoint to start
-+ * @ep:		the endpoint to start
-+ * @can_sleep:	flag indicating whether the operation is executed in
-+ * 		non-atomic context
-  *
-  * A call to this function will increment the use count of the endpoint.
-  * In case it is not already running, the URBs for this endpoint will be
-@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct s
-  *
-  * Returns an error if the URB submission failed, 0 in all other cases.
-  */
--int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
-+int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
- {
- 	int err;
- 	unsigned int i;
-@@ -821,6 +823,11 @@ int snd_usb_endpoint_start(struct snd_us
- 	if (++ep->use_count != 1)
- 		return 0;
- 
-+	/* just to be sure */
-+	deactivate_urbs(ep, 0, can_sleep);
-+	if (can_sleep)
-+		wait_clear_urbs(ep);
-+
- 	ep->active_mask = 0;
- 	ep->unlink_mask = 0;
- 	ep->phase = 0;
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -13,7 +13,7 @@ int snd_usb_endpoint_set_params(struct s
- 				struct audioformat *fmt,
- 				struct snd_usb_endpoint *sync_ep);
- 
--int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep);
-+int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep);
- void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep,
- 			   int force, int can_sleep, int wait);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
 --- a/sound/usb/pcm.c
 +++ b/sound/usb/pcm.c
-@@ -212,7 +212,7 @@ int snd_usb_init_pitch(struct snd_usb_au
- 	}
+@@ -1091,7 +1091,16 @@ static void prepare_playback_urb(struct
+ 	subs->hwptr_done += bytes;
+ 	if (subs->hwptr_done >= runtime->buffer_size * stride)
+ 		subs->hwptr_done -= runtime->buffer_size * stride;
++
++	/* update delay with exact number of samples queued */
++	runtime->delay = subs->last_delay;
+ 	runtime->delay += frames;
++	subs->last_delay = runtime->delay;
++
++	/* realign last_frame_number */
++	subs->last_frame_number = usb_get_current_frame_number(subs->dev);
++	subs->last_frame_number &= 0xFF; /* keep 8 LSBs */
++
+ 	spin_unlock_irqrestore(&subs->lock, flags);
+ 	urb->transfer_buffer_length = bytes;
+ 	if (period_elapsed)
+@@ -1109,12 +1118,26 @@ static void retire_playback_urb(struct s
+ 	struct snd_pcm_runtime *runtime = subs->pcm_substream->runtime;
+ 	int stride = runtime->frame_bits >> 3;
+ 	int processed = urb->transfer_buffer_length / stride;
++	int est_delay;
+ 
+ 	spin_lock_irqsave(&subs->lock, flags);
+-	if (processed > runtime->delay)
+-		runtime->delay = 0;
++	est_delay = snd_usb_pcm_delay(subs, runtime->rate);
++	/* update delay with exact number of samples played */
++	if (processed > subs->last_delay)
++		subs->last_delay = 0;
+ 	else
+-		runtime->delay -= processed;
++		subs->last_delay -= processed;
++	runtime->delay = subs->last_delay;
++
++	/*
++	 * Report when delay estimate is off by more than 2ms.
++	 * The error should be lower than 2ms since the estimate relies
++	 * on two reads of a counter updated every ms.
++	 */
++	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
++		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
++			est_delay, subs->last_delay);
++
+ 	spin_unlock_irqrestore(&subs->lock, flags);
  }
- 
--static int start_endpoints(struct snd_usb_substream *subs)
-+static int start_endpoints(struct snd_usb_substream *subs, int can_sleep)
- {
- 	int err;
- 
-@@ -225,7 +225,7 @@ static int start_endpoints(struct snd_us
- 		snd_printdd(KERN_DEBUG "Starting data EP @%p\n", ep);
- 
- 		ep->data_subs = subs;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_DATA_EP_STARTED, &subs->flags);
- 			return err;
-@@ -239,7 +239,7 @@ static int start_endpoints(struct snd_us
- 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
- 
- 		ep->sync_slave = subs->data_endpoint;
--		err = snd_usb_endpoint_start(ep);
-+		err = snd_usb_endpoint_start(ep, can_sleep);
- 		if (err < 0) {
- 			clear_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags);
- 			return err;
-@@ -544,13 +544,10 @@ static int snd_usb_pcm_prepare(struct sn
- 	subs->last_frame_number = 0;
- 	runtime->delay = 0;
- 
--	/* clear the pending deactivation on the target EPs */
--	deactivate_endpoints(subs);
--
- 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
- 	 * updates for all URBs would happen at the same time when starting */
- 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
--		return start_endpoints(subs);
-+		return start_endpoints(subs, 1);
- 
- 	return 0;
- }
-@@ -1175,7 +1172,7 @@ static int snd_usb_substream_capture_tri
- 
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
--		err = start_endpoints(subs);
-+		err = start_endpoints(subs, 0);
- 		if (err < 0)
- 			return err;
  
 
 
