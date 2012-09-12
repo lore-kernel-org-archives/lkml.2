@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab2ILX5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:57:36 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933106Ab2ILXmd (ORCPT
+	id S1757395Ab2ILX56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:57:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933083Ab2ILXmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:33 -0400
+	Wed, 12 Sep 2012 19:42:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: =?UTF-8?q?=5B=2085/85=5D=20hwmon=3A=20=28asus=5Fatk0110=29=20Add=20quirk=20for=20Asus=20M5A78L?=
-Date: Wed, 12 Sep 2012 16:37:08 -0700
-Message-Id: <20120912233550.569736985@linuxfoundation.org>
+        Kashyap Desai <Kashyap.Desai@lsi.com>,
+        Adam Radford <aradford@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 68/85] SCSI: megaraid_sas: Move poll_aen_lock initializer
+Date: Wed, 12 Sep 2012 16:36:51 -0700
+Message-Id: <20120912233548.840974778@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,38 +30,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Luca Tettamanti <kronos.it@gmail.com>
+From: Kashyap Desai <Kashyap.Desai@lsi.com>
 
-commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
+commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
 
-The old interface is bugged and reads the wrong sensor when retrieving
-the reading for the chassis fan (it reads the CPU sensor); the new
-interface works fine.
+The following patch moves the poll_aen_lock initializer from
+megasas_probe_one() to megasas_init().  This prevents a crash when a user
+loads the driver and tries to issue a poll() system call on the ioctl
+interface with no adapters present.
 
-Reported-by: Göran Uddeborg <goeran@uddeborg.se>
-Tested-by: Göran Uddeborg <goeran@uddeborg.se>
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
+Signed-off-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/asus_atk0110.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/asus_atk0110.c
-+++ b/drivers/hwmon/asus_atk0110.c
-@@ -34,6 +34,12 @@ static const struct dmi_system_id __init
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
- 		}
-+	}, {
-+		/* Old interface reads the same sensor for fan0 and fan1 */
-+		.ident = "Asus M5A78L",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
-+		}
- 	},
- 	{ }
- };
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4066,7 +4066,6 @@ megasas_probe_one(struct pci_dev *pdev,
+ 	spin_lock_init(&instance->cmd_pool_lock);
+ 	spin_lock_init(&instance->hba_lock);
+ 	spin_lock_init(&instance->completion_lock);
+-	spin_lock_init(&poll_aen_lock);
+ 
+ 	mutex_init(&instance->aen_mutex);
+ 	mutex_init(&instance->reset_mutex);
+@@ -5392,6 +5391,8 @@ static int __init megasas_init(void)
+ 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
+ 	       MEGASAS_EXT_VERSION);
+ 
++	spin_lock_init(&poll_aen_lock);
++
+ 	support_poll_for_event = 2;
+ 	support_device_change = 1;
+ 
 
 
