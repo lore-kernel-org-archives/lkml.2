@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760347Ab2ILQT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:19:26 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49725 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2ILQTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:19:24 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 12 Sep 2012 09:19:25 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Luca Tettamanti <kronos.it@gmail.com>, kernel-janitors@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] drivers/hwmon/asus_atk0110.c: Remove useless kfree
-Message-ID: <20120912161925.GA22539@roeck-us.net>
-References: <1347462407-13499-4-git-send-email-peter.senna@gmail.com>
+	id S932160Ab2ILQVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:21:37 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:60250 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab2ILQVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 12:21:36 -0400
+Date: Wed, 12 Sep 2012 09:21:02 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2] module: report -EFAULT on bytes remaining
+Message-ID: <20120912162102.GA16676@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347462407-13499-4-git-send-email-peter.senna@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 05:06:42PM +0200, Peter Senna Tschudin wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> Remove useless kfree() and clean up code related to the removal.
-> 
+Caught by smatch:
+kernel/module.c:2450 copy_module_from_user() warn: maybe return -EFAULT instead of the bytes remaining?
 
-Queued for -next.
+Fix the check of copy_from_user() to report -EFAULT as was done before.
 
-Thanks,
-Guenter
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+Should be applied on top of the finit_module syscall patches.
+
+v2:
+ - copy_from_user never returns negative, thanks to Dan Carpenter.
+---
+ kernel/module.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 0ad03c4..461e7d4 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2440,9 +2440,10 @@ int copy_module_from_user(const void __user *umod, unsigned long len,
+ 	if (!info->hdr)
+ 		return -ENOMEM;
+ 
+-	err = copy_from_user(info->hdr, umod, info->len);
+-	if (err)
++	if (copy_from_user(info->hdr, umod, info->len) != 0) {
++		err = -EFAULT;
+ 		goto free_hdr;
++	}
+ 
+ 	err = check_info(info);
+ 	if (err)
+-- 
+1.7.0.4
+
+
+-- 
+Kees Cook
+Chrome OS Security
