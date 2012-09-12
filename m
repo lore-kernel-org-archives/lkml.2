@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab2ILVXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 17:23:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45476 "EHLO
+	id S1754107Ab2ILV1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 17:27:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42858 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab2ILVXP (ORCPT
+	with ESMTP id S1753772Ab2ILV1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 17:23:15 -0400
-Message-ID: <5050FD3E.6000107@wwwdotorg.org>
-Date: Wed, 12 Sep 2012 15:23:10 -0600
+	Wed, 12 Sep 2012 17:27:10 -0400
+Message-ID: <5050FE28.2080502@wwwdotorg.org>
+Date: Wed, 12 Sep 2012 15:27:04 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
@@ -25,9 +25,9 @@ CC: Stephen Warren <swarren@nvidia.com>,
         Leela Krishna Amudala <l.krishna@samsung.com>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v6 4/4] tegra: ventana: add pwm backlight DT nodes
-References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <1347443867-18868-5-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1347443867-18868-5-git-send-email-acourbot@nvidia.com>
+Subject: Re: [PATCH v6 0/4] Runtime Interpreted Power Sequences
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
 X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -36,10 +36,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 09/12/2012 03:57 AM, Alexandre Courbot wrote:
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> New revision of the power sequences, taking as usual the feedback that was
+> kindly provided about the last version.
+> 
+> I think now is a good time to discuss integrating this and to start looking for
+> a maintainer who would be willing to merge this into his/her tree (I am
+> especially thinking about the power framework maintainers, since this is where
+> the code is right now.
 
-Both patches 3 and 4 in the series,
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+The other alternative is for you to maintain this going forward; I
+believe that would be as simple as:
 
-I will take those patches into the Tegra tree when (hopefully rather
-than if) patches 1 and 2 are accepted.
+* Create a patch to add yourself to MAINTAINERS for the
+drivers/power/power_seq/ directory.
+
+* Get a kernel.org account, push this patch to a branch there, and add
+the branch into linux-next.
+
+* Send a pull request to Linus at the appropriate time.
+
+* Ongoing: Accept any patches, perform any maintenance required, etc.
+
+Does anyone see any issue with Alexandre doing this? Nobody else has
+volunteered yet:-)
