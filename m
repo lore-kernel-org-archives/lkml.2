@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab2IMAAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:00:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36222 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948Ab2ILXle (ORCPT
+	id S932841Ab2ILXld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:41:33 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab2ILXl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:41:34 -0400
+	Wed, 12 Sep 2012 19:41:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jakob Bornecrantz <jakob@vmware.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 79/85] drm/vmwgfx: add MODULE_DEVICE_TABLE so vmwgfx loads at boot
-Date: Wed, 12 Sep 2012 16:37:02 -0700
-Message-Id: <20120912233549.963758378@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 61/85] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
+Date: Wed, 12 Sep 2012 16:36:44 -0700
+Message-Id: <20120912233548.130986523@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,30 +28,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit c4903429a92be60e6fe59868924a65eca4cd1a38 upstream.
+commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
 
-This will cause udev to load vmwgfx instead of waiting for X
-to do it.
+Writing to dscr_default in sysfs doesn't actually change the DSCR -
+we rely on a context switch on each CPU to do the work. There is no
+guarantee we will get a context switch in a reasonable amount of time
+so fire off an IPI to force an immediate change.
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This issue was found with the following test case:
+
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/sysfs.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -182,6 +182,7 @@ static struct pci_device_id vmw_pci_id_l
- 	{0x15ad, 0x0405, PCI_ANY_ID, PCI_ANY_ID, 0, 0, VMWGFX_CHIP_SVGAII},
- 	{0, 0, 0}
- };
-+MODULE_DEVICE_TABLE(pci, vmw_pci_id_list);
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -194,6 +194,12 @@ static ssize_t show_dscr_default(struct
+ 	return sprintf(buf, "%lx\n", dscr_default);
+ }
  
- static int enable_fbdev;
++static void update_dscr(void *dummy)
++{
++	if (!current->thread.dscr_inherit)
++		mtspr(SPRN_DSCR, dscr_default);
++}
++
+ static ssize_t __used store_dscr_default(struct device *dev,
+ 		struct device_attribute *attr, const char *buf,
+ 		size_t count)
+@@ -206,6 +212,8 @@ static ssize_t __used store_dscr_default
+ 		return -EINVAL;
+ 	dscr_default = val;
+ 
++	on_each_cpu(update_dscr, NULL, 1);
++
+ 	return count;
+ }
  
 
 
