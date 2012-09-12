@@ -1,171 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760989Ab2ILSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 14:06:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51631 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab2ILSGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 14:06:23 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-ia64@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
-CC: <arnd@arndb.de>, <cyril@ti.com>, <dhowells@redhat.com>,
-        <fenghua.yu@intel.com>, <gregkh@linuxfoundation.org>,
-        <lethal@linux-sh.org>, <linux@arm.linux.org.uk>, <nico@linaro.org>,
-        <rob.herring@calxeda.com>, <tony.luck@intel.com>, <tony@atomide.com>,
-        <will.deacon@arm.com>
-Subject: [PATCH v2] /dev/mem: use phys_addr_t for physical addresses
-Date: Wed, 12 Sep 2012 14:05:58 -0400
-Message-ID: <1347473158-7219-1-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1761018Ab2ILSGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 14:06:42 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39952 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761002Ab2ILSGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 14:06:39 -0400
+Message-ID: <5050CF0E.3080502@xenotime.net>
+Date: Wed, 12 Sep 2012 11:06:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Amit Daniel <amit.kachhap@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] thermal: cpu_cooling.c needs to select CPU_FREQ_TABLE
+References: <20120912184644.48e4e2e7d59b12893a42f60a@canb.auug.org.au>
+In-Reply-To: <20120912184644.48e4e2e7d59b12893a42f60a@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the /dev/mem driver to use phys_addr_t for physical
-addresses.  This is required on PAE systems, especially those that run
-entirely out of >4G physical memory space.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+cpu_cooling.c (CONFIG_CPU_THERMAL) uses cpu frequency table
+intefaces so it should select CPU_FREQ_TABLE.
+Fixes these build errors:
+
+drivers/built-in.o: In function `cpufreq_get_max_state':
+cpu_cooling.c:(.text+0x4e1297): undefined reference to `cpufreq_frequency_get_table'
+drivers/built-in.o: In function `cpufreq_set_cur_state':
+cpu_cooling.c:(.text+0x4e138b): undefined reference to `cpufreq_frequency_get_table'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Amit Daniel <amit.kachhap@linaro.org>
 ---
- arch/arm/include/asm/io.h  |    2 +-
- arch/arm/mm/mmap.c         |    2 +-
- arch/ia64/include/asm/io.h |    2 +-
- arch/ia64/kernel/efi.c     |    2 +-
- arch/sh/include/asm/io.h   |    2 +-
- arch/sh/mm/mmap.c          |    2 +-
- drivers/char/mem.c         |   10 +++++-----
- 7 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/thermal/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 35c1ed8..f52a93d 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -374,7 +374,7 @@ extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- 
- #ifdef CONFIG_MMU
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
--extern int valid_phys_addr_range(unsigned long addr, size_t size);
-+extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
- extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
- extern int devmem_is_allowed(unsigned long pfn);
- #endif
-diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
-index ce8cb19..89f2b7f 100644
---- a/arch/arm/mm/mmap.c
-+++ b/arch/arm/mm/mmap.c
-@@ -279,7 +279,7 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
-  * You really shouldn't be using read() or write() on /dev/mem.  This
-  * might go away in the future.
-  */
--int valid_phys_addr_range(unsigned long addr, size_t size)
-+int valid_phys_addr_range(phys_addr_t addr, size_t size)
- {
- 	if (addr < PHYS_OFFSET)
- 		return 0;
-diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
-index 2c26321..74a7cc3 100644
---- a/arch/ia64/include/asm/io.h
-+++ b/arch/ia64/include/asm/io.h
-@@ -90,7 +90,7 @@ phys_to_virt (unsigned long address)
- 
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
- extern u64 kern_mem_attribute (unsigned long phys_addr, unsigned long size);
--extern int valid_phys_addr_range (unsigned long addr, size_t count); /* efi.c */
-+extern int valid_phys_addr_range (phys_addr_t addr, size_t count); /* efi.c */
- extern int valid_mmap_phys_addr_range (unsigned long pfn, size_t count);
- 
- /*
-diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
-index d37bbd4..f034563 100644
---- a/arch/ia64/kernel/efi.c
-+++ b/arch/ia64/kernel/efi.c
-@@ -870,7 +870,7 @@ kern_mem_attribute (unsigned long phys_addr, unsigned long size)
- EXPORT_SYMBOL(kern_mem_attribute);
- 
- int
--valid_phys_addr_range (unsigned long phys_addr, unsigned long size)
-+valid_phys_addr_range (phys_addr_t phys_addr, unsigned long size)
- {
- 	u64 attr;
- 
-diff --git a/arch/sh/include/asm/io.h b/arch/sh/include/asm/io.h
-index 0cf60a6..c4302a5 100644
---- a/arch/sh/include/asm/io.h
-+++ b/arch/sh/include/asm/io.h
-@@ -382,7 +382,7 @@ static inline int iounmap_fixed(void __iomem *addr) { return -EINVAL; }
- #define xlate_dev_kmem_ptr(p)	p
- 
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
--int valid_phys_addr_range(unsigned long addr, size_t size);
-+int valid_phys_addr_range(phys_addr_t addr, size_t size);
- int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/sh/mm/mmap.c b/arch/sh/mm/mmap.c
-index afeb710..80bf494 100644
---- a/arch/sh/mm/mmap.c
-+++ b/arch/sh/mm/mmap.c
-@@ -238,7 +238,7 @@ bottomup:
-  * You really shouldn't be using read() or write() on /dev/mem.  This
-  * might go away in the future.
-  */
--int valid_phys_addr_range(unsigned long addr, size_t count)
-+int valid_phys_addr_range(phys_addr_t addr, size_t count)
- {
- 	if (addr < __MEMORY_START)
- 		return 0;
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 0537903..c6fa3bc 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -48,7 +48,7 @@ static inline unsigned long size_inside_page(unsigned long start,
- }
- 
- #ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE
--static inline int valid_phys_addr_range(unsigned long addr, size_t count)
-+static inline int valid_phys_addr_range(phys_addr_t addr, size_t count)
- {
- 	return addr + count <= __pa(high_memory);
- }
-@@ -96,7 +96,7 @@ void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
- static ssize_t read_mem(struct file *file, char __user *buf,
- 			size_t count, loff_t *ppos)
- {
--	unsigned long p = *ppos;
-+	phys_addr_t p = *ppos;
- 	ssize_t read, sz;
- 	char *ptr;
- 
-@@ -153,7 +153,7 @@ static ssize_t read_mem(struct file *file, char __user *buf,
- static ssize_t write_mem(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
--	unsigned long p = *ppos;
-+	phys_addr_t p = *ppos;
- 	ssize_t written, sz;
- 	unsigned long copied;
- 	void *ptr;
-@@ -226,7 +226,7 @@ int __weak phys_mem_access_prot_allowed(struct file *file,
-  *
-  */
- #ifdef pgprot_noncached
--static int uncached_access(struct file *file, unsigned long addr)
-+static int uncached_access(struct file *file, phys_addr_t addr)
- {
- #if defined(CONFIG_IA64)
- 	/*
-@@ -258,7 +258,7 @@ static pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
- 				     unsigned long size, pgprot_t vma_prot)
- {
- #ifdef pgprot_noncached
--	unsigned long offset = pfn << PAGE_SHIFT;
-+	phys_addr_t offset = pfn << PAGE_SHIFT;
- 
- 	if (uncached_access(file, offset))
- 		return pgprot_noncached(vma_prot);
--- 
-1.7.9.5
+Also, please add info in the MAINTAINERS file for drivers/thermal/.
 
+--- linux-next-20120912.orig/drivers/thermal/Kconfig
++++ linux-next-20120912/drivers/thermal/Kconfig
+@@ -22,6 +22,7 @@ config THERMAL_HWMON
+ config CPU_THERMAL
+ 	bool "generic cpu cooling support"
+ 	depends on THERMAL && CPU_FREQ
++	select CPU_FREQ_TABLE
+ 	help
+ 	  This implements the generic cpu cooling mechanism through frequency
+ 	  reduction, cpu hotplug and any other ways of reducing temperature. An
