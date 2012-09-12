@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab2ILM43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 08:56:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38091 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758341Ab2ILM40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 08:56:26 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/8] drivers/media/dvb-frontends/lg2160.c: Removes useless kfree()
-Date: Wed, 12 Sep 2012 14:56:03 +0200
-Message-Id: <1347454564-5178-7-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1758449Ab2ILM4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 08:56:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758410Ab2ILM4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 08:56:44 -0400
+Message-ID: <5050867B.2080605@redhat.com>
+Date: Wed, 12 Sep 2012 14:56:27 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 3/3] block: add back command filter modification via sysfs
+References: <1347449133-26476-1-git-send-email-pbonzini@redhat.com> <1347449133-26476-4-git-send-email-pbonzini@redhat.com> <20120912134124.55d968ef@pyramind.ukuu.org.uk>
+In-Reply-To: <20120912134124.55d968ef@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+Il 12/09/2012 14:41, Alan Cox ha scritto:
+>> > +	if (!q->cmd_filter) {
+>> > +		q->cmd_filter = kmalloc(sizeof(struct blk_cmd_filter),
+>> > +					GFP_KERNEL);
+>> > +		blk_set_cmd_filter_defaults(q->cmd_filter);
+>> > +	}
+>> > +
+> This also needs CAP_SYS_RAWIO otherwise you have a capability escalation
+> path.
 
-Remove useless kfree() and clean up code related to the removal.
+Seems more like for CAP_SYS_ADMIN, since it can affect other processes
+than the one writing to the file.
 
-The semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> I'm not really in favour of this patch as is. It's not as flexible as
+> doing it with a BPF filter which if we are going to have a new API is
+> going to be cleaner, faster and has a clear understood API plus tools.
+> 
+> With BPF you can do things like enabling command A with option B on a
+> specific device for a certain block range.
 
-// <smpl>
-@r exists@
-position p1,p2;
-expression x;
-@@
+I liked the BPF idea, either with SCM_RIGHTS or cgroups, but I do wonder
+if it's overengineered.  There are two uses for the filtering:
 
-if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
+- non-privileged users who want to burn a CD or something like that.
+For this, a bitmap is more than enough.  Customizing the bitmap lets
+userspace fix the case of different meanings for the same byte value in
+different SCSI standards.
 
-@unchanged exists@
-position r.p1,r.p2;
-expression e <= r.x,x,e1;
-iterator I;
-statement S;
-@@
+- virtualization who wants to pass through almost everything, but still
+run as confined as possible.  In this case a more complex filtering can
+be done just as easily in userspace (i.e. QEMU).  Of course this means
+the filter can be subverted if the guest can escape the QEMU jail, but
+the "almost everything" takes care of that, for example you could still
+block WRITE BUFFER commands.
 
-if (x@p1 == NULL) { ... when != I(x,...) S
-                        when != e = e1
-                        when != e += e1
-                        when != e -= e1
-                        when != ++e
-                        when != --e
-                        when != e++
-                        when != e--
-                        when != &e
-   kfree@p2(x); ... return ...; }
+I would be okay with a ioctl to disable the filter altogether (four
+options: regular filter, no filter, no SG_IO at all, choose depending on
+CAP_SYS_RAWIO).  Then you can use file descriptor passing with
+SCM_RIGHTS, and do everything in userspace.  But it doesn't work too
+well with the first usage above, besides being a larger patch.
 
-@ok depends on unchanged exists@
-position any r.p1;
-position r.p2;
-expression x;
-@@
-
-... when != true x@p1 == NULL
-kfree@p2(x);
-
-@depends on !ok && unchanged@
-position r.p2;
-expression x;
-@@
-
-*kfree@p2(x);
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
----
- drivers/media/dvb-frontends/lg2160.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/media/dvb-frontends/lg2160.c b/drivers/media/dvb-frontends/lg2160.c
-index cc11260..5fd14f8 100644
---- a/drivers/media/dvb-frontends/lg2160.c
-+++ b/drivers/media/dvb-frontends/lg2160.c
-@@ -1421,8 +1421,8 @@ struct dvb_frontend *lg2160_attach(const struct lg2160_config *config,
- 	       config ? config->i2c_addr : 0);
- 
- 	state = kzalloc(sizeof(struct lg216x_state), GFP_KERNEL);
--	if (state == NULL)
--		goto fail;
-+	if (!state)
-+		return NULL;
- 
- 	state->cfg = config;
- 	state->i2c_adap = i2c_adap;
-@@ -1449,10 +1449,6 @@ struct dvb_frontend *lg2160_attach(const struct lg2160_config *config,
- 	state->frontend.dtv_property_cache.atscmh_parade_id = 1;
- 
- 	return &state->frontend;
--fail:
--	lg_warn("unable to detect LG216x hardware\n");
--	kfree(state);
--	return NULL;
- }
- EXPORT_SYMBOL(lg2160_attach);
- 
-
+Paolo
