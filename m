@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab2ILXdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:33:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	id S1756014Ab2ILXeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:34:03 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2ILXdq (ORCPT
+	with ESMTP id S932400Ab2ILXdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:46 -0400
+	Wed, 12 Sep 2012 19:33:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 054/108] ath9k: fix decrypt_error initialization in ath_rx_tasklet()
-Date: Wed, 12 Sep 2012 16:28:52 -0700
-Message-Id: <20120912232456.203422053@linuxfoundation.org>
+        Forest Bond <forest.bond@rapidrollout.com>,
+        Alan Cox <alan@linux.intel.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 056/108] gma500: Consider CRTC initially active.
+Date: Wed, 12 Sep 2012 16:28:54 -0700
+Message-Id: <20120912232456.412255046@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,54 +30,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit e1352fde5682ab1bdd2a9e5d75c22d1fe210ef77 upstream.
+commit 4a68a74ba04e7ccf798d45988f4f2d2131fb5063 upstream.
 
-ath_rx_tasklet() calls ath9k_rx_skb_preprocess() and ath9k_rx_skb_postprocess()
-in a loop over the received frames. The decrypt_error flag is
-initialized to false
-just outside ath_rx_tasklet() loop. ath9k_rx_accept(), called by
-ath9k_rx_skb_preprocess(),
-only sets decrypt_error to true and never to false.
-Then ath_rx_tasklet() calls ath9k_rx_skb_postprocess() and passes
-decrypt_error to it.
-So, after a decryption error, in ath9k_rx_skb_postprocess(), we can
-have a leftover value
-from another processed frame. In that case, the frame will not be marked with
-RX_FLAG_DECRYPTED even if it is decrypted correctly.
-When using CCMP encryption this issue can lead to connection stuck
-because of CCMP
-PN corruption and a waste of CPU time since mac80211 tries to decrypt an already
-deciphered frame with ieee80211_aes_ccm_decrypt.
-Fix the issue initializing decrypt_error flag at the begging of the
-ath_rx_tasklet() loop.
+[this one ideally should make 3.6 - it fixes the very annoying mode setting bug]
 
-Signed-off-by: Lorenzo Bianconi <lorenzo.bianconi83@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This causes the pipe to be forced off prior to initial mode set, which
+roughly mirrors the behavior of the i915 driver.  It fixes initial mode
+setting on my Intel DN2800MT (Cedarview) board.  Without it, mode
+setting triggers an out-of-range error from the monitor for most modes,
+but only on initial configuration (i.e. they can be configured
+successfully from userspace after that).
+
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/psb_intel_display.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -1781,7 +1781,6 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 	struct ieee80211_hw *hw = sc->hw;
- 	struct ieee80211_hdr *hdr;
- 	int retval;
--	bool decrypt_error = false;
- 	struct ath_rx_status rs;
- 	enum ath9k_rx_qtype qtype;
- 	bool edma = !!(ah->caps.hw_caps & ATH9K_HW_CAP_EDMA);
-@@ -1803,6 +1802,7 @@ int ath_rx_tasklet(struct ath_softc *sc,
- 	tsf_lower = tsf & 0xffffffff;
+--- a/drivers/gpu/drm/gma500/psb_intel_display.c
++++ b/drivers/gpu/drm/gma500/psb_intel_display.c
+@@ -1362,6 +1362,9 @@ void psb_intel_crtc_init(struct drm_devi
+ 	    (struct drm_connector **) (psb_intel_crtc + 1);
+ 	psb_intel_crtc->mode_set.num_connectors = 0;
+ 	psb_intel_cursor_init(dev, psb_intel_crtc);
++
++	/* Set to true so that the pipe is forced off on initial config. */
++	psb_intel_crtc->active = true;
+ }
  
- 	do {
-+		bool decrypt_error = false;
- 		/* If handling rx interrupt and flush is in progress => exit */
- 		if ((sc->sc_flags & SC_OP_RXFLUSH) && (flush == 0))
- 			break;
+ int psb_intel_get_pipe_from_crtc_id(struct drm_device *dev, void *data,
 
 
