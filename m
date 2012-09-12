@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab2IMAYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:24:01 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50843 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2ILXfS (ORCPT
+	id S933190Ab2IMAZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:25:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab2ILXfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:35:18 -0400
+	Wed, 12 Sep 2012 19:35:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Mads <mads@ab3.no>,
-        Mike Frysinger <vapier@gentoo.org>, "H. J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 066/108] x32: Use compat shims for {g,s}etsockopt
-Date: Wed, 12 Sep 2012 16:29:04 -0700
-Message-Id: <20120912232457.449549342@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Mack <zonque@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 073/108] ALSA: snd-usb: Fix URB cancellation at stream start
+Date: Wed, 12 Sep 2012 16:29:11 -0700
+Message-Id: <20120912232458.173297527@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,93 +29,128 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 515c7af85ed92696c311c53d53cb4898ff32d784 upstream.
+commit 015618b902ae8e28705b7af9b4668615fea48ddd upstream.
 
-Some of the arguments to {g,s}etsockopt are passed in userland pointers.
-If we try to use the 64bit entry point, we end up sometimes failing.
+Commit e9ba389c5 ("ALSA: usb-audio: Fix scheduling-while-atomic bug in
+PCM capture stream") fixed a scheduling-while-atomic bug that happened
+when snd_usb_endpoint_start was called from the trigger callback, which
+is an atmic context. However, the patch breaks the idea of the endpoints
+reference counting, which is the reason why the driver has been
+refactored lately.
 
-For example, dhcpcd doesn't run in x32:
-	# dhcpcd eth0
-	dhcpcd[1979]: version 5.5.6 starting
-	dhcpcd[1979]: eth0: broadcasting for a lease
-	dhcpcd[1979]: eth0: open_socket: Invalid argument
-	dhcpcd[1979]: eth0: send_raw_packet: Bad file descriptor
+Revert that commit and let snd_usb_endpoint_start() take care of the URB
+cancellation again. As this function is called from both atomic and
+non-atomic context, add a flag to denote whether the function may sleep.
 
-The code in particular is getting back EINVAL when doing:
-	struct sock_fprog pf;
-	setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &pf, sizeof(pf));
-
-Diving into the kernel code, we can see:
-include/linux/filter.h:
-	struct sock_fprog {
-		unsigned short len;
-		struct sock_filter __user *filter;
-	};
-
-net/core/sock.c:
-	case SO_ATTACH_FILTER:
-		ret = -EINVAL;
-		if (optlen == sizeof(struct sock_fprog)) {
-			struct sock_fprog fprog;
-
-			ret = -EFAULT;
-			if (copy_from_user(&fprog, optval, sizeof(fprog)))
-				break;
-
-			ret = sk_attach_filter(&fprog, sk);
-		}
-		break;
-
-arch/x86/syscalls/syscall_64.tbl:
-	54 common setsockopt sys_setsockopt
-	55 common getsockopt sys_getsockopt
-
-So for x64, sizeof(sock_fprog) is 16 bytes.  For x86/x32, it's 8 bytes.
-This comes down to the pointer being 32bit for x32, which means we need
-to do structure size translation.  But since x32 comes in directly to
-sys_setsockopt, it doesn't get translated like x86.
-
-After changing the syscall table and rebuilding glibc with the new kernel
-headers, dhcp runs fine in an x32 userland.
-
-Oddly, it seems like Linus noted the same thing during the initial port,
-but I guess that was missed/lost along the way:
-	https://lkml.org/lkml/2011/8/26/452
-
-[ hpa: tagging for -stable since this is an ABI fix. ]
-
-Bugzilla: https://bugs.gentoo.org/423649
-Reported-by: Mads <mads@ab3.no>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1345320697-15713-1-git-send-email-vapier@gentoo.org
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/syscalls/syscall_64.tbl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/endpoint.c |   11 +++++++++--
+ sound/usb/endpoint.h |    2 +-
+ sound/usb/pcm.c      |   13 +++++--------
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -60,8 +60,8 @@
- 51	common	getsockname		sys_getsockname
- 52	common	getpeername		sys_getpeername
- 53	common	socketpair		sys_socketpair
--54	common	setsockopt		sys_setsockopt
--55	common	getsockopt		sys_getsockopt
-+54	64	setsockopt		sys_setsockopt
-+55	64	getsockopt		sys_getsockopt
- 56	common	clone			stub_clone
- 57	common	fork			stub_fork
- 58	common	vfork			stub_vfork
-@@ -353,3 +353,5 @@
- 538	x32	sendmmsg		compat_sys_sendmmsg
- 539	x32	process_vm_readv	compat_sys_process_vm_readv
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
-+541	x32	setsockopt		compat_sys_setsockopt
-+542	x32	getsockopt		compat_sys_getsockopt
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct s
+ /**
+  * snd_usb_endpoint_start: start an snd_usb_endpoint
+  *
+- * @ep: the endpoint to start
++ * @ep:		the endpoint to start
++ * @can_sleep:	flag indicating whether the operation is executed in
++ * 		non-atomic context
+  *
+  * A call to this function will increment the use count of the endpoint.
+  * In case it is not already running, the URBs for this endpoint will be
+@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct s
+  *
+  * Returns an error if the URB submission failed, 0 in all other cases.
+  */
+-int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
++int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
+ {
+ 	int err;
+ 	unsigned int i;
+@@ -821,6 +823,11 @@ int snd_usb_endpoint_start(struct snd_us
+ 	if (++ep->use_count != 1)
+ 		return 0;
+ 
++	/* just to be sure */
++	deactivate_urbs(ep, 0, can_sleep);
++	if (can_sleep)
++		wait_clear_urbs(ep);
++
+ 	ep->active_mask = 0;
+ 	ep->unlink_mask = 0;
+ 	ep->phase = 0;
+--- a/sound/usb/endpoint.h
++++ b/sound/usb/endpoint.h
+@@ -13,7 +13,7 @@ int snd_usb_endpoint_set_params(struct s
+ 				struct audioformat *fmt,
+ 				struct snd_usb_endpoint *sync_ep);
+ 
+-int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep);
++int  snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep);
+ void snd_usb_endpoint_stop(struct snd_usb_endpoint *ep,
+ 			   int force, int can_sleep, int wait);
+ int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -212,7 +212,7 @@ int snd_usb_init_pitch(struct snd_usb_au
+ 	}
+ }
+ 
+-static int start_endpoints(struct snd_usb_substream *subs)
++static int start_endpoints(struct snd_usb_substream *subs, int can_sleep)
+ {
+ 	int err;
+ 
+@@ -225,7 +225,7 @@ static int start_endpoints(struct snd_us
+ 		snd_printdd(KERN_DEBUG "Starting data EP @%p\n", ep);
+ 
+ 		ep->data_subs = subs;
+-		err = snd_usb_endpoint_start(ep);
++		err = snd_usb_endpoint_start(ep, can_sleep);
+ 		if (err < 0) {
+ 			clear_bit(SUBSTREAM_FLAG_DATA_EP_STARTED, &subs->flags);
+ 			return err;
+@@ -239,7 +239,7 @@ static int start_endpoints(struct snd_us
+ 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
+ 
+ 		ep->sync_slave = subs->data_endpoint;
+-		err = snd_usb_endpoint_start(ep);
++		err = snd_usb_endpoint_start(ep, can_sleep);
+ 		if (err < 0) {
+ 			clear_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags);
+ 			return err;
+@@ -544,13 +544,10 @@ static int snd_usb_pcm_prepare(struct sn
+ 	subs->last_frame_number = 0;
+ 	runtime->delay = 0;
+ 
+-	/* clear the pending deactivation on the target EPs */
+-	deactivate_endpoints(subs);
+-
+ 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
+ 	 * updates for all URBs would happen at the same time when starting */
+ 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
+-		return start_endpoints(subs);
++		return start_endpoints(subs, 1);
+ 
+ 	return 0;
+ }
+@@ -1175,7 +1172,7 @@ static int snd_usb_substream_capture_tri
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+-		err = start_endpoints(subs);
++		err = start_endpoints(subs, 0);
+ 		if (err < 0)
+ 			return err;
+ 
 
 
