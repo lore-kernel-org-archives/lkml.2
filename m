@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab2ILXmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:42:53 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58620 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933141Ab2ILXms (ORCPT
+	id S933171Ab2ILXnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:43:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933148Ab2ILXmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:42:48 -0400
+	Wed, 12 Sep 2012 19:42:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
         Fengguang Wu <fengguang.wu@intel.com>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jesper Juhl <jj@chaosbits.net>, Jiri Pirko <jpirko@redhat.com>
-Subject: =?UTF-8?q?=5B=2001/46=5D=20USB=3A=20vt6656=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
-Date: Wed, 12 Sep 2012 16:38:51 -0700
-Message-Id: <20120912233817.828400807@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>
+Subject: =?UTF-8?q?=5B=2002/46=5D=20USB=3A=20emi62=3A=20remove=20=5F=5Fdevinit*=20from=20the=20struct=20usb=5Fdevice=5Fid=20table?=
+Date: Wed, 12 Sep 2012 16:38:52 -0700
+Message-Id: <20120912233817.926353473@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233817.662663809@linuxfoundation.org>
 References: <20120912233817.662663809@linuxfoundation.org>
@@ -38,7 +36,7 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 4d088876f24887cd15a29db923f5f37db6a99f21 upstream.
+commit 83957df21dd94655d2b026e0944a69ff37b83988 upstream.
 
 This structure needs to always stick around, even if CONFIG_HOTPLUG
 is disabled, otherwise we can oops when trying to probe a device that
@@ -48,27 +46,25 @@ Thanks to Fengguang Wu and Bjørn Mork for tracking this issue down.
 
 Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Reported-by: Bjørn Mork <bjorn@mork.no>
-CC: Forest Bond <forest@alittletooquiet.net>
-CC: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Jesper Juhl <jj@chaosbits.net>
-CC: Jiri Pirko <jpirko@redhat.com>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/main_usb.c |    2 +-
+ drivers/usb/misc/emi62.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -222,7 +222,7 @@ DEVICE_PARAM(b80211hEnable, "802.11h mod
- // Static vars definitions
- //
+--- a/drivers/usb/misc/emi62.c
++++ b/drivers/usb/misc/emi62.c
+@@ -259,7 +259,7 @@ wraperr:
+ 	return err;
+ }
  
--static struct usb_device_id vt6656_table[] __devinitdata = {
-+static struct usb_device_id vt6656_table[] = {
- 	{USB_DEVICE(VNT_USB_VENDOR_ID, VNT_USB_PRODUCT_ID)},
- 	{}
+-static const struct usb_device_id id_table[] __devinitconst = {
++static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(EMI62_VENDOR_ID, EMI62_PRODUCT_ID) },
+ 	{ }                                             /* Terminating entry */
  };
 
 
