@@ -1,99 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2ILI6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:58:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46953 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab2ILI6a convert rfc822-to-8bit (ORCPT
+	id S1752390Ab2ILJAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 05:00:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:33020 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2ILJAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:58:30 -0400
-Date: Wed, 12 Sep 2012 09:58:25 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: wzch <wzch@marvell.com>, Russell King <linux@arm.linux.org.uk>,
-        Dave Martin <dave.martin@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: suspend: use flush range instead of flush all
-Message-ID: <20120912085825.GA4111@e102568-lin.cambridge.arm.com>
-References: <1347434328-7207-1-git-send-email-wzch@marvell.com>
- <CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
+	Wed, 12 Sep 2012 05:00:16 -0400
+Message-ID: <50504EB9.7000906@huawei.com>
+Date: Wed, 12 Sep 2012 16:58:33 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Sep 2012 08:58:28.0376 (UTC) FILETIME=[C69CB180:01CD90C4]
-X-MC-Unique: 112091209582803601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH v1 21/22] PCI: cleanups for PCI bus lock implementation
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-22-git-send-email-jiang.liu@huawei.com> <CAErSpo4ubTSu5cSrLVfs5UHc44KgtzO_OxL_QganfhqYn2hUWQ@mail.gmail.com>
+In-Reply-To: <CAErSpo4ubTSu5cSrLVfs5UHc44KgtzO_OxL_QganfhqYn2hUWQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 08:43:33AM +0100, Shilimkar, Santosh wrote:
-> + Lorenzo,
+On 2012-9-12 7:21, Bjorn Helgaas wrote:
+> On Tue, Aug 7, 2012 at 10:11 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> Now all Archs have been converted to the new PCI bus lock mechanism,
+>> so clean up unused code.
 > 
-> On Wed, Sep 12, 2012 at 12:48 PM, wzch <wzch@marvell.com> wrote:
-> > From: Wenzeng Chen <wzch@marvell.com>
-> >
-> > In cpu suspend function __cpu_suspend_save(), we save cp15 registers,
-> > resume function, sp and suspend_pgd, then flush the data to DDR, but
-> > no need to flush all D cache, only need to flush range.
-> >
-> > Change-Id: I591a1fde929f3f987c69306b601843ed975d3e41
-> You should drop above.
-> 
-> > Signed-off-by: Wenzeng Chen <wzch@marvell.com>
-> > ---
-> Lorenzo and myself discussed about the above expensive flush and he
-> is planning to post a similar patch but with small difference.
-> 
-> >  arch/arm/kernel/suspend.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/arm/kernel/suspend.c b/arch/arm/kernel/suspend.c
-> > index 1794cc3..bb582d8 100644
-> > --- a/arch/arm/kernel/suspend.c
-> > +++ b/arch/arm/kernel/suspend.c
-> > @@ -17,6 +17,7 @@ extern void cpu_resume_mmu(void);
-> >   */
-> >  void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
-> >  {
-> > +       u32 *ptr_orig = ptr;
-> >         *save_ptr = virt_to_phys(ptr);
-> >
-> >         /* This must correspond to the LDM in cpu_resume() assembly */
-> > @@ -26,7 +27,8 @@ void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
-> >
-> >         cpu_do_suspend(ptr);
-> >
-> > -       flush_cache_all();
-> Lorenzo's patch was limiting above flush to local cache (LOUs) instead
-> of dropping
-> it completely.
-
-Because if we remove it completely we have to make sure that every given
-suspend finisher calls flush_cache_all(), hence from my viewpoint this
-patch is incomplete. Either we remove it, and add it to ALL suspend
-finisher (or just make sure it is there) or we leave it but it should use
-the new LoUIS API we are going to add.
+> When you say "all arches," do you really mean "x86 and ia64"?  I
+> assume all the other architectures have similar issues.  Or is this
+> somehow ACPI-specific?
+Hi Bjorn,
+	It's still RFC to give an overview of the whole patch set. 
+Here I mean once we have enhanced all arches, we will apply following patches:)
+I'm working to enhance all arches recently, and will post the latest patch
+once it passes basic tests.
+	Thanks!
 
 > 
-> > +       __cpuc_flush_dcache_area((void *)ptr_orig, ptrsz);
-> > +       __cpuc_flush_dcache_area((void *)save_ptr, sizeof(*save_ptr));
-> >         outer_clean_range(*save_ptr, *save_ptr + ptrsz);
-> >         outer_clean_range(virt_to_phys(save_ptr),
-> >                           virt_to_phys(save_ptr) + sizeof(*save_ptr));
+>> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>> ---
+>>  drivers/pci/Kconfig     |    3 ---
+>>  drivers/pci/bus.c       |    1 -
+>>  drivers/pci/pci-sysfs.c |    9 ---------
+>>  drivers/pci/probe.c     |    4 +---
+>>  include/linux/pci.h     |   10 ----------
+>>  5 files changed, 1 insertion(+), 26 deletions(-)
+>>
+>> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+>> index 5a796c0..848bfb8 100644
+>> --- a/drivers/pci/Kconfig
+>> +++ b/drivers/pci/Kconfig
+>> @@ -120,6 +120,3 @@ config PCI_IOAPIC
+>>  config PCI_LABEL
+>>         def_bool y if (DMI || ACPI)
+>>         select NLS
+>> -
+>> -config PCI_BUS_LOCK
+>> -       def_bool y if (X86 || IA64)
+>> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+>> index 371f20a..308c376 100644
+>> --- a/drivers/pci/bus.c
+>> +++ b/drivers/pci/bus.c
+>> @@ -196,7 +196,6 @@ int pci_bus_add_child(struct pci_bus *bus)
+>>                         pci_create_legacy_files(bus);
+>>                         pci_bus_change_state(bus, PCI_BUS_STATE_INITIALIZED,
+>>                                         PCI_BUS_STATE_WORKING, false);
+>> -                       bus->is_added = 1;
+>>                 }
+>>         }
+>>
+>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>> index 11043b4..a5a4195 100644
+>> --- a/drivers/pci/pci-sysfs.c
+>> +++ b/drivers/pci/pci-sysfs.c
+>> @@ -284,7 +284,6 @@ msi_bus_store(struct device *dev, struct device_attribute *attr,
+>>  }
+>>
+>>  #ifdef CONFIG_HOTPLUG
+>> -static DEFINE_MUTEX(pci_remove_rescan_mutex);
+>>  static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+>>                                 size_t count)
+>>  {
+>> @@ -296,13 +295,11 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+>>
+>>         if (val) {
+>>                 pci_host_bridge_hotplug_lock();
+>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>                 while ((b = pci_find_next_bus(b)) != NULL)
+>>                         if (pci_bus_lock_states(b, PCI_BUS_STATE_WORKING) > 0) {
+>>                                 pci_rescan_bus(b);
+>>                                 pci_bus_unlock(b);
+>>                         }
+>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>                 pci_host_bridge_hotplug_unlock();
+>>         }
+>>         return count;
+>> @@ -326,13 +323,11 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+>>         if (val) {
+>>                 struct pci_bus *bus = pdev->bus;
+>>
+>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>                 if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
+>>                         if (pdev->is_added)
+>>                                 pci_rescan_bus(bus);
+>>                         pci_bus_unlock(bus);
+>>                 }
+>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>         }
+>>         return count;
+>>  }
+>> @@ -342,13 +337,11 @@ static void remove_callback(struct device *dev)
+>>         struct pci_dev *pdev = to_pci_dev(dev);
+>>         struct pci_bus *bus = pdev->bus;
+>>
+>> -       mutex_lock(&pci_remove_rescan_mutex);
+>>         if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
+>>                 pci_bus_get(bus);
+>>                 pci_stop_and_remove_bus_device(pdev);
+>>                 pci_unlock_and_put_bus(bus);
+>>         }
+>> -       mutex_unlock(&pci_remove_rescan_mutex);
+>>  }
+>>
+>>  static ssize_t
+>> @@ -382,14 +375,12 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
+>>                 return -EINVAL;
+>>
+>>         if (val) {
+>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>                 if (!pci_is_root_bus(bus))
+>>                         pci_rescan_bus_bridge_resize(bus->self);
+>>                 else if (pci_bus_lock_states(bus, PCI_BUS_STATE_WORKING) > 0) {
+>>                         pci_rescan_bus(bus);
+>>                         pci_bus_unlock(bus);
+>>                 }
+>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>         }
+>>         return count;
+>>  }
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index da6f04c..09517c3 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -1626,11 +1626,9 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+>>         if (pci_bus_get_state(bus) < PCI_BUS_STATE_WORKING) {
+>>                 dev_dbg(&bus->dev, "fixups for bus\n");
+>>                 pcibios_fixup_bus(bus);
+>> -               if (pci_is_root_bus(bus)) {
+>> +               if (pci_is_root_bus(bus))
+>>                         pci_bus_change_state(bus, PCI_BUS_STATE_REGISTERED,
+>>                                              PCI_BUS_STATE_WORKING, false);
+>> -                       bus->is_added = 1;
+>> -               }
+>>         }
+>>
+>>         for (pass=0; pass < 2; pass++)
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index 9e52e88..0e50ec8 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -442,7 +442,6 @@ struct pci_bus {
+>>         struct device           dev;
+>>         struct bin_attribute    *legacy_io; /* legacy I/O for this bus */
+>>         struct bin_attribute    *legacy_mem; /* legacy mem */
+>> -       unsigned int            is_added:1;
+>>         atomic_t                state;
+>>  };
+>>
+>> @@ -463,21 +462,12 @@ struct pci_bus {
+>>  #define        PCI_BUS_STATE_DESTROYED         0x40    /* invalid state */
+>>  #define        PCI_BUS_STATE_MASK              0x7F
+>>
+>> -#ifdef CONFIG_PCI_BUS_LOCK
+>>  #define        PCI_BUS_STATE_LOCK              0x10000 /* for pci core only */
+>>
+>>  static inline bool pci_bus_is_locked(struct pci_bus *bus)
+>>  {
+>>         return !!(atomic_read(&bus->state) & PCI_BUS_STATE_LOCK);
+>>  }
+>> -#else /* CONFIG_PCI_BUS_LOCK */
+>> -#define        PCI_BUS_STATE_LOCK              0x0000  /* for pci core only */
+>> -
+>> -static inline bool pci_bus_is_locked(struct pci_bus *bus)
+>> -{
+>> -       return true;
+>> -}
+>> -#endif /* CONFIG_PCI_BUS_LOCK */
+>>
+>>  static inline int pci_bus_get_state(struct pci_bus *bus)
+>>  {
+>> --
+>> 1.7.9.5
+>>
 > 
-> Just thinking bit more, even in case we drop the flush_cache_all()
-> completely, it should be safe since the suspend_finisher()  takes
-> care of the cache maintenance already.
+> .
+> 
 
-We already discussed this. Fine by me, but we have to make sure it is
-called on all suspend finishers in the mainline.
-
-Lorenzo
 
