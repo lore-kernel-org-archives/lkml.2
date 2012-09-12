@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2ILXiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S932592Ab2IMAPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:15:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab2ILXiA (ORCPT
+	with ESMTP id S932536Ab2ILXh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:00 -0400
+	Wed, 12 Sep 2012 19:37:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jon Hunter <jon-hunter@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [ 08/85] ARM: OMAP2+: Fix dmtimer set source clock failure
-Date: Wed, 12 Sep 2012 16:35:51 -0700
-Message-Id: <20120912233542.607469336@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 07/85] ARM: 7489/1: errata: fix workaround for erratum #720789 on UP systems
+Date: Wed, 12 Sep 2012 16:35:50 -0700
+Message-Id: <20120912233542.497655685@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,50 +28,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jon Hunter <jon-hunter@ti.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 54f32a35f4d3a653a18a2c8c239f19ae060bd803 upstream.
+commit 730a8128cd8978467eb1cf546b11014acb57d433 upstream.
 
-Calling the dmtimer function omap_dm_timer_set_source() fails if following a
-call to pm_runtime_put() to disable the timer. For example the following
-sequence would fail to set the parent clock ...
+Commit 5a783cbc4836 ("ARM: 7478/1: errata: extend workaround for erratum
+ #720789") added workarounds for erratum #720789 to the range TLB
+invalidation functions with the observation that the erratum only
+affects SMP platforms. However, when running an SMP_ON_UP kernel on a
+uniprocessor platform we must take care to preserve the ASID as the
+workaround is not required.
 
-	omap_dm_timer_stop(gptimer);
-	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_32_KHZ);
+This patch ensures that we don't set the ASID to 0 when flushing the TLB
+on such a system, preserving the original behaviour with the workaround
+disabled.
 
-The following error message would be seen ...
-
-omap_dm_timer_set_source: failed to set timer_32k_ck as parent
-
-The problem is that, by design, pm_runtime_put() simply decrements the usage
-count and returns before the timer has actually been disabled. Therefore,
-setting the parent clock failed because the timer was still active when the
-trying to set the parent clock. Setting a parent clock will fail if the clock
-you are setting the parent of has a non-zero usage count. To ensure that this
-does not fail use pm_runtime_put_sync() when disabling the timer.
-
-Note that this will not be seen on OMAP1 devices, because these devices do
-not use the clock framework for dmtimers.
-
-Signed-off-by: Jon Hunter <jon-hunter@ti.com>
-Acked-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-omap/dmtimer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/tlb-v7.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -238,7 +238,7 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
- 
- void omap_dm_timer_disable(struct omap_dm_timer *timer)
- {
--	pm_runtime_put(&timer->pdev->dev);
-+	pm_runtime_put_sync(&timer->pdev->dev);
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_disable);
- 
+--- a/arch/arm/mm/tlb-v7.S
++++ b/arch/arm/mm/tlb-v7.S
+@@ -38,10 +38,10 @@ ENTRY(v7wbi_flush_user_tlb_range)
+ 	dsb
+ 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
+ 	mov	r1, r1, lsr #PAGE_SHIFT
+-#ifdef CONFIG_ARM_ERRATA_720789
+-	mov	r3, #0
+-#else
+ 	asid	r3, r3				@ mask ASID
++#ifdef CONFIG_ARM_ERRATA_720789
++	ALT_SMP(W(mov)	r3, #0	)
++	ALT_UP(W(nop)		)
+ #endif
+ 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
+ 	mov	r1, r1, lsl #PAGE_SHIFT
 
 
