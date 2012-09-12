@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2ILUji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 16:39:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50251 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752467Ab2ILUjd (ORCPT
+	id S1753545Ab2ILUmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 16:42:11 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44033 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab2ILUmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 16:39:33 -0400
-Date: Wed, 12 Sep 2012 21:39:21 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: pkg-sysvinit-devel@lists.alioth.debian.org, debian-devel@lists.debian.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Message-ID: <20120912203921.GY29217@decadent.org.uk>
-References: <20120912161154.GB3289@khazad-dum.debian.net>
+	Wed, 12 Sep 2012 16:42:09 -0400
+Date: Wed, 12 Sep 2012 16:42:06 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Shiraz Hashim <shiraz.hashim@st.com>,
+        Viresh Kumar <viresh.linux@gmail.com>, spear-devel@list.st.com
+Subject: Re: [PATCH v9 00/13] Per sub-architecture SMP operations
+In-Reply-To: <1347461906-13527-1-git-send-email-arnd@arndb.de>
+Message-ID: <alpine.LFD.2.02.1209121635560.28681@xanadu.home>
+References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912161154.GB3289@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: (fwd) make tar*-pkg considered dangerous
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 01:11:54PM -0300, Henrique de Moraes Holschuh wrote:
-> I am forwarding this as a remider that, should we ever get to the point of
-> moving around /lib or /usr/lib, /sbin or /usr/sbin, and /bin or /usr/sbin,
-> as well as any other such trunks, we really ought to consider whether we
-> should be using symlinks or bind mounts [where possible] for such moves.
+On Wed, 12 Sep 2012, Arnd Bergmann wrote:
+
+> As I promised at the ARM mini summit, I've updated Marc's series
+> for smp operations according to my complaints. Unfortunately,
+> I could not find version 7 of the patches when I started this,
+> so I based my work on version 6 and had to redo the same
+> changes.
 > 
-> Also, just in case, Debian users are gently reminded that there are less
-> unsavory methods of packing custom kernel builds for later use in Debian
-> boxes, including the Linux upstream "deb-pkg" make target (dpkg is a lot
-> smarter than "tar"), and the make-kpkg command provided by the
-> kernel-package Debian package (which IMHO tends to produce better kernel
-> .deb packages than the upstream "deb-pkg" make target.
-
-kernel-package is effectively unmaintained, so please don't recommend
-its use unless you intend to rectify that.
-
-> ----- Forwarded message from Andi Kleen <andi@firstfloor.org> -----
-> Date: Wed, 12 Sep 2012 05:16:46 +0200
-> From: Andi Kleen <andi@firstfloor.org>
-> To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-> Subject: make tar*-pkg considered dangerous
+> The patches are also available on
 > 
-> Hi,
-> 
-> We've had some incidents with people destroying Fedore 17 installs
-> (to the point of reinstall) by installing a kernel tarball generated with 
-> make tar*-pkg
-> 
-> The problem is that the tarball includes /lib/{modules,firmware},
-> but on FC17 /lib is a symlink. tar when it unpacks the tarball
-> replaces the symlink with the directory.
-[...]
+> git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git testing/smp_ops
 
-Presumably the tarball also contains an entry for the directory lib,
-and that (not the subdirectory entries) triggers tar to replace the
-symlink.  So this can be fixed by only including
-lib/{modules,firmware} in the tarball, not lib.
+There are still minor details nagging me, although I did mention them in 
+my previous review of this series.  You might have disagreed if I 
+remember correctly.  They aren't fundamental, and my insisting on them 
+would only be bikeshedding at this point. Therefore you can add my ACK.
 
-A quick experiment under F16 (tar 1.26) supports this.
- 
-Ben.
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+
+Nicolas
