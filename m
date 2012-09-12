@@ -1,216 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760251Ab2ILQHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:07:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33547 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759721Ab2ILQH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:07:28 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH 1/6] fuse: general infrastructure for pages[] of variable size
-References: <20120907172536.1343.80497.stgit@maximpc.sw.ru>
-	<20120907174042.1343.91852.stgit@maximpc.sw.ru>
-Date: Wed, 12 Sep 2012 18:09:01 +0200
-In-Reply-To: <20120907174042.1343.91852.stgit@maximpc.sw.ru> (Maxim Patlasov's
-	message of "Fri, 07 Sep 2012 21:41:07 +0400")
-Message-ID: <877grzxlya.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1760281Ab2ILQHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:07:54 -0400
+Received: from fieldses.org ([174.143.236.118]:36747 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab2ILQHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 12:07:50 -0400
+Date: Wed, 12 Sep 2012 12:07:48 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] issues with NFS filesystems as lower layer
+Message-ID: <20120912160748.GF3009@fieldses.org>
+References: <1346946994-21286-1-git-send-email-apw@canonical.com>
+ <CAJfpegsCQKX==v-8NqO5tLDsEed7KhBFWpoeWLDjxT1vuMSokg@mail.gmail.com>
+ <20120907193825.GA4633@fieldses.org>
+ <87ipbkxoq3.fsf@tucsk.pomaz.szeredi.hu>
+ <20120911214450.GB28418@fieldses.org>
+ <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ehm7xo7i.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim Patlasov <mpatlasov@parallels.com> writes:
+On Wed, Sep 12, 2012 at 05:20:17PM +0200, Miklos Szeredi wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> 
+> > On Tue, Sep 11, 2012 at 10:56:52PM +0200, Miklos Szeredi wrote:
+> >> "J. Bruce Fields" <bfields@fieldses.org> writes:
+> >> 
+> >> >> > Secondly when using an NFSv3 R/O lower layer the filesystem permissions
+> >> >> > check refuses permission to write to the inode which prevents us from
+> >> >> > copying it up even though we have a writable upper layer.  (With an ext4
+> >> >> > lower layer the inode check will succeed if the inode  is writable even
+> >> >> > if the filesystem is not.)  It is not clear what the right solution is
+> >> >> > here.  One approach is to check the inode permissions only (avoiding the
+> >> >> > filesystem specific permissions op), but it is not clear we can rely on
+> >> >> > these for all underlying filesystems.  Perhaps this check should only be
+> >> >> > used for NFS.
+> >> >
+> >> > Then couldn't you for example end up circumventing ACLs on the
+> >> > underlying file to access data cached by reads from another user on the
+> >> > same system?
+> >> 
+> >> Ignoring ACL's should always give less access, isn't that right?
+> >
+> > Not necessarily.
+> >
+> > (It's up to the server--and if anything servers probably want to err on
+> > the side of returning mode bits that are an upper, not a lower, bound on
+> > the permissions.)
+> 
+> Okay, I looked at the POSIX ACL access check algorithm and now
+> understand things better.
+> 
+> Now i think that enforcing ACL's on the overlay is not possible if ACL's
+> are not copied up together with the data.
 
-> The patch removes inline array of FUSE_MAX_PAGES_PER_REQ page pointers from
-> fuse_req. Instead of that, req->pages may now point either to small inline
-> array or to an array allocated dynamically.
->
-> This essentially means that all callers of fuse_request_alloc[_nofs] should
-> pass the number of pages needed explicitly.
->
-> The patch doesn't make any logic changes.
+And the NFSv4 case is different (it doesn't use "posix" acls), etc.,
+etc.
 
-See comments inline.
+But forget all that, even mode bits aren't much use since you don't
+understand how the server might be mapping your uid, so you don't know
+whether you're the owner, or a member of the group.
 
+On the other hand, for some cases maybe what you want is to just forget
+all that and trust the file owners and mode bits, so maybe that's useful
+at least as an option.
 
-> ---
->  fs/fuse/dev.c    |   40 ++++++++++++++++++++++++++++++----------
->  fs/fuse/file.c   |    4 ++--
->  fs/fuse/fuse_i.h |    9 ++++++---
->  fs/fuse/inode.c  |    4 ++--
->  4 files changed, 40 insertions(+), 17 deletions(-)
->
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index 7df2b5e..c0283a1 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -36,32 +36,52 @@ static struct fuse_conn *fuse_get_conn(struct file *file)
->  
->  static void fuse_request_init(struct fuse_req *req)
->  {
-> +	struct page **pages = req->pages;
-> +
+> > Oh, OK, I guess I assumed you were dealing with an NFS filesystem that
+> > had been mounted readonly on the NFS client.
+> >
+> > If it's a read-write mount of a filesystem that's read-only on the
+> > server side: well, there is at least an error for that case: the server
+> > should return NFSERR_ROFS, and you should see EROFS--could you do the
+> > copy-up only in the case you get that error?
+> 
+> If the server returns EROFS then all you know is that the filesystem is
+> read-only.  But that's not what we are interested in.  We are interested
+> in whether the access would be allowed *if* the filesystem *wasn't*
+> read-only.  The server doesn't tell us that.
 
-Rather than this, make fuse_request_init() take 'pages' as a second
-argument.
+Yeah.  I wonder if it would be reasonable in the future to let servers
+tell us that.
 
->  	memset(req, 0, sizeof(*req));
->  	INIT_LIST_HEAD(&req->list);
->  	INIT_LIST_HEAD(&req->intr_entry);
->  	init_waitqueue_head(&req->waitq);
->  	atomic_set(&req->count, 1);
-> +
-> +	req->pages = pages;
->  }
->  
-> -struct fuse_req *fuse_request_alloc(void)
-> +static struct fuse_req *__fuse_request_alloc(int npages, gfp_t flags)
->  {
-> -	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_KERNEL);
-> -	if (req)
-> +	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, flags);
-> +	if (req) {
-> +		if (npages <= 1)
-
-Instead of '1' use a constant (e.g. FUSE_REQ_INLINE_PAGES)
-
-> +			req->pages = req->inline_pages;
-> +		else
-> +			req->pages = kmalloc(sizeof(struct page *) * npages,
-> +					     flags);
-> +
-> +		if (!req->pages) {
-> +			kmem_cache_free(fuse_req_cachep, req);
-> +			return NULL;
-> +		}
-> +
->  		fuse_request_init(req);
-> +	}
->  	return req;
->  }
-> +
-> +struct fuse_req *fuse_request_alloc(int npages)
-> +{
-> +	return __fuse_request_alloc(npages, GFP_KERNEL);
-> +}
->  EXPORT_SYMBOL_GPL(fuse_request_alloc);
->  
-> -struct fuse_req *fuse_request_alloc_nofs(void)
-> +struct fuse_req *fuse_request_alloc_nofs(int npages)
->  {
-> -	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_NOFS);
-> -	if (req)
-> -		fuse_request_init(req);
-> -	return req;
-> +	return __fuse_request_alloc(npages, GFP_NOFS);
->  }
->  
->  void fuse_request_free(struct fuse_req *req)
->  {
-> +	if (req->pages != req->inline_pages)
-> +		kfree(req->pages);
->  	kmem_cache_free(fuse_req_cachep, req);
->  }
->  
-> @@ -116,7 +136,7 @@ struct fuse_req *fuse_get_req(struct fuse_conn *fc)
->  	if (!fc->connected)
->  		goto out;
->  
-> -	req = fuse_request_alloc();
-> +	req = fuse_request_alloc(FUSE_MAX_PAGES_PER_REQ);
->  	err = -ENOMEM;
->  	if (!req)
->  		goto out;
-> @@ -193,7 +213,7 @@ struct fuse_req *fuse_get_req_nofail(struct fuse_conn *fc, struct file *file)
->  
->  	atomic_inc(&fc->num_waiting);
->  	wait_event(fc->blocked_waitq, !fc->blocked);
-> -	req = fuse_request_alloc();
-> +	req = fuse_request_alloc(FUSE_MAX_PAGES_PER_REQ);
->  	if (!req)
->  		req = get_reserved_req(fc, file);
->  
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index aba15f1..7423ea4 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -57,7 +57,7 @@ struct fuse_file *fuse_file_alloc(struct fuse_conn *fc)
->  		return NULL;
->  
->  	ff->fc = fc;
-> -	ff->reserved_req = fuse_request_alloc();
-> +	ff->reserved_req = fuse_request_alloc(0);
->  	if (unlikely(!ff->reserved_req)) {
->  		kfree(ff);
->  		return NULL;
-> @@ -1272,7 +1272,7 @@ static int fuse_writepage_locked(struct page *page)
->  
->  	set_page_writeback(page);
->  
-> -	req = fuse_request_alloc_nofs();
-> +	req = fuse_request_alloc_nofs(1);
->  	if (!req)
->  		goto err;
->  
-> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-> index e24dd74..5e78840 100644
-> --- a/fs/fuse/fuse_i.h
-> +++ b/fs/fuse/fuse_i.h
-> @@ -291,7 +291,10 @@ struct fuse_req {
->  	} misc;
->  
->  	/** page vector */
-> -	struct page *pages[FUSE_MAX_PAGES_PER_REQ];
-> +	struct page **pages;
-> +
-> +	/** inline page vector */
-> +	struct page *inline_pages[1];
->  
-
-To defend against programming errors, I think it would be wise to add
-
-	/** size of the 'pages' array */
-	unsigned max_pages;
-
-so that when storing pages in the array we can check whether we are
-overflowing the array.
-
->  	/** number of pages in vector */
->  	unsigned num_pages;
-> @@ -658,9 +661,9 @@ void fuse_ctl_cleanup(void);
->  /**
->   * Allocate a request
->   */
-> -struct fuse_req *fuse_request_alloc(void);
-> +struct fuse_req *fuse_request_alloc(int npages);
->  
-> -struct fuse_req *fuse_request_alloc_nofs(void);
-> +struct fuse_req *fuse_request_alloc_nofs(int npages);
->  
->  /**
->   * Free a request
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index ce0a283..3f399ba 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -1027,12 +1027,12 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
->  	/* only now - we want root dentry with NULL ->d_op */
->  	sb->s_d_op = &fuse_dentry_operations;
->  
-> -	init_req = fuse_request_alloc();
-> +	init_req = fuse_request_alloc(0);
->  	if (!init_req)
->  		goto err_put_root;
->  
->  	if (is_bdev) {
-> -		fc->destroy_req = fuse_request_alloc();
-> +		fc->destroy_req = fuse_request_alloc(0);
->  		if (!fc->destroy_req)
->  			goto err_free_init_req;
->  	}
+--b.
