@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab2ILGcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 02:32:25 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64893 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab2ILGcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 02:32:24 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-f2-50502c74c05f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 4/5] perf ui/browser: Use perf_hpp__format functions
-References: <1346640790-17197-1-git-send-email-namhyung@kernel.org>
-	<1346640790-17197-5-git-send-email-namhyung@kernel.org>
-	<20120908003218.GC20401@ghostprotocols.net>
-	<87ehmca9u0.fsf@kernel.org>
-Date: Wed, 12 Sep 2012 15:25:29 +0900
-In-Reply-To: <87ehmca9u0.fsf@kernel.org> (Namhyung Kim's message of "Sat, 08
-	Sep 2012 23:05:43 +0900")
-Message-ID: <87fw6nahba.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754800Ab2ILGdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 02:33:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:39514 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329Ab2ILGd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 02:33:29 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC 1/2] virtio_console: Add support for DMA memory allocation
+In-Reply-To: <20120910221111.GA21854@redhat.com>
+References: <1346680277-5887-1-git-send-email-sjur.brandeland@stericsson.com> <20120903143018.GA5353@redhat.com> <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com> <20120903202737.GD6181@redhat.com> <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com> <20120904135022.GI9805@redhat.com> <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com> <20120904185541.GB3602@redhat.com> <87k3w7j49i.fsf@rustcorp.com.au> <20120906052735.GB17656@redhat.com> <20120910221111.GA21854@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 12 Sep 2012 15:54:40 +0930
+Message-ID: <877grzdahj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 08 Sep 2012 23:05:43 +0900, Namhyung Kim wrote:
-> On Fri, 7 Sep 2012 17:32:18 -0700, Arnaldo Carvalho de Melo wrote:
->> I folded the patch below so that we have the lines starting at column 1
->> like before, i.e. we were using " %5.2f" for the overhead and now you
->> changed it to "%5.2f".
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+>> virtio: don't crash when device is buggy
+>> 
+>> Because of a sanity check in virtio_dev_remove, a buggy device can crash
+>> kernel.  And in case of rproc it's userspace so it's not a good idea.
+>> We are unloading a driver so how bad can it be?
+>> Be less aggressive in handling this error: if it's a driver bug,
+>> warning once should be enough.
+>> 
+>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 >
-> Looks good to me.
+> Rusty?
 
-It wasn't good actually :-/  Simply because it cannot refresh the
-character at column 0 anymore.  I will send a fix soon.
+Thanks, applied.
 
-Thanks,
-Namhyung
+I really want to implement CONFIG_VIRTIO_DEVEL_DEBUG which would
+incorporate the checks in virtio_ring.c as well as this.  Then I could
+also reshuffle descriptors (eg. split them) to find buggy devices like
+qemu which assume the first descriptor is the struct virtio_net_hdr...
+
+Cheers,
+Rusty,
