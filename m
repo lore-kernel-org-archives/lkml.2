@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab2ILXeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:34:03 -0400
+	id S1756111Ab2ILXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:34:16 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400Ab2ILXdz (ORCPT
+	with ESMTP id S1756047Ab2ILXeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:55 -0400
+	Wed, 12 Sep 2012 19:34:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Forest Bond <forest.bond@rapidrollout.com>,
-        Alan Cox <alan@linux.intel.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 056/108] gma500: Consider CRTC initially active.
-Date: Wed, 12 Sep 2012 16:28:54 -0700
-Message-Id: <20120912232456.412255046@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 059/108] ALSA: usb-audio: Fix scheduling-while-atomic bug in PCM capture stream
+Date: Wed, 12 Sep 2012 16:28:57 -0700
+Message-Id: <20120912232456.729849839@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -30,39 +28,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4a68a74ba04e7ccf798d45988f4f2d2131fb5063 upstream.
+commit e9ba389c5ffc4dd29dfe17e00e48877302111135 upstream.
 
-[this one ideally should make 3.6 - it fixes the very annoying mode setting bug]
+A PCM capture stream on usb-audio causes a scheduling-while-atomic
+BUG, as reported in the bugzilla entry below.  It's because
+snd_usb_endpoint_start() is called at first at trigger START for a
+capture stream, and this function contains the left-over EP
+deactivation codes.  The problem doesn't happen for a playback stream
+because the function is called at PCM prepare time, which can sleep.
 
-This causes the pipe to be forced off prior to initial mode set, which
-roughly mirrors the behavior of the i915 driver.  It fixes initial mode
-setting on my Intel DN2800MT (Cedarview) board.  Without it, mode
-setting triggers an out-of-range error from the monitor for most modes,
-but only on initial configuration (i.e. they can be configured
-successfully from userspace after that).
+This patch fixes the BUG by moving the EP deactivation code into the
+PCM prepare callback.
 
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46011
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/psb_intel_display.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/usb/endpoint.c |    4 ----
+ sound/usb/pcm.c      |    3 +++
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/gma500/psb_intel_display.c
-+++ b/drivers/gpu/drm/gma500/psb_intel_display.c
-@@ -1362,6 +1362,9 @@ void psb_intel_crtc_init(struct drm_devi
- 	    (struct drm_connector **) (psb_intel_crtc + 1);
- 	psb_intel_crtc->mode_set.num_connectors = 0;
- 	psb_intel_cursor_init(dev, psb_intel_crtc);
-+
-+	/* Set to true so that the pipe is forced off on initial config. */
-+	psb_intel_crtc->active = true;
- }
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -821,10 +821,6 @@ int snd_usb_endpoint_start(struct snd_us
+ 	if (++ep->use_count != 1)
+ 		return 0;
  
- int psb_intel_get_pipe_from_crtc_id(struct drm_device *dev, void *data,
+-	/* just to be sure */
+-	deactivate_urbs(ep, 0, 1);
+-	wait_clear_urbs(ep);
+-
+ 	ep->active_mask = 0;
+ 	ep->unlink_mask = 0;
+ 	ep->phase = 0;
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -544,6 +544,9 @@ static int snd_usb_pcm_prepare(struct sn
+ 	subs->last_frame_number = 0;
+ 	runtime->delay = 0;
+ 
++	/* clear the pending deactivation on the target EPs */
++	deactivate_endpoints(subs);
++
+ 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
+ 	 * updates for all URBs would happen at the same time when starting */
+ 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
 
 
