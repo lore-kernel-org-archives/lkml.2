@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2ILFwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 01:52:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42506 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab2ILFwk (ORCPT
+	id S1754590Ab2ILF52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 01:57:28 -0400
+Received: from magic.merlins.org ([209.81.13.136]:42871 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab2ILF51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 01:52:40 -0400
-Date: Wed, 12 Sep 2012 15:52:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: linux-next: manual merge of the staging tree with the thermal tree
-Message-Id: <20120912155231.716530c364bb20bd43efec0d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb"
+	Wed, 12 Sep 2012 01:57:27 -0400
+Date: Tue, 11 Sep 2012 22:57:12 -0700
+From: Marc MERLIN <marc@merlins.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
+        David Rientjes <rientjes@google.com>, sgruszka@redhat.com,
+        linux-wireless@vger.kernel.org, johannes.berg@intel.com,
+        wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        Andrew Morton <akpm@osdl.org>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
+Message-ID: <20120912055712.GE11613@merlins.org>
+References: <20120909213228.GA5538@elf.ucw.cz> <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com> <20120910111113.GA25159@elf.ucw.cz> <20120911162536.bd5171a1.akpm@linux-foundation.org> <1347426988.13103.684.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347426988.13103.684.camel@edumazet-glaptop>
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux 3.1.5-core2-volpreempt-noide-hm64-20111218/Debian squeeze/sid
+X-Mailer: Some Outlooks can't quote properly without this header
+User-Agent: Mutt/1.5.13 (2006-08-11)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: marc@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 12, 2012 at 07:16:28AM +0200, Eric Dumazet wrote:
+> On Tue, 2012-09-11 at 16:25 -0700, Andrew Morton wrote:
+> 
+> > Asking for a 256k allocation is pretty crazy - this is an operating
+> > system kernel, not a userspace application.
+> > 
+> > I'm wondering if this is due to a recent change, but I'm having trouble
+> > working out where the allocation call site is.
+> > --
+> 
+> (Adding Marc Merlin to CC, since he reported same problem)
+> 
+> Thats the firmware loading in iwlwifi driver. Not sure if it can use SG.
+> 
+> drivers/net/wireless/iwlwifi/iwl-drv.c
+> 
+> iwl_alloc_ucode() -> iwl_alloc_fw_desc() -> dma_alloc_coherent()
+> 
+> It seems some sections of /lib/firmware/iwlwifi*.ucode files are above
+> 128 Kbytes, so dma_alloc_coherent() try order-5 allocations
 
-Hi Greg,
+Thanks for looping me in, yes, this looks very familiar to me :)
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/omap-thermal/omap-thermal-common.c between commit
-76f726fb24bd ("Thermal: Remove tc1/tc2 in generic thermal layer") from
-the thermal tree and commit 765a1939a364 ("staging: omap-thermal: fix
-polling period settings") from the staging tree.
+In the other thread, Johannes Berg gave me this patch which is supposed to
+help: http://p.sipsolutions.net/11ea33b376a5bac5.txt
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+Unfortunately due to very long work days, I haven't had the time to try it
+out yet, but I will soon.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Would that help in this case too?
 
-diff --cc drivers/staging/omap-thermal/omap-thermal-common.c
-index b4cd6cc,46ee0a9..0000000
---- a/drivers/staging/omap-thermal/omap-thermal-common.c
-+++ b/drivers/staging/omap-thermal/omap-thermal-common.c
-@@@ -248,7 -268,9 +270,8 @@@ int omap_thermal_expose_sensor(struct o
-  	/* Create thermal zone */
-  	data->omap_thermal =3D thermal_zone_device_register(domain,
-  				OMAP_TRIP_NUMBER, 0, data, &omap_thermal_ops,
-- 				0, FAST_TEMP_MONITORING_RATE);
- -				1, 2, /*TODO: remove this when FW allows */
-+ 				FAST_TEMP_MONITORING_RATE,
-+ 				FAST_TEMP_MONITORING_RATE);
-  	if (IS_ERR_OR_NULL(data->omap_thermal)) {
-  		dev_err(bg_ptr->dev, "thermal zone device is NULL\n");
-  		return PTR_ERR(data->omap_thermal);
+And to answer David Rientjes, I also have compaction on:
+gandalfthegreat:~# zgrep CONFIG_COMPACTION /proc/config.gz 
+CONFIG_COMPACTION=y
 
---Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb
-Content-Type: application/pgp-signature
+Full config:
+http://marc.merlins.org/tmp/config-3.5.2-amd64-preempt-noide-20120731
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+If that helps for comparison, my thread is here:
+http://www.spinics.net/lists/linux-wireless/msg96438.html
 
-iQIcBAEBCAAGBQJQUCMfAAoJEECxmPOUX5FE1SUP/RrlYm39+7uJD5rdCdpMUHhG
-PfMwbWeETJo889WP9r1XHt4DWUO5g0RaxFQ985O4TsPfxTZRe24dgF8zNHchXExQ
-V82Pe//3jEM+R8VaY/BXb/ycczGnom1VyFBpgo4y1f5qg09kljnwrOFCMT7ozhYW
-6XghhGkuET7vwo+/8G6bzVrKa4jlDC6k/VrfWeIPplIjRzEUxRrwJwB9Pg4xihsz
-DFDXnhbNmYSMvYd7wHQw8NPYtz2LCa4Ca+A7k2uvtQOMTWEtCok86MHkjRAa8pGI
-yQwFP4ISqwzoS5aBwoEhbdeBk80Gmk0jPA7dpisoV0NVc95dGC5bvCHIXO9i+nad
-1IgWGpxki2O1NKUGwZPVd5vNNxMdEuzHf5FlDZyR7TpT44QVaxPUGrhzddd38cGZ
-e/yDT8xwIUdlZX5tmze/1+KwAg6E+5cj/QORwBePcENmuttE7ST5jv+3aqq1wvVU
-pKLKYXtez653/gkoHi9ZM3PvkWw2njz4naJupCOwadIvrB1zuU3Sog+t0sOL9Kxa
-0GOPgPwReMqiZ2f0PWZ/OtXun16wk0EeGwjDYhTHZ7kerH6uN4zumIZqLDSU1wmH
-5vKu9OL+MTC1Q9au7ekviniv9cBiboI4EMdooQBojBGIM+h9mfLKRVkbkqGvlNQ0
-uGTHDKjp1zWLIjTA0sHa
-=8JIB
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Sep_2012_15_52_31_+1000_f3N/thIT8Oj_jdDb--
+Thanks,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/  
