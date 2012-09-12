@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab2ILPJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 11:09:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49575 "EHLO
+	id S1759224Ab2ILPJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 11:09:53 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60432 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759834Ab2ILPHP (ORCPT
+	with ESMTP id S1757216Ab2ILPHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 11:07:15 -0400
+	Wed, 12 Sep 2012 11:07:14 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/9] drivers/staging/rtl8192u/r8192U_core.c: Remove useless kfree
-Date: Wed, 12 Sep 2012 17:06:43 +0200
-Message-Id: <1347462407-13499-5-git-send-email-peter.senna@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/9] block/blk-tag.c: Remove useless kfree
+Date: Wed, 12 Sep 2012 17:06:40 +0200
+Message-Id: <1347462407-13499-2-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -72,43 +71,31 @@ expression x;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/staging/rtl8192u/r8192U_core.c |   23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+ block/blk-tag.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 5c132ac..5a2fab9 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -2232,24 +2232,15 @@ short rtl8192_usb_initendpoints(struct net_device *dev)
- 	memset(priv->rx_urb, 0, sizeof(struct urb*) * MAX_RX_URB);
- 	priv->pp_rxskb = kcalloc(MAX_RX_URB, sizeof(struct sk_buff *),
- 				 GFP_KERNEL);
--	if (priv->pp_rxskb == NULL)
--		goto destroy;
--
--	goto _middle;
--
--
--destroy:
--	kfree(priv->pp_rxskb);
--	kfree(priv->rx_urb);
--
--	priv->pp_rxskb = NULL;
--	priv->rx_urb = NULL;
--
--	DMESGE("Endpoint Alloc Failure");
--	return -ENOMEM;
-+	if (!priv->pp_rxskb) {
-+		kfree(priv->rx_urb);
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index 4af6f5c..cc345e1 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -186,7 +186,8 @@ int blk_queue_init_tags(struct request_queue *q, int depth,
+ 		tags = __blk_queue_init_tags(q, depth);
  
-+		priv->pp_rxskb = NULL;
-+		priv->rx_urb = NULL;
- 
--_middle:
-+		DMESGE("Endpoint Alloc Failure");
-+		return -ENOMEM;
-+	}
- 
- 	printk("End of initendpoints\n");
+ 		if (!tags)
+-			goto fail;
++			return -ENOMEM;
++
+ 	} else if (q->queue_tags) {
+ 		rc = blk_queue_resize_tags(q, depth);
+ 		if (rc)
+@@ -203,9 +204,6 @@ int blk_queue_init_tags(struct request_queue *q, int depth,
+ 	queue_flag_set_unlocked(QUEUE_FLAG_QUEUED, q);
+ 	INIT_LIST_HEAD(&q->tag_busy_list);
  	return 0;
+-fail:
+-	kfree(tags);
+-	return -ENOMEM;
+ }
+ EXPORT_SYMBOL(blk_queue_init_tags);
+ 
 
