@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab2ILN1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 09:27:41 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:59498 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2ILN1j (ORCPT
+	id S932096Ab2ILNeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 09:34:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56384 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab2ILNeD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 09:27:39 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkqJAFeNUFBV5qoUPGdsb2JhbABFhR4jhQCvfAICfhkBAQEBHhkNJ4IgAQEEATocIwULCAMOOBQlChqIGgq8cxSLL4E3g3hgA5VehW+NGQ
-X-IronPort-AV: E=Sophos;i="4.80,410,1344204000"; 
-   d="scan'208";a="407956073"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 12 Sep 2012 15:34:28 +0200
-To: Ferruh Yigit <fery@cypress.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kevin McNeely <kev@cypress.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Shawn Landden <shawnlandden@gmail.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Input: cyttsp4 - bus driver for Cypress TMA4XX
- touchscreen devices
-Message-ID: <20120912133428.GA4894@polaris.bitmath.org>
-References: <fery@cypress.com>
- <1344344978-30453-1-git-send-email-fery@cypress.com>
- <50377C60.4020008@cypress.com>
- <20120824173408.GA6176@polaris.bitmath.org>
- <503B099A.6010807@cypress.com>
- <50508B45.40706@cypress.com>
+	Wed, 12 Sep 2012 09:34:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50508B45.40706@cypress.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347454564-5178-2-git-send-email-peter.senna@gmail.com>
+References: <1347454564-5178-2-git-send-email-peter.senna@gmail.com>
+Date: Wed, 12 Sep 2012 10:34:01 -0300
+Message-ID: <CAH0vN5+ZoexHtmgyZ+s9tiW3LYx+6PMT8aLyYt-T5mnaGXvYbQ@mail.gmail.com>
+Subject: Re: [PATCH v2 7/8] drivers/media/platform/davinci/vpbe.c: Removes
+ useless kfree()
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ferruh,
+2012/9/12 Peter Senna Tschudin <peter.senna@gmail.com>:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> Remove useless kfree() and clean up code related to the removal.
+>
+> The semantic patch that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @r exists@
+> position p1,p2;
+> expression x;
+> @@
+>
+> if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
+>
+> @unchanged exists@
+> position r.p1,r.p2;
+> expression e <= r.x,x,e1;
+> iterator I;
+> statement S;
+> @@
+>
+> if (x@p1 == NULL) { ... when != I(x,...) S
+>                         when != e = e1
+>                         when != e += e1
+>                         when != e -= e1
+>                         when != ++e
+>                         when != --e
+>                         when != e++
+>                         when != e--
+>                         when != &e
+>    kfree@p2(x); ... return ...; }
+>
+> @ok depends on unchanged exists@
+> position any r.p1;
+> position r.p2;
+> expression x;
+> @@
+>
+> ... when != true x@p1 == NULL
+> kfree@p2(x);
+>
+> @depends on !ok && unchanged@
+> position r.p2;
+> expression x;
+> @@
+>
+> *kfree@p2(x);
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>
+> ---
+>  drivers/media/platform/davinci/vpbe.c |    1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
+> index c4a82a1..1125a87 100644
+> --- a/drivers/media/platform/davinci/vpbe.c
+> +++ b/drivers/media/platform/davinci/vpbe.c
+> @@ -771,7 +771,6 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>         return 0;
+>
+>  vpbe_fail_amp_register:
+> -       kfree(vpbe_dev->amp);
 
-> Before finalizing the work, we want to learn if introducing new files
-> for new driver is acceptable and our effort is inline with your request,
-> can you please comment on it?
+Now that you removed this kfree, you could remove this label too. Very
+nice your cleanup :)
 
-New files are certainly alright when they are warranted, but of course
-it depends on the details. We will know once you have submitted the
-new version. :-)
+>  vpbe_fail_sd_register:
+>         kfree(vpbe_dev->encoders);
+>  vpbe_fail_v4l2_device:
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Henrik
+
+
+-- 
+Att,
+
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
