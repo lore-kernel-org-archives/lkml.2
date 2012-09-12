@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab2ILTUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 15:20:35 -0400
-Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:49673 "EHLO
-	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751160Ab2ILTUd (ORCPT
+	id S1751803Ab2ILT2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 15:28:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39197 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab2ILT2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 15:20:33 -0400
-Message-ID: <1347477630.3384.1.camel@offbook>
-Subject: Re: [PATCH v2] lib: gcd: prevent possible div by 0
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Date: Wed, 12 Sep 2012 21:20:30 +0200
-In-Reply-To: <20120912121055.bd417043.akpm@linux-foundation.org>
-References: <1347287719.2561.14.camel@offbook>
-	 <20120912121055.bd417043.akpm@linux-foundation.org>
-Organization: GNU
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Sep 2012 15:28:00 -0400
+Date: Wed, 12 Sep 2012 12:27:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/3 v2] mm: Batch page reclamation under shink_page_list
+Message-Id: <20120912122758.ad15e10f.akpm@linux-foundation.org>
+In-Reply-To: <1347293960.9977.70.camel@schen9-DESK>
+References: <1347293960.9977.70.camel@schen9-DESK>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-12 at 12:10 -0700, Andrew Morton wrote:
-> On Mon, 10 Sep 2012 16:35:19 +0200
-> Davidlohr Bueso <dave@gnu.org> wrote:
+On Mon, 10 Sep 2012 09:19:20 -0700
+Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> This is the second version of the patch series. Thanks to Matthew Wilcox 
+> for many valuable suggestions on improving the patches.
 > 
-> > Account for all properties when a and/or b are 0:
-> > gcd(0, 0) = 0
-> > gcd(a, 0) = a
-> > gcd(0, b) = b
-> > 
-> > Cc: stable@vger.kernel.org
+> To do page reclamation in shrink_page_list function, there are two
+> locks taken on a page by page basis.  One is the tree lock protecting
+> the radix tree of the page mapping and the other is the
+> mapping->i_mmap_mutex protecting the mapped
+> pages.  I try to batch the operations on pages sharing the same lock
+> to reduce lock contentions.  The first patch batch the operations protected by
+> tree lock while the second and third patch batch the operations protected by 
+> the i_mmap_mutex.
 > 
-> Why cc:stable?  If this patch fixes some known problem in the current
-> kernel then that really really should have been described in the
-> changelog.  Always.  Please.
+> I managed to get 14% throughput improvement when with a workload putting
+> heavy pressure of page cache by reading many large mmaped files
+> simultaneously on a 8 socket Westmere server.
 
-Ok, I will keep it in mind next time. No known problem (at least that I
-know of), but due to the nature of the potential bug, I thought that it
-was worth adding it to stable.
+That sounds good, although more details on the performance changes
+would be appreciated - after all, that's the entire point of the
+patchset.
 
-Thanks.
+And we shouldn't only test for improvements - we should also test for
+degradation.  What workloads might be harmed by this change?  I'd suggest
 
-> 
-> > ...
-> > --- a/lib/gcd.c
-> > +++ b/lib/gcd.c
-> > @@ -9,6 +9,9 @@ unsigned long gcd(unsigned long a, unsigned long b)
-> >  
-> >  	if (a < b)
-> >  		swap(a, b);
-> > +
-> > +	if (!b)
-> > +		return a;
-> >  	while ((r = a % b) != 0) {
-> >  		a = b;
-> >  		b = r;
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> 
+- a single process which opens N files and reads one page from each
+  one, then repeats.  So there are no contiguous LRU pages which share
+  the same ->mapping.  Get some page reclaim happening, measure the
+  impact.
 
+- The batching means that we now do multiple passes over pageframes
+  where we used to do things in a single pass.  Walking all those new
+  page lists will be expensive if they are lengthy enough to cause L1
+  cache evictions.
 
+  What would be a test for this?  A simple, single-threaded walk
+  through a file, I guess?
+
+Mel's review comments were useful, thanks.
