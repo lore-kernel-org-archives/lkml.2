@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2IMAme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:42:34 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59246 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab2ILXbH (ORCPT
+	id S1753897Ab2IMAnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:43:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755205Ab2ILXav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:31:07 -0400
+	Wed, 12 Sep 2012 19:30:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 012/108] xen/setup: Fix one-off error when adding for-balloon PFNs to the P2M.
-Date: Wed, 12 Sep 2012 16:28:10 -0700
-Message-Id: <20120912232451.773982631@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jon Hunter <jon-hunter@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [ 008/108] ARM: OMAP2+: Fix dmtimer set source clock failure
+Date: Wed, 12 Sep 2012 16:28:06 -0700
+Message-Id: <20120912232451.310834782@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -29,59 +29,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jon Hunter <jon-hunter@ti.com>
 
-commit c96aae1f7f393387d160211f60398d58463a7e65 upstream.
+commit 54f32a35f4d3a653a18a2c8c239f19ae060bd803 upstream.
 
-When we are finished with return PFNs to the hypervisor, then
-populate it back, and also mark the E820 MMIO and E820 gaps
-as IDENTITY_FRAMEs, we then call P2M to set areas that can
-be used for ballooning. We were off by one, and ended up
-over-writting a P2M entry that most likely was an IDENTITY_FRAME.
-For example:
+Calling the dmtimer function omap_dm_timer_set_source() fails if following a
+call to pm_runtime_put() to disable the timer. For example the following
+sequence would fail to set the parent clock ...
 
-1-1 mapping on 40000->40200
-1-1 mapping on bc558->bc5ac
-1-1 mapping on bc5b4->bc8c5
-1-1 mapping on bc8c6->bcb7c
-1-1 mapping on bcd00->100000
-Released 614 pages of unused memory
-Set 277889 page(s) to 1-1 mapping
-Populating 40200-40466 pfn range: 614 pages added
+	omap_dm_timer_stop(gptimer);
+	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_32_KHZ);
 
-=> here we set from 40466 up to bc559 P2M tree to be
-INVALID_P2M_ENTRY. We should have done it up to bc558.
+The following error message would be seen ...
 
-The end result is that if anybody is trying to construct
-a PTE for PFN bc558 they end up with ~PAGE_PRESENT.
+omap_dm_timer_set_source: failed to set timer_32k_ck as parent
 
-Reported-by-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+The problem is that, by design, pm_runtime_put() simply decrements the usage
+count and returns before the timer has actually been disabled. Therefore,
+setting the parent clock failed because the timer was still active when the
+trying to set the parent clock. Setting a parent clock will fail if the clock
+you are setting the parent of has a non-zero usage count. To ensure that this
+does not fail use pm_runtime_put_sync() when disabling the timer.
+
+Note that this will not be seen on OMAP1 devices, because these devices do
+not use the clock framework for dmtimers.
+
+Signed-off-by: Jon Hunter <jon-hunter@ti.com>
+Acked-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/plat-omap/dmtimer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -78,9 +78,16 @@ static void __init xen_add_extra_mem(u64
- 	memblock_reserve(start, size);
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -236,7 +236,7 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
  
- 	xen_max_p2m_pfn = PFN_DOWN(start + size);
-+	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
-+		unsigned long mfn = pfn_to_mfn(pfn);
-+
-+		if (WARN(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
-+			continue;
-+		WARN(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
-+			pfn, mfn);
- 
--	for (pfn = PFN_DOWN(start); pfn <= xen_max_p2m_pfn; pfn++)
- 		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
-+	}
+ void omap_dm_timer_disable(struct omap_dm_timer *timer)
+ {
+-	pm_runtime_put(&timer->pdev->dev);
++	pm_runtime_put_sync(&timer->pdev->dev);
  }
+ EXPORT_SYMBOL_GPL(omap_dm_timer_disable);
  
- static unsigned long __init xen_do_chunk(unsigned long start,
 
 
