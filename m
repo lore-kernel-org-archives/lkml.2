@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab2ILE02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 00:26:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56353 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab2ILE0Z (ORCPT
+	id S1751737Ab2ILEdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 00:33:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40158 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2ILEdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 00:26:25 -0400
-Date: Wed, 12 Sep 2012 12:36:47 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Hugh Dickins <hughd@google.com>, Arvydas Sidorenko <asido4@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, linux-kernel@vger.kernel.org,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Storage related regression in linux-next 20120824
-Message-ID: <20120912043647.GA3084@gmail.com>
-Mail-Followup-To: Jeff Garzik <jgarzik@pobox.com>,
-	Hugh Dickins <hughd@google.com>,
-	Arvydas Sidorenko <asido4@gmail.com>,
-	Zheng Liu <wenqing.lz@taobao.com>, linux-kernel@vger.kernel.org,
-	IDE/ATA development list <linux-ide@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com>
- <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com>
- <503BA2DB.9080704@gmail.com>
- <503BB4BB.4080307@gmail.com>
- <alpine.LSU.2.00.1209090012390.2416@eggly.anvils>
- <CA+6av4=6WeLcde5me2FCpBtQJAOTtHZvf4pkMExgMW9agVNLWg@mail.gmail.com>
- <504CFBE3.401@pobox.com>
- <CANsGZ6aPB6ZjTmUJ=xeLY68iV5V9ghGGAQrp9KvJcyC0d-ARUg@mail.gmail.com>
- <504D0127.5080807@pobox.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <504D0127.5080807@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Sep 2012 00:33:41 -0400
+Date: Wed, 12 Sep 2012 14:33:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jamie Iles <jamie@jamieiles.com>, Gleb Natapov <gleb@redhat.com>
+Subject: linux-next: manual merge of the kvm tree with Linus' tree
+Message-Id: <20120912143331.beed6ad11cfc753f3c33f5a3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 09, 2012 at 04:50:47PM -0400, Jeff Garzik wrote:
-> On 09/09/2012 04:36 PM, Hugh Dickins wrote:
-> >On Sun, Sep 9, 2012 at 1:28 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
-> >>I'll send Linus a patch to disable.
-> >
-> >Thanks, but no, the change in question hasn't reached Linus yet, it's
-> >just a linux-next or mmotm thing - isn't it?
-> 
-> Yep, libata-dev#upstream.  Sorry, got my own branches confused for a
-> second there.
+--Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for delay reply.  In our product system, we tested a lot of
-different brands of SATA disks, and it is OK after fua is enabled on
-default.  Certainly we can't test all disks. :-(
+Hi all,
 
-So I think we quite have to revert my patch now, and try to fix the
-current problem.
+Today's linux-next merge of the kvm tree got a conflict in
+arch/x86/kvm/i8259.c between commit 749c59fd15b2 ("KVM: PIC: fix use of
+uninitialised variable") from Linus' tree and commit ec798660cf72 ("KVM:
+cleanup pic reset") from the kvm tree.
 
-Regards,
-Zheng
+The latter removed the code fixed by the former, so I just did that (no
+action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUBCbAAoJEECxmPOUX5FEPx0P/ihX48AKb/J1m5Ka9Clv0OS7
+cNF6yYZR17XoejSwyevjaWTMe7KKyTUvQA/hED7iVcc071VScN5P3CLhhj5fIP4o
++NQCkgFIUhIm9q9s/vqWEyQnQFtUy8I8Pct1Zv60vtAkdfYEcrpXUqhOTZPf4B7n
++EJ/FV7sDSereZRjWlvurraznb0n2linipNbm8B8a/UDP9UKCjhX6vvWfyQtwTYJ
+IgdY3KP7u7cKnHEiXLDazhV1zuFF5Jw9GyQjQ7u60YeV3oNBvHuUutCNJOZ9E6L2
+b4sWRVhq8A4Cj2Z/v2hOXTfWMkZThTEUCnzNDu0KpTYI8zYSSW4IZF33Ps8W0Hh4
+7jvlJL9R0PXDIbKWZuZYYAhW/zTqrfNEDNWtd2JoVuAejHVqjS/kXfAkt2bFjIho
+PHkfXMAxxZDEpBBq0s3+pqi0NKz6i77I8MGn8riPkcYj7BnnqbiXUWe8wf5siW6N
+GXDse/UrlksHjCtHdr//fw+Kh/v5CgxFI2YKQCjLezF55EHcBEib/Wf3upOOE+M1
+K8zvY5yXINUcjRp6MMNZ7yO9u5DaNCXVFxaBGA372meqTGujvFlyEAVhDy2DNB48
+2vIIr0iYUzU6V/hq6XUdJyfaNprdlomG05rCadDMTJxfngpoOxnz7vjXeBfmZWpR
+H3VwT9Muf6Um3VWalGYB
+=EpOU
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Sep_2012_14_33_31_+1000_NGsW.6Ccl1KcBvsD--
