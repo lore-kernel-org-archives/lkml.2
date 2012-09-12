@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2ILXhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:37:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S932552Ab2ILXiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab2ILXhp (ORCPT
+	with ESMTP id S932534Ab2ILXhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:37:45 -0400
+	Wed, 12 Sep 2012 19:37:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: [ 18/85] vfs: canonicalize create mode in build_open_flags()
-Date: Wed, 12 Sep 2012 16:36:01 -0700
-Message-Id: <20120912233543.645504259@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Cree <mcree@orcon.net.nz>,
+        Matt Turner <mattst88@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 20/85] alpha: Dont export SOCK_NONBLOCK to user space.
+Date: Wed, 12 Sep 2012 16:36:03 -0700
+Message-Id: <20120912233543.845388142@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,41 +29,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Michael Cree <mcree@orcon.net.nz>
 
-commit e68726ff72cf7ba5e7d789857fcd9a75ca573f03 upstream.
+commit a2fa3ccd7b43665fe14cb562761a6c3d26a1d13f upstream.
 
-Userspace can pass weird create mode in open(2) that we canonicalize to
-"(mode & S_IALLUGO) | S_IFREG" in vfs_create().
+Currently we export SOCK_NONBLOCK to user space but that conflicts with
+the definition from glibc leading to compilation errors in user programs
+(e.g.  see Debian bug #658460).
 
-The problem is that we use the uncanonicalized mode before calling vfs_create()
-with unforseen consequences.
+The generic socket.h restricts the definition of SOCK_NONBLOCK to the
+kernel, as does the MIPS specific socket.h, so let's do the same on
+Alpha.
 
-So do the canonicalization early in build_open_flags().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/open.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/socket.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -882,9 +882,10 @@ static inline int build_open_flags(int f
- 	int lookup_flags = 0;
- 	int acc_mode;
+--- a/arch/alpha/include/asm/socket.h
++++ b/arch/alpha/include/asm/socket.h
+@@ -76,9 +76,11 @@
+ /* Instruct lower device to use last 4-bytes of skb data as FCS */
+ #define SO_NOFCS		43
  
--	if (!(flags & O_CREAT))
--		mode = 0;
--	op->mode = mode;
-+	if (flags & O_CREAT)
-+		op->mode = (mode & S_IALLUGO) | S_IFREG;
-+	else
-+		op->mode = 0;
++#ifdef __KERNEL__
+ /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
+  * have to define SOCK_NONBLOCK to a different value here.
+  */
+ #define SOCK_NONBLOCK	0x40000000
++#endif /* __KERNEL__ */
  
- 	/* Must never be set by userspace */
- 	flags &= ~FMODE_NONOTIFY;
+ #endif /* _ASM_SOCKET_H */
 
 
