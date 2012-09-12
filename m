@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2ILXiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:50 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:41747 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694Ab2ILXim (ORCPT
+	id S932748Ab2ILXi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932735Ab2ILXiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:42 -0400
-Date: Wed, 12 Sep 2012 23:38:42 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>
-cc: Vaibhav Hiremath <hvaibhav@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: AM33XX: hwmod: Add OMAP_INTC_START offset to
- all module int nos
-In-Reply-To: <20120912215232.GE5997@atomide.com>
-Message-ID: <alpine.DEB.2.00.1209122330580.7275@utopia.booyaka.com>
-References: <1347484551-11775-1-git-send-email-hvaibhav@ti.com> <1347484551-11775-3-git-send-email-hvaibhav@ti.com> <20120912215232.GE5997@atomide.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 12 Sep 2012 19:38:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Eric Paris <eparis@redhat.com>
+Subject: [ 36/85] audit: dont free_chunk() after fsnotify_add_mark()
+Date: Wed, 12 Sep 2012 16:36:19 -0700
+Message-Id: <20120912233545.516580826@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
+References: <20120912233541.747973832@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Wed, 12 Sep 2012, Tony Lindgren wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> * Vaibhav Hiremath <hvaibhav@ti.com> [120912 14:17]:
-> > With recent migration of omap architectures to SPARSE_IRQ framework,
-> > it is important to add OMAP_INTC_START to all interrupt numbers
-> > which will be eventually requested by drivers.
-> > 
-> > This is required in order to get AM33XX boot functionality.
-> > 
-> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > ---
-> >  arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  168 ++++++++++++++--------------
-> >  1 files changed, 84 insertions(+), 84 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> > index 7b7ed08..3c320f4 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
-> 
-> You should just have on top of this file:
-> 
-> #define OMAP_INTC_START		0
-> 
-> Then Paul can apply this, and while merging with the sparseirq
-> changes, the above can be removed.
+------------------
 
-This change has been made.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-> Then these should be fixed up to have trailing commas
-> as requested by Russell earlier on several occasions.
+commit 0fe33aae0e94b4097dd433c9399e16e17d638cd8 upstream.
 
-I've taken the script you sent and run it on the data file - thanks for 
-the script - and will send the updated pull request shortly.  Sounds like 
-Russell should send patches for Documentation/CodingStyle and 
-scripts/checkpatch.pl so it can be agreed as a kernel-wide policy.
+Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
+via the destroy list and this results in use-after-free.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/audit_tree.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
+ 
+ 	fsnotify_duplicate_mark(&new->mark, entry);
+ 	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
+-		free_chunk(new);
++		fsnotify_put_mark(&new->mark);
+ 		goto Fallback;
+ 	}
+ 
+@@ -322,7 +322,7 @@ static int create_chunk(struct inode *in
+ 
+ 	entry = &chunk->mark;
+ 	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
+-		free_chunk(chunk);
++		fsnotify_put_mark(entry);
+ 		return -ENOSPC;
+ 	}
+ 
+@@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode
+ 	fsnotify_duplicate_mark(chunk_entry, old_entry);
+ 	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
+ 		spin_unlock(&old_entry->lock);
+-		free_chunk(chunk);
++		fsnotify_put_mark(chunk_entry);
+ 		fsnotify_put_mark(old_entry);
+ 		return -ENOSPC;
+ 	}
 
 
-- Paul
