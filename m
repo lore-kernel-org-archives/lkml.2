@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab2IMANL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:13:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757393Ab2IMANE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 20:13:04 -0400
-Date: Thu, 13 Sep 2012 02:12:55 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 0/3] Minor changes to common hugetlb code for ARM
-Message-ID: <20120913001255.GD3404@redhat.com>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
- <20120912152759.GR21579@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912152759.GR21579@dhcp22.suse.cz>
+	id S932671Ab2ILXih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932633Ab2ILXi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 19:38:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Christop Fritz <chf.fritz@googlemail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 15/85] ASoC: wm9712: Fix microphone source selection
+Date: Wed, 12 Sep 2012 16:35:58 -0700
+Message-Id: <20120912233543.329329526@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
+References: <20120912233541.747973832@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Wed, Sep 12, 2012 at 05:27:59PM +0200, Michal Hocko wrote:
-> On Tue 11-09-12 17:47:13, Will Deacon wrote:
-> > Hello,
-> 
-> Hi,
-> 
-> > A few changes are required to common hugetlb code before the ARM support
-> > can be merged. I posted the main one previously, which has been picked up
-> > by akpm:
-> > 
-> >   http://marc.info/?l=linux-mm&m=134573987631394&w=2
-> > 
-> > The remaining three patches (included here) are all fairly minor but do
-> > affect other architectures.
-> 
-> I am quite confused. Why THP changes are required for hugetlb code for
-> ARM?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Some functions are just noops on x86 and with no arch other than x86
-building the huge_memory.c file, those x86-noop parts that needed
-minor interface adjustments couldn't be noticed until now.
+------------------
 
-Hopefully we got the brainer part right (i.e. the location of the x86
-noop callouts), it's clearly untested.
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-> Besides that I would suggest adding Andrea to the CC (added now the
-> whole series can be found here http://lkml.org/lkml/2012/9/11/322) list
-> for all THP changes.
-> 
-> > 
-> > All comments welcome,
-> > 
-> > Will
-> > 
-> > Catalin Marinas (2):
-> >   mm: thp: Fix the pmd_clear() arguments in pmdp_get_and_clear()
-> >   mm: thp: Fix the update_mmu_cache() last argument passing in
-> >     mm/huge_memory.c
+commit ccf795847a38235ee4a56a24129ce75147d6ba8f upstream.
 
-Both:
+Currently the microphone input source is not selectable as while there is
+a DAPM widget it's not connected to anything so it won't be properly
+instantiated. Add something more correct for the input structure to get
+things going, even though it's not hooked into the rest of the routing
+map and so won't actually achieve anything except allowing the relevant
+register bits to be written.
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Christop Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> > 
-> > Steve Capper (1):
-> >   mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+---
+ sound/soc/codecs/wm9712.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
-This was already introduced by the s390 THP support which I reviewed a
-few days ago, and it's already included in -mm, so it can be dropped.
+--- a/sound/soc/codecs/wm9712.c
++++ b/sound/soc/codecs/wm9712.c
+@@ -272,7 +272,7 @@ SOC_DAPM_ENUM("Route", wm9712_enum[9]);
+ 
+ /* Mic select */
+ static const struct snd_kcontrol_new wm9712_mic_src_controls =
+-SOC_DAPM_ENUM("Route", wm9712_enum[7]);
++SOC_DAPM_ENUM("Mic Source Select", wm9712_enum[7]);
+ 
+ /* diff select */
+ static const struct snd_kcontrol_new wm9712_diff_sel_controls =
+@@ -291,7 +291,9 @@ SND_SOC_DAPM_MUX("Left Capture Select",
+ 	&wm9712_capture_selectl_controls),
+ SND_SOC_DAPM_MUX("Right Capture Select", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_capture_selectr_controls),
+-SND_SOC_DAPM_MUX("Mic Select Source", SND_SOC_NOPM, 0, 0,
++SND_SOC_DAPM_MUX("Left Mic Select Source", SND_SOC_NOPM, 0, 0,
++	&wm9712_mic_src_controls),
++SND_SOC_DAPM_MUX("Right Mic Select Source", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_mic_src_controls),
+ SND_SOC_DAPM_MUX("Differential Source", SND_SOC_NOPM, 0, 0,
+ 	&wm9712_diff_sel_controls),
+@@ -319,6 +321,7 @@ SND_SOC_DAPM_PGA("Out 3 PGA", AC97_INT_P
+ SND_SOC_DAPM_PGA("Line PGA", AC97_INT_PAGING, 2, 1, NULL, 0),
+ SND_SOC_DAPM_PGA("Phone PGA", AC97_INT_PAGING, 1, 1, NULL, 0),
+ SND_SOC_DAPM_PGA("Mic PGA", AC97_INT_PAGING, 0, 1, NULL, 0),
++SND_SOC_DAPM_PGA("Differential Mic", SND_SOC_NOPM, 0, 0, NULL, 0),
+ SND_SOC_DAPM_MICBIAS("Mic Bias", AC97_INT_PAGING, 10, 1),
+ SND_SOC_DAPM_OUTPUT("MONOOUT"),
+ SND_SOC_DAPM_OUTPUT("HPOUTL"),
+@@ -379,6 +382,18 @@ static const struct snd_soc_dapm_route w
+ 	{"Mic PGA", NULL, "MIC1"},
+ 	{"Mic PGA", NULL, "MIC2"},
+ 
++	/* microphones */
++	{"Differential Mic", NULL, "MIC1"},
++	{"Differential Mic", NULL, "MIC2"},
++	{"Left Mic Select Source", "Mic 1", "MIC1"},
++	{"Left Mic Select Source", "Mic 2", "MIC2"},
++	{"Left Mic Select Source", "Stereo", "MIC1"},
++	{"Left Mic Select Source", "Differential", "Differential Mic"},
++	{"Right Mic Select Source", "Mic 1", "MIC1"},
++	{"Right Mic Select Source", "Mic 2", "MIC2"},
++	{"Right Mic Select Source", "Stereo", "MIC2"},
++	{"Right Mic Select Source", "Differential", "Differential Mic"},
++
+ 	/* left capture selector */
+ 	{"Left Capture Select", "Mic", "MIC1"},
+ 	{"Left Capture Select", "Speaker Mixer", "Speaker Mixer"},
 
-Thanks!
-Andrea
+
