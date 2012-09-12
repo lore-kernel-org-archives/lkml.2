@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab2ILXih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:38:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932656Ab2ILXif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:38:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633Ab2ILXi0 (ORCPT
+	with ESMTP id S932620Ab2ILXia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:38:26 -0400
+	Wed, 12 Sep 2012 19:38:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Christop Fritz <chf.fritz@googlemail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 15/85] ASoC: wm9712: Fix microphone source selection
-Date: Wed, 12 Sep 2012 16:35:58 -0700
-Message-Id: <20120912233543.329329526@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 06/85] ARM: 7488/1: mm: use 5 bits for swapfile type encoding
+Date: Wed, 12 Sep 2012 16:35:49 -0700
+Message-Id: <20120912233542.399235646@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -29,73 +30,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit ccf795847a38235ee4a56a24129ce75147d6ba8f upstream.
+commit f5f2025ef3e2cdb593707cbf87378761f17befbe upstream.
 
-Currently the microphone input source is not selectable as while there is
-a DAPM widget it's not connected to anything so it won't be properly
-instantiated. Add something more correct for the input structure to get
-things going, even though it's not hooked into the rest of the routing
-map and so won't actually achieve anything except allowing the relevant
-register bits to be written.
+Page migration encodes the pfn in the offset field of a swp_entry_t.
+For LPAE, we support physical addresses of up to 36 bits (due to
+sparsemem limitations with the size of page flags), requiring 24 bits
+to represent a pfn. A further 3 bits are used to encode a swp_entry into
+a pte, leaving 5 bits for the type field. Furthermore, the core code
+defines MAX_SWAPFILES_SHIFT as 5, so the additional type bit does not
+get used.
 
-Reported-by: Christop Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This patch reduces the width of the type field to 5 bits, allowing us
+to create up to 31 swapfiles of 64GB each.
+
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm9712.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/pgtable.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/wm9712.c
-+++ b/sound/soc/codecs/wm9712.c
-@@ -272,7 +272,7 @@ SOC_DAPM_ENUM("Route", wm9712_enum[9]);
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -253,13 +253,13 @@ static inline pte_t pte_modify(pte_t pte
+  *
+  *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+  *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+- *   <--------------- offset --------------------> <- type --> 0 0 0
++ *   <--------------- offset ----------------------> < type -> 0 0 0
+  *
+- * This gives us up to 63 swap files and 32GB per swap file.  Note that
++ * This gives us up to 31 swap files and 64GB per swap file.  Note that
+  * the offset field is always non-zero.
+  */
+ #define __SWP_TYPE_SHIFT	3
+-#define __SWP_TYPE_BITS		6
++#define __SWP_TYPE_BITS		5
+ #define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
+ #define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
  
- /* Mic select */
- static const struct snd_kcontrol_new wm9712_mic_src_controls =
--SOC_DAPM_ENUM("Route", wm9712_enum[7]);
-+SOC_DAPM_ENUM("Mic Source Select", wm9712_enum[7]);
- 
- /* diff select */
- static const struct snd_kcontrol_new wm9712_diff_sel_controls =
-@@ -291,7 +291,9 @@ SND_SOC_DAPM_MUX("Left Capture Select",
- 	&wm9712_capture_selectl_controls),
- SND_SOC_DAPM_MUX("Right Capture Select", SND_SOC_NOPM, 0, 0,
- 	&wm9712_capture_selectr_controls),
--SND_SOC_DAPM_MUX("Mic Select Source", SND_SOC_NOPM, 0, 0,
-+SND_SOC_DAPM_MUX("Left Mic Select Source", SND_SOC_NOPM, 0, 0,
-+	&wm9712_mic_src_controls),
-+SND_SOC_DAPM_MUX("Right Mic Select Source", SND_SOC_NOPM, 0, 0,
- 	&wm9712_mic_src_controls),
- SND_SOC_DAPM_MUX("Differential Source", SND_SOC_NOPM, 0, 0,
- 	&wm9712_diff_sel_controls),
-@@ -319,6 +321,7 @@ SND_SOC_DAPM_PGA("Out 3 PGA", AC97_INT_P
- SND_SOC_DAPM_PGA("Line PGA", AC97_INT_PAGING, 2, 1, NULL, 0),
- SND_SOC_DAPM_PGA("Phone PGA", AC97_INT_PAGING, 1, 1, NULL, 0),
- SND_SOC_DAPM_PGA("Mic PGA", AC97_INT_PAGING, 0, 1, NULL, 0),
-+SND_SOC_DAPM_PGA("Differential Mic", SND_SOC_NOPM, 0, 0, NULL, 0),
- SND_SOC_DAPM_MICBIAS("Mic Bias", AC97_INT_PAGING, 10, 1),
- SND_SOC_DAPM_OUTPUT("MONOOUT"),
- SND_SOC_DAPM_OUTPUT("HPOUTL"),
-@@ -379,6 +382,18 @@ static const struct snd_soc_dapm_route w
- 	{"Mic PGA", NULL, "MIC1"},
- 	{"Mic PGA", NULL, "MIC2"},
- 
-+	/* microphones */
-+	{"Differential Mic", NULL, "MIC1"},
-+	{"Differential Mic", NULL, "MIC2"},
-+	{"Left Mic Select Source", "Mic 1", "MIC1"},
-+	{"Left Mic Select Source", "Mic 2", "MIC2"},
-+	{"Left Mic Select Source", "Stereo", "MIC1"},
-+	{"Left Mic Select Source", "Differential", "Differential Mic"},
-+	{"Right Mic Select Source", "Mic 1", "MIC1"},
-+	{"Right Mic Select Source", "Mic 2", "MIC2"},
-+	{"Right Mic Select Source", "Stereo", "MIC2"},
-+	{"Right Mic Select Source", "Differential", "Differential Mic"},
-+
- 	/* left capture selector */
- 	{"Left Capture Select", "Mic", "MIC1"},
- 	{"Left Capture Select", "Speaker Mixer", "Speaker Mixer"},
 
 
