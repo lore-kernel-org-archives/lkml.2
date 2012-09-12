@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760362Ab2ILQ0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 12:26:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37917 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2ILQ0T (ORCPT
+	id S1760409Ab2ILQ04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 12:26:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56314 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758845Ab2ILQ0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:26:19 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marc Dietrich <marvin24@gmx.de>
-Subject: [PATCH] staging: nvec: adjust for mfd_add_devices() API change
-Date: Wed, 12 Sep 2012 10:26:00 -0600
-Message-Id: <1347467160-22724-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Wed, 12 Sep 2012 12:26:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="233503953"
+Date: Wed, 12 Sep 2012 09:26:52 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 06/13] ARM: SoC: convert MSM SMP to SoC descriptor
+Message-ID: <20120912162651.GA22904@codeaurora.org>
+References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
+ <1347461906-13527-7-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347461906-13527-7-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, Sep 12, 2012 at 04:58:19PM +0200, Arnd Bergmann wrote:
+> From: Marc Zyngier <marc.zyngier@arm.com>
+> 
+> Convert MSM SMP platforms to use the SoC descriptor to provide
+> their SMP and CPU hotplug operations.
+> 
+> Cc: David Brown <davidb@codeaurora.org>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/mach-msm/board-msm8960.c |    3 +++
+>  arch/arm/mach-msm/board-msm8x60.c |    7 +++++++
 
-Commit 6607bad "mfd: core: Push irqdomain mapping out into devices"
-added a new parameter to mfd_add_devices(), but missed updating the
-nvec driver in staging.
+Stephen Boyd recently sent out a patch series that remove the non-DT
+support for these two targets, which naturally generates a bunch of
+conflicts.
 
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marc Dietrich <marvin24@gmx.de>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
---
-Samuel, I wonder if this patch should be squashed into the commit mentioned
-above in the MFD tree?
----
- drivers/staging/nvec/nvec.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I'm about to send out a pull request including these changes, and
+after that, I'll rework this patch for the new board files, and give
+it a try.
 
-diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-index b0972d0..24d8eeb 100644
---- a/drivers/staging/nvec/nvec.c
-+++ b/drivers/staging/nvec/nvec.c
-@@ -837,7 +837,7 @@ static int __devinit tegra_nvec_probe(struct platform_device *pdev)
- 	}
- 
- 	ret = mfd_add_devices(nvec->dev, -1, nvec_devices,
--			      ARRAY_SIZE(nvec_devices), base, 0);
-+			      ARRAY_SIZE(nvec_devices), base, 0, NULL);
- 	if (ret)
- 		dev_err(nvec->dev, "error adding subdevices\n");
- 
+David Brown
+
 -- 
-1.7.0.4
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
