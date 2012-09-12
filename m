@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab2ILXkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:40:12 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
+	id S1756793Ab2ILXkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:40:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878Ab2ILXkF (ORCPT
+	with ESMTP id S932892Ab2ILXkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:40:05 -0400
+	Wed, 12 Sep 2012 19:40:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Michael Tokarev <mjt@tls.msk.ru>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 41/85] svcrpc: fix svc_xprt_enqueue/svc_recv busy-looping
-Date: Wed, 12 Sep 2012 16:36:24 -0700
-Message-Id: <20120912233546.065553076@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Roel van Meer <roel.vanmeer@bokxing.nl>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 43/85] cciss: fix incorrect scsi status reporting
+Date: Wed, 12 Sep 2012 16:36:26 -0700
+Message-Id: <20120912233546.265208148@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912233541.747973832@linuxfoundation.org>
 References: <20120912233541.747973832@linuxfoundation.org>
@@ -28,71 +31,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit d10f27a750312ed5638c876e4bd6aa83664cccd8 upstream.
+commit b0cf0b118c90477d1a6811f2cd2307f6a5578362 upstream.
 
-The rpc server tries to ensure that there will be room to send a reply
-before it receives a request.
+Delete code which sets SCSI status incorrectly as it's already been set
+correctly above this incorrect code.  The bug was introduced in 2009 by
+commit b0e15f6db111 ("cciss: fix typo that causes scsi status to be
+lost.")
 
-It does this by tracking, in xpt_reserved, an upper bound on the total
-size of the replies that is has already committed to for the socket.
-
-Currently it is adding in the estimate for a new reply *before* it
-checks whether there is space available.  If it finds that there is not
-space, it then subtracts the estimate back out.
-
-This may lead the subsequent svc_xprt_enqueue to decide that there is
-space after all.
-
-The results is a svc_recv() that will repeatedly return -EAGAIN, causing
-server threads to loop without doing any actual work.
-
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Reported-by: Roel van Meer <roel.vanmeer@bokxing.nl>
+Tested-by: Roel van Meer <roel.vanmeer@bokxing.nl>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc_xprt.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/block/cciss_scsi.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -316,7 +316,6 @@ static bool svc_xprt_has_something_to_do
-  */
- void svc_xprt_enqueue(struct svc_xprt *xprt)
- {
--	struct svc_serv	*serv = xprt->xpt_server;
- 	struct svc_pool *pool;
- 	struct svc_rqst	*rqstp;
- 	int cpu;
-@@ -362,8 +361,6 @@ void svc_xprt_enqueue(struct svc_xprt *x
- 				rqstp, rqstp->rq_xprt);
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 		pool->sp_stats.threads_woken++;
- 		wake_up(&rqstp->rq_wait);
- 	} else {
-@@ -643,8 +640,6 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 	if (xprt) {
- 		rqstp->rq_xprt = xprt;
- 		svc_xprt_get(xprt);
--		rqstp->rq_reserved = serv->sv_max_mesg;
--		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 
- 		/* As there is a shortage of threads and this request
- 		 * had to be queued, don't allow the thread to wait so
-@@ -741,6 +736,8 @@ int svc_recv(struct svc_rqst *rqstp, lon
- 		else
- 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
- 		dprintk("svc: got len=%d\n", len);
-+		rqstp->rq_reserved = serv->sv_max_mesg;
-+		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 	}
- 	svc_xprt_received(xprt);
- 
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -763,16 +763,7 @@ static void complete_scsi_command(Comman
+ 		{
+ 			case CMD_TARGET_STATUS:
+ 				/* Pass it up to the upper layers... */
+-				if( ei->ScsiStatus)
+-                		{
+-#if 0
+-                    			printk(KERN_WARNING "cciss: cmd %p "
+-						"has SCSI Status = %x\n",
+-						c, ei->ScsiStatus);
+-#endif
+-					cmd->result |= (ei->ScsiStatus << 1);
+-                		}
+-				else {  /* scsi status is zero??? How??? */
++				if (!ei->ScsiStatus) {
+ 					
+ 	/* Ordinarily, this case should never happen, but there is a bug
+ 	   in some released firmware revisions that allows it to happen
 
 
