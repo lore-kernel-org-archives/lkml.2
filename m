@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450Ab2ILBQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 21:16:59 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40804 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab2ILBQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Sep 2012 21:16:57 -0400
-Date: Wed, 12 Sep 2012 02:16:54 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Meredydd Luff <meredydd@senatehouse.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH signal#execve2] syscalls,x86: Add execveat() system call
- (v3)
-Message-ID: <20120912011654.GQ13973@ZenIV.linux.org.uk>
-References: <1347411352-12392-1-git-send-email-meredydd@senatehouse.org>
+	id S1758804Ab2ILBTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 21:19:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53584 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756504Ab2ILBTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Sep 2012 21:19:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,407,1344236400"; 
+   d="scan'208";a="220972137"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Andy Whitcroft <apw@canonical.com>, David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: RE: [PATCH] checkpatch: Check networking specific block comment
+ style
+Thread-Topic: [PATCH] checkpatch: Check networking specific block comment
+ style
+Thread-Index: AQHNkIBUJ3iozheCikaYIDc4eKJJG5eF4vlA
+Date: Wed, 12 Sep 2012 01:19:51 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A1842EB021D9@ORSMSX102.amr.corp.intel.com>
+References: <1347410853.2456.7.camel@joe2Laptop>
+In-Reply-To: <1347410853.2456.7.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347411352-12392-1-git-send-email-meredydd@senatehouse.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8C1JwWq026855
 
-On Wed, Sep 12, 2012 at 01:55:52AM +0100, Meredydd Luff wrote:
-> Al (in particular): I've reworked this on top of your generic
-> execve() changes, as well as incorporating feedback from HPA.
-> Could you take another look please (and merge if all is well)?
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-
+> owner@vger.kernel.org] On Behalf Of Joe Perches
+> Sent: Tuesday, September 11, 2012 5:48 PM
+> To: Andrew Morton
+> Cc: Andy Whitcroft; David Miller; LKML; netdev
+> Subject: [PATCH] checkpatch: Check networking specific block comment
+> style
 > 
-> [v3: now rebased onto signal.git#execve2, and takes a flags
-> parameter which understands AT_SYMLINK_NOFOLLOW; all thanks to
-> feedback from https://lkml.org/lkml/2012/8/1/418]
+> In an effort to get fewer checkpatch reviewer corrections,
+> add a networking specific style test for the preferred
+> networking comment style.
 > 
-> HPA is already on record calling for an execveat() which also does
-> fexecve()'s job: https://lkml.org/lkml/2006/7/11/556.
-> And the current glibc hack for fexecve() is already causing problems
-> in the wild. Eg: https://bugzilla.redhat.com/show_bug.cgi?id=241609,
-> https://lkml.org/lkml/2006/12/27/123, and as recounted at
-> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043.
+> 	/* The preferred style for block comments in
+> 	 * drivers/net/... and net/... is like this
+> 	 */
+> 
+> These tests are only used in net/ and drivers/net/
+> 
+> Tested with:
+> 
+> $ cat drivers/net/t.c
+> 
+> /* foo */
+> 
+> /*
+>  * foo
+>  */
+> 
+> /* foo
+>  */
+> 
+> /* foo
+>  * bar */
+> $ ./scripts/checkpatch.pl -f drivers/net/t.c
+> WARNING: networking block comments don't use an empty /* line, use /* Comment...
 
-Please, declare open_execat(), leaving open_exec() as it is (i.e. a
-trivial wrapper for open_execat()).  Would cut down on the patch
-footprint a bit...
+This conflicts with the preferred style for long (multi-line) comments documented in
+./Documentation/CodingStyle.  If this is the way comments should be done in the
+networking code this patch should also include an update to Chapter 8 in CodingStyle
+documenting the networking specific style to avoid confusion.
 
-> +	bprm->filename = filename ?:
-> +			(const char *) file->f_path.dentry->d_name.name;
 
-Absolutely not.  If nothing else, ->d_name can change on rename() *and*
-get underlying memory freed.  At zero notice.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
