@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2ILIuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 04:50:19 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:41748 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751865Ab2ILIuO (ORCPT
+	id S1753026Ab2ILIwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 04:52:02 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41815 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab2ILIv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 04:50:14 -0400
+	Wed, 12 Sep 2012 04:51:59 -0400
+Message-ID: <50504CF1.70605@huawei.com>
+Date: Wed, 12 Sep 2012 16:50:57 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <1346764151-21323-1-git-send-email-gururaja.hebbar@ti.com>
-References: <1346764151-21323-1-git-send-email-gururaja.hebbar@ti.com>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Wed, 12 Sep 2012 14:19:51 +0530
-Message-ID: <CANfBPZ-Wb7HE45DTmwsMt-hpJRUevjbjm9-aCR61B4JFULb8Mw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: omap_hsmmc: Enable HSPE bit for high speed cards
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, cjb@laptop.org, nsekhar@ti.com,
-        sudhakar.raj@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH v1 02/22] PCI: trivial cleanups for drivers/pci/remove.c
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com> <1344355862-2726-3-git-send-email-jiang.liu@huawei.com> <CAErSpo7oXFGARWS+M=_7_R_4Hw6j5pufRbaNKtwTr5BT-_xeAA@mail.gmail.com>
+In-Reply-To: <CAErSpo7oXFGARWS+M=_7_R_4Hw6j5pufRbaNKtwTr5BT-_xeAA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 4, 2012 at 6:39 PM, Hebbar, Gururaja <gururaja.hebbar@ti.com> wrote:
-> HSMMC IP on AM33xx need a special setting to handle High-speed cards.
-> Other platforms like TI81xx, OMAP4 may need this as-well. This depends
-> on the HSMMC IP timing closure done for the high speed cards.
->
-> From AM335x TRM (SPRUH73F - 18.3.12 Output Signals Generation)
->
-> The MMC/SD/SDIO output signals can be driven on either falling edge or
-> rising edge depending on the SD_HCTL[2] HSPE bit. This feature allows
-> to reach better timing performance, and thus to increase data transfer
-> frequency.
->
-> There are few pre-requisites for enabling the HSPE bit
-> - Controller should support High-Speed-Enable Bit and
-> - Controller should not be using DDR Mode and
-> - Controller should advertise that it supports High Speed in
->   capabilities register and
-> - MMC/SD clock coming out of controller > 25MHz
->
+On 2012-9-12 6:03, Bjorn Helgaas wrote:
+> On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> Trivial cleanups for drivers/pci/remove.c:
+>> 1) move the comment for pci_stop_and_remove_bus_device() to the right place
+>> 2) rename __pci_remove_behind_bridge() to pci_remove_behind_bridge()
+> 
+> This seems fine, but I think my pci/bjorn-cleanup-remove branch subsumes it.
+Hi Bjorn,
+	I have rebased my latest patchset to your pci-next branch, so this
+patch has been dropped.
 
-The patch is well written. But then, I don't see a need for a DT
-binding for this feature.
-By definition, HS implies 25MHz or above, so that check seems to be
-redundant as well.
-Meanwhile, I'll check with HSPE enabled on OMAP.
+> 
+>> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>> ---
+>>  drivers/pci/remove.c |   33 +++++++++++++++++----------------
+>>  1 file changed, 17 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+>> index 04a4861..33b6318 100644
+>> --- a/drivers/pci/remove.c
+>> +++ b/drivers/pci/remove.c
+>> @@ -78,25 +78,14 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+>>  }
+>>  EXPORT_SYMBOL(pci_remove_bus);
+>>
+>> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
+>> -/**
+>> - * pci_stop_and_remove_bus_device - remove a PCI device and any children
+>> - * @dev: the device to remove
+>> - *
+>> - * Remove a PCI device from the device lists, informing the drivers
+>> - * that the device has been removed.  We also remove any subordinate
+>> - * buses and children in a depth-first manner.
+>> - *
+>> - * For each device we remove, delete the device structure from the
+>> - * device lists, remove the /proc entry, and notify userspace
+>> - * (/sbin/hotplug).
+>> - */
+>> +static void pci_remove_behind_bridge(struct pci_dev *dev);
+>> +
+>>  void __pci_remove_bus_device(struct pci_dev *dev)
+>>  {
+>>         if (dev->subordinate) {
+>>                 struct pci_bus *b = dev->subordinate;
+>>
+>> -               __pci_remove_behind_bridge(dev);
+>> +               pci_remove_behind_bridge(dev);
+>>                 pci_remove_bus(b);
+>>                 dev->subordinate = NULL;
+>>         }
+>> @@ -105,13 +94,25 @@ void __pci_remove_bus_device(struct pci_dev *dev)
+>>  }
+>>  EXPORT_SYMBOL(__pci_remove_bus_device);
+>>
+>> +/**
+>> + * pci_stop_and_remove_bus_device - remove a PCI device and any children
+>> + * @dev: the device to remove
+>> + *
+>> + * Remove a PCI device from the device lists, informing the drivers
+>> + * that the device has been removed.  We also remove any subordinate
+>> + * buses and children in a depth-first manner.
+>> + *
+>> + * For each device we remove, delete the device structure from the
+>> + * device lists, remove the /proc entry, and notify userspace
+>> + * (/sbin/hotplug).
+>> + */
+>>  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>>  {
+>>         pci_stop_bus_device(dev);
+>>         __pci_remove_bus_device(dev);
+>>  }
+>>
+>> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
+>> +static void pci_remove_behind_bridge(struct pci_dev *dev)
+>>  {
+>>         struct list_head *l, *n;
+>>
+>> @@ -141,7 +142,7 @@ static void pci_stop_behind_bridge(struct pci_dev *dev)
+>>  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
+>>  {
+>>         pci_stop_behind_bridge(dev);
+>> -       __pci_remove_behind_bridge(dev);
+>> +       pci_remove_behind_bridge(dev);
+>>  }
+>>
+>>  static void pci_stop_bus_devices(struct pci_bus *bus)
+>> --
+>> 1.7.9.5
+>>
+> 
+> .
+> 
 
-Regards,
-Venkat.
+
