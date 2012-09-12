@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab2ILXgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 19:36:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
+	id S932370Ab2ILXg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 19:36:59 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49817 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755Ab2ILXgm (ORCPT
+	with ESMTP id S1756741Ab2ILXgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:36:42 -0400
+	Wed, 12 Sep 2012 19:36:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Ren, Yongjie" <yongjie.ren@intel.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 104/108] xen/pciback: Fix proper FLR steps.
-Date: Wed, 12 Sep 2012 16:29:42 -0700
-Message-Id: <20120912232501.404255572@linuxfoundation.org>
+Subject: [ 103/108] xen/p2m: Fix one-off error in checking the P2M tree directory.
+Date: Wed, 12 Sep 2012 16:29:41 -0700
+Message-Id: <20120912232501.303947548@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
 References: <20120912232816.GA1655@kroah.com>
@@ -32,61 +31,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 80ba77dfbce85f2d1be54847de3c866de1b18a9a upstream.
+commit 50e900417b8096939d12a46848f965e27a905e36 upstream.
 
-When we do FLR and save PCI config we did it in the wrong order.
-The end result was that if a PCI device was unbind from
-its driver, then binded to xen-pciback, and then back to its
-driver we would get:
+We would traverse the full P2M top directory (from 0->MAX_DOMAIN_PAGES
+inclusive) when trying to figure out whether we can re-use some of the
+P2M middle leafs.
 
-> lspci -s 04:00.0
-04:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network Connection
-13:42:12 # 4 :~/
-> echo "0000:04:00.0" > /sys/bus/pci/drivers/pciback/unbind
-> modprobe e1000e
-e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
-e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-e1000e 0000:04:00.0: Disabling ASPM L0s L1
-e1000e 0000:04:00.0: enabling device (0000 -> 0002)
-xen: registering gsi 48 triggering 0 polarity 1
-Already setup the GSI :48
-e1000e 0000:04:00.0: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
-e1000e: probe of 0000:04:00.0 failed with error -2
+Which meant that if the kernel was compiled with MAX_DOMAIN_PAGES=512
+we would try to use the 512th entry. Fortunately for us the p2m_top_index
+has a check for this:
 
-This fixes it by first saving the PCI configuration space, then
-doing the FLR.
+ BUG_ON(pfn >= MAX_P2M_PFN);
 
-Reported-by: Ren, Yongjie <yongjie.ren@intel.com>
-Reported-and-Tested-by: Tobias Geiger <tobias.geiger@vido.info>
+which we hit and saw this:
+
+(XEN) domain_crash_sync called from entry.S
+(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
+(XEN) ----[ Xen-4.1.2-OVM  x86_64  debug=n  Tainted:    C ]----
+(XEN) CPU:    0
+(XEN) RIP:    e033:[<ffffffff819cadeb>]
+(XEN) RFLAGS: 0000000000000212   EM: 1   CONTEXT: pv guest
+(XEN) rax: ffffffff81db5000   rbx: ffffffff81db4000   rcx: 0000000000000000
+(XEN) rdx: 0000000000480211   rsi: 0000000000000000   rdi: ffffffff81db4000
+(XEN) rbp: ffffffff81793db8   rsp: ffffffff81793d38   r8:  0000000008000000
+(XEN) r9:  4000000000000000   r10: 0000000000000000   r11: ffffffff81db7000
+(XEN) r12: 0000000000000ff8   r13: ffffffff81df1ff8   r14: ffffffff81db6000
+(XEN) r15: 0000000000000ff8   cr0: 000000008005003b   cr4: 00000000000026f0
+(XEN) cr3: 0000000661795000   cr2: 0000000000000000
+
+Fixes-Oracle-Bug: 14570662
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/xen-pciback/pci_stub.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/xen/p2m.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -353,16 +353,16 @@ static int __devinit pcistub_init_device
- 	if (err)
- 		goto config_release;
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -599,7 +599,7 @@ bool __init early_can_reuse_p2m_middle(u
+ 	if (p2m_index(set_pfn))
+ 		return false;
  
--	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
--	__pci_reset_function_locked(dev);
--
- 	/* We need the device active to save the state. */
- 	dev_dbg(&dev->dev, "save state of device\n");
- 	pci_save_state(dev);
- 	dev_data->pci_saved_state = pci_store_saved_state(dev);
- 	if (!dev_data->pci_saved_state)
- 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
--
-+	else {
-+		dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
-+		__pci_reset_function_locked(dev);
-+	}
- 	/* Now disable the device (this also ensures some private device
- 	 * data is setup before we export)
- 	 */
+-	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
++	for (pfn = 0; pfn < MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
+ 		topidx = p2m_top_index(pfn);
+ 
+ 		if (!p2m_top[topidx])
 
 
