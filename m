@@ -1,130 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2ILAuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Sep 2012 20:50:05 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:59351 "EHLO e2.ny.us.ibm.com"
+	id S1756296Ab2ILAuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Sep 2012 20:50:02 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:51688 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab2ILAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754809Ab2ILAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Sep 2012 20:50:00 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Prarit Bhargava <prarit@redhat.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] 3.0.y: time: Move ktime_t overflow checking into timespec_valid_strict
-Date: Tue, 11 Sep 2012 20:49:53 -0400
-Message-Id: <1347410993-19004-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/3] 3.0-stable timekeeping fixes merged in 3.6
+Date: Tue, 11 Sep 2012 20:49:50 -0400
+Message-Id: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
-References: <1347410993-19004-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091200-5112-0000-0000-00000C337B86
+x-cbid: 12091200-5930-0000-0000-00000BF2CA49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a -stable backport of cee58483cf56e0ba355fdd97ff5e8925329aa936
+Just wanted to send out a few timekeeping fixes that were merged
+in 3.6 which are appropriate for -stable.
 
-Andreas Bombe reported that the added ktime_t overflow checking added to
-timespec_valid in commit 4e8b14526ca7 ("time: Improve sanity checking of
-timekeeping inputs") was causing problems with X.org because it caused
-timeouts larger then KTIME_T to be invalid.
+This queue backports the following fixes:
+-----------------------------------------
+cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
+bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
+4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
 
-Previously, these large timeouts would be clamped to KTIME_MAX and would
-never expire, which is valid.
+I've run these through my timetest suite w/ kvm on both i386
+& x86_64. But more testing would be of course appreciated.
+	https://github.com/johnstultz-work/timetests
 
-This patch splits the ktime_t overflow checking into a new
-timespec_valid_strict function, and converts the timekeeping codes
-internal checking to use this more strict function.
+I also have patch queues for all the -stable trees that I'll be
+sending out as my testing completes for those trees.
 
-Reported-and-tested-by: Andreas Bombe <aeb@debian.org>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/time.h      |    7 +++++++
- kernel/time/timekeeping.c |   14 ++++++++++----
- 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index c8f7233..8c0216e 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -125,6 +125,13 @@ static inline bool timespec_valid(const struct timespec *ts)
- 	/* Can't have more nanoseconds then a second */
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return false;
-+	return true;
-+}
-+
-+static inline bool timespec_valid_strict(const struct timespec *ts)
-+{
-+	if (!timespec_valid(ts))
-+		return false;
- 	/* Disallow values that could overflow ktime_t */
- 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
- 		return false;
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 3bbaf2d0..c3cbd8c 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespec *tv)
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if (!timespec_valid(tv))
-+	if (!timespec_valid_strict(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
-@@ -428,7 +428,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	timekeeping_forward_now();
- 
- 	tmp = timespec_add(xtime,  *ts);
--	if (!timespec_valid(&tmp)) {
-+	if (!timespec_valid_strict(&tmp)) {
- 		ret = -EINVAL;
- 		goto error;
- 	}
-@@ -591,7 +591,7 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
--	if (!timespec_valid(&now)) {
-+	if (!timespec_valid_strict(&now)) {
- 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
- 			"         Check your CMOS/BIOS settings.\n");
- 		now.tv_sec = 0;
-@@ -599,7 +599,7 @@ void __init timekeeping_init(void)
- 	}
- 
- 	read_boot_clock(&boot);
--	if (!timespec_valid(&boot)) {
-+	if (!timespec_valid_strict(&boot)) {
- 		pr_warn("WARNING: Boot clock returned invalid value!\n"
- 			"         Check your CMOS/BIOS settings.\n");
- 		boot.tv_sec = 0;
-@@ -649,6 +649,12 @@ static void update_sleep_time(struct timespec t)
-  */
- static void __timekeeping_inject_sleeptime(struct timespec *delta)
- {
-+	if (!timespec_valid_strict(delta)) {
-+		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
-+					"sleep delta value!\n");
-+		return;
-+	}
-+
- 	xtime = timespec_add(xtime, *delta);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
- 	update_sleep_time(timespec_add(total_sleep_time, *delta));
+John Stultz (3):
+  3.0.y: time: Improve sanity checking of timekeeping inputs
+  3.0.y: time: Avoid making adjustments if we haven't accumulated
+    anything
+  3.0.y: time: Move ktime_t overflow checking into
+    timespec_valid_strict
+
+ include/linux/ktime.h     |    7 -------
+ include/linux/time.h      |   29 +++++++++++++++++++++++++++--
+ kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++++++--
+ 3 files changed, 61 insertions(+), 11 deletions(-)
+
 -- 
 1.7.9.5
 
