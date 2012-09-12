@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760846Ab2ILRNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 13:13:41 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:54548 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760524Ab2ILQ73 (ORCPT
+	id S1760556Ab2ILRQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 13:16:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60082 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab2ILRQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 12:59:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6832"; a="235815643"
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH 10/24] ARM: msm: Fix sparse warnings due to incorrect type
-Date: Wed, 12 Sep 2012 09:58:46 -0700
-Message-Id: <1347469140-25069-11-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
-References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
+	Wed, 12 Sep 2012 13:16:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Pihet-XID, Jean" <j-pihet@ti.com>
+Subject: Re: [PATCH 13/16] ARM: omap: move platform_data definitions
+Date: Wed, 12 Sep 2012 17:15:57 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Ohad Ben-Cohen" <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        J Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de> <1347368390-31252-13-git-send-email-arnd@arndb.de> <CAN5iSWqnyA0VNDkaCb7bcZOhQxOxJ8xUy4RXWgt+xukSUmHnAA@mail.gmail.com>
+In-Reply-To: <CAN5iSWqnyA0VNDkaCb7bcZOhQxOxJ8xUy4RXWgt+xukSUmHnAA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209121715.58621.arnd@arndb.de>
+X-Provags-ID: V02:K0:XpZjWNRiNo2JT19wq98r7Gvm+wSKZtH/PXRosSomuat
+ k8QGjjsYsYWR1iLld1hFJJW2tqxpIanD+quVjg/aEXBlOR6I+k
+ u5Iz7jD6slZCA/NBhZpP9AsZcmv7UpisotWzhHiMLWMHaix+Jw
+ YVan3FAZoks/XelC0a45dIrKDcEv4APS10hHSIFgIqKKkzj1e7
+ AEQRUR5VlbRW4MraMu8bktfMcwqMSdMmNpufm2j49kPuBWqM9A
+ eBGgc2/DCxQwKFU8SAMu/iYUZ0CSVG9hCiZoyaYCk275Jm/Arb
+ AKpZU0TmzpNAV1H8aRO4BkBLUyNylaKEXLp+iPLsZgCnWQRlPv
+ KwYT/uHWT8pOVcmzbvKU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+On Wednesday 12 September 2012, Pihet-XID, Jean wrote:
+> > diff --git a/arch/arm/plat-omap/include/plat/voltage.h b/include/linux/platform_data/smartreflex-omap.h
+> > similarity index 100%
+> > rename from arch/arm/plat-omap/include/plat/voltage.h
+> > rename to include/linux/platform_data/smartreflex-omap.h
+> The filename should be voltage-omap.h. The header file is for a
+> voltage layer which is used by other layers, one of them is the
+> smartreflex driver code (in drivers/power/avs).
+> The header file for the smartreflex driver is in
+> include/linux/power/smartreflex.h.
 
-arch/arm/mach-msm/timer.c:153:3: warning: incorrect type in initializer (different address spaces)
-arch/arm/mach-msm/timer.c:153:3:    expected void const [noderef] <asn:3>*__vpp_verify
-arch/arm/mach-msm/timer.c:153:3:    got struct clock_event_device [noderef] <asn:3>**<noident>
-arch/arm/mach-msm/timer.c:153:38: warning: incorrect type in assignment (different address spaces)
-arch/arm/mach-msm/timer.c:153:38:    expected struct clock_event_device [noderef] <asn:3>*<noident>
-arch/arm/mach-msm/timer.c:153:38:    got struct clock_event_device *evt
-arch/arm/mach-msm/timer.c:191:22: warning: incorrect type in assignment (different address spaces)
-arch/arm/mach-msm/timer.c:191:22:    expected struct clock_event_device [noderef] <asn:3>**static [toplevel] percpu_evt
-arch/arm/mach-msm/timer.c:191:22:    got struct clock_event_device *[noderef] <asn:3>*<noident>
-arch/arm/mach-msm/timer.c:196:4: warning: incorrect type in initializer (different address spaces)
-arch/arm/mach-msm/timer.c:196:4:    expected void const [noderef] <asn:3>*__vpp_verify
-arch/arm/mach-msm/timer.c:196:4:    got struct clock_event_device [noderef] <asn:3>**<noident>
-arch/arm/mach-msm/timer.c:196:39: warning: incorrect type in assignment (different address spaces)
-arch/arm/mach-msm/timer.c:196:39:    expected struct clock_event_device [noderef] <asn:3>*<noident>
-arch/arm/mach-msm/timer.c:196:39:    got struct clock_event_device *ce
-arch/arm/mach-msm/timer.c:198:24: warning: incorrect type in argument 4 (different address spaces)
-arch/arm/mach-msm/timer.c:198:24:    expected void [noderef] <asn:3>*percpu_dev_id
-arch/arm/mach-msm/timer.c:198:24:    got struct clock_event_device [noderef] <asn:3>**static [toplevel] percpu_evt
+Ok, makes sense. Changed now.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- arch/arm/mach-msm/timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 81280825..004f935 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -101,7 +101,7 @@ static struct clock_event_device msm_clockevent = {
- 
- static union {
- 	struct clock_event_device *evt;
--	struct clock_event_device __percpu **percpu_evt;
-+	struct clock_event_device * __percpu *percpu_evt;
- } msm_evt;
- 
- static void __iomem *source_base;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+	Arnd
