@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab2ILOOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 10:14:30 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61686 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759109Ab2ILONk (ORCPT
+	id S1759001Ab2ILOQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 10:16:19 -0400
+Received: from [205.233.59.134] ([205.233.59.134]:49022 "EHLO
+	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1757380Ab2ILOQR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 10:13:40 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com, robert.richter@amd.com
-Subject: [PATCH v2 1/3] hrtimer: add hrtimer_init_cpu()
-Date: Wed, 12 Sep 2012 16:13:13 +0200
-Message-Id: <1347459195-5491-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347459195-5491-1-git-send-email-eranian@google.com>
-References: <1347459195-5491-1-git-send-email-eranian@google.com>
+	Wed, 12 Sep 2012 10:16:17 -0400
+Message-ID: <1347458966.15764.29.camel@twins>
+Subject: Re: [PATCH tip/core/rcu 11/26] rcu: Exit RCU extended QS on user
+ preemption
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        sbw@mit.edu, patches@linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Date: Wed, 12 Sep 2012 16:09:26 +0200
+In-Reply-To: <20120912135420.GB17139@somewhere.redhat.com>
+References: <20120830210520.GA2824@linux.vnet.ibm.com>
+	 <1346360743-3628-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346360743-3628-11-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1346950959.18408.47.camel@twins> <1346951591.18408.48.camel@twins>
+	 <20120910202611.GB19268@somewhere> <1347442413.2124.70.camel@twins>
+	 <20120912120627.GA14705@somewhere> <1347453696.15764.24.camel@twins>
+	 <1347454360.15764.27.camel@twins>
+	 <20120912135420.GB17139@somewhere.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hrtimer_init() assumes it is called for the current CPU
-as it accesses per-cpu variables (hrtimer_bases).
+On Wed, 2012-09-12 at 15:54 +0200, Frederic Weisbecker wrote:
+> On Wed, Sep 12, 2012 at 02:52:40PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-09-12 at 14:41 +0200, Peter Zijlstra wrote:
+> > 
+> > > We could of course mandate that all remote wakeups to special nohz cpus
+> > > get queued. That would just leave us with RCU and it would simply not
+> > > send resched IPIs to extended quiescent CPUs anyway, right?
+> > > 
+> > > So at that point all return to user schedule() calls have nr_running > 1
+> > > and the tick is running and RCU is not in extended quiescent state.
+> > > Since either we had nr_running > 1 and pre and post state are the same,
+> > > or we had nr_running == 1 and we just got a fresh wakeup pushing it to
+> > > 2, the wakeup will have executed on our cpu and have re-started the tick
+> > > and kicked RCU into active gear again.
+> > > 
+> > > We cannot hit return to user schedule() with nr_running == 0, simply
+> > > because in that case there's no userspace to return to, only the idle
+> > > thread and that's very much not userspace :-)
+> > > 
+> > > Hmm ?
+> > 
+> > Crap.. this will screw over -rt, since the wakeups batch the IPI can
+> > take forever so we had to disable this.
+> 
+> I don't know that part of -rt. Probably we can deal with that later once
+> we have some upstream code in place?
 
-However, there can be cases where a hrtimer is initialized
-from a different CPU, so add an entry point to make this
-more explicit.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/hrtimer.h |    3 +++
- kernel/hrtimer.c        |   17 ++++++++++++-----
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index cc07d27..9d07e93 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -337,6 +337,9 @@ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- /* Initialize timers: */
- extern void hrtimer_init(struct hrtimer *timer, clockid_t which_clock,
- 			 enum hrtimer_mode mode);
-+extern void hrtimer_init_cpu(int cpu, struct hrtimer *timer,
-+			     clockid_t which_clock,
-+			     enum hrtimer_mode mode);
- 
- #ifdef CONFIG_DEBUG_OBJECTS_TIMERS
- extern void hrtimer_init_on_stack(struct hrtimer *timer, clockid_t which_clock,
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6db7a5e..cde7fc4 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -440,14 +440,14 @@ static inline void debug_hrtimer_free(struct hrtimer *timer)
- 	debug_object_free(timer, &hrtimer_debug_descr);
- }
- 
--static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
-+static void __hrtimer_init(int cpu, struct hrtimer *timer, clockid_t clock_id,
- 			   enum hrtimer_mode mode);
- 
- void hrtimer_init_on_stack(struct hrtimer *timer, clockid_t clock_id,
- 			   enum hrtimer_mode mode)
- {
- 	debug_object_init_on_stack(timer, &hrtimer_debug_descr);
--	__hrtimer_init(timer, clock_id, mode);
-+	__hrtimer_init(smp_processor_id(), timer, clock_id, mode);
- }
- EXPORT_SYMBOL_GPL(hrtimer_init_on_stack);
- 
-@@ -1146,7 +1146,7 @@ ktime_t hrtimer_get_next_event(void)
- }
- #endif
- 
--static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
-+static void __hrtimer_init(int cpu, struct hrtimer *timer, clockid_t clock_id,
- 			   enum hrtimer_mode mode)
- {
- 	struct hrtimer_cpu_base *cpu_base;
-@@ -1154,7 +1154,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
- 
- 	memset(timer, 0, sizeof(struct hrtimer));
- 
--	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
-+	cpu_base = &per_cpu(hrtimer_bases, cpu);
- 
- 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
- 		clock_id = CLOCK_MONOTONIC;
-@@ -1180,10 +1180,17 @@ void hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
- 		  enum hrtimer_mode mode)
- {
- 	debug_init(timer, clock_id, mode);
--	__hrtimer_init(timer, clock_id, mode);
-+	__hrtimer_init(smp_processor_id(), timer, clock_id, mode);
- }
- EXPORT_SYMBOL_GPL(hrtimer_init);
- 
-+void hrtimer_init_cpu(int cpu, struct hrtimer *timer, clockid_t clock_id,
-+		  enum hrtimer_mode mode)
-+{
-+	debug_init(timer, clock_id, mode);
-+	__hrtimer_init(cpu, timer, clock_id, mode);
-+}
-+
- /**
-  * hrtimer_get_res - get the timer resolution for a clock
-  * @which_clock: which clock to query
--- 
-1.7.5.4
-
+Yeah maybe.. its going to be hard though, anyway, I'm going to stare at
+wtf drm is doing for a bit :-)
