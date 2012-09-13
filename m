@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab2IMIdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:33:20 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38345 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab2IMIdN (ORCPT
+	id S1756935Ab2IMId1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:33:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62155 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab2IMIdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:33:13 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <87har6kmfx.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
-	<87oblc4u6f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
-	<871ui84l4l.fsf@devron.myhome.or.jp>
-	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
-	<20120912143227.GE3009@fieldses.org>
-	<87vcfjfa14.fsf@devron.myhome.or.jp>
-	<20120912171128.GG3009@fieldses.org>
-	<87r4q7f8fw.fsf@devron.myhome.or.jp>
-	<20120912174556.GH3009@fieldses.org>
-	<87ipbjf54f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
-Date: Thu, 13 Sep 2012 17:33:02 +0900
-In-Reply-To: <CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
-	(Namjae Jeon's message of "Thu, 13 Sep 2012 17:11:54 +0900")
-Message-ID: <87txv2cog1.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Thu, 13 Sep 2012 04:33:19 -0400
+Date: Thu, 13 Sep 2012 10:32:38 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Alex Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+Message-ID: <20120913083238.GB12259@avionic-0098.mockup.avionic-design.de>
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
+ <1464760.6eqxJ2IzZ2@percival>
+ <1347517377.7471.23.camel@lappyti>
+ <2689722.93BQTh4lSC@percival>
+ <1347519249.7471.42.camel@lappyti>
+ <20120913070012.GC6180@pengutronix.de>
+ <1347519807.7471.45.camel@lappyti>
+ <20120913072920.GA11459@avionic-0098.mockup.avionic-design.de>
+ <1347523218.3014.4.camel@deskari>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ftEhullJWpWg/VHq"
+Content-Disposition: inline
+In-Reply-To: <1347523218.3014.4.camel@deskari>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:VFKZo9Nr2kYEmYDejsFvvu/VPG8p+P2MPfXog99WXd/
+ AlHYwctM1Lk+kLLVYjR30EBOdLDEA9L3BtnzQrXlUo7DJLDcrG
+ QoY9CnxStqI6MCfEuemL38R+wAaOt2fWwY03RUobYetEUp47IL
+ uOITIzXlvOWKomf2fs+I1ZzB0TImztNRHhbicLS1QEoLMaqCYr
+ pf3SUCYhGZBa//nUlJBkO/J+D57gfeLpivHRa8jk5TpGANnQuk
+ GxaS5r+NVk/7dQs0Ka2KxRHQCOzxKwRofdy+zZUDxeAYEoA/3G
+ igv+3gUMWisp+QMjxGzQULDcGeGnecnpS+4BRdBcGrGVjW6Qym
+ uaoYZqsUIZ5DoqBYNjzWA6rm8X7xBu4Ab4YnE95q7qfk3qjMyZ
+ +d1bCbCmd+C5Je1kkpnyQiSy6Xo7XAQ3veb5y8FRFvY5jGE4sq
+ /g7AJ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
 
->> I see. So, client can't solve the ESTALE if inode cache was evicted,
->> right? (without application changes)
->
-> There can be situation where we may get not only ESTALE but EIO also.
->
-> For example,
-> -------------------------------
-> fd = open(“foo.txt”);
-> while (1) {
->        sleep(1);
->        write(fd..);
-> }
-> --------------------------------
->
-> Here “write” may fail when inode number of “foo.txt” is changed at
-> server due to cache eviction under memory pressure.
-> When we tried a similar test, we found that “write” is retuning “EIO”
-> instead of “ESTALE”
->
-> ---------------------------------------------------------------------------------------------------------
-> #> ./write_test_dbg bbb 1000 0
-> FILE : bbb, SIZE : 1048576000 , FSYNC : OFF , RECORD_SIZE = 4096
-> 106264 -rwxr-xr-x 1 root 0 0 Jan 1 00:14 bbb
-> write failed after 60080128 bytes:, errno = 5: Input/output error
-> ---------------------------------------------------------------------------------------------------------
->
->  As we get EIO instead of ESTALE, it may be difficult to decide when
-> "restart from LOOKUP” in such situation.
-> Also, as per Bruce opinion, we can not avoid ESTALE from inode number
-> change in rebooted server case.
-> In reboot case, it is worst as it may attempt to write in a different
-> file if NFS handle at NFS client match with inode number of some other
-> file at NFS server.
+--ftEhullJWpWg/VHq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I see.
+On Thu, Sep 13, 2012 at 11:00:18AM +0300, Tomi Valkeinen wrote:
+> Yes, I think the backlight and the panel should be considered separate
+> devices. Just like, say, a touch screen and a panel may happen to be in
+> the same display module, a backlight and a panel can be in the same
+> display module. They are still separate, independent things, although
+> they are, of course, used together.
 
->> Grepping around... Documentation/sysctl/vm.txt mentions a
->> vfs_cache_pressure parameter.
->> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
-> I am worrying if it could lead to OOM condition on embedded
-> system(short memory(DRAM) and support 3TB HDD disk of big size.)
->
-> Please let me know if any issues or queries.
+Still, as Alex mentioned, there may be some dependency between the panel
+and the backlight, so we may need to have some kind of connection. I
+haven't had much time to look at the panel subsystem, but perhaps it
+should provide for this.
 
-So, now I think stable inode number may be useful if there are users of
-it. And I guess those functionality is no collisions with -mm. And I
-suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
+I obviously don't know every panel and backlight combination out there,
+but isn't the dependency more of a usability nature. What I mean is that
+the panel will work even if you switch the backlight on immediately,
+just that the panel might take some time to properly display data and
+therefore the backlight should remain powered off so the user doesn't
+see garbage. Or are there really any functional dependencies?
 
-If nfs=1, works like current -mm without no limited operations.
-If nfs=2, try to make stable FH and limit some operations
+Thierry
 
-(option name doesn't matter here.)
+--ftEhullJWpWg/VHq
+Content-Type: application/pgp-signature
 
-Does this work fine?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQUZomAAoJEN0jrNd/PrOhoxkP/1NcMahOa2vJssXtRd00kKjt
+43a6kdaicffWOSgNh6grb8KYv1yc3obztLPrDXZK+mEYI4BZRw4HSR+xkoRHH1B7
+tYBbrnB7gwJV3aI1kEbF2O78SPIuk6OcdpMcF1G7vYV/W9aI04GTUMxbeARSppQI
+omA8Fsp6r0XtMYMeupBXRBAgrXB0UB7SESrB2ZRYCYK/Ok7+lZ/6A9Wfals7Cep7
+ZdGa0PsXBp9XqEKiG3xyW3Z1HEM2Xjq306OoxWjci8kyy3s2oIerAj2/d087fkWY
+brt/hTKIxPUYPRorYFgT5O+LyHhPQDr8GER11kqRRsaYrrV1aQ/DH/0n3dTtD3Ts
+TFume+Cu9gDLJ69yh6Iyohf5NqhQTmeERR8h8lwWfLZjhi7ksxl3wwEA1BorT2ly
+MQe8FRiJEvQLnneYjPlcIvjCGW1h+NpjmRdRAiS7XsRec3O/t+U71MxY/nNkxR/u
+aUXtvVBVklTOSzhqsU2H3BSYHw2F/Ngvu9TkqbBz/YRtzwSroVMJMeiU8DRGl0Hs
+gY6bogMqy9UT+WE4xtsVEm3h7K6tlBkNgX9ZVSr7OcJ1kzH2YtKQ32DI3MVXl4DJ
+xJvsMEeRgBuYFFtY35mG2zGx04nLdcUDoVoeNS2jmTfxW7dWHdIsGveyGU7ANWF6
+EFnBvzqsTwC2AaDlAJJz
+=M0St
+-----END PGP SIGNATURE-----
+
+--ftEhullJWpWg/VHq--
