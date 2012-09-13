@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab2IMBak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:30:40 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:2229 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751214Ab2IMBaj (ORCPT
+	id S1754840Ab2IMBbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:31:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49365 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab2IMBbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:30:39 -0400
-Message-ID: <50513733.8040801@blueyonder.co.uk>
-Date: Thu, 13 Sep 2012 02:30:27 +0100
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	Wed, 12 Sep 2012 21:31:38 -0400
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: AMD Bulldozer FX-8150 Powers off during kernel build
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Cloudmark-Analysis: v=1.1 cv=GaEGOwq9FwezmTggA+b6yC6zDZF2HYaK6RN/tSqdnVA= c=1 sm=0 a=beXUTUSmZ6sA:10 a=lFDGhQ1XsWEA:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=-xESdocTVQBKntGDdugA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+In-Reply-To: <87mx1iecwi.fsf@xmission.com>
+References: <87lih2h6i4.fsf@xmission.com>
+	<87mx1iecwi.fsf@xmission.com>
+Date: Thu, 13 Sep 2012 11:31:36 +1000
+Message-ID: <CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
+Subject: Re: [REVIEW][PATCH 12/15] userns: Convert drm to use kuid and kgid
+ and struct pid where appropriate
+From: Dave Airlie <airlied@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        David Miller <davem@davemloft.net>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a huge heatsink and large CPU fan plus lots of cooling fans in 
-the case and nothing gets hot.
-If I build e.g 3.6-rc5 with 8 or 6 cores, part way through it suddenly 
-powers off.
+> Blink Blink this had not been converted to use struct pid ages ago?
+>
+> - On drm open capture the openers kuid and struct pid.
+> - On drm close release the kuid and struct pid
+> - When reporting the uid and pid convert the kuid and struct pid
+>   into values in the appropriate namespace.
+>
 
-I have checked hwmon/k10temp.c to see if I could see where these values 
-were defined.
+Hi Eric,
 
-k10temp.h is 0 bytes.
--rw-r--r-- 1 root root 0 Sep  9 01:59 
-/usr/src/linux-3.6.0-rc5/include/config/sensors/k10temp.h
+I'm fine with this seems okay, do you want me to merge it via drm-next?
 
-Currently I build with "make -j 1" and temperature and power values are 
-around those below.
-# sensors
-k10temp-pci-00c3
-Adapter: PCI adapter
-temp1:        +60.4°C  (high = +70.0°C)
-                        (crit = +90.0°C, hyst = +87.0°C)
+Dave.
 
-fam15h_power-pci-00c4
-Adapter: PCI adapter
-power1:      127.49 W  (crit = 124.77 W)
-
-# cat /proc/cpuinfo
-processor       : 0
-vendor_id       : AuthenticAMD
-cpu family      : 21
-model           : 1
-model name      : AMD FX(tm)-8150 Eight-Core Processor
-stepping        : 2
-microcode       : 0x6000626
-cpu MHz         : 3600.000
-cache size      : 2048 KB
-
-from .config:-
-# grep HWMON .config
-CONFIG_IXGBE_HWMON=y
-CONFIG_HWMON=y
-CONFIG_HWMON_VID=m
-# CONFIG_HWMON_DEBUG_CHIP is not set
-CONFIG_THERMAL_HWMON=y
-
-# grep POWERSAVE .config
-# CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE is not set
-CONFIG_CPU_FREQ_GOV_POWERSAVE=m
-# CONFIG_PCIEASPM_POWERSAVE is not set
-CONFIG_DEVFREQ_GOV_POWERSAVE=y
-
-On another 6-core box I can build kernels with "make -j 6" without problems.
-# cat /proc/cpuinfo
-processor       : 0
-vendor_id       : AuthenticAMD
-cpu family      : 21
-model           : 1
-model name      : AMD FX(tm)-6100 Six-Core Processor
-stepping        : 2
-microcode       : 0x6000623
-cpu MHz         : 3300.000
-cache size      : 2048 KB
-
-With a kernel build going on six core box, temperature and power hover 
-around the values below.
-sabre:~ # sensors
-k10temp-pci-00c3
-Adapter: PCI adapter
-temp1:        +50.2°C  (high = +70.0°C)
-                        (crit = +90.0°C, hyst = +87.0°C)
-
-fam15h_power-pci-00c4
-Adapter: PCI adapter
-power1:       94.40 W  (crit =  95.01 W)
-
-73 ... Sid.
-
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
-
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  drivers/gpu/drm/drm_fops.c  |    3 ++-
+>  drivers/gpu/drm/drm_info.c  |    5 +++--
+>  drivers/gpu/drm/drm_ioctl.c |    4 ++--
+>  include/drm/drmP.h          |    4 ++--
+>  init/Kconfig                |    1 -
+>  5 files changed, 9 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
+> index 5062eec..433d2fa 100644
+> --- a/drivers/gpu/drm/drm_fops.c
+> +++ b/drivers/gpu/drm/drm_fops.c
+> @@ -251,7 +251,7 @@ static int drm_open_helper(struct inode *inode, struct file *filp,
+>         filp->private_data = priv;
+>         priv->filp = filp;
+>         priv->uid = current_euid();
+> -       priv->pid = task_pid_nr(current);
+> +       priv->pid = get_pid(task_pid(current));
+>         priv->minor = idr_find(&drm_minors_idr, minor_id);
+>         priv->ioctl_count = 0;
+>         /* for compatibility root is always authenticated */
+> @@ -524,6 +524,7 @@ int drm_release(struct inode *inode, struct file *filp)
+>         if (drm_core_check_feature(dev, DRIVER_PRIME))
+>                 drm_prime_destroy_file_private(&file_priv->prime);
+>
+> +       put_pid(file_priv->pid);
+>         kfree(file_priv);
+>
+>         /* ========================================================
+> diff --git a/drivers/gpu/drm/drm_info.c b/drivers/gpu/drm/drm_info.c
+> index 8928edb..eb0af39 100644
+> --- a/drivers/gpu/drm/drm_info.c
+> +++ b/drivers/gpu/drm/drm_info.c
+> @@ -191,8 +191,9 @@ int drm_clients_info(struct seq_file *m, void *data)
+>                 seq_printf(m, "%c %3d %5d %5d %10u %10lu\n",
+>                            priv->authenticated ? 'y' : 'n',
+>                            priv->minor->index,
+> -                          priv->pid,
+> -                          priv->uid, priv->magic, priv->ioctl_count);
+> +                          pid_vnr(priv->pid),
+> +                          from_kuid_munged(seq_user_ns(m), priv->uid),
+> +                          priv->magic, priv->ioctl_count);
+>         }
+>         mutex_unlock(&dev->struct_mutex);
+>         return 0;
+> diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
+> index 64a62c6..39a4383 100644
+> --- a/drivers/gpu/drm/drm_ioctl.c
+> +++ b/drivers/gpu/drm/drm_ioctl.c
+> @@ -215,8 +215,8 @@ int drm_getclient(struct drm_device *dev, void *data,
+>         list_for_each_entry(pt, &dev->filelist, lhead) {
+>                 if (i++ >= idx) {
+>                         client->auth = pt->authenticated;
+> -                       client->pid = pt->pid;
+> -                       client->uid = pt->uid;
+> +                       client->pid = pid_vnr(pt->pid);
+> +                       client->uid = from_kuid_munged(current_user_ns(), pt->uid);
+>                         client->magic = pt->magic;
+>                         client->iocs = pt->ioctl_count;
+>                         mutex_unlock(&dev->struct_mutex);
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index d6b67bb..9bc5c6a 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -426,8 +426,8 @@ struct drm_prime_file_private {
+>  /** File private data */
+>  struct drm_file {
+>         int authenticated;
+> -       pid_t pid;
+> -       uid_t uid;
+> +       struct pid *pid;
+> +       kuid_t uid;
+>         drm_magic_t magic;
+>         unsigned long ioctl_count;
+>         struct list_head lhead;
+> diff --git a/init/Kconfig b/init/Kconfig
+> index d849ba2..2a388e5 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -930,7 +930,6 @@ config UIDGID_CONVERTED
+>         depends on FS_POSIX_ACL = n
+>         depends on QUOTA = n
+>         depends on QUOTACTL = n
+> -       depends on DRM = n
+>
+>         # Networking
+>         depends on NET_9P = n
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
