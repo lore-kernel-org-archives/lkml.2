@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab2IMU0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:26:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48622 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab2IMU0S (ORCPT
+	id S932324Ab2IMU0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:26:40 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54049 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab2IMU0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:26:18 -0400
-Date: Thu, 13 Sep 2012 15:26:14 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] gmux: Fix backlight set function
-Message-ID: <20120913202614.GA26996@thinkpad-t410>
-Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Matthew Garrett <mjg@redhat.com>
-References: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
-MIME-Version: 1.0
+	Thu, 13 Sep 2012 16:26:39 -0400
+Date: Thu, 13 Sep 2012 22:26:32 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, tools: Stop perf stat -p when profiled process exits v3
+Message-ID: <20120913202632.GY16230@one.firstfloor.org>
+References: <1347551931-7666-1-git-send-email-andi@firstfloor.org> <505240BA.1010804@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <505240BA.1010804@gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 09:02:35PM +0100, Grant Likely wrote:
-> In commit 7e30ed6b, "gmux: Add generic write32 function", the new
-> gmux_write32() function didn't include the io offset when writing
-> registers. This means that backlight update writes never go to the right
-> place. This patch fixes it.
-> 
-> Tested on Apple Macbook 8,3
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Matthew Garrett <mjg@redhat.com>
+> The is_alive function can be used by perf-top, perf-stat and perf-record 
+> to know that its target has died so it can stop monitoring.
+ 
+Sorry that's to complicated and overengineered for me.
+My simple patch works for me at least. It's not solving world hunger,
+but it wasn't intended to do that.
 
-I sent a patch for this several weeks ago [1], just waiting for Matthew
-to pick it up.
-
-Seth
-
-[1] https://lkml.org/lkml/2012/8/21/721
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
