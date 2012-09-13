@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab2IMXwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:52:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44008 "EHLO mx1.redhat.com"
+	id S1759252Ab2IMXwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:52:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49067 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759196Ab2IMXt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:49:58 -0400
+	id S1759153Ab2IMXtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:49:20 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 12/16] X.509: Add utility functions to render OIDs as strings
+Subject: [PATCH 07/16] KEYS: Provide signature verification with an asymmetric
+ key
 To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
 Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:49:47 +0100
-Message-ID: <20120913234947.3575.9661.stgit@warthog.procyon.org.uk>
+Date: Fri, 14 Sep 2012 00:49:06 +0100
+Message-ID: <20120913234906.3575.85399.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,131 +24,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pair of utility functions to render OIDs as strings.  The first takes an
-encoded OID and turns it into a "a.b.c.d" form string:
+Provide signature verification using an asymmetric-type key to indicate the
+public key to be used.
 
-	int sprint_oid(const void *data, size_t datasize,
-		       char *buffer, size_t bufsize);
+The API is a single function that can be found in crypto/public_key.h:
 
-The second takes an OID enum index and calls the first on the data held
-therein:
+	int verify_signature(const struct key *key,
+			     const struct public_key_signature *sig)
 
-	int sprint_OID(enum OID oid, char *buffer, size_t bufsize);
+The first argument is the appropriate key to be used and the second argument
+is the parsed signature data:
+
+	struct public_key_signature {
+		u8 *digest;
+		u16 digest_size;
+		enum pkey_hash_algo pkey_hash_algo : 8;
+		union {
+			MPI mpi[2];
+			struct {
+				MPI s;		/* m^d mod n */
+			} rsa;
+			struct {
+				MPI r;
+				MPI s;
+			} dsa;
+		};
+	};
+
+This should be filled in prior to calling the function.  The hash algorithm
+should already have been called and the hash finalised and the output should
+be in a buffer pointed to by the 'digest' member.
+
+Any extra data to be added to the hash by the hash format (eg. PGP) should
+have been added by the caller prior to finalising the hash.
+
+It is assumed that the signature is made up of a number of MPI values.  If an
+algorithm becomes available for which this is not the case, the above structure
+will have to change.
+
+It is also assumed that it will have been checked that the signature algorithm
+matches the key algorithm.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/oid_registry.h |    2 +
- lib/oid_registry.c           |   81 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 83 insertions(+)
+ crypto/asymmetric_keys/Makefile    |    2 +
+ crypto/asymmetric_keys/signature.c |   49 ++++++++++++++++++++++++++++++++++++
+ include/crypto/public_key.h        |    4 +++
+ 3 files changed, 54 insertions(+), 1 deletion(-)
+ create mode 100644 crypto/asymmetric_keys/signature.c
 
 
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index 5928546..6926db7 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -86,5 +86,7 @@ enum OID {
- };
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 5ed46ee..8dcdf0c 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -4,6 +4,6 @@
  
- extern enum OID look_up_OID(const void *data, size_t datasize);
-+extern int sprint_oid(const void *, size_t, char *, size_t);
-+extern int sprint_OID(enum OID, char *, size_t);
+ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys.o
  
- #endif /* _LINUX_OID_REGISTRY_H */
-diff --git a/lib/oid_registry.c b/lib/oid_registry.c
-index 33cfd17..d8de11f 100644
---- a/lib/oid_registry.c
-+++ b/lib/oid_registry.c
-@@ -11,6 +11,9 @@
+-asymmetric_keys-y := asymmetric_type.o
++asymmetric_keys-y := asymmetric_type.o signature.o
  
- #include <linux/export.h>
- #include <linux/oid_registry.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/bug.h>
- #include "oid_registry_data.c"
- 
- /**
-@@ -87,3 +90,81 @@ enum OID look_up_OID(const void *data, size_t datasize)
- 	return OID__NR;
- }
- EXPORT_SYMBOL_GPL(look_up_OID);
-+
-+/*
-+ * sprint_OID - Print an Object Identifier into a buffer
-+ * @data: The encoded OID to print
-+ * @datasize: The size of the encoded OID
-+ * @buffer: The buffer to render into
-+ * @bufsize: The size of the buffer
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
+diff --git a/crypto/asymmetric_keys/signature.c b/crypto/asymmetric_keys/signature.c
+new file mode 100644
+index 0000000..50b3f88
+--- /dev/null
++++ b/crypto/asymmetric_keys/signature.c
+@@ -0,0 +1,49 @@
++/* Signature verification with an asymmetric key
 + *
-+ * The OID is rendered into the buffer in "a.b.c.d" format and the number of
-+ * bytes is returned.  -EBADMSG is returned if the data could not be intepreted
-+ * and -ENOBUFS if the buffer was too small.
++ * See Documentation/security/asymmetric-keys.txt
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
 + */
-+int sprint_oid(const void *data, size_t datasize, char *buffer, size_t bufsize)
-+{
-+	const unsigned char *v = data, *end = v + datasize;
-+	unsigned long num;
-+	unsigned char n;
-+	size_t ret;
-+	int count;
 +
-+	if (v >= end)
-+		return -EBADMSG;
-+
-+	n = *v++;
-+	ret = count = snprintf(buffer, bufsize, "%u.%u", n / 40, n % 40);
-+	buffer += count;
-+	bufsize -= count;
-+	if (bufsize == 0)
-+		return -ENOBUFS;
-+
-+	while (v < end) {
-+		num = 0;
-+		n = *v++;
-+		if (!(n & 0x80)) {
-+			num = n;
-+		} else {
-+			num = n & 0x7f;
-+			do {
-+				if (v >= end)
-+					return -EBADMSG;
-+				n = *v++;
-+				num <<= 7;
-+				num |= n & 0x7f;
-+			} while (n & 0x80);
-+		}
-+		ret += count = snprintf(buffer, bufsize, ".%lu", num);
-+		buffer += count;
-+		bufsize -= count;
-+		if (bufsize == 0)
-+			return -ENOBUFS;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(sprint_oid);
++#include <keys/asymmetric-subtype.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <crypto/public_key.h>
++#include "asymmetric_keys.h"
 +
 +/**
-+ * sprint_OID - Print an Object Identifier into a buffer
-+ * @oid: The OID to print
-+ * @buffer: The buffer to render into
-+ * @bufsize: The size of the buffer
++ * verify_signature - Initiate the use of an asymmetric key to verify a signature
++ * @key: The asymmetric key to verify against
++ * @sig: The signature to check
 + *
-+ * The OID is rendered into the buffer in "a.b.c.d" format and the number of
-+ * bytes is returned.
++ * Returns 0 if successful or else an error.
 + */
-+int sprint_OID(enum OID oid, char *buffer, size_t bufsize)
++int verify_signature(const struct key *key,
++		     const struct public_key_signature *sig)
 +{
++	const struct asymmetric_key_subtype *subtype;
 +	int ret;
 +
-+	BUG_ON(oid >= OID__NR);
++	pr_devel("==>%s()\n", __func__);
 +
-+	ret = sprint_oid(oid_data + oid_index[oid],
-+			 oid_index[oid + 1] - oid_index[oid],
-+			 buffer, bufsize);
-+	BUG_ON(ret == -EBADMSG);
++	if (key->type != &key_type_asymmetric)
++		return -EINVAL;
++	subtype = asymmetric_key_subtype(key);
++	if (!subtype ||
++	    !key->payload.data)
++		return -EINVAL;
++	if (!subtype->verify_signature)
++		return -ENOTSUPP;
++
++	ret = subtype->verify_signature(key, sig);
++
++	pr_devel("<==%s() = %d\n", __func__, ret);
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(sprint_OID);
++EXPORT_SYMBOL_GPL(verify_signature);
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index 65d9879..eb25eb2 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -106,4 +106,8 @@ struct public_key_signature {
+ 	};
+ };
+ 
++struct key;
++extern int verify_signature(const struct key *key,
++			    const struct public_key_signature *sig);
++
+ #endif /* _LINUX_PUBLIC_KEY_H */
 
