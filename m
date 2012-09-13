@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab2IMTFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 15:05:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49065 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab2IMTFQ (ORCPT
+	id S1753131Ab2IMTGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 15:06:38 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64745 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2IMTGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 15:05:16 -0400
-Date: Thu, 13 Sep 2012 12:05:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mhocko@suse.cz,
-        Steve Capper <steve.capper@arm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
-Message-Id: <20120913120514.135d2c38.akpm@linux-foundation.org>
-In-Reply-To: <1347382036-18455-4-git-send-email-will.deacon@arm.com>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
-	<1347382036-18455-4-git-send-email-will.deacon@arm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 15:06:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <50369498.4010006@gmx.de>
+References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr>
+	<1343752762-16861-3-git-send-email-damien.cassou@lifl.fr>
+	<50369498.4010006@gmx.de>
+Date: Thu, 13 Sep 2012 21:06:35 +0200
+X-Google-Sender-Auth: E8w8L1q_kpgKaPanIC2CEQbIqUc
+Message-ID: <CAMuHMdWsiXmt=2uo3C8ZC_apnHRV2aHi3yZrYV_jgwB22=3Mfw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] drivers/video/gbefb.c: use devm_ functions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Damien Cassou <damien.cassou@lifl.fr>, kernel-janitors@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012 17:47:16 +0100
-Will Deacon <will.deacon@arm.com> wrote:
+On Thu, Aug 23, 2012 at 10:37 PM, Florian Tobias Schandinat
+<FlorianSchandinat@gmx.de> wrote:
+> On 07/31/2012 04:39 PM, Damien Cassou wrote:
+>> From: Damien Cassou <damien.cassou@lifl.fr>
+>>
+>> The various devm_ functions allocate memory that is released when a driver
+>> detaches.  This patch uses these functions for data that is allocated in
+>> the probe function of a platform device and is only freed in the remove
+>> function.
+>>
+>> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+>
+> Applied.
 
-> From: Steve Capper <steve.capper@arm.com>
-> 
-> Different architectures have slightly different pre-requisites for supporting
-> Transparent Huge Pages. To simplify the layout of mm/Kconfig, a new option
-> HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each architecture's
-> Kconfig file (at the moment x86, with ARM being set in a future patch).
-> 
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1297,6 +1297,10 @@ config ILLEGAL_POINTER_VALUE
->         default 0 if X86_32
->         default 0xdead000000000000 if X86_64
->  
-> +config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-> +       def_bool y
-> +       depends on MMU
-> +
->  source "mm/Kconfig"
->  
->  config HIGHPTE
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index d5c8019..3322342 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
->  
->  config TRANSPARENT_HUGEPAGE
->  	bool "Transparent Hugepage Support"
-> -	depends on X86 && MMU
-> +	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
->  	select COMPACTION
->  	help
->  	  Transparent Hugepages allows the kernel to use huge pages and
+>> diff --git a/drivers/video/gbefb.c b/drivers/video/gbefb.c
+>> index 7e7b7a9..9b79d38 100644
+>> --- a/drivers/video/gbefb.c
+>> +++ b/drivers/video/gbefb.c
+>> @@ -1156,7 +1156,8 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+>>               goto out_release_framebuffer;
+>>       }
+>>
+>> -     gbe = (struct sgi_gbe *) ioremap(GBE_BASE, sizeof(struct sgi_gbe));
+>> +     gbe = (struct sgi_gbe *) devm_ioremap(&p_dev->dev, GBE_BASE,
+>> +                                           sizeof(struct sgi_gbe));
 
-We need to talk with Gerald concerning
-http://ozlabs.org/~akpm/mmotm/broken-out/thp-x86-introduce-have_arch_transparent_hugepage.patch
+drivers/video/gbefb.c:1159:16: error: implicit declaration of function
+'devm_ioremap' [-Werror=implicit-function-declaration]
+drivers/video/gbefb.c:1179:3: error: implicit declaration of function
+'devm_ioremap_nocache' [-Werror=implicit-function-declaration]
 
+http://kisskb.ellerman.id.au/kisskb/buildresult/7187731/
 
-I did this.  Please check.
+Gr{oetje,eeting}s,
 
-From: Steve Capper <steve.capper@arm.com>
-Subject: mm: introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+                        Geert
 
-Different architectures have slightly different pre-requisites for
-supporting Transparent Huge Pages.  To simplify the layout of mm/Kconfig,
-a new option HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each
-architecture's Kconfig file (at the moment x86, with ARM being set in a
-future patch).
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Signed-off-by: Steve Capper <steve.capper@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- arch/x86/Kconfig |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff -puN arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage arch/x86/Kconfig
---- a/arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage
-+++ a/arch/x86/Kconfig
-@@ -83,7 +83,6 @@ config X86
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select HAVE_BPF_JIT if X86_64
--	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
-@@ -1330,6 +1329,10 @@ config ILLEGAL_POINTER_VALUE
-        default 0 if X86_32
-        default 0xdead000000000000 if X86_64
- 
-+config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-+       def_bool y
-+       depends on MMU
-+
- source "mm/Kconfig"
- 
- config HIGHPTE
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
