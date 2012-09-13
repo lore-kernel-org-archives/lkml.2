@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2IMV2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:28:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22705 "EHLO relay.sw.ru"
+	id S1753364Ab2IMVaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:30:19 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:43217 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab2IMV2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:28:01 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH] tcp: restore rcv_wscale in a repair mode
-Date: Fri, 14 Sep 2012 01:28:07 +0400
-Message-Id: <1347571687-3539973-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1752264Ab2IMVaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 17:30:17 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH] pcmcia: synclink_cs: fix potential tty NULL dereference
+Date: Fri, 14 Sep 2012 01:30:06 +0400
+Message-Id: <1347571806-5567-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcv_wscale is a symetric parameter with snd_wscale.
+tty_port_tty_get() can return NULL after port hangup that may happen anytime.
+The patch adds checks that tty_port_tty_get() returns nonNULL around places
+where tty is actually used.
 
-Both this parameters are set on a connection handshake.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Without this value a remote window size can not be interpreted correctly,
-because a value from a packet should be shifted on rcv_wscale.
-
-And one more thing is that wscale_ok should be set too.
-
-This patch doesn't break a backward compatibility.
-If someone uses it in a old scheme, a rcv window
-will be restored with the same bug (rcv_wscale = 0).
-
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- net/ipv4/tcp.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+ drivers/char/pcmcia/synclink_cs.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index df83d74..ed22cd7 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2348,10 +2348,22 @@ static int tcp_repair_options_est(struct tcp_sock *tp,
- 			tp->rx_opt.mss_clamp = opt.opt_val;
- 			break;
- 		case TCPOPT_WINDOW:
--			if (opt.opt_val > 14)
--				return -EFBIG;
--
--			tp->rx_opt.snd_wscale = opt.opt_val;
-+			{
-+				union {
-+					struct {
-+						u16 snd_wscale;
-+						u16 rcv_wscale;
-+					};
-+					u32 raw;
-+				} val = { .raw = opt.opt_val };
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index 0a484b4..13c9747 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -891,6 +891,9 @@ static void rx_ready_async(MGSLPC_INFO *info, int tcd, struct tty_struct *tty)
+ 	int work = 0;
+  	struct mgsl_icount *icount = &info->icount;
+ 
++	if (!tty)
++		return;
 +
-+				if (val.snd_wscale > 14 || val.rcv_wscale > 14)
-+					return -EFBIG;
-+
-+				tp->rx_opt.snd_wscale = val.snd_wscale;
-+				tp->rx_opt.rcv_wscale = val.rcv_wscale;
-+				tp->rx_opt.wscale_ok = 1;
-+			}
- 			break;
- 		case TCPOPT_SACK_PERM:
- 			if (opt.opt_val != 0)
+ 	if (tcd) {
+ 		/* early termination, get FIFO count from RBCL register */
+ 		fifo_count = (unsigned char)(read_reg(info, CHA+RBCL) & 0x1f);
+@@ -980,7 +983,7 @@ static void tx_done(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	else
+ #endif
+ 	{
+-		if (tty->stopped || tty->hw_stopped) {
++		if (tty && (tty->stopped || tty->hw_stopped)) {
+ 			tx_stop(info);
+ 			return;
+ 		}
+@@ -1000,7 +1003,7 @@ static void tx_ready(MGSLPC_INFO *info, struct tty_struct *tty)
+ 		if (!info->tx_active)
+ 			return;
+ 	} else {
+-		if (tty->stopped || tty->hw_stopped) {
++		if (tty && (tty->stopped || tty->hw_stopped)) {
+ 			tx_stop(info);
+ 			return;
+ 		}
+@@ -1050,13 +1053,12 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	wake_up_interruptible(&info->status_event_wait_q);
+ 	wake_up_interruptible(&info->event_wait_q);
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty && (info->port.flags & ASYNC_CTS_FLOW)) {
+ 		if (tty->hw_stopped) {
+ 			if (info->serial_signals & SerialSignal_CTS) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+ 					printk("CTS tx start...");
+-				if (tty)
+-					tty->hw_stopped = 0;
++				tty->hw_stopped = 0;
+ 				tx_start(info, tty);
+ 				info->pending_bh |= BH_TRANSMIT;
+ 				return;
+@@ -1065,8 +1067,7 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 			if (!(info->serial_signals & SerialSignal_CTS)) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+ 					printk("CTS tx stop...");
+-				if (tty)
+-					tty->hw_stopped = 1;
++				tty->hw_stopped = 1;
+ 				tx_stop(info);
+ 			}
+ 		}
 -- 
-1.7.1
+1.7.9.5
 
