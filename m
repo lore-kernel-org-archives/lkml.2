@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2IMNhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 09:37:43 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:56897 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751786Ab2IMNhl (ORCPT
+	id S1753420Ab2IMNht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 09:37:49 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53763 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752657Ab2IMNho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 09:37:41 -0400
+	Thu, 13 Sep 2012 09:37:44 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 01/15] dmaengine: omap: Support for element mode in cyclic DMA
-Date: Thu, 13 Sep 2012 16:37:51 +0300
-Message-Id: <1347543485-339-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 02/15] dmaengine: omap: Add support for pause/resume in cyclic dma mode
+Date: Thu, 13 Sep 2012 16:37:52 +0300
+Message-Id: <1347543485-339-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,32 +28,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When src_maxburst/dst_maxburst is set to 0 by the users of cyclic DMA
-(mostly audio) indicates that we should configure the omap DMA to element
-sync mode instead of packet mode.
+The audio stack used omap_stop_dma/omap_start_dma to pause/resume the DMA.
+This method has been used for years on OMAP based products.
+We only allow pause/resume when the DMA has been configured in cyclic mode
+which is used by the audio stack.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 CC: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/dma/omap-dma.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/dma/omap-dma.c | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index ae05618..b77a40d 100644
+index b77a40d..71d7869 100644
 --- a/drivers/dma/omap-dma.c
 +++ b/drivers/dma/omap-dma.c
-@@ -413,7 +413,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
- 	d->dev_addr = dev_addr;
- 	d->fi = burst;
- 	d->es = es;
--	d->sync_mode = OMAP_DMA_SYNC_PACKET;
-+	if (burst)
-+		d->sync_mode = OMAP_DMA_SYNC_PACKET;
-+	else
-+		d->sync_mode = OMAP_DMA_SYNC_ELEMENT;
- 	d->sync_type = sync_type;
- 	d->periph_port = OMAP_DMA_PORT_MPUI;
- 	d->sg[0].addr = buf_addr;
+@@ -34,6 +34,7 @@ struct omap_chan {
+ 	struct dma_slave_config	cfg;
+ 	unsigned dma_sig;
+ 	bool cyclic;
++	bool paused;
+ 
+ 	int dma_ch;
+ 	struct omap_desc *desc;
+@@ -470,11 +471,14 @@ static int omap_dma_terminate_all(struct omap_chan *c)
+ 	 */
+ 	if (c->desc) {
+ 		c->desc = NULL;
+-		omap_stop_dma(c->dma_ch);
++		/* Avoid stopping the dma twice */
++		if (!c->paused)
++			omap_stop_dma(c->dma_ch);
+ 	}
+ 
+ 	if (c->cyclic) {
+ 		c->cyclic = false;
++		c->paused = false;
+ 		omap_dma_unlink_lch(c->dma_ch, c->dma_ch);
+ 	}
+ 
+@@ -487,14 +491,30 @@ static int omap_dma_terminate_all(struct omap_chan *c)
+ 
+ static int omap_dma_pause(struct omap_chan *c)
+ {
+-	/* FIXME: not supported by platform private API */
+-	return -EINVAL;
++	/* Pause/Resume only allowed with cyclic mode */
++	if (!c->cyclic)
++		return -EINVAL;
++
++	if (!c->paused) {
++		omap_stop_dma(c->dma_ch);
++		c->paused = true;
++	}
++
++	return 0;
+ }
+ 
+ static int omap_dma_resume(struct omap_chan *c)
+ {
+-	/* FIXME: not supported by platform private API */
+-	return -EINVAL;
++	/* Pause/Resume only allowed with cyclic mode */
++	if (!c->cyclic)
++		return -EINVAL;
++
++	if (c->paused) {
++		omap_start_dma(c->dma_ch);
++		c->paused = false;
++	}
++
++	return 0;
+ }
+ 
+ static int omap_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 -- 
 1.7.12
 
