@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab2IMPIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:08:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61313 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758164Ab2IMPGm (ORCPT
+	id S1758244Ab2IMPIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:08:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53959 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758180Ab2IMPGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:06:42 -0400
+	Thu, 13 Sep 2012 11:06:48 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -20,9 +20,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com,
         kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: =?UTF-8?q?=5BPATCH=2007/11=5D=20tty/serial=3A=20Add=20kgdb=5Fnmi=20driver?=
-Date: Thu, 13 Sep 2012 08:03:31 -0700
-Message-Id: <1347548615-18227-7-git-send-email-anton.vorontsov@linaro.org>
+Subject: =?UTF-8?q?=5BPATCH=2009/11=5D=20ARM=3A=20Add=20KGDB/KDB=20FIQ=20debugger=20generic=20code?=
+Date: Thu, 13 Sep 2012 08:03:33 -0700
+Message-Id: <1347548615-18227-9-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120913150133.GA16238@lizard>
 References: <20120913150133.GA16238@lizard>
@@ -33,99 +33,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This special driver makes it possible to temporary use NMI debugger port
-as a normal console by issuing 'nmi_console' command (assuming that the
-port is attached to KGDB).
+The FIQ debugger may be used to debug situations when the kernel stuck
+in uninterruptable sections, e.g. the kernel infinitely loops or
+deadlocked in an interrupt or with interrupts disabled.
 
-Unlike KDB's disable_nmi command, with this driver you are always able
-to go back to the debugger using KGDB escape sequence ($3#33).  This is
-because this console driver processes the input in NMI context, and thus
-is able to intercept the magic sequence.
+By default KGDB FIQ is disabled in runtime, but can be enabled with
+kgdb_fiq.enable=1 kernel command line option.
 
-Note that since the console interprets input and uses polling
-communication methods, for things like PPP it is still better to fully
-detach debugger port from the KGDB NMI (i.e. disable_nmi), and use raw
-console.
-
-Usually, to enter the debugger one have to type the magic sequence, so
-initially the kernel will print the following prompt on the NMI debugger
-console:
-
-	Type $3#33 to enter the debugger>
-
-For convenience, there is a kgdb_fiq.knock kernel command line option,
-when set to 0, this turns the special command to just a return key
-press, so the kernel will be printing this:
-
-	Hit <return> to enter the debugger>
-
-This is more convenient for long debugging sessions, although it makes
-nmi_console feature somewhat useless.
-
-And for the cases when NMI connected to a dedicated button, the knocking
-can be disabled altogether by setting kgdb_fiq.knock to -1.
-
-Suggested-by: Colin Cross <ccross@android.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/tty/serial/Kconfig    |  19 ++
- drivers/tty/serial/Makefile   |   1 +
- drivers/tty/serial/kgdb_nmi.c | 396 ++++++++++++++++++++++++++++++++++++++++++
- drivers/tty/serial/kgdboc.c   |   6 +
- include/linux/kgdb.h          |  10 ++
- 5 files changed, 432 insertions(+)
- create mode 100644 drivers/tty/serial/kgdb_nmi.c
+ arch/arm/Kconfig                 | 18 ++++++++
+ arch/arm/include/asm/kgdb.h      |  8 ++++
+ arch/arm/kernel/Makefile         |  1 +
+ arch/arm/kernel/kgdb_fiq.c       | 99 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/kgdb_fiq_entry.S | 87 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 213 insertions(+)
+ create mode 100644 arch/arm/kernel/kgdb_fiq.c
+ create mode 100644 arch/arm/kernel/kgdb_fiq_entry.S
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 26907cf..b22e45b 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -141,6 +141,25 @@ config SERIAL_ATMEL_TTYAT
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 6d6e18f..c978c74 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -171,6 +171,24 @@ config GENERIC_ISA_DMA
+ config FIQ
+ 	bool
  
- 	  Say Y if you have an external 8250/16C550 UART.  If unsure, say N.
- 
-+config SERIAL_KGDB_NMI
-+	bool "Serial console over KGDB NMI debugger port"
-+	depends on KGDB_SERIAL_CONSOLE
++config ARCH_MIGHT_HAVE_KGDB_FIQ
++	bool
++
++config KGDB_FIQ
++	bool "KGDB/KDB FIQ debugger"
++	depends on KGDB_KDB && ARCH_MIGHT_HAVE_KGDB_FIQ && !THUMB2_KERNEL
++	select FIQ
 +	help
-+	  This special driver allows you to temporary use NMI debugger port
-+	  as a normal console (assuming that the port is attached to KGDB).
++	  The FIQ debugger may be used to debug situations when the
++	  kernel stuck in uninterruptable sections, e.g. the kernel
++	  infinitely loops or deadlocked in an interrupt or with
++	  interrupts disabled.
 +
-+	  Unlike KDB's disable_nmi command, with this driver you are always
-+	  able to go back to the debugger using KGDB escape sequence ($3#33).
-+	  This is because this console driver processes the input in NMI
-+	  context, and thus is able to intercept the magic sequence.
-+
-+	  Note that since the console interprets input and uses polling
-+	  communication methods, for things like PPP you still must fully
-+	  detach debugger port from the KGDB NMI (i.e. disable_nmi), and
-+	  use raw console.
++	  By default KGDB FIQ is disabled in runtime, but can be
++	  enabled with kgdb_fiq.enable=1 kernel command line option.
 +
 +	  If unsure, say N.
 +
- config SERIAL_KS8695
- 	bool "Micrel KS8695 (Centaur) serial port support"
- 	depends on ARCH_KS8695
-diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
-index ce88667..4f694da 100644
---- a/drivers/tty/serial/Makefile
-+++ b/drivers/tty/serial/Makefile
-@@ -61,6 +61,7 @@ obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs.o
- obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
- obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
- obj-$(CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL) += nwpserial.o
-+obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
- obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
- obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
- obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
-diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
+ config NEED_RET_TO_USER
+ 	bool
+ 
+diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
+index 48066ce..807e547 100644
+--- a/arch/arm/include/asm/kgdb.h
++++ b/arch/arm/include/asm/kgdb.h
+@@ -11,6 +11,8 @@
+ #define __ARM_KGDB_H__
+ 
+ #include <linux/ptrace.h>
++#include <linux/linkage.h>
++#include <asm/exception.h>
+ 
+ /*
+  * GDB assumes that we're a user process being debugged, so
+@@ -47,6 +49,12 @@ static inline void arch_kgdb_breakpoint(void)
+ extern void kgdb_handle_bus_error(void);
+ extern int kgdb_fault_expected;
+ 
++extern char kgdb_fiq_handler;
++extern char kgdb_fiq_handler_end;
++asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs);
++extern int __init kgdb_register_fiq(unsigned int mach_kgdb_fiq,
++		     void (*mach_kgdb_enable_fiq)(unsigned int irq, bool on),
++		     bool (*mach_is_kgdb_fiq)(unsigned int irq));
+ #endif /* !__ASSEMBLY__ */
+ 
+ /*
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 7ad2d5c..5aa079b 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -56,6 +56,7 @@ obj-$(CONFIG_ATAGS_PROC)	+= atags.o
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
++obj-$(CONFIG_KGDB_FIQ)		+= kgdb_fiq_entry.o kgdb_fiq.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
+ obj-$(CONFIG_OF)		+= devtree.o
+diff --git a/arch/arm/kernel/kgdb_fiq.c b/arch/arm/kernel/kgdb_fiq.c
 new file mode 100644
-index 0000000..57bf744
+index 0000000..8443af1
 --- /dev/null
-+++ b/drivers/tty/serial/kgdb_nmi.c
-@@ -0,0 +1,396 @@
++++ b/arch/arm/kernel/kgdb_fiq.c
+@@ -0,0 +1,99 @@
 +/*
-+ * KGDB NMI serial console
++ * KGDB FIQ
 + *
 + * Copyright 2010 Google, Inc.
 + *		  Arve Hjønnevåg <arve@android.com>
@@ -140,431 +140,182 @@ index 0000000..57bf744
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/compiler.h>
 +#include <linux/init.h>
 +#include <linux/slab.h>
 +#include <linux/errno.h>
-+#include <linux/atomic.h>
-+#include <linux/console.h>
-+#include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/tty_flip.h>
-+#include <linux/interrupt.h>
-+#include <linux/hrtimer.h>
-+#include <linux/tick.h>
-+#include <linux/kfifo.h>
-+#include <linux/kgdb.h>
++#include <linux/hardirq.h>
 +#include <linux/kdb.h>
++#include <linux/kgdb.h>
++#include <asm/fiq.h>
++#include <asm/exception.h>
 +
-+static int kgdb_nmi_knock = 1;
-+module_param_named(knock, kgdb_nmi_knock, int, 0600);
-+MODULE_PARM_DESC(knock, "if set to 1 (default), the special '$3#33' command "
-+			"must be used to enter the debugger; when set to 0, "
-+			"hitting return key is enough to enter the debugger; "
-+			"when set to -1, the debugger is entered immediately "
-+			"upon NMI");
++static int kgdb_fiq_enabled;
++module_param_named(enable, kgdb_fiq_enabled, int, 0600);
++MODULE_PARM_DESC(enable, "set to 1 to enable FIQ KGDB");
 +
-+static char *kgdb_nmi_magic = "$3#33";
-+module_param_named(magic, kgdb_nmi_magic, charp, 0600);
-+MODULE_PARM_DESC(magic, "magic sequence to enter NMI debugger (default $3#33)");
++static unsigned int kgdb_fiq;
++static bool (*is_kgdb_fiq)(unsigned int irq);
 +
-+static bool kgdb_nmi_tty_enabled;
-+
-+static void kgdb_nmi_console_write(struct console *co, const char *s, uint c)
++asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs)
 +{
-+	int i;
-+
-+	if (!kgdb_nmi_tty_enabled || atomic_read(&kgdb_active) >= 0)
++	if (!is_kgdb_fiq(kgdb_fiq))
++		return;
++	if (!kgdb_nmi_poll_knock())
 +		return;
 +
-+	for (i = 0; i < c; i++)
-+		dbg_io_ops->write_char(s[i]);
++	nmi_enter();
++	kgdb_handle_exception(1, 0, 0, regs);
++	nmi_exit();
 +}
 +
-+static struct tty_driver *kgdb_nmi_tty_driver;
-+
-+static struct tty_driver *kgdb_nmi_console_device(struct console *co, int *idx)
-+{
-+	*idx = co->index;
-+	return kgdb_nmi_tty_driver;
-+}
-+
-+static struct console kgdb_nmi_console = {
-+	.name	= "ttyNMI",
-+	.write	= kgdb_nmi_console_write,
-+	.device	= kgdb_nmi_console_device,
-+	.flags	= CON_PRINTBUFFER | CON_ANYTIME | CON_ENABLED,
-+	.index	= -1,
++static struct fiq_handler kgdb_fiq_desc = {
++	.name = "kgdb",
 +};
 +
-+/*
-+ * This is usually the maximum rate on debug ports. We make fifo large enough
-+ * to make copy-pasting to the terminal usable.
-+ */
-+#define KGDB_NMI_BAUD		115200
-+#define KGDB_NMI_FIFO_SIZE	roundup_pow_of_two(KGDB_NMI_BAUD / 8 / HZ)
-+
-+struct kgdb_nmi_tty_priv {
-+	struct tty_port port;
-+	struct tasklet_struct tlet;
-+	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
-+};
-+
-+static struct kgdb_nmi_tty_priv *kgdb_nmi_port_to_priv(struct tty_port *port)
++static long kgdb_fiq_setup_stack(void *info)
 +{
-+	return container_of(port, struct kgdb_nmi_tty_priv, port);
-+}
++	struct pt_regs regs;
 +
-+/*
-+ * Our debugging console is polled in a tasklet, so we'll check for input
-+ * every tick. In HZ-less mode, we should program the next tick.  We have
-+ * to use the lowlevel stuff as no locks should be grabbed.
-+ */
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+static void kgdb_tty_poke(void)
-+{
-+	tick_program_event(ktime_get(), 0);
-+}
-+#else
-+static inline void kgdb_tty_poke(void) {}
-+#endif
++	regs.ARM_sp = __get_free_pages(GFP_KERNEL, THREAD_SIZE_ORDER) +
++			THREAD_START_SP;
++	WARN_ON(!regs.ARM_sp);
 +
-+static struct tty_port *kgdb_nmi_port;
-+
-+static void kgdb_tty_recv(int ch)
-+{
-+	struct kgdb_nmi_tty_priv *priv;
-+	char c = ch;
-+
-+	if (!kgdb_nmi_port || ch < 0)
-+		return;
-+	/*
-+	 * Can't use port->tty->driver_data as tty might be not there. Tasklet
-+	 * will check for tty and will get the ref, but here we don't have to
-+	 * do that, and actually, we can't: we're in NMI context, no locks are
-+	 * possible.
-+	 */
-+	priv = kgdb_nmi_port_to_priv(kgdb_nmi_port);
-+	kfifo_in(&priv->fifo, &c, 1);
-+	kgdb_tty_poke();
-+}
-+
-+static int kgdb_nmi_poll_one_knock(void)
-+{
-+	static int n;
-+	int c = -1;
-+	const char *magic = kgdb_nmi_magic;
-+	size_t m = strlen(magic);
-+	bool printch = 0;
-+
-+	c = dbg_io_ops->read_char();
-+	if (c == NO_POLL_CHAR)
-+		return c;
-+
-+	if (!kgdb_nmi_knock && (c == '\r' || c == '\n')) {
-+		return 1;
-+	} else if (c == magic[n]) {
-+		n = (n + 1) % m;
-+		if (!n)
-+			return 1;
-+		printch = 1;
-+	} else {
-+		n = 0;
-+	}
-+
-+	if (kgdb_nmi_tty_enabled) {
-+		kgdb_tty_recv(c);
-+		return 0;
-+	}
-+
-+	if (printch) {
-+		kdb_printf("%c", c);
-+		return 0;
-+	}
-+
-+	kdb_printf("\r%s %s to enter the debugger> %*s",
-+		   kgdb_nmi_knock ? "Type" : "Hit",
-+		   kgdb_nmi_knock ? magic  : "<return>", m, "");
-+	while (m--)
-+		kdb_printf("\b");
++	set_fiq_regs(&regs);
 +	return 0;
 +}
 +
-+/**
-+ * kgdb_nmi_poll_knock - Check if it is time to enter the debugger
++static void (*kgdb_enable_fiq)(unsigned int irq, bool on);
++
++void kgdb_arch_enable_nmi(bool on)
++{
++	if (!kgdb_enable_fiq)
++		return;
++	kgdb_enable_fiq(kgdb_fiq, on);
++}
++
++int __init kgdb_register_fiq(unsigned int mach_kgdb_fiq,
++		void (*mach_kgdb_enable_fiq)(unsigned int irq, bool on),
++		bool (*mach_is_kgdb_fiq)(unsigned int irq))
++{
++	int err;
++	int cpu;
++
++	if (!kgdb_fiq_enabled)
++		return -ENODEV;
++	if (kgdb_fiq)
++		return -EBUSY;
++
++	kgdb_fiq = mach_kgdb_fiq;
++	kgdb_enable_fiq = mach_kgdb_enable_fiq;
++	is_kgdb_fiq = mach_is_kgdb_fiq;
++
++	err = claim_fiq(&kgdb_fiq_desc);
++	if (err) {
++		pr_warn("%s: unable to claim fiq", __func__);
++		return err;
++	}
++
++	for_each_possible_cpu(cpu)
++		work_on_cpu(cpu, kgdb_fiq_setup_stack, NULL);
++
++	set_fiq_handler(&kgdb_fiq_handler,
++			&kgdb_fiq_handler_end - &kgdb_fiq_handler);
++
++	return 0;
++}
+diff --git a/arch/arm/kernel/kgdb_fiq_entry.S b/arch/arm/kernel/kgdb_fiq_entry.S
+new file mode 100644
+index 0000000..d6becca
+--- /dev/null
++++ b/arch/arm/kernel/kgdb_fiq_entry.S
+@@ -0,0 +1,87 @@
++/*
++ * KGDB FIQ entry
 + *
-+ * "Serial ports are often noisy, especially when muxed over another port (we
-+ * often use serial over the headset connector). Noise on the async command
-+ * line just causes characters that are ignored, on a command line that blocked
-+ * execution noise would be catastrophic." -- Colin Cross
++ * Copyright 1996,1997,1998 Russell King.
++ * Copyright 2012 Linaro Ltd.
++ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
 + *
-+ * So, this function implements KGDB/KDB knocking on the serial line: we won't
-+ * enter the debugger until we receive a known magic phrase (which is actually
-+ * "$3#33", known as "escape to KDB" command. There is also a relaxed variant
-+ * of knocking, i.e. just pressing the return key is enough to enter the
-+ * debugger. And if knocking is disabled, the function always returns 1.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
 + */
-+bool kgdb_nmi_poll_knock(void)
-+{
-+	if (kgdb_nmi_knock < 0)
-+		return 1;
 +
-+	while (1) {
-+		int ret;
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/memory.h>
++#include <asm/unwind.h>
++#include "entry-header.S"
 +
-+		ret = kgdb_nmi_poll_one_knock();
-+		if (ret == NO_POLL_CHAR)
-+			return 0;
-+		else if (ret == 1)
-+			break;
-+	}
-+	return 1;
-+}
++	.text
 +
-+/*
-+ * The tasklet is cheap, it does not cause wakeups when reschedules itself,
-+ * instead it waits for the next tick.
-+ */
-+static void kgdb_nmi_tty_receiver(unsigned long data)
-+{
-+	struct kgdb_nmi_tty_priv *priv = (void *)data;
-+	struct tty_struct *tty;
-+	char ch;
++@ This is needed for usr_entry/alignment_trap
++.LCcralign:
++	.long	cr_alignment
++.LCdohandle:
++	.long	kgdb_fiq_do_handle
 +
-+	tasklet_schedule(&priv->tlet);
++	.macro	fiq_handler
++	ldr	r1, =.LCdohandle
++	mov	r0, sp
++	adr	lr, BSYM(9997f)
++	ldr	pc, [r1]
++9997:
++	.endm
 +
-+	if (likely(!kgdb_nmi_tty_enabled || !kfifo_len(&priv->fifo)))
-+		return;
++	.align	5
++__fiq_svc:
++	svc_entry
++	fiq_handler
++	mov	r0, sp
++	ldmib	r0, {r1 - r14}
++	msr	cpsr_c, #FIQ_MODE | PSR_I_BIT | PSR_F_BIT
++	add	r8, r0, #S_PC
++	ldr	r9, [r0, #S_PSR]
++	msr	spsr_cxsf, r9
++	ldr	r0, [r0, #S_R0]
++	ldmia	r8, {pc}^
 +
-+	/* Port is there, but tty might be hung up, check. */
-+	tty = tty_port_tty_get(kgdb_nmi_port);
-+	if (!tty)
-+		return;
++ UNWIND(.fnend		)
++ENDPROC(__fiq_svc)
++	.ltorg
 +
-+	while (kfifo_out(&priv->fifo, &ch, 1))
-+		tty_insert_flip_char(priv->port.tty, ch, TTY_NORMAL);
-+	tty_flip_buffer_push(priv->port.tty);
++	.align	5
++__fiq_usr:
++	usr_entry
++	kuser_cmpxchg_check
++	fiq_handler
++	get_thread_info tsk
++	mov	why, #0
++	b	ret_to_user_from_irq
++ UNWIND(.fnend		)
++ENDPROC(__fiq_usr)
++	.ltorg
 +
-+	tty_kref_put(tty);
-+}
++	.global kgdb_fiq_handler
++kgdb_fiq_handler:
 +
-+static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
-+{
-+	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
++	vector_stub	fiq, FIQ_MODE, 4
 +
-+	kgdb_nmi_port = port;
-+	tasklet_schedule(&priv->tlet);
-+	return 0;
-+}
++	.long	__fiq_usr			@  0  (USR_26 / USR_32)
++	.long	__fiq_svc			@  1  (FIQ_26 / FIQ_32)
++	.long	__fiq_svc			@  2  (IRQ_26 / IRQ_32)
++	.long	__fiq_svc			@  3  (SVC_26 / SVC_32)
++	.long	__fiq_svc			@  4
++	.long	__fiq_svc			@  5
++	.long	__fiq_svc			@  6
++	.long	__fiq_svc			@  7
++	.long	__fiq_svc			@  8
++	.long	__fiq_svc			@  9
++	.long	__fiq_svc			@  a
++	.long	__fiq_svc			@  b
++	.long	__fiq_svc			@  c
++	.long	__fiq_svc			@  d
++	.long	__fiq_svc			@  e
++	.long	__fiq_svc			@  f
 +
-+static void kgdb_nmi_tty_shutdown(struct tty_port *port)
-+{
-+	struct kgdb_nmi_tty_priv *priv = port->tty->driver_data;
-+
-+	tasklet_kill(&priv->tlet);
-+	kgdb_nmi_port = NULL;
-+}
-+
-+static const struct tty_port_operations kgdb_nmi_tty_port_ops = {
-+	.activate	= kgdb_nmi_tty_activate,
-+	.shutdown	= kgdb_nmi_tty_shutdown,
-+};
-+
-+static int kgdb_nmi_tty_install(struct tty_driver *drv, struct tty_struct *tty)
-+{
-+	struct kgdb_nmi_tty_priv *priv;
-+	int ret;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	INIT_KFIFO(priv->fifo);
-+	tasklet_init(&priv->tlet, kgdb_nmi_tty_receiver, (unsigned long)priv);
-+	tty_port_init(&priv->port);
-+	priv->port.ops = &kgdb_nmi_tty_port_ops;
-+	tty->driver_data = priv;
-+
-+	ret = tty_port_install(&priv->port, drv, tty);
-+	if (ret) {
-+		pr_err("%s: can't nstall tty port: %d\n", __func__, ret);
-+		goto err;
-+	}
-+	return 0;
-+err:
-+	kfree(priv);
-+	return ret;
-+}
-+
-+static void kgdb_nmi_tty_cleanup(struct tty_struct *tty)
-+{
-+	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
-+
-+	tty->driver_data = NULL;
-+	kfree(priv);
-+}
-+
-+static int kgdb_nmi_tty_open(struct tty_struct *tty, struct file *file)
-+{
-+	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
-+
-+	return tty_port_open(&priv->port, tty, file);
-+}
-+
-+static void kgdb_nmi_tty_close(struct tty_struct *tty, struct file *file)
-+{
-+	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
-+
-+	tty_port_close(&priv->port, tty, file);
-+}
-+
-+static void kgdb_nmi_tty_hangup(struct tty_struct *tty)
-+{
-+	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
-+
-+	tty_port_hangup(&priv->port);
-+}
-+
-+static int kgdb_nmi_tty_write_room(struct tty_struct *tty)
-+{
-+	/* Actually, we can handle any amount as we use polled writes. */
-+	return 2048;
-+}
-+
-+static int kgdb_nmi_tty_write(struct tty_struct *tty, const unchar *buf, int c)
-+{
-+	int i;
-+
-+	for (i = 0; i < c; i++)
-+		dbg_io_ops->write_char(buf[i]);
-+	return c;
-+}
-+
-+static const struct tty_operations kgdb_nmi_tty_ops = {
-+	.open		= kgdb_nmi_tty_open,
-+	.close		= kgdb_nmi_tty_close,
-+	.install	= kgdb_nmi_tty_install,
-+	.cleanup	= kgdb_nmi_tty_cleanup,
-+	.hangup		= kgdb_nmi_tty_hangup,
-+	.write_room	= kgdb_nmi_tty_write_room,
-+	.write		= kgdb_nmi_tty_write,
-+};
-+
-+static int kgdb_nmi_enable_console(int argc, const char *argv[])
-+{
-+	kgdb_nmi_tty_enabled = !(argc == 1 && !strcmp(argv[1], "off"));
-+	return 0;
-+}
-+
-+int kgdb_register_nmi_console(void)
-+{
-+	int ret;
-+
-+	kgdb_nmi_tty_driver = alloc_tty_driver(1);
-+	if (!kgdb_nmi_tty_driver) {
-+		pr_err("%s: cannot allocate tty\n", __func__);
-+		return -ENOMEM;
-+	}
-+	kgdb_nmi_tty_driver->driver_name	= "ttyNMI";
-+	kgdb_nmi_tty_driver->name		= "ttyNMI";
-+	kgdb_nmi_tty_driver->num		= 1;
-+	kgdb_nmi_tty_driver->type		= TTY_DRIVER_TYPE_SERIAL;
-+	kgdb_nmi_tty_driver->subtype		= SERIAL_TYPE_NORMAL;
-+	kgdb_nmi_tty_driver->flags		= TTY_DRIVER_REAL_RAW;
-+	kgdb_nmi_tty_driver->init_termios	= tty_std_termios;
-+	tty_termios_encode_baud_rate(&kgdb_nmi_tty_driver->init_termios,
-+				     KGDB_NMI_BAUD, KGDB_NMI_BAUD);
-+	tty_set_operations(kgdb_nmi_tty_driver, &kgdb_nmi_tty_ops);
-+
-+	ret = tty_register_driver(kgdb_nmi_tty_driver);
-+	if (ret) {
-+		pr_err("%s: can't register tty driver: %d\n", __func__, ret);
-+		goto err_drv_reg;
-+	}
-+
-+	ret = kdb_register("nmi_console", kgdb_nmi_enable_console, "[off]",
-+			   "switch to Linux NMI console", 0);
-+	if (ret) {
-+		pr_err("%s: can't register kdb command: %d\n", __func__, ret);
-+		goto err_kdb_reg;
-+	}
-+
-+	register_console(&kgdb_nmi_console);
-+	kgdb_enable_nmi(1);
-+
-+	return 0;
-+err_kdb_reg:
-+	tty_unregister_driver(kgdb_nmi_tty_driver);
-+err_drv_reg:
-+	put_tty_driver(kgdb_nmi_tty_driver);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kgdb_register_nmi_console);
-+
-+int kgdb_unregister_nmi_console(void)
-+{
-+	int ret;
-+
-+	kgdb_enable_nmi(0);
-+	kdb_unregister("nmi_console");
-+
-+	ret = unregister_console(&kgdb_nmi_console);
-+	if (ret)
-+		return ret;
-+
-+	ret = tty_unregister_driver(kgdb_nmi_tty_driver);
-+	if (ret)
-+		return ret;
-+	put_tty_driver(kgdb_nmi_tty_driver);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(kgdb_unregister_nmi_console);
-diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
-index 2b42a01..ed97cfd 100644
---- a/drivers/tty/serial/kgdboc.c
-+++ b/drivers/tty/serial/kgdboc.c
-@@ -145,6 +145,8 @@ __setup("kgdboc=", kgdboc_option_setup);
- 
- static void cleanup_kgdboc(void)
- {
-+	if (kgdb_unregister_nmi_console())
-+		return;
- 	kgdboc_unregister_kbd();
- 	if (configured == 1)
- 		kgdb_unregister_io_module(&kgdboc_io_ops);
-@@ -198,6 +200,10 @@ do_register:
- 	if (err)
- 		goto noconfig;
- 
-+	err = kgdb_register_nmi_console();
-+	if (err)
-+		goto noconfig;
-+
- 	configured = 1;
- 
- 	return 0;
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index 3b111a6..9bf888e 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -245,6 +245,16 @@ extern void kgdb_arch_enable_nmi(bool on);
-  */
- extern int kgdb_enable_nmi(bool on);
- 
-+#ifdef CONFIG_SERIAL_KGDB_NMI
-+extern int kgdb_register_nmi_console(void);
-+extern int kgdb_unregister_nmi_console(void);
-+extern bool kgdb_nmi_poll_knock(void);
-+#else
-+static inline int kgdb_register_nmi_console(void) { return 0; }
-+static inline int kgdb_unregister_nmi_console(void) { return 0; }
-+static inline bool kgdb_nmi_poll_knock(void) { return 1; }
-+#endif
-+
- /**
-  * struct kgdb_arch - Describe architecture specific values.
-  * @gdb_bpt_instr: The instruction to trigger a breakpoint.
++	.global kgdb_fiq_handler_end
++kgdb_fiq_handler_end:
 -- 
 1.7.11.5
 
