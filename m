@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2IMAdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:33:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37074 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab2ILXdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:33:17 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 036/108] UBIFS: fix crash on error path
-Date: Wed, 12 Sep 2012 16:28:34 -0700
-Message-Id: <20120912232454.322374429@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
-References: <20120912232816.GA1655@kroah.com>
- <20120912232450.500619493@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1756188Ab2IMAdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:33:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7188 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab2IMAdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 20:33:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,413,1344236400"; 
+   d="scan'208";a="221447563"
+Date: Thu, 13 Sep 2012 08:33:37 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
+Message-ID: <20120913003337.GA16363@localhost>
+References: <87wr002z39.fsf@devron.myhome.or.jp>
+ <20120912024249.GB17922@localhost>
+ <87sjan3c27.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sjan3c27.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Wed, Sep 12, 2012 at 05:00:48PM +0900, OGAWA Hirofumi wrote:
+> Fengguang Wu <fengguang.wu@intel.com> writes:
+> 
+> > On Wed, Sep 12, 2012 at 03:28:42AM +0900, OGAWA Hirofumi wrote:
+> >> 
+> >> If bdi has BDI_CAP_NO_WRITEBACK, bdi_forker_thread() doesn't start
+> >> writeback thread. This means there is no consumer of work item made
+> >> by bdi_queue_work().
+> >> 
+> >> This adds to checking of !bdi_cap_writeback_dirty(sb->s_bdi) before
+> >> calling bdi_queue_work(), otherwise queued work never be consumed.
+> >
+> > Thanks for catching this! Does this bug have any side effects other
+> > than memory leaking?
+> >
+> > It may be possible for some caller that actually expect it to do some
+> > work to make progress, otherwise will eventually block.  If so, we'll
+> > need to fix the caller.
+> 
+> If used custom bdi with BDI_CAP_NO_WRITEBACK, wait_for_completion()
+> (e.g. sync_inodes_sb()) will be blocked forever.
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+The sync(2) block cannot be fixed by this patch?
 
-------------------
+> I tested by custom bdi with BDI_CAP_NO_WRITEBACK - sync(2) blocked
+> forever by this reason.
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+What's your test script? How do you create/use that custom bdi?
 
-commit 11e3be0be2a1314e0861304857e7efcaed5d3e54 upstream.
-
-This patch fixes a regression introduced by
-"4994297 UBIFS: make ubifs_lpt_init clean-up in case of failure" which
-I've hit while running the 'integck -p' test. When remount the file-system
-from R/O mode to R/W mode and 'lpt_init_wr()' fails, we free _all_ LPT
-resources by calling 'ubifs_lpt_free(c, 0)', even those needed for R/O
-mode. This leads to subsequent crashes, e.g., if we try to unmount
-the file-system.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ubifs/lpt.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/fs/ubifs/lpt.c
-+++ b/fs/ubifs/lpt.c
-@@ -1749,7 +1749,10 @@ int ubifs_lpt_init(struct ubifs_info *c,
- 	return 0;
- 
- out_err:
--	ubifs_lpt_free(c, 0);
-+	if (wr)
-+		ubifs_lpt_free(c, 1);
-+	if (rd)
-+		ubifs_lpt_free(c, 0);
- 	return err;
- }
- 
-
-
+Thanks,
+Fengguang
