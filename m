@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab2IMPJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:09:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40064 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095Ab2IMPG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:06:29 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 02/11] kdb: Implement disable_nmi command
-Date: Thu, 13 Sep 2012 08:03:26 -0700
-Message-Id: <1347548615-18227-2-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <20120913150133.GA16238@lizard>
-References: <20120913150133.GA16238@lizard>
+	id S1754891Ab2IMPOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:14:32 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:43180 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773Ab2IMPOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 11:14:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=hb3b5mcBDyj59tUhibX9gPcAh2DMpE/2
+	4hBt3HJzgAOBrSpfJIHW4vPow0VquYoPyA1ncDgMyGzjSSNknECYaVg4garac7Z3
+	GymtOzKRhyfsnFW/mzVvakulAr+HHbKHNqT/FvCsXOMLljZ9/U7u+DGCMRNGwqW0
+	Uv+h42P1RM4=
+From: Junio C Hamano <gitster@pobox.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jeff King <peff@peff.net>, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Git Mailing List <git@vger.kernel.org>
+Subject: Re: [GIT PULL] sound fixes for 3.6-rc6
+References: <s5h392m1728.wl%tiwai@suse.de>
+ <CA+55aFyo6do-dZiZMiwZkN1Ko+W58+4-zkbfJnpQR+ufw=+8ig@mail.gmail.com>
+ <s5hzk4uyvsr.wl%tiwai@suse.de> <s5hvcfiyum4.wl%tiwai@suse.de>
+ <20120913130344.GC4287@sigill.intra.peff.net> <s5hligeyrz8.wl%tiwai@suse.de>
+Date: Thu, 13 Sep 2012 08:14:27 -0700
+In-Reply-To: <s5hligeyrz8.wl%tiwai@suse.de> (Takashi Iwai's message of "Thu,
+ 13 Sep 2012 15:25:47 +0200")
+Message-ID: <7vhar29cq4.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: B6A39F74-FDB5-11E1-BAE0-BAB72E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This command disables NMI-entry. If NMI source has been previously shared
-with a serial console ("debug port"), this effectively releases the port
-from KDB exclusive use, and makes the console available for normal use.
+Takashi Iwai <tiwai@suse.de> writes:
 
-Of course, NMI can be reenabled, enable_nmi modparam is used for that:
+>> I can't reproduce here. What is your exact request-pull invocation?
 
-	echo 1 > /sys/module/kdb/parameters/enable_nmi
+This question was not answerd.  Did you ask request-pull to ask for
+a branch to be pulled, or did you ask it to ask for the tag to be
+pulled?
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- kernel/debug/kdb/kdb_main.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+If the former, I would have say it is a pebcak.  Linus asked you to
+ask a signed tag to be pulled, and you want to have the tag to be
+pulled, but if you do not give "git request-pull" the tag but a
+branch that the tag points at, the command does not have a good
+reason to countermand your (apparent) wish that the branch is what
+is to be pulled.
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 31df170..9fadff1 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -21,6 +21,7 @@
- #include <linux/smp.h>
- #include <linux/utsname.h>
- #include <linux/vmalloc.h>
-+#include <linux/atomic.h>
- #include <linux/module.h>
- #include <linux/mm.h>
- #include <linux/init.h>
-@@ -2107,6 +2108,32 @@ static int kdb_dmesg(int argc, const char **argv)
- 	return 0;
- }
- #endif /* CONFIG_PRINTK */
-+
-+/* Make sure we balance enable/disable calls, must disable first. */
-+static atomic_t kdb_nmi_disabled;
-+
-+static int kdb_disable_nmi(int argc, const char *argv[])
-+{
-+	if (atomic_read(&kdb_nmi_disabled))
-+		return 0;
-+	atomic_set(&kdb_nmi_disabled, 1);
-+	kgdb_enable_nmi(0);
-+	return 0;
-+}
-+
-+static int kdb_param_enable_nmi(const char *val, const struct kernel_param *kp)
-+{
-+	if (!atomic_add_unless(&kdb_nmi_disabled, -1, 0))
-+		return -EINVAL;
-+	kgdb_enable_nmi(1);
-+	return 0;
-+}
-+
-+static const struct kernel_param_ops kdb_param_ops_enable_nmi = {
-+	.set = kdb_param_enable_nmi,
-+};
-+module_param_cb(enable_nmi, &kdb_param_ops_enable_nmi, NULL, 0600);
-+
- /*
-  * kdb_cpu - This function implements the 'cpu' command.
-  *	cpu	[<cpunum>]
-@@ -2851,6 +2878,8 @@ static void __init kdb_inittab(void)
- 	kdb_register_repeat("dmesg", kdb_dmesg, "[lines]",
- 	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
- #endif
-+	kdb_register_repeat("disable_nmi", kdb_disable_nmi, "",
-+	  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
- 	kdb_register_repeat("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
- 	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
- 	kdb_register_repeat("kill", kdb_kill, "<-signal> <pid>",
--- 
-1.7.11.5
+>> Is request-pull showing a warning like:
+>> 
+>>   warn: You locally have sound-3.6 but it does not (yet)
+>>   warn: appear to be at git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git
+>>   warn: Do you want to push it there, perhaps?
+>
+> Hm, it looks like the check is performed only for tag objects.
+> In the example below, no warning appears:
+>     % git tag mytest for-next
+>     % git request-pull mytest~ git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git mytest
+>
+> With an annotated or a signed tag, git seems giving a warning like
+> above, indeed.  So my test seemed wrong.  Sorry for the noise.
 
+OK.
