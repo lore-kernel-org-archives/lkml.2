@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab2IMRSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 13:18:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56126 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758650Ab2IMRSh (ORCPT
+	id S932231Ab2IMRTC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 13:19:02 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57967 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758650Ab2IMRS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 13:18:37 -0400
-Date: Thu, 13 Sep 2012 10:18:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120913171832.GY7677@google.com>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <20120911100433.GC8058@dhcp22.suse.cz>
- <5050568B.9090601@parallels.com>
- <20120912154907.GW21579@dhcp22.suse.cz>
- <20120912171120.GP7677@google.com>
- <20120913121438.GC8055@dhcp22.suse.cz>
+	Thu, 13 Sep 2012 13:18:59 -0400
+Message-ID: <5052157F.8040201@wwwdotorg.org>
+Date: Thu, 13 Sep 2012 11:18:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913121438.GC8055@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: stern@rowland.harvard.edu, gregkh@linuxfoundation.org, balbi@ti.com,
+        swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2] USB: PHY: Re-organize Tegra USB PHY driver
+References: <1347519738-24162-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1347519738-24162-1-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
-
-On Thu, Sep 13, 2012 at 02:14:38PM +0200, Michal Hocko wrote:
-> I would like to see use_hierarchy go away. The only concern I have is 
-> to warn only if somebody is doing something wrong (aka flat
-> hierarchies). Or better put it this way. Do not warn in cases which do
-> not change if use_hierarchy is gone or default changes to 1.
-> An example:
-> root (use_hierarchy=0)
->  | \
->  |  A (use_hierarchy=0)
->  |
->  B (use_hierarachy=1)
->  |\
->  C D
+On 09/13/2012 01:02 AM, Venu Byravarasu wrote:
+> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
+> In order to support USB PHY drivers on these SoCs, existing
+> PHY driver is split into SoC agnostic common USB PHY driver
+> and Tegra20-specific USB phy driver. This will facilitate
+> easy addition and deletion of phy drivers for Tegra SoCs.
 > 
-> is a perfectly sane configuration and I do not see any reason to fill
-> logs with some scary warnings when A is created. There will be no
-> semantical change in this setup When use_hierchy is gone.
-> 
-> So the only thing I am proposing here is to warn only if something
-> should be fixed in the configuration in order to be prepared for fully
-> hierarchical (and that is a second level of children from root with
-> use_hierachy==0).
-> 
-> Does it make more sense now?
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 
-Ah, okay, so what you're saying is that we shouldn't warn if 0
-.use_hierarchys don't make any behavior difference from when they're
-all 1, right?  If so, I have no objection.  Will incorporate your
-updated version.
-
-Thanks.
-
--- 
-tejun
+Tested-by: Stephen Warren <swarren@wwwdotorg.org>
