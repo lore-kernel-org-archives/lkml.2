@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab2IMGt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:49:57 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50070 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754137Ab2IMGt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:49:56 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX192Krkn5Jl2Tm8SDMuqHYWAdCzUFehVBS8mow5Ptg
-	ZjUPR7QSKUbT9N
-Message-ID: <1347518991.6821.45.camel@marge.simpson.net>
-Subject: Re: [RFC] sched: nohz_idle_balance
-From: Mike Galbraith <efault@gmx.de>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@redhat.com
-Date: Thu, 13 Sep 2012 08:49:51 +0200
-In-Reply-To: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
-References: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1756071Ab2IMGuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:50:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50379 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755968Ab2IMGuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:50:07 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <svenkatr@ti.com>
+CC: <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <cjb@laptop.org>, <nsekhar@ti.com>,
+        <sudhakar.raj@ti.com>, <gururaja.hebbar@ti.com>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>
+Subject: [PATCH V2] mmc: omap_hsmmc: Pass on the suspend failure to the PM core
+Date: Thu, 13 Sep 2012 12:01:03 +0530
+Message-ID: <1347517863-30017-1-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 06:11 +0200, Vincent Guittot wrote: 
-> On tickless system, one CPU runs load balance for all idle CPUs.
-> The cpu_load of this CPU is updated before starting the load balance
-> of each other idle CPUs. We should instead update the cpu_load of the balance_cpu.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/fair.c |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 1ca4fe4..9ae3a5b 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4794,14 +4794,15 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
->  		if (need_resched())
->  			break;
->  
-> -		raw_spin_lock_irq(&this_rq->lock);
-> -		update_rq_clock(this_rq);
-> -		update_idle_cpu_load(this_rq);
-> -		raw_spin_unlock_irq(&this_rq->lock);
-> +		rq = cpu_rq(balance_cpu);
-> +
-> +		raw_spin_lock_irq(&rq->lock);
-> +		update_rq_clock(rq);
-> +		update_idle_cpu_load(rq);
-> +		raw_spin_unlock_irq(&rq->lock);
->  
->  		rebalance_domains(balance_cpu, CPU_IDLE);
->  
-> -		rq = cpu_rq(balance_cpu);
->  		if (time_after(this_rq->next_balance, rq->next_balance))
->  			this_rq->next_balance = rq->next_balance;
->  	}
+From: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-Ew, banging locks and updating clocks to what good end?
+In some cases mmc_suspend_host() is not able to claim the
+host and proceed with the suspend process. The core returns
+-EBUSY to the host controller driver. Unfortunately, the
+host controller driver does not pass on this information
+to the PM core and hence the system suspend process continues.
 
--Mike
+	ret = mmc_suspend_host(host->mmc);
+	if (ret) {
+		host->suspended = 0;
+		if (host->pdata->resume) {
+			ret = host->pdata->resume(dev, host->slot_id);
+
+The return status from mmc_suspend_host() is overwritten by return
+status from host->pdata->resume. So the original return status is lost.
+
+In these cases the MMC core gets to an unexpected state
+during resume and multiple issues related to MMC crop up.
+1. Host controller driver starts accessing the device registers
+before the clocks are enabled which leads to a prefetch abort.
+2. A file copy thread which was launched before suspend gets
+stuck due to the host not being reclaimed during resume.
+
+To avoid such problems pass on the -EBUSY status to the PM core
+from the host controller driver. With this change, MMC core
+suspend might still fail but it does not end up making the
+system unusable. Suspend gets aborted and the user can try
+suspending the system again.
+
+Signed-off-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+---
+Changes from V1:
+	- Instead of forcibly returning -EBUSY on err, retain old
+	status and pass on the same to the caller.
+	- add more detail to commit message (explanation with code
+	snippet)
+
+:100644 100644 9afdd20... d9af5f1... M	drivers/mmc/host/omap_hsmmc.c
+ drivers/mmc/host/omap_hsmmc.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 9afdd20..d9af5f1 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2050,8 +2050,7 @@ static int omap_hsmmc_suspend(struct device *dev)
+ 	if (ret) {
+ 		host->suspended = 0;
+ 		if (host->pdata->resume) {
+-			ret = host->pdata->resume(dev, host->slot_id);
+-			if (ret)
++			if (host->pdata->resume(dev, host->slot_id))
+ 				dev_dbg(dev, "Unmask interrupt failed\n");
+ 		}
+ 		goto err;
+-- 
+1.7.0.4
 
