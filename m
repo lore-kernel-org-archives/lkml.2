@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab2IMDaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 23:30:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64875 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab2IMDaB (ORCPT
+	id S1755321Ab2IMDlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 23:41:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42399 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab2IMDk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 23:30:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ligefz34.fsf@xmission.com>
-References: <87lih2h6i4.fsf@xmission.com>
-	<87mx1iecwi.fsf@xmission.com>
-	<CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
-	<87ligefz34.fsf@xmission.com>
-Date: Thu, 13 Sep 2012 13:29:59 +1000
-Message-ID: <CAPM=9tyF=R7KespXvS6FmU0d4KOcu=NT_Y4zm9gbwvfze64hOw@mail.gmail.com>
-Subject: Re: [REVIEW][PATCH 12/15] userns: Convert drm to use kuid and kgid
- and struct pid where appropriate
-From: Dave Airlie <airlied@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Sep 2012 23:40:59 -0400
+From: joseph.glanville@orionvm.com.au
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        NeilBrown <neilb@suse.de>, Kent Overstreet <koverstreet@google.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Joseph Glanville <joseph.glanville@orionvm.com.au>
+Subject: [PATCH] block: Document lack of ordering of submit_bio/generic_make_request
+Date: Thu, 13 Sep 2012 13:40:30 +1000
+Message-Id: <1347507630-10215-1-git-send-email-joseph.glanville@orionvm.com.au>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 12:14 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Dave Airlie <airlied@gmail.com> writes:
->
->>> Blink Blink this had not been converted to use struct pid ages ago?
->>>
->>> - On drm open capture the openers kuid and struct pid.
->>> - On drm close release the kuid and struct pid
->>> - When reporting the uid and pid convert the kuid and struct pid
->>>   into values in the appropriate namespace.
->>>
->>
->> Hi Eric,
->>
->> I'm fine with this seems okay, do you want me to merge it via
->> drm-next?
->
-> My plan is to merge it via my user namespace tree.  And since you have
-> responed positively I will add your acked-by.  There are some nice
-> synergies when I get all of the changes in one tree.
->
-> If for some reason you want to carry this in your drm tree we can work
-> something out.
->
-> In this case I expect the change isn't big enough to worry about.
+From: Joseph Glanville <joseph.glanville@orionvm.com.au>
 
-No all fine by me,
+It is worth noting here that the block layer makes no attempt
+to preserve the order of requests and that upper layers like
+journaling filesystems that require such ordering need to do so
+explicity.
 
-for formality sake:
-Acked-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Joseph Glanville <joseph.glanville@orionvm.com.au>
+---
+ block/blk-core.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 4b4dbdf..14b8be6 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1749,6 +1749,11 @@ end_io:
+  * bio happens to be merged with someone else, and may resubmit the bio to
+  * a lower device by calling into generic_make_request recursively, which
+  * means the bio should NOT be touched after the call to ->make_request_fn.
++ *
++ * Ordering is not guaranteed, callers of generic_make_request()
++ * that require ordering should ensure dependencies are first drained
++ * before submission of dependent bios.
++ *
+  */
+ void generic_make_request(struct bio *bio)
+ {
+@@ -1808,6 +1813,7 @@ EXPORT_SYMBOL(generic_make_request);
+  * submit_bio() is very similar in purpose to generic_make_request(), and
+  * uses that function to do most of the work. Both are fairly rough
+  * interfaces; @bio must be presetup and ready for I/O.
++ * Note: submit_bio() doesn't ensure ordering, see generic_make_request()
+  *
+  */
+ void submit_bio(int rw, struct bio *bio)
+-- 
+1.7.12
+
