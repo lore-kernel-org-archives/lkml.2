@@ -1,246 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2IMDtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 23:49:50 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12459 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab2IMDtr convert rfc822-to-8bit (ORCPT
+	id S1755462Ab2IMDu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 23:50:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65187 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab2IMDuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 23:49:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 12 Sep 2012 20:48:56 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Thu, 13 Sep 2012 09:19:41 +0530
-Subject: RE: [PATCH] USB: phy: re-organize tegra phy driver
-Thread-Topic: [PATCH] USB: phy: re-organize tegra phy driver
-Thread-Index: Ac2RFYO5bGw5yK0QTUGevFrkQDD47AATNuvw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDEFB8D80@BGMAIL02.nvidia.com>
-References: <1347447481-25574-1-git-send-email-vbyravarasu@nvidia.com>
- <5050D622.7080704@wwwdotorg.org>
-In-Reply-To: <5050D622.7080704@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 12 Sep 2012 23:50:01 -0400
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF49CB@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF49CB@DQHE02.ent.ti.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Thu, 13 Sep 2012 11:49:39 +0800
+X-Google-Sender-Auth: cVvsZF5b8eCvWejcjbljAzIQJ6s
+Message-ID: <CAK5ve-J3TCJehSja8eRg58ZHqFMFDRx7T2O_EQH-kT=_zRXRHw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] leds-lp5523: turn off the LED engines on unloading
+ the driver
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Thursday, September 13, 2012 12:06 AM
-> To: Venu Byravarasu
-> Cc: balbi@ti.com; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org;
-> linux-tegra@vger.kernel.org
-> Subject: Re: [PATCH] USB: phy: re-organize tegra phy driver
-> 
-> On 09/12/2012 04:58 AM, Venu Byravarasu wrote:
-> > Nvidia produces several Tegra SOCs viz Tegra2, Tegra3 etc.
-> > In order to support USB phy drivers on these SOCs, existing
-> > phy driver is split into SOC agnostic common USB phy driver and
-> > tegra2 specific USB phy driver.
-> > This will facilitate easy addition & deletion of phy drivers for
-> > Tegra SOCs.
-> 
-> For capitalization/related reasons, I would re-write the commit
-> description as:
-> 
-> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
-> In order to support USB PHY drivers on these SoCs, existing
+On Wed, Sep 12, 2012 at 8:16 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+>  The LP5523 has 3 engines which are used for running LED patterns.
+>  These engines should be off while unloading the driver.
+>  Obviously, LP5523 platform data are used for releasing the resource
+>  such like enable()/release_resource(), but these are not mandatory.
+>  Therefore this patch is required without the platform data dependency.
+>
 
-Will change tegra2 to Tegra20 and similar for Tegra30 & NVIDIA.
-However as phy is not an acronym, should we still have it in Caps?
+Thanks, merged into my for-next branch
+-Bryan
 
-> PHY driver is split into SoC agnostic common USB PHY driver and
-> Tegra20-specific USB phy driver. This will facilitate easy addition
-> and deletion of phy drivers for Tegra SoCs.
-> 
-> ... and s/tegra/Tegra/ in the patch subject.
-> 
-> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
-> 
-> (On Harmony, both the USB Ethernet on USB3/UTMI and USB2's ULPI to a
-> breakout board)
-> 
-> > diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-> 
-> > @@ -706,9 +709,22 @@ static int tegra_ehci_probe(struct platform_device
-> *pdev)
-> >  		}
-> >  	}
-> >
-> > +	phy_type = of_property_match_string(np, "phy_type", "utmi");
-> > +	if (phy_type >= 0)
-> > +		params.type = TEGRA_USB_PHY_TYPE_UTMI;
-> > +	else {
-> > +		phy_type = of_property_match_string(np, "phy_type",
-> "ulpi");
-> > +		if (phy_type >= 0)
-> > +			params.type = TEGRA_USB_PHY_TYPE_ULPI;
-> > +		else
-> > +			params.type = TEGRA_USB_PHY_TYPE_INVALID;
-> > +	}
-> > +
-> > +	params.mode = TEGRA_USB_PHY_MODE_HOST;
-> 
-> Do we not support device mode yet? There's a dr_mode property in the DT
-> that's supposed to indicate host/device/otg.
-> 
-> > diff --git a/drivers/usb/phy/tegra2_usb_phy.c
-> b/drivers/usb/phy/tegra2_usb_phy.c
-> 
-> > +#include <mach/gpio-tegra.h>
-> 
-> Please remove that #include statement; the heaer is not needed, and will
-> be deleted in the kernel 3.7 merge window.
-> 
-> > +static int tegra2_utmip_pad_open(struct tegra_usb_phy *phy)
-> > +{
-> > +	phy->pad_clk = clk_get_sys("utmip-pad", NULL);
-> > +	if (IS_ERR(phy->pad_clk)) {
-> > +		pr_err("%s: can't get utmip pad clock\n", __func__);
-> > +		return PTR_ERR(phy->pad_clk);
-> > +	}
-> > +
-> > +	if (phy->instance == 0) {
-> > +		phy->pad_regs = phy->regs;
-> > +	} else {
-> 
-> Can we use something other than phy->instance here? I see lots of usage
-> of this field, but we should really be deleting the following code from
-> ehci-tegra.c, rather the propagating the use of that field.
-> 
->         /* This is pretty ugly and needs to be fixed when we do only
->          * device-tree probing. Old code relies on the platform_device
->          * numbering that we lack for device-tree-instantiated devices.
->          */
->         if (instance < 0) {
->                 switch (res->start) {
->                 case TEGRA_USB_BASE:
->                         instance = 0;
->                         break;
->                 case TEGRA_USB2_BASE:
->                         instance = 1;
->                         break;
->                 case TEGRA_USB3_BASE:
->                         instance = 2;
->                         break;
->                 default:
->                         err = -ENODEV;
->                         dev_err(&pdev->dev, "unknown usb instance\n");
->                         goto fail_io;
->                 }
->         }
-> 
-> Still, I suppose the cleanup not to use the instance value could be a
-> later patch as long as you're aware of the issue and planning to solve it.
-> 
-> > +		phy->pad_regs = ioremap(TEGRA_USB_BASE,
-> TEGRA_USB_SIZE);
-> 
-> Hmmm. Why do we need to remap the registers again? Didn't the EHCI
-> controller already map them? I'm a little confused what in HW causes the
-> need for this whole if statement.
-> 
-> > +		if (!phy->pad_regs) {
-> > +			pr_err("%s: can't remap usb registers\n", __func__);
-> > +			clk_put(phy->pad_clk);
-> > +			return -ENOMEM;
-> > +		}
-> > +	}
-> 
-> > +static void tegra2_utmi_phy_clk_disable(struct tegra_usb_phy *phy)
-> > +{
-> > +	unsigned long val;
-> > +	void __iomem *base = phy->regs;
-> > +
-> > +	if (phy->instance == 0) {
-> 
-> Hmmm. There sure are a lot of places where the code is conditional based
-> on instance. This seems to be crying out to be split into more ops
-> functions that get set up once at probe() time and then just used.
-> 
-> > +static int tegra2_utmi_phy_power_off(struct tegra_usb_phy *phy)
-> > +{
-> > +	unsigned long val;
-> > +	void __iomem *base = phy->regs;
-> > +
-> > +	tegra2_utmi_phy_clk_disable(phy);
-> > +
-> > +	if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE) {
-> 
-> Hmm. Yet here, we have some support for device-mode.
-> 
-> > +static int	tegra2_usb_phy_open(struct tegra_usb_phy *phy)
-> > +{
-> > +	struct tegra_ulpi_config *ulpi_config;
-> > +	int err;
-> > +
-> > +	if (phy_is_ulpi(phy)) {
-> 
-> Similarly, this seems like it'd be better as two separate functions,
-> since there's already an op defined for open.
-> 
-> > +		ulpi_config = phy->config;
-> > +		phy->clk = clk_get_sys(NULL, ulpi_config->clk);
-> > +		if (IS_ERR(phy->clk)) {
-> > +			pr_err("%s: can't get ulpi clock\n", __func__);
-> > +			err = -ENXIO;
-> > +			goto err1;
-> > +		}
-> > +		if (!gpio_is_valid(ulpi_config->reset_gpio))
-> > +			ulpi_config->reset_gpio =
-> > +				of_get_named_gpio(phy->dev->of_node,
-> > +						  "nvidia,phy-reset-gpio", 0);
-> > +		if (!gpio_is_valid(ulpi_config->reset_gpio)) {
-> > +			pr_err("%s: invalid reset gpio: %d\n", __func__,
-> > +			       ulpi_config->reset_gpio);
-> > +			err = -EINVAL;
-> > +			goto err1;
-> > +		}
-> > +		gpio_request(ulpi_config->reset_gpio, "ulpi_phy_reset_b");
-> > +		gpio_direction_output(ulpi_config->reset_gpio, 0);
-> > +		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
-> > +		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
-> > +	} else {
-> > +		err = tegra2_utmip_pad_open(phy);
-> > +		if (err < 0)
-> > +			goto err1;
-> > +	}
-> > +	return 0;
-> > +err1:
-> > +	clk_disable_unprepare(phy->pll_u);
-> > +	clk_put(phy->pll_u);
-> 
-> In the else clause above, phy->pll_u was never assigned, yet failure
-> jumps here...
-> 
-> > +	return err;
-> > +}
-> 
-> > diff --git a/drivers/usb/phy/tegra2_usb_phy.h
-> b/drivers/usb/phy/tegra2_usb_phy.h
-> 
-> > +static const struct tegra_xtal_freq tegra_freq_table[] = {
-> > +	{
-> > +		.freq = 12000000,
-> > +		.enable_delay = 0x02,
-> ...
-> 
-> It doesn't seem like a good idea to put data into a header file.
-> 
-> > diff --git a/include/linux/usb/tegra_usb_phy.h
-> b/include/linux/usb/tegra_usb_phy.h
-> 
-> > +struct usb_phy_ops {
-> 
-> Shouldn't that be tegra_usb_phy_ops to avoid namespace collisions?
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lp5523.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index 3d60428..5ebdc92 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -997,6 +997,9 @@ static int lp5523_remove(struct i2c_client *client)
+>         struct lp5523_chip *chip = i2c_get_clientdata(client);
+>         int i;
+>
+> +       /* Disable engine mode */
+> +       lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
+> +
+>         lp5523_unregister_sysfs(client);
+>
+>         for (i = 0; i < chip->num_leds; i++) {
+> --
+> 1.7.9.5
+>
+>
+> Best Regards,
+> Milo
+>
+
+
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
