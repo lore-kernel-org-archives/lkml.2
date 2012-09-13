@@ -1,291 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab2IMDLc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 23:11:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45549 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752114Ab2IMDLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 23:11:30 -0400
-Message-ID: <1347505889.2749.2.camel@joe2Laptop>
-Subject: [PATCH 1/5] dev_dbg/dynamic_debug: Update to use printk_emit,
- optimize stack
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Baron <jbaron@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, netdev@vger.kernel.org,
+	id S1755184Ab2IMDMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 23:12:21 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:65400 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab2IMDMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 23:12:18 -0400
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
         linux-kernel@vger.kernel.org
-Date: Wed, 12 Sep 2012 20:11:29 -0700
-In-Reply-To: <cover.1345978012.git.joe@perches.com>
-References: <cover.1345978012.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: tytso@mit.edu, akpm@linux-foundation.org,
+        Anatol Pomozov <anatol.pomozov@gmail.com>
+Subject: [PATCH] fs: Preserve error code in get_empty_filp()
+Date: Wed, 12 Sep 2012 20:11:55 -0700
+Message-Id: <1347505915-27984-1-git-send-email-anatol.pomozov@gmail.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4e00daaa9
-("driver-core: extend dev_printk() to pass structured data")
-changed __dev_printk and broke dynamic-debug's ability to control the
-dynamic prefix of dev_dbg(dev,..).
+Allocating a file structure in function get_empty_filp() might fail because
+of several reasons:
+ - not enough memory for file structures
+ - operation is not allowed
+ - user is over its limit
 
-commit af7f2158fd
-("drivers-core: make structured logging play nice with dynamic-debug")
-made a minimal correction.
+Currently the function returns NULL in all cases and we loose the exact
+reason of the error. All callers of get_empty_filp() assume that the function
+can fail with ENFILE only.
 
-The current dynamic debug code uses up to 3 recursion levels via %pV.
-This can consume quite a bit of stack.  Directly call printk_emit to
-reduce the recursion depth.
+Return error through pointer. Change all callers to preserve this error code.
 
-These changes include:
-
-dev_dbg:
-o Create and use function create_syslog_header to format the syslog
-  header for printk_emit uses.
-o Call create_syslog_header and neaten __dev_printk
-o Make __dev_printk static not global
-o Remove include header declaration of __dev_printk
-o Remove now unused EXPORT_SYMBOL() of __dev_printk
-o Whitespace neatening
-
-dynamic_dev_dbg:
-o Remove KERN_DEBUG from dynamic_emit_prefix
-o Call create_syslog_header and printk_emit
-o Whitespace neatening
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Tested-by: Jim Cromie <jim.cromie@gmail.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
 ---
- drivers/base/core.c    |   64 +++++++++++++++++++++++++----------------------
- include/linux/device.h |    8 +++---
- lib/dynamic_debug.c    |   39 +++++++++++++++++++++-------
- 3 files changed, 67 insertions(+), 44 deletions(-)
+ arch/ia64/kernel/perfmon.c |  4 ++--
+ fs/anon_inodes.c           |  5 +++--
+ fs/file_table.c            | 22 ++++++++++++++--------
+ fs/hugetlbfs/inode.c       |  5 +++--
+ fs/namei.c                 |  4 ++--
+ fs/open.c                  |  5 ++---
+ fs/pipe.c                  |  9 ++++++---
+ ipc/shm.c                  |  4 +++-
+ mm/shmem.c                 |  5 +++--
+ net/socket.c               |  4 ++--
+ 10 files changed, 40 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 5e6e00b..d46b635 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1861,26 +1861,19 @@ void device_shutdown(void)
-  */
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 3fa4bc5..da2dcce 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -2221,9 +2221,9 @@ pfm_alloc_file(pfm_context_t *ctx)
+ 	d_add(path.dentry, inode);
  
- #ifdef CONFIG_PRINTK
--int __dev_printk(const char *level, const struct device *dev,
--		 struct va_format *vaf)
-+int create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
- {
--	char dict[128];
--	const char *level_extra = "";
--	size_t dictlen = 0;
- 	const char *subsys;
--
--	if (!dev)
--		return printk("%s(NULL device *): %pV", level, vaf);
-+	size_t pos = 0;
+ 	file = alloc_file(&path, FMODE_READ, &pfm_file_ops);
+-	if (!file) {
++	if (IS_ERR(file)) {
+ 		path_put(&path);
+-		return ERR_PTR(-ENFILE);
++		return file;
+ 	}
  
- 	if (dev->class)
- 		subsys = dev->class->name;
- 	else if (dev->bus)
- 		subsys = dev->bus->name;
- 	else
--		goto skip;
-+		return 0;
+ 	file->f_flags = O_RDONLY;
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 28d39fb..73536e3 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -160,10 +160,11 @@ struct file *anon_inode_getfile(const char *name,
  
--	dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--			    "SUBSYSTEM=%s", subsys);
-+	pos += snprintf(hdr + pos, hdrlen - pos, "SUBSYSTEM=%s", subsys);
+ 	d_instantiate(path.dentry, anon_inode_inode);
+ 
+-	error = -ENFILE;
+ 	file = alloc_file(&path, OPEN_FMODE(flags), fops);
+-	if (!file)
++	if (IS_ERR(file)) {
++		error = PTR_ERR(file);
+ 		goto err_dput;
++	}
+ 	file->f_mapping = anon_inode_inode->i_mapping;
+ 
+ 	file->f_pos = 0;
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 701985e..3b3f4d7 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -94,8 +94,8 @@ int proc_nr_files(ctl_table *table, int write,
+ #endif
+ 
+ /* Find an unused file structure and return a pointer to it.
+- * Returns NULL, if there are no more free file structures or
+- * we run out of memory.
++ * Returns an error pointer if some error happend e.g. we over file
++ * structures limit, run out of memory or operation is not permitted.
+  *
+  * Be very careful using this.  You are responsible for
+  * getting write access to any mount that you might assign
+@@ -108,6 +108,7 @@ struct file *get_empty_filp(void)
+ 	const struct cred *cred = current_cred();
+ 	static long old_max;
+ 	struct file * f;
++	int error;
  
  	/*
- 	 * Add device identifier DEVICE=:
-@@ -1896,32 +1889,41 @@ int __dev_printk(const char *level, const struct device *dev,
- 			c = 'b';
- 		else
- 			c = 'c';
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				   "DEVICE=%c%u:%u",
--				   c, MAJOR(dev->devt), MINOR(dev->devt));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=%c%u:%u",
-+				c, MAJOR(dev->devt), MINOR(dev->devt));
- 	} else if (strcmp(subsys, "net") == 0) {
- 		struct net_device *net = to_net_dev(dev);
- 
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=n%u", net->ifindex);
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=n%u", net->ifindex);
- 	} else {
--		dictlen++;
--		dictlen += snprintf(dict + dictlen, sizeof(dict) - dictlen,
--				    "DEVICE=+%s:%s", subsys, dev_name(dev));
-+		pos++;
-+		pos += snprintf(hdr + pos, hdrlen - pos,
-+				"DEVICE=+%s:%s", subsys, dev_name(dev));
+ 	 * Privileged users can go above max_files
+@@ -117,17 +118,22 @@ struct file *get_empty_filp(void)
+ 		 * percpu_counters are inaccurate.  Do an expensive check before
+ 		 * we go and fail.
+ 		 */
+-		if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files)
++		if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files) {
++			error = -ENFILE;
+ 			goto over;
++		}
  	}
--skip:
--	if (level[2])
--		level_extra = &level[2]; /* skip past KERN_SOH "L" */
  
--	return printk_emit(0, level[1] - '0',
--			   dictlen ? dict : NULL, dictlen,
--			   "%s %s: %s%pV",
--			   dev_driver_string(dev), dev_name(dev),
--			   level_extra, vaf);
-+	return pos;
-+}
-+EXPORT_SYMBOL(create_syslog_header);
-+
-+static int __dev_printk(const char *level, const struct device *dev,
-+			struct va_format *vaf)
-+{
-+	char hdr[128];
-+	size_t hdrlen;
-+
-+	if (!dev)
-+		return printk("%s(NULL device *): %pV", level, vaf);
-+
-+	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
-+
-+	return printk_emit(0, level[1] - '0', hdrlen ? hdr : NULL, hdrlen,
-+			   "%s %s: %pV",
-+			   dev_driver_string(dev), dev_name(dev), vaf);
- }
--EXPORT_SYMBOL(__dev_printk);
- 
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-@@ -1936,6 +1938,7 @@ int dev_printk(const char *level, const struct device *dev,
- 	vaf.va = &args;
- 
- 	r = __dev_printk(level, dev, &vaf);
-+
- 	va_end(args);
- 
- 	return r;
-@@ -1955,6 +1958,7 @@ int func(const struct device *dev, const char *fmt, ...)	\
- 	vaf.va = &args;						\
- 								\
- 	r = __dev_printk(kern_level, dev, &vaf);		\
-+								\
- 	va_end(args);						\
- 								\
- 	return r;						\
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 52a5f15..4800d73 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -891,12 +891,12 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int __dev_printk(const char *level, const struct device *dev,
--			struct va_format *vaf);
-+extern int create_syslog_header(const struct device *dev,
-+				char *hdr, size_t hdrlen);
-+
- extern __printf(3, 4)
- int dev_printk(const char *level, const struct device *dev,
--	       const char *fmt, ...)
--	;
-+	       const char *fmt, ...);
- extern __printf(2, 3)
- int dev_emerg(const struct device *dev, const char *fmt, ...);
- extern __printf(2, 3)
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 7ca29a0..29ff2e4 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -521,25 +521,25 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 	int pos_after_tid;
- 	int pos = 0;
- 
--	pos += snprintf(buf + pos, remaining(pos), "%s", KERN_DEBUG);
-+	*buf = '\0';
-+
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
- 		if (in_interrupt())
--			pos += snprintf(buf + pos, remaining(pos), "%s ",
--						"<intr>");
-+			pos += snprintf(buf + pos, remaining(pos), "<intr> ");
- 		else
- 			pos += snprintf(buf + pos, remaining(pos), "[%d] ",
--						task_pid_vnr(current));
-+					task_pid_vnr(current));
- 	}
- 	pos_after_tid = pos;
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->modname);
-+				desc->modname);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
- 		pos += snprintf(buf + pos, remaining(pos), "%s:",
--					desc->function);
-+				desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
- 		pos += snprintf(buf + pos, remaining(pos), "%d:",
--					desc->lineno);
-+				desc->lineno);
- 	if (pos - pos_after_tid)
- 		pos += snprintf(buf + pos, remaining(pos), " ");
- 	if (pos >= PREFIX_SIZE)
-@@ -559,9 +559,13 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = printk("%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
-+
-+	res = printk(KERN_DEBUG "%s%pV",
-+		     dynamic_emit_prefix(descriptor, buf), &vaf);
-+
- 	va_end(args);
- 
- 	return res;
-@@ -574,15 +578,30 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 	struct va_format vaf;
- 	va_list args;
- 	int res;
--	char buf[PREFIX_SIZE];
- 
- 	BUG_ON(!descriptor);
- 	BUG_ON(!fmt);
- 
- 	va_start(args, fmt);
-+
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
--	res = __dev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
-+
-+	if (!dev) {
-+		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
-+	} else {
-+		char buf[PREFIX_SIZE];
-+		char dict[128];
-+		size_t dictlen;
-+
-+		dictlen = create_syslog_header(dev, dict, sizeof(dict));
-+
-+		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
-+				  "%s%s %s: %pV",
-+				  dynamic_emit_prefix(descriptor, buf),
-+				  dev_driver_string(dev), dev_name(dev), &vaf);
+ 	f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
+-	if (f == NULL)
++	if (f == NULL) {
++		error = -ENOMEM;
+ 		goto fail;
 +	}
-+
- 	va_end(args);
  
- 	return res;
+ 	percpu_counter_inc(&nr_files);
+ 	f->f_cred = get_cred(cred);
+-	if (security_file_alloc(f))
++	error = security_file_alloc(f);
++	if (error)
+ 		goto fail_sec;
+ 
+ 	INIT_LIST_HEAD(&f->f_u.fu_list);
+@@ -149,7 +155,7 @@ over:
+ fail_sec:
+ 	file_free(f);
+ fail:
+-	return NULL;
++	return ERR_PTR(error);
+ }
+ 
+ /**
+@@ -173,8 +179,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+ 	struct file *file;
+ 
+ 	file = get_empty_filp();
+-	if (!file)
+-		return NULL;
++	if (IS_ERR(file))
++		return file;
+ 
+ 	file->f_path = *path;
+ 	file->f_mapping = path->dentry->d_inode->i_mapping;
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 8349a89..5ec849b 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -984,11 +984,12 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
+ 	inode->i_size = size;
+ 	clear_nlink(inode);
+ 
+-	error = -ENFILE;
+ 	file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+ 			&hugetlbfs_file_operations);
+-	if (!file)
++	if (IS_ERR(file)) {
++		error = PTR_ERR(file);
+ 		goto out_dentry; /* inode is already attached */
++	}
+ 
+ 	return file;
+ 
+diff --git a/fs/namei.c b/fs/namei.c
+index dd1ed1b..0160da0 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2885,8 +2885,8 @@ static struct file *path_openat(int dfd, const char *pathname,
+ 	int error;
+ 
+ 	file = get_empty_filp();
+-	if (!file)
+-		return ERR_PTR(-ENFILE);
++	if (IS_ERR(file))
++		return file;
+ 
+ 	file->f_flags = op->open_flag;
+ 
+diff --git a/fs/open.c b/fs/open.c
+index e1f2cdb..cb9a385 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -781,10 +781,9 @@ struct file *dentry_open(const struct path *path, int flags,
+ 	/* We must always pass in a valid mount pointer. */
+ 	BUG_ON(!path->mnt);
+ 
+-	error = -ENFILE;
+ 	f = get_empty_filp();
+-	if (f == NULL)
+-		return ERR_PTR(error);
++	if (IS_ERR(f))
++		return f;
+ 
+ 	f->f_flags = flags;
+ 	f->f_path = *path;
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 8d85d70..e420908 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -1035,16 +1035,19 @@ int create_pipe_files(struct file **res, int flags)
+ 
+ 	d_instantiate(path.dentry, inode);
+ 
+-	err = -ENFILE;
+ 	f = alloc_file(&path, FMODE_WRITE, &write_pipefifo_fops);
+-	if (!f)
++	if (IS_ERR(f)) {
++		err = PTR_ERR(f);
+ 		goto err_dentry;
++	}
+ 
+ 	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
+ 
+ 	res[0] = alloc_file(&path, FMODE_READ, &read_pipefifo_fops);
+-	if (!res[0])
++	if (IS_ERR(res[0])) {
++		err = PTR_ERR(res[0]);
+ 		goto err_file;
++	}
+ 
+ 	path_get(&path);
+ 	res[0]->f_flags = O_RDONLY | (flags & O_NONBLOCK);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 00faa05..c8eee21 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -1039,8 +1039,10 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 			  is_file_hugepages(shp->shm_file) ?
+ 				&shm_file_operations_huge :
+ 				&shm_file_operations);
+-	if (!file)
++	if (IS_ERR(file)) {
++		err = PTR_ERR(file);
+ 		goto out_free;
++	}
+ 
+ 	file->private_data = sfd;
+ 	file->f_mapping = shp->shm_file->f_mapping;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index d4e184e..cd814ee 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2948,11 +2948,12 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
+ 		goto put_dentry;
+ #endif
+ 
+-	error = -ENFILE;
+ 	file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+ 		  &shmem_file_operations);
+-	if (!file)
++	if (IS_ERR(file)) {
++		error = PTR_ERR(file);
+ 		goto put_dentry;
++	}
+ 
+ 	return file;
+ 
+diff --git a/net/socket.c b/net/socket.c
+index edc3c4a..dc1d071 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -369,12 +369,12 @@ static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
+ 
+ 	file = alloc_file(&path, FMODE_READ | FMODE_WRITE,
+ 		  &socket_file_ops);
+-	if (unlikely(!file)) {
++	if (unlikely(IS_ERR(file))) {
+ 		/* drop dentry, keep inode */
+ 		ihold(path.dentry->d_inode);
+ 		path_put(&path);
+ 		put_unused_fd(fd);
+-		return -ENFILE;
++		return PTR_ERR(file);
+ 	}
+ 
+ 	sock->file = file;
 -- 
-1.7.8.111.gad25c.dirty
-
+1.7.12
 
