@@ -1,81 +1,546 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548Ab2IMQQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 12:16:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58060 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab2IMQQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 12:16:50 -0400
-Message-ID: <505206E3.7050307@ti.com>
-Date: Thu, 13 Sep 2012 18:16:35 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <arnd@arndb.de>,
-        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm: omap: hwmod: make *phy_48m* as the main_clk of
- ocp2scp
-References: <1347008955-21310-1-git-send-email-kishon@ti.com> <alpine.DEB.2.00.1209112218440.9444@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1209112218440.9444@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8bit
+	id S1758563Ab2IMQRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 12:17:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52044 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578Ab2IMQQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 12:16:51 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: lars@metafoo.de, jic23@cam.ac.uk, cbou@mail.ru
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] power: battery: Generic battery driver using IIO
+Date: Thu, 13 Sep 2012 21:46:32 +0530
+Message-Id: <1347552992-13836-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: anish kumar <anish198519851985@gmail.com>
 
-On 09/12/2012 12:28 AM, Paul Walmsley wrote:
-> Hi Kishon, Benoît,
-> 
-> On Fri, 7 Sep 2012, Kishon Vijay Abraham I wrote:
-> 
->> Made *ocp2scp_usb_phy_phy_48m* as the main_clk for ocp2scp. Since this 
->> ocp2scp module does not have any fck but does have a single opt_clock, 
->> it is added as the main_clk for ocp2scp. Also removed phy_48m as the 
->> optional clock since it is now made as the main clock. By this the 
->> driver need not enable/disable phy_48m clk separately and 
->> runtime_get/runtime_put will take care of that.
-> 
-> Looking at this patch, it doesn't seem to make sense from a hardware point 
-> of view.  If you look at the OMAP4430 TRM Rev. AE, Table 23-1166 "Clocks 
-> and Resets", the 48MHz clock input is listed as an "Optional functional 
-> clock".  The main functional clock is listed as "INIT_960M_FCLK", which 
-> according to the same TRM, Section 3.6.3.9.1 "Overview", is an alias for 
-> the clock we call "dpll_usb_clkdcoldo_ck".
-> 
-> So if any clock should be the main functional clock in the hwmod data, 
-> shouldn't it be dpll_usb_clkdcoldo_ck?  The goal with the hwmod data 
-> is/was to have it match the hardware.
+In this version:
+Addressed concerns raised by lars:
+a. made the adc_bat per device.
+b. get the IIO channel using hardcoded channel names.
+c. Minor issues related to gpio_is_valid and some code
+   refactoring.
 
-In this case, the ocp2scp IP is just the *bus controller* to access the
-real USB_UTMI_PHY IP.
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ drivers/power/generic-adc-battery.c       |  460 +++++++++++++++++++++++++++++
+ include/linux/power/generic-adc-battery.h |   33 ++
+ 2 files changed, 493 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/generic-adc-battery.c
+ create mode 100644 include/linux/power/generic-adc-battery.h
 
-The TRM diagram does not show that level of detail unfortunately. You
-can check the PRCM spec (Figure 78 : CD_L3_INIT_USB clock scheme) to see
-the two modules.
-
-So considering phy_48m as the main clock is still correct for the
-ocp2scp IP.
-
-The INIT_960M_FCLK will be a fck associated with the child of the
-ocp2scp nodes which is the usb_phy.
-
-Upgrading the opt_clk to fck does make sense as soon as we don't have
-any other functional clock and as soon as this clock is *mandatory*. The
-optional aspect in that case is just a wrong PRCM naming for a clock
-that is mandatory. It is similar to the DSS case that does have only
-optional clocks that are mandatory.
-
-I do agree that we must stick to the HW definition as far as we can. But
-the optional attribute is something that is wrong/inaccurate for a
-couple of IPs. HW folks agreed on that point and will fix that in the
-future.
-
-Regards,
-Benoit
+diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
+new file mode 100644
+index 0000000..003e0e1
+--- /dev/null
++++ b/drivers/power/generic-adc-battery.c
+@@ -0,0 +1,460 @@
++/*
++ * Generic battery driver code using IIO
++ * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
++ * based on jz4740-battery.c
++ * based on s3c_adc_battery.c
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ *
++ */
++
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/gpio.h>
++#include <linux/err.h>
++#include <linux/timer.h>
++#include <linux/jiffies.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/iio/consumer.h>
++#include <linux/iio/types.h>
++
++#include <linux/power/generic-adc-battery.h>
++
++#define to_generic_bat(ptr)	\
++	container_of(ptr, struct generic_adc_bat, ptr)
++
++enum chan_type {
++	VOLTAGE = 0,
++	CURRENT,
++	POWER,
++	MAX_CHAN_TYPE
++};
++
++#define CHAN_MAX_NAME 30
++/*
++ * channel_name suggests the standard channel names for commonly used
++ * channel types.
++ */
++char channel_name[][CHAN_MAX_NAME + 1] = {
++	[VOLTAGE]	= "voltage",
++	[CURRENT]	= "current",
++	[POWER]		= "power",
++};
++
++struct generic_adc_bat {
++	struct power_supply	psy;
++	struct iio_channel	**channel;
++	struct iio_battery_platform_data	*pdata;
++	struct delayed_work bat_work;
++	int		was_plugged;
++	int		volt_value;
++	int		cur_value;
++	int		level;
++	int		status;
++	int		cable_plugged:1;
++};
++
++static void generic_adc_bat_ext_power_changed(struct power_supply *psy)
++{
++	struct generic_adc_bat *adc_bat;
++	adc_bat = to_generic_bat(psy);
++
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++}
++
++static enum power_supply_property bat_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++};
++
++/*
++ * This properties are set based on the received platform data and this
++ * should correspond one-to-one with enum chan_type.
++ */
++static enum power_supply_property dyn_props[] = {
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_POWER_NOW,
++};
++
++static int charge_finished(struct generic_adc_bat *adc_bat)
++{
++	return adc_bat->pdata->gpio_inverted ?
++		!gpio_get_value(adc_bat->pdata->gpio_charge_finished) :
++		gpio_get_value(adc_bat->pdata->gpio_charge_finished);
++}
++
++long read_scale_channel(struct generic_adc_bat *adc_bat,
++			enum power_supply_property psp)
++{
++	int scaleint, scalepart, iio_val, ret = 0;
++	int result = 0;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_POWER_NOW:
++		ret = iio_read_channel_raw(adc_bat->channel[POWER],
++				&iio_val);
++		ret = iio_read_channel_scale(adc_bat->channel[POWER],
++				&scaleint, &scalepart);
++		if (ret < 0)
++			return ret;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = iio_read_channel_raw(adc_bat->channel[VOLTAGE],
++				&iio_val);
++		ret = iio_read_channel_scale(adc_bat->channel[VOLTAGE],
++				&scaleint, &scalepart);
++		if (ret < 0)
++			return ret;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		ret = iio_read_channel_raw(adc_bat->channel[CURRENT],
++				&iio_val);
++		ret = iio_read_channel_scale(adc_bat->channel[CURRENT],
++				&scaleint, &scalepart);
++		if (ret < 0)
++			return ret;
++		break;
++	default:
++		break;
++	}
++
++	switch (ret) {
++	case IIO_VAL_INT:
++		result = iio_val * scaleint;
++		break;
++	case IIO_VAL_INT_PLUS_MICRO:
++		result = (s64)iio_val * (s64)scaleint +
++			div_s64((s64)iio_val * (s64)scalepart, 1000000LL);
++		break;
++	case IIO_VAL_INT_PLUS_NANO:
++		result = (s64)iio_val * (s64)scaleint +
++			div_s64((s64)iio_val * (s64)scalepart, 1000000000LL);
++		break;
++	}
++	return result;
++}
++
++static int generic_adc_bat_get_property(struct power_supply *psy,
++		enum power_supply_property psp,
++		union power_supply_propval *val)
++{
++	struct generic_adc_bat *adc_bat;
++	int ret = 0;
++	long result;
++
++	adc_bat = to_generic_bat(psy);
++	if (!adc_bat) {
++		dev_err(psy->dev, "no battery infos ?!\n");
++		return -EINVAL;
++	}
++
++	result = read_scale_channel(adc_bat, psp);
++	if (result < 0) {
++		dev_err(psy->dev, "read channel error\n");
++		ret =  -EINVAL;
++		goto err;
++	}
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
++			if (adc_bat->pdata->gpio_charge_finished < 0)
++				val->intval = adc_bat->level == 100000 ?
++					POWER_SUPPLY_STATUS_FULL :
++					adc_bat->status;
++			else
++				val->intval = adc_bat->status;
++		}
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
++		val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		val->intval = adc_bat->pdata->cal_charge(result);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_POWER_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = adc_bat->pdata->battery_info.technology;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = adc_bat->pdata->battery_info.voltage_min_design;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		val->intval = adc_bat->pdata->battery_info.voltage_max_design;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		val->intval = adc_bat->pdata->battery_info.charge_full_design;
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = adc_bat->pdata->battery_info.name;
++		break;
++	default:
++		return -EINVAL;
++	}
++err:
++	return ret;
++}
++
++static void generic_adc_bat_work(struct work_struct *work)
++{
++	struct generic_adc_bat *adc_bat;
++	struct delayed_work *delayed_work;
++	int is_charged;
++	int is_plugged;
++
++	delayed_work = container_of(work,
++				struct delayed_work, work);
++	adc_bat = container_of(delayed_work,
++				struct generic_adc_bat, bat_work);
++
++	is_plugged = power_supply_am_i_supplied(&adc_bat->psy);
++	adc_bat->cable_plugged = is_plugged;
++	if (is_plugged != adc_bat->was_plugged) {
++		adc_bat->was_plugged = is_plugged;
++		if (is_plugged)
++			adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
++		else
++			adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
++	} else {
++		if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
++			if ((adc_bat->pdata->gpio_charge_finished >= 0) &&
++								is_plugged) {
++				is_charged = charge_finished(adc_bat);
++				if (is_charged)
++					adc_bat->status =
++						POWER_SUPPLY_STATUS_FULL;
++				else
++					adc_bat->status =
++						POWER_SUPPLY_STATUS_CHARGING;
++			}
++		}
++	}
++
++	power_supply_changed(&adc_bat->psy);
++}
++
++static irqreturn_t generic_adc_bat_charged(int irq, void *dev_id)
++{
++	struct generic_adc_bat *adc_bat = dev_id;
++	adc_bat = container_of(&adc_bat->bat_work,
++				struct generic_adc_bat, bat_work);
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++	return IRQ_HANDLED;
++}
++
++static int __devinit generic_adc_bat_probe(struct platform_device *pdev)
++{
++	struct generic_adc_bat *adc_bat;
++	struct iio_battery_platform_data *pdata = pdev->dev.platform_data;
++	int ret, chan_index, fail = 0;
++
++	adc_bat = devm_kzalloc(&pdev->dev, sizeof(*adc_bat), GFP_KERNEL);
++	if (!adc_bat) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	/* copying the battery name from platform data */
++	adc_bat->psy.name = pdata->battery_name;
++
++	/* bootup default values for the battery */
++	adc_bat->volt_value = -1;
++	adc_bat->cur_value = -1;
++	adc_bat->cable_plugged = 0;
++	adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
++	adc_bat->psy.type = POWER_SUPPLY_TYPE_BATTERY;
++	adc_bat->psy.get_property =
++		generic_adc_bat_get_property;
++	adc_bat->psy.external_power_changed =
++		generic_adc_bat_ext_power_changed;
++
++	adc_bat->pdata = pdata;
++
++	/* calculate the total number of channels */
++	for (chan_index = 0; channel_name[chan_index]; chan_index++)
++		;
++
++	if (!chan_index) {
++		pr_err("atleast provide one channel\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * copying the static properties and allocating extra memory for holding
++	 * the extra configurable properties received from platform data.
++	*/
++	adc_bat->psy.properties = kzalloc(sizeof(bat_props)
++					+ sizeof(int)*chan_index, GFP_KERNEL);
++	if (!adc_bat->psy.properties) {
++		ret = -ENOMEM;
++		goto first_mem_fail;
++	}
++	memcpy(adc_bat->psy.properties, bat_props, sizeof(bat_props));
++
++	/* allocating memory for iio channels */
++	adc_bat->channel = kzalloc(chan_index * sizeof(struct iio_channel),
++					GFP_KERNEL);
++	if (!adc_bat->channel) {
++		ret = -ENOMEM;
++		goto second_mem_fail;
++	}
++
++	/*
++	 * getting channel from iio and copying the battery properties
++	 * based on the channel supported by consumer device.
++	 */
++	for (chan_index = 0; channel_name[chan_index]; chan_index++) {
++		adc_bat->channel[chan_index] =
++		iio_channel_get(dev_name(&pdev->dev),
++			channel_name[chan_index]);
++		/* we skip for channels which fail */
++		if (IS_ERR(adc_bat->channel[chan_index]))
++			fail++;
++		else {
++			static int index;
++			memcpy(adc_bat->psy.properties +
++				sizeof(bat_props) + sizeof(int)*index,
++				&dyn_props[chan_index],
++				sizeof(dyn_props[chan_index]));
++			index++;
++		}
++	}
++
++	/* none of the channels are supported so let's bail out */
++	if (fail == chan_index) {
++		ret = PTR_ERR(adc_bat->channel[chan_index]);
++		goto second_mem_fail;
++	}
++
++	ret = power_supply_register(&pdev->dev, &adc_bat->psy);
++	if (ret)
++		goto err_reg_fail;
++
++	INIT_DELAYED_WORK(&adc_bat->bat_work, generic_adc_bat_work);
++
++	if (gpio_is_valid(pdata->gpio_charge_finished)) {
++		ret = gpio_request(pdata->gpio_charge_finished, "charged");
++		if (ret)
++			goto err_gpio;
++
++		ret = request_any_context_irq(gpio_to_irq
++				(pdata->gpio_charge_finished),
++				generic_adc_bat_charged,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				"battery charged", &adc_bat);
++		if (ret)
++			goto err_gpio;
++	} else
++		goto err_gpio; /* let's bail out */
++
++	platform_set_drvdata(pdev, &adc_bat);
++
++	/* Schedule timer to check current status */
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(0));
++	return 0;
++
++err_gpio:
++	power_supply_unregister(&adc_bat->psy);
++err_reg_fail:
++	for (chan_index = 0; channel_name[chan_index]; chan_index++)
++		iio_channel_release(adc_bat->channel[chan_index]);
++	kfree(adc_bat->channel);
++second_mem_fail:
++	kfree(adc_bat->psy.properties);
++first_mem_fail:
++	return ret;
++}
++
++static int generic_adc_bat_remove(struct platform_device *pdev)
++{
++	int chan_index;
++	struct generic_adc_bat *adc_bat = platform_get_drvdata(pdev);
++
++	power_supply_unregister(&adc_bat->psy);
++
++	if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
++		if (adc_bat->pdata->gpio_charge_finished >= 0) {
++			free_irq(gpio_to_irq(
++				adc_bat->pdata->gpio_charge_finished),
++								NULL);
++			gpio_free(adc_bat->pdata->gpio_charge_finished);
++		}
++	}
++
++	for (chan_index = 0; channel_name[chan_index]; chan_index++)
++		iio_channel_release(adc_bat->channel[chan_index]);
++	cancel_delayed_work(&adc_bat->bat_work);
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int generic_adc_bat_suspend(struct device *dev)
++{
++	struct generic_adc_bat *adc_bat = dev_get_drvdata(dev);
++
++	cancel_delayed_work_sync(&adc_bat->bat_work);
++	adc_bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
++	return 0;
++}
++
++static int generic_adc_bat_resume(struct device *dev)
++{
++	struct generic_adc_bat *adc_bat = dev_get_drvdata(dev);
++
++	/* Schedule timer to check current status */
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++	return 0;
++}
++
++static const struct dev_pm_ops generic_adc_battery_pm_ops = {
++	.suspend        = generic_adc_bat_suspend,
++	.resume         = generic_adc_bat_resume,
++};
++
++#define GENERIC_ADC_BATTERY_PM_OPS       (&generic_adc_battery_pm_ops)
++#else
++#define GENERIC_ADC_BATTERY_PM_OPS       (NULL)
++#endif
++
++static struct platform_driver generic_adc_bat_driver = {
++	.driver		= {
++		.name	= "generic-adc-battery",
++		.owner	= THIS_MODULE,
++		.pm	= GENERIC_ADC_BATTERY_PM_OPS
++	},
++	.probe		= generic_adc_bat_probe,
++	.remove		= generic_adc_bat_remove,
++};
++
++module_platform_driver(generic_adc_bat_driver);
++
++MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
++MODULE_DESCRIPTION("generic battery driver using IIO");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/power/generic-adc-battery.h b/include/linux/power/generic-adc-battery.h
+new file mode 100644
+index 0000000..d7c6d20
+--- /dev/null
++++ b/include/linux/power/generic-adc-battery.h
+@@ -0,0 +1,33 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef GENERIC_ADC_BATTERY_H
++#define GENERIC_ADC_BATTERY_H
++
++/* should be enough for the channel names */
++#define BAT_MAX_NAME	30
++
++enum chan_type {
++	VOLTAGE = 0,
++	CURRENT,
++	POWER,
++	MAX_CHAN_TYPE
++};
++
++extern char channel_name[][BAT_MAX_NAME + 1];
++
++struct iio_battery_platform_data {
++	struct power_supply_info battery_info;
++	char	**channel_name;
++	char	*battery_name;
++	int	(*cal_charge)(long);
++	int	gpio_charge_finished;
++	int	gpio_inverted;
++	int	bat_poll_interval;
++	int	jitter_delay;
++};
++
++#endif /* GENERIC_ADC_BATTERY_H */
+-- 
+1.7.1
 
