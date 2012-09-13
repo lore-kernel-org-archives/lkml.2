@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758992Ab2IMW0C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 18:26:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50849 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758637Ab2IMW0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 18:26:00 -0400
-Date: Thu, 13 Sep 2012 15:25:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Cong Wang <amwang@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Jiri Moskovcak <jmoskovc@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] coredump: add support for %d=__get_dumpable() in
- core name
-Message-Id: <20120913152559.d0a9ade0.akpm@linux-foundation.org>
-In-Reply-To: <20120913172817.GA11337@redhat.com>
-References: <20120913172817.GA11337@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759011Ab2IMW2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 18:28:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54003 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753865Ab2IMW2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 18:28:48 -0400
+Date: Fri, 14 Sep 2012 00:28:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Sid Boyce <sboyce@blueyonder.co.uk>
+Cc: LKML Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: AMD Bulldozer FX-8150 Powers off during kernel build
+Message-ID: <20120913222843.GA24666@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Sid Boyce <sboyce@blueyonder.co.uk>,
+	LKML Mailing List <linux-kernel@vger.kernel.org>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <50513733.8040801@blueyonder.co.uk>
+ <20120913094413.GB15810@liondog.tnic>
+ <50525719.5010701@blueyonder.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50525719.5010701@blueyonder.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Sep 2012 19:28:17 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Thu, Sep 13, 2012 at 10:58:49PM +0100, Sid Boyce wrote:
+> If needed I can go back to the earlier 3.6.0-rc5 kernel and config to
+> recreate the power off situation. With the kernel that powered off,
+> MCE was not set and CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
 
-> https://bugzilla.redhat.com/show_bug.cgi?id=787135
+Yes, as I suggested earlier, enable CONFIG_X86_MCE and
+CONFIG_EDAC_DECODE_MCE and *then* try recreating the reboot.
 
-Needs a RH bugzilla account, so no Reported-by: for you!
+After it reboots, catch the whole dmesg and send it to me.
 
-> Some coredump handlers want to create a core file in a way compatible
-> with standard behavior. Standard behavior with fs.suid_dumpable = 2
-> is to create core file with uid=gid=0. However, there was no way for
-> coredump handler to know that the process being dumped was suid'ed.
-> 
-> This patch adds the new %d specifier for format_corename() which
-> simply reports __get_dumpable(mm->flags), this is compatible with
-> /proc/sys/fs/suid_dumpable we already have.
+Thanks.
 
-Please prepare an update to Documentation/sysctl/kernel.txt:core_pattern?
+-- 
+Regards/Gruss,
+    Boris.
