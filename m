@@ -1,160 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab2IMNcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 09:32:07 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:49562 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751888Ab2IMNcF (ORCPT
+	id S1753624Ab2IMNem (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 09:34:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48190 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab2IMNel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 09:32:05 -0400
-Message-ID: <5051E02B.5040703@stericsson.com>
-Date: Thu, 13 Sep 2012 19:01:23 +0530
-From: Rajanikanth HV <rajanikanth.hv@stericsson.com>
-Organization: st.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rajanikanth HV <rajanikanth.hv@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: Implement devicetree support for AB8500 Btemp
-References: <CAB4BAktQz5MY_AHHWUAhRp7HtEzC3v8uFbP0enx1b7ibJLoZ4Q@mail.gmail.com> <201209111122.08713.arnd@arndb.de> <50509D1C.9060206@stericsson.com> <201209121536.56346.arnd@arndb.de>
-In-Reply-To: <201209121536.56346.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 09:34:41 -0400
+Date: Thu, 13 Sep 2012 23:34:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Fries <david@fries.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+Message-Id: <20120913233429.27668296c459915dc11222f5@canb.auug.org.au>
+In-Reply-To: <20120913132408.GZ2608@spacedout.fries.net>
+References: <20120913181127.862265ddb9a08758ada8405c@canb.auug.org.au>
+	<20120913132408.GZ2608@spacedout.fries.net>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Sep_2012_23_34_29_+1000_0KbffCb5YVP5aF/M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__13_Sep_2012_23_34_29_+1000_0KbffCb5YVP5aF/M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi David,
 
-On Wednesday 12 September 2012 09:06 PM, Arnd Bergmann wrote:
-> On Wednesday 12 September 2012, Rajanikanth HV wrote:
->> On Tuesday 11 September 2012 04:52 PM, Arnd Bergmann wrote:
->>> On Tuesday 11 September 2012, Rajanikanth HV wrote:
-> 
->> Consider: USB charging:
->>             ______________________
->>            |                      |
->> --(Vbus)-->|   USB Charger with   |
->>            |  Charger FSM (h/w)   |
->>            |______________________|
->>                 |    |
->>                 |    |(Vbat and other signals)
->>                 |  __|_____
->>         to      | |        |(GaugeSense
->>      Charger FSM| | LION   | Signal)     _____________
->>                 | |Battery |----------->|FuelGauge blk|
->>                 | |________|            |{Coulomb Ctr}|
->>                 |       |                -------------
->>                 |   <Thermistor>
->>                 |       |
->>                 |       | (BatCtrl Signal)
->>                 |_______|---------->[Btemp blk]
->>                         |               |
->>                       [ADC]             |__Btemp_Low
->>                                         |__Btemp_Med
->>                                         |__Btemp_High
->>
->> Note: Charging algorithm is a logical entity.
-> Ok, thanks for the explanation, this is starting to make a lot more
-> sense. So the three blocks (fb, btemp, charger) are all separate
-> mfd cells, each with their own register set in ab8500 and a separate
-> driver in drivers/power, right?
-Correct, You can have a look at ab8500 spec:
-www.stericsson.com/developers/CD00291561_UM1031_AB8500_user_manual-rev5_CTDS_public.pdf
-> 
-> Then there is the ab8500-charalg driver which I guess is implementing
-> the Charger FSM you mention above,
-ab8500-charalg does not implements charger FSM, Charger FSM is a
-hardware block for which any functional info is not available in the
-spec. However, ab8500-charalg implements state m/c depicted in the
-figure (9) of spec, implementation can be found in the code:
-abx500_chargalg.c: centered around abx500_chargalg_algorithm(..)
+On Thu, 13 Sep 2012 08:24:08 -0500 David Fries <david@fries.net> wrote:
+>
+> On Thu, Sep 13, 2012 at 06:11:27PM +1000, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > After merging the final tree, today's linux-next build (sparc64 defconf=
+ig)
+> > failed like this:
+> >=20
+> > drivers/built-in.o: In function `rtc_hctosys':
+> > hctosys.c:(.init.text+0x4a98): undefined reference to `rtc_hctosys_ret'
+> > hctosys.c:(.init.text+0x4b54): undefined reference to `rtc_hctosys_ret'
+> > hctosys.c:(.init.text+0x4b58): undefined reference to `rtc_hctosys_ret'
+>=20
+> Can you post your .config?  `grep RTC .config`
+> It would seem to me that drivers/rtc/hctosys.c is being compiled
+> without drivers/rtc/class.c which now holds the global variable, but
+> Kconfig says that RTC_HCTOSYS 'depends on RTC_CLASS =3D y'.
 
-Let me brief out what 'charger(Wall/USB)' and 'chargalg' driver does:
+Did you read the bit you quoted below?  CONFIG_PM is not set, so that the
+part of class.c that contains the definition of rtc_hctosys_ret is not
+compiled ...
 
-(a) Charger driver implements:
-	- events specific to Wall(a/c) and USB Charger
-	- power supply attributes handling and notification
-	  to power_supply core. Ref: enum power_supply_property
-	  linux/power_supply.h
-	  Note: subset of power_supply_property are handled	
-	- turn on/off charging led, AC and USB charging
-	- Regulating Voltage and Current values for charging
-	- voltage threshold check
-	- Charging regulation based on btemp
-all this functionality has register dependency
+> > Caused by commit "rtc_sysfs_show_hctosys(): display 0 if resume failed"
+> > from the akpm tree.  rtc_hctosys_ret was moved into class.c but protect=
+ed
+> > by defined(CONFIG_PM) && defined(CONFIG_RTC_HCTOSYS_DEVICE) and this
+> > build does not have CONFIG_PM set.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-(b) Charging algorithm:
-	- Starts by collecting power_supply properties across power
-          class devices which are 'bm' devices
-	- Maintains the different charging states across ac and usb
-	  charging process pertaining to 'Vbus, main or Vbat', thermal,
-	  btemp etc.,	
-	- Implements subset of power_suppply_class properties	
-Note: Do not have direct register interface
+--Signature=_Thu__13_Sep_2012_23_34_29_+1000_0KbffCb5YVP5aF/M
+Content-Type: application/pgp-signature
 
- but it doesn't have any registers
-yes, but make use of power supply properties updated by other bm devs
-while managing charging states.
-> in the ab8500 but rather ties the other drivers together.
-> 
-> If this is true, I don't understand what makes the 'supplied-to'
-> properties you list in the device tree binding board specific. Are
-> they not always done the same way? If so, you could just leave them
-> out.
-Precisely 'supplied-to' is not board specific, it was maintained as
-platform_data which i migrated to dt-node. It is meant to establish
-dependency across bm drivers based on power_supply property and
-runtime battery attributes.
-Basically, 'supplied-to' provides a way of exporting change in
-power_supply_property and runtime batter characteristics so that other
-bm devs shall make use or refer the updated values.
-Ref: external_power_changed(...) call back api.
-Note: all the bm drivers handles subset of power_supply property and
-      battery attributes,
-      ref: include/linux/power_supply.h and get_property(...) call back
-      api across bm drivers.
-> 
-> What does indeed seem to be needed is a place to identify the battery
-> type, but it's not clear if the btemp device is the best place for
-> that (maybe it is). 
-I am not clear whether you are trying to correlate battery-type with
-supplied-to. however, battery type is identified based on the
-resistance value measured at batctrl pin which is expected to be in the
-allowable limit of ab8500 device. This resistance limit varies across
-battery types. This happens in btemp driver.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-For this, I would suggest you give a list of
-> possible batteries and require a property such as
-> 
->  st-ericsson,battery-type: A string identifier for the type of battery,
-> 			   which impacts how an operating system interpret
-> 			   the sensor readings. Possible values include:
-> 	* "none"	-- no battery connected
-> 	* "li-ion-9100" -- Type 9100 Li-ION battery
-> 	* <add any others that apply here>
-Can do this, not precisely as "st-ericsson,battery-type", it will be as
-battery-type = [unknown|NiMH|LION|...|]], reason being
-allowable battery type is based on technology, as you can see the
-possible types as:
-POWER_SUPPLY_TECHNOLOGY_UNKNOWN = 0,
-        POWER_SUPPLY_TECHNOLOGY_NiMH,
-        POWER_SUPPLY_TECHNOLOGY_LION,
-        POWER_SUPPLY_TECHNOLOGY_LIPO,
-        POWER_SUPPLY_TECHNOLOGY_LiFe,
-        POWER_SUPPLY_TECHNOLOGY_NiCd,
-        POWER_SUPPLY_TECHNOLOGY_LiMn
-Ref: include/linux/power_supply.h
-Note: doing this will impact my of_probe(...), may slightly bloat the
-code.
-> 
-> 	Arnd
-> 
+iQIcBAEBCAAGBQJQUeDlAAoJEECxmPOUX5FEpxwQAIYJrXGaFHyVRQ/dpXEBHqPD
+yODjgNN+0O5FTGhTJM2FdC8zE3xgqA/YUV9cG07cjrlXFoU0W63kSCWJYkwXnq6c
+/gx4j9t6jpLPqq/ua9K7yMeuf403f9GBux6TJDXaqArv1yiZVqGD7xo8zTIRAFfi
+mPKe9SfeVuVkHC+VHgy4bvxgCHCyVtz1a3ksIxw/jFBuxp94tKQpCOi8H9OJoV0S
+wg62hGLpjDtFPLC3VU/5/eMtMbchZUfZyZ3Sz0j7nNfkkjEZ6usk5UUHfRfYMWQe
+Q6T6PMotfSyF+eKPiSJR3Spg2D3Sor8qjzFKvAD0mjpWdvPNeypTIsWkIv41GHST
+I3lPuHA11+3YVtfwKuZyTJi9niOg+zh9BvcbZdj4ng0+GCxC+FxzaFN4wL/GQ37l
+u0wS2rkMQ8l9iSDxt5HLY8JbkZETnlChN5hvqj9MwN2pefpME/aupeoCR557mtR+
+M9DcQVRq1qU3BvpiLZ6H9G86eFR5Nk+XuMlcKOsLL59vM6hPhF0QwA9HCAqahsgj
+iuLBIte4snAtivT3kfdcu+E9P8FwPj0boliB6Uke+XDDsDsOlq22ftcl0a4opgo6
++zhE8cJzMt9TWeiAj7z9vp4R33+ba0D82UbiFchNOil2VJ4cmkeT4HDcz5VK4aqh
+MEn3QP+ziLMFv/PCv1w0
+=SwjT
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Sep_2012_23_34_29_+1000_0KbffCb5YVP5aF/M--
