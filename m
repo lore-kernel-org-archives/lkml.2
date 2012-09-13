@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab2IMIcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:32:01 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54464 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab2IMIb4 (ORCPT
+	id S1756810Ab2IMIdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:33:20 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:38345 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab2IMIdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:31:56 -0400
-Date: Thu, 13 Sep 2012 18:31:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120913183154.5a638d274ae5bae800890ee0@canb.auug.org.au>
-In-Reply-To: <CAK9yfHwceAmikpPCYGCnDwzY9igvwkOj7j314+sC4_kD8Egzmg@mail.gmail.com>
-References: <20120913174441.f5fbf5cc38713425331f4d86@canb.auug.org.au>
-	<CAK9yfHwceAmikpPCYGCnDwzY9igvwkOj7j314+sC4_kD8Egzmg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Sep_2012_18_31_54_+1000_kYyZwpK=oGMBTx/N"
+	Thu, 13 Sep 2012 04:33:13 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+References: <87har6kmfx.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ZNmCbHqmFX=YXti7XprhD_Hgvmnd=TnKPVoFc88Sc4A@mail.gmail.com>
+	<87oblc4u6f.fsf@devron.myhome.or.jp>
+	<CAKYAXd-gO5Pw=0unjB=YQJhu6W=g7VpZYnmHXkve-k8_4VjpgA@mail.gmail.com>
+	<871ui84l4l.fsf@devron.myhome.or.jp>
+	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
+	<20120912143227.GE3009@fieldses.org>
+	<87vcfjfa14.fsf@devron.myhome.or.jp>
+	<20120912171128.GG3009@fieldses.org>
+	<87r4q7f8fw.fsf@devron.myhome.or.jp>
+	<20120912174556.GH3009@fieldses.org>
+	<87ipbjf54f.fsf@devron.myhome.or.jp>
+	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
+Date: Thu, 13 Sep 2012 17:33:02 +0900
+In-Reply-To: <CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
+	(Namjae Jeon's message of "Thu, 13 Sep 2012 17:11:54 +0900")
+Message-ID: <87txv2cog1.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Sep_2012_18_31_54_+1000_kYyZwpK=oGMBTx/N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Hi Sachin,
-
-On Thu, 13 Sep 2012 13:19:48 +0530 Sachin Kamat <sachin.kamat@linaro.org> w=
-rote:
+>> I see. So, client can't solve the ESTALE if inode cache was evicted,
+>> right? (without application changes)
 >
-> > - *  This program is distributed in the hope that it will be useful, but
-> > + *  This program is distributed in the hope that it will be useful, bu=
-tX_ID_MASK
->=20
->                             ^^^^^^^^^^^^^
-> Looks like a stray paste..
+> There can be situation where we may get not only ESTALE but EIO also.
+>
+> For example,
+> -------------------------------
+> fd = open(“foo.txt”);
+> while (1) {
+>        sleep(1);
+>        write(fd..);
+> }
+> --------------------------------
+>
+> Here “write” may fail when inode number of “foo.txt” is changed at
+> server due to cache eviction under memory pressure.
+> When we tried a similar test, we found that “write” is retuning “EIO”
+> instead of “ESTALE”
+>
+> ---------------------------------------------------------------------------------------------------------
+> #> ./write_test_dbg bbb 1000 0
+> FILE : bbb, SIZE : 1048576000 , FSYNC : OFF , RECORD_SIZE = 4096
+> 106264 -rwxr-xr-x 1 root 0 0 Jan 1 00:14 bbb
+> write failed after 60080128 bytes:, errno = 5: Input/output error
+> ---------------------------------------------------------------------------------------------------------
+>
+>  As we get EIO instead of ESTALE, it may be difficult to decide when
+> "restart from LOOKUP” in such situation.
+> Also, as per Bruce opinion, we can not avoid ESTALE from inode number
+> change in rebooted server case.
+> In reboot case, it is worst as it may attempt to write in a different
+> file if NFS handle at NFS client match with inode number of some other
+> file at NFS server.
 
-Yeah, thanks.  I will sort it out tomorrow.
+I see.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> Grepping around... Documentation/sysctl/vm.txt mentions a
+>> vfs_cache_pressure parameter.
+>> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
+> I am worrying if it could lead to OOM condition on embedded
+> system(short memory(DRAM) and support 3TB HDD disk of big size.)
+>
+> Please let me know if any issues or queries.
 
---Signature=_Thu__13_Sep_2012_18_31_54_+1000_kYyZwpK=oGMBTx/N
-Content-Type: application/pgp-signature
+So, now I think stable inode number may be useful if there are users of
+it. And I guess those functionality is no collisions with -mm. And I
+suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+If nfs=1, works like current -mm without no limited operations.
+If nfs=2, try to make stable FH and limit some operations
 
-iQIcBAEBCAAGBQJQUZn6AAoJEECxmPOUX5FE75YQAIesbM/5+W9jYwjMM272mmqF
-iMic17K0lSkdNtKJA+luHxrTOS8pu4G6xKylzZK854pI4QJaVtN9rjK2uTk3xQ2l
-LicClKh8CySzmLbf4ZLwkxCouID8OgzEIVkbl3dzzY7Jqb54pKSbZMwcpuwme5S+
-5X/in3epGqX6q3A7NqnQkEr/dybSm9X54I5zOsQFwxGxZQn2K6Is+0CQ4mTb1N3U
-rkw6cBohK+MvrkMcOqBsgRTgjwOFs4XHoIpq8DyF+RpXjeRTKmXyFLsEqdSKr0es
-ExjhDEe09kNPR7f/ZY50JWodAXI236ln4uUft8TH0ZQs4spe5bucq8yyXuXWzTne
-SWQLiY86uJUtfQt5FSmzoa/Hsnk8OKKQBr1uOZc7VyXVLIBeo43+5bhoDrO7wTTH
-UxTnRTmLc0GqW+ufAWT0A34fbKqGTCAZ+/G9LOIQ3oDYiiP7bufQgi81t7Y2cpaQ
-qtf4LSoW8nJw3L2gZrbgZPbPVBSYnaOcd2Tj/4n4jjvexRLWupIQzecZnp5nkeRE
-n4OW6eOmhxkUp6QlokmftIPxO6vkw8AvjJIAtUTHP9MA8jcol9Z1fsuDkak8rlG/
-jQ4vWJ3luUE22axaouXqoRiDBuMAQzeLwv/acmuOj22kErQGUuG0bi0JOFKuWSoJ
-uXIi7qS05y7xGx6XcbfJ
-=C8eU
------END PGP SIGNATURE-----
+(option name doesn't matter here.)
 
---Signature=_Thu__13_Sep_2012_18_31_54_+1000_kYyZwpK=oGMBTx/N--
+Does this work fine?
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
