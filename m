@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab2IMUX3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:23:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42104 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab2IMUX0 (ORCPT
+	id S932305Ab2IMU0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:26:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48622 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab2IMU0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:23:26 -0400
-Message-ID: <505240BA.1010804@gmail.com>
-Date: Thu, 13 Sep 2012 14:23:22 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Thu, 13 Sep 2012 16:26:18 -0400
+Date: Thu, 13 Sep 2012 15:26:14 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] gmux: Fix backlight set function
+Message-ID: <20120913202614.GA26996@thinkpad-t410>
+Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Matthew Garrett <mjg@redhat.com>
+References: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, tools: Stop perf stat -p when profiled process
- exits v3
-References: <1347551931-7666-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1347551931-7666-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/13/12 9:58 AM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> When counting a process with perf stat -p check if the process died
-> and exit collection if yes.
->
-> v2: Add more checks, handle non -p again. Handle /proc not there.
-> v3: Handle multi pid case. Fix non /proc error path
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->   tools/perf/builtin-stat.c |   14 +++++++++++++-
->   1 files changed, 13 insertions(+), 1 deletions(-)
->
-> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> index 861f0ae..b5e7df2 100644
-> --- a/tools/perf/builtin-stat.c
-> +++ b/tools/perf/builtin-stat.c
-> @@ -536,7 +536,19 @@ static int run_perf_stat(int argc __used, const char **argv)
->   		if (WIFSIGNALED(status))
->   			psignal(WTERMSIG(status), argv[0]);
->   	} else {
-> -		while(!done) sleep(1);
-> +		char piddir[40];
-> +		int check_proc = target.pid &&
-> +				 access("/proc", X_OK) == 0 &&
-> +				 !strchr(target.pid, ',');
-> +		if (check_proc)
-> +			snprintf(piddir, sizeof piddir, "/proc/%d",
-> +				 atoi(target.pid));
-> +		while(!done) {
-> +			sleep(1);
-> +			if (check_proc && access(piddir, X_OK) < 0 &&
-> +			    errno == ENOENT)
-> +				break;
-> +		}
->   	}
+On Thu, Sep 13, 2012 at 09:02:35PM +0100, Grant Likely wrote:
+> In commit 7e30ed6b, "gmux: Add generic write32 function", the new
+> gmux_write32() function didn't include the io offset when writing
+> registers. This means that backlight update writes never go to the right
+> place. This patch fixes it.
+> 
+> Tested on Apple Macbook 8,3
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Matthew Garrett <mjg@redhat.com>
 
-I still think this is the wrong approach. A more complete solution would 
-monitor all of the targets given by the user. e.g.,
+I sent a patch for this several weeks ago [1], just waiting for Matthew
+to pick it up.
 
-1. create a perf_target__parse_pid - all it needs to do is:
-    struct strlist *slist = strlist__new(false, pid_str);
-and save that into the target struct. That line is currently done in 
-thread_map.c, thread_map__new_by_pid_str() and 
-thread_map__new_by_tid_str. Those functions can be altered to take the 
-slist instead of the string.
+Seth
 
-2. create a perf_target__is_alive that runs through each entry in the 
-slist (strlist__for_each(pos, slist)) and checks that it still exists. 
-As long as 1 target is alive it returns true. If no pid or tid is 
-specified it always returns true.
+[1] https://lkml.org/lkml/2012/8/21/721
 
-The is_alive function can be used by perf-top, perf-stat and perf-record 
-to know that its target has died so it can stop monitoring.
-
-
-David
