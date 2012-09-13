@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab2IME2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 00:28:51 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45961 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab2IME2q (ORCPT
+	id S1751583Ab2IMEai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 00:30:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50343 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750754Ab2IMEah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 00:28:46 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-e5-505160fc4214
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>, mingo@kernel.org, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] perf record: Add missing perf_hpp__init for pipe-mode
-References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
-	<tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
-	<20120912172641.GB29278@erda.amd.com>
-	<20120912184815.GC557@infradead.org>
-	<87y5ke8wxv.fsf@sejong.aot.lge.com>
-	<87txv28spl.fsf_-_@sejong.aot.lge.com>
-Date: Thu, 13 Sep 2012 13:21:57 +0900
-In-Reply-To: <87txv28spl.fsf_-_@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Thu, 13 Sep 2012 13:14:30 +0900")
-Message-ID: <87pq5q8sd6.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 13 Sep 2012 00:30:37 -0400
+Date: Thu, 13 Sep 2012 12:30:30 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, kernel-janitors@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] sound/soc/soc-core.c: Remove useless kfree
+Message-ID: <20120913043028.GD6732@opensource.wolfsonmicro.com>
+References: <1347462407-13499-8-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347462407-13499-8-git-send-email-peter.senna@gmail.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, please do s/record/report/ on the subject line, sorry! ;-)
+On Wed, Sep 12, 2012 at 05:06:46PM +0200, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Remove useless kfree() and clean up code related to the removal.
+> 
+> The semantic patch that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 
-Also I don't see the issue on the other users of the setup_browser() -
-i.e. perf annotate and perf top - since they call it unconditionally.
-
-Thanks,
-Namhyung
+Applied, thanks.
