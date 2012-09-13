@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab2IMUDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:03:44 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:43305 "EHLO
+	id S1756874Ab2IMUHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:07:11 -0400
+Received: from shmail0.sohard.de ([212.114.139.117]:43349 "EHLO
 	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab2IMUDm convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754304Ab2IMUHJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:03:42 -0400
-Date: Thu, 13 Sep 2012 22:03:39 +0200 (CEST)
+	Thu, 13 Sep 2012 16:07:09 -0400
+Date: Thu, 13 Sep 2012 22:07:07 +0200 (CEST)
 From: Rene Buergel <rene.buergel@sohard.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4]: ezusb cleanup, FX2 support, firmware downloading support
-Message-ID: <6d35b589-57ac-4535-97e9-c4965085aaf1@shmail0>
+Subject: [PATCH 1/4]: ezusb: remove dependency to usb_serial interface
+Message-ID: <0c08f47e-3a4b-4437-8768-d40aae679ff7@shmail0>
 In-Reply-To: <25c2a6f7-a559-4222-9c69-fb1c8229c238@shmail0>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
