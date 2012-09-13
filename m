@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab2IMLvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 07:51:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57980 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757686Ab2IMLvg (ORCPT
+	id S1757733Ab2IMLwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 07:52:05 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55465 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757703Ab2IMLwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 07:51:36 -0400
+	Thu, 13 Sep 2012 07:52:01 -0400
+Date: Thu, 13 Sep 2012 15:51:57 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120913115157.GH19956@moon>
+References: <20120913095623.GB28508@moon>
+ <5051C7AD.7050005@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <s5h392m1728.wl%tiwai@suse.de>
-References: <s5h392m1728.wl%tiwai@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 13 Sep 2012 19:51:14 +0800
-X-Google-Sender-Auth: ZoWugGHafZeD45BrxIdBa3lZk3o
-Message-ID: <CA+55aFyo6do-dZiZMiwZkN1Ko+W58+4-zkbfJnpQR+ufw=+8ig@mail.gmail.com>
-Subject: Re: [GIT PULL] sound fixes for 3.6-rc6
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, Junio C Hamano <gitster@pobox.com>,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5051C7AD.7050005@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 7:43 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git for-linus
+On Thu, Sep 13, 2012 at 01:46:53PM +0200, Jiri Slaby wrote:
+> On 09/13/2012 11:56 AM, Cyrill Gorcunov wrote:
+> > For checkpoint/restore we need to know if tty has
+> > exclusive or packet mode set, as well as if pty
+> > is currently locked. Just to be able to restore
+> > this characteristics.
+> > 
+> > For this sake the following ioctl codes are introduced
+> > 
+> >  - TIOGPKT to get packet mode state
+> >  - TIOGPTLCK to get Pty locked state
+> >  - TIOGEXCL to get Exclusive mode state
+> 
+> Hi! I have only a comment regarding the naming. Why not to follow TIOC*?
 
-*PLEASE* don't do this.
+Hi Jiri, yeah, seems to be a good idea. I'll update if there will be no
+objection about idea in general. Thanks!
 
-You point to a branch, but then the pull request clearly implies there
-is a tag with extra information in it.
-
-And indeed, the actual thing I should pull is not at all "for-linus",
-it seems to be your "tags/sound-3.6" tag.
-
-I don't know if this is the old "git pull-request" breakage where it
-stupidly "corrects" the remote branch when it verifies the branch
-name, or whether it's some other scripting problem. I think current
-git versions should not mess up the tag information, if that's the
-cause, but please verify.
-
-            Linus
+	Cyrill
