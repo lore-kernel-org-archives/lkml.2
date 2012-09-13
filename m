@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2IMJaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:30:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39119 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2IMJ36 (ORCPT
+	id S1755086Ab2IMJaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:30:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34469 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607Ab2IMJaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:29:58 -0400
-Message-ID: <5051A793.3010107@gmail.com>
-Date: Thu, 13 Sep 2012 10:29:55 +0100
-From: Alan Jenkins <alan.christopher.jenkins@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 13 Sep 2012 05:30:02 -0400
+Date: Thu, 13 Sep 2012 11:29:43 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: m-karicheri2@ti.com
+Cc: nsekhar@ti.com, khilman@ti.com, khali@linux-fr.org, ben-linux@fluff.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: i2c:clk: preparation for switch to common clock framework
+Message-ID: <20120913092943.GA5912@pengutronix.de>
+References: <1346350236-11105-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-To: Christoph Jung <jung@codemercs.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: issues with unknown/new alias [retraction]
-References: <50518A75.4030608@codemercs.com> <50519E25.7080007@gmail.com> <50519FF1.9040002@codemercs.com>
-In-Reply-To: <50519FF1.9040002@codemercs.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+In-Reply-To: <1346350236-11105-1-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/09/12 09:57, Christoph Jung wrote:
-> Am 13.09.2012 10:49, schrieb Alan Jenkins:
->> On 13/09/12 08:25, Christoph Jung wrote:
->>> Hello,
->>>
->>> I am from the company "Code Mercenaries GmbH" from Germany. We have 
->>> some USB HID devices wich work with Linux.
->>> Since kernel version 2.6 our default products will be included in 
->>> the kernel.
->>>
->>> Devicedetails
->>> VendorID: 0x07C0
->>> ProductIDs: 0x1500, 0x1501, 0x1511, 0x1512, 0x1503
->>> Devicename: iowarrior
->>>
->>> Now we have some new custom product IDs but this two new devices get 
->>> no node in dev/usb/ , but I can find the with "lsusb".
->>> If I run "modinfo iowarrior" there will be 5 alias (with the default 
->>> pIDs) .
->>>
->>> The two new pIDs are: 0x158A, 0x158B
->>>
->>> I have not much experiance with linux (I work with Ubuntu 12.04). 
->>> What have be done to get the device nodes to work with them?
->>> Have I add some rules? Or have I edit the iowarrior.ko?
->>>
->> Argh, sorry, I misread your email and went off on one.
->>
->> You will indeed need to "edit iowarrior.ko".  I.e. change the C 
->> source code to include the new pIDs, recompile, test, get patches 
->> merged into the mainline kernel etc :).
->>
->> It's also possible to test new devices with an old driver, i.e. 
->> before you modify it.  Possible instructions: http://www.ha19.no/usb/
->>
->> Alan
->>
->>
-> Ah ok but where will I find the sourcecode for iowarrior.ko ?
-> I have no idea about compiling, patching in linux
->
-> Christoph
->
 
-The kernel is all one big tree.  The file you're looking for is 
-drivers/usb/misc/iowarrior.c.  (Preview at 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/usb/misc/iowarrior.c). 
-The change you're talking about should be fairly straightforward - just 
-look for the existing ids.
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Step 1 for me has always been to compile a whole kernel. Unfortunately 
-that's a bit of learning curve.  I'm not sure which resources to recommend.
+On Thu, Aug 30, 2012 at 06:10:36PM -0000, m-karicheri2@ti.com wrote:
+> As a first step towards migrating davinci platforms to use common clock
+> framework, replace all instances of clk_enable() with clk_prepare_enable()
+> and clk_disable() with clk_disable_unprepare(). Until the platform is
+> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
+> adds a might_sleep() call and would work without any issues.
+>=20
+> This will make it easy later to switch to common clk based implementation
+> of clk driver from DaVinci specific driver.
+>=20
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-Alan
+Subject had "i2c:clk" where "i2c: davinci" would be more precise.
+
+Fixed that and pushed to -next.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlBRp4cACgkQD27XaX1/VRsvYACgotXt37eiAUUakCKM84H6Zenz
+02AAoJZZy+6DE2r7DGJhe/Mg7fkU60OC
+=9RhD
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
