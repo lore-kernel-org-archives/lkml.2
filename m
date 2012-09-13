@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2IMXv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:51:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38299 "EHLO mx1.redhat.com"
+	id S1759216Ab2IMXuD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:50:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759054Ab2IMXuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:50:18 -0400
+	id S1759209Ab2IMXtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:49:51 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 14/16] X.509: Add an ASN.1 decoder
+Subject: [PATCH 11/16] X.509: Implement simple static OID registry
 To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
 Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:50:05 +0100
-Message-ID: <20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
+Date: Fri, 14 Sep 2012 00:49:39 +0100
+Message-ID: <20120913234939.3575.90622.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,49 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an ASN.1 BER/DER/CER decoder.  This uses the bytecode from the ASN.1
-compiler in the previous patch to inform it as to what to expect to find in the
-encoded byte stream.  The output from the compiler also tells it what functions
-to call on what tags, thus allowing the caller to retrieve information.
+Implement a simple static OID registry that allows the mapping of an encoded
+OID to an enum value for ease of use.
 
-The decoder is called as follows:
+The OID registry index enum appears in the:
 
-	int asn1_decoder(const struct asn1_decoder *decoder,
-			 void *context,
-			 const unsigned char *data,
-			 size_t datalen);
+	linux/oid_registry.h
 
-The decoder argument points to the bytecode from the ASN.1 compiler.  context
-is the caller's context and is passed to the action functions.  data and
-datalen define the byte stream to be decoded.
+header file.  A script generates the registry from lines in the header file
+that look like:
 
+	<sp*>OID_foo,<sp*>/*<sp*>1.2.3.4<sp*>*/
 
-Note that the decoder is currently limited to datalen being less than 64K.
-This reduces the amount of stack space used by the decoder because ASN.1 is a
-nested construct.  Similarly, the decoder is limited to a maximum of 10 levels
-of constructed data outside of a leaf node also in an effort to keep stack
-usage down.
+The actual OID is taken to be represented by the numbers with interpolated
+dots in the comment.
 
-These restrictions can be raised if necessary.
+All other lines in the header are ignored.
+
+The registry is queries by calling:
+
+	OID look_up_oid(const void *data, size_t datasize);
+
+This returns a number from the registry enum representing the OID if found or
+OID__NR if not.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/asn1_decoder.h |   24 ++
- lib/Makefile                 |    2 
- lib/asn1_decoder.c           |  473 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 499 insertions(+)
- create mode 100644 include/linux/asn1_decoder.h
- create mode 100644 lib/asn1_decoder.c
+ include/linux/oid_registry.h |   90 ++++++++++++++++++
+ lib/.gitignore               |    2 
+ lib/Kconfig                  |    5 +
+ lib/Makefile                 |   16 +++
+ lib/build_OID_registry       |  209 ++++++++++++++++++++++++++++++++++++++++++
+ lib/oid_registry.c           |   89 ++++++++++++++++++
+ 6 files changed, 410 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/oid_registry.h
+ create mode 100755 lib/build_OID_registry
+ create mode 100644 lib/oid_registry.c
 
 
-diff --git a/include/linux/asn1_decoder.h b/include/linux/asn1_decoder.h
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
 new file mode 100644
-index 0000000..fa2ff5b
+index 0000000..5928546
 --- /dev/null
-+++ b/include/linux/asn1_decoder.h
-@@ -0,0 +1,24 @@
-+/* ASN.1 decoder
++++ b/include/linux/oid_registry.h
+@@ -0,0 +1,90 @@
++/* ASN.1 Object identifier (OID) registry
 + *
 + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -76,39 +79,355 @@ index 0000000..fa2ff5b
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#ifndef _LINUX_ASN1_DECODER_H
-+#define _LINUX_ASN1_DECODER_H
++#ifndef _LINUX_OID_REGISTRY_H
++#define _LINUX_OID_REGISTRY_H
 +
-+#include <linux/asn1.h>
++#include <linux/types.h>
 +
-+struct asn1_decoder;
++/*
++ * OIDs are turned into these values if possible, or OID__NR if not held here.
++ *
++ * NOTE!  Do not mess with the format of each line as this is read by
++ *	  build_OID_registry.pl to generate the data for look_up_OID().
++ */
++enum OID {
++	OID_id_dsa_with_sha1,		/* 1.2.840.10030.4.3 */
++	OID_id_dsa,			/* 1.2.840.10040.4.1 */
++	OID_id_ecdsa_with_sha1,		/* 1.2.840.10045.4.1 */
++	OID_id_ecPublicKey,		/* 1.2.840.10045.2.1 */
 +
-+extern int asn1_ber_decoder(const struct asn1_decoder *decoder,
-+			    void *context,
-+			    const unsigned char *data,
-+			    size_t datalen);
++	/* PKCS#1 {iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-1(1)} */
++	OID_rsaEncryption,		/* 1.2.840.113549.1.1.1 */
++	OID_md2WithRSAEncryption,	/* 1.2.840.113549.1.1.2 */
++	OID_md3WithRSAEncryption,	/* 1.2.840.113549.1.1.3 */
++	OID_md4WithRSAEncryption,	/* 1.2.840.113549.1.1.4 */
++	OID_sha1WithRSAEncryption,	/* 1.2.840.113549.1.1.5 */
++	OID_sha256WithRSAEncryption,	/* 1.2.840.113549.1.1.11 */
++	OID_sha384WithRSAEncryption,	/* 1.2.840.113549.1.1.12 */
++	OID_sha512WithRSAEncryption,	/* 1.2.840.113549.1.1.13 */
++	OID_sha224WithRSAEncryption,	/* 1.2.840.113549.1.1.14 */
++	/* PKCS#7 {iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-7(7)} */
++	OID_data,			/* 1.2.840.113549.1.7.1 */
++	OID_signed_data,		/* 1.2.840.113549.1.7.2 */
++	/* PKCS#9 {iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-9(9)} */
++	OID_email_address,		/* 1.2.840.113549.1.9.1 */
++	OID_content_type,		/* 1.2.840.113549.1.9.3 */
++	OID_messageDigest,		/* 1.2.840.113549.1.9.4 */
++	OID_signingTime,		/* 1.2.840.113549.1.9.5 */
++	OID_smimeCapabilites,		/* 1.2.840.113549.1.9.15 */
++	OID_smimeAuthenticatedAttrs,	/* 1.2.840.113549.1.9.16.2.11 */
 +
-+#endif /* _LINUX_ASN1_DECODER_H */
++	/* {iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2)} */
++	OID_md2,			/* 1.2.840.113549.2.2 */
++	OID_md4,			/* 1.2.840.113549.2.4 */
++	OID_md5,			/* 1.2.840.113549.2.5 */
++
++	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
++	OID_msOutlookExpress,		/* 1.3.6.1.4.1.311.16.4 */
++	OID_sha1,			/* 1.3.14.3.2.26 */
++
++	/* Distinguished Name attribute IDs [RFC 2256] */
++	OID_commonName,			/* 2.5.4.3 */
++	OID_surname,			/* 2.5.4.4 */
++	OID_countryName,		/* 2.5.4.6 */
++	OID_locality,			/* 2.5.4.7 */
++	OID_stateOrProvinceName,	/* 2.5.4.8 */
++	OID_organizationName,		/* 2.5.4.10 */
++	OID_organizationUnitName,	/* 2.5.4.11 */
++	OID_title,			/* 2.5.4.12 */
++	OID_description,		/* 2.5.4.13 */
++	OID_name,			/* 2.5.4.41 */
++	OID_givenName,			/* 2.5.4.42 */
++	OID_initials,			/* 2.5.4.43 */
++	OID_generationalQualifier,	/* 2.5.4.44 */
++
++	/* Certificate extension IDs */
++	OID_subjectKeyIdentifier,	/* 2.5.29.14 */
++	OID_keyUsage,			/* 2.5.29.15 */
++	OID_subjectAltName,		/* 2.5.29.17 */
++	OID_issuerAltName,		/* 2.5.29.18 */
++	OID_basicConstraints,		/* 2.5.29.19 */
++	OID_crlDistributionPoints,	/* 2.5.29.31 */
++	OID_certPolicies,		/* 2.5.29.32 */
++	OID_authorityKeyIdentifier,	/* 2.5.29.35 */
++	OID_extKeyUsage,		/* 2.5.29.37 */
++
++	OID__NR
++};
++
++extern enum OID look_up_OID(const void *data, size_t datasize);
++
++#endif /* _LINUX_OID_REGISTRY_H */
+diff --git a/lib/.gitignore b/lib/.gitignore
+index 3bef1ea..09aae85 100644
+--- a/lib/.gitignore
++++ b/lib/.gitignore
+@@ -3,4 +3,4 @@
+ #
+ gen_crc32table
+ crc32table.h
+-
++oid_registry_data.c
+diff --git a/lib/Kconfig b/lib/Kconfig
+index bb94c1b..a4009c2 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -396,4 +396,9 @@ config SIGNATURE
+ config LIBFDT
+ 	bool
+ 
++config OID_REGISTRY
++	tristate "Fast OID registry"
++	help
++	  Enable fast lookup object identifier registry.
++
+ endmenu
 diff --git a/lib/Makefile b/lib/Makefile
-index b042896..ca856b6 100644
+index 42d283e..b042896 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -140,6 +140,8 @@ $(foreach file, $(libfdt_files), \
- 	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
- lib-$(CONFIG_LIBFDT) += $(libfdt_files)
+@@ -150,3 +150,19 @@ quiet_cmd_crc32 = GEN     $@
  
-+obj-$(CONFIG_ASN1) += asn1_decoder.o
+ $(obj)/crc32table.h: $(obj)/gen_crc32table
+ 	$(call cmd,crc32)
 +
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
- 
-diff --git a/lib/asn1_decoder.c b/lib/asn1_decoder.c
-new file mode 100644
-index 0000000..8179f3c
++#
++# Build a fast OID lookip registry from include/linux/oid_registry.h
++#
++obj-$(CONFIG_OID_REGISTRY) += oid_registry.o
++
++$(obj)/oid_registry.c: $(obj)/oid_registry_data.c
++
++$(obj)/oid_registry_data.c: $(srctree)/include/linux/oid_registry.h \
++			    $(src)/build_OID_registry
++	$(call cmd,build_OID_registry)
++
++quiet_cmd_build_OID_registry = GEN     $@
++      cmd_build_OID_registry = perl $(srctree)/$(src)/build_OID_registry $< $@
++
++clean-files	+= oid_registry_data.c
+diff --git a/lib/build_OID_registry b/lib/build_OID_registry
+new file mode 100755
+index 0000000..dfbdaab
 --- /dev/null
-+++ b/lib/asn1_decoder.c
-@@ -0,0 +1,473 @@
-+/* Decoder for ASN.1 BER/DER/CER encoded bytestream
++++ b/lib/build_OID_registry
+@@ -0,0 +1,209 @@
++#!/usr/bin/perl -w
++#
++# Build a static ASN.1 Object Identified (OID) registry
++#
++# Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++# Written by David Howells (dhowells@redhat.com)
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public Licence
++# as published by the Free Software Foundation; either version
++# 2 of the Licence, or (at your option) any later version.
++#
++
++use strict;
++
++my @names = ();
++my @oids = ();
++
++if ($#ARGV != 1) {
++    print STDERR "Format: ", $0, " <in-h-file> <out-c-file>\n";
++    exit(2);
++}
++
++#
++# Open the file to read from
++#
++open IN_FILE, "<$ARGV[0]" || die;
++while (<IN_FILE>) {
++    chomp;
++    if (m!\s+OID_([a-zA-z][a-zA-Z0-9_]+),\s+/[*]\s+([012][.0-9]*)\s+[*]/!) {
++	push @names, $1;
++	push @oids, $2;
++    }
++}
++close IN_FILE || die;
++
++#
++# Open the files to write into
++#
++open C_FILE, ">$ARGV[1]" or die;
++print C_FILE "/*\n";
++print C_FILE " * Automatically generated by ", $0, ".  Do not edit\n";
++print C_FILE " */\n";
++
++#
++# Split the data up into separate lists and also determine the lengths of the
++# encoded data arrays.
++#
++my @indices = ();
++my @lengths = ();
++my $total_length = 0;
++
++print "Compiling ", $#names + 1, " OIDs\n";
++
++for (my $i = 0; $i <= $#names; $i++) {
++    my $name = $names[$i];
++    my $oid = $oids[$i];
++
++    my @components = split(/[.]/, $oid);
++
++    # Determine the encoded length of this OID
++    my $size = $#components;
++    for (my $loop = 2; $loop <= $#components; $loop++) {
++	my $c = $components[$loop];
++
++	# We will base128 encode the number
++	my $tmp = ($c == 0) ? 0 : int(log($c)/log(2));
++	$tmp = int($tmp / 7);
++	$size += $tmp;
++    }
++    push @lengths, $size;
++    push @indices, $total_length;
++    $total_length += $size;
++}
++
++#
++# Emit the look-up-by-OID index table
++#
++print C_FILE "\n";
++if ($total_length <= 255) {
++    print C_FILE "static const unsigned char oid_index[OID__NR + 1] = {\n";
++} else {
++    print C_FILE "static const unsigned short oid_index[OID__NR + 1] = {\n";
++}
++for (my $i = 0; $i <= $#names; $i++) {
++    print C_FILE "\t[OID_", $names[$i], "] = ", $indices[$i], ",\n"
++}
++print C_FILE "\t[OID__NR] = ", $total_length, "\n";
++print C_FILE "};\n";
++
++#
++# Encode the OIDs
++#
++my @encoded_oids = ();
++
++for (my $i = 0; $i <= $#names; $i++) {
++    my @octets = ();
++
++    my @components = split(/[.]/, $oids[$i]);
++
++    push @octets, $components[0] * 40 + $components[1];
++
++    for (my $loop = 2; $loop <= $#components; $loop++) {
++	my $c = $components[$loop];
++
++	# Base128 encode the number
++	my $tmp = ($c == 0) ? 0 : int(log($c)/log(2));
++	$tmp = int($tmp / 7);
++
++	for (; $tmp > 0; $tmp--) {
++	    push @octets, (($c >> $tmp * 7) & 0x7f) | 0x80;
++	}
++	push @octets, $c & 0x7f;
++    }
++
++    push @encoded_oids, \@octets;
++}
++
++#
++# Create a hash value for each OID
++#
++my @hash_values = ();
++for (my $i = 0; $i <= $#names; $i++) {
++    my @octets = @{$encoded_oids[$i]};
++
++    my $hash = $#octets;
++    foreach (@octets) {
++	$hash += $_ * 33;
++    }
++
++    $hash = ($hash >> 24) ^ ($hash >> 16) ^ ($hash >> 8) ^ ($hash);
++
++    push @hash_values, $hash & 0xff;
++}
++
++#
++# Emit the OID data
++#
++print C_FILE "\n";
++print C_FILE "static const unsigned char oid_data[", $total_length, "] = {\n";
++for (my $i = 0; $i <= $#names; $i++) {
++    my @octets = @{$encoded_oids[$i]};
++    print C_FILE "\t";
++    print C_FILE $_, ", " foreach (@octets);
++    print C_FILE "\t// ", $names[$i];
++    print C_FILE "\n";
++}
++print C_FILE "};\n";
++
++#
++# Build the search index table (ordered by length then hash then content)
++#
++my @index_table = ( 0 .. $#names );
++
++@index_table = sort {
++    my @octets_a = @{$encoded_oids[$a]};
++    my @octets_b = @{$encoded_oids[$b]};
++
++    return $hash_values[$a] <=> $hash_values[$b]
++	if ($hash_values[$a] != $hash_values[$b]);
++    return $#octets_a <=> $#octets_b
++	if ($#octets_a != $#octets_b);
++    for (my $i = $#octets_a; $i >= 0; $i--) {
++	return $octets_a[$i] <=> $octets_b[$i]
++	    if ($octets_a[$i] != $octets_b[$i]);
++    }
++    return 0;
++
++} @index_table;
++
++#
++# Emit the search index and hash value table
++#
++print C_FILE "\n";
++print C_FILE "static const struct {\n";
++print C_FILE "\tunsigned char hash;\n";
++if ($#names <= 255) {
++    print C_FILE "\tenum OID oid : 8;\n";
++} else {
++    print C_FILE "\tenum OID oid : 16;\n";
++}
++print C_FILE "} oid_search_table[OID__NR] = {\n";
++for (my $i = 0; $i <= $#names; $i++) {
++    my @octets = @{$encoded_oids[$index_table[$i]]};
++    printf(C_FILE "\t[%3u] = { %3u, OID_%-35s }, // ",
++	   $i,
++	   $hash_values[$index_table[$i]],
++	   $names[$index_table[$i]]);
++    printf C_FILE "%02x", $_ foreach (@octets);
++    print C_FILE "\n";
++}
++print C_FILE "};\n";
++
++#
++# Emit the OID debugging name table
++#
++#print C_FILE "\n";
++#print C_FILE "const char *const oid_name_table[OID__NR + 1] = {\n";
++#
++#for (my $i = 0; $i <= $#names; $i++) {
++#    print C_FILE "\t\"", $names[$i], "\",\n"
++#}
++#print C_FILE "\t\"Unknown-OID\"\n";
++#print C_FILE "};\n";
++
++#
++# Polish off
++#
++close C_FILE or die;
+diff --git a/lib/oid_registry.c b/lib/oid_registry.c
+new file mode 100644
+index 0000000..33cfd17
+--- /dev/null
++++ b/lib/oid_registry.c
+@@ -0,0 +1,89 @@
++/* ASN.1 Object identifier (OID) registry
 + *
 + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -120,465 +439,81 @@ index 0000000..8179f3c
 + */
 +
 +#include <linux/export.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/asn1_decoder.h>
-+#include <linux/asn1_ber_bytecode.h>
-+
-+static const unsigned char asn1_op_lengths[ASN1_OP__NR] = {
-+	/*					OPC TAG JMP ACT */
-+	[ASN1_OP_MATCH]				= 1 + 1,
-+	[ASN1_OP_MATCH_OR_SKIP]			= 1 + 1,
-+	[ASN1_OP_MATCH_ACT]			= 1 + 1     + 1,
-+	[ASN1_OP_MATCH_ACT_OR_SKIP]		= 1 + 1     + 1,
-+	[ASN1_OP_MATCH_JUMP]			= 1 + 1 + 1,
-+	[ASN1_OP_MATCH_JUMP_OR_SKIP]		= 1 + 1 + 1,
-+	[ASN1_OP_MATCH_ANY]			= 1,
-+	[ASN1_OP_MATCH_ANY_ACT]			= 1         + 1,
-+	[ASN1_OP_COND_MATCH_OR_SKIP]		= 1 + 1,
-+	[ASN1_OP_COND_MATCH_ACT_OR_SKIP]	= 1 + 1     + 1,
-+	[ASN1_OP_COND_MATCH_JUMP_OR_SKIP]	= 1 + 1 + 1,
-+	[ASN1_OP_COND_MATCH_ANY]		= 1,
-+	[ASN1_OP_COND_MATCH_ANY_ACT]		= 1         + 1,
-+	[ASN1_OP_COND_FAIL]			= 1,
-+	[ASN1_OP_COMPLETE]			= 1,
-+	[ASN1_OP_ACT]				= 1         + 1,
-+	[ASN1_OP_RETURN]			= 1,
-+	[ASN1_OP_END_SEQ]			= 1,
-+	[ASN1_OP_END_SEQ_OF]			= 1     + 1,
-+	[ASN1_OP_END_SET]			= 1,
-+	[ASN1_OP_END_SET_OF]			= 1     + 1,
-+	[ASN1_OP_END_SEQ_ACT]			= 1         + 1,
-+	[ASN1_OP_END_SEQ_OF_ACT]		= 1     + 1 + 1,
-+	[ASN1_OP_END_SET_ACT]			= 1         + 1,
-+	[ASN1_OP_END_SET_OF_ACT]		= 1     + 1 + 1,
-+};
-+
-+/*
-+ * Find the length of an indefinite length object
-+ */
-+static int asn1_find_indefinite_length(const unsigned char *data, size_t datalen,
-+				       const char **_errmsg, size_t *_err_dp)
-+{
-+	unsigned char tag, tmp;
-+	size_t dp = 0, len, n;
-+	int indef_level = 1;
-+
-+next_tag:
-+	if (unlikely(datalen - dp < 2)) {
-+		if (datalen == dp)
-+			goto missing_eoc;
-+		goto data_overrun_error;
-+	}
-+
-+	/* Extract a tag from the data */
-+	tag = data[dp++];
-+	if (tag == 0) {
-+		/* It appears to be an EOC. */
-+		if (data[dp++] != 0)
-+			goto invalid_eoc;
-+		if (--indef_level <= 0)
-+			return dp;
-+		goto next_tag;
-+	}
-+
-+	if (unlikely((tag & 0x1f) == 0x1f)) {
-+		do {
-+			if (unlikely(datalen - dp < 2))
-+				goto data_overrun_error;
-+			tmp = data[dp++];
-+		} while (tmp & 0x80);
-+	}
-+
-+	/* Extract the length */
-+	len = data[dp++];
-+	if (len < 0x7f) {
-+		dp += len;
-+		goto next_tag;
-+	}
-+
-+	if (unlikely(len == 0x80)) {
-+		/* Indefinite length */
-+		if (unlikely((tag & ASN1_CONS_BIT) == ASN1_PRIM << 5))
-+			goto indefinite_len_primitive;
-+		indef_level++;
-+		goto next_tag;
-+	}
-+
-+	n = len - 0x80;
-+	if (unlikely(n > sizeof(size_t) - 1))
-+		goto length_too_long;
-+	if (unlikely(n > datalen - dp))
-+		goto data_overrun_error;
-+	for (len = 0; n > 0; n--) {
-+		len <<= 8;
-+		len |= data[dp++];
-+	}
-+	dp += len;
-+	goto next_tag;
-+
-+length_too_long:
-+	*_errmsg = "Unsupported length";
-+	goto error;
-+indefinite_len_primitive:
-+	*_errmsg = "Indefinite len primitive not permitted";
-+	goto error;
-+invalid_eoc:
-+	*_errmsg = "Invalid length EOC";
-+	goto error;
-+data_overrun_error:
-+	*_errmsg = "Data overrun error";
-+	goto error;
-+missing_eoc:
-+	*_errmsg = "Missing EOC in indefinite len cons";
-+error:
-+	*_err_dp = dp;
-+	return -1;
-+}
++#include <linux/oid_registry.h>
++#include "oid_registry_data.c"
 +
 +/**
-+ * asn1_ber_decoder - Decoder BER/DER/CER ASN.1 according to pattern
-+ * @decoder: The decoder definition (produced by asn1_compiler)
-+ * @context: The caller's context (to be passed to the action functions)
-+ * @data: The encoded data
-+ * @datasize: The size of the encoded data
-+ *
-+ * Decode BER/DER/CER encoded ASN.1 data according to a bytecode pattern
-+ * produced by asn1_compiler.  Action functions are called on marked tags to
-+ * allow the caller to retrieve significant data.
-+ *
-+ * LIMITATIONS:
-+ *
-+ * To keep down the amount of stack used by this function, the following limits
-+ * have been imposed:
-+ *
-+ *  (1) This won't handle datalen > 65535 without increasing the size of the
-+ *	cons stack elements and length_too_long checking.
-+ *
-+ *  (2) The stack of constructed types is 10 deep.  If the depth of non-leaf
-+ *	constructed types exceeds this, the decode will fail.
-+ *
-+ *  (3) The SET type (not the SET OF type) isn't really supported as tracking
-+ *	what members of the set have been seen is a pain.
++ * look_up_OID - Find an OID registration for the specified data
++ * @data: Binary representation of the OID
++ * @datasize: Size of the binary representation
 + */
-+int asn1_ber_decoder(const struct asn1_decoder *decoder,
-+		     void *context,
-+		     const unsigned char *data,
-+		     size_t datalen)
++enum OID look_up_OID(const void *data, size_t datasize)
 +{
-+	const unsigned char *machine = decoder->machine;
-+	const asn1_action_t *actions = decoder->actions;
-+	size_t machlen = decoder->machlen;
-+	enum asn1_opcode op;
-+	unsigned char tag = 0, csp = 0, jsp = 0, optag = 0;
-+	const char *errmsg;
-+	size_t pc = 0, dp = 0, tdp = 0, len = 0, hdr = 0;
-+	int ret;
++	const unsigned char *octets = data;
++	enum OID oid;
++	unsigned char xhash;
++	unsigned i, j, k, hash;
++	size_t len;
 +
-+	unsigned char flags = 0;
-+#define FLAG_INDEFINITE_LENGTH	0x01
-+#define FLAG_MATCHED		0x02
-+#define FLAG_CONS		0x20 /* Corresponds to CONS bit in the opcode tag
-+				      * - ie. whether or not we are going to parse
-+				      *   a compound type.
-+				      */
++	/* Hash the OID data */
++	hash = datasize - 1;
 +
-+#define NR_CONS_STACK 10
-+	unsigned short cons_dp_stack[NR_CONS_STACK];
-+	unsigned short cons_datalen_stack[NR_CONS_STACK];
-+#define NR_JUMP_STACK 10
-+	unsigned char jump_stack[NR_JUMP_STACK];
++	for (i = 0; i < datasize; i++)
++		hash += octets[i] * 33;
++	hash = (hash >> 24) ^ (hash >> 16) ^ (hash >> 8) ^ hash;
++	hash &= 0xff;
 +
-+	if (datalen > 65535)
-+		return -EMSGSIZE;
-+
-+next_op:
-+	pr_debug("next_op: pc=\e[32m%zu\e[m/%zu dp=\e[33m%zu\e[m/%zu C=%d J=%d\n",
-+		 pc, machlen, dp, datalen, csp, jsp);
-+	if (unlikely(pc >= machlen))
-+		goto machine_overrun_error;
-+	op = machine[pc];
-+	if (unlikely(pc + asn1_op_lengths[op] > machlen))
-+		goto machine_overrun_error;
-+
-+	/* If this command is meant to match a tag, then do that before
-+	 * evaluating the command.
++	/* Binary search the OID registry.  OIDs are stored in ascending order
++	 * of hash value then ascending order of size and then in ascending
++	 * order of reverse value.
 +	 */
-+	if (op <= ASN1_OP__MATCHES_TAG) {
-+		unsigned char tmp;
++	i = 0;
++	k = OID__NR;
++	while (i < k) {
++		j = (i + k) / 2;
 +
-+		/* Skip conditional matches if possible */
-+		if ((op & ASN1_OP_MATCH__COND &&
-+		     flags & FLAG_MATCHED) ||
-+		    dp == datalen) {
-+			pc += asn1_op_lengths[op];
-+			goto next_op;
++		xhash = oid_search_table[j].hash;
++		if (xhash > hash) {
++			k = j;
++			continue;
++		}
++		if (xhash < hash) {
++			i = j + 1;
++			continue;
 +		}
 +
-+		flags = 0;
-+		hdr = dp;
++		oid = oid_search_table[j].oid;
++		len = oid_index[oid + 1] - oid_index[oid];
++		if (len > datasize) {
++			k = j;
++			continue;
++		}
++		if (len < datasize) {
++			i = j + 1;
++			continue;
++		}
 +
-+		/* Extract a tag from the data */
-+		if (unlikely(dp >= datalen - 1))
-+			goto data_overrun_error;
-+		tag = data[dp++];
-+		if (unlikely((tag & 0x1f) == 0x1f))
-+			goto long_tag_not_supported;
-+
-+		if (op & ASN1_OP_MATCH__ANY) {
-+			pr_debug("- any %02x\n", tag);
-+		} else {
-+			/* Extract the tag from the machine
-+			 * - Either CONS or PRIM are permitted in the data if
-+			 *   CONS is not set in the op stream, otherwise CONS
-+			 *   is mandatory.
-+			 */
-+			optag = machine[pc + 1];
-+			flags |= optag & FLAG_CONS;
-+
-+			/* Determine whether the tag matched */
-+			tmp = optag ^ tag;
-+			tmp &= ~(optag & ASN1_CONS_BIT);
-+			pr_debug("- match? %02x %02x %02x\n", tag, optag, tmp);
-+			if (tmp != 0) {
-+				/* All odd-numbered tags are MATCH_OR_SKIP. */
-+				if (op & ASN1_OP_MATCH__SKIP) {
-+					pc += asn1_op_lengths[op];
-+					dp--;
-+					goto next_op;
-+				}
-+				goto tag_mismatch;
++		/* Variation is most likely to be at the tail end of the
++		 * OID, so do the comparison in reverse.
++		 */
++		while (len > 0) {
++			unsigned char a = oid_data[oid_index[oid] + --len];
++			unsigned char b = octets[len];
++			if (a > b) {
++				k = j;
++				goto next;
++			}
++			if (a < b) {
++				i = j + 1;
++				goto next;
 +			}
 +		}
-+		flags |= FLAG_MATCHED;
-+
-+		len = data[dp++];
-+		if (len > 0x7f) {
-+			if (unlikely(len == 0x80)) {
-+				/* Indefinite length */
-+				if (unlikely(!(tag & ASN1_CONS_BIT)))
-+					goto indefinite_len_primitive;
-+				flags |= FLAG_INDEFINITE_LENGTH;
-+				if (unlikely(2 > datalen - dp))
-+					goto data_overrun_error;
-+			} else {
-+				int n = len - 0x80;
-+				if (unlikely(n > 2))
-+					goto length_too_long;
-+				if (unlikely(dp >= datalen - n))
-+					goto data_overrun_error;
-+				for (len = 0; n > 0; n--) {
-+					len <<= 8;
-+					len |= data[dp++];
-+				}
-+				if (unlikely(len > datalen - dp))
-+					goto data_overrun_error;
-+			}
-+		}
-+
-+		if (flags & FLAG_CONS) {
-+			/* For expected compound forms, we stack the positions
-+			 * of the start and end of the data.
-+			 */
-+			if (unlikely(csp >= NR_CONS_STACK))
-+				goto cons_stack_overflow;
-+			cons_dp_stack[csp] = dp;
-+			if (!(flags & FLAG_INDEFINITE_LENGTH)) {
-+				cons_datalen_stack[csp] = datalen;
-+				datalen = dp + len;
-+			} else {
-+				cons_datalen_stack[csp] = 0;
-+			}
-+			csp++;
-+		}
-+
-+		pr_debug("- TAG: %02x %zu%s\n",
-+			 tag, len, flags & FLAG_CONS ? " CONS" : "");
-+		tdp = dp;
++		return oid;
++	next:
++		;
 +	}
 +
-+	/* Decide how to handle the operation */
-+	switch (op) {
-+	case ASN1_OP_MATCH_ANY_ACT:
-+	case ASN1_OP_COND_MATCH_ANY_ACT:
-+		ret = actions[machine[pc + 1]](context, dp - hdr, tag, data + dp, len);
-+		if (ret < 0)
-+			return ret;
-+		goto skip_data;
-+
-+	case ASN1_OP_MATCH_ACT:
-+	case ASN1_OP_MATCH_ACT_OR_SKIP:
-+	case ASN1_OP_COND_MATCH_ACT_OR_SKIP:
-+		ret = actions[machine[pc + 2]](context, dp - hdr, tag, data + dp, len);
-+		if (ret < 0)
-+			return ret;
-+		goto skip_data;
-+
-+	case ASN1_OP_MATCH:
-+	case ASN1_OP_MATCH_OR_SKIP:
-+	case ASN1_OP_MATCH_ANY:
-+	case ASN1_OP_COND_MATCH_OR_SKIP:
-+	case ASN1_OP_COND_MATCH_ANY:
-+	skip_data:
-+		if (!(flags & FLAG_CONS)) {
-+			if (flags & FLAG_INDEFINITE_LENGTH) {
-+				len = asn1_find_indefinite_length(
-+					data + dp, datalen - dp, &errmsg, &dp);
-+				if (len < 0)
-+					goto error;
-+			}
-+			pr_debug("- LEAF: %zu\n", len);
-+			dp += len;
-+		}
-+		pc += asn1_op_lengths[op];
-+		goto next_op;
-+
-+	case ASN1_OP_MATCH_JUMP:
-+	case ASN1_OP_MATCH_JUMP_OR_SKIP:
-+	case ASN1_OP_COND_MATCH_JUMP_OR_SKIP:
-+		pr_debug("- MATCH_JUMP\n");
-+		if (unlikely(jsp == NR_JUMP_STACK))
-+			goto jump_stack_overflow;
-+		jump_stack[jsp++] = pc + asn1_op_lengths[op];
-+		pc = machine[pc + 2];
-+		goto next_op;
-+
-+	case ASN1_OP_COND_FAIL:
-+		if (unlikely(!(flags & FLAG_MATCHED)))
-+			goto tag_mismatch;
-+		pc += asn1_op_lengths[op];
-+		goto next_op;
-+
-+	case ASN1_OP_COMPLETE:
-+		if (unlikely(jsp != 0 || csp != 0)) {
-+			pr_err("ASN.1 decoder error: Stacks not empty at completion (%u, %u)\n",
-+			       jsp, csp);
-+			return -EBADMSG;
-+		}
-+		return 0;
-+
-+	case ASN1_OP_END_SET:
-+	case ASN1_OP_END_SET_ACT:
-+		if (unlikely(!(flags & FLAG_MATCHED)))
-+			goto tag_mismatch;
-+	case ASN1_OP_END_SEQ:
-+	case ASN1_OP_END_SET_OF:
-+	case ASN1_OP_END_SEQ_OF:
-+	case ASN1_OP_END_SEQ_ACT:
-+	case ASN1_OP_END_SET_OF_ACT:
-+	case ASN1_OP_END_SEQ_OF_ACT:
-+		if (unlikely(csp <= 0))
-+			goto cons_stack_underflow;
-+		csp--;
-+		tdp = cons_dp_stack[csp];
-+		len = datalen;
-+		datalen = cons_datalen_stack[csp];
-+		pr_debug("- end cons t=%zu dp=%zu l=%zu/%zu\n",
-+			 tdp, dp, len, datalen);
-+		if (datalen == 0) {
-+			/* Indefinite length - check for the EOC. */
-+			datalen = len;
-+			if (unlikely(datalen - dp < 2))
-+				goto data_overrun_error;
-+			if (data[dp++] != 0) {
-+				if (op & ASN1_OP_END__OF) {
-+					dp--;
-+					csp++;
-+					pc = machine[pc + 1];
-+					pr_debug("- continue\n");
-+					goto next_op;
-+				}
-+				goto missing_eoc;
-+			}
-+			if (data[dp++] != 0)
-+				goto invalid_eoc;
-+			len = dp - tdp - 2;
-+		} else {
-+			if (dp < len && (op & ASN1_OP_END__OF)) {
-+				datalen = len;
-+				csp++;
-+				pc = machine[pc + 1];
-+				pr_debug("- continue\n");
-+				goto next_op;
-+			}
-+			if (dp != len)
-+				goto cons_length_error;
-+			len -= tdp;
-+			pr_debug("- cons len l=%zu d=%zu\n", len, dp - tdp);
-+		}
-+
-+		if (op & ASN1_OP_END__ACT) {
-+			unsigned char act;
-+			if (op & ASN1_OP_END__OF)
-+				act = machine[pc + 2];
-+			else
-+				act = machine[pc + 1];
-+			ret = actions[act](context, dp - hdr, 0, data + tdp, len);
-+		}
-+		pc += asn1_op_lengths[op];
-+		goto next_op;
-+
-+	case ASN1_OP_ACT:
-+		ret = actions[machine[pc + 1]](context, dp - hdr, tag, data + tdp, len);
-+		pc += asn1_op_lengths[op];
-+		goto next_op;
-+
-+	case ASN1_OP_RETURN:
-+		if (unlikely(jsp <= 0))
-+			goto jump_stack_underflow;
-+		pc = jump_stack[--jsp];
-+		goto next_op;
-+
-+	default:
-+		break;
-+	}
-+
-+	/* Shouldn't reach here */
-+	pr_err("ASN.1 decoder error: Found reserved opcode (%u)\n", op);
-+	return -EBADMSG;
-+
-+data_overrun_error:
-+	errmsg = "Data overrun error";
-+	goto error;
-+machine_overrun_error:
-+	errmsg = "Machine overrun error";
-+	goto error;
-+jump_stack_underflow:
-+	errmsg = "Jump stack underflow";
-+	goto error;
-+jump_stack_overflow:
-+	errmsg = "Jump stack overflow";
-+	goto error;
-+cons_stack_underflow:
-+	errmsg = "Cons stack underflow";
-+	goto error;
-+cons_stack_overflow:
-+	errmsg = "Cons stack overflow";
-+	goto error;
-+cons_length_error:
-+	errmsg = "Cons length error";
-+	goto error;
-+missing_eoc:
-+	errmsg = "Missing EOC in indefinite len cons";
-+	goto error;
-+invalid_eoc:
-+	errmsg = "Invalid length EOC";
-+	goto error;
-+length_too_long:
-+	errmsg = "Unsupported length";
-+	goto error;
-+indefinite_len_primitive:
-+	errmsg = "Indefinite len primitive not permitted";
-+	goto error;
-+tag_mismatch:
-+	errmsg = "Unexpected tag";
-+	goto error;
-+long_tag_not_supported:
-+	errmsg = "Long tag not supported";
-+error:
-+	pr_debug("\nASN1: %s [m=%zu d=%zu ot=%02x t=%02x l=%zu]\n",
-+		 errmsg, pc, dp, optag, tag, len);
-+	return -EBADMSG;
++	return OID__NR;
 +}
-+EXPORT_SYMBOL_GPL(asn1_ber_decoder);
++EXPORT_SYMBOL_GPL(look_up_OID);
 
