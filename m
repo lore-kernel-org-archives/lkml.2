@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2IMPef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:34:35 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38436 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2IMPed (ORCPT
+	id S1758261Ab2IMPhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:37:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57940 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758106Ab2IMPh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:34:33 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-References: <87vcfjfa14.fsf@devron.myhome.or.jp>
-	<20120912171128.GG3009@fieldses.org>
-	<87r4q7f8fw.fsf@devron.myhome.or.jp>
-	<20120912174556.GH3009@fieldses.org>
-	<87ipbjf54f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
-	<87txv2cog1.fsf@devron.myhome.or.jp>
-	<20120913112024.GA24684@fieldses.org>
-	<87ehm6p15v.fsf@devron.myhome.or.jp>
-	<CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
-	<20120913144602.GD24684@fieldses.org>
-Date: Fri, 14 Sep 2012 00:34:18 +0900
-In-Reply-To: <20120913144602.GD24684@fieldses.org> (J. Bruce Fields's message
-	of "Thu, 13 Sep 2012 10:46:02 -0400")
-Message-ID: <87txv2ndhh.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Thu, 13 Sep 2012 11:37:28 -0400
+Message-ID: <5051FDB3.9040008@wwwdotorg.org>
+Date: Thu, 13 Sep 2012 09:37:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alex Courbot <acourbot@nvidia.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <2689722.93BQTh4lSC@percival> <1347519249.7471.42.camel@lappyti> <3082244.Oec3ulPCgi@percival>
+In-Reply-To: <3082244.Oec3ulPCgi@percival>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+On 09/13/2012 01:08 AM, Alex Courbot wrote:
+> On Thursday 13 September 2012 14:54:09 Tomi Valkeinen wrote:
+>> * PGP Signed by an unknown key
+>>
+>> On Thu, 2012-09-13 at 15:36 +0900, Alex Courbot wrote:
+>>
+>>> On Thursday 13 September 2012 14:22:57 Tomi Valkeinen wrote:
+>>>
+>>>  
+>>>  
+>>>> However, I fear these board specific things may be quite a bit
+>>>> anything,
+>>>> so it may well be pwm, gpios and regulators are not enough for them.
+>>>> For
+>>>> example, there could be an FPGA on the board which requires some
+>>>> configuration to accomplish the task at hand. It could be rather
+>>>> difficult to handle it with a generic power sequence.
+>>>
+>>>
+>>> Right. Note that this framework is supposed to be extended - I would like
+>>> to at least add regulator voltage setting, and maybe even support for
+>>> clocks and pinmux (but that might be out of place).
+>>
+>>
+>> Yes, that's one concern of mine... I already can imagine someone
+>> suggesting adding conditionals to the power sequence data.
+> 
+> I took care of that when naming the feature - it is not a "sequence" anymore 
+> if you have conditionals. :P
+> 
+>> Perhaps also
+>> direct memory read/writes so you can twiddle registers directly. And so
+>> on. Where's the limit what it should contain? Can we soon write full
+>> drivers with the DT data? =)
+> 
+> I shall be satisfied the day the kernel is released as one big DT node along 
+> with the 5KB interpreter that runs it.
 
->> > Current -mm means the best-effort work only if inode cache is not
->> > evicted.  I.e. if there is no inode cache anymore on server, server
->> > would return ESTALE. So I guess the behavior would not be stable
->> > relatively.
->> Hi OGAWA.
->> Sorry for late response.
->> Okay, I will resend patchset include your suggeston.(-o nfs=2)
->> Do you mind adding busy list patch to avoid unlink issue ?
->> And in case of rename, FAT retrun EBUSY while opening file.
->> We can limit only rename.
->
-> The server doesn't necessarily know whether a client has the file open,
-> so does that really help?
-
-If you are assuming to do rename() somehow, it would not be true. And if
-so, you might want to rethink about the patch. (btw, I'm not thinking
-deeply yet though, I guess we have to limit unlink() too)
-
-Well, anyway, I'd like to see stable/clean read-only support at first.
-(with new nfs option, and with MS_RDONLY).  After that, we can
-enable write support.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I know you're joking, but *cough* OpenFirmware *cough*, right?
