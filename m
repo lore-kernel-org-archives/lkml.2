@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab2IMJdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:33:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34195 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2IMJds (ORCPT
+	id S1756448Ab2IMJfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:35:47 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54659 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab2IMJfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:33:48 -0400
-Subject: Re: xt_nat_init: BUG: unable to handle kernel NULL pointer
- dereference at 00000000000000e0
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Patrick McHardy <kaber@trash.net>, networking <netdev@vger.kernel.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Netfilter Development Maili..." <netfilter-devel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120913091629.GA28022@localhost>
-References: <20120913091629.GA28022@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Sep 2012 11:33:43 +0200
-Message-ID: <1347528823.13103.1427.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 05:35:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
+References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
+Date: Thu, 13 Sep 2012 11:35:43 +0200
+Message-ID: <CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between DT
+ and non-DT boots
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, arnd@arndb.de,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, arm@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 17:16 +0800, Fengguang Wu wrote:
-> Hi Patrick,
-> 
-> This happens in today's linux-next tree and is pretty reproducible.
-> Bisection has been started.
-> 
-> [    1.834544] nf_conntrack version 0.5.0 (1786 buckets, 7144 max)
-> [    1.835406] ctnetlink v0.93: registering with nfnetlink.
-> [    1.836202] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e0
-> [    1.837539] IP: [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
-> [    1.838493] PGD 0 
-> [    1.838983] Oops: 0002 [#1] PREEMPT SMP 
-> [    1.839786] CPU 0 
-> [    1.840050] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc5-07686-gdbf978b #58 Bochs Bochs
-> [    1.840172] RIP: 0010:[<ffffffff81a19123>]  [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
-> [    1.840172] RSP: 0018:ffff88000d845e40  EFLAGS: 00010202
-> [    1.840172] RAX: 0000000000000246 RBX: 00000000000000e0 RCX: ffff88000d848000
-> [    1.840172] RDX: 0000000000000000 RSI: 0000000000000175 RDI: ffffffff81e6bc88
-> [    1.840172] RBP: ffff88000d845e50 R08: ffffffff821bd170 R09: 0000000000000000
-> [    1.840172] R10: 0000000000000000 R11: dead000000200200 R12: 00000000ffffffff
-> [    1.840172] R13: 0000000000000004 R14: ffffffff821c1ce0 R15: 0000000000000000
-> [    1.840172] FS:  0000000000000000(0000) GS:ffff88000de00000(0000) knlGS:0000000000000000
-> [    1.840172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    1.840172] CR2: 00000000000000e0 CR3: 000000000200b000 CR4: 00000000000006f0
-> [    1.840172] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [    1.840172] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [    1.840172] Process swapper/0 (pid: 1, threadinfo ffff88000d844000, task ffff88000d848000)
-> [    1.840172] Stack:
-> [    1.840172]  00000000000000e0 ffffffff821c1ce0 ffff88000d845e80 ffffffff8187c204
-> [    1.840172]  0000000000000000 ffffffff820f7ea0 0000000000000000 ffffffff821c1ce0
-> [    1.840172]  ffff88000d845ec0 ffffffff8187c334 ffff88000d845eb0 0000000000000000
-> [    1.840172] Call Trace:
-> [    1.840172]  [<ffffffff8187c204>] xt_register_target+0x34/0x70
-> [    1.840172]  [<ffffffff8187c334>] xt_register_targets+0x34/0x70
-> [    1.840172]  [<ffffffff8221f336>] ? nf_nat_init+0x12c/0x12c
-> [    1.840172]  [<ffffffff8221f34b>] xt_nat_init+0x15/0x17
-> [    1.840172]  [<ffffffff821dcc3e>] do_one_initcall+0x7a/0x134
-> [    1.840172]  [<ffffffff821dcdfb>] kernel_init+0x103/0x187
-> [    1.864014]  [<ffffffff821dc615>] ? do_early_param+0x8d/0x8d
-> [    1.864014]  [<ffffffff81a1dc44>] kernel_thread_helper+0x4/0x10
-> [    1.864014]  [<ffffffff821dccf8>] ? do_one_initcall+0x134/0x134
-> [    1.864014]  [<ffffffff81a1dc40>] ? gs_change+0x13/0x13
-> [    1.864014] Code: 8b 65 f8 c9 c3 0f 1f 00 55 31 d2 be 75 01 00 00 48 89 e5 41 54 41 bc ff ff ff ff 53 48 89 fb 48 c7 c7 88 bc e6 81 e8 dd 73 6e ff <f0> 44 0f c1 23 41 83 ec 01 31 d2 48 c7 c7 c8 b7 13 82 41 c1 ec 
-> [    1.864014] RIP  [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
-> [    1.864014]  RSP <ffff88000d845e40>
-> [    1.864014] CR2: 00000000000000e0
-> 
-> Thanks,
-> Fengguang
+On Mon, Aug 6, 2012 at 2:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Wasnt it already solved ?
+> If we're booting with Device Tree enabled, we want the IRQ numbers to
+> be taken and translated from the Device Tree binary. If not, they
+> should be taken from the resource allocation defined in the AB8500 MFD
+> core driver.
+>
+> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-http://1984.lsi.us.es/git/nf-next/commit/?id=00545bec9412d130c77f72a08d6c8b6ad21d4a1
+Not having this patch in v3.6-rcN gives the following boot noise (and
+the key does not work):
 
-Just have to wait that netfilter fixes are pushed upstream
+------------[ cut here ]------------
+WARNING: at /home/elinwal/linux-stericsson/kernel/irq/irqdomain.c:137
+irq_domain_legacy_revmap+0x20/0x48()
+Modules linked in:
+[<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c001d37c>]
+(warn_slowpath_common+0x4c/0x64)
+[<c001d37c>] (warn_slowpath_common+0x4c/0x64) from [<c001d3b0>]
+(warn_slowpath_null+0x1c/0x24)
+[<c001d3b0>] (warn_slowpath_null+0x1c/0x24) from [<c0064200>]
+(irq_domain_legacy_revmap+0x20/0x48)
+[<c0064200>] (irq_domain_legacy_revmap+0x20/0x48) from [<c02cea28>]
+(ab8500_ponkey_probe+0xd0/0x1f8)
+[<c02cea28>] (ab8500_ponkey_probe+0xd0/0x1f8) from [<c01a1e20>]
+(platform_drv_probe+0x14/0x18)
+[<c01a1e20>] (platform_drv_probe+0x14/0x18) from [<c01a0be4>]
+(driver_probe_device+0x78/0x208)
+[<c01a0be4>] (driver_probe_device+0x78/0x208) from [<c01a0e00>]
+(__driver_attach+0x8c/0x90)
+[<c01a0e00>] (__driver_attach+0x8c/0x90) from [<c019f514>]
+(bus_for_each_dev+0x50/0x7c)
+[<c019f514>] (bus_for_each_dev+0x50/0x7c) from [<c01a0424>]
+(bus_add_driver+0x170/0x23c)
+[<c01a0424>] (bus_add_driver+0x170/0x23c) from [<c01a12b4>]
+(driver_register+0x78/0x144)
+[<c01a12b4>] (driver_register+0x78/0x144) from [<c0008598>]
+(do_one_initcall+0x34/0x174)
+[<c0008598>] (do_one_initcall+0x34/0x174) from [<c03df8e8>]
+(kernel_init+0xfc/0x1bc)
+[<c03df8e8>] (kernel_init+0xfc/0x1bc) from [<c000f1d4>]
+(kernel_thread_exit+0x0/0x8)
+---[ end trace d77aa0db848f0e28 ]---
+ab8500-core ab8500-core.0: Failed to request dbf IRQ#0: -22
+ab8500-poweron-key: probe of ab8500-poweron-key.0 failed with error -22
 
-Thanks
+So how do we proceed to not release v3.6 with this regression?
 
+Shall all of the MFD IRQdomain stuff be pulled into the -rc series?
 
+(Linux-next seems to be working, so the real fix is in there)
 
+Yours,
+Linus Walleij
