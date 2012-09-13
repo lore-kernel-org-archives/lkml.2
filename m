@@ -1,141 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2IMBbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:31:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49365 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab2IMBbi (ORCPT
+	id S1754397Ab2IMBiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:38:20 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41045 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab2IMBiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:31:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <87mx1iecwi.fsf@xmission.com>
-References: <87lih2h6i4.fsf@xmission.com>
-	<87mx1iecwi.fsf@xmission.com>
-Date: Thu, 13 Sep 2012 11:31:36 +1000
-Message-ID: <CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
-Subject: Re: [REVIEW][PATCH 12/15] userns: Convert drm to use kuid and kgid
- and struct pid where appropriate
-From: Dave Airlie <airlied@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Sep 2012 21:38:18 -0400
+Message-ID: <1347500288.7434.1.camel@phoenix>
+Subject: [PATCH 1/2] HID: hid-sensor-hub: Clear HID_CLAIMED_INPUT bit earlier
+From: Axel Lin <axel.lin@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: srinivas pandruvada <srinivas.pandruvada@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Sep 2012 09:38:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Blink Blink this had not been converted to use struct pid ages ago?
->
-> - On drm open capture the openers kuid and struct pid.
-> - On drm close release the kuid and struct pid
-> - When reporting the uid and pid convert the kuid and struct pid
->   into values in the appropriate namespace.
->
+Clear HID_CLAIMED_INPUT bit of hdev->claimed, this prevents calling
+hidinput_disconnect() in hid_disconnect(), which is called by hid_hw_stop().
 
-Hi Eric,
+We need to clear HID_CLAIMED_INPUT bit earlier rather than in
+sensor_hub_remove() because we also call hid_hw_stop() in sensor_hub_probe
+error handling.
 
-I'm fine with this seems okay, do you want me to merge it via drm-next?
+Also adds comments for why we set hdev->claimed = HID_CLAIMED_INPUT.
 
-Dave.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Hi srinivas,
+I don't have this hardware, I'd appreciate if you can test these patches.
+Axel
 
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  drivers/gpu/drm/drm_fops.c  |    3 ++-
->  drivers/gpu/drm/drm_info.c  |    5 +++--
->  drivers/gpu/drm/drm_ioctl.c |    4 ++--
->  include/drm/drmP.h          |    4 ++--
->  init/Kconfig                |    1 -
->  5 files changed, 9 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
-> index 5062eec..433d2fa 100644
-> --- a/drivers/gpu/drm/drm_fops.c
-> +++ b/drivers/gpu/drm/drm_fops.c
-> @@ -251,7 +251,7 @@ static int drm_open_helper(struct inode *inode, struct file *filp,
->         filp->private_data = priv;
->         priv->filp = filp;
->         priv->uid = current_euid();
-> -       priv->pid = task_pid_nr(current);
-> +       priv->pid = get_pid(task_pid(current));
->         priv->minor = idr_find(&drm_minors_idr, minor_id);
->         priv->ioctl_count = 0;
->         /* for compatibility root is always authenticated */
-> @@ -524,6 +524,7 @@ int drm_release(struct inode *inode, struct file *filp)
->         if (drm_core_check_feature(dev, DRIVER_PRIME))
->                 drm_prime_destroy_file_private(&file_priv->prime);
->
-> +       put_pid(file_priv->pid);
->         kfree(file_priv);
->
->         /* ========================================================
-> diff --git a/drivers/gpu/drm/drm_info.c b/drivers/gpu/drm/drm_info.c
-> index 8928edb..eb0af39 100644
-> --- a/drivers/gpu/drm/drm_info.c
-> +++ b/drivers/gpu/drm/drm_info.c
-> @@ -191,8 +191,9 @@ int drm_clients_info(struct seq_file *m, void *data)
->                 seq_printf(m, "%c %3d %5d %5d %10u %10lu\n",
->                            priv->authenticated ? 'y' : 'n',
->                            priv->minor->index,
-> -                          priv->pid,
-> -                          priv->uid, priv->magic, priv->ioctl_count);
-> +                          pid_vnr(priv->pid),
-> +                          from_kuid_munged(seq_user_ns(m), priv->uid),
-> +                          priv->magic, priv->ioctl_count);
->         }
->         mutex_unlock(&dev->struct_mutex);
->         return 0;
-> diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
-> index 64a62c6..39a4383 100644
-> --- a/drivers/gpu/drm/drm_ioctl.c
-> +++ b/drivers/gpu/drm/drm_ioctl.c
-> @@ -215,8 +215,8 @@ int drm_getclient(struct drm_device *dev, void *data,
->         list_for_each_entry(pt, &dev->filelist, lhead) {
->                 if (i++ >= idx) {
->                         client->auth = pt->authenticated;
-> -                       client->pid = pt->pid;
-> -                       client->uid = pt->uid;
-> +                       client->pid = pid_vnr(pt->pid);
-> +                       client->uid = from_kuid_munged(current_user_ns(), pt->uid);
->                         client->magic = pt->magic;
->                         client->iocs = pt->ioctl_count;
->                         mutex_unlock(&dev->struct_mutex);
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index d6b67bb..9bc5c6a 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -426,8 +426,8 @@ struct drm_prime_file_private {
->  /** File private data */
->  struct drm_file {
->         int authenticated;
-> -       pid_t pid;
-> -       uid_t uid;
-> +       struct pid *pid;
-> +       kuid_t uid;
->         drm_magic_t magic;
->         unsigned long ioctl_count;
->         struct list_head lhead;
-> diff --git a/init/Kconfig b/init/Kconfig
-> index d849ba2..2a388e5 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -930,7 +930,6 @@ config UIDGID_CONVERTED
->         depends on FS_POSIX_ACL = n
->         depends on QUOTA = n
->         depends on QUOTACTL = n
-> -       depends on DRM = n
->
->         # Networking
->         depends on NET_9P = n
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/hid/hid-sensor-hub.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index 4ac759c..50bc8c7 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -539,8 +539,11 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 	}
+ 	INIT_LIST_HEAD(&hdev->inputs);
+ 
++	/* We don't use hidinput but hid_hw_start() fails if nothing is
++	 * claimed. So spoof claimed input. */
+ 	hdev->claimed = HID_CLAIMED_INPUT;
+ 	ret = hid_hw_start(hdev, 0);
++	hdev->claimed &= ~HID_CLAIMED_INPUT;
+ 	if (ret) {
+ 		hid_err(hdev, "hw start failed\n");
+ 		goto err_free;
+@@ -627,7 +630,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
+ 	int i;
+ 
+ 	hid_dbg(hdev, " hardware removed\n");
+-	hdev->claimed &= ~HID_CLAIMED_INPUT;
+ 	hid_hw_stop(hdev);
+ 	hid_hw_close(hdev);
+ 	spin_lock_irqsave(&data->lock, flags);
+-- 
+1.7.9.5
+
+
+
