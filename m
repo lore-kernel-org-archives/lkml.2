@@ -1,104 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab2IMLUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 07:20:37 -0400
-Received: from fieldses.org ([174.143.236.118]:38115 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756872Ab2IMLUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 07:20:35 -0400
-Date: Thu, 13 Sep 2012 07:20:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-Message-ID: <20120913112024.GA24684@fieldses.org>
-References: <871ui84l4l.fsf@devron.myhome.or.jp>
- <CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
- <20120912143227.GE3009@fieldses.org>
- <87vcfjfa14.fsf@devron.myhome.or.jp>
- <20120912171128.GG3009@fieldses.org>
- <87r4q7f8fw.fsf@devron.myhome.or.jp>
- <20120912174556.GH3009@fieldses.org>
- <87ipbjf54f.fsf@devron.myhome.or.jp>
- <CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
- <87txv2cog1.fsf@devron.myhome.or.jp>
+	id S1757609Ab2IML3o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 07:29:44 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:27826
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756994Ab2IML3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 07:29:37 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah107ah1288h12a5h12bdh12e5h1155h)
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
+To: <linux-edac@vger.kernel.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <avorontsov@mvista.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, Shaohui Xie <Shaohui.Xie@freescale.com>
+Subject: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+Date: Thu, 13 Sep 2012 18:55:29 +0800
+Message-ID: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
+X-Mailer: git-send-email 1.6.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87txv2cog1.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 05:33:02PM +0900, OGAWA Hirofumi wrote:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
-> 
-> >> I see. So, client can't solve the ESTALE if inode cache was evicted,
-> >> right? (without application changes)
-> >
-> > There can be situation where we may get not only ESTALE but EIO also.
-> >
-> > For example,
-> > -------------------------------
-> > fd = open(“foo.txt”);
-> > while (1) {
-> >        sleep(1);
-> >        write(fd..);
-> > }
-> > --------------------------------
-> >
-> > Here “write” may fail when inode number of “foo.txt” is changed at
-> > server due to cache eviction under memory pressure.
-> > When we tried a similar test, we found that “write” is retuning “EIO”
-> > instead of “ESTALE”
-> >
-> > ---------------------------------------------------------------------------------------------------------
-> > #> ./write_test_dbg bbb 1000 0
-> > FILE : bbb, SIZE : 1048576000 , FSYNC : OFF , RECORD_SIZE = 4096
-> > 106264 -rwxr-xr-x 1 root 0 0 Jan 1 00:14 bbb
-> > write failed after 60080128 bytes:, errno = 5: Input/output error
-> > ---------------------------------------------------------------------------------------------------------
-> >
-> >  As we get EIO instead of ESTALE, it may be difficult to decide when
-> > "restart from LOOKUP” in such situation.
-> > Also, as per Bruce opinion, we can not avoid ESTALE from inode number
-> > change in rebooted server case.
-> > In reboot case, it is worst as it may attempt to write in a different
-> > file if NFS handle at NFS client match with inode number of some other
-> > file at NFS server.
-> 
-> I see.
-> 
-> >> Grepping around... Documentation/sysctl/vm.txt mentions a
-> >> vfs_cache_pressure parameter.
-> >> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
-> > I am worrying if it could lead to OOM condition on embedded
-> > system(short memory(DRAM) and support 3TB HDD disk of big size.)
-> >
-> > Please let me know if any issues or queries.
-> 
-> So, now I think stable inode number may be useful if there are users of
-> it. And I guess those functionality is no collisions with -mm. And I
-> suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
-> 
-> If nfs=1, works like current -mm without no limited operations.
+Error handle in case of DDR ECC off is wrong, sysfs entries have not been
+created, so edac_mc_free which frees a mci instance should not be called.
+Also, free mci's memory in this case.
 
-Apologies, I haven't been following the conversation carefully: remind
-me what "works like current -mm" means?
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+ drivers/edac/edac_core.h    |    1 +
+ drivers/edac/edac_mc.c      |   53 ++++++++++++++++++++++++++++--------------
+ drivers/edac/mpc85xx_edac.c |   14 +++++++----
+ 3 files changed, 45 insertions(+), 23 deletions(-)
 
---b.
+diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+index 23bb99f..108c4e2 100644
+--- a/drivers/edac/edac_core.h
++++ b/drivers/edac/edac_core.h
+@@ -448,6 +448,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 				   unsigned sz_pvt);
+ extern int edac_mc_add_mc(struct mem_ctl_info *mci);
+ extern void edac_mc_free(struct mem_ctl_info *mci);
++extern void edac_mc_free_mem(struct mem_ctl_info *mci);
+ extern struct mem_ctl_info *edac_mc_find(int idx);
+ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
+ extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 616d90b..a2488b2 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -199,6 +199,40 @@ void *edac_align_ptr(void **p, unsigned size, int n_elems)
+ 	return (void *)(((unsigned long)ptr) + align - r);
+ }
+ 
++/*
++ * edac_mc_free_mem
++ *	'Free' a previously allocated 'mci' memory
++ * @mci: pointer to a struct mem_ctl_info structure
++ */
++void edac_mc_free_mem(struct mem_ctl_info *mci)
++{
++	int i = 0, tot_dimms, chn, tot_channels;
++	struct csrow_info *csr;
++
++	tot_dimms = mci->tot_dimms;
++	tot_channels = mci->num_cschannel;
++
++	if (mci->dimms) {
++		for (i = 0; i < tot_dimms; i++)
++			kfree(mci->dimms[i]);
++		kfree(mci->dimms);
++	}
++	if (mci->csrows) {
++		for (chn = 0; chn < tot_channels; chn++) {
++			csr = mci->csrows[chn];
++			if (csr) {
++				for (chn = 0; chn < tot_channels; chn++)
++					kfree(csr->channels[chn]);
++				kfree(csr);
++			}
++			kfree(mci->csrows[i]);
++		}
++		kfree(mci->csrows);
++	}
++	kfree(mci);
++}
++EXPORT_SYMBOL_GPL(edac_mc_free_mem);
++
+ /**
+  * edac_mc_alloc: Allocate and partially fill a struct mem_ctl_info structure
+  * @mc_num:		Memory controller number
+@@ -413,24 +447,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	return mci;
+ 
+ error:
+-	if (mci->dimms) {
+-		for (i = 0; i < tot_dimms; i++)
+-			kfree(mci->dimms[i]);
+-		kfree(mci->dimms);
+-	}
+-	if (mci->csrows) {
+-		for (chn = 0; chn < tot_channels; chn++) {
+-			csr = mci->csrows[chn];
+-			if (csr) {
+-				for (chn = 0; chn < tot_channels; chn++)
+-					kfree(csr->channels[chn]);
+-				kfree(csr);
+-			}
+-			kfree(mci->csrows[i]);
+-		}
+-		kfree(mci->csrows);
+-	}
+-	kfree(mci);
++	edac_mc_free_mem(mci);
+ 
+ 	return NULL;
+ }
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index a1e791e..402b3f5 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -1012,7 +1012,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 	if (res) {
+ 		printk(KERN_ERR "%s: Unable to get resource for MC err regs\n",
+ 		       __func__);
+-		goto err;
++		goto err1;
+ 	}
+ 
+ 	if (!devm_request_mem_region(&op->dev, r.start, resource_size(&r),
+@@ -1020,14 +1020,14 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 		printk(KERN_ERR "%s: Error while requesting mem region\n",
+ 		       __func__);
+ 		res = -EBUSY;
+-		goto err;
++		goto err1;
+ 	}
+ 
+ 	pdata->mc_vbase = devm_ioremap(&op->dev, r.start, resource_size(&r));
+ 	if (!pdata->mc_vbase) {
+ 		printk(KERN_ERR "%s: Unable to setup MC err regs\n", __func__);
+ 		res = -ENOMEM;
+-		goto err;
++		goto err1;
+ 	}
+ 
+ 	sdram_ctl = in_be32(pdata->mc_vbase + MPC85XX_MC_DDR_SDRAM_CFG);
+@@ -1035,7 +1035,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 		/* no ECC */
+ 		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
+ 		res = -ENODEV;
+-		goto err;
++		goto err1;
+ 	}
+ 
+ 	edac_dbg(3, "init mci\n");
+@@ -1065,7 +1065,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 
+ 	if (edac_mc_add_mc(mci)) {
+ 		edac_dbg(3, "failed edac_mc_add_mc()\n");
+-		goto err;
++		goto err1;
+ 	}
+ 
+ 	if (mpc85xx_create_sysfs_attributes(mci)) {
+@@ -1115,6 +1115,10 @@ err:
+ 	devres_release_group(&op->dev, mpc85xx_mc_err_probe);
+ 	edac_mc_free(mci);
+ 	return res;
++err1:
++	devres_release_group(&op->dev, mpc85xx_mc_err_probe);
++	edac_mc_free_mem(mci);
++	return res;
+ }
+ 
+ static int mpc85xx_mc_err_remove(struct platform_device *op)
+-- 
+1.6.4
 
-> If nfs=2, try to make stable FH and limit some operations
-> 
-> (option name doesn't matter here.)
-> 
-> Does this work fine?
-> -- 
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
