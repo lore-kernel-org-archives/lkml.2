@@ -1,125 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab2IMOPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:15:36 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:25129 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755980Ab2IMOPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:15:35 -0400
-Message-ID: <5051EA85.1070000@bfs.de>
-Date: Thu, 13 Sep 2012 16:15:33 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757632Ab2IMOSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:18:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37889 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab2IMOSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 10:18:09 -0400
+Date: Thu, 13 Sep 2012 16:18:41 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [pull] drm-intel-next
+Message-ID: <20120913141841.GC5693@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] drivers/staging/gdm72xx/gdm_sdio.c: Remove useless
- kfree
-References: <1347462407-13499-6-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1347462407-13499-6-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dave,
+
+The big ticket item here is the new i915 modeset infrastructure.
+Shockingly it didn't not blow up all over the place (i.e. I've managed to
+fix the ugly issues before merging). 1-2 smaller corner cases broke, but
+we have patches. Also, there's tons of patches on top of this that clean
+out cruft and fix a few bugs that couldn't be fixed with the crtc helper
+based stuff. So more stuff to come ;-)
+
+Also a few other things:
+- Tiny fix in the fb helper to go through the official dpms interface
+  instead of calling the crtc helper code.
+- forcewake code frobbery from Ben, code should be more in-line with
+  what Windows does now.
+- fixes for the render ring flush on hsw (Paulo)
+- gpu frequency tracepoint
+- vlv forcewake changes to better align it with our understanding of the
+  forcewake magic.
+- a few smaller cleanups
+
+Cheers, Daniel
 
 
-Am 12.09.2012 17:06, schrieb Peter Senna Tschudin:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> Remove useless kfree() and clean up code related to the removal.
-> 
-> The semantic patch that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> position p1,p2;
-> expression x;
-> @@
-> 
-> if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
-> 
-> @unchanged exists@
-> position r.p1,r.p2;
-> expression e <= r.x,x,e1;
-> iterator I;
-> statement S;
-> @@
-> 
-> if (x@p1 == NULL) { ... when != I(x,...) S
->                         when != e = e1
->                         when != e += e1
->                         when != e -= e1
->                         when != ++e
->                         when != --e
->                         when != e++
->                         when != e--
->                         when != &e
->    kfree@p2(x); ... return ...; }
-> 
-> @ok depends on unchanged exists@
-> position any r.p1;
-> position r.p2;
-> expression x;
-> @@
-> 
-> ... when != true x@p1 == NULL
-> kfree@p2(x);
-> 
-> @depends on !ok && unchanged@
-> position r.p2;
-> expression x;
-> @@
-> 
-> *kfree@p2(x);
-> // </smpl>
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
->  drivers/staging/gdm72xx/gdm_sdio.c |    7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-> index f824290..a0621d9 100644
-> --- a/drivers/staging/gdm72xx/gdm_sdio.c
-> +++ b/drivers/staging/gdm72xx/gdm_sdio.c
-> @@ -94,17 +94,14 @@ static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
->  	struct sdio_rx *r = NULL;
->  
->  	r = kmalloc(sizeof(*r), GFP_ATOMIC);
-> -	if (r == NULL)
-> -		goto out;
-> +	if (!r)
-> +		return NULL;
->  
->  	memset(r, 0, sizeof(*r));
+The following changes since commit d7c3b937bdf45f0b844400b7bf6fd3ed50bac604:
 
-This should be
- r = kzmalloc(sizeof(*r), GFP_ATOMIC);
- if (!r)
-	return NULL;
+  drm/i915: Remove __GFP_NO_KSWAPD (2012-08-27 17:11:38 +0200)
 
+are available in the git repository at:
 
->  
->  	r->rx_cxt = rx;
->  
->  	return r;
-> -out:
-> -	kfree(r);
-> -	return NULL;
->  }
->  
->  static void free_rx_struct(struct sdio_rx *r)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+  git://people.freedesktop.org/~danvet/drm-intel tags/drm-intel-next-2012-09-09
+
+for you to fetch changes up to e04190e0ecb236c51af181c18c545ea076fb9cca:
+
+  drm/fb helper: don't call drm_helper_connector_dpms directly (2012-09-08 00:51:15 +0200)
+
+----------------------------------------------------------------
+
+Ben Widawsky (5):
+      drm/i915: Extract forcewake ack timeout
+      drm/i915: use cpu_relax() in wait_for_atomic
+      drm/i915: Change forcewake timeout to 2ms
+      drm/i915: Never read FORCEWAKE
+      drm/i915: Enable some sysfs stuff without CONFIG_PM
+
+Chris Wilson (1):
+      drm/i915: Convert remaining debugfs iterators over rings to for_each_ring()
+
+Daniel Vetter (66):
+      drm/ips: move drps/ips/ilk related variables into dev_priv->ips
+      drm/i915: add a tracepoint for gpu frequency changes
+      drm/i915: align vlv forcewake with common lore
+      drm/i915: differ error message between forcwake timeouts
+      drm/i915: add crtc->enable/disable vfuncs insted of dpms
+      drm/i915: rip out crtc prepare/commit indirection
+      drm/i915: add direct encoder disable/enable infrastructure
+      drm/i915/hdmi: convert to encoder->disable/enable
+      drm/i915/tv: convert to encoder enable/disable
+      drm/i915/lvds: convert to encoder disable/enable
+      drm/i915/dp: convert to encoder disable/enable
+      drm/i915/crt: convert to encoder disable/enable
+      drm/i915/sdvo: convert to encoder disable/enable
+      drm/i915/dvo: convert to encoder disable/enable
+      drm/i915: convert dpms functions of dvo/sdvo/crt
+      drm/i915: rip out encoder->disable/enable checks
+      drm/i915: clean up encoder_prepare/commit
+      drm/i915: copy&paste drm_crtc_helper_set_config
+      drm/i915: call set_base directly
+      drm/i915: inline intel_best_encoder
+      drm/i915: copy&paste drm_crtc_helper_set_mode
+      drm/i915: simplify intel_crtc_prepare_encoders
+      drm/i915: rip out encoder->prepare/commit
+      drm/i915: call crtc functions directly
+      drm/i915: WARN when trying to enabled an unused crtc
+      drm/i915: Add interfaces to read out encoder/connector hw state
+      drm/i915/dp: implement get_hw_state
+      drm/i915/hdmi: implement get_hw_state
+      drm/i915/tv: implement get_hw_state
+      drm/i915/lvds: implement get_hw_state
+      drm/i915/crt: implement get_hw_state
+      drm/i915/sdvo: implement get_hw_state
+      drm/i915/dvo: implement get_hw_state
+      drm/i915: read out the modeset hw state at load and resume time
+      drm/i915: check connector hw/sw state
+      drm/i915: rip out intel_crtc->dpms_mode
+      drm/i915: rip out intel_dp->dpms_mode
+      drm/i915: ensure the force pipe A quirk is actually followed
+      drm/i915: introduce struct intel_set_config
+      drm/i915: extract modeset config save/restore code
+      drm/i915: extract intel_set_config_compute_mode_changes
+      drm/i915: extract intel_set_config_update_output_state
+      drm/i915: implement crtc helper semantics relied upon by the fb helper
+      drm/i915: don't update the fb base if there is no fb
+      drm/i915: convert pointless error checks in set_config to BUGs
+      drm/i915: don't save all the encoder/crtc state in set_config
+      drm/i915: stage modeset output changes
+      drm/i915: push crtc->fb update into pipe_set_base
+      drm/i915: remove crtc disabling special case
+      drm/i915: move output commit and crtc disabling into set_mode
+      drm/i915: extract adjusted mode computation
+      drm/i915: use staged outuput config in tv->mode_fixup
+      drm/i915: use staged outuput config in lvds->mode_fixup
+      drm/i915: compute masks of crtcs affected in set_mode
+      drm/i915: implement new set_mode code flow
+      drm/i915: push commit_output_state past crtc disabling
+      drm/i915: s/intel_encoder_disable/intel_encoder_noop
+      drm/i915: WARN if the pipe won't turn off
+      drm/i915: switch the load detect code to the staged modeset config
+      drm/i915: push commit_output_state past the crtc/encoder preparing
+      drm/i915: disable all crtcs at suspend time
+      drm/i915: no longer call drm_helper_resume_force_mode
+      drm/i915: add tons of modeset state checks
+      drm/i915: improve modeset state checking after dpms calls
+      Merge the modeset-rework, basic conversion into drm-intel-next
+      drm/fb helper: don't call drm_helper_connector_dpms directly
+
+Jani Nikula (2):
+      drm/i915: only enable sdvo hotplug irq if needed
+      drm/i915: fix sdvo hotplug support check and activation
+
+Paulo Zanoni (3):
+      drm/i915: add gen7_render_ring_flush
+      drm/i915: add workarounds directly to gen6_render_ring_flush
+      drm/i915: add workarounds to gen7_render_ring_flush
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
