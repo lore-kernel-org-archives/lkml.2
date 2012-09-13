@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab2IMOmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:42:33 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25446 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab2IMOmb (ORCPT
+	id S1758074Ab2IMOmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:42:53 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58735 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab2IMOmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:42:31 -0400
-Date: Thu, 13 Sep 2012 17:42:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: walter harms <wharms@bfs.de>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
-        "Ed L. Cashin" <ecashin@coraid.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] drivers/block/aoe/aoecmd.c: Remove useless kfree
-Message-ID: <20120913144205.GN19396@mwanda>
-References: <1347462407-13499-1-git-send-email-peter.senna@gmail.com>
- <5051E9F3.4020708@bfs.de>
+	Thu, 13 Sep 2012 10:42:52 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] perf,
+ cpu hotplug: Run CPU_STARTING notifiers with irqs disabled
+To: a.p.zijlstra@chello.nl, acme@infradead.org
+Cc: mingo@kernel.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 13 Sep 2012 20:12:20 +0530
+Message-ID: <20120913144220.3426.22392.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5051E9F3.4020708@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091314-5564-0000-0000-000004734236
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 04:13:07PM +0200, walter harms wrote:
-> > diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-> > index 5461faa..cbb0521 100644
-> > --- a/drivers/block/aoe/aoecmd.c
-> > +++ b/drivers/block/aoe/aoecmd.c
-> > @@ -1257,7 +1257,6 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
-> >  	}
-> >  	t = kcalloc(1, sizeof *t, GFP_ATOMIC);
-> >  	if (!t) {
-> > -		kfree(t);
-> >  		printk(KERN_INFO "aoe: cannot allocate memory to add target\n");
-> >  		return NULL;
-> >  	}
-> > 
-> 
-> 
-> this should read kzalloc(sizeof (*t), GFP_ATOMIC);
-> see: [PATCH 3/9] drivers/gpu/drm/ttm/ttm_page_alloc_dma.c: Remove useless kfree
+The CPU_STARTING notifiers are supposed to be run with irqs disabled. But the
+perf_cpu_notifier() macro invokes them without doing that. Fix it.
 
-I already fixed this one last week actually.  I did it the way
-Walter suggests.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-regards,
-dan carpenter
+ include/linux/perf_event.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 7602ccb..cc4574d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1346,10 +1346,13 @@ static inline void perf_event_task_tick(void)				{ }
+ do {									\
+ 	static struct notifier_block fn##_nb __cpuinitdata =		\
+ 		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
++	unsigned long flags;						\
+ 	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
+ 		(void *)(unsigned long)smp_processor_id());		\
++	local_irq_save(flags);						\
+ 	fn(&fn##_nb, (unsigned long)CPU_STARTING,			\
+ 		(void *)(unsigned long)smp_processor_id());		\
++	local_irq_restore(flags);					\
+ 	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
+ 		(void *)(unsigned long)smp_processor_id());		\
+ 	register_cpu_notifier(&fn##_nb);				\
 
