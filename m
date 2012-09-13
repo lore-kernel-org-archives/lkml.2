@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab2IMAvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:51:23 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:50044 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751485Ab2IMAvV (ORCPT
+	id S1753663Ab2IMBIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:08:20 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:45047 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab2IMBIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 20:51:21 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgwKACgtUVB5LPyM/2dsb2JhbABFumcDf4EIgiABAQU6HCMQCAMYLhQNGAMWCxOHfgMLskANiVMUihljeoVIA5QKgVSLFoUKgng
-Date: Thu, 13 Sep 2012 10:51:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Joe Perches <joe@perches.com>
-Cc: raghu.prabhu13@gmail.com, xfs@oss.sgi.com,
-        Raghavendra D Prabhu <rprabhu@wnohang.net>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Add ratelimited printk for different alert levels
-Message-ID: <20120913005112.GK11511@dastard>
-References: <cover.1347396641.git.rprabhu@wnohang.net>
- <ef779779fdfb84c7c1216b374216246d4de83233.1347396641.git.rprabhu@wnohang.net>
- <1347420159.2456.15.camel@joe2Laptop>
+	Wed, 12 Sep 2012 21:08:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347420159.2456.15.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120912232454.947953753@linuxfoundation.org>
+References: <20120912232816.GA1655@kroah.com>
+	<20120912232450.500619493@linuxfoundation.org>
+	<20120912232454.947953753@linuxfoundation.org>
+Date: Wed, 12 Sep 2012 21:08:17 -0400
+Message-ID: <CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
+Subject: Re: [ 042/108] NFS: Alias the nfs module to nfs4
+From: Josh Boyer <jwboyer@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 08:22:39PM -0700, Joe Perches wrote:
-> On Wed, 2012-09-12 at 03:43 +0530, raghu.prabhu13@gmail.com wrote:
-> > Ratelimited printk will be useful in printing xfs messages which are otherwise
-> > not required to be printed always due to their high rate (to prevent kernel ring
-> > buffer from overflowing), while at the same time required to be printed.
-> []
-> > diff --git a/fs/xfs/xfs_message.h b/fs/xfs/xfs_message.h
-> []
-> > @@ -30,6 +32,32 @@ void xfs_debug(const struct xfs_mount *mp, const char *fmt, ...)
-> >  }
-> >  #endif
-> >  
-> > +#define xfs_printk_ratelimited(xfs_printk, dev, fmt, ...)		\
-> > +do {									\
-> > +	static DEFINE_RATELIMIT_STATE(_rs,				\
-> > +				      DEFAULT_RATELIMIT_INTERVAL,	\
-> > +				      DEFAULT_RATELIMIT_BURST);		\
-> > +	if (__ratelimit(&_rs))						\
-> > +		xfs_printk(dev, fmt, ##__VA_ARGS__);			\
-> > +} while (0)
-> 
-> It might be better to use an xfs singleton RATELIMIT_STATE
-> 
-> DEFINE_RATELIMIT_STATE(xfs_rs);
-> ...
-> #define xfs_printk_ratelimited(xfs_printk, dev, fmt, ...)		\
-> do {									\
-> 	if (__ratelimit(&xfs_rs))					\
-> 		xfs_printk(dev, fmt, ##__VA_ARGS__);			\
-> } while (0)
+On Wed, Sep 12, 2012 at 7:28 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+>
+> 3.5-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
+>
+> This allows distros to remove the line from their modprobe
+> configuration.
+>
+> Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> [bwh: Backported to 3.2: adjust context]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Which would then result in ratelimiting dropping potentially
-important, unique messages. I think it's much better to guarantee
-ratelimited messages get emitted at least once, especially as there
-is the potential for multiple filesystems to emit messages
-simultaneously.
+Could someone elaborate why this is acceptable now, while it wasn't
+during the timeframe I sent an identical patch months ago?
 
-I think per-location rate limiting is fine for the current usage -
-ratelimiting is not widespread so there isn't a massive increase in
-size as a result of this. If we do start to use ratelimiting in lots
-of places in XFS, then we might have to revisit this, but it's OK
-for now.
+http://lkml.indiana.edu/hypermail/linux/kernel/1204.3/02064.html
 
-Cheers,
+We had some trouble in Fedora 17 because of this and would up with
+patches to nfs-utils because the modalias was NAKed.  If we're bringing
+it into stable (and upstream) at this point, it would be good to know
+what changed so I can go and undo what we did because I was told no.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Please don't get me wrong, I'm all for simplicity.  I'm just perhaps
+so simple that the brief changelog confuses me because it doesn't
+actually describe why the original solution wasn't followed up on.
+
+josh
