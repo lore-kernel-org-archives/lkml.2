@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab2IMRot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 13:44:49 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34730 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187Ab2IMRor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 13:44:47 -0400
-Date: Thu, 13 Sep 2012 11:45:31 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Federico Vaga <federico.vaga@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory
- allocator
-Message-ID: <20120913114531.4560b3f0@lwn.net>
-In-Reply-To: <2107949.TNqhOsq2WF@harkonnen>
-References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
-	<1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
-	<002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
-	<2107949.TNqhOsq2WF@harkonnen>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1755485Ab2IMRpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 13:45:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65040 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab2IMRpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 13:45:07 -0400
+Date: Thu, 13 Sep 2012 10:45:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY fixes for 3.6-rc6
+Message-ID: <20120913174502.GA21928@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Sep 2012 17:46:32 +0200
-Federico Vaga <federico.vaga@gmail.com> wrote:
+The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
 
-> > A few words explaining why this memory handling module is required or
-> > beneficial will definitely improve the commit :)  
-> 
-> ok, I will write some lines
+  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
 
-In general, all of these patches need *much* better changelogs (i.e. they
-need changelogs).  What are you doing, and *why* are you doing it?  The
-future will want to know.
+are available in the git repository at:
 
-I'm going to try to look at the actual code, but time isn't something I
-have a lot of, still...
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.6-rc6
 
-Thanks,
+for you to fetch changes up to 7be0670f7b9198382938a03ff3db7f47ef6b4780:
 
-jon
+  tty: serial: imx: don't reinit clock in imx_setup_ufcr() (2012-09-05 12:44:44 -0700)
+
+----------------------------------------------------------------
+TTY fixes for 3.6-rc6
+
+Here are 2 tiny patches for a serial driver to resolve issues that
+people have reported with the 3.6-rc tree.
+
+Both of these have been in the linux-next tree for a while now.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Dirk Behme (1):
+      tty: serial: imx: don't reinit clock in imx_setup_ufcr()
+
+Xinyu Chen (1):
+      tty: serial: imx: console write routing is unsafe on SMP
+
+ drivers/tty/serial/imx.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
