@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759037Ab2IMXs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:48:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26183 "EHLO mx1.redhat.com"
+	id S1759088Ab2IMXsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:48:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39701 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab2IMXsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:48:24 -0400
+	id S1759053Ab2IMXsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:48:35 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 00/16] Asymmetric / Public-key cryptography key type
+Subject: [PATCH 02/16] MPILIB: Provide count_leading/trailing_zeros() based on
+ arch functions
 To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
 Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:48:02 +0100
-Message-ID: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
+Date: Fri, 14 Sep 2012 00:48:22 +0100
+Message-ID: <20120913234822.3575.92227.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
+References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,186 +24,357 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Provide count_leading/trailing_zeros() macros based on extant arch bit scanning
+functions rather than reimplementing from scratch in MPILIB.
 
-Hi Herbert, Rusty,
+Whilst we're at it, turn count_foo_zeros(n, x) into n = count_foo_zeros(x).
 
-I've redone my crypto keys patches to be more specific, implementing an
-asymmetric key type for containing the stuff required for public-key
-cryptography and anything else one might want an asymmetric key for.
+Also move the definition to asm-generic as other people may be interested in
+using it.
 
-This facility can be used for module signing, firmware signing and eCryptfs.
-
-The patches can be found here as well as following this covering note:
-
-	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/crypto-keys-post-KS
-
-I have arranged things such that:
-
- (1) Keys of the asymmetric key type are just simple containers.  They have
-     three attributes:
-
-     (a) A subtype.
-
-     (b) The data for the subtype.  This is entirely defined by the subtype.
-
-     (c) A binary identifier (in addition to the usual text decription) that
-     	 can also be used to match the key.
-
- (2) The asymmetric key subtype provides the mechanism used to operate with the
-     key.  The mechanism can be entirely in-kernel, or can be offloaded to
-     hardware.
-
-     A completely software subtype is provided that can support a multiplicity
-     of public-key algorithms.  One such algorithm is currently provided (RSA).
-
- (3) Parsers can be registered that can take the instantiation data and turn it
-     into a subtype pointer, appropriate subtype data, a binary identifier and
-     a proposed description (keys can be auto-described).
-
-     An X.509 certificate parser is provided.  It can be given a certificate
-     like this:
-
-	keyctl padd asymmetric "" @s </tmp/x509.cert
-
-     giving something like:
-
-	102492b2 I--Q---     1 perm 39390000     0     0 asymmetri bfbc0cd76d050ea4:/C=GB/L=Cambridge/O=Red Hat/CN=kernel key: X509.RSA 0c688c7b []
-
-     Note that the X.509 parser uses the ASN.1 decoder and fast OID registry
-     patches.
-
-     I have dropped the PGP key parser for the moment.
-
-     Parsers can be provided that interpret the instantiation data to be a
-     pointer to where the key is actually stored (eg. a hardware key store).
-     Examples might be:
-
-	keyctl add asymmetric "" "tpm:bfbc0cd76d050ea4" @s
-	keyctl add asymmetric "" "uefi:bfbc0cd76d050ea4" @s
-
-     The parser could then, for example, extract the key from a key store and
-     set up for the software subtype or it could use a subtype that offloads
-     crypto operations to the hardware.
-
- (4) The main interface for using it is in include/crypto/public_key.h.
-     Currently, there is one operation function provided: verify_signature() -
-     it takes a key, the parsed-out signature data and the signed data digest
-     and indicates whether the signature is valid or not.
-
- (5) The sources are under crypto/ rather than security/ as that's a better fit
-     for them.
-
-I wonder if I should rename the key type to public_key (rather than
-asymmetric).  I'm not sure what else it might be used for.
-
-David
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.com>
 ---
-David Howells (16):
-      X.509: Add a crypto key parser for binary (DER) X.509 certificates
-      MPILIB: Provide a function to read raw data into an MPI
-      X.509: Add an ASN.1 decoder
-      X.509: Add simple ASN.1 grammar compiler
-      X.509: Add utility functions to render OIDs as strings
-      X.509: Implement simple static OID registry
-      RSA: Fix signature verification for shorter signatures
-      RSA: Implement signature verification algorithm [PKCS#1 / RFC3447]
-      MPILIB: Reinstate mpi_cmp[_ui]() and export for RSA signature verification
-      KEYS: Provide signature verification with an asymmetric key
-      KEYS: Asymmetric public-key algorithm crypto key subtype
-      KEYS: Asymmetric key pluggable data parsers
-      KEYS: Implement asymmetric key type
-      KEYS: Document asymmetric key type
-      MPILIB: Provide count_leading/trailing_zeros() based on arch functions
-      KEYS: Add payload preparsing opportunity prior to key instantiate or update
 
-
- Documentation/crypto/asymmetric-keys.txt  |  312 ++++++
- Documentation/security/keys.txt           |   50 +
- crypto/Kconfig                            |    1 
- crypto/Makefile                           |    1 
- crypto/asymmetric_keys/.gitignore         |    1 
- crypto/asymmetric_keys/Kconfig            |   38 +
- crypto/asymmetric_keys/Makefile           |   27 +
- crypto/asymmetric_keys/asymmetric_keys.h  |   15 
- crypto/asymmetric_keys/asymmetric_type.c  |  274 +++++
- crypto/asymmetric_keys/public_key.c       |  108 ++
- crypto/asymmetric_keys/public_key.h       |   30 +
- crypto/asymmetric_keys/rsa.c              |  277 +++++
- crypto/asymmetric_keys/signature.c        |   49 +
- crypto/asymmetric_keys/x509.asn1          |   60 +
- crypto/asymmetric_keys/x509_cert_parser.c |  503 +++++++++
- crypto/asymmetric_keys/x509_parser.h      |   37 +
- crypto/asymmetric_keys/x509_public_key.c  |  206 ++++
- crypto/asymmetric_keys/x509_rsakey.asn1   |    4 
- fs/cifs/cifs_spnego.c                     |    6 
- fs/cifs/cifsacl.c                         |    8 
- include/asm-generic/bitops/count_zeros.h  |   57 +
- include/crypto/public_key.h               |  113 ++
- include/keys/asymmetric-parser.h          |   37 +
- include/keys/asymmetric-subtype.h         |   55 +
- include/keys/asymmetric-type.h            |   25 
- include/keys/user-type.h                  |    6 
- include/linux/asn1.h                      |   67 +
- include/linux/asn1_ber_bytecode.h         |   87 ++
- include/linux/asn1_decoder.h              |   24 
- include/linux/key-type.h                  |   35 +
- include/linux/mpi.h                       |    1 
- include/linux/oid_registry.h              |   92 ++
- init/Kconfig                              |    8 
- lib/.gitignore                            |    2 
- lib/Kconfig                               |    5 
- lib/Makefile                              |   18 
- lib/asn1_decoder.c                        |  473 +++++++++
- lib/build_OID_registry                    |  209 ++++
- lib/mpi/Makefile                          |    1 
- lib/mpi/longlong.h                        |  138 ---
- lib/mpi/mpi-bit.c                         |    2 
- lib/mpi/mpi-cmp.c                         |   70 +
- lib/mpi/mpi-pow.c                         |    4 
- lib/mpi/mpicoder.c                        |   55 +
- lib/oid_registry.c                        |  170 +++
- net/ceph/crypto.c                         |    9 
- net/dns_resolver/dns_key.c                |    6 
- net/rxrpc/ar-key.c                        |   40 -
- scripts/.gitignore                        |    1 
- scripts/Makefile                          |    2 
- scripts/Makefile.build                    |   11 
- scripts/asn1_compiler.c                   | 1544 +++++++++++++++++++++++++++++
- security/keys/encrypted-keys/encrypted.c  |   16 
- security/keys/key.c                       |  114 ++
- security/keys/keyctl.c                    |   18 
- security/keys/keyring.c                   |    6 
- security/keys/request_key_auth.c          |    8 
- security/keys/trusted.c                   |   16 
- security/keys/user_defined.c              |   14 
- 59 files changed, 5324 insertions(+), 242 deletions(-)
- create mode 100644 Documentation/crypto/asymmetric-keys.txt
- create mode 100644 crypto/asymmetric_keys/.gitignore
- create mode 100644 crypto/asymmetric_keys/Kconfig
- create mode 100644 crypto/asymmetric_keys/Makefile
- create mode 100644 crypto/asymmetric_keys/asymmetric_keys.h
- create mode 100644 crypto/asymmetric_keys/asymmetric_type.c
- create mode 100644 crypto/asymmetric_keys/public_key.c
- create mode 100644 crypto/asymmetric_keys/public_key.h
- create mode 100644 crypto/asymmetric_keys/rsa.c
- create mode 100644 crypto/asymmetric_keys/signature.c
- create mode 100644 crypto/asymmetric_keys/x509.asn1
- create mode 100644 crypto/asymmetric_keys/x509_cert_parser.c
- create mode 100644 crypto/asymmetric_keys/x509_parser.h
- create mode 100644 crypto/asymmetric_keys/x509_public_key.c
- create mode 100644 crypto/asymmetric_keys/x509_rsakey.asn1
+ include/asm-generic/bitops/count_zeros.h |   57 ++++++++++++
+ lib/mpi/longlong.h                       |  138 ------------------------------
+ lib/mpi/mpi-bit.c                        |    2 
+ lib/mpi/mpi-pow.c                        |    4 -
+ 4 files changed, 62 insertions(+), 139 deletions(-)
  create mode 100644 include/asm-generic/bitops/count_zeros.h
- create mode 100644 include/crypto/public_key.h
- create mode 100644 include/keys/asymmetric-parser.h
- create mode 100644 include/keys/asymmetric-subtype.h
- create mode 100644 include/keys/asymmetric-type.h
- create mode 100644 include/linux/asn1.h
- create mode 100644 include/linux/asn1_ber_bytecode.h
- create mode 100644 include/linux/asn1_decoder.h
- create mode 100644 include/linux/oid_registry.h
- create mode 100644 lib/asn1_decoder.c
- create mode 100755 lib/build_OID_registry
- create mode 100644 lib/mpi/mpi-cmp.c
- create mode 100644 lib/oid_registry.c
- create mode 100644 scripts/asn1_compiler.c
+
+
+diff --git a/include/asm-generic/bitops/count_zeros.h b/include/asm-generic/bitops/count_zeros.h
+new file mode 100644
+index 0000000..97520d2
+--- /dev/null
++++ b/include/asm-generic/bitops/count_zeros.h
+@@ -0,0 +1,57 @@
++/* Count leading and trailing zeros functions
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
++#define _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
++
++#include <asm/bitops.h>
++
++/**
++ * count_leading_zeros - Count the number of zeros from the MSB back
++ * @x: The value
++ *
++ * Count the number of leading zeros from the MSB going towards the LSB in @x.
++ *
++ * If the MSB of @x is set, the result is 0.
++ * If only the LSB of @x is set, then the result is BITS_PER_LONG-1.
++ * If @x is 0 then the result is COUNT_LEADING_ZEROS_0.
++ */
++static inline int count_leading_zeros(unsigned long x)
++{
++	if (sizeof(x) == 4)
++		return BITS_PER_LONG - fls(x);
++	else
++		return BITS_PER_LONG - fls64(x);
++}
++
++#define COUNT_LEADING_ZEROS_0 BITS_PER_LONG
++
++/**
++ * count_trailing_zeros - Count the number of zeros from the LSB forwards
++ * @x: The value
++ *
++ * Count the number of trailing zeros from the LSB going towards the MSB in @x.
++ *
++ * If the LSB of @x is set, the result is 0.
++ * If only the MSB of @x is set, then the result is BITS_PER_LONG-1.
++ * If @x is 0 then the result is COUNT_TRAILING_ZEROS_0.
++ */
++static inline int count_trailing_zeros(unsigned long x)
++{
++#define COUNT_TRAILING_ZEROS_0 (-1)
++
++	if (sizeof(x) == 4)
++		return ffs(x);
++	else
++		return (x != 0) ? __ffs(x) : COUNT_TRAILING_ZEROS_0;
++}
++
++#endif /* _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_ */
+diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
+index 29f9862..678ce4f 100644
+--- a/lib/mpi/longlong.h
++++ b/lib/mpi/longlong.h
+@@ -19,6 +19,8 @@
+  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+  * MA 02111-1307, USA. */
+ 
++#include <asm-generic/bitops/count_zeros.h>
++
+ /* You have to define the following before including this file:
+  *
+  * UWtype -- An unsigned type, default type for operations (typically a "word")
+@@ -146,12 +148,6 @@ do { \
+ 	: "1" ((USItype)(n1)), \
+ 		"r" ((USItype)(n0)), \
+ 		"r" ((USItype)(d)))
+-
+-#define count_leading_zeros(count, x) \
+-	__asm__ ("clz %0,%1" \
+-	: "=r" ((USItype)(count)) \
+-	: "r" ((USItype)(x)))
+-#define COUNT_LEADING_ZEROS_0 32
+ #endif /* __a29k__ */
+ 
+ #if defined(__alpha) && W_TYPE_SIZE == 64
+@@ -298,11 +294,6 @@ extern UDItype __udiv_qrnnd();
+ 	: "1" ((USItype)(nh)), \
+ 		"0" ((USItype)(nl)), \
+ 		"g" ((USItype)(d)))
+-#define count_leading_zeros(count, x) \
+-	__asm__ ("bsch/1 %1,%0" \
+-	: "=g" (count) \
+-	: "g" ((USItype)(x)), \
+-	     "0" ((USItype)0))
+ #endif
+ 
+ /***************************************
+@@ -354,27 +345,6 @@ do { USItype __r; \
+ } while (0)
+ extern USItype __udiv_qrnnd();
+ #endif /* LONGLONG_STANDALONE */
+-#define count_leading_zeros(count, x) \
+-do { \
+-	USItype __tmp; \
+-	__asm__ ( \
+-	"ldi             1,%0\n" \
+-	"extru,=	%1,15,16,%%r0  ; Bits 31..16 zero?\n" \
+-	"extru,tr	%1,15,16,%1    ; No.  Shift down, skip add.\n" \
+-	"ldo		16(%0),%0      ; Yes.	Perform add.\n" \
+-	"extru,=	%1,23,8,%%r0   ; Bits 15..8 zero?\n" \
+-	"extru,tr	%1,23,8,%1     ; No.  Shift down, skip add.\n" \
+-	"ldo		8(%0),%0       ; Yes.	Perform add.\n" \
+-	"extru,=	%1,27,4,%%r0   ; Bits 7..4 zero?\n" \
+-	"extru,tr	%1,27,4,%1     ; No.  Shift down, skip add.\n" \
+-	"ldo		4(%0),%0       ; Yes.	Perform add.\n" \
+-	"extru,=	%1,29,2,%%r0   ; Bits 3..2 zero?\n" \
+-	"extru,tr	%1,29,2,%1     ; No.  Shift down, skip add.\n" \
+-	"ldo		2(%0),%0       ; Yes.	Perform add.\n" \
+-	"extru		%1,30,1,%1     ; Extract bit 1.\n" \
+-	"sub		%0,%1,%0       ; Subtract it.              " \
+-	: "=r" (count), "=r" (__tmp) : "1" (x)); \
+-} while (0)
+ #endif /* hppa */
+ 
+ /***************************************
+@@ -457,15 +427,6 @@ do { \
+ 	: "0" ((USItype)(n0)), \
+ 	     "1" ((USItype)(n1)), \
+ 	     "rm" ((USItype)(d)))
+-#define count_leading_zeros(count, x) \
+-do { \
+-	USItype __cbtmp; \
+-	__asm__ ("bsrl %1,%0" \
+-	: "=r" (__cbtmp) : "rm" ((USItype)(x))); \
+-	(count) = __cbtmp ^ 31; \
+-} while (0)
+-#define count_trailing_zeros(count, x) \
+-	__asm__ ("bsfl %1,%0" : "=r" (count) : "rm" ((USItype)(x)))
+ #ifndef UMUL_TIME
+ #define UMUL_TIME 40
+ #endif
+@@ -536,15 +497,6 @@ do { \
+ 	     "dI" ((USItype)(d))); \
+ 	(r) = __rq.__i.__l; (q) = __rq.__i.__h; \
+ } while (0)
+-#define count_leading_zeros(count, x) \
+-do { \
+-	USItype __cbtmp; \
+-	__asm__ ("scanbit %1,%0" \
+-	: "=r" (__cbtmp) \
+-	: "r" ((USItype)(x))); \
+-	(count) = __cbtmp ^ 31; \
+-} while (0)
+-#define COUNT_LEADING_ZEROS_0 (-32)	/* sic */
+ #if defined(__i960mx)		/* what is the proper symbol to test??? */
+ #define rshift_rhlc(r, h, l, c) \
+ do { \
+@@ -603,11 +555,6 @@ do { \
+ 	: "0" ((USItype)(n0)), \
+ 	     "1" ((USItype)(n1)), \
+ 	     "dmi" ((USItype)(d)))
+-#define count_leading_zeros(count, x) \
+-	__asm__ ("bfffo %1{%b2:%b2},%0" \
+-	: "=d" ((USItype)(count)) \
+-	: "od" ((USItype)(x)), "n" (0))
+-#define COUNT_LEADING_ZEROS_0 32
+ #else /* not mc68020 */
+ #define umul_ppmm(xh, xl, a, b) \
+ do { USItype __umul_tmp1, __umul_tmp2; \
+@@ -664,15 +611,6 @@ do { USItype __umul_tmp1, __umul_tmp2; \
+ 	     "rJ" ((USItype)(bh)), \
+ 	     "rJ" ((USItype)(al)), \
+ 	     "rJ" ((USItype)(bl)))
+-#define count_leading_zeros(count, x) \
+-do { \
+-	USItype __cbtmp; \
+-	__asm__ ("ff1 %0,%1" \
+-	: "=r" (__cbtmp) \
+-	: "r" ((USItype)(x))); \
+-	(count) = __cbtmp ^ 31; \
+-} while (0)
+-#define COUNT_LEADING_ZEROS_0 63	/* sic */
+ #if defined(__m88110__)
+ #define umul_ppmm(wh, wl, u, v) \
+ do { \
+@@ -779,12 +717,6 @@ do { \
+ 	: "0" (__xx.__ll), \
+ 	     "g" ((USItype)(d))); \
+ 	(r) = __xx.__i.__l; (q) = __xx.__i.__h; })
+-#define count_trailing_zeros(count, x) \
+-do { \
+-	__asm__("ffsd      %2,%0" \
+-	: "=r"((USItype) (count)) \
+-	: "0"((USItype) 0), "r"((USItype) (x))); \
+-	} while (0)
+ #endif /* __ns32000__ */
+ 
+ /***************************************
+@@ -855,11 +787,6 @@ do { \
+ 		"rI" ((USItype)(al)), \
+ 		"r" ((USItype)(bl))); \
+ } while (0)
+-#define count_leading_zeros(count, x) \
+-	__asm__ ("{cntlz|cntlzw} %0,%1" \
+-	: "=r" ((USItype)(count)) \
+-	: "r" ((USItype)(x)))
+-#define COUNT_LEADING_ZEROS_0 32
+ #if defined(_ARCH_PPC)
+ #define umul_ppmm(ph, pl, m0, m1) \
+ do { \
+@@ -1001,19 +928,6 @@ do { \
+ } while (0)
+ #define UMUL_TIME 20
+ #define UDIV_TIME 200
+-#define count_leading_zeros(count, x) \
+-do { \
+-	if ((x) >= 0x10000) \
+-		__asm__ ("clz     %0,%1" \
+-		: "=r" ((USItype)(count)) \
+-		: "r" ((USItype)(x) >> 16)); \
+-	else { \
+-		__asm__ ("clz   %0,%1" \
+-		: "=r" ((USItype)(count)) \
+-		: "r" ((USItype)(x))); \
+-		(count) += 16; \
+-	} \
+-} while (0)
+ #endif /* RT/ROMP */
+ 
+ /***************************************
+@@ -1142,13 +1056,6 @@ do { \
+ 	"rI" ((USItype)(d)) \
+ 	: "%g1" __AND_CLOBBER_CC)
+ #define UDIV_TIME 37
+-#define count_leading_zeros(count, x) \
+-	__asm__ ("scan %1,0,%0" \
+-	: "=r" ((USItype)(x)) \
+-	: "r" ((USItype)(count)))
+-/* Early sparclites return 63 for an argument of 0, but they warn that future
+-	implementations might change this.  Therefore, leave COUNT_LEADING_ZEROS_0
+-	undefined.  */
+ #endif /* __sparclite__ */
+ #endif /* __sparc_v8__ */
+ 	/* Default to sparc v7 versions of umul_ppmm and udiv_qrnnd.  */
+@@ -1454,47 +1361,6 @@ do { \
+ #define udiv_qrnnd __udiv_qrnnd_c
+ #endif
+ 
+-#undef count_leading_zeros
+-#if !defined(count_leading_zeros)
+-	extern
+-#ifdef __STDC__
+-			const
+-#endif
+-			unsigned char __clz_tab[];
+-#define count_leading_zeros(count, x) \
+-do { \
+-	UWtype __xr = (x); \
+-	UWtype __a; \
+-	\
+-	if (W_TYPE_SIZE <= 32) { \
+-		__a = __xr < ((UWtype) 1 << 2*__BITS4) \
+-		? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
+-		: (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
+-	} \
+-	else { \
+-		for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
+-			if (((__xr >> __a) & 0xff) != 0) \
+-				break; \
+-	} \
+-	\
+-	(count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
+-} while (0)
+-	/* This version gives a well-defined value for zero. */
+-#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
+-#endif
+-
+-#if !defined(count_trailing_zeros)
+-/* Define count_trailing_zeros using count_leading_zeros.  The latter might be
+-	defined in asm, but if it is not, the C version above is good enough.  */
+-#define count_trailing_zeros(count, x) \
+-do { \
+-	UWtype __ctz_x = (x); \
+-	UWtype __ctz_c; \
+-	count_leading_zeros(__ctz_c, __ctz_x & -__ctz_x); \
+-	(count) = W_TYPE_SIZE - 1 - __ctz_c; \
+-} while (0)
+-#endif
+-
+ #ifndef UDIV_NEEDS_NORMALIZATION
+ #define UDIV_NEEDS_NORMALIZATION 0
+ #endif
+diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
+index 5687248..503537e 100644
+--- a/lib/mpi/mpi-bit.c
++++ b/lib/mpi/mpi-bit.c
+@@ -45,7 +45,7 @@ unsigned mpi_get_nbits(MPI a)
+ 	if (a->nlimbs) {
+ 		mpi_limb_t alimb = a->d[a->nlimbs - 1];
+ 		if (alimb)
+-			count_leading_zeros(n, alimb);
++			n = count_leading_zeros(alimb);
+ 		else
+ 			n = BITS_PER_MPI_LIMB;
+ 		n = BITS_PER_MPI_LIMB - n + (a->nlimbs - 1) * BITS_PER_MPI_LIMB;
+diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
+index 67f3e79..5464c87 100644
+--- a/lib/mpi/mpi-pow.c
++++ b/lib/mpi/mpi-pow.c
+@@ -77,7 +77,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
+ 	mp = mp_marker = mpi_alloc_limb_space(msize);
+ 	if (!mp)
+ 		goto enomem;
+-	count_leading_zeros(mod_shift_cnt, mod->d[msize - 1]);
++	mod_shift_cnt = count_leading_zeros(mod->d[msize - 1]);
+ 	if (mod_shift_cnt)
+ 		mpihelp_lshift(mp, mod->d, msize, mod_shift_cnt);
+ 	else
+@@ -169,7 +169,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
+ 
+ 		i = esize - 1;
+ 		e = ep[i];
+-		count_leading_zeros(c, e);
++		c = count_leading_zeros(e);
+ 		e = (e << c) << 1;	/* shift the exp bits to the left, lose msb */
+ 		c = BITS_PER_MPI_LIMB - 1 - c;
+ 
 
