@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2IMPmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:42:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48693 "EHLO
+	id S932248Ab2IMPnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:43:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50161 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758294Ab2IMPmr (ORCPT
+	with ESMTP id S932170Ab2IMPma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:42:47 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>
-Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
-Date: Thu, 13 Sep 2012 17:46:32 +0200
-Message-ID: <2107949.TNqhOsq2WF@harkonnen>
-User-Agent: KMail/4.8.5 (Linux/3.5.3-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
-References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com> <1347544368-30583-3-git-send-email-federico.vaga@gmail.com> <002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 13 Sep 2012 11:42:30 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 08/10] ARM: mvebu: adjust Armada XP evaluation board DTS
+Date: Thu, 13 Sep 2012 17:41:50 +0200
+Message-Id: <1347550912-18021-9-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thursday, September 13, 2012 3:53 PM Federico Vaga wrote:
-> > Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-> 
-> A few words explaining why this memory handling module is required or
-> beneficial will definitely improve the commit :)
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-ok, I will write some lines
+The Armada XP evaluation board is based on the MV78460 Armava XP
+SoC. Now that we have separate .dtsi files for the three different
+SoCs of the Armada XP family, use the appropriate one as include for
+the Armada XP evaluation board .dts file.
 
-> > +static void *vb2_dma_streaming_cookie(void *buf_priv)
-> > +{
-> > +	struct vb2_streaming_buf *buf = buf_priv;
-> > +
-> > +	return (void *)buf->dma_handle;
-> > +}
-> 
-> Please change this function to:
-> 
-> static void *vb2_dma_streaming_cookie(void *buf_priv)
-> {
-> 	struct vb2_streaming_buf *buf = buf_priv;
-> 	return &buf->dma_handle;
-> }
-> 
-> and add a following static inline to
-> include/media/videobuf2-dma-streaming.h:
-> 
-> static inline dma_addr_t
-> vb2_dma_streaming_plane_paddr(struct vb2_buffer *vb, unsigned int
-> plane_no) {
->         dma_addr_t *dma_addr = vb2_plane_cookie(vb, plane_no);
->         return *dma_addr;
-> }
-> 
-> Do not use 'cookie' callback directly in the driver, the driver should
-> use the above proxy.
-> 
-> The &buf->dma_handle workaround is required for some possible
-> configurations with 64bit dma addresses, see commit 472af2b05bdefc.
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Lior Amsalem <alior@marvell.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/boot/dts/armada-xp-db.dts |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-ACK.
-
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index f97040d..b1fc728 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -14,11 +14,11 @@
+  */
+ 
+ /dts-v1/;
+-/include/ "armada-xp.dtsi"
++/include/ "armada-xp-mv78460.dtsi"
+ 
+ / {
+ 	model = "Marvell Armada XP Evaluation Board";
+-	compatible = "marvell,axp-db", "marvell,armadaxp", "marvell,armada-370-xp";
++	compatible = "marvell,axp-db", "marvell,armadaxp-mv78460", "marvell,armadaxp", "marvell,armada-370-xp";
+ 
+ 	chosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
 -- 
-Federico Vaga
+1.7.10.4
+
