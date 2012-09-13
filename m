@@ -1,65 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab2IMPOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:14:32 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:43180 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab2IMPOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:14:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=hb3b5mcBDyj59tUhibX9gPcAh2DMpE/2
-	4hBt3HJzgAOBrSpfJIHW4vPow0VquYoPyA1ncDgMyGzjSSNknECYaVg4garac7Z3
-	GymtOzKRhyfsnFW/mzVvakulAr+HHbKHNqT/FvCsXOMLljZ9/U7u+DGCMRNGwqW0
-	Uv+h42P1RM4=
-From: Junio C Hamano <gitster@pobox.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jeff King <peff@peff.net>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Git Mailing List <git@vger.kernel.org>
-Subject: Re: [GIT PULL] sound fixes for 3.6-rc6
-References: <s5h392m1728.wl%tiwai@suse.de>
- <CA+55aFyo6do-dZiZMiwZkN1Ko+W58+4-zkbfJnpQR+ufw=+8ig@mail.gmail.com>
- <s5hzk4uyvsr.wl%tiwai@suse.de> <s5hvcfiyum4.wl%tiwai@suse.de>
- <20120913130344.GC4287@sigill.intra.peff.net> <s5hligeyrz8.wl%tiwai@suse.de>
-Date: Thu, 13 Sep 2012 08:14:27 -0700
-In-Reply-To: <s5hligeyrz8.wl%tiwai@suse.de> (Takashi Iwai's message of "Thu,
- 13 Sep 2012 15:25:47 +0200")
-Message-ID: <7vhar29cq4.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755384Ab2IMPQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:16:07 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47020 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473Ab2IMPQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 11:16:04 -0400
+Date: Thu, 13 Sep 2012 17:15:58 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/20] perf/core improvements and fixes
+Message-ID: <20120913151558.GA27521@gmail.com>
+References: <1347407590-30960-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: B6A39F74-FDB5-11E1-BAE0-BAB72E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <1347407590-30960-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai <tiwai@suse.de> writes:
 
->> I can't reproduce here. What is your exact request-pull invocation?
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-This question was not answerd.  Did you ask request-pull to ask for
-a branch to be pulled, or did you ask it to ask for the tag to be
-pulled?
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> Best Regards,
+> 
+> - Arnaldo
+> 
+> The following changes since commit d5cb2aef4fda355fbafe8db4f425b73ea94d2019:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-09-09 10:39:14 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 9ec3f4e437ede2f3b5087d412abe16a0219b3b99:
+> 
+>   perf sched: Don't read all tracepoint variables in advance (2012-09-11 20:39:19 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes
+> 
+> . Remove die()/exit() calls from several tools.
+> 
+> . Add missing perf_regs.h file to MANIFEST
+> 
+> . Clean up and improve 'perf sched' performance by elliminating lots of
+>   needless calls to libtraceevent.
+> 
+> . More patches to make perf build on Android, from Irina Tirdea
+> 
+> . Resolve vdso callchains, from Jiri Olsa
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (9):
+>       perf test: Remove die() calls
+>       perf sched: Remove die() calls
+>       perf kmem: Remove die() calls
+>       perf tools: Add missing perf_regs.h file to MANIFEST
+>       perf sched: Remove unused thread parameter
+>       perf sched: Use perf_tool as ancestor
+>       perf evsel: Introduce perf_evsel__{str,int}val methods
+>       perf sched: Use perf_evsel__{int,str}val
+>       perf sched: Don't read all tracepoint variables in advance
+> 
+> Irina Tirdea (5):
+>       perf tools: include wrapper for magic.h
+>       perf tools: Update types definitions for Android
+>       perf tools: include __WORDSIZE definition
+>       perf tools: fix ALIGN redefinition in system headers
+>       perf tools: Use __maybe_used for unused variables
+> 
+> Jiri Olsa (4):
+>       perf tools: Do backtrace post unwind only if we regs and stack were captured
+>       perf tools: Add memdup function
+>       perf symbols: Make dsos__find function globally available
+>       perf tools: Back [vdso] DSO with real data
+> 
+>  tools/lib/traceevent/event-parse.c                 |    8 +-
+>  tools/lib/traceevent/event-parse.h                 |    4 +-
+>  tools/perf/MANIFEST                                |    1 +
+>  tools/perf/Makefile                                |    3 +
+>  tools/perf/bench/bench.h                           |    3 +-
+>  tools/perf/bench/mem-memcpy.c                      |    2 +-
+>  tools/perf/bench/mem-memset.c                      |    2 +-
+>  tools/perf/bench/sched-messaging.c                 |    2 +-
+>  tools/perf/bench/sched-pipe.c                      |    6 +-
+>  tools/perf/builtin-annotate.c                      |    2 +-
+>  tools/perf/builtin-bench.c                         |    2 +-
+>  tools/perf/builtin-buildid-cache.c                 |   10 +-
+>  tools/perf/builtin-buildid-list.c                  |    3 +-
+>  tools/perf/builtin-diff.c                          |    4 +-
+>  tools/perf/builtin-evlist.c                        |    2 +-
+>  tools/perf/builtin-help.c                          |    2 +-
+>  tools/perf/builtin-inject.c                        |   24 +-
+>  tools/perf/builtin-kmem.c                          |  130 +-
+>  tools/perf/builtin-kvm.c                           |    2 +-
+>  tools/perf/builtin-list.c                          |    2 +-
+>  tools/perf/builtin-lock.c                          |    4 +-
+>  tools/perf/builtin-probe.c                         |   24 +-
+>  tools/perf/builtin-record.c                        |   10 +-
+>  tools/perf/builtin-report.c                        |   11 +-
+>  tools/perf/builtin-sched.c                         | 1446 +++++++++-----------
+>  tools/perf/builtin-script.c                        |   29 +-
+>  tools/perf/builtin-stat.c                          |   40 +-
+>  tools/perf/builtin-test.c                          |   23 +-
+>  tools/perf/builtin-timechart.c                     |   30 +-
+>  tools/perf/builtin-top.c                           |    7 +-
+>  tools/perf/ui/browser.c                            |    7 +-
+>  tools/perf/ui/browsers/annotate.c                  |    6 +-
+>  tools/perf/ui/gtk/browser.c                        |    5 +-
+>  tools/perf/ui/gtk/setup.c                          |    2 +-
+>  tools/perf/ui/gtk/util.c                           |    4 +-
+>  tools/perf/ui/helpline.c                           |    2 +-
+>  tools/perf/ui/helpline.h                           |    8 +-
+>  tools/perf/ui/hist.c                               |   21 +-
+>  tools/perf/ui/tui/setup.c                          |    4 +-
+>  tools/perf/util/alias.c                            |    3 +-
+>  tools/perf/util/annotate.c                         |    6 +-
+>  tools/perf/util/annotate.h                         |   13 +-
+>  tools/perf/util/build-id.c                         |   11 +-
+>  tools/perf/util/cache.h                            |    6 +-
+>  tools/perf/util/callchain.c                        |    6 +-
+>  tools/perf/util/cgroup.c                           |    4 +-
+>  tools/perf/util/config.c                           |    6 +-
+>  tools/perf/util/debug.h                            |    9 +-
+>  tools/perf/util/event.c                            |   29 +-
+>  tools/perf/util/event.h                            |    2 +-
+>  tools/perf/util/evsel.c                            |   35 +
+>  tools/perf/util/evsel.h                            |    7 +
+>  tools/perf/util/header.c                           |  177 ++-
+>  tools/perf/util/header.h                           |    2 +-
+>  tools/perf/util/help.c                             |    3 +-
+>  tools/perf/util/hist.c                             |    2 +-
+>  tools/perf/util/hist.h                             |   32 +-
+>  tools/perf/util/include/linux/bitops.h             |    4 +
+>  tools/perf/util/include/linux/compiler.h           |    8 +-
+>  tools/perf/util/include/linux/kernel.h             |   13 +-
+>  tools/perf/util/include/linux/magic.h              |   12 +
+>  tools/perf/util/include/linux/string.h             |    2 +
+>  tools/perf/util/include/linux/types.h              |    8 +
+>  tools/perf/util/intlist.c                          |    4 +-
+>  tools/perf/util/map.c                              |   12 +-
+>  tools/perf/util/map.h                              |    2 +-
+>  tools/perf/util/parse-events-test.c                |    6 +-
+>  tools/perf/util/parse-events.c                     |    7 +-
+>  tools/perf/util/parse-events.l                     |    2 +-
+>  tools/perf/util/parse-events.y                     |    4 +-
+>  tools/perf/util/parse-options.c                    |    3 +-
+>  tools/perf/util/perf_regs.h                        |    2 +-
+>  tools/perf/util/pmu.y                              |    6 +-
+>  tools/perf/util/probe-event.c                      |   21 +-
+>  tools/perf/util/probe-finder.c                     |    4 +-
+>  tools/perf/util/python.c                           |    8 +-
+>  .../perf/util/scripting-engines/trace-event-perl.c |    8 +-
+>  .../util/scripting-engines/trace-event-python.c    |   10 +-
+>  tools/perf/util/session.c                          |   61 +-
+>  tools/perf/util/sort.c                             |   14 +-
+>  tools/perf/util/string.c                           |   18 +-
+>  tools/perf/util/symbol-minimal.c                   |   28 +-
+>  tools/perf/util/symbol.c                           |    6 +-
+>  tools/perf/util/symbol.h                           |    8 +-
+>  tools/perf/util/trace-event-parse.c                |    4 +-
+>  tools/perf/util/trace-event-scripting.c            |   33 +-
+>  tools/perf/util/unwind.c                           |   36 +-
+>  tools/perf/util/unwind.h                           |   11 +-
+>  tools/perf/util/util.h                             |    2 +-
+>  tools/perf/util/vdso.c                             |  111 ++
+>  tools/perf/util/vdso.h                             |   18 +
+>  tools/perf/util/wrapper.c                          |    3 +-
+>  92 files changed, 1518 insertions(+), 1231 deletions(-)
+>  create mode 100644 tools/perf/util/include/linux/magic.h
+>  create mode 100644 tools/perf/util/vdso.c
+>  create mode 100644 tools/perf/util/vdso.h
 
-If the former, I would have say it is a pebcak.  Linus asked you to
-ask a signed tag to be pulled, and you want to have the tag to be
-pulled, but if you do not give "git request-pull" the tag but a
-branch that the tag points at, the command does not have a good
-reason to countermand your (apparent) wish that the branch is what
-is to be pulled.
+Pulled, thanks a lot Arnaldo!
 
->> Is request-pull showing a warning like:
->> 
->>   warn: You locally have sound-3.6 but it does not (yet)
->>   warn: appear to be at git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git
->>   warn: Do you want to push it there, perhaps?
->
-> Hm, it looks like the check is performed only for tag objects.
-> In the example below, no warning appears:
->     % git tag mytest for-next
->     % git request-pull mytest~ git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git mytest
->
-> With an annotated or a signed tag, git seems giving a warning like
-> above, indeed.  So my test seemed wrong.  Sorry for the noise.
-
-OK.
+	Ingo
