@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab2IMUMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:12:33 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:43446 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2IMUMb convert rfc822-to-8bit (ORCPT
+	id S1758068Ab2IMUMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:12:45 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:46848 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757791Ab2IMUMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:12:31 -0400
-Date: Thu, 13 Sep 2012 22:12:29 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/4]: ezusb cleanup, FX2 support, firmware downloading support
-Message-ID: <7120fd46-da21-4203-8293-7dcdb70f02dc@shmail0>
-In-Reply-To: <785f10f2-79bc-4708-9c57-7b505d75f223@shmail0>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Sep 2012 16:12:43 -0400
+Message-ID: <50523E39.5080708@kernel.org>
+Date: Thu, 13 Sep 2012 21:12:41 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-X-Originating-IP: [77.190.106.167]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
+To: anish kumar <anish198519851985@gmail.com>
+CC: jic23@cam.ac.uk, linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH] iio: Documentation change for inkern interface.
+References: <1347133337-7795-1-git-send-email-anish198519851985@gmail.com>
+In-Reply-To: <1347133337-7795-1-git-send-email-anish198519851985@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/08/2012 08:42 PM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
+> 
+> This commit- 314be14bb renamed the _st_ functions to loose the bit
+> that was meant for staging version but forgot to change
+> the documentation which still have _st_ sprinkled in some of the
+> places.
+> 
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+merge to togreg branch of
 
-this is V2 of a patches-series for controllers using the ezusb-functions.
+git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
 
-ezusb: remove dependency to usb_serial interface
-euzsb: add support for Cypress FX2LP
-ezusb: add functions for firmware download
-ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
-
---
-René Bürgel
-
-SOHARD Embedded Systems GmbH
+> ---
+>  drivers/staging/iio/Documentation/inkernel.txt |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/Documentation/inkernel.txt b/drivers/staging/iio/Documentation/inkernel.txt
+> index a05823e..ab52840 100644
+> --- a/drivers/staging/iio/Documentation/inkernel.txt
+> +++ b/drivers/staging/iio/Documentation/inkernel.txt
+> @@ -48,11 +48,11 @@ There are then a number of functions that can be used to get information
+>  about this channel such as it's current reading.
+>  
+>  e.g.
+> -iio_st_read_channel_raw() - get a reading
+> -iio_st_read_channel_type() - get the type of channel
+> +iio_read_channel_raw() - get a reading
+> +iio_get_channel_type() - get the type of channel
+>  
+>  There is also provision for retrieving all of the channels associated
+>  with a given consumer.  This is useful for generic drivers such as
+>  iio_hwmon where the number and naming of channels is not known by the
+> -consumer driver.  To do this, use iio_st_channel_get_all.
+> +consumer driver.  To do this, use iio_channel_get_all.
+>  
+> 
