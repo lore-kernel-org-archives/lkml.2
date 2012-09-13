@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2IMWvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 18:51:09 -0400
-Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:45784
-	"EHLO relay" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753535Ab2IMWvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 18:51:07 -0400
-From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] A driver for Si476x series of chips
-Date: Thu, 13 Sep 2012 15:40:10 -0700
-Message-Id: <1347576013-28832-1-git-send-email-andrey.smirnov@convergeddevices.net>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755886Ab2IMXFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:05:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51264 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab2IMXFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:05:09 -0400
+Date: Thu, 13 Sep 2012 16:05:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v4 0/8] Avoid cache trashing on clearing huge/gigantic
+ page
+Message-Id: <20120913160506.d394392a.akpm@linux-foundation.org>
+In-Reply-To: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains a driver for a Silicon Laboratories 476x series
-of radio tuners. The driver itself is implemented as an MFD devices
-comprised of three parts:
- 1. Core device that provides all the other devices with basic
- functionality and locking scheme.
- 2. Radio device that translates between V4L2 subsystem requests into
- Core device commands.
- 3. Codec device that does similar to the earlier described task, but
- for ALSA SoC subsystem.
+On Mon, 20 Aug 2012 16:52:29 +0300
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-This driver has been tested to work in two different sytems:
- 1. A custom Tegra-based ARM board(design is based on Harmony board)
- running linux kernel 3.1.10 kernel
- 2. A standalone USB-connected board that has a dedicated Cortex M3
- working as a transparent USB to I2C bridge which was connected to a
- off-the-shelf x86-64 laptop running Ubuntu with 3.2.0 kernel.
+> Clearing a 2MB huge page will typically blow away several levels of CPU
+> caches.  To avoid this only cache clear the 4K area around the fault
+> address and use a cache avoiding clears for the rest of the 2MB area.
+> 
+> This patchset implements cache avoiding version of clear_page only for
+> x86. If an architecture wants to provide cache avoiding version of
+> clear_page it should to define ARCH_HAS_USER_NOCACHE to 1 and implement
+> clear_page_nocache() and clear_user_highpage_nocache().
 
-As far as SubmitChecklist is concerned following criteria should be
-satisfied: 2b, 3, 5, 7, 9, 10
+Patchset looks nice to me, but the changelogs are terribly short of
+performance measurements.  For this sort of change I do think it is
+important that pretty exhaustive testing be performed, and that the
+results (or a readable summary of them) be shown.  And that testing
+should be designed to probe for slowdowns, not just the speedups!
 
-Andrey Smirnov (3):
-  Add a core driver for SI476x MFD
-  Add a V4L2 driver for SI476X MFD
-  Add a codec driver for SI476X MFD
-
- drivers/media/radio/Kconfig        |   17 +
- drivers/media/radio/radio-si476x.c | 1307 +++++++++++++++++++++++++++++++
- drivers/mfd/Kconfig                |   14 +
- drivers/mfd/Makefile               |    3 +
- drivers/mfd/si476x-cmd.c           | 1509 ++++++++++++++++++++++++++++++++++++
- drivers/mfd/si476x-i2c.c           | 1033 ++++++++++++++++++++++++
- drivers/mfd/si476x-prop.c          |  477 ++++++++++++
- include/linux/mfd/si476x-core.h    |  532 +++++++++++++
- include/media/si476x.h             |  461 +++++++++++
- sound/soc/codecs/Kconfig           |    4 +
- sound/soc/codecs/Makefile          |    2 +
- sound/soc/codecs/si476x.c          |  346 +++++++++
- 12 files changed, 5705 insertions(+)
- create mode 100644 drivers/media/radio/radio-si476x.c
- create mode 100644 drivers/mfd/si476x-cmd.c
- create mode 100644 drivers/mfd/si476x-i2c.c
- create mode 100644 drivers/mfd/si476x-prop.c
- create mode 100644 include/linux/mfd/si476x-core.h
- create mode 100644 include/media/si476x.h
- create mode 100644 sound/soc/codecs/si476x.c
-
--- 
-1.7.9.5
 
