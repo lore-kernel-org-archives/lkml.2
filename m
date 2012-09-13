@@ -1,46 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab2IMWLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 18:11:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56546 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab2IMWLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 18:11:51 -0400
-Message-ID: <1347574295.2276.34.camel@pasglop>
-Subject: Re: [PATCH] powerpc/smp: Do not disable IPI interrupts during
- suspend
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        Zhao Chenhui <chenhui.zhao@freescale.com>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
-Date: Fri, 14 Sep 2012 08:11:35 +1000
-In-Reply-To: <287921FF-96B1-4BBC-B9F9-3F8D24244061@kernel.crashing.org>
-References: <1342788421-27648-1-git-send-email-chenhui.zhao@freescale.com>
-	 <5028672F-1873-4E45-AA23-4CA9F191BE77@kernel.crashing.org>
-	 <1343427631.21647.1.camel@pasglop>
-	 <20120802100418.GA13777@localhost.localdomain>
-	 <1C2FF4B5-3F3C-4A9D-941D-A4BC4F5C95DE@kernel.crashing.org>
-	 <287921FF-96B1-4BBC-B9F9-3F8D24244061@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1756276Ab2IMWT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 18:19:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50838 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2IMWTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 18:19:23 -0400
+Date: Thu, 13 Sep 2012 15:19:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Kyungmin Park <kmpark@infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH] mm: cma: Discard clean pages during contiguous
+ allocation instead of migration
+Message-Id: <20120913151922.b8893088.akpm@linux-foundation.org>
+In-Reply-To: <CAMuHMdXWZ=Jeggd7cT_LXK0MTnmFAf+cWEhC75B1gCcSd3eWeg@mail.gmail.com>
+References: <1347324112-14134-1-git-send-email-minchan@kernel.org>
+	<CAMuHMdXWZ=Jeggd7cT_LXK0MTnmFAf+cWEhC75B1gCcSd3eWeg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 13:16 -0500, Kumar Gala wrote:
-> >> Yes, we disabled all non-boot CPUs on suspend by calling
-> disable_nonboot_cpus().
-> >> The disable_nonboot_cpus() needs IPIs to work. But prior to
-> >> calling disable_nonboot_cpus(), the IPIs are disabled in
-> dpm_suspend_noirq().
+On Thu, 13 Sep 2012 21:17:19 +0200
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-Sure, no biggie on this one, forgot to ack it, just stick my ack in and
-put it in your tree.
+> On Tue, Sep 11, 2012 at 2:41 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -674,8 +674,10 @@ static enum page_references page_check_references(struct page *page,
+> >  static unsigned long shrink_page_list(struct list_head *page_list,
+> >                                       struct zone *zone,
+> >                                       struct scan_control *sc,
+> > +                                     enum ttu_flags ttu_flags,
+> 
+> "enum ttu_flags" is defined on CONFIG_MMU=y only, causing on nommu:
+> 
+> mm/vmscan.c:677:26: error: parameter 4 ('ttu_flags') has incomplete type
+> mm/vmscan.c:987:5: error: 'TTU_UNMAP' undeclared (first use in this function)
+> mm/vmscan.c:987:15: error: 'TTU_IGNORE_ACCESS' undeclared (first use
+> in this function)
+> mm/vmscan.c:1312:56: error: 'TTU_UNMAP' undeclared (first use in this function)
+> 
+> E.g.
+> http://kisskb.ellerman.id.au/kisskb/buildresult/7191694/ (h8300-defconfig)
+> http://kisskb.ellerman.id.au/kisskb/buildresult/7191858/ (sh-allnoconfig)
 
-Cheers,
-Ben.
+hm, OK, the means by which current mainline avoids build errors is
+either clever or lucky.
 
+			switch (try_to_unmap(page, TTU_UNMAP)) {
+
+gets preprocessed into
+
+			switch (2) {
+
+so the cmopiler never gets to see the TTU_ symbol at all.  Because it
+happens to be inside the try_to_unmap() call.
+
+
+I guess we can just make ttu_flags visible to NOMMU:
+
+
+--- a/include/linux/rmap.h~mm-cma-discard-clean-pages-during-contiguous-allocation-instead-of-migration-fix-fix
++++ a/include/linux/rmap.h
+@@ -71,6 +71,17 @@ struct anon_vma_chain {
+ #endif
+ };
+ 
++enum ttu_flags {
++	TTU_UNMAP = 0,			/* unmap mode */
++	TTU_MIGRATION = 1,		/* migration mode */
++	TTU_MUNLOCK = 2,		/* munlock mode */
++	TTU_ACTION_MASK = 0xff,
++
++	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
++	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
++	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
++};
++
+ #ifdef CONFIG_MMU
+ static inline void get_anon_vma(struct anon_vma *anon_vma)
+ {
+@@ -164,16 +175,6 @@ int page_referenced(struct page *, int i
+ int page_referenced_one(struct page *, struct vm_area_struct *,
+ 	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
+ 
+-enum ttu_flags {
+-	TTU_UNMAP = 0,			/* unmap mode */
+-	TTU_MIGRATION = 1,		/* migration mode */
+-	TTU_MUNLOCK = 2,		/* munlock mode */
+-	TTU_ACTION_MASK = 0xff,
+-
+-	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+-	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
+-	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
+-};
+ #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
+ 
+ int try_to_unmap(struct page *, enum ttu_flags flags);
+_
 
