@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab2IMKIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:08:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753953Ab2IMKIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:08:05 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 1/3] GFS2: Make write size hinting code common
-Date: Thu, 13 Sep 2012 10:42:27 +0100
-Message-Id: <1347529349-6704-2-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1347529349-6704-1-git-send-email-swhiteho@redhat.com>
-References: <1347529349-6704-1-git-send-email-swhiteho@redhat.com>
+	id S1754916Ab2IMKKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:10:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45841 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab2IMKKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 06:10:13 -0400
+Message-ID: <5051B101.4030806@canonical.com>
+Date: Thu, 13 Sep 2012 12:10:09 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lockdep: Check if nested lock is actually held
+References: <5051A9E7.5040501@canonical.com> <1347530393.15764.115.camel@twins>
+In-Reply-To: <1347530393.15764.115.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This collects up the write size hinting code which is used by the
-block reservation subsystem into a single function. At the same
-time this also corrects the rounding for this calculation.
+Hey,
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Op 13-09-12 11:59, Peter Zijlstra schreef:
+> On Thu, 2012-09-13 at 11:39 +0200, Maarten Lankhorst wrote:
+>> It is considered good form to lock the lock you claim to be nested in.
+> Uhm yeah.. cute. You actually found a site where this triggered?
+>
+Not in mainline, I was working on some lockdep annotations for my work on
+moving ttm reservations to base kernel, and I wrote a whole bunch of tests
+to stress interaction between reservations and locks, one of the tests I
+was doing was taking a spinlock without the nested object:
 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index d1d791e..382000f 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -323,6 +323,29 @@ static long gfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- }
- 
- /**
-+ * gfs2_size_hint - Give a hint to the size of a write request
-+ * @file: The struct file
-+ * @offset: The file offset of the write
-+ * @size: The length of the write
-+ *
-+ * When we are about to do a write, this function records the total
-+ * write size in order to provide a suitable hint to the lower layers
-+ * about how many blocks will be required.
-+ *
-+ */
-+
-+static void gfs2_size_hint(struct file *filep, loff_t offset, size_t size)
-+{
-+	struct inode *inode = filep->f_dentry->d_inode;
-+	struct gfs2_sbd *sdp = GFS2_SB(inode);
-+	struct gfs2_inode *ip = GFS2_I(inode);
-+	size_t blks = (size + sdp->sd_sb.sb_bsize - 1) >> sdp->sd_sb.sb_bsize_shift;
-+	int hint = min_t(size_t, INT_MAX, blks);
-+
-+	atomic_set(&ip->i_res->rs_sizehint, hint);
-+}
-+
-+/**
-  * gfs2_allocate_page_backing - Use bmap to allocate blocks
-  * @page: The (locked) page to allocate backing for
-  *
-@@ -382,8 +405,7 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (ret)
- 		return ret;
- 
--	atomic_set(&ip->i_res->rs_sizehint,
--		   PAGE_CACHE_SIZE >> sdp->sd_sb.sb_bsize_shift);
-+	gfs2_size_hint(vma->vm_file, pos, PAGE_CACHE_SIZE);
- 
- 	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
- 	ret = gfs2_glock_nq(&gh);
-@@ -663,7 +685,8 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (ret)
- 		return ret;
- 
--	atomic_set(&ip->i_res->rs_sizehint, writesize >> sdp->sd_sb.sb_bsize_shift);
-+	gfs2_size_hint(file, pos, writesize);
-+
- 	if (file->f_flags & O_APPEND) {
- 		struct gfs2_holder gh;
- 
-@@ -789,7 +812,7 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
- 	if (unlikely(error))
- 		goto out_uninit;
- 
--	atomic_set(&ip->i_res->rs_sizehint, len >> sdp->sd_sb.sb_bsize_shift);
-+	gfs2_size_hint(file, offset, len);
- 
- 	while (len > 0) {
- 		if (len < bytes)
--- 
-1.7.4
+static void reservation_test_fence_nest_unreserved(void)
+{
+	struct reservation_object o;
+
+	reservation_object_init(&o);
+
+	spin_lock_nest_lock(&o.fence_lock, &o);
+	spin_unlock(&o.fence_lock);
+}
+
+I would have expected it to fail, and the patch fixed it. As a nice side effect
+it also complained about another hack I was doing elsewhere with reservations to
+tests for deadlocks, and it forced me to fix it in a slightly less hacky way.
+
+~Maarten
 
