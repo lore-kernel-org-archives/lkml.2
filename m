@@ -1,171 +1,559 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab2IMUfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:35:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51792 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab2IMUfS (ORCPT
+	id S1758746Ab2IMUj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:39:29 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47152 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab2IMUj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:35:18 -0400
-Message-ID: <1347568514.21322.5.camel@shinybook.infradead.org>
-Subject: Re: [PATCH] gmux: Fix backlight set function
-From: David Woodhouse <dwmw2@infradead.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Date: Thu, 13 Sep 2012 21:35:14 +0100
-In-Reply-To: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
-References: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-XovY+JPWPe32aI5As72l"
-X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 13 Sep 2012 16:39:26 -0400
+Message-ID: <5052447D.8010907@kernel.org>
+Date: Thu, 13 Sep 2012 21:39:25 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: anish kumar <anish198519851985@gmail.com>
+CC: lars@metafoo.de, jic23@cam.ac.uk, cbou@mail.ru,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH] power: battery: Generic battery driver using IIO
+References: <1347552992-13836-1-git-send-email-anish198519851985@gmail.com>
+In-Reply-To: <1347552992-13836-1-git-send-email-anish198519851985@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/13/2012 05:16 PM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
+>
+> In this version:
+> Addressed concerns raised by lars:
+> a. made the adc_bat per device.
+> b. get the IIO channel using hardcoded channel names.
+Couple of bits related to this inline..
 
---=-XovY+JPWPe32aI5As72l
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> c. Minor issues related to gpio_is_valid and some code
+>    refactoring.
+>
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+>  drivers/power/generic-adc-battery.c       |  460 +++++++++++++++++++++++++++++
+>  include/linux/power/generic-adc-battery.h |   33 ++
+>  2 files changed, 493 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/power/generic-adc-battery.c
+>  create mode 100644 include/linux/power/generic-adc-battery.h
+>
+> diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
+> new file mode 100644
+> index 0000000..003e0e1
+> --- /dev/null
+> +++ b/drivers/power/generic-adc-battery.c
+> @@ -0,0 +1,460 @@
+> +/*
+> + * Generic battery driver code using IIO
+> + * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
+> + * based on jz4740-battery.c
+> + * based on s3c_adc_battery.c
+> + *
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file COPYING in the main directory of this archive for
+> + * more details.
+> + *
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/power_supply.h>
+> +#include <linux/gpio.h>
+> +#include <linux/err.h>
+> +#include <linux/timer.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/errno.h>
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/iio/consumer.h>
+> +#include <linux/iio/types.h>
+> +
+> +#include <linux/power/generic-adc-battery.h>
+> +
+> +#define to_generic_bat(ptr)	\
+> +	container_of(ptr, struct generic_adc_bat, ptr)
+> +
+> +enum chan_type {
+> +	VOLTAGE = 0,
+> +	CURRENT,
+> +	POWER,
+> +	MAX_CHAN_TYPE
+> +};
+> +
+> +#define CHAN_MAX_NAME 30
+> +/*
+> + * channel_name suggests the standard channel names for commonly used
+> + * channel types.
+> + */
+const
+> +char channel_name[][CHAN_MAX_NAME + 1] = {
+> +	[VOLTAGE]	= "voltage",
+> +	[CURRENT]	= "current",
+> +	[POWER]		= "power",
+> +};
+> +
+> +struct generic_adc_bat {
+> +	struct power_supply	psy;
+> +	struct iio_channel	**channel;
+> +	struct iio_battery_platform_data	*pdata;
+> +	struct delayed_work bat_work;
+> +	int		was_plugged;
+> +	int		volt_value;
+> +	int		cur_value;
+> +	int		level;
+> +	int		status;
+> +	int		cable_plugged:1;
+> +};
+> +
+> +static void generic_adc_bat_ext_power_changed(struct power_supply *psy)
+> +{
+> +	struct generic_adc_bat *adc_bat;
+> +	adc_bat = to_generic_bat(psy);
+> +
+> +	schedule_delayed_work(&adc_bat->bat_work,
+> +			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
+> +}
+> +
+> +static enum power_supply_property bat_props[] = {
+> +	POWER_SUPPLY_PROP_STATUS,
+> +	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+> +	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
+> +	POWER_SUPPLY_PROP_CHARGE_NOW,
+> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+> +	POWER_SUPPLY_PROP_TECHNOLOGY,
+> +	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+> +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+> +	POWER_SUPPLY_PROP_MODEL_NAME,
+> +};
+> +
+> +/*
+> + * This properties are set based on the received platform data and this
+> + * should correspond one-to-one with enum chan_type.
+> + */
+> +static enum power_supply_property dyn_props[] = {
+> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+> +	POWER_SUPPLY_PROP_POWER_NOW,
+> +};
+> +
+> +static int charge_finished(struct generic_adc_bat *adc_bat)
+> +{
+> +	return adc_bat->pdata->gpio_inverted ?
+> +		!gpio_get_value(adc_bat->pdata->gpio_charge_finished) :
+> +		gpio_get_value(adc_bat->pdata->gpio_charge_finished);
+> +}
+> +
+> +long read_scale_channel(struct generic_adc_bat *adc_bat,
+> +			enum power_supply_property psp)
+> +{
+> +	int scaleint, scalepart, iio_val, ret = 0;
+> +	int result = 0;
+> +
+> +	switch (psp) {
+> +	case POWER_SUPPLY_PROP_POWER_NOW:
+> +		ret = iio_read_channel_raw(adc_bat->channel[POWER],
+> +				&iio_val);
+> +		ret = iio_read_channel_scale(adc_bat->channel[POWER],
+> +				&scaleint, &scalepart);
+> +		if (ret < 0)
+> +			return ret;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> +		ret = iio_read_channel_raw(adc_bat->channel[VOLTAGE],
+> +				&iio_val);
+> +		ret = iio_read_channel_scale(adc_bat->channel[VOLTAGE],
+> +				&scaleint, &scalepart);
+> +		if (ret < 0)
+> +			return ret;
+> +		break;
+> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> +		ret = iio_read_channel_raw(adc_bat->channel[CURRENT],
+> +				&iio_val);
+> +		ret = iio_read_channel_scale(adc_bat->channel[CURRENT],
+> +				&scaleint, &scalepart);
+> +		if (ret < 0)
+> +			return ret;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	switch (ret) {
+> +	case IIO_VAL_INT:
+> +		result = iio_val * scaleint;
+> +		break;
+> +	case IIO_VAL_INT_PLUS_MICRO:
+> +		result = (s64)iio_val * (s64)scaleint +
+> +			div_s64((s64)iio_val * (s64)scalepart, 1000000LL);
+> +		break;
+> +	case IIO_VAL_INT_PLUS_NANO:
+> +		result = (s64)iio_val * (s64)scaleint +
+> +			div_s64((s64)iio_val * (s64)scalepart, 1000000000LL);
+> +		break;
+> +	}
+> +	return result;
+> +}
+> +
+> +static int generic_adc_bat_get_property(struct power_supply *psy,
+> +		enum power_supply_property psp,
+> +		union power_supply_propval *val)
+> +{
+> +	struct generic_adc_bat *adc_bat;
+> +	int ret = 0;
+> +	long result;
+> +
+> +	adc_bat = to_generic_bat(psy);
+> +	if (!adc_bat) {
+> +		dev_err(psy->dev, "no battery infos ?!\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	result = read_scale_channel(adc_bat, psp);
+> +	if (result < 0) {
+> +		dev_err(psy->dev, "read channel error\n");
+> +		ret =  -EINVAL;
+> +		goto err;
+> +	}
+> +
+> +	switch (psp) {
+> +	case POWER_SUPPLY_PROP_STATUS:
+> +		if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
+> +			if (adc_bat->pdata->gpio_charge_finished < 0)
+> +				val->intval = adc_bat->level == 100000 ?
+> +					POWER_SUPPLY_STATUS_FULL :
+> +					adc_bat->status;
+> +			else
+> +				val->intval = adc_bat->status;
+> +		}
+> +		break;
+> +	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
+> +		val->intval = 0;
+> +		break;
+> +	case POWER_SUPPLY_PROP_CHARGE_NOW:
+> +		val->intval = adc_bat->pdata->cal_charge(result);
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> +		val->intval = result;
+> +		break;
+> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> +		val->intval = result;
+> +		break;
+> +	case POWER_SUPPLY_PROP_POWER_NOW:
+> +		val->intval = result;
+> +		break;
+> +	case POWER_SUPPLY_PROP_TECHNOLOGY:
+> +		val->intval = adc_bat->pdata->battery_info.technology;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
+> +		val->intval = adc_bat->pdata->battery_info.voltage_min_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
+> +		val->intval = adc_bat->pdata->battery_info.voltage_max_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+> +		val->intval = adc_bat->pdata->battery_info.charge_full_design;
+> +		break;
+> +	case POWER_SUPPLY_PROP_MODEL_NAME:
+> +		val->strval = adc_bat->pdata->battery_info.name;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +err:
+> +	return ret;
+> +}
+> +
+> +static void generic_adc_bat_work(struct work_struct *work)
+> +{
+> +	struct generic_adc_bat *adc_bat;
+> +	struct delayed_work *delayed_work;
+> +	int is_charged;
+> +	int is_plugged;
+> +
+> +	delayed_work = container_of(work,
+> +				struct delayed_work, work);
+> +	adc_bat = container_of(delayed_work,
+> +				struct generic_adc_bat, bat_work);
+> +
+> +	is_plugged = power_supply_am_i_supplied(&adc_bat->psy);
+> +	adc_bat->cable_plugged = is_plugged;
+> +	if (is_plugged != adc_bat->was_plugged) {
+> +		adc_bat->was_plugged = is_plugged;
+> +		if (is_plugged)
+> +			adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
+> +		else
+> +			adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
+> +	} else {
+> +		if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
+> +			if ((adc_bat->pdata->gpio_charge_finished >= 0) &&
+> +								is_plugged) {
+> +				is_charged = charge_finished(adc_bat);
+> +				if (is_charged)
+> +					adc_bat->status =
+> +						POWER_SUPPLY_STATUS_FULL;
+> +				else
+> +					adc_bat->status =
+> +						POWER_SUPPLY_STATUS_CHARGING;
+> +			}
+> +		}
+> +	}
+> +
+> +	power_supply_changed(&adc_bat->psy);
+> +}
+> +
+> +static irqreturn_t generic_adc_bat_charged(int irq, void *dev_id)
+> +{
+> +	struct generic_adc_bat *adc_bat = dev_id;
+> +	adc_bat = container_of(&adc_bat->bat_work,
+> +				struct generic_adc_bat, bat_work);
+> +	schedule_delayed_work(&adc_bat->bat_work,
+> +			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit generic_adc_bat_probe(struct platform_device *pdev)
+> +{
+> +	struct generic_adc_bat *adc_bat;
+> +	struct iio_battery_platform_data *pdata = pdev->dev.platform_data;
+> +	int ret, chan_index, fail = 0;
+> +
+> +	adc_bat = devm_kzalloc(&pdev->dev, sizeof(*adc_bat), GFP_KERNEL);
+> +	if (!adc_bat) {
+> +		dev_err(&pdev->dev, "failed to allocate memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/* copying the battery name from platform data */
+> +	adc_bat->psy.name = pdata->battery_name;
+> +
+> +	/* bootup default values for the battery */
+> +	adc_bat->volt_value = -1;
+> +	adc_bat->cur_value = -1;
+> +	adc_bat->cable_plugged = 0;
+> +	adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
+> +	adc_bat->psy.type = POWER_SUPPLY_TYPE_BATTERY;
+> +	adc_bat->psy.get_property =
+> +		generic_adc_bat_get_property;
+> +	adc_bat->psy.external_power_changed =
+> +		generic_adc_bat_ext_power_changed;
+> +
+> +	adc_bat->pdata = pdata;
+> +
+> +	/* calculate the total number of channels */
+> +	for (chan_index = 0; channel_name[chan_index]; chan_index++)
+> +		;
+> +
+> +	if (!chan_index) {
+> +		pr_err("atleast provide one channel\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/*
+> +	 * copying the static properties and allocating extra memory for holding
+> +	 * the extra configurable properties received from platform data.
+> +	*/
+> +	adc_bat->psy.properties = kzalloc(sizeof(bat_props)
+> +					+ sizeof(int)*chan_index, GFP_KERNEL);
+> +	if (!adc_bat->psy.properties) {
+> +		ret = -ENOMEM;
+> +		goto first_mem_fail;
+> +	}
+> +	memcpy(adc_bat->psy.properties, bat_props, sizeof(bat_props));
+> +
+> +	/* allocating memory for iio channels */
+> +	adc_bat->channel = kzalloc(chan_index * sizeof(struct iio_channel),
+> +					GFP_KERNEL);
+> +	if (!adc_bat->channel) {
+> +		ret = -ENOMEM;
+> +		goto second_mem_fail;
+> +	}
+> +
+> +	/*
+> +	 * getting channel from iio and copying the battery properties
+> +	 * based on the channel supported by consumer device.
+> +	 */
+> +	for (chan_index = 0; channel_name[chan_index]; chan_index++) {
+> +		adc_bat->channel[chan_index] =
+> +		iio_channel_get(dev_name(&pdev->dev),
+> +			channel_name[chan_index]);
+> +		/* we skip for channels which fail */
+> +		if (IS_ERR(adc_bat->channel[chan_index]))
+> +			fail++;
+> +		else {
+> +			static int index;
+> +			memcpy(adc_bat->psy.properties +
+> +				sizeof(bat_props) + sizeof(int)*index,
+> +				&dyn_props[chan_index],
+> +				sizeof(dyn_props[chan_index]));
+> +			index++;
+> +		}
+> +	}
+> +
+> +	/* none of the channels are supported so let's bail out */
+> +	if (fail == chan_index) {
+> +		ret = PTR_ERR(adc_bat->channel[chan_index]);
+> +		goto second_mem_fail;
+> +	}
+> +
+> +	ret = power_supply_register(&pdev->dev, &adc_bat->psy);
+> +	if (ret)
+> +		goto err_reg_fail;
+> +
+> +	INIT_DELAYED_WORK(&adc_bat->bat_work, generic_adc_bat_work);
+> +
+> +	if (gpio_is_valid(pdata->gpio_charge_finished)) {
+> +		ret = gpio_request(pdata->gpio_charge_finished, "charged");
+> +		if (ret)
+> +			goto err_gpio;
+> +
+> +		ret = request_any_context_irq(gpio_to_irq
+> +				(pdata->gpio_charge_finished),
+> +				generic_adc_bat_charged,
+> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+> +				"battery charged", &adc_bat);
+> +		if (ret)
+> +			goto err_gpio;
+> +	} else
+> +		goto err_gpio; /* let's bail out */
+> +
+> +	platform_set_drvdata(pdev, &adc_bat);
+> +
+> +	/* Schedule timer to check current status */
+> +	schedule_delayed_work(&adc_bat->bat_work,
+> +			msecs_to_jiffies(0));
+> +	return 0;
+> +
+> +err_gpio:
+> +	power_supply_unregister(&adc_bat->psy);
+> +err_reg_fail:
+> +	for (chan_index = 0; channel_name[chan_index]; chan_index++)
+> +		iio_channel_release(adc_bat->channel[chan_index]);
+> +	kfree(adc_bat->channel);
+> +second_mem_fail:
+> +	kfree(adc_bat->psy.properties);
+> +first_mem_fail:
+> +	return ret;
+> +}
+> +
+> +static int generic_adc_bat_remove(struct platform_device *pdev)
+> +{
+> +	int chan_index;
+> +	struct generic_adc_bat *adc_bat = platform_get_drvdata(pdev);
+> +
+> +	power_supply_unregister(&adc_bat->psy);
+> +
+> +	if (gpio_is_valid(adc_bat->pdata->gpio_charge_finished)) {
+> +		if (adc_bat->pdata->gpio_charge_finished >= 0) {
+> +			free_irq(gpio_to_irq(
+> +				adc_bat->pdata->gpio_charge_finished),
+> +								NULL);
+> +			gpio_free(adc_bat->pdata->gpio_charge_finished);
+> +		}
+> +	}
+> +
+> +	for (chan_index = 0; channel_name[chan_index]; chan_index++)
+> +		iio_channel_release(adc_bat->channel[chan_index]);
+> +	cancel_delayed_work(&adc_bat->bat_work);
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int generic_adc_bat_suspend(struct device *dev)
+> +{
+> +	struct generic_adc_bat *adc_bat = dev_get_drvdata(dev);
+> +
+> +	cancel_delayed_work_sync(&adc_bat->bat_work);
+> +	adc_bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
+> +	return 0;
+> +}
+> +
+> +static int generic_adc_bat_resume(struct device *dev)
+> +{
+> +	struct generic_adc_bat *adc_bat = dev_get_drvdata(dev);
+> +
+> +	/* Schedule timer to check current status */
+> +	schedule_delayed_work(&adc_bat->bat_work,
+> +			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
+> +	return 0;
+> +}
+> +
+> +static const struct dev_pm_ops generic_adc_battery_pm_ops = {
+> +	.suspend        = generic_adc_bat_suspend,
+> +	.resume         = generic_adc_bat_resume,
+> +};
+> +
+> +#define GENERIC_ADC_BATTERY_PM_OPS       (&generic_adc_battery_pm_ops)
+> +#else
+> +#define GENERIC_ADC_BATTERY_PM_OPS       (NULL)
+> +#endif
+> +
+> +static struct platform_driver generic_adc_bat_driver = {
+> +	.driver		= {
+> +		.name	= "generic-adc-battery",
+> +		.owner	= THIS_MODULE,
+> +		.pm	= GENERIC_ADC_BATTERY_PM_OPS
+> +	},
+> +	.probe		= generic_adc_bat_probe,
+> +	.remove		= generic_adc_bat_remove,
+> +};
+> +
+> +module_platform_driver(generic_adc_bat_driver);
+> +
+> +MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
+> +MODULE_DESCRIPTION("generic battery driver using IIO");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/power/generic-adc-battery.h b/include/linux/power/generic-adc-battery.h
+> new file mode 100644
+> index 0000000..d7c6d20
+> --- /dev/null
+> +++ b/include/linux/power/generic-adc-battery.h
+> @@ -0,0 +1,33 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef GENERIC_ADC_BATTERY_H
+> +#define GENERIC_ADC_BATTERY_H
+> +
+> +/* should be enough for the channel names */
+> +#define BAT_MAX_NAME	30
+> +
+> +enum chan_type {
+> +	VOLTAGE = 0,
+> +	CURRENT,
+> +	POWER,
+> +	MAX_CHAN_TYPE
+> +};
+> +
+why this definition?
+> +extern char channel_name[][BAT_MAX_NAME + 1];
+> +
+> +struct iio_battery_platform_data {
+> +	struct power_supply_info battery_info;
 
-On Thu, 2012-09-13 at 21:02 +0100, Grant Likely wrote:
-> In commit 7e30ed6b, "gmux: Add generic write32 function", the new
-> gmux_write32() function didn't include the io offset when writing
-> registers. This means that backlight update writes never go to the
-> right
-> place. This patch fixes it.
->=20
-> Tested on Apple Macbook 8,3=20
+Should this still be here?
+> +	char	**channel_name;
+> +	char	*battery_name;
+> +	int	(*cal_charge)(long);
+> +	int	gpio_charge_finished;
+> +	int	gpio_inverted;
 
-Aha, thanks. I was going to have to get to that in the next few days.
-
-I also noticed that since updating to the latest kernel and the latest
-version of all the patches, I never get Intel graphics output working
-after switching. And even the Radeon doesn't work right, if I switch
-away and back. X just locks up after a few seconds and the graphics
-engine isn't responding.
-
---=20
-dwmw2
-
---=-XovY+JPWPe32aI5As72l
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwOTEzMjAzNTE0WjAjBgkqhkiG9w0BCQQx
-FgQUGqUS6HGCRArv5Nk6ybcpg/UwNtAwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBanObVl1vWdtLrqQL71JWxgSXu
-9b6MH7zIu+9fgcpfBQ7ae0MF3SBPClwYcWTT5ilbHzCxmT44HAW9No+KPp382YFNeRhpZRWo2vxa
-CZeThkpyoQCMVcDzq5Mkh0mK3BeW7N+vBU+ah1KXLNd16GbvI5sP3d8c9oy3Kosj8XsZxB5CssmM
-go3CARqA8WugRAWFWzf7KsPQjUqi6KwCODaNk+2bgO+peUVfVpfD5+0Cc75HZDbDBrEjui4jCcoM
-/6xlgXnSj7cN590N5+ErVVWIzwBA2GQ1C37vji5Sh5avvW0nStXThfPfMQUA0AEwy/8pIotzkGxU
-D99Djbtv9F8pAAAAAAAA
-
-
---=-XovY+JPWPe32aI5As72l--
-
+unused..
+> +	int	bat_poll_interval;
+> +	int	jitter_delay;
+> +};
+> +
+> +#endif /* GENERIC_ADC_BATTERY_H */
+>
