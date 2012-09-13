@@ -1,135 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab2IMJpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:45:53 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:38978 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756834Ab2IMJpY (ORCPT
+	id S1757034Ab2IMJsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:48:39 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:56950
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753091Ab2IMJsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:45:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkCAL6qUVBbdWObgWdsb2JhbABFu3AiAQEWJieCIAEBBSdSECAxVwYTiBG8GpFHA5Vfkwc
-X-IronPort-AV: E=Sophos;i="4.80,416,1344204000"; 
-   d="scan'208";a="1043297972"
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 2/5] Staging: ipack: move the responsibility to clear interrupts to the IPack devices.
-Date: Thu, 13 Sep 2012 11:46:25 +0200
-Message-Id: <1347529588-21212-2-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
-References: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
+	Thu, 13 Sep 2012 05:48:36 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAA8KQ-02-0RK-02
+X-M-MSG: 
+Date: Thu, 13 Sep 2012 11:48:26 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, <mingo@kernel.org>,
+        <hpa@zytor.com>, <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
+        <a.p.zijlstra@chello.nl>, <namhyung.kim@lge.com>, <tglx@linutronix.de>,
+        <linux-tip-commits@vger.kernel.org>
+Subject: Re: [PATCH] perf record: Add missing perf_hpp__init for pipe-mode
+Message-ID: <20120913094826.GD8285@erda.amd.com>
+References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
+ <tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
+ <20120912172641.GB29278@erda.amd.com>
+ <20120912184815.GC557@infradead.org>
+ <87y5ke8wxv.fsf@sejong.aot.lge.com>
+ <87txv28spl.fsf_-_@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <87txv28spl.fsf_-_@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Taprogge <jens.taprogge@taprogge.org>
+On 13.09.12 13:14:30, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The perf_hpp__init() function was only called from setup_browser() so
+> that the pipe-mode missed the initialization thus didn't respond to
+> related options.  Fix it.
+> 
+> Reported-by: Robert Richter <robert.richter@amd.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-report.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 
-Now the IPack device acknowledges its own IRQ.
+This patch fixes it.
 
-Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
----
- drivers/staging/ipack/bridges/tpci200.c |    4 ----
- drivers/staging/ipack/devices/ipoctal.c |   19 +++++++++++++++++--
- drivers/staging/ipack/devices/scc2698.h |    3 +++
- 3 files changed, 20 insertions(+), 6 deletions(-)
+Thanks,
 
-diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 3462783..43f2f38 100644
---- a/drivers/staging/ipack/bridges/tpci200.c
-+++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -126,10 +126,6 @@ static irqreturn_t tpci200_slot_irq(struct slot_irq *slot_irq)
- 		return -ENODEV;
- 	ret = slot_irq->handler(slot_irq->arg);
- 
--	/* Clear the IPack device interrupt */
--	readw(slot_irq->holder->io_space.address + 0xC0);
--	readw(slot_irq->holder->io_space.address + 0xC2);
--
- 	return ret;
- }
- 
-diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
-index 0292364..30d8d42 100644
---- a/drivers/staging/ipack/devices/ipoctal.c
-+++ b/drivers/staging/ipack/devices/ipoctal.c
-@@ -252,6 +252,10 @@ static irqreturn_t ipoctal_irq_handler(void *arg)
- 	for (i = 0; i < NR_CHANNELS; i++)
- 		ipoctal_irq_channel(&ipoctal->channel[i]);
- 
-+	/* Clear the IPack device interrupt */
-+	readw(ipoctal->dev->int_space.address + ACK_INT_REQ0);
-+	readw(ipoctal->dev->int_space.address + ACK_INT_REQ1);
-+
- 	return IRQ_HANDLED;
- }
- 
-@@ -264,7 +268,6 @@ static int ipoctal_check_model(struct ipack_device *dev, unsigned char *id)
- 	manufacturerID = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MANUFACTURER_ID);
- 	if (manufacturerID != IPACK1_VENDOR_ID_SBS)
- 		return -ENODEV;
--
- 	board_id = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MODEL);
- 	switch (board_id) {
- 	case IPACK1_DEVICE_ID_SBS_OCTAL_232:
-@@ -322,13 +325,22 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
- 		goto out_unregister_id_space;
- 	}
- 
-+	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev, 0,
-+						IPACK_INT_SPACE);
-+	if (res) {
-+		dev_err(&ipoctal->dev->dev,
-+			"Unable to map slot [%d:%d] INT space!\n",
-+			bus_nr, slot);
-+		goto out_unregister_io_space;
-+	}
-+
- 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev,
- 					   0x8000, IPACK_MEM_SPACE);
- 	if (res) {
- 		dev_err(&ipoctal->dev->dev,
- 			"Unable to map slot [%d:%d] MEM space!\n",
- 			bus_nr, slot);
--		goto out_unregister_io_space;
-+		goto out_unregister_int_space;
- 	}
- 
- 	/* Save the virtual address to access the registers easily */
-@@ -450,6 +462,8 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
- 
- out_unregister_slot_unmap:
- 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
-+out_unregister_int_space:
-+	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
- out_unregister_io_space:
- 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
- out_unregister_id_space:
-@@ -735,6 +749,7 @@ static void __ipoctal_remove(struct ipoctal *ipoctal)
- 	tty_unregister_driver(ipoctal->tty_drv);
- 	put_tty_driver(ipoctal->tty_drv);
- 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_MEM_SPACE);
-+	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
- 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
- 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
- 	kfree(ipoctal);
-diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
-index 223838a..96e8d8c 100644
---- a/drivers/staging/ipack/devices/scc2698.h
-+++ b/drivers/staging/ipack/devices/scc2698.h
-@@ -221,4 +221,7 @@ union scc2698_block {
- #define ISR_DELTA_BREAK_B           (0x1 << 6)
- #define ISR_INPUT_PORT_CHANGE       (0x1 << 7)
- 
-+#define ACK_INT_REQ0			0
-+#define ACK_INT_REQ1			2
-+
- #endif /* SCC2698_H_ */
+-Robert
+
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index 97b2e6300f4c..279155a47d1c 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -689,8 +689,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  
+>  	if (strcmp(report.input_name, "-") != 0)
+>  		setup_browser(true);
+> -	else
+> +	else {
+>  		use_browser = 0;
+> +		perf_hpp__init(false, false);
+> +	}
+>  
+>  	/*
+>  	 * Only in the newt browser we are doing integrated annotation,
+> -- 
+> 1.7.11.4
+> 
+> 
+
 -- 
-1.7.10.4
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
