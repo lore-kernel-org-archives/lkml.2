@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2IMS7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 14:59:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:7803 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2IMS7R (ORCPT
+	id S1752579Ab2IMTFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 15:05:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49065 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab2IMTFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 14:59:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6834"; a="234070226"
-Date: Thu, 13 Sep 2012 11:59:15 -0700
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL 1/5] msm cleanups (resend)
-Message-ID: <20120913185915.GF30032@codeaurora.org>
-References: <20120913185342.GA29823@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913185342.GA29823@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Sep 2012 15:05:16 -0400
+Date: Thu, 13 Sep 2012 12:05:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mhocko@suse.cz,
+        Steve Capper <steve.capper@arm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Message-Id: <20120913120514.135d2c38.akpm@linux-foundation.org>
+In-Reply-To: <1347382036-18455-4-git-send-email-will.deacon@arm.com>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+	<1347382036-18455-4-git-send-email-will.deacon@arm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resending to proper In-Reply-To]
+On Tue, 11 Sep 2012 17:47:16 +0100
+Will Deacon <will.deacon@arm.com> wrote:
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+> From: Steve Capper <steve.capper@arm.com>
+> 
+> Different architectures have slightly different pre-requisites for supporting
+> Transparent Huge Pages. To simplify the layout of mm/Kconfig, a new option
+> HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each architecture's
+> Kconfig file (at the moment x86, with ARM being set in a future patch).
+> 
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1297,6 +1297,10 @@ config ILLEGAL_POINTER_VALUE
+>         default 0 if X86_32
+>         default 0xdead000000000000 if X86_64
+>  
+> +config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+> +       def_bool y
+> +       depends on MMU
+> +
+>  source "mm/Kconfig"
+>  
+>  config HIGHPTE
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index d5c8019..3322342 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
+>  
+>  config TRANSPARENT_HUGEPAGE
+>  	bool "Transparent Hugepage Support"
+> -	depends on X86 && MMU
+> +	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
+>  	select COMPACTION
+>  	help
+>  	  Transparent Hugepages allows the kernel to use huge pages and
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+We need to talk with Gerald concerning
+http://ozlabs.org/~akpm/mmotm/broken-out/thp-x86-introduce-have_arch_transparent_hugepage.patch
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-cleanup-for-3.7
+I did this.  Please check.
 
-for you to fetch changes up to e63770acb3c1e7334885ed4673aed1375f93484a:
+From: Steve Capper <steve.capper@arm.com>
+Subject: mm: introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
 
-  ARM: msm: Remove uncompiled board-msm7x27 (2012-09-13 11:13:08 -0700)
+Different architectures have slightly different pre-requisites for
+supporting Transparent Huge Pages.  To simplify the layout of mm/Kconfig,
+a new option HAVE_ARCH_TRANSPARENT_HUGEPAGE is introduced and set in each
+architecture's Kconfig file (at the moment x86, with ARM being set in a
+future patch).
 
-----------------------------------------------------------------
-Various cleanups for the msm targets.  Most of this is removing dead
-code, along with a fix of a sparse warning, a list fix from a semantic
-patch, and marking some functions as static.
+Signed-off-by: Steve Capper <steve.capper@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-----------------------------------------------------------------
-Stephen Boyd (6):
-      ARM: msm: Remove msm_hw_reset_hook
-      ARM: msm: clock-pcom: Mark functions static
-      ARM: msm: Remove unused idle.c
-      ARM: msm: Fix sparse warnings due to incorrect type
-      ARM: msm: Remove unused acpuclock-arm11
-      ARM: msm: Remove uncompiled board-msm7x27
+ arch/x86/Kconfig |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Wei Yongjun (1):
-      ARM: msm: dma: use list_move_tail instead of list_del/list_add_tail
+diff -puN arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage arch/x86/Kconfig
+--- a/arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage
++++ a/arch/x86/Kconfig
+@@ -83,7 +83,6 @@ config X86
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select HAVE_BPF_JIT if X86_64
+-	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
+@@ -1330,6 +1329,10 @@ config ILLEGAL_POINTER_VALUE
+        default 0 if X86_32
+        default 0xdead000000000000 if X86_64
+ 
++config HAVE_ARCH_TRANSPARENT_HUGEPAGE
++       def_bool y
++       depends on MMU
++
+ source "mm/Kconfig"
+ 
+ config HIGHPTE
 
- arch/arm/mach-msm/Makefile              |   4 +-
- arch/arm/mach-msm/acpuclock-arm11.c     | 525 --------------------------------
- arch/arm/mach-msm/acpuclock.h           |  32 --
- arch/arm/mach-msm/board-mahimahi.c      |   1 -
- arch/arm/mach-msm/board-msm7x27.c       | 170 -----------
- arch/arm/mach-msm/board-sapphire.c      |   1 -
- arch/arm/mach-msm/clock-pcom.c          |  18 +-
- arch/arm/mach-msm/dma.c                 |   3 +-
- arch/arm/mach-msm/idle.c                |  49 ---
- arch/arm/mach-msm/include/mach/board.h  |  10 -
- arch/arm/mach-msm/include/mach/system.h |  19 --
- arch/arm/mach-msm/io.c                  |   3 +-
- arch/arm/mach-msm/proc_comm.c           |   1 -
- arch/arm/mach-msm/smd.c                 |   7 -
- arch/arm/mach-msm/timer.c               |   2 +-
- 15 files changed, 14 insertions(+), 831 deletions(-)
- delete mode 100644 arch/arm/mach-msm/acpuclock-arm11.c
- delete mode 100644 arch/arm/mach-msm/acpuclock.h
- delete mode 100644 arch/arm/mach-msm/board-msm7x27.c
- delete mode 100644 arch/arm/mach-msm/idle.c
- delete mode 100644 arch/arm/mach-msm/include/mach/system.h
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
