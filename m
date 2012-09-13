@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2IMBYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:24:17 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:47030 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753705Ab2IMBYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:24:10 -0400
-X-IronPort-AV: E=Sophos;i="4.80,413,1344236400"; 
-   d="scan'208";a="688993793"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [ 042/108] NFS: Alias the nfs module to nfs4
-Thread-Topic: [ 042/108] NFS: Alias the nfs module to nfs4
-Thread-Index: AQHNkT7zQ9NJUuhTq0uFXyZ79P0ufJeH616AgAAEb4A=
-Date: Thu, 13 Sep 2012 01:24:08 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA0381@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120912232816.GA1655@kroah.com>
-	 <20120912232450.500619493@linuxfoundation.org>
-	 <20120912232454.947953753@linuxfoundation.org>
-	 <CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <01849687A5E459478E648F1E79BFBA26@tahoe.netapp.com>
+	id S1754533Ab2IMBak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:30:40 -0400
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:2229 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751214Ab2IMBaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 21:30:39 -0400
+Message-ID: <50513733.8040801@blueyonder.co.uk>
+Date: Thu, 13 Sep 2012 02:30:27 +0100
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
+To: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: AMD Bulldozer FX-8150 Powers off during kernel build
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Cloudmark-Analysis: v=1.1 cv=GaEGOwq9FwezmTggA+b6yC6zDZF2HYaK6RN/tSqdnVA= c=1 sm=0 a=beXUTUSmZ6sA:10 a=lFDGhQ1XsWEA:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=-xESdocTVQBKntGDdugA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8D1OSm5001990
 
-On Wed, 2012-09-12 at 21:08 -0400, Josh Boyer wrote:
-> On Wed, Sep 12, 2012 at 7:28 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > From: Greg KH <gregkh@linuxfoundation.org>
-> >
-> > 3.5-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
-> >
-> > This allows distros to remove the line from their modprobe
-> > configuration.
-> >
-> > Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > [bwh: Backported to 3.2: adjust context]
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Could someone elaborate why this is acceptable now, while it wasn't
-> during the timeframe I sent an identical patch months ago?
-> 
-> http://lkml.indiana.edu/hypermail/linux/kernel/1204.3/02064.html
-> 
-> We had some trouble in Fedora 17 because of this and would up with
-> patches to nfs-utils because the modalias was NAKed.  If we're bringing
-> it into stable (and upstream) at this point, it would be good to know
-> what changed so I can go and undo what we did because I was told no.
-> 
-> Please don't get me wrong, I'm all for simplicity.  I'm just perhaps
-> so simple that the brief changelog confuses me because it doesn't
-> actually describe why the original solution wasn't followed up on.
+I have a huge heatsink and large CPU fan plus lots of cooling fans in 
+the case and nothing gets hot.
+If I build e.g 3.6-rc5 with 8 or 6 cores, part way through it suddenly 
+powers off.
 
-Linux-3.6 converts NFSv2/v3/v4 into modules, and so modprobe.conf
-entries of the form
+I have checked hwmon/k10temp.c to see if I could see where these values 
+were defined.
 
-  alias nfs4 nfs
+k10temp.h is 0 bytes.
+-rw-r--r-- 1 root root 0 Sep  9 01:59 
+/usr/src/linux-3.6.0-rc5/include/config/sensors/k10temp.h
 
-will now fail to ensure that 'mount -t nfs4 ...' works. In order to
-facilitate the task for the distros when dealing with kernels >= 3.5.x,
-we've added the automatic module alias so that they can remove the
-hard-coded aliases in modprobe.conf while remaining backward-compatible.
+Currently I build with "make -j 1" and temperature and power values are 
+around those below.
+# sensors
+k10temp-pci-00c3
+Adapter: PCI adapter
+temp1:        +60.4∞C  (high = +70.0∞C)
+                        (crit = +90.0∞C, hyst = +87.0∞C)
+
+fam15h_power-pci-00c4
+Adapter: PCI adapter
+power1:      127.49 W  (crit = 124.77 W)
+
+# cat /proc/cpuinfo
+processor       : 0
+vendor_id       : AuthenticAMD
+cpu family      : 21
+model           : 1
+model name      : AMD FX(tm)-8150 Eight-Core Processor
+stepping        : 2
+microcode       : 0x6000626
+cpu MHz         : 3600.000
+cache size      : 2048 KB
+
+from .config:-
+# grep HWMON .config
+CONFIG_IXGBE_HWMON=y
+CONFIG_HWMON=y
+CONFIG_HWMON_VID=m
+# CONFIG_HWMON_DEBUG_CHIP is not set
+CONFIG_THERMAL_HWMON=y
+
+# grep POWERSAVE .config
+# CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE is not set
+CONFIG_CPU_FREQ_GOV_POWERSAVE=m
+# CONFIG_PCIEASPM_POWERSAVE is not set
+CONFIG_DEVFREQ_GOV_POWERSAVE=y
+
+On another 6-core box I can build kernels with "make -j 6" without problems.
+# cat /proc/cpuinfo
+processor       : 0
+vendor_id       : AuthenticAMD
+cpu family      : 21
+model           : 1
+model name      : AMD FX(tm)-6100 Six-Core Processor
+stepping        : 2
+microcode       : 0x6000623
+cpu MHz         : 3300.000
+cache size      : 2048 KB
+
+With a kernel build going on six core box, temperature and power hover 
+around the values below.
+sabre:~ # sensors
+k10temp-pci-00c3
+Adapter: PCI adapter
+temp1:        +50.2∞C  (high = +70.0∞C)
+                        (crit = +90.0∞C, hyst = +87.0∞C)
+
+fam15h_power-pci-00c4
+Adapter: PCI adapter
+power1:       94.40 W  (crit =  95.01 W)
+
+73 ... Sid.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
