@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2IMOHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:07:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:58919 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2IMOHr (ORCPT
+	id S1756965Ab2IMOIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:08:13 -0400
+Received: from ams-iport-1.cisco.com ([144.254.224.140]:19346 "EHLO
+	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab2IMOIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:07:47 -0400
-X-AuditID: cbfee61a-b7fb46d00000656d-e1-5051e8b101af
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Federico Vaga'" <federico.vaga@gmail.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>
-Cc: "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
+	Thu, 13 Sep 2012 10:08:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,417,1344211200"; 
+   d="scan'208";a="143761307"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Federico Vaga <federico.vaga@gmail.com>
+Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+Date: Thu, 13 Sep 2012 16:08:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>
-References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
- <1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
-In-reply-to: <1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
-Subject: RE: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
-Date: Thu, 13 Sep 2012 16:07:32 +0200
-Organization: SPRC
-Message-id: <002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2RtrMw8pFHBgrUReSgw7VWgHb5FAAAV+hw
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t9jAd2NLwIDDB5v1rW4vGsOm0XPhq2s
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXMPiNQsN2z4sb7XywNjHetuxg5OSQETCQ2vLzFCmGL
-	SVy4t56ti5GLQ0hgEaPE7oevWSGcn4wS02a1MYJUsQkYSnS97QKrEhFYxyixs+MRI4jDLDCV
-	UeLJxk4miJZWRolTM08zg7RwCnhIrL++BqxdWCBA4vvi7WBxFgFViZU/7wI1cHDwCwhJTJyl
-	AGLyCrhIXPwTBlLBKyAo8WPyPRYQm1lAS2L9zuNMELa8xOY1b5lByiUE1CUe/dUFCYsIGEks
-	aj7EBlEiInG34TnrBEbhWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpec
-	n7uJERzqz6R2MK5ssDjEKMDBqMTD++BZYIAQa2JZcWXuIUYJDmYlEV71bqAQb0piZVVqUX58
-	UWlOavEhRmkOFiVxXq/zQCmB9MSS1OzU1ILUIpgsEwenVAOjouvH+SdvN297lp94+XFoSo64
-	3dI7M/q2fVS8ZvMn77SRpYbG44epFkZ68/fELZ15ab3BJg6RP6V5aedzNy04smI1e0W/9TYx
-	5W9bLT/9Vtj/4cCe3Qc+mD/8LGD7qpo5gk09bfqfgK7DyieKnRortDwYQzk6ZlZsnb/r4Z57
-	Qqaae9vLFVqLlFiKMxINtZiLihMBTXqPm3ECAAA=
+        Jonathan Corbet <corbet@lwn.net>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com> <1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
+In-Reply-To: <1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209131608.05869.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thursday, September 13, 2012 3:53 PM Federico Vaga wrote:
-
+On Thu 13 September 2012 15:52:47 Federico Vaga wrote:
 > Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-
-A few words explaining why this memory handling module is required or beneficial will
-definitely improve the commit :)
-
 > ---
 >  drivers/media/v4l2-core/Kconfig                   |   5 +
 >  drivers/media/v4l2-core/Makefile                  |   1 +
@@ -84,11 +65,10 @@ definitely improve the commit :)
 >  obj-$(CONFIG_VIDEOBUF2_DMA_CONTIG) += videobuf2-dma-contig.o
 >  obj-$(CONFIG_VIDEOBUF2_DMA_SG) += videobuf2-dma-sg.o
 > +obj-$(CONFIG_VIDEOBUF2_DMA_STREAMING) += videobuf2-dma-streaming.o
-> 
+>  
 >  ccflags-y += -I$(srctree)/drivers/media/dvb-core
 >  ccflags-y += -I$(srctree)/drivers/media/dvb-frontends
-> diff --git a/drivers/media/v4l2-core/videobuf2-dma-streaming.c b/drivers/media/v4l2-
-> core/videobuf2-dma-streaming.c
+> diff --git a/drivers/media/v4l2-core/videobuf2-dma-streaming.c b/drivers/media/v4l2-core/videobuf2-dma-streaming.c
 > new file mode 100644
 > index 0000000..23475a6
 > --- /dev/null
@@ -188,30 +168,6 @@ definitely improve the commit :)
 > +
 > +	return (void *)buf->dma_handle;
 > +}
-
-Please change this function to:
-
-static void *vb2_dma_streaming_cookie(void *buf_priv)
-{
-	struct vb2_streaming_buf *buf = buf_priv;
-	return &buf->dma_handle;
-}
-
-and add a following static inline to include/media/videobuf2-dma-streaming.h:
-
-static inline dma_addr_t
-vb2_dma_streaming_plane_paddr(struct vb2_buffer *vb, unsigned int plane_no)
-{
-        dma_addr_t *dma_addr = vb2_plane_cookie(vb, plane_no);
-        return *dma_addr;
-}
-
-Do not use 'cookie' callback directly in the driver, the driver should use 
-the above proxy. 
-
-The &buf->dma_handle workaround is required for some possible configurations 
-with 64bit dma addresses, see commit 472af2b05bdefc.
-
 > +
 > +static void *vb2_dma_streaming_vaddr(void *buf_priv)
 > +{
@@ -331,6 +287,17 @@ with 64bit dma addresses, see commit 472af2b05bdefc.
 > @@ -0,0 +1,24 @@
 > +/*
 > + * videobuf2-dma-streaming.h - DMA steaming memory allocator for videobuf2
+
+typo: steaming -> streaming :-)
+
+The header and esp. the source could really do with more documentation. It is
+not at all clear from the code what the dma-streaming allocator does and how
+it differs from other allocators.
+
+Regards,
+
+	Hans
+
 > + *
 > + * Copyright (C) 2012 Federico Vaga
 > + *
@@ -353,12 +320,4 @@ with 64bit dma addresses, see commit 472af2b05bdefc.
 > +extern const struct vb2_mem_ops vb2_dma_streaming_memops;
 > +
 > +#endif
-> --
-> 1.7.11.4
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+> 
