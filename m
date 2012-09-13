@@ -1,207 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2IMKMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:12:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5741 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753953Ab2IMKMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:12:30 -0400
-X-IronPort-AV: E=Sophos;i="4.80,416,1344182400"; 
-   d="scan'208";a="5839707"
-Message-ID: <5051B2DB.6080503@cn.fujitsu.com>
-Date: Thu, 13 Sep 2012 18:18:03 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1757178Ab2IMKQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:16:56 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59422 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab2IMKQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 06:16:51 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Prabhakar Lad <prabhakar.lad@ti.com>,
+        LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2] media: v4l2-ctrls: add control for test pattern
+Date: Thu, 13 Sep 2012 03:04:58 +0200
+Message-ID: <2535230.94CWWn0niF@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <20120909074017.GF6834@valkosipuli.retiisi.org.uk>
+References: <1347007309-6913-1-git-send-email-prabhakar.lad@ti.com> <201209081311.04861.hverkuil@xs4all.nl> <20120909074017.GF6834@valkosipuli.retiisi.org.uk>
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        hughd@google.com, paul.gortmaker@windriver.com
-Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
- onlined
-References: <505187D4.7070404@cn.fujitsu.com> <5051B011.7060905@jp.fujitsu.com>
-In-Reply-To: <5051B011.7060905@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/13 18:11:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/13 18:11:53,
-	Serialize complete at 2012/09/13 18:11:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/13/2012 06:06 PM, Kamezawa Hiroyuki Wrote:
-> (2012/09/13 16:14), Wen Congyang wrote:
->> root_mem_cgroup->info.nodeinfo is initialized when the system boots.
->> But NODE_DATA(nid) is null if the node is not onlined, so
->> root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone contains
->> an invalid pointer. If we use numactl to bind a program to the node
->> after onlining the node and its memory, it will cause the kernel
->> panicked:
->>
->> [   63.413436] BUG: unable to handle kernel NULL pointer dereference
->> at 0000000000000f60
->> [   63.414161] IP: [<ffffffff811870b9>] __mod_zone_page_state+0x9/0x60
->> [   63.414161] PGD 0
->> [   63.414161] Oops: 0000 [#1] SMP
->> [   63.414161] Modules linked in: acpi_memhotplug binfmt_misc
->> dm_mirror dm_region_hash dm_log dm_mod ppdev sg microcode pcspkr
->> virtio_console virtio_balloon snd_intel8x0 snd_ac9
->> 7_codec ac97_bus snd_seq snd_seq_device snd_pcm snd_timer snd
->> soundcore snd_page_alloc e1000 i2c_piix4 i2c_core floppy parport_pc
->> parport sr_mod cdrom virtio_blk pata_acpi ata_g
->> eneric ata_piix libata scsi_mod
->> [   63.414161] CPU 2
->> [   63.414161] Pid: 1219, comm: numactl Not tainted 3.6.0-rc5+ #180
->> Bochs Bochs
->> ...
->> [   63.414161] Process numactl (pid: 1219, threadinfo
->> ffff880039abc000, task ffff8800383c4ce0)
->> [   63.414161] Stack:
->> [   63.414161]  ffff880039abdaf8 ffffffff8117390f ffff880039abdaf8
->> 000000008167c601
->> [   63.414161]  ffffffff81174162 ffff88003a480f00 0000000000000001
->> ffff8800395e0000
->> [   63.414161]  ffff88003dbd0e80 0000000000000282 ffff880039abdb48
->> ffffffff81174181
->> [   63.414161] Call Trace:
->> [   63.414161]  [<ffffffff8117390f>] __pagevec_lru_add_fn+0xdf/0x140
->> [   63.414161]  [<ffffffff81174162>] ? pagevec_lru_move_fn+0x92/0x100
->> [   63.414161]  [<ffffffff81174181>] pagevec_lru_move_fn+0xb1/0x100
->> [   63.414161]  [<ffffffff81173830>] ? lru_add_page_tail+0x1b0/0x1b0
->> [   63.414161]  [<ffffffff811dff71>] ? exec_mmap+0x121/0x230
->> [   63.414161]  [<ffffffff811741ec>] __pagevec_lru_add+0x1c/0x30
->> [   63.414161]  [<ffffffff81174383>] lru_add_drain_cpu+0xa3/0x130
->> [   63.414161]  [<ffffffff8117443f>] lru_add_drain+0x2f/0x40
->> [   63.414161]  [<ffffffff81196da9>] exit_mmap+0x69/0x160
->> [   63.414161]  [<ffffffff810db115>] ? lock_release_holdtime+0x35/0x1a0
->> [   63.414161]  [<ffffffff81069c37>] mmput+0x77/0x100
->> [   63.414161]  [<ffffffff811dffc0>] exec_mmap+0x170/0x230
->> [   63.414161]  [<ffffffff811e0152>] flush_old_exec+0xd2/0x140
->> [   63.414161]  [<ffffffff812343ea>] load_elf_binary+0x32a/0xe70
->> [   63.414161]  [<ffffffff810d700d>] ? trace_hardirqs_off+0xd/0x10
->> [   63.414161]  [<ffffffff810b231f>] ? local_clock+0x6f/0x80
->> [   63.414161]  [<ffffffff810db115>] ? lock_release_holdtime+0x35/0x1a0
->> [   63.414161]  [<ffffffff810dd813>] ? __lock_release+0x133/0x1a0
->> [   63.414161]  [<ffffffff811e22e7>] ? search_binary_handler+0x1a7/0x4a0
->> [   63.414161]  [<ffffffff811e22f3>] search_binary_handler+0x1b3/0x4a0
->> [   63.414161]  [<ffffffff811e2194>] ? search_binary_handler+0x54/0x4a0
->> [   63.414161]  [<ffffffff812340c0>] ? set_brk+0xe0/0xe0
->> [   63.414161]  [<ffffffff811e284f>] do_execve_common+0x26f/0x320
->> [   63.414161]  [<ffffffff811bde33>] ? kmem_cache_alloc+0x113/0x220
->> [   63.414161]  [<ffffffff811e298a>] do_execve+0x3a/0x40
->> [   63.414161]  [<ffffffff8102061a>] sys_execve+0x4a/0x80
->> [   63.414161]  [<ffffffff81686c6c>] stub_execve+0x6c/0xc0
->> [   63.414161] Code: ff 03 00 00 48 c1 e7 0b 48 c1 e2 07 48 29 d7 48
->> 03 3c c5 c0 27 d2 81 e8 a6 fe ff ff c9 c3 0f 1f 40 00 55 48 89 e5 0f
->> 1f 44 00 00 <48> 8b 4f 60 89 f6 48 8d 44 31 40 65 44 8a 40 02 45 0f be
->> c0 41
->>
->> The reason is that we don't update
->> root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone
->> when onlining the node, and we try to access it.
->>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-> 
-> Thank you !!!
-> 
-> But, I think, all memcg's lruvec should be updated.
-> I guess you'll see panic again if you put tasks under memcg and
-> allocates memory on a new node.
->  
-> Could you dig more ?
+Hi Sakari,
 
-OK, I will do it.
+On Sunday 09 September 2012 10:40:17 Sakari Ailus wrote:
+> On Sat, Sep 08, 2012 at 01:11:04PM +0200, Hans Verkuil wrote:
+> > On Fri September 7 2012 20:20:51 Sakari Ailus wrote:
+> > > Prabhakar Lad wrote:
+> > > > From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > > > 
+> > > > add V4L2_CID_TEST_PATTERN of type menu, which determines
+> > > > the internal test pattern selected by the device.
+> > > > 
+> > > > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> > > > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> > > > Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> > > > Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> > > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > > Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> > > > Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > > Cc: Hans de Goede <hdegoede@redhat.com>
+> > > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > > Cc: Rob Landley <rob@landley.net>
+> > > > ---
+> > > > This patches has one checkpatch warning for line over
+> > > > 80 characters altough it can be avoided I have kept it
+> > > > for consistency.
+> > > > 
+> > > > Changes for v2:
+> > > > 1: Included display devices in the description for test pattern
+> > > >     as pointed by Hans.
+> > > > 
+> > > > 2: In the menu replaced 'Test Pattern Disabled' by 'Disabled' as
+> > > >     pointed by Sylwester.
+> > > > 
+> > > > 3: Removed the test patterns from menu as the are hardware specific
+> > > >     as pointed by Sakari.
+> > > >   
+> > > >   Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++
+> > > >   drivers/media/v4l2-core/v4l2-ctrls.c         |    8 ++++++++
+> > > >   include/linux/videodev2.h                    |    4 ++++
+> > > >   3 files changed, 32 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/DocBook/media/v4l/controls.xml
+> > > > b/Documentation/DocBook/media/v4l/controls.xml index ad873ea..173934e
+> > > > 100644
+> > > > --- a/Documentation/DocBook/media/v4l/controls.xml
+> > > > +++ b/Documentation/DocBook/media/v4l/controls.xml
+> > > > @@ -4311,6 +4311,26 @@ interface and may change in the future.</para>
+> > > >   	      </tbody>
+> > > >   	    </entrytbl>
+> > > >   	  </row>
+> > > > +	  <row>
+> > > > +	    <entry
+> > > > spanname="id"><constant>V4L2_CID_TEST_PATTERN</constant></entry> +	  
+> > > >  <entry>menu</entry>
+> > > > +	  </row>
+> > > > +	  <row id="v4l2-test-pattern">
+> > > > +	    <entry spanname="descr"> The Capture/Display/Sensors have the
+> > > > capability
+> > > > +	    to generate internal test patterns and this are hardware
+> > > > specific. This
+> > > > +	    test patterns are used to test a device is properly working and
+> > > > can generate
+> > > > +	    the desired waveforms that
+> > > > it supports.</entry>
+> > > > +	  </row>
+> > > > +	  <row>
+> > > > +	    <entrytbl spanname="descr" cols="2">
+> > > > +	      <tbody valign="top">
+> > > > +	        <row>
+> > > > +	        
+> > > > <entry><constant>V4L2_TEST_PATTERN_DISABLED</constant></entry>
+> > > > +	          <entry>Test pattern generation is disabled</entry>
+> > > > +	        </row>
+> > > > +	      </tbody>
+> > > > +	    </entrytbl>
+> > > > +	  </row>
+> > > >   	<row><entry></entry></row>
+> > > >   	</tbody>
+> > > >         </tgroup>
+> > > > diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > > b/drivers/media/v4l2-core/v4l2-ctrls.c index 8f2f40b..d731422 100644
+> > > > --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > > +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> > > > @@ -430,6 +430,10 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+> > > >   		"Advanced",
+> > > >   		NULL,
+> > > >   	};
+> > > > +	static const char * const test_pattern[] = {
+> > > > +		"Disabled",
+> > > > +		NULL,
+> > > > +	};
+> > > > 
+> > > >   	switch (id) {
+> > > >   	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
+> > > > @@ -509,6 +513,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+> > > >   		return jpeg_chroma_subsampling;
+> > > >   	case V4L2_CID_DPCM_PREDICTOR:
+> > > >   		return dpcm_predictor;
+> > > > +	case V4L2_CID_TEST_PATTERN:
+> > > > +		return test_pattern;
+> > > 
+> > > I think it's not necessary to define test_pattern (nor be prepared to
+> > > return it) since the menu is going to be device specific. So the driver
+> > > is responsible for all of the menu items. Such menus are created using
+> > > v4l2_ctrl_new_custom() instead of v4l2_ctrl_new_std_menu().
+> > > 
+> > > Looks good to me otherwise.
+> > 
+> > I would suggest that we *do* make this a standard control, but the menu
+> > consists of just one item: "Disabled". After creating the control you can
+> > just set the ctrl->qmenu pointer to the device-specific menu. I like
+> > using standard controls because they guarantee standard naming and type
+> > conventions. They are also easier to use in an application.
+> 
+> That's not quite enough. Also menu_skip_mask and max also need to be
+> replaced. In a general case min as well. It's easy to do mistakes in that
+> --- how about a separate function for doing that? It'd be also nice to be
+> able to use the existing standardised menu item strings, but that's just an
+> extra plus.
 
-Thanks
-Wen Congyang
+Agreed. A way to create a standard menu control with driver-supplied menu 
+items would be a good addition to the control framework API.
 
+> However I think it's beyond this patch, which I think then is be fine w/o
+> modifications. So on my behalf,
 > 
-> Thanks,
-> -Kame
-> 
->> ---
->>   include/linux/memcontrol.h |    7 +++++++
->>   mm/memcontrol.c            |   14 ++++++++++++++
->>   mm/memory_hotplug.c        |    2 ++
->>   3 files changed, 23 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 8d9489f..87d8b77 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -182,6 +182,9 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct
->> zone *zone, int order,
->>                           unsigned long *total_scanned);
->>
->>   void mem_cgroup_count_vm_event(struct mm_struct *mm, enum
->> vm_event_item idx);
->> +
->> +void update_root_mem_cgroup(int nid);
->> +
->>   #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->>   void mem_cgroup_split_huge_fixup(struct page *head);
->>   #endif
->> @@ -374,6 +377,10 @@ static inline void
->> mem_cgroup_replace_page_cache(struct page *oldpage,
->>                   struct page *newpage)
->>   {
->>   }
->> +
->> +static inline void update_root_mem_cgroup(int nid)
->> +{
->> +}
->>   #endif /* CONFIG_MEMCG */
->>
->>   #if !defined(CONFIG_MEMCG) || !defined(CONFIG_DEBUG_VM)
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 795e525..c997a46 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3427,6 +3427,20 @@ void mem_cgroup_replace_page_cache(struct page
->> *oldpage,
->>       __mem_cgroup_commit_charge(memcg, newpage, 1, type, true);
->>   }
->>
->> +/* NODE_DATA(nid) is changed */
->> +void update_root_mem_cgroup(int nid)
->> +{
->> +    struct mem_cgroup_per_node *pn;
->> +    struct mem_cgroup_per_zone *mz;
->> +    int zone;
->> +
->> +    pn = root_mem_cgroup->info.nodeinfo[nid];
->> +    for (zone = 0; zone < MAX_NR_ZONES; zone++) {
->> +        mz = &pn->zoneinfo[zone];
->> +        lruvec_init(&mz->lruvec, &NODE_DATA(nid)->node_zones[zone]);
->> +    }
->> +}
->> +
->>   #ifdef CONFIG_DEBUG_VM
->>   static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
->>   {
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 3ad25f9..bf03b02 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -555,6 +555,8 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid,
->> u64 start)
->>
->>       /* we can use NODE_DATA(nid) from here */
->>
->> +    update_root_mem_cgroup(nid);
->> +
->>       /* init node's zones as empty zones, we don't have any present
->> pages.*/
->>       free_area_init_node(nid, zones_size, start_pfn, zholes_size);
->>
->>
-> 
-> 
-> 
+> Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+
+-- 
+Regards,
+
+Laurent Pinchart
 
