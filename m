@@ -1,288 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab2IMU6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:58:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55597 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab2IMU6c (ORCPT
+	id S1758840Ab2IMU7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:59:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48818 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab2IMU7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:58:32 -0400
-Date: Thu, 13 Sep 2012 13:58:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [RFC] cgroup TODOs
-Message-ID: <20120913205827.GO7677@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 13 Sep 2012 16:59:21 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH 0/3 v3] perf: precise mode and exclude_guest
+Date: Thu, 13 Sep 2012 14:59:12 -0600
+Message-Id: <1347569955-54626-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Hopefully this wraps up the precise mode-exclude_guest dependency.
+I'm sure someone will let me know if I screwed up the attribution
+in the second patch.
 
-Here's the write-up I promised last week about what I think are the
-problems in cgroup and what the current plans are.
+David Ahern (2):
+  perf tool: precise mode requires exclude_guest
+  perf tool: give user better message if precise is not supported
 
-First of all, it's a mess.  Shame on me.  Shame on you.  Shame on all
-of us for allowing this mess.  Let's all tremble in shame for solid
-ten seconds before proceeding.
+Peter Zijlstra (1):
+  perf: require exclude_guest to use PEBS - kernel side enforcement
 
-I'll list the issues I currently see with cgroup (easier ones first).
-I think I now have at least tentative plans for all of them and will
-list them together with the prospective asignees (my wish mostly).
-Unfortunately, some of the plans involve userland visible changes
-which would at least cause some discomfort and require adjustments on
-their part.
+v3: removed extra tab in patch 2
+v2: updated commit messages for patches 1 and 2
 
-1. cpu and cpuacct
+ arch/x86/kernel/cpu/perf_event.c |    6 ++++++
+ tools/perf/builtin-record.c      |    5 +++++
+ tools/perf/builtin-top.c         |    4 ++++
+ tools/perf/util/parse-events.c   |    3 +++
+ 4 files changed, 18 insertions(+)
 
-  They cover the same resources and the scheduler cgroup code ends up
-  having to traverse two separate cgroup trees to update the stats.
-  With nested cgroups, the overhead isn't insignificant and it
-  generally is silly.
+-- 
+1.7.10.1
 
-  While the use cases for having cpuacct on a separate and likely more
-  granular hierarchy, are somewhat valid, the consensus seems that
-  it's just not worth the trouble and cpuacct should be removed in the
-  long term and we shouldn't allow overlapping controllers for the
-  same resource, especially accounting ones.
-
-  Solution:
-
-  * Whine if cpuacct is not co-mounted with cpu.
-
-  * Make sure cpu has all the stats of cpuacct.  If cpu and cpuacct
-    are comounted, don't really mount cpuacct but tell cpu that the
-    user requested it.  cpu is updated to create aliases for cpuacct.*
-    files in such cases.  This involves special casing cpuacct in
-    cgroup core but I much prefer one-off exception case to adding a
-    generic mechanism for this.
-
-  * After a while, we can just remove cpuacct completely.
-
-  * Later on, phase out the aliases too.
-
-  Who:
-
-  Me, working on it.
-
-2. memcg's __DEPRECATED_clear_css_refs
-
-  This is a remnant of another weird design decision of requiring
-  synchronous draining of refcnts on cgroup removal and allowing
-  subsystems to veto cgroup removal - what's the userspace supposed to
-  do afterwards?  Note that this also hinders co-mounting different
-  controllers.
-
-  The behavior could be useful for development and debugging but it
-  unnecessarily interlocks userland visible behavior with in-kernel
-  implementation details.  To me, it seems outright wrong (either
-  implement proper severing semantics in the controller or do full
-  refcnting) and disallows, for example, lazy drain of caching refs.
-  Also, it complicates the removal path with try / commit / revert
-  logic which has never been fully correct since the beginning.
-
-  Currently, the only left user is memcg.
-
-  Solution:
-
-  * Update memcg->pre_destroy() such that it never fails.
-
-  * Drop __DEPRECATED_clear_css_refs and all related logic.
-    Convert pre_destroy() to return void.
-
-  Who:
-
-  KAMEZAWA, Michal, PLEASE.  I will make __DEPRECATED_clear_css_refs
-  trigger WARN sooner or later.  Let's please get this settled.
-
-3. cgroup_mutex usage outside cgroup core
-
-  This is another thing which is simply broken.  Given the way cgroup
-  is structured and used, nesting cgroup_mutex inside any other
-  commonly used lock simply doesn't work - it's held while invoking
-  controller callbacks which then interact and synchronize with
-  various core subsystems.
-
-  There are currently three external cgroup_mutex users - cpuset,
-  memcontrol and cgroup_freezer.
-
-  Solution:
-
-  Well, we should just stop doing it - use a separate nested lock
-  (which seems possible for cgroup_freezer) or track and mange task
-  in/egress some other way.
-
-  Who:
-
-  I'll do the cgroup_freezer.  I'm hoping PeterZ or someone who's
-  familiar with the code base takes care of cpuset.  Michal, can you
-  please take care of memcg?
-
-4. Make disabled controllers cheaper
-
-  Mostly through the use of static_keys, I suppose.  Making this
-  easier AFAICS depends on resolving #2.  The lock dependency loop
-  from #2 makes using static_keys from cgroup callbacks extremely
-  nasty.
-
-  Solution:
-
-  Fix #2 and support common pattern from cgroup core.
-
-  Who:
-
-  Dunno.  Let's see.
-
-5. I CAN HAZ HIERARCHIES?
-
-  The cpu ones handle nesting correctly - parent's accounting includes
-  children's, parent's configuration affects children's unless
-  explicitly overridden, and children's limits nest inside parent's.
-
-  memcg asked itself the existential question of to be hierarchical or
-  not and then got confused and decided to become both.
-
-  When faced with the same question, blkio and cgroup_freezer just
-  gave up and decided to allow nesting and then ignore it - brilliant.
-
-  And there are others which kinda sorta try to handle hierarchy but
-  only goes way-half.
-
-  This one is screwed up embarrassingly badly.  We failed to establish
-  one of the most basic semantics and can't even define what a cgroup
-  hierarchy is - it depends on each controller and they're mostly
-  wacky!
-
-  Fortunately, I don't think it will be prohibitively difficult to dig
-  ourselves out of this hole.
-
-  Solution:
-
-  * cpu ones seem fine.
-
-  * For broken controllers, cgroup core will be generating warning
-    messages if the user tries to nest cgroups so that the user at
-    least can know that the behavior may change underneath them later
-    on.  For more details,
-
-    http://thread.gmane.org/gmane.linux.kernel/1356264/focus=3902
-
-  * memcg can be fully hierarchical but we need to phase out the flat
-    hierarchy support.  Unfortunately, this involves flipping the
-    behavior for the existing users.  Upstream will try to nudge users
-    with warning messages.  Most burden would be on the distros and at
-    least SUSE seems to be on board with it.  Needs coordination with
-    other distros.
-
-  * blkio is the most problematic.  It has two sub-controllers - cfq
-    and blk-throttle.  Both are utterly broken in terms of hierarchy
-    support and the former is known to have pretty hairy code base.  I
-    don't see any other way than just biting the bullet and fixing it.
-
-  * cgroup_freezer and others shouldn't be too difficult to fix.
-
-  Who:
-
-  memcg can be handled by memcg people and I can handle cgroup_freezer
-  and others with help from the authors.  The problematic one is
-  blkio.  If anyone is interested in working on blkio, please be my
-  guest.  Vivek?  Glauber?
-
-6. Multiple hierarchies
-
-  Apart from the apparent wheeeeeeeeness of it (I think I talked about
-  that enough the last time[1]), there's a basic problem when more
-  than one controllers interact - it's impossible to define a resource
-  group when more than two controllers are involved because the
-  intersection of different controllers is only defined in terms of
-  tasks.
-
-  IOW, if an entity X is of interest to two controllers, there's no
-  way to map X to the cgroups of the two controllers.  X may belong to
-  A and B when viewed by one task but A' and B when viewed by another.
-  This already is a head scratcher in writeback where blkcg and memcg
-  have to interact.
-
-  While I am pushing for unified hierarchy, I think it's necessary to
-  have different levels of granularities depending on controllers
-  given that nesting involves significant overhead and noticeable
-  controller-dependent behavior changes.
-
-  Solution:
-
-  I think a unified hierarchy with the ability to ignore subtrees
-  depending on controllers should work.  For example, let's assume the
-  following hierarchy.
-
-          R
-	/   \
-       A     B
-      / \
-     AA AB
-
-  All controllers are co-mounted.  There is per-cgroup knob which
-  controls which controllers nest beyond it.  If blkio doesn't want to
-  distinguish AA and AB, the user can specify that blkio doesn't nest
-  beyond A and blkio would see the tree as,
-
-          R
-	/   \
-       A     B
-
-  While other controllers keep seeing the original tree.  The exact
-  form of interface, I don't know yet.  It could be a single file
-  which the user echoes [-]controller name into it or per-controller
-  boolean file.
-
-  I think this level of flexibility should be enough for most use
-  cases.  If someone disagrees, please voice your objections now.
-
-  I *think* this can be achieved by changing where css_set is bound.
-  Currently, a css_set is (conceptually) owned by a task.  After the
-  change, a cgroup in the unified hierarchy has its own css_set which
-  tasks point to and can also be used to tag resources as necessary.
-  This way, it should be achieveable without introducing a lot of new
-  code or affecting individual controllers too much.
-
-  The headache will be the transition period where we'll probably have
-  to support both modes of operation.  Oh well....
-
-  Who:
-
-  Li, Glauber and me, I guess?
-
-7. Misc issues
-
-  * Sort & unique when listing tasks.  Even the documentation says it
-    doesn't happen but we have a good hunk of code doing it in
-    cgroup.c.  I'm gonna rip it out at some point.  Again, if you
-    don't like it, scream.
-
-  * At the PLC, pjt told me that assinging threads of a cgroup to
-    different cgroups is useful for some use cases but if we're to
-    have a unified hierarchy, I don't think we can continue to do
-    that.  Paul, can you please elaborate the use case?
-
-  * Vivek brought up the issue of distributing resources to tasks and
-    groups in the same cgroup.  I don't know.  Need to think more
-    about it.
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/857
