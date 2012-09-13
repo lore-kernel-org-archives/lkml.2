@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758454Ab2IMQUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 12:20:24 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57296 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2IMQUW (ORCPT
+	id S1758551Ab2IMQXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 12:23:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56343 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754578Ab2IMQXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 12:20:22 -0400
-Date: Thu, 13 Sep 2012 17:25:07 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
-Message-ID: <20120913172507.5039e3c6@pyramind.ukuu.org.uk>
-In-Reply-To: <20120913125401.GK19956@moon>
-References: <20120913095623.GB28508@moon>
-	<20120913135131.5b251797@pyramind.ukuu.org.uk>
-	<20120913125401.GK19956@moon>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 12:23:30 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH] eeepc-laptop: fix device reference count leakage in eeepc_rfkill_hotplug()
+Date: Fri, 14 Sep 2012 00:21:59 +0800
+Message-Id: <1347553319-6867-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Sep 2012 16:54:01 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+Fix a device reference count leakage issue in function
+eeepc_rfkill_hotplug().
 
-> On Thu, Sep 13, 2012 at 01:51:31PM +0100, Alan Cox wrote:
-> > > +static int pty_get_lock(struct tty_struct *tty, int __user *arg)
-> > > +{
-> > > +	int locked = test_bit(TTY_PTY_LOCK, &tty->flags);
-> > > +	if (put_user(locked, arg))
-> > > +		return -EFAULT;
-> > 
-> > Now explain exactly how this doesn't race with another thread chanigng
-> > the lock setting ?
-> 
-> It's the same as to set/clear this bit, isn't it? Please correct me
-> if I'm wrong.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/platform/x86/eeepc-laptop.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-So by the time you've finished the test bit and returned it to user space
-the answer may have changed ?
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index dab91b4..5ca2641 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -610,12 +610,12 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 
+ 		if (!bus) {
+ 			pr_warn("Unable to find PCI bus 1?\n");
+-			goto out_unlock;
++			goto out_put_dev;
+ 		}
+ 
+ 		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
+ 			pr_err("Unable to read PCI config space?\n");
+-			goto out_unlock;
++			goto out_put_dev;
+ 		}
+ 
+ 		absent = (l == 0xffffffff);
+@@ -627,7 +627,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 				absent ? "absent" : "present");
+ 			pr_warn("skipped wireless hotplug as probably "
+ 				"inappropriate for this model\n");
+-			goto out_unlock;
++			goto out_put_dev;
+ 		}
+ 
+ 		if (!blocked) {
+@@ -635,7 +635,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 			if (dev) {
+ 				/* Device already present */
+ 				pci_dev_put(dev);
+-				goto out_unlock;
++				goto out_put_dev;
+ 			}
+ 			dev = pci_scan_single_device(bus, 0);
+ 			if (dev) {
+@@ -650,6 +650,8 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
+ 				pci_dev_put(dev);
+ 			}
+ 		}
++out_put_dev:
++		pci_dev_put(port);
+ 	}
+ 
+ out_unlock:
+-- 
+1.7.9.5
 
-> > The other comment I have is that it might be better put these in now
-> > there are sysfs patches for the tty layer bouncing about to provide the
-> > needed infrastructure ?
-> 
-> Alan, could you please point me where these patches are living, so I would
-> take a look and check them out
-
-linux-serial or check tty-next as I think Greg has now merged the test
-patch.
