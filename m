@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab2IMP7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:59:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19044 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab2IMP7A (ORCPT
+	id S1758500Ab2IMQAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 12:00:35 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:9942 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758402Ab2IMQAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:59:00 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=JBLNcV8zRgkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=B2NTZjWQ9qwA:10 a=16kj1NKcxtvoXTIdzgUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347551937.10751.80.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/7] perf: Enable function tracing for perf core
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 13 Sep 2012 11:58:57 -0400
-In-Reply-To: <20120908130646.GA2122@somewhere.redhat.com>
-References: <20120908115515.211175517@goodmis.org>
-	 <20120908115640.032328533@goodmis.org>
-	 <20120908130646.GA2122@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 12:00:34 -0400
+X-IronPort-AV: E=Sophos;i="4.80,417,1344211200"; 
+   d="scan'208";a="14526314"
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <20562.800.744932.439629@mariner.uk.xensource.com>
+Date: Thu, 13 Sep 2012 17:00:32 +0100
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        stefano.stabellini@eu.citrix.com
+Subject: Re: [Xen-devel] [PATCH 09/10] xen/swiotlb: Fix compile warnings when
+	using plain integer instead of NULL pointer.
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <20562.532.48940.555794@mariner.uk.xensource.com>
+References: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
+	<m2n.s.1TBAAE-152299@chiark.greenend.org.uk>
+	<20562.397.264907.380798@mariner.uk.xensource.com>
+	<20562.532.48940.555794@mariner.uk.xensource.com>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-09-08 at 15:06 +0200, Frederic Weisbecker wrote:
-> On Sat, Sep 08, 2012 at 07:55:16AM -0400, Steven Rostedt wrote:
-> > According to Steven R. there is no reason left to not support
-> > function tracing for the perf core. This makes it easier to debug
-> > perf.
-> > 
-> > Don't remove -pg for the x86 and generic perf core.
-> 
-> Actually, perf can use function tracing. A good reason for disabling
-> function tracing in perf is to avoid the overhead of recursive function
-> tracing, even though we are protected against tracing re-entrancy, this
-> still result in some overhead.
+Ian Jackson writes ("Re: [Xen-devel] [PATCH 09/10] xen/swiotlb: Fix compile warnings when using plain integer instead of NULL pointer."):
+> Oh wait this is Linux kernel code, not in Xen?  Still,
+> Documentation/CodingStyle doesn't say that NULL is required.
 
-As I believe the patch set is being held off due to whether or not to
-function trace perf, I'll rebase without it, and push the result again.
-I'll add this to the queue of patches I have to trace the event
-functions as well, as they seem to do the same things.
+Someone on irc found me this rant from Linus:
+  https://lkml.org/lkml/2004/7/8/7
+That suggests that perhaps someone should patch CodingStyle to
+document this style requirement.
 
--- Steve
+That someone shouldn't be me because I don't agree with the
+requirement and a rationale I'd write for it would come out sounding
+sarcastic.
 
-
+Ian.
