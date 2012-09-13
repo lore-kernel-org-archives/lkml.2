@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab2IMPHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:07:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40064 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758185Ab2IMPGv (ORCPT
+	id S1758187Ab2IMPH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:07:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56084 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758114Ab2IMPHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:06:51 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 10/11] ARM: VIC: Add a couple of low-level FIQ management helpers
-Date: Thu, 13 Sep 2012 08:03:34 -0700
-Message-Id: <1347548615-18227-10-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <20120913150133.GA16238@lizard>
-References: <20120913150133.GA16238@lizard>
+	Thu, 13 Sep 2012 11:07:25 -0400
+Date: Thu, 13 Sep 2012 17:07:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] perf record: Change error message on failure
+Message-ID: <20120913150720.GA27411@gmail.com>
+References: <1347531654-16024-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347531654-16024-1-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a couple of calls to manage VIC FIQ routing. We'll use them for
-KGDB FIQ support on ARM Versatile machines.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- arch/arm/common/vic.c               | 28 ++++++++++++++++++++++++++++
- arch/arm/include/asm/hardware/vic.h |  2 ++
- 2 files changed, 30 insertions(+)
+* Robert Richter <robert.richter@amd.com> wrote:
 
-diff --git a/arch/arm/common/vic.c b/arch/arm/common/vic.c
-index e0d5388..df2fc82 100644
---- a/arch/arm/common/vic.c
-+++ b/arch/arm/common/vic.c
-@@ -66,6 +66,34 @@ static struct vic_device vic_devices[CONFIG_ARM_VIC_NR];
- 
- static int vic_id;
- 
-+static void __iomem *vic_base(struct irq_data *d)
-+{
-+	return (void __iomem *)irq_data_get_irq_chip_data(d);
-+}
-+
-+void vic_fiq_select(unsigned int irq, bool on)
-+{
-+	void __iomem *base = vic_base(&irq_to_desc(irq)->irq_data);
-+	void __iomem *sel = base + VIC_INT_SELECT;
-+	u32 msk = 1 << irq;
-+	u32 val;
-+
-+	pr_debug("rerouting VIC vector %d to %s\n", irq, on ? "FIQ" : "IRQ");
-+
-+	val = readl(sel);
-+	val &= ~msk;
-+	if (on)
-+		val |= msk;
-+	writel(val, sel);
-+}
-+
-+bool vic_is_fiq_rised(unsigned int irq)
-+{
-+	void __iomem *base = vic_base(&irq_to_desc(irq)->irq_data);
-+
-+	return readl(base + VIC_FIQ_STATUS) & (1 << irq);
-+}
-+
- /**
-  * vic_init2 - common initialisation code
-  * @base: Base of the VIC.
-diff --git a/arch/arm/include/asm/hardware/vic.h b/arch/arm/include/asm/hardware/vic.h
-index e14af1a..2728975 100644
---- a/arch/arm/include/asm/hardware/vic.h
-+++ b/arch/arm/include/asm/hardware/vic.h
-@@ -52,6 +52,8 @@ void __vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources,
- void vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources, u32 resume_sources);
- int vic_of_init(struct device_node *node, struct device_node *parent);
- void vic_handle_irq(struct pt_regs *regs);
-+void vic_fiq_select(unsigned int irq, bool on);
-+bool vic_is_fiq_rised(unsigned int irq);
- 
- #endif /* __ASSEMBLY__ */
- #endif
--- 
-1.7.11.5
+> Only report
+> 
+>  No CONFIG_PERF_EVENTS=y kernel support configured?
+> 
+> if the syscall fails with ENOSYS. In other cases CONFIG_PERF_EVENTS is
+> set and might confuse users. The default message is now:
+> 
+>  Not all events could be opened.
 
+Indeed, and it would be nice to be even less passive-aggressive 
+and figure out and display the exact error condition?
+
+Thanks,
+
+	Ingo
