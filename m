@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab2IMIga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:36:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60087 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab2IMIg1 (ORCPT
+	id S1757005Ab2IMIhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:37:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52851 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2IMIhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:36:27 -0400
-Date: Thu, 13 Sep 2012 10:36:23 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH] gpiolib: add another might_sleep
-Message-ID: <20120913083623.GH19497@pengutronix.de>
-References: <1297977533-17794-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20110829190142.GA17354@ponder.secretlab.ca>
+	Thu, 13 Sep 2012 04:37:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110829190142.GA17354@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1347522994.6821.67.camel@marge.simpson.net>
+References: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
+	<1347518991.6821.45.camel@marge.simpson.net>
+	<CAKfTPtBQ7Y1xGOe9NZw8AhNbOzGgkVMgYyXjVa1d308kdG6bfQ@mail.gmail.com>
+	<1347521382.6821.61.camel@marge.simpson.net>
+	<CAKfTPtCvg1qxUv02-dO9qD2HiFzS_bA2Gr0mrN=8LEA3eXA7Bg@mail.gmail.com>
+	<1347522994.6821.67.camel@marge.simpson.net>
+Date: Thu, 13 Sep 2012 10:37:08 +0200
+Message-ID: <CAKfTPtCoYjiZphPqyYtmEN-jR=hbAUMLbWSkD9BoWRiVkmE=3Q@mail.gmail.com>
+Subject: Re: [RFC] sched: nohz_idle_balance
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Wrong button make me removed others guys from the thread.
 
-On Mon, Aug 29, 2011 at 01:01:42PM -0600, Grant Likely wrote:
-> On Thu, Feb 17, 2011 at 10:18:53PM +0100, Uwe Kleine-König wrote:
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> 
-> Applied, thanks.
-I cannot see it in Linus' tree?!
+Sorry for this mistake.
 
-> > ---
-> >  drivers/gpio/gpiolib.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> > index 5fc5e2d..2c9f814 100644
-> > --- a/drivers/gpio/gpiolib.c
-> > +++ b/drivers/gpio/gpiolib.c
-> > @@ -1207,6 +1207,7 @@ int gpio_request(unsigned gpio, const char *label)
-> >  	if (chip->request) {
-> >  		/* chip->request may sleep */
-> >  		spin_unlock_irqrestore(&gpio_lock, flags);
-> > +		might_sleep_if(chip->can_sleep);
-> >  		status = chip->request(chip, gpio - chip->base);
-> >  		spin_lock_irqsave(&gpio_lock, flags);
-> >  
-> > -- 
-> > 1.7.2.3
-> > 
+On 13 September 2012 09:56, Mike Galbraith <efault@gmx.de> wrote:
+> On Thu, 2012-09-13 at 09:44 +0200, Vincent Guittot wrote:
+>> On 13 September 2012 09:29, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Thu, 2012-09-13 at 08:59 +0200, Vincent Guittot wrote:
+>> >> On 13 September 2012 08:49, Mike Galbraith <efault@gmx.de> wrote:
+>> >> > On Thu, 2012-09-13 at 06:11 +0200, Vincent Guittot wrote:
+>> >> >> On tickless system, one CPU runs load balance for all idle CPUs.
+>> >> >> The cpu_load of this CPU is updated before starting the load balance
+>> >> >> of each other idle CPUs. We should instead update the cpu_load of the balance_cpu.
+>> >> >>
+>> >> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> >> >> ---
+>> >> >>  kernel/sched/fair.c |   11 ++++++-----
+>> >> >>  1 file changed, 6 insertions(+), 5 deletions(-)
+>> >> >>
+>> >> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> >> >> index 1ca4fe4..9ae3a5b 100644
+>> >> >> --- a/kernel/sched/fair.c
+>> >> >> +++ b/kernel/sched/fair.c
+>> >> >> @@ -4794,14 +4794,15 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+>> >> >>               if (need_resched())
+>> >> >>                       break;
+>> >> >>
+>> >> >> -             raw_spin_lock_irq(&this_rq->lock);
+>> >> >> -             update_rq_clock(this_rq);
+>> >> >> -             update_idle_cpu_load(this_rq);
+>> >> >> -             raw_spin_unlock_irq(&this_rq->lock);
+>> >> >> +             rq = cpu_rq(balance_cpu);
+>> >> >> +
+>> >> >> +             raw_spin_lock_irq(&rq->lock);
+>> >> >> +             update_rq_clock(rq);
+>> >> >> +             update_idle_cpu_load(rq);
+>> >> >> +             raw_spin_unlock_irq(&rq->lock);
+>> >> >>
+>> >> >>               rebalance_domains(balance_cpu, CPU_IDLE);
+>> >> >>
+>> >> >> -             rq = cpu_rq(balance_cpu);
+>> >> >>               if (time_after(this_rq->next_balance, rq->next_balance))
+>> >> >>                       this_rq->next_balance = rq->next_balance;
+>> >> >>       }
+>> >> >
+>> >> > Ew, banging locks and updating clocks to what good end?
+>> >>
+>> >> The goal is to update the cpu_load table of the CPU before starting
+>> >> the load balance. Other wise we will use outdated value in the load
+>> >> balance sequence
+>> >
+>> > If there's load to distribute, seems it should all work out fine without
+>> > doing that.  What harm is being done that makes this worth while?
+>>
+>> this_load and avg_load can be wrong and make an idle CPU set as
+>> balanced compared to the busy one
+>
+> I think you need to present numbers showing benefit.  Crawling all over
+> a mostly idle (4096p?) box is decidedly bad thing to do.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Yep, let me prepare some figures
+
+You should also notice that you are already crawling all over the idle
+processor in rebalance_domains
+
+Vincent
+
+>
+> -Mike
+>
