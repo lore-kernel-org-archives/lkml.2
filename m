@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2IMGcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:32:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:37065 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754377Ab2IMGcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:32:05 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        kernel-janitors@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] module: report -EFAULT on bytes remaining
-In-Reply-To: <20120912154023.GL19410@mwanda>
-References: <20120912150616.GA27343@www.outflux.net> <20120912154023.GL19410@mwanda>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 13 Sep 2012 16:01:24 +0930
-Message-ID: <87pq5qsabn.fsf@rustcorp.com.au>
+	id S1754074Ab2IMGdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:33:09 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46873 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab2IMGdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:33:05 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [v3 PATCH 2/2] netprio_cgroup: Use memcpy instead of the for-loop to
+ copy priomap
+To: davem@davemloft.net, nhorman@tuxdriver.com
+Cc: David.Laight@aculab.com, john.r.fastabend@intel.com,
+        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
+        mark.d.rustad@intel.com, lizefan@huawei.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 13 Sep 2012 12:02:34 +0530
+Message-ID: <20120913063233.6278.7615.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120913063225.6278.87780.stgit@srivatsabhat.in.ibm.com>
+References: <20120913063225.6278.87780.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091306-2000-0000-0000-00000918DB80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter <dan.carpenter@oracle.com> writes:
+Replace the current (inefficient) for-loop with memcpy, to copy priomap.
 
-> On Wed, Sep 12, 2012 at 08:06:16AM -0700, Kees Cook wrote:
->> Caught by smatch:
->> kernel/module.c:2450 copy_module_from_user() warn: maybe return -EFAULT instead of the bytes remaining?  
->> 
->> Clean up the copy_from_user() call to not report a positive value.
->> With this patch, init_module() will report errors from copy_from_user
->> (before it would always only report -EFAULT when err != 0).
->> 
->> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> This change is on top of the finit_module patch series.
->> ---
->>  kernel/module.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->> 
->> diff --git a/kernel/module.c b/kernel/module.c
->> index 0ad03c4..05b8dde 100644
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -2441,8 +2441,11 @@ int copy_module_from_user(const void __user *umod, unsigned long len,
->>  		return -ENOMEM;
->>  
->>  	err = copy_from_user(info->hdr, umod, info->len);
->> -	if (err)
->> +	if (err) {
->> +		if (err > 0)
->                 ^^^^^^^^^^^
-> This condition is always true because copy_to/from_user() returns
-> the number of bytes remaining to be copied.  (It never returns a
-> negative error code).
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Yes, I made the obvious fix (eliminating the >0 check).
+ net/core/netprio_cgroup.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-This "copy_from_user is stupid" was a debate a lost long ago, but it
-still annoys me.
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index fd339bb0..45c503e 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -73,7 +73,6 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ 			   ((sizeof(u32) * new_len));
+ 	struct netprio_map *new_priomap = kzalloc(new_size, GFP_KERNEL);
+ 	struct netprio_map *old_priomap;
+-	int i;
+ 
+ 	old_priomap  = rtnl_dereference(dev->priomap);
+ 
+@@ -82,10 +81,10 @@ static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ 		return -ENOMEM;
+ 	}
+ 
+-	for (i = 0;
+-	     old_priomap && (i < old_priomap->priomap_len);
+-	     i++)
+-		new_priomap->priomap[i] = old_priomap->priomap[i];
++	if (old_priomap)
++		memcpy(new_priomap->priomap, old_priomap->priomap,
++		       old_priomap->priomap_len *
++		       sizeof(old_priomap->priomap[0]));
+ 
+ 	new_priomap->priomap_len = new_len;
+ 
 
-Applied,
-Rusty.
