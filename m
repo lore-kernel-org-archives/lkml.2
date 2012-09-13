@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab2IMReW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 13:34:22 -0400
-Received: from toast.topped-with-meat.com ([204.197.218.159]:42834 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab2IMReN (ORCPT
+	id S1752893Ab2IMRfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 13:35:07 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:53454 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab2IMRfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 13:34:13 -0400
-X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Sep 2012 13:34:13 EDT
+	Thu, 13 Sep 2012 13:35:04 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiqWAEQYUlBV5h1yPGdsb2JhbABFhR4jhQCwOAICehkBAQEBNzSCIAEBBTocIxAIAxguFCUKGogku3EUinw0gS6DdWADlV+FcINGiVQ
+X-IronPort-AV: E=Sophos;i="4.80,417,1344204000"; 
+   d="scan'208";a="114954273"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 13 Sep 2012 19:41:08 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-input@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: input_to_handler: unable to handle kernel NULL pointer
+ dereference
+Message-ID: <20120913174108.GA3099@polaris.bitmath.org>
+References: <5051F648.8030003@suse.cz>
+ <20120913155738.GA3519@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/lkml
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Amerigo Wang <amwang@redhat.com>
-Subject: Re: [PATCH 2/2] coredump: add a new elf note with siginfo fields
-	of the signal
-In-Reply-To: Oleg Nesterov's message of  Thursday, 13 September 2012 17:52:59 +0200 <20120913155259.GA2267@redhat.com>
-References: <1347493124-10661-1-git-send-email-vda.linux@googlemail.com>
-	<1347493124-10661-2-git-send-email-vda.linux@googlemail.com>
-	<20120913153615.GB32128@redhat.com>
-	<20120913155259.GA2267@redhat.com>
-X-Windows: no hardware is safe.
-Message-Id: <20120913172511.A69262C09C@topped-with-meat.com>
-Date: Thu, 13 Sep 2012 10:25:11 -0700 (PDT)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=LtfpOghc c=1 sm=1 a=WHebIpn890YA:10
-		a=Z6MIti7PxpgA:10 a=kj9zAlcOel0A:10 a=hOe2yjtxAAAA:8 a=14OXPxybAAAA:8
-		a=ZAWFwMYEd_IA:10 a=yGuRBKujVmk6JG-HAmUA:9 a=CjuIK1q_8ugA:10
-		a=WkljmVdYkabdwxfqvArNOQ==:117
+Content-Disposition: inline
+In-Reply-To: <20120913155738.GA3519@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree with Oleg.  If there is an NT_SIGINFO note, it should contain
-exactly the siginfo_t layout and data that we otherwise expose to userland
-already.  That is, it must match what PTRACE_GETSIGINFO reports, which (I
-think) also matches exactly what appears on the stack for a signal
-delivery.  Note also that compat_binfmt_elf must deliver the 32-bit version
-of siginfo_t, i.e. as copy_siginfo_to_user32 does.
+On Thu, Sep 13, 2012 at 08:57:38AM -0700, Dmitry Torokhov wrote:
+> On Thu, Sep 13, 2012 at 05:05:44PM +0200, Jiri Slaby wrote:
+> > Hi,
+> > 
+> > -next commit "Input: Send events one packet at a time" seems like broke
+> > the input layer:
+> 
+> Right, Henrik has a patch for this.
 
+Yep, it just missed the cut for today, but will appear in tomorrow's
+-next.
 
 Thanks,
-Roland
-
+Henrik
