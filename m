@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2IMKQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:16:42 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59407 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab2IMKQk (ORCPT
+	id S1757113Ab2IMKTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:19:06 -0400
+Received: from mailrelayi.jaist.ac.jp ([150.65.19.7]:6528 "EHLO
+	mailrelayi.jaist.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2IMKTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:16:40 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 4/5] video:omap3isp:fix up ENOIOCTLCMD error handling
-Date: Thu, 13 Sep 2012 06:03:21 +0200
-Message-ID: <1946796.hhZ2Ot34qB@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <1346052196-32682-5-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1346052196-32682-1-git-send-email-gaowanlong@cn.fujitsu.com> <1346052196-32682-5-git-send-email-gaowanlong@cn.fujitsu.com>
+	Thu, 13 Sep 2012 06:19:03 -0400
+X-IronPort-AV: E=Sophos;i="4.80,416,1344178800"; 
+   d="scan'208";a="122817509"
+Date: Thu, 13 Sep 2012 19:18:42 +0900
+To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: rtl8192se: ping router gives mdev of 25387.102???
+Message-ID: <20120913101828.GA3309@gandalf.dynalias.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Norbert Preining <preining@logic.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wanlong,
+Hi everyone,
 
-Thanks for the patch.
+(please cc)
 
-On Monday 27 August 2012 15:23:15 Wanlong Gao wrote:
-> At commit 07d106d0, Linus pointed out that ENOIOCTLCMD should be
-> translated as ENOTTY to user mode.
-> 
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: linux-media@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  drivers/media/video/omap3isp/ispvideo.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/media/video/omap3isp/ispvideo.c
-> b/drivers/media/video/omap3isp/ispvideo.c index b37379d..2dd982e 100644
-> --- a/drivers/media/video/omap3isp/ispvideo.c
-> +++ b/drivers/media/video/omap3isp/ispvideo.c
-> @@ -337,7 +337,7 @@ __isp_video_get_format(struct isp_video *video, struct
-> v4l2_format *format) fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
->  	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt);
->  	if (ret == -ENOIOCTLCMD)
-> -		ret = -EINVAL;
-> +		ret = -ENOTTY;
+see $subject ...
 
-I don't think this location should be changed. __isp_video_get_format() is 
-called by isp_video_check_format() only, which in turn is called by 
-isp_video_streamon() only. A failure to retrieve the format in 
-__isp_video_get_format() does not really mean the VIDIOC_STREAMON is not 
-supported.
+No warning, nothing in the logs, but pinging my router I get
+things like:
+--- 192.168.0.1 ping statistics ---
+376 packets transmitted, 315 received, +33 errors, 16% packet loss, time 405164ms
+rtt min/avg/max/mdev = 0.873/10077.793/95935.698/25387.102 ms, pipe 68
 
-I'll apply hunks 2 to 5 and drop hunk 1 if that's fine with you.
+or
+--- 192.168.0.1 ping statistics ---
+1252 packets transmitted, 1225 received, 2% packet loss, time 1252976ms
+rtt min/avg/max/mdev = 0.941/764.171/19929.265/2758.225 ms, pipe 20
 
-> 
->  	mutex_unlock(&video->mutex);
-> 
-> @@ -723,7 +723,7 @@ isp_video_try_format(struct file *file, void *fh, struct
-> v4l2_format *format) fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
->  	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt);
->  	if (ret)
-> -		return ret == -ENOIOCTLCMD ? -EINVAL : ret;
-> +		return ret == -ENOIOCTLCMD ? -ENOTTY : ret;
-> 
->  	isp_video_mbus_to_pix(video, &fmt.format, &format->fmt.pix);
->  	return 0;
-> @@ -744,7 +744,7 @@ isp_video_cropcap(struct file *file, void *fh, struct
-> v4l2_cropcap *cropcap) ret = v4l2_subdev_call(subdev, video, cropcap,
-> cropcap);
->  	mutex_unlock(&video->mutex);
-> 
-> -	return ret == -ENOIOCTLCMD ? -EINVAL : ret;
-> +	return ret == -ENOIOCTLCMD ? -ENOTTY : ret;
->  }
-> 
->  static int
-> @@ -771,7 +771,7 @@ isp_video_get_crop(struct file *file, void *fh, struct
-> v4l2_crop *crop) format.which = V4L2_SUBDEV_FORMAT_ACTIVE;
->  	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &format);
->  	if (ret < 0)
-> -		return ret == -ENOIOCTLCMD ? -EINVAL : ret;
-> +		return ret == -ENOIOCTLCMD ? -ENOTTY : ret;
-> 
->  	crop->c.left = 0;
->  	crop->c.top = 0;
-> @@ -796,7 +796,7 @@ isp_video_set_crop(struct file *file, void *fh, struct
-> v4l2_crop *crop) ret = v4l2_subdev_call(subdev, video, s_crop, crop);
->  	mutex_unlock(&video->mutex);
-> 
-> -	return ret == -ENOIOCTLCMD ? -EINVAL : ret;
-> +	return ret == -ENOIOCTLCMD ? -ENOTTY : ret;
->  }
-> 
->  static int
 
--- 
-Regards,
+Has anyone *ever* seen a mdev of 25387.102 ms ???
 
-Laurent Pinchart
+At the same time I am pinging the same router from an iphone with a 
+steady stream of 40ms or so, no problem whatsoever ...
 
+$ lspci -v -s 03:00.0
+03:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller (rev 10)
+	Subsystem: Realtek Semiconductor Co., Ltd. Device e020
+	Flags: bus master, fast devsel, latency 0, IRQ 17
+ 	I/O ports at 2000 [size=256]
+ 	Memory at f0500000 (32-bit, non-prefetchable) [size=16K]
+ 	Capabilities: [40] Power Management version 3
+ 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+ 	Capabilities: [70] Express Legacy Endpoint, MSI 00
+ 	Capabilities: [100] Advanced Error Reporting
+ 	Capabilities: [140] Virtual Channel
+ 	Capabilities: [160] Device Serial Number 88-55-22-fe-ff-4c-e0-00
+ 	Kernel driver in use: rtl8192se
+
+That is with git from yesterday or so.
+
+Best wishes
+
+Norbert
+
+----------------------------------------------------------------------------
+Norbert Preining                preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                   TeX Live and Debian Developer
+gpg DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+----------------------------------------------------------------------------
+`Ford, you're turning into a penguin. Stop it.'
+                 --- Arthur experiences the improbability drive at work.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
