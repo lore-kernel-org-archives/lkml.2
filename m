@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab2IMNsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 09:48:25 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:34909 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab2IMNsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 09:48:22 -0400
-Date: Thu, 13 Sep 2012 15:48:19 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Aaron Lu <aaron.lwe@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Lin Ming <minggr@gmail.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI: power: Use KERN_DEBUG when no power resources are
- found
-Message-ID: <20120913134819.GD19691@aftab.osrc.amd.com>
-References: <1344564353-493-1-git-send-email-aaron.lu@amd.com>
- <20120823132646.GD18279@aftab.osrc.amd.com>
- <1345847781.32359.15.camel@joe2Laptop>
- <20120829020134.GA1761@aaronlu.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120829020134.GA1761@aaronlu.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753272Ab2IMNtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 09:49:50 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42751 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab2IMNts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 09:49:48 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH 1/4] v4l: vb2: add prepare/finish callbacks to allocators
+Date: Thu, 13 Sep 2012 15:52:45 +0200
+Message-Id: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 29, 2012 at 10:01:36AM +0800, Aaron Lu wrote:
-> On Fri, Aug 24, 2012 at 03:36:21PM -0700, Joe Perches wrote:
-> > On Thu, 2012-08-23 at 15:26 +0200, Borislav Petkov wrote:
-> > > On Fri, Aug 10, 2012 at 10:05:53AM +0800, Aaron Lu wrote:
-> > > > commit a606dac368eed5696fb38e16b1394f1d049c09e9 adds support to link
-> > > > devices which have _PRx, if a device does not have _PRx, a warning
-> > > > message will be printed.
-> > > > 
-> > > > This commit is for ZPODD on Intel's platform, on AMD's platform, there
-> > > > is no _PRx to support ZPODD, we use _PSx.
-> > > > 
-> > > > So instead of printing a useless warning message on AMD's platform,
-> > > > changing the print level to DEBUG to suppress this message.
-> > []
-> > > > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> > []
-> > > > @@ -460,7 +460,7 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-> > > >  	return ret;
-> > > >  
-> > > >  no_power_resource:
-> > > > -	printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
-> > > > +	printk(KERN_DEBUG PREFIX "Invalid Power Resource to register!");
-> > 
-> > Perhaps add something like:
-> > 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-> > 		printk(etc...)
-> > instead?
-> 
-> Sorry for not describing this problem clear, this would also occur on
-> Intel platforms as long as that device we are calling this register
-> function on does not have any power resource attached to it.
-> 
-> So the problem is actually, does the acpi_power_resource_register_device
-> function expect such input devices that they do not have any power
-> resource attached? If yes, then it shouldn't complain with a warning
-> message; if no, then we should probably check these conditions before
-> making such a call.
-> 
-> Looking at the function itself, I think it expects such devices so a
-> warning message here is not appropriate.
+This patch adds support for prepare/finish callbacks in VB2 allocators.
+These callback are used for buffer flushing.
 
-This is still present in -rc5.
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
+ include/media/videobuf2-core.h           |  7 +++++++
+ 2 file modificati, 18 inserzioni(+)
 
-Linus, this message obviously warns for no good reason. Can you please
-pick up the patch at http://marc.info/?l=linux-kernel&m=134456468110431
-since ACPI people don't seem to react here.
-
-Btw, Aaron, the stable tag should be covering 3.4 too because the patch
-that added the message actually is 0090def6c37c8:
-
-$ git tag --contains 0090def6c37c8
-v3.4
-v3.4-rc1
-v3.4-rc2
-v3.4-rc3
-v3.4-rc4
-v3.4-rc5
-v3.4-rc6
-v3.4-rc7
-v3.4.1
-v3.4.2
-v3.4.3
-v3.4.4
-v3.4.5
-v3.4.6
-v3.4.7
-v3.5
-v3.5-rc1
-v3.5-rc2
-v3.5-rc3
-v3.5-rc4
-v3.5-rc5
-v3.5-rc6
-v3.5-rc7
-v3.6-rc1
-v3.6-rc2
-v3.6-rc3
-v3.6-rc4
-v3.6-rc5
-
-Thanks.
-
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 4da3df6..079fa79 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
+ 	unsigned long flags;
++	unsigned int plane;
+ 
+ 	if (vb->state != VB2_BUF_STATE_ACTIVE)
+ 		return;
+@@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
+ 	dprintk(4, "Done processing on buffer %d, state: %d\n",
+ 			vb->v4l2_buf.index, vb->state);
+ 
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, finish, vb->planes[plane].mem_priv);
++
+ 	/* Add the buffer to the done buffers list */
+ 	spin_lock_irqsave(&q->done_lock, flags);
+ 	vb->state = state;
+@@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
+ static void __enqueue_in_driver(struct vb2_buffer *vb)
+ {
+ 	struct vb2_queue *q = vb->vb2_queue;
++	unsigned int plane;
+ 
+ 	vb->state = VB2_BUF_STATE_ACTIVE;
+ 	atomic_inc(&q->queued_count);
++
++	/* sync buffers */
++	for (plane = 0; plane < vb->num_planes; ++plane)
++		call_memop(q, prepare, vb->planes[plane].mem_priv);
++
+ 	q->ops->buf_queue(vb);
+ }
+ 
+diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
+index 8dd9b6c..f374f99 100644
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -41,6 +41,10 @@ struct vb2_fileio_data;
+  *		 argument to other ops in this structure
+  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
+  *		 be used
++ * @prepare:	called everytime the buffer is passed from userspace to the
++ *		driver, usefull for cache synchronisation, optional
++ * @finish:	called everytime the buffer is passed back from the driver
++ *		to the userspace, also optional
+  * @vaddr:	return a kernel virtual address to a given memory buffer
+  *		associated with the passed private structure or NULL if no
+  *		such mapping exists
+@@ -65,6 +69,9 @@ struct vb2_mem_ops {
+ 					unsigned long size, int write);
+ 	void		(*put_userptr)(void *buf_priv);
+ 
++	void		(*prepare)(void *buf_priv);
++	void		(*finish)(void *buf_priv);
++
+ 	void		*(*vaddr)(void *buf_priv);
+ 	void		*(*cookie)(void *buf_priv);
+ 
 -- 
-Regards/Gruss,
-Boris.
+1.7.11.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
