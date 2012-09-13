@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2IMOJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:09:22 -0400
-Received: from mga06.intel.com ([134.134.136.21]:14121 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752593Ab2IMOJU (ORCPT
+	id S1756946Ab2IMOLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:11:19 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35680 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900Ab2IMOLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:09:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1209131512161.9845@tundra.namei.org>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-	<20120816013434.872.8115.stgit@warthog.procyon.org.uk>
-	<CALLzPKbsp0EnZMTmfWtjfctsZn+YAurA_5W=hqzy1kHuxiCGng@mail.gmail.com>
-	<alpine.LRH.2.02.1209131512161.9845@tundra.namei.org>
-Date: Thu, 13 Sep 2012 17:09:09 +0300
-Message-ID: <CALLzPKZGJb+-RKbFHo+X_GXoci5QrSP4=kGYg21sSkqt+23J1w@mail.gmail.com>
-Subject: Re: [PATCH 02/25] MPILIB: Provide count_leading/trailing_zeros()
- based on arch functions
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: James Morris <jmorris@namei.org>
-Cc: David Howells <dhowells@redhat.com>, rusty@rustcorp.com.au,
-        zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Sep 2012 10:11:17 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com, robert.richter@amd.com
+Subject: [PATCH v3 0/3] perf: use hrtimer for event multiplexing
+Date: Thu, 13 Sep 2012 16:10:55 +0200
+Message-Id: <1347545457-28124-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O
+The current scheme of using the timer tick was fine
+for per-thread events. However, it was causing
+bias issues in system-wide mode (including for
+uncore PMUs). Event groups would not get their
+fair share of runtime on the PMU. With tickless
+kernels, if a core is idle there is no timer tick,
+and thus no event rotation (multiplexing). However,
+there are events (especially uncore events) which do
+count even though cores are asleep.
 
-On Thu, Sep 13, 2012 at 8:14 AM, James Morris <jmorris@namei.org> wrote:
-> On Mon, 10 Sep 2012, Kasatkin, Dmitry wrote:
->
->> > Signed-off-by: David Howells <dhowells@redhat.com>
->> > Cc: David S. Miller <davem@davemloft.net>
->> > Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
->> > Cc: Arnd Bergmann <arnd@arndb.com>
->>
->> Hi James,
->>
->> Can you please apply this?
->
-> Could you send me this and any other outstanding changes as patches
-> against my -next branch, tested and signed-off ?
->
-> Or, perhaps Mimi could do that as maintainer of the integrity subsystem.
->
->
+This patch changes the timer source for multiplexing.
+It introduces a per-cpu hrtimer. The advantage is that
+even when the core goes idle, it will come back to
+service the hrtimer, thus multiplexing on system-wide
+events works much better.
 
-Ok. let's do it with other collection of patches...
+In order to minimize the impact of the hrtimer, it
+is turned on and off on demand. When the PMU on
+a CPU is overcommited, the hrtimer is activated.
+It is stopped when the PMU is not overcommitted.
 
-> - James
-> --
-> James Morris
-> <jmorris@namei.org>
+In order for this to work properly with HOTPLUG_CPU,
+we had to change the order of initialization in
+start_kernel() such that hrtimer_init() is run
+before perf_event_init().
+
+The second patch provide a sysctl control to
+adjust the multiplexing interval. Unit is
+milliseconds.
+
+Here is a simple before/after example with
+two event groups which do require multiplexing.
+This is done in system-wide mode on an idle
+system. What matters here is the scaling factor
+in [] in not the total counts.
+
+Before:
+
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 34,319,545 ref-cycles  [56.51%]
+ 31,917,229 ref-cycles  [43.50%]
+
+ 10.000827569 seconds time elapsed
+
+After:
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 11,144,822,193 ref-cycles [50.00%]
+ 11,103,760,513 ref-cycles [50.00%]
+
+ 10.000672946 seconds time elapsed
+
+In this second version of the patchset, we now
+have the hrtimer_interval per PMU instance. The
+tunable is in /sys/devices/XXX/mux_interval_ms,
+where XXX is the name of the PMU instance. Due
+to initialization changes of each hrtimer, we
+had to introduce hrtimer_init_cpu() to initialize
+a hrtimer from another CPU.
+
+In the 3rd version, we simplify the code a bit
+by using hrtimer_active(). We stopped using
+the rotation_list for perf_cpu_hrtimer_cancel().
+We also fix an intialization problem.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (3):
+  hrtimer: add hrtimer_init_cpu()
+  perf: use hrtimer for event multiplexing
+  perf: add sysfs entry to adjust multiplexing interval per PMU
+
+ include/linux/hrtimer.h    |    2 +
+ include/linux/perf_event.h |    5 +-
+ init/main.c                |    2 +-
+ kernel/events/core.c       |  166 +++++++++++++++++++++++++++++++++++++++++---
+ kernel/hrtimer.c           |   17 +++--
+ 5 files changed, 176 insertions(+), 16 deletions(-)
+
+-- 
+1.7.5.4
+
