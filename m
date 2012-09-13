@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab2IMSZD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 14:25:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42874 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab2IMSZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 14:25:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,417,1344236400"; 
-   d="scan'208";a="192447935"
-From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-To: Axel Lin <axel.lin@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error
- handling
-Thread-Topic: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error
- handling
-Thread-Index: AQHNkVCuNGdjxbdkZEi/yzCYW1fkNZeIl0/w
-Date: Thu, 13 Sep 2012 18:24:58 +0000
-Message-ID: <4FA419E87744DF4DAECD5BCE1214B7A919D52336@ORSMSX108.amr.corp.intel.com>
-References: <1347500288.7434.1.camel@phoenix>
- <1347500387.7434.3.camel@phoenix>
-In-Reply-To: <1347500387.7434.3.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1752628Ab2IMScN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 14:32:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48702 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab2IMScK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 14:32:10 -0400
+Message-ID: <505226A5.1030809@suse.cz>
+Date: Thu, 13 Sep 2012 20:32:05 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: qemu-kvm loops after kernel udpate
+References: <504F7ED8.1030702@suse.cz> <20120911190303.GA3626@amt.cnet> <504F93F1.2060005@suse.cz> <50504299.2050205@redhat.com> <50504439.3050700@suse.cz> <5050453B.6040702@redhat.com> <5050D048.4010704@suse.cz> <5051AE8B.7090904@redhat.com>
+In-Reply-To: <5051AE8B.7090904@redhat.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/mixed;
+ boundary="------------010206010908050507080000"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8DIPA6U006296
 
-Agreed. It works.
+This is a multi-part message in MIME format.
+--------------010206010908050507080000
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Thanks,
-Srinivas
+On 09/13/2012 11:59 AM, Avi Kivity wrote:
+> On 09/12/2012 09:11 PM, Jiri Slaby wrote:
+>> On 09/12/2012 10:18 AM, Avi Kivity wrote:
+>>> On 09/12/2012 11:13 AM, Jiri Slaby wrote:
+>>>>
+>>>>>  Please provide the output of vmxcap
+>>>>> (http://goo.gl/c5lUO),
+>>>>
+>>>>   Unrestricted guest                       no
+>>>
+>>> The big real mode fixes.
+>>>
+>>>
+>>>>
+>>>>> and a snapshot of kvm_stat while the guest is hung.
+>>>>
+>>>> kvm statistics
+>>>>
+>>>>  exits                                      6778198  615942
+>>>>  host_state_reload                             1988     187
+>>>>  irq_exits                                     1523     138
+>>>>  mmu_cache_miss                                   4       0
+>>>>  fpu_reload                                       1       0
+>>>
+>>> Please run this as root so we get the tracepoint based output; and press
+>>> 'x' when it's running so we get more detailed output.
+>>
+>> kvm statistics
+>>
+>>  kvm_exit                                  13798699  330708
+>>  kvm_entry                                 13799110  330708
+>>  kvm_page_fault                            13793650  330604
+>>  kvm_exit(EXCEPTION_NMI)                    6188458  330604
+>>  kvm_exit(EXTERNAL_INTERRUPT)                  2169     105
+>>  kvm_exit(TPR_BELOW_THRESHOLD)                   82       0
+>>  kvm_exit(IO_INSTRUCTION)                         6       0
+> 
+> Strange, it's unable to fault in the very first page.
+> 
+> Please provide a trace as per http://www.linux-kvm.org/page/Tracing (but
+> append -e kvmmmu to the command line).
 
------Original Message-----
-From: Axel Lin [mailto:axel.lin@gmail.com] 
-Sent: Wednesday, September 12, 2012 6:40 PM
-To: Jiri Kosina
-Cc: Pandruvada, Srinivas; Jonathan Cameron; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error handling
+Attached. Does it make sense? It wrote things like:
+  failed to read event print fmt for kvm_mmu_unsync_page
+to the stderr.
 
-Fix below issues in sensor_hub_probe error handling:
-1. In the case of goto err_close, hid_hw_stop(hdev) is called twice. Fix it.
-2. If fails to allocate MFD device name, we also need to free all
-   successfully allocated names in previous iterations.
+thanks,
+-- 
+js
+suse labs
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/hid/hid-sensor-hub.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+--------------010206010908050507080000
+Content-Type: text/plain; charset=UTF-8;
+ name="report"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="report"
 
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c index 50bc8c7..8bd7620 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -584,7 +584,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 				hid_err(hdev,
- 					"Failed MFD device name\n");
- 					ret = -ENOMEM;
--					goto err_free_cells;
-+					goto err_free_names;
- 			}
- 			sd->hid_sensor_hub_client_devs[
- 				sd->hid_sensor_client_cnt].name = name; @@ -608,10 +608,8 @@ static int sensor_hub_probe(struct hid_device *hdev,
- err_free_names:
- 	for (i = 0; i < sd->hid_sensor_client_cnt ; ++i)
- 		kfree(sd->hid_sensor_hub_client_devs[i].name);
--err_free_cells:
- 	kfree(sd->hid_sensor_hub_client_devs);
- err_close:
--	hid_hw_stop(hdev);
- 	hid_hw_close(hdev);
- err_stop_hw:
- 	hid_hw_stop(hdev);
---
-1.7.9.5
+version = 6
+CPU 0 is empty
+cpus=2
+        qemu-kvm-6170  [001]   457.811896: kvm_mmu_get_page:     [FAILED TO PARSE] gfn=0 role=122882 root_count=0 unsync=0 created=1
+        qemu-kvm-6170  [001]   457.811899: kvm_mmu_get_page:     [FAILED TO PARSE] gfn=262144 role=122882 root_count=0 unsync=0 created=1
+        qemu-kvm-6170  [001]   457.811900: kvm_mmu_get_page:     [FAILED TO PARSE] gfn=524288 role=122882 root_count=0 unsync=0 created=1
+        qemu-kvm-6170  [001]   457.811902: kvm_mmu_get_page:     [FAILED TO PARSE] gfn=786432 role=122882 root_count=0 unsync=0 created=1
+        qemu-kvm-6171  [001]   462.416705: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=786432 role=122882 root_count=1 unsync=0
+        qemu-kvm-6171  [001]   462.416712: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=524288 role=122882 root_count=1 unsync=0
+        qemu-kvm-6171  [001]   462.416715: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=262144 role=122882 root_count=1 unsync=0
+        qemu-kvm-6171  [001]   462.416717: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=0 role=122882 root_count=1 unsync=0
+        qemu-kvm-6171  [001]   462.485197: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=0 role=253954 root_count=0 unsync=0
+        qemu-kvm-6171  [001]   462.485202: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=262144 role=253954 root_count=0 unsync=0
+        qemu-kvm-6171  [001]   462.485205: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=524288 role=253954 root_count=0 unsync=0
+        qemu-kvm-6171  [001]   462.485209: kvm_mmu_prepare_zap_page: [FAILED TO PARSE] gfn=786432 role=253954 root_count=0 unsync=0
 
-
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--------------010206010908050507080000--
