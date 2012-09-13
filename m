@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab2IMPmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:42:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50161 "EHLO
+	id S1758315Ab2IMPmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:42:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48693 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab2IMPmf (ORCPT
+	with ESMTP id S1758294Ab2IMPmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:42:35 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 10/10] arm: mvebu: select the pinctrl drivers for Armada 370 and Armada XP platforms
-Date: Thu, 13 Sep 2012 17:41:52 +0200
-Message-Id: <1347550912-18021-11-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 13 Sep 2012 11:42:47 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Pawel Osciak'" <pawel@osciak.com>,
+        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
+        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>
+Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+Date: Thu, 13 Sep 2012 17:46:32 +0200
+Message-ID: <2107949.TNqhOsq2WF@harkonnen>
+User-Agent: KMail/4.8.5 (Linux/3.5.3-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com> <1347544368-30583-3-git-send-email-federico.vaga@gmail.com> <002e01cd91b9$2110d160$63327420$%szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> On Thursday, September 13, 2012 3:53 PM Federico Vaga wrote:
+> > Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+> 
+> A few words explaining why this memory handling module is required or
+> beneficial will definitely improve the commit :)
 
-This patch actually enables pinctrl drivers for Armada 370 and XP.
+ok, I will write some lines
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
----
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Lior Amsalem <alior@marvell.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/mach-mvebu/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+> > +static void *vb2_dma_streaming_cookie(void *buf_priv)
+> > +{
+> > +	struct vb2_streaming_buf *buf = buf_priv;
+> > +
+> > +	return (void *)buf->dma_handle;
+> > +}
+> 
+> Please change this function to:
+> 
+> static void *vb2_dma_streaming_cookie(void *buf_priv)
+> {
+> 	struct vb2_streaming_buf *buf = buf_priv;
+> 	return &buf->dma_handle;
+> }
+> 
+> and add a following static inline to
+> include/media/videobuf2-dma-streaming.h:
+> 
+> static inline dma_addr_t
+> vb2_dma_streaming_plane_paddr(struct vb2_buffer *vb, unsigned int
+> plane_no) {
+>         dma_addr_t *dma_addr = vb2_plane_cookie(vb, plane_no);
+>         return *dma_addr;
+> }
+> 
+> Do not use 'cookie' callback directly in the driver, the driver should
+> use the above proxy.
+> 
+> The &buf->dma_handle workaround is required for some possible
+> configurations with 64bit dma addresses, see commit 472af2b05bdefc.
 
-diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
-index 5540a8b..a601a0b 100644
---- a/arch/arm/mach-mvebu/Kconfig
-+++ b/arch/arm/mach-mvebu/Kconfig
-@@ -10,6 +10,7 @@ config MACH_ARMADA_370_XP
- config MACH_ARMADA_370
- 	bool "Marvell Armada 370 boards"
- 	select MACH_ARMADA_370_XP
-+	select PINCTRL_ARMADA_370
- 	help
- 	  Say 'Y' here if you want your kernel to support boards based
- 	  on the Marvell Armada 370 SoC with device tree.
-@@ -17,6 +18,7 @@ config MACH_ARMADA_370
- config MACH_ARMADA_XP
- 	bool "Marvell Armada XP boards"
- 	select MACH_ARMADA_370_XP
-+	select PINCTRL_ARMADA_XP
- 	help
- 	  Say 'Y' here if you want your kernel to support boards based
- 	  on the Marvell Armada XP SoC with device tree.
+ACK.
+
 -- 
-1.7.10.4
-
+Federico Vaga
