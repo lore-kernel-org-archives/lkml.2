@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2IMCfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:35:19 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50012 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2IMCfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:35:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA0381@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120912232816.GA1655@kroah.com>
-	<20120912232450.500619493@linuxfoundation.org>
-	<20120912232454.947953753@linuxfoundation.org>
-	<CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA908FA0381@SACEXCMBX04-PRD.hq.netapp.com>
-Date: Wed, 12 Sep 2012 22:35:15 -0400
-Message-ID: <CA+5PVA7OF-JeVb3mB7XxMZVRy=SQHzqV8ppvER2uJjhydYC03w@mail.gmail.com>
-Subject: Re: [ 042/108] NFS: Alias the nfs module to nfs4
-From: Josh Boyer <jwboyer@gmail.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+	id S1754723Ab2IMCkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:40:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373Ab2IMCj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 22:39:59 -0400
+Date: Wed, 12 Sep 2012 22:39:48 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Joe Perches <joe@perches.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+        Jim Cromie <jim.cromie@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] dev_<level> and dynamic_debug cleanups
+Message-ID: <20120913023948.GC3214@redhat.com>
+References: <cover.1345978012.git.joe@perches.com>
+ <CAJfuBxyQc-XeNHxw0_XDs0JuCrNArNzcgsmrLya4ncDvSojZxQ@mail.gmail.com>
+ <CAJfuBxyToA9-=c3H88GGba3GFX64kdbP4OCEC0f4trnBnjpU-w@mail.gmail.com>
+ <20120906161359.GC23641@kroah.com>
+ <20120906175313.GC9786@redhat.com>
+ <1347498810.2749.0.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347498810.2749.0.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 9:24 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
-> On Wed, 2012-09-12 at 21:08 -0400, Josh Boyer wrote:
->> On Wed, Sep 12, 2012 at 7:28 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > From: Greg KH <gregkh@linuxfoundation.org>
->> >
->> > 3.5-stable review patch.  If anyone has any objections, please let me know.
->> >
->> > ------------------
->> >
->> > commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
->> >
->> > This allows distros to remove the line from their modprobe
->> > configuration.
->> >
->> > Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
->> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->> > [bwh: Backported to 3.2: adjust context]
->> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>
->> Could someone elaborate why this is acceptable now, while it wasn't
->> during the timeframe I sent an identical patch months ago?
->>
->> http://lkml.indiana.edu/hypermail/linux/kernel/1204.3/02064.html
->>
->> We had some trouble in Fedora 17 because of this and would up with
->> patches to nfs-utils because the modalias was NAKed.  If we're bringing
->> it into stable (and upstream) at this point, it would be good to know
->> what changed so I can go and undo what we did because I was told no.
->>
->> Please don't get me wrong, I'm all for simplicity.  I'm just perhaps
->> so simple that the brief changelog confuses me because it doesn't
->> actually describe why the original solution wasn't followed up on.
->
-> Linux-3.6 converts NFSv2/v3/v4 into modules, and so modprobe.conf
-> entries of the form
->
->   alias nfs4 nfs
->
-> will now fail to ensure that 'mount -t nfs4 ...' works. In order to
+On Wed, Sep 12, 2012 at 06:13:30PM -0700, Joe Perches wrote:
+> On Thu, 2012-09-06 at 13:53 -0400, Jason Baron wrote:
+> > On Thu, Sep 06, 2012 at 09:13:59AM -0700, Greg Kroah-Hartman wrote:
+> > > Jason, any ACK on these, or any of the other random dynamic debug
+> > > patches floating around?  What am I supposed to be applying here?
+> []
+> > I just posted some follow up comments to Joe, so let's see where that
+> > discussion goes.
+> 
+> Jason, I think you need to ack these original 5 patches.
+> 
 
-Ah, ok.  That makes sense.
+Hi,
 
-> facilitate the task for the distros when dealing with kernels >= 3.5.x,
-> we've added the automatic module alias so that they can remove the
-> hard-coded aliases in modprobe.conf while remaining backward-compatible.
+Yes, they are certainly an improvement. Please add to the series:
 
-This is queued for 3.5.x, 3.4.x, 3.2.x, and 3.0.x.  That's probably OK,
-but it's a slightly broader scope that what you mentioned above.
+Acked-by: Jason Baron <jbaron@redhat.com>
 
-At any rate, I'm glad to see this go in.  It will make things easier
-going forward.  Thanks for the reply.
+Thanks!
 
-josh
+-Jason
