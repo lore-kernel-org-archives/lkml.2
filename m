@@ -1,108 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab2IMPw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:52:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22342 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758397Ab2IMPwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:52:55 -0400
-Message-ID: <50520156.4010508@redhat.com>
-Date: Thu, 13 Sep 2012 11:52:54 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1758430Ab2IMPx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:53:57 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38913 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758343Ab2IMPxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 11:53:55 -0400
+X-IronPort-AV: E=Sophos;i="4.80,417,1344211200"; 
+   d="scan'208";a="14526131"
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Jim Schutt <jaschut@sandia.gov>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mm: have order > 0 compaction start near a pageblock
- with free pages
-References: <1344962492-1914-1-git-send-email-mgorman@suse.de> <1344962492-1914-5-git-send-email-mgorman@suse.de>
-In-Reply-To: <1344962492-1914-5-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <20562.397.264907.380798@mariner.uk.xensource.com>
+Date: Thu, 13 Sep 2012 16:53:49 +0100
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH 09/10] xen/swiotlb: Fix compile warnings when
+	using plain integer instead of NULL pointer.
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <m2n.s.1TBAAE-152299@chiark.greenend.org.uk>
+References: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com>
+	<m2n.s.1TBAAE-152299@chiark.greenend.org.uk>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2012 12:41 PM, Mel Gorman wrote:
-> commit [7db8889a: mm: have order > 0 compaction start off where it left]
-> introduced a caching mechanism to reduce the amount work the free page
-> scanner does in compaction. However, it has a problem. Consider two process
-> simultaneously scanning free pages
->
-> 				    			C
-> Process A		M     S     			F
-> 		|---------------------------------------|
-> Process B		M 	FS
->
-> C is zone->compact_cached_free_pfn
-> S is cc->start_pfree_pfn
-> M is cc->migrate_pfn
-> F is cc->free_pfn
+Konrad Rzeszutek Wilk writes ("[Xen-devel] [PATCH 09/10] xen/swiotlb: Fix compile warnings when using plain integer instead of NULL pointer."):
+> arch/x86/xen/pci-swiotlb-xen.c:96:1: warning: Using plain integer as NULL pointer
+> arch/x86/xen/pci-swiotlb-xen.c:96:1: warning: Using plain integer as NULL pointer
 
-> There is not an obvious way around this problem without introducing new
-> locking and state so this patch takes a different approach.
+This warning is simply wrong for this code:
 
-... actually, unless I am mistaken there may be a simple
-approach to keep my "skip ahead" logic but make it proof
-against the above scenario.
+>  IOMMU_INIT_FINISH(pci_xen_swiotlb_detect,
+> -		  0,
+> +		  NULL,
 
-> First, it gets rid of the skip logic because it's not clear that it matters
-> if two free scanners happen to be in the same block
+There is (according to the C language specifications) nothing wrong
+with writing 0 for a null pointer.
 
-It is not so much about being in the same block, as it is
-about multiple invocations starting at the same block over
-and over again.
+Nor does CODING_STYLE say that it is forbidden to just write 0.
 
-> but with racing updates
-> it's too easy for it to skip over blocks it should not.
-
-If one thread stops compaction free page scanning in one
-block, the next invocation will start by scanning that
-block again, until it is exhausted.
-
-We just need to make the code proof against the race you
-described.
-
-> @@ -475,17 +489,6 @@ static void isolate_freepages(struct zone *zone,
->   					pfn -= pageblock_nr_pages) {
->   		unsigned long isolated;
->
-> -		/*
-> -		 * Skip ahead if another thread is compacting in the area
-> -		 * simultaneously. If we wrapped around, we can only skip
-> -		 * ahead if zone->compact_cached_free_pfn also wrapped to
-> -		 * above our starting point.
-> -		 */
-> -		if (cc->order > 0 && (!cc->wrapped ||
-> -				      zone->compact_cached_free_pfn >
-> -				      cc->start_free_pfn))
-> -			pfn = min(pfn, zone->compact_cached_free_pfn);
-> -
->   		if (!pfn_valid(pfn))
->   			continue;
-
-I think the skipping logic should look something like this:
-
-static bool compaction_may_skip(struct zone *zone,
-                         struct compaction_control *cc)
-{
-	/* If we have not wrapped, we can only skip downwards. */
-	if (!cc->wrapped && zone->compact_cached_free_pfn < cc->start_free_pfn)
-		return true;
-
-	/* If we have wrapped, we can skip ahead to our start point. */
-	if (cc->wrapped && zone->compact_cached_free_pfn > cc->start_free_pfn)
-		return true;
-
-	return false;
-}
-
-		if (cc->order > 0 && compaction_may_skip(zone, cc))
-			pfn = min(pfn, zone->compact_cached_free_pfn);
-
-
-I believe that would close the hole you described, while
-not re-introducing the quadratic "start at the same block
-every invocation, until we wrap" behaviour.
+Ian.
