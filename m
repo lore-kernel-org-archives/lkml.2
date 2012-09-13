@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab2IMSYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 14:24:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20731 "EHLO mga14.intel.com"
+	id S1758786Ab2IMSZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 14:25:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42874 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758744Ab2IMSYE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 14:24:04 -0400
+	id S1750828Ab2IMSZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 14:25:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,417,1344236400"; 
-   d="scan'208";a="192447613"
+   d="scan'208";a="192447935"
 From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-To: "axel.lin@gmail.com" <axel.lin@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+To: Axel Lin <axel.lin@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 CC: Jonathan Cameron <jic23@kernel.org>,
         "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] HID: hid-sensor-hub: Clear HID_CLAIMED_INPUT bit
- earlier
-Thread-Topic: [PATCH 1/2] HID: hid-sensor-hub: Clear HID_CLAIMED_INPUT bit
- earlier
-Thread-Index: AQHNkVB5VVifJochvk+aZZ4cTZ4xs5eIuRmA///dgBA=
-Date: Thu, 13 Sep 2012 18:24:00 +0000
-Message-ID: <4FA419E87744DF4DAECD5BCE1214B7A919D52325@ORSMSX108.amr.corp.intel.com>
+Subject: RE: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error
+ handling
+Thread-Topic: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error
+ handling
+Thread-Index: AQHNkVCuNGdjxbdkZEi/yzCYW1fkNZeIl0/w
+Date: Thu, 13 Sep 2012 18:24:58 +0000
+Message-ID: <4FA419E87744DF4DAECD5BCE1214B7A919D52336@ORSMSX108.amr.corp.intel.com>
 References: <1347500288.7434.1.camel@phoenix>
- <CAF+7xW=1wJjDHeRSqBHNQuyOkuDrn0J1Eypg9BMAxA=Np5SwLg@mail.gmail.com>
-In-Reply-To: <CAF+7xW=1wJjDHeRSqBHNQuyOkuDrn0J1Eypg9BMAxA=Np5SwLg@mail.gmail.com>
+ <1347500387.7434.3.camel@phoenix>
+In-Reply-To: <1347500387.7434.3.camel@phoenix>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8DIPA6U006296
 
-Hi Axel,
+Agreed. It works.
 
-We don't need this anymore as when connect_mask is 0, the hid_connect will not be called.
-So we don't need hdev->claimed = HID_CLAIMED_INPUT anymore.
-
-Thanks for the review.
-
--Srinivas
+Thanks,
+Srinivas
 
 -----Original Message-----
 From: Axel Lin [mailto:axel.lin@gmail.com] 
-Sent: Thursday, September 13, 2012 6:25 AM
+Sent: Wednesday, September 12, 2012 6:40 PM
 To: Jiri Kosina
 Cc: Pandruvada, Srinivas; Jonathan Cameron; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: hid-sensor-hub: Clear HID_CLAIMED_INPUT bit earlier
+Subject: [PATCH 2/2] HID: hid-sensor-hub: Fix sensor_hub_probe error handling
 
-2012/9/13 Axel Lin <axel.lin@gmail.com>:
-> Clear HID_CLAIMED_INPUT bit of hdev->claimed, this prevents calling
-> hidinput_disconnect() in hid_disconnect(), which is called by hid_hw_stop().
->
-> We need to clear HID_CLAIMED_INPUT bit earlier rather than in
-> sensor_hub_remove() because we also call hid_hw_stop() in 
-> sensor_hub_probe error handling.
->
-> Also adds comments for why we set hdev->claimed = HID_CLAIMED_INPUT.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Hi srinivas,
-> I don't have this hardware, I'd appreciate if you can test these patches.
-> Axel
->
->  drivers/hid/hid-sensor-hub.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/hid/hid-sensor-hub.c 
-> b/drivers/hid/hid-sensor-hub.c index 4ac759c..50bc8c7 100644
-> --- a/drivers/hid/hid-sensor-hub.c
-> +++ b/drivers/hid/hid-sensor-hub.c
-> @@ -539,8 +539,11 @@ static int sensor_hub_probe(struct hid_device *hdev,
->         }
->         INIT_LIST_HEAD(&hdev->inputs);
->
-> +       /* We don't use hidinput but hid_hw_start() fails if nothing is
-> +        * claimed. So spoof claimed input. */
->         hdev->claimed = HID_CLAIMED_INPUT;
->         ret = hid_hw_start(hdev, 0);
+Fix below issues in sensor_hub_probe error handling:
+1. In the case of goto err_close, hid_hw_stop(hdev) is called twice. Fix it.
+2. If fails to allocate MFD device name, we also need to free all
+   successfully allocated names in previous iterations.
 
-I check the implementation of hid_hw_start again, it looks hid_hw_start allows connect_mask to be 0.
-So we don't need setting  "hdev->claimed = HID_CLAIMED_INPUT;" here.
-Comments?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hid/hid-sensor-hub.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Axel
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c index 50bc8c7..8bd7620 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -584,7 +584,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ 				hid_err(hdev,
+ 					"Failed MFD device name\n");
+ 					ret = -ENOMEM;
+-					goto err_free_cells;
++					goto err_free_names;
+ 			}
+ 			sd->hid_sensor_hub_client_devs[
+ 				sd->hid_sensor_client_cnt].name = name; @@ -608,10 +608,8 @@ static int sensor_hub_probe(struct hid_device *hdev,
+ err_free_names:
+ 	for (i = 0; i < sd->hid_sensor_client_cnt ; ++i)
+ 		kfree(sd->hid_sensor_hub_client_devs[i].name);
+-err_free_cells:
+ 	kfree(sd->hid_sensor_hub_client_devs);
+ err_close:
+-	hid_hw_stop(hdev);
+ 	hid_hw_close(hdev);
+ err_stop_hw:
+ 	hid_hw_stop(hdev);
+--
+1.7.9.5
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
