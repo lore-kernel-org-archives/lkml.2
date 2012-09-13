@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab2IMK02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:26:28 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53126 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2IMK00 (ORCPT
+	id S1757170Ab2IMK3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:29:33 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:37374 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751708Ab2IMK3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:26:26 -0400
-Date: Thu, 13 Sep 2012 11:26:16 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
-Message-ID: <20120913102616.GA2470@linaro.org>
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
- <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <503BFCD8.5090804@gmail.com>
- <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Sep 2012 06:29:31 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1//FQ0RvB3/lcfDSCh+RcoAXRtNCTnKP8AG009OAO
+	Sv4t5/bfsCQfp+
+Message-ID: <1347532167.6821.75.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: nohz_idle_balance
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, mingo@redhat.com
+Date: Thu, 13 Sep 2012 12:29:27 +0200
+In-Reply-To: <1347524381.15764.100.camel@twins>
+References: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
+	 <1347518991.6821.45.camel@marge.simpson.net>
+	 <1347524381.15764.100.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 07:14:58PM +0100, Stefano Stabellini wrote:
-> On Wed, 12 Sep 2012, Stefano Stabellini wrote:
-> > On Tue, 28 Aug 2012, Rob Herring wrote:
-> > > You should look at ePAPR 1.1 which defines hypervisor related bindings.
-> > > While it is a PPC doc, we should reuse or extend what makes sense.
+On Thu, 2012-09-13 at 10:19 +0200, Peter Zijlstra wrote: 
+> On Thu, 2012-09-13 at 08:49 +0200, Mike Galbraith wrote:
+> > On Thu, 2012-09-13 at 06:11 +0200, Vincent Guittot wrote: 
+> > > On tickless system, one CPU runs load balance for all idle CPUs.
+> > > The cpu_load of this CPU is updated before starting the load balance
+> > > of each other idle CPUs. We should instead update the cpu_load of the balance_cpu.
 > > > 
-> > > See section 7.5:
+> > > Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> > > ---
+> > >  kernel/sched/fair.c |   11 ++++++-----
+> > >  1 file changed, 6 insertions(+), 5 deletions(-)
 > > > 
-> > > https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
+> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > > index 1ca4fe4..9ae3a5b 100644
+> > > --- a/kernel/sched/fair.c
+> > > +++ b/kernel/sched/fair.c
+> > > @@ -4794,14 +4794,15 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+> > >  		if (need_resched())
+> > >  			break;
+> > >  
+> > > -		raw_spin_lock_irq(&this_rq->lock);
+> > > -		update_rq_clock(this_rq);
+> > > -		update_idle_cpu_load(this_rq);
+> > > -		raw_spin_unlock_irq(&this_rq->lock);
+> > > +		rq = cpu_rq(balance_cpu);
+> > > +
+> > > +		raw_spin_lock_irq(&rq->lock);
+> > > +		update_rq_clock(rq);
+> > > +		update_idle_cpu_load(rq);
+> > > +		raw_spin_unlock_irq(&rq->lock);
+> > >  
+> > >  		rebalance_domains(balance_cpu, CPU_IDLE);
+> > >  
+> > > -		rq = cpu_rq(balance_cpu);
+> > >  		if (time_after(this_rq->next_balance, rq->next_balance))
+> > >  			this_rq->next_balance = rq->next_balance;
+> > >  	}
 > > 
-> > Thanks for the link, I wasn't aware of ePAPR.
-> > 
-> > The hypervisor node defined by ePAPR is not very different from what I
-> > am proposing. Should I try to be compatible with the hypervisor
-> > specification above (as in compatible = "epapr,hypervisor-1.1")?
-> > Or should I just use it as a reference for my own specification?
-> > 
-> > Personally I would rather avoid full compatibility with ePAPR.
+> > Ew, banging locks and updating clocks to what good end?
 > 
-> In particular reading section 7.5, these are the required properties of
-> the ePAPR hypervisor node:
-> 
-> - compatible = "epapr,hypervisor-1.1"
-> compared to what I am proposing, it is laking information about what
-> hypervisor we are talking about (xen, kvm, vmware, etc) and the version
-> of the ABI (xen-4.2).
-> 
-> - hcall-instructions
-> potentially interesting, but given that for Xen we are quite happy with
-> HVC, we are not going to add any secondary hypercall mechanisms,
-> therefore at the moment it would just result in a BUG if the specified
-> hcall instruction is != HVC. Besides if somebody else wanted to
-> implemented the Xen hypercall interface in a different way they could
-> just reimplement the hypercall wrappers, that would be easier than
-> trying to do it with this property.
+> Well, updating the load statistics on the cpu you're going to balance
+> seems like a good end to me.. ;-) No point updating the local statistics
+> N times and leaving the ones you're going to balance stale for god knows
+> how long.
 
-Some thoughts on this:
+Sure, the goal is fine, but I wonder about the price vs payoff.  I was
+thinking perhaps the redundant updates should go away instead, unless
+stats are shown to be causing real world pain.
 
-We decided that embedding machine instructions into the DT is a fairly
-awful idea when discussing how to describe low-level debug UARTs in the
-DT.  I don't think it's a lot better in this case (never mind issues
-like ARM versus Thumb, endianness etc.)
+-Mike
 
-If we are going to attempt to describe the call interface, we should
-do it symbolically, allowing the hypervisor interface code in the kernel
-to choose (or, if necessary, generate) the right call wrappers.
-
-We will have this issue for descrbing power firmware interfaces for
-example: we already know that this functionality might require an SMC
-or HVC instruction to call it, depending on the platform.
-
-A hypervisor with only one call ABI could leave this to be implicit,
-providing there is a version number property of similar to allow future
-changes to be accommodated.
-
-
-Cheers
----Dave
