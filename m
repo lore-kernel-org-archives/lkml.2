@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab2IMBlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:41:16 -0400
-Received: from server505h.appriver.com ([98.129.35.13]:3765 "EHLO
-	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751764Ab2IMBlP convert rfc822-to-8bit (ORCPT
+	id S1754898Ab2IMBqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:46:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62212 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab2IMBqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:41:15 -0400
-X-Note-AR-ScanTimeLocal: 9/12/2012 8:41:13 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-ALLOW: @coraid.com ALLOWED
-X-Virus-Scan: V-
-X-Note: Spam Tests Failed: 
-X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
-X-Note-Sending-IP: 98.129.35.1
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G299 G300 G301 G302 G306 G307 G318 G409 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: ALLOWEDSENDER
-X-Note: Headers Injected
-From: Ed Cashin <ecashin@coraid.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 Sep 2012 20:41:09 -0500
-Subject: Re: [PATCH 1/9] drivers/block/aoe/aoecmd.c: Remove useless kfree
-Thread-Topic: [PATCH 1/9] drivers/block/aoe/aoecmd.c: Remove useless kfree
-Thread-Index: Ac2RUNsf9t3DVDCITJmhGZuh8M9LEQ==
-Message-ID: <2A87C8FF-BD7F-46EA-8C08-29A9AB176DCD@coraid.com>
-References: <1347462407-13499-1-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1347462407-13499-1-git-send-email-peter.senna@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 12 Sep 2012 21:46:14 -0400
+From: Bruce Humphrey <brucehum@gmail.com>
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org
+Cc: hsweeten@visionengravers.com, standby24x7@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Bruce Humphrey <brucehum@gmail.com>
+Subject: [PATCH 1/2] Staging: Comedi: dyna_pci10xx: Replace printk with dev_info
+Date: Thu, 13 Sep 2012 03:46:00 +0200
+Message-Id: <1347500760-4394-1-git-send-email-brucehum@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a patch in the mm tree that already makes this change, thanks.
+Replace printk(KERN_XXX with dev_info, dev_warn, dev_dbg as appropiate in dyna_pci10xx
 
-Sent from my iPhone
+Signed-off-by: Bruce Humphrey Ventura <brucehum@gmail.com>
+---
+ drivers/staging/comedi/drivers/dyna_pci10xx.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-On Sep 12, 2012, at 5:08 AM, "Peter Senna Tschudin" <peter.senna@gmail.com> wrote:
+diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+index 064be9a..bfa62d1 100644
+--- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
++++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+@@ -140,8 +140,7 @@ static int dyna_pci10xx_insn_read_ai(struct comedi_device *dev,
+ 				goto conv_finish;
+ 		}
+ 		data[n] = 0;
+-		printk(KERN_DEBUG "comedi: dyna_pci10xx: "
+-			"timeout reading analog input\n");
++		dev_dbg(dev->class_dev, "timeout reading analog input\n");
+ 		continue;
+ conv_finish:
+ 		/* mask the first 4 bits - EOC bits */
+@@ -262,8 +261,7 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 	int ret;
+ 
+ 	if (alloc_private(dev, sizeof(struct dyna_pci10xx_private)) < 0) {
+-		printk(KERN_ERR "comedi: dyna_pci10xx: "
+-			"failed to allocate memory!\n");
++		dev_err(dev->class_dev, "failed to allocate memory!\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -276,14 +274,14 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 	dev->irq = 0;
+ 
+ 	if (comedi_pci_enable(pcidev, DRV_NAME)) {
+-		printk(KERN_ERR "comedi: dyna_pci10xx: "
+-			"failed to enable PCI device and request regions!");
++		dev_err(dev->class_dev,
++			"failed to enable PCI device and request regions!\n");
+ 		return -EIO;
+ 	}
+ 
+ 	mutex_init(&devpriv->mutex);
+ 
+-	printk(KERN_INFO "comedi: dyna_pci10xx: device found!\n");
++	pr_info("comedi: dyna_pci10xx: device found!\n");
+ 
+ 	dev->iobase = pci_resource_start(pcidev, 2);
+ 	devpriv->BADR3 = pci_resource_start(pcidev, 3);
+@@ -333,7 +331,7 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 	s->state = 0;
+ 	s->insn_bits = dyna_pci10xx_do_insn_bits;
+ 
+-	printk(KERN_INFO "comedi: dyna_pci10xx: %s - device setup completed!\n",
++	dev_info(dev->class_dev, "%s - device setup completed!\n",
+ 		thisboard->name);
+ 
+ 	return 1;
+-- 
+1.7.9.5
 
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> Remove useless kfree() and clean up code related to the removal.
-> 
-> The semantic patch that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> position p1,p2;
-> expression x;
-> @@
-> 
-> if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
-> 
-> @unchanged exists@
-> position r.p1,r.p2;
-> expression e <= r.x,x,e1;
-> iterator I;
-> statement S;
-> @@
-> 
-> if (x@p1 == NULL) { ... when != I(x,...) S
->                        when != e = e1
->                        when != e += e1
->                        when != e -= e1
->                        when != ++e
->                        when != --e
->                        when != e++
->                        when != e--
->                        when != &e
->   kfree@p2(x); ... return ...; }
-> 
-> @ok depends on unchanged exists@
-> position any r.p1;
-> position r.p2;
-> expression x;
-> @@
-> 
-> ... when != true x@p1 == NULL
-> kfree@p2(x);
-> 
-> @depends on !ok && unchanged@
-> position r.p2;
-> expression x;
-> @@
-> 
-> *kfree@p2(x);
-> // </smpl>
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
-> drivers/block/aoe/aoecmd.c |    1 -
-> 1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-> index 5461faa..cbb0521 100644
-> --- a/drivers/block/aoe/aoecmd.c
-> +++ b/drivers/block/aoe/aoecmd.c
-> @@ -1257,7 +1257,6 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
->    }
->    t = kcalloc(1, sizeof *t, GFP_ATOMIC);
->    if (!t) {
-> -        kfree(t);
->        printk(KERN_INFO "aoe: cannot allocate memory to add target\n");
->        return NULL;
->    }
-> 
