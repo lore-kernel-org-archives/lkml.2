@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2IMWnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 18:43:12 -0400
-Received: from smtp12.ono.com ([62.42.230.20]:30019 "EHLO resmaa12.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751074Ab2IMWnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 18:43:10 -0400
-X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Sep 2012 18:43:10 EDT
-Message-ID: <5052603D.90802@ono.com>
-Date: Fri, 14 Sep 2012 00:37:49 +0200
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120909 Thunderbird/15.0.1
+	id S1752917Ab2IMWp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 18:45:56 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:56685 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750847Ab2IMWpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 18:45:54 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z21eIzbb2dI98dI1432Izz1202h1d1ah1d2ahzzz2fh2a8h668h839hd25hf0ah107ah10d2h1288h12a5h12a9h12bdh1315h1155h)
+Message-ID: <5052621B.6020204@am.sony.com>
+Date: Thu, 13 Sep 2012 15:45:47 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Question on /proc/cpuinfo
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 0/2] [ANNOUNCE] 3.0.42-rt64-rc1 stable review
+References: <20120913185234.912247144@goodmis.org>
+In-Reply-To: <20120913185234.912247144@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi...
+On 09/13/12 11:52, Steven Rostedt wrote:
+> 
+> Dear RT Folks,
+> 
+> This is the RT stable review cycle of patch 3.0.42-rt64-rc1.
 
-Probably it is a stupid question, but... I wan to count the number of
-processors, cores and threads on a linux system. I do it by reading /proc/cpuinfo.
+Tested on:
 
-The problem is that the meaning of 'cpu cores' and 'siblings' seems to have changed
-over time. Nowadays, it looks like this:
+  - ARM mpcore
+  - ARM panda
 
-Dual P4 Xeon with HT:
-processor	: 0
-   siblings	: 1
-   cpu cores	: 1
-processor	: 1
-   siblings	: 1
-   cpu cores	: 1
-processor	: 2
-   siblings	: 1
-   cpu cores	: 0
-processor	: 3
-   siblings	: 1
-   cpu cores	: 0
+For configurations:
 
-Single Atom N450
-processor	: 0
-   siblings	: 1
-   cpu cores	: 1
-processor	: 1
-   siblings	: 1
-   cpu cores	: 0
+  - SMP CONFIG_PREEMPT_NONE
+  - UP  CONFIG_PREEMPT_NONE
+  - SMP CONFIG_PREEMPT_RT_FULL
+  - UP  CONFIG_PREEMPT_RT_FULL
 
-So it just sets logical 'fake' processors that have no core but one thread.
-And process would just be count 'processor' lines, add up 'cpu cores' lines
-and also add 'siblings' lines. Values of the latter ones are associated
-with the ligical processor, no the physical one.
+Tests:
 
-Bu I have seen in google that in old docs and mail threads the values were
-associated with physical_id's, so in fact for the atom you would get something
-like
+  - build
+  - boot
+  - magic SYSRQ prints on serial console
 
-processor	: 0
-   siblings	: 2
-   cpu cores	: 1
-processor	: 1
-   siblings	: 2
-   cpu cores	: 1
+As expected, panda SMP CONFIG_PREEMPT_RT_FULL still has the
+lock warning on boot.  (tglx is looking into this.)
 
-because both processors were in the same physical one.
+-Frank
 
-Since when is it safe to read things the modern way (kernel version ?).
-Is there a better procedure to get this info ?
-
--- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
