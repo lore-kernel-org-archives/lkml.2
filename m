@@ -1,200 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab2IMGBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:01:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1236 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755545Ab2IMGBB (ORCPT
+	id S1755776Ab2IMGCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:02:16 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49244 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab2IMGCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:01:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 12 Sep 2012 23:00:09 -0700
-From: Alex Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
-Date: Thu, 13 Sep 2012 15:02:54 +0900
-Message-ID: <3678448.5nUOr4ZZV4@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.1 (Linux/3.5.3-1-ARCH; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <50510791.8080302@wwwdotorg.org>
-References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <1347443867-18868-2-git-send-email-acourbot@nvidia.com> <50510791.8080302@wwwdotorg.org>
+	Thu, 13 Sep 2012 02:02:07 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-ad-505176dbe5c0
+Date: Thu, 13 Sep 2012 15:04:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: Re: linux-next: Tree for Sept 12 (kernel-panic after pressing any
+ key at X login)
+Message-ID: <20120913060412.GB5085@bbox>
+References: <CA+icZUVEQNPGL7_BbLA-urgP6rFvdOh0SUtYESUv6ZJc+w78Nw@mail.gmail.com>
+ <CA+icZUXqzV=YFjHT=5QxUf1_WHwS1-DhuXkhN8QAhn1t9+-PYA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUXqzV=YFjHT=5QxUf1_WHwS1-DhuXkhN8QAhn1t9+-PYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 September 2012 06:07:13 Stephen Warren wrote:
-> On 09/12/2012 03:57 AM, Alexandre Courbot wrote:
-> > Some device drivers (panel backlights especially) need to follow precise
-> > sequences for powering on and off, involving gpios, regulators, PWMs
-> > with a precise powering order and delays to respect between each steps.
-> > These sequences are board-specific, and do not belong to a particular
-> > driver - therefore they have been performed by board-specific hook
-> > functions to far.
-> > 
-> > With the advent of the device tree and of ARM kernels that are not
-> > board-tied, we cannot rely on these board-specific hooks anymore but
-> > need a way to implement these sequences in a portable manner. This patch
-> > introduces a simple interpreter that can execute such power sequences
-> > encoded either as platform data or within the device tree.
-> > 
-> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> > 
-> > diff --git a/Documentation/power/power_seq.txt
-> > b/Documentation/power/power_seq.txt
-> > 
-> > +Sometimes, you may want to browse the list of resources allocated by a
-> > sequence, +for instance to ensure that a resource of a given type is
-> > present. The +power_seq_set_resources() function returns a list head that
-> > can be used with +the power_seq_for_each_resource() macro to browse all
-> > the resources of a set: +
-> > +  struct list_head *power_seq_set_resources(struct power_seq_set *seqs);
+On Thu, Sep 13, 2012 at 07:29:32AM +0200, Sedat Dilek wrote:
+> On Thu, Sep 13, 2012 at 5:18 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Wed, Sep 12, 2012 at 10:46 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >> Hi all,
+> >>
+> >> Changes since 201209011:
+> >>
+> >> The pci tree lost its build failure.
+> >>
+> >> The mfd tree gained a conflict against Linus' tree.
+> >>
+> >> The omap_dss2 tree lost its conflict.
+> >>
+> >> The trivial tree gained a conflict against the mfd tree.
+> >>
+> >> The kvm tree gained a conflict against Linus' tree.
+> >>
+> >> The workqueues tree gained a conflict against the omap_dss2 tree.
+> >>
+> >> The usb tree gained conflicts against the usb.current tree.
+> >>
+> >> The staging tree gained a conflict against the thermal tree and a build
+> >> failure for which I applied a merge fix patch.
+> >>
+> >> The tegra tree gained conflicts against the usb and arm-perf trees.
+> >>
+> >> ----------------------------------------------------------------------------
+> >>
+> >
+> > Hi,
+> >
+> > this weeks linux-next seems to bring new and new issues, yay :-)!
+> >
+> > I have taken a photo, but can't say what can have caused.
+> > The issue is reproducible...
+> > Immediately, after pressing any key (when X-display-manager (lightdm)
+> > and X-greeter are up) my machine panics and is no more usable (cold
+> > rough brutal killer restart).
+> > Note: Using upstart or systemd does not matter.
+> >
+> > Any pointer to an area where to dig into or any feedback in general is welcome!
+> >
+> > Kind Regards,
+> > - Sedat -
 > 
-> I don't think you need to include that prototype here?
+> [ CC Dmitry Torokhov (linux-input maintainer) plus linux-input ML ]
+> 
+> By looking at my screenshot, someone could imagine that there is a
+> problem coming from the input GIT branch(es) merges:
+> 
+> input_to_handler()
+> input_pass_values()
+> input_handle_event()
+> input_event()
+> 
+> Unfortunately, with those 3 revert-patches I see the same kernel-panic.
+> 
+> Dimitry, any idea what can cause this kernel-panic?
 
-Why not? I thought it was customary to include the prototypes in the 
-documentation, and this seems to be the right place for this function.
+Today, I met similar problem in mmotm-2012-09-12-17-36 on my KVM.
+It's hard to reproduce in my mahcine but I confirmed following as
+Hoping it helps you.
 
-> > +  power_seq_for_each_resource(pos, seqs)
-> > +
-> > +Here "pos" will be a pointer to a struct power_seq_resource. This
-> > structure +contains the type of the resource, the information used for
-> > identifying it, and +the resolved resource itself.
-> > 
-> > diff --git a/drivers/power/power_seq/Makefile
-> > b/drivers/power/power_seq/Makefile new file mode 100644
-> > index 0000000..f77a359
-> > --- /dev/null
-> > +++ b/drivers/power/power_seq/Makefile
-> > @@ -0,0 +1 @@
-> > +obj-$(CONFIG_POWER_SEQ)		+= power_seq.o
-> 
-> Don't you need to compile all the power_seq_*.c too?
-> 
-> Oh, I see the following in power_seq.c:
-> > +#include "power_seq_delay.c"
-> > +#include "power_seq_regulator.c"
-> > +#include "power_seq_pwm.c"
-> > +#include "power_seq_gpio.c"
-> 
-> It's probably better just to compile them separately and link them.
-> 
-> > diff --git a/drivers/power/power_seq/power_seq.c
-> > b/drivers/power/power_seq/power_seq.c
-> > 
-> > +struct power_seq_step {
-> > +	/* Copy of the platform data */
-> > +	struct platform_power_seq_step pdata;
-> 
-> I'd reword the comment to "Copy of the step", and name the field "step".
+static unsigned int input_to_handler(struct input_handle *handle,
+                        struct input_value *vals, unsigned int count)
+{
+        ...
+        ...
+        if (handler->events)
+                handler->events(handle, vals, count);
+        else 
+                for (v = vals; v != end; v++) 
+                        handler->event(...); <-- handler->event is *ZERO*.
 
-That would make a step within a step - doesn't pdata make it more explicit 
-what this member is for (containing the platform data for this step)?
+        return count;
+}
 
-> > +static const struct power_seq_res_ops
-> > power_seq_types[POWER_SEQ_NUM_TYPES] = { +	[POWER_SEQ_DELAY] =
-> > POWER_SEQ_DELAY_TYPE,
-> > +	[POWER_SEQ_REGULATOR] = POWER_SEQ_REGULATOR_TYPE,
-> > +	[POWER_SEQ_PWM] = POWER_SEQ_PWM_TYPE,
-> > +	[POWER_SEQ_GPIO] = POWER_SEQ_GPIO_TYPE,
-> > +};
-> 
-> Ah, I see why you're using #include now.
 
-We could also go with something more dynamic and compile these files 
-separately, but that would require some registration mechanism which I don't 
-think is needed for such a simple feature.
+[   34.667212] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[   34.668320] IP: [<          (null)>]           (null)
+[   34.669095] PGD 1fe47c067 PUD 1fe47b067 PMD 0 
+[   34.669808] Oops: 0010 [#1] SMP 
+[   34.670316] Modules linked in: i2c_piix4
+[   34.670618] CPU 6 
+[   34.670618] Pid: 0, comm: swapper/6 Not tainted 3.6.0-rc5-mm1-alloc-enhance+ #60 Bochs Bochs[   34.670618] RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+[   34.670618] RSP: 0018:ffff88021fd83c20  EFLAGS: 00010082    
+[   34.670618] RAX: 0000000000000010 RBX: 0000000000000002 RCX: 000000000000000f
+[   34.670618] RDX: 0000000000000004 RSI: 0000000000000004 RDI: ffff8802145b4c00
+[   34.670618] RBP: ffff88021fd83c68 R08: 0000000000000000 R09: 0000000000000000
+[   34.670618] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880215c21070
+[   34.670618] R13: ffff880215c21068 R14: ffffffff81a8bfe0 R15: ffff8802145b4c00
+[   34.670618] FS:  0000000000000000(0000) GS:ffff88021fd80000(0000) knlGS:0000000000000000
+[   34.670618] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   34.670618] CR2: 0000000000000000 CR3: 00000001fe46f000 CR4: 00000000000006e0
+[   34.670618] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   34.670618] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   34.670618] Process swapper/6 (pid: 0, threadinfo ffff88021611e000, task ffff880216128000)
+[   34.670618] Stack:
+[   34.670618]  ffffffff81480a5d 0000000000000000 ffff880215c21060 0000000000000000
+[   34.670618]  ffff880215c21060 0000000000000002 ffff8802161ca800 ffff8802145b4c00
+[   34.670618]  ffff8802161cadb0 ffff88021fd83cc8 ffffffff81482caf ffffffff81482b28
+[   34.670618] Call Trace:
+[   34.670618]  <IRQ> 
+[   34.670618]  [<ffffffff81480a5d>] ? input_to_handler+0xdd/0xf0
+[   34.670618]  [<ffffffff81482caf>] input_pass_values+0x1cf/0x1e0
+[   34.670618]  [<ffffffff81482b28>] ? input_pass_values+0x48/0x1e0
+[   34.670618]  [<ffffffff8148320e>] input_handle_event+0xce/0x540
+[   34.670618]  [<ffffffff8148380c>] input_event+0x6c/0x80
+[   34.670618]  [<ffffffff8148acf6>] atkbd_interrupt+0x4f6/0x660
+[   34.670618]  [<ffffffff812e6b94>] ? do_raw_spin_lock+0x54/0x120
+[   34.670618]  [<ffffffff8147dd52>] serio_interrupt+0x52/0xa0
+[   34.670618]  [<ffffffff8147ece3>] i8042_interrupt+0x193/0x3b0
+[   34.670618]  [<ffffffff810e4de5>] handle_irq_event_percpu+0x75/0x270
+[   34.670618]  [<ffffffff812e6cfd>] ? do_raw_spin_unlock+0x5d/0xb0
+[   34.670618]  [<ffffffff810e5028>] handle_irq_event+0x48/0x70
+[   34.670618]  [<ffffffff810e79d7>] handle_edge_irq+0x77/0x110
+[   34.670618]  [<ffffffff81016192>] handle_irq+0x22/0x40
+[   34.670618]  [<ffffffff81591c3a>] do_IRQ+0x5a/0xe0
+[   34.670618]  [<ffffffff8158786f>] common_interrupt+0x6f/0x6f
+[   34.670618]  <EOI> 
+[   34.670618]  [<ffffffff810422e6>] ? native_safe_halt+0x6/0x10
+[   34.670618]  [<ffffffff810b027d>] ? trace_hardirqs_on+0xd/0x10
+[   34.670618]  [<ffffffff8101c5d8>] default_idle+0x58/0x270
+[   34.670618]  [<ffffffff8101d669>] cpu_idle+0xe9/0x130
+[   34.670618]  [<ffffffff815734fc>] start_secondary+0x200/0x207
+[   34.670618] Code:  Bad RIP value.
+[   34.670618] RIP  [<          (null)>]           (null)
+[   34.670618]  RSP <ffff88021fd83c20>
+[   34.670618] CR2: 0000000000000000
+[   34.670618] ---[ end trace 11a3b8aa65519925 ]---
+[   34.670618] Kernel panic - not syncing: Fatal exception in interrupt
 
-> 
-> > +MODULE_LICENSE("GPL");
-> 
-> s/GPL/GPL v2/ given the license header.
-> 
-> > diff --git a/drivers/power/power_seq/power_seq_gpio.c
-> > b/drivers/power/power_seq/power_seq_gpio.c
-> > 
-> > +static int power_seq_res_alloc_gpio(struct device *dev,
-> > +				    struct platform_power_seq_step *pstep,
-> > +				    struct power_seq_resource *res)
-> > +{
-> > +	int err;
-> > +
-> > +	err = devm_gpio_request_one(dev, pstep->gpio.gpio,
-> > +				    GPIOF_OUT_INIT_LOW, dev_name(dev));
-> 
-> Hmm. The INIT_LOW part of that might be somewhat presumptive. I would
-> suggest simply requesting the GPIO here, and using
-> gpio_direction_output() in power_seq_step_run_gpio(), thus deferring the
-> decision of what value to set the GPIO to until a real sequence is
-> actually run.
-> 
-> > diff --git a/drivers/power/power_seq/power_seq_pwm.c
-> > b/drivers/power/power_seq/power_seq_pwm.c
-> > 
-> > diff --git a/drivers/power/power_seq/power_seq_regulator.c
-> > b/drivers/power/power_seq/power_seq_regulator.c
-> > 
-> > diff --git a/include/linux/power_seq.h b/include/linux/power_seq.h
-> > 
-> > +#include <net/irda/parameters.h>
-> 
-> That looks out of place.
-
-Totally, thanks. I don't even understand how it landed there in the first 
-place.
-
-> 
-> > +/**
-> > + * struct power_seq_resource - resource used by a power sequence set
-> > + * @pdata:	Pointer to the platform data used to resolve this resource
-> > + * @regulator:	Resolved regulator if of type POWER_SEQ_REGULATOR
-> > + * @pwm:	Resolved PWM if of type POWER_SEQ_PWM
-> > + * @list:	Used to link resources together
-> > + */
-> 
-> I think that kerneldoc is stale.
-> 
-> > +struct power_seq_resource {
-> > +	enum power_seq_res_type type;
-> > +	/* resolved resource and identifier */
-> > +	union {
-> > +		struct {
-> > +			struct regulator *regulator;
-> > +			const char *id;
-> > +		} regulator;
-> > +		struct {
-> > +			struct pwm_device *pwm;
-> > +			const char *id;
-> > +		} pwm;
-> > +		struct {
-> > +			int gpio;
-> > +		} gpio;
-> > +	};
-> > +	struct list_head list;
-> > +};
-> 
-> Aside from those minor issues, this all looks reasonable to me, so,
-> Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
-
-Thanks!
-
-Alex.
-
+-- 
+Kind regards,
+Minchan Kim
