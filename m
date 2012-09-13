@@ -1,109 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2IMISh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:18:37 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55141 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978Ab2IMISa (ORCPT
+	id S1756798Ab2IMITd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:19:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12609 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2IMITT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:18:30 -0400
+	Thu, 13 Sep 2012 04:19:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 13 Sep 2012 01:19:16 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+Date: Thu, 13 Sep 2012 17:21:10 +0900
+Message-ID: <1469388.zjfDz88nxK@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.1 (Linux/3.5.3-1-ARCH; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <20120913075037.GG6180@pengutronix.de>
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <20120913072920.GA11459@avionic-0098.mockup.avionic-design.de> <20120913075037.GG6180@pengutronix.de>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120913070410.GA309@polaris.bitmath.org>
-References: <CA+icZUVEQNPGL7_BbLA-urgP6rFvdOh0SUtYESUv6ZJc+w78Nw@mail.gmail.com>
-	<CA+icZUXqzV=YFjHT=5QxUf1_WHwS1-DhuXkhN8QAhn1t9+-PYA@mail.gmail.com>
-	<20120913060412.GB5085@bbox>
-	<CA+icZUUF=vTwSoNrs-+F08H7LAO0RUwztJ3M1_iyNR28TsrFMw@mail.gmail.com>
-	<20120913064909.GF17105@core.coreip.homeip.net>
-	<20120913070410.GA309@polaris.bitmath.org>
-Date: Thu, 13 Sep 2012 10:18:28 +0200
-Message-ID: <CA+icZUVH7Nm6WDau+dSgf9kQGaE5-06tPEOpukSJPc2z7gjR=A@mail.gmail.com>
-Subject: Re: linux-next: Tree for Sept 12 (kernel-panic after pressing any key
- at X login)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Henrik Rydberg <rydberg@bitmath.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Ping Cheng <pingc@wacom.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 9:04 AM, Henrik Rydberg <rydberg@bitmath.se> wrote:
->> > >> > this weeks linux-next seems to bring new and new issues, yay :-)!
->> > >> >
->> > >> > I have taken a photo, but can't say what can have caused.
->> > >> > The issue is reproducible...
->> > >> > Immediately, after pressing any key (when X-display-manager (lightdm)
->> > >> > and X-greeter are up) my machine panics and is no more usable (cold
->> > >> > rough brutal killer restart).
->> > >> > Note: Using upstart or systemd does not matter.
->> > >> >
->> > >> > Any pointer to an area where to dig into or any feedback in general is welcome!
->> > >> >
->> > >> > Kind Regards,
->> > >> > - Sedat -
->> >
->> > Hey, cool. Thanks for the pointer in the source-code and the call-trace!
->> > I had reverted [1], but anyway input folks should look at this.
->> >
->> > Kind Regards,
->> > - Sedat -
->> >
->> > [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=b276fc1e875a51e4a9dc3322ed008bf4ae481baf
->>
->> Henrik,
->>
->> It looks like your changes are causing the panic.
->
-> Indeed, I have pushed the fix below to next already. Thanks for Sedat,
-> and sorry for not catching this earlier. :-(
->
+On Thursday 13 September 2012 15:50:37 Sascha Hauer wrote:
+> On Thu, Sep 13, 2012 at 09:29:20AM +0200, Thierry Reding wrote:
+> > On Thu, Sep 13, 2012 at 10:03:27AM +0300, Tomi Valkeinen wrote:
+> > > On Thu, 2012-09-13 at 09:00 +0200, Sascha Hauer wrote:
+> > > > On Thu, Sep 13, 2012 at 09:54:09AM +0300, Tomi Valkeinen wrote:
+> > > > > On Thu, 2012-09-13 at 15:36 +0900, Alex Courbot wrote:
+> > > > > > On Thursday 13 September 2012 14:22:57 Tomi Valkeinen wrote:
+> > > > > > > However, I fear these board specific things may be quite a bit
+> > > > > > > anything,
+> > > > > > > so it may well be pwm, gpios and regulators are not enough for
+> > > > > > > them. For
+> > > > > > > example, there could be an FPGA on the board which requires some
+> > > > > > > configuration to accomplish the task at hand. It could be rather
+> > > > > > > difficult to handle it with a generic power sequence.
+> > > > > > 
+> > > > > > Right. Note that this framework is supposed to be extended - I
+> > > > > > would like to at least add regulator voltage setting, and maybe
+> > > > > > even support for clocks and pinmux (but that might be out of
+> > > > > > place).
+> > > > > 
+> > > > > Yes, that's one concern of mine... I already can imagine someone
+> > > > > suggesting adding conditionals to the power sequence data. Perhaps
+> > > > > also
+> > > > > direct memory read/writes so you can twiddle registers directly. And
+> > > > > so
+> > > > > on. Where's the limit what it should contain? Can we soon write full
+> > > > > drivers with the DT data? =)
+> > > > 
+> > > > I have this concern aswell, that's why I'm sceptical about this patch
+> > > > set. But what are the alternatives? Adding power code to the drivers
+> > > > and
+> > > > thus adding board specific code to them is backwards.
+> > > 
+> > > As was pointed out in earlier posts in this thread, these are almost
+> > > always device specific, not board specific.
+> > > 
+> > > Do you have examples of board specific power sequences or such?
+> > 
+> > It is true that most (perhaps all) power sequences can be associated
+> > with a specific device, but if we go and implement drivers for these
+> > kinds of devices we will probably end up with loads of variations of
+> > the same scheme.
+> > 
+> > Lets take display panels as an example. One of the devices that we build
+> > has gone through two generations so far and both are slightly different
+> > in how they control the panel backlight: one has an external backlight
+> > controller, the other has the display controller built into the panel.
+> > However, from the board's perspective the control of the backlight
+> > doesn't change, because both devices get the same inputs (an enable pin
+> > and a PWM) that map to the same pins on the SoC.
+> > 
+> > This may not be a very good example because the timing isn't relevant,
+> > but the basic point is still valid: if we provide a driver for both
+> > panel devices, the code will be exactly the same. So we end up having to
+> > refactor to avoid code duplication and use the same driver for a number
+> > of backlight/panel combinations. Which in itself isn't very bad, but it
+> > also means that we'll probably get to see a large number of "generic"
+> > drivers which aren't very generic after all.
+> > 
+> > Another problem, which also applies to the case of power-sequences, is
+> > that often the panel and backlight are not the same device.
+> 
+> Maybe that is the problem that needs to be addressed? They *are* not the
+> same device, still they are handled in a single platform callback (or
+> now power sequence). Maybe the amount of combinations dastrically go
+> down if we really make them two devices.
+> 
+> Most of our panels have:
+> 
+> - A regulator (or gpio) for turning them on
+> 
+> And the backlights have:
+> 
+> - A regulator (or gpio) for turning them on
+> - A PWM for controlling brightness.
+> 
+> The power sequence for the above is clear: Turn on the panel the panel,
+> wait until it stabilized and afterwards turn on the backlight.
 
-Hi Hendrik,
+Actually the sequence I submitted in this patchset only takes care of the 
+backlight device (the panel - or LCD - should have its own). The regulator 
+controls the power supply, the PWM the intensity, and on top of that it also 
+has an enable GPIO. These 3 resources are exclusively for the LED - the LCD 
+uses other ones. So as of now it seems that the LCD/backlight separation is 
+effective and the resources needed are not so uniform across backlights (not 
+even mentioning the delays).
 
-Wow, so fast :-).
+The LCD's power sequence is even weirder - VDD must take at least 0.5ms for 
+going from 10% to 90% of its power, you must wait 400ms after switching it off 
+before switching it on again, and you should also transmit data for 200ms 
+before switching the backlight's LED on (using its own sequence). That last 
+point is interesting since it somehow makes the LCD and LED dependent on each 
+other - on an unrelated note, this might be something to consider in Laurent's 
+proposal for a panel framework.
 
-Stephen, can you apply this to today's linux-next (next-20120913), please?
+Alex.
 
-Regards,
-- Sedat -
-
-> Henrik
->
-> --
->
-> From ccc6557bfd02efdca4d9dfda6cfdfe5a08d0193b Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Thu, 13 Sep 2012 08:59:40 +0200
-> Subject: [PATCH] Input: Fix oops caused by missing null test
->
-> Found in linux-next on September 12, thanks Sedat.
->
-> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/input/input.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/input/input.c b/drivers/input/input.c
-> index 5b66b2f..2dff71b 100644
-> --- a/drivers/input/input.c
-> +++ b/drivers/input/input.c
-> @@ -114,7 +114,7 @@ static unsigned int input_to_handler(struct input_handle *handle,
->
->         if (handler->events)
->                 handler->events(handle, vals, count);
-> -       else
-> +       else if (handler->event)
->                 for (v = vals; v != end; v++)
->                         handler->event(handle, v->type, v->code, v->value);
->
-> --
-> 1.7.12
->
