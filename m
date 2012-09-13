@@ -1,242 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2IMUOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:14:43 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:43521 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091Ab2IMUOl convert rfc822-to-8bit (ORCPT
+	id S1758179Ab2IMUOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:14:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54375 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758051Ab2IMUOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:14:41 -0400
-Date: Thu, 13 Sep 2012 22:14:38 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/4]: ezusb cleanup, FX2 support, firmware downloading support
-Message-ID: <d0086be6-995c-46af-9618-5c2aee8f0b98@shmail0>
-In-Reply-To: <7120fd46-da21-4203-8293-7dcdb70f02dc@shmail0>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Sep 2012 16:14:48 -0400
+Date: Thu, 13 Sep 2012 22:14:44 +0200
+From: Simon Baatz <gmbnomis@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Simon Baatz <gmbnomis@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 09/31] arm64: Cache maintenance routines
+Message-ID: <20120913201444.GA11692@schnuecks.de>
+References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com>
+ <1347035226-18649-10-git-send-email-catalin.marinas@arm.com>
+ <20120907193542.GA22806@schnuecks.de>
+ <20120912092954.GA21823@arm.com>
+ <20120912215553.GA17393@schnuecks.de>
+ <20120913123850.GB25131@arm.com>
 MIME-Version: 1.0
-X-Originating-IP: [77.190.106.167]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120913123850.GB25131@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the dependency on the usb_serial interface and names 
-some magic constants
+On Thu, Sep 13, 2012 at 01:38:50PM +0100, Catalin Marinas wrote:
+> On Wed, Sep 12, 2012 at 10:55:54PM +0100, Simon Baatz wrote:
+> > On Wed, Sep 12, 2012 at 10:29:54AM +0100, Catalin Marinas wrote:
+> ...
+> 
+> > In case of direct I/O (and probably also in other cases like SG_IO)
+> > the block layer will see pages from get_user_pages() directly, i.e.
+> > also anonymous pages. Many drivers (especially emulated storage
+> > drivers like dm-crypt) use flush_dcache_page() after modifying a
+> > page. Although flush_dcache_page() is not even supposed to handle
+> > anonymous pages, it flushes the kernel mapping of the page because of
+> > this code line and everything is well on aliasing D-caches.
+> 
+> According to the cachetlb.txt document (though not sure architecture
+> ports follow it entirely), flush_dcache_page() deliberately shouldn't
+> follow anonymous pages. But it seems that we do it on ARM (maybe as an
+> alternative to flush_kernel_dcache_page()).
+> 
+> > Back to arm64 (and possibly to arm with non-aliasing D-caches?), this
+> > also means that the saved D-cache flush in the anonymous page case is
+> > not only a slight improvement on clarity, but may avoid a
+> > considerable number of D-cache flushes in some I/O situations.  (If
+> > it is still correct that there are no problems with the I-cache for
+> > this use case.)
+> 
+> The I-cache would be needed if the kernel modifies an executable user
+> page. But I don't see a case for this yet. So with non-aliasing D-cache
+> the flush_kernel_dcache_page() can be a nop.
 
-Signed-off-by: René Bürgel <rene.buergel@sohard.de>
---
-diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/serial/ezusb.c
-index 800e8eb..3048b52d 100644
---- a/drivers/usb/serial/ezusb.c
-+++ b/drivers/usb/serial/ezusb.c
-@@ -9,24 +9,24 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/slab.h>
--#include <linux/tty.h>
- #include <linux/module.h>
- #include <linux/usb.h>
--#include <linux/usb/serial.h>
- 
- /* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
- #define CPUCS_REG    0x7F92
- 
--int ezusb_writememory(struct usb_serial *serial, int address,
-+/* Command for writing to internal memory */
-+#define WRITE_INT_RAM 0xA0
-+
-+int ezusb_writememory(struct usb_device *dev, int address,
- 				unsigned char *data, int length, __u8 request)
- {
- 	int result;
- 	unsigned char *transfer_buffer;
- 
--	if (!serial->dev) {
-+	if (!dev) {
- 		printk(KERN_ERR "ezusb: %s - no physical device present, "
- 		       "failing.\n", __func__);
- 		return -ENODEV;
-@@ -34,25 +34,25 @@ int ezusb_writememory(struct usb_serial *serial, int address,
- 
- 	transfer_buffer = kmemdup(data, length, GFP_KERNEL);
- 	if (!transfer_buffer) {
--		dev_err(&serial->dev->dev, "%s - kmalloc(%d) failed.\n",
-+		dev_err(&dev->dev, "%s - kmalloc(%d) failed.\n",
- 							__func__, length);
- 		return -ENOMEM;
- 	}
--	result = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--		     request, 0x40, address, 0, transfer_buffer, length, 3000);
-+	result = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), request,
-+				 USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+				 address, 0, transfer_buffer, length, 3000);
-+
- 	kfree(transfer_buffer);
- 	return result;
- }
- EXPORT_SYMBOL_GPL(ezusb_writememory);
- 
--int ezusb_set_reset(struct usb_serial *serial, unsigned char reset_bit)
-+int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit)
- {
--	int response;
--
--	response = ezusb_writememory(serial, CPUCS_REG, &reset_bit, 1, 0xa0);
-+	int response = ezusb_writememory(dev, CPUCS_REG, &reset_bit, 1, WRITE_INT_RAM);
- 	if (response < 0)
--		dev_err(&serial->dev->dev, "%s- %d failed\n",
--						__func__, reset_bit);
-+		dev_err(&dev->dev, "%s-%d failed: %d\n",
-+						__func__, reset_bit, response);
- 	return response;
- }
- EXPORT_SYMBOL_GPL(ezusb_set_reset);
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index af0b70e..f0d4f3f 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -1241,12 +1241,12 @@ static int keyspan_fake_startup(struct usb_serial *serial)
- 	dbg("Uploading Keyspan %s firmware.", fw_name);
- 
- 		/* download the firmware image */
--	response = ezusb_set_reset(serial, 1);
-+	response = ezusb_set_reset(serial->dev, 1);
- 
- 	record = (const struct ihex_binrec *)fw->data;
- 
- 	while (record) {
--		response = ezusb_writememory(serial, be32_to_cpu(record->addr),
-+		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
- 					     (unsigned char *)record->data,
- 					     be16_to_cpu(record->len), 0xa0);
- 		if (response < 0) {
-@@ -1260,7 +1260,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
- 	release_firmware(fw);
- 		/* bring device out of reset. Renumeration will occur in a
- 		   moment and the new device will bind to the real driver */
--	response = ezusb_set_reset(serial, 0);
-+	response = ezusb_set_reset(serial->dev, 0);
- 
- 	/* we don't want this device to have a driver assigned to it. */
- 	return 1;
-diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
-index a4ac3cf..1290b6f 100644
---- a/drivers/usb/serial/keyspan_pda.c
-+++ b/drivers/usb/serial/keyspan_pda.c
-@@ -682,7 +682,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
- 	const struct firmware *fw;
- 
- 	/* download the firmware here ... */
--	response = ezusb_set_reset(serial, 1);
-+	response = ezusb_set_reset(serial->dev, 1);
- 
- 	if (0) { ; }
- #ifdef KEYSPAN
-@@ -707,7 +707,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
- 	record = (const struct ihex_binrec *)fw->data;
- 
- 	while (record) {
--		response = ezusb_writememory(serial, be32_to_cpu(record->addr),
-+		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
- 					     (unsigned char *)record->data,
- 					     be16_to_cpu(record->len), 0xa0);
- 		if (response < 0) {
-@@ -722,7 +722,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
- 	release_firmware(fw);
- 	/* bring device out of reset. Renumeration will occur in a moment
- 	   and the new device will bind to the real driver */
--	response = ezusb_set_reset(serial, 0);
-+	response = ezusb_set_reset(serial->dev, 0);
- 
- 	/* we want this device to fail to have a driver assigned to it. */
- 	return 1;
-diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
-index 473635e..fc72591 100644
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -213,13 +213,13 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		goto out;
- 	}
- 	ret = 0;
--	response = ezusb_set_reset (serial, 1);
-+	response = ezusb_set_reset(serial->dev, 1);
- 
- 	record = (const struct ihex_binrec *)loader_fw->data;
- 	while (record) {
--		response = ezusb_writememory (serial, be32_to_cpu(record->addr),
--					      (unsigned char *)record->data,
--					      be16_to_cpu(record->len), 0xa0);
-+		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
-+					     (unsigned char *)record->data,
-+					     be16_to_cpu(record->len), 0xa0);
- 		if (response < 0) {
- 			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
- 				"failed for loader (%d %04X %p %d)\n",
-@@ -230,15 +230,15 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		record = ihex_next_binrec(record);
- 	}
- 
--	response = ezusb_set_reset(serial, 0);
-+	response = ezusb_set_reset(serial->dev, 0);
- 
- 	record = (const struct ihex_binrec *)firmware_fw->data;
- 	while (record && be32_to_cpu(record->addr) < 0x1b40)
- 		record = ihex_next_binrec(record);
- 	while (record) {
--		response = ezusb_writememory (serial, be32_to_cpu(record->addr),
--					      (unsigned char *)record->data,
--					      be16_to_cpu(record->len), 0xa3);
-+		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
-+					     (unsigned char *)record->data,
-+					     be16_to_cpu(record->len), 0xa3);
- 		if (response < 0) {
- 			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
- 				"failed for first firmware step "
-@@ -250,13 +250,13 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		++record;
- 	}
- 
--	response = ezusb_set_reset(serial, 1);
-+	response = ezusb_set_reset(serial->dev, 1);
- 
- 	record = (const struct ihex_binrec *)firmware_fw->data;
- 	while (record && be32_to_cpu(record->addr) < 0x1b40) {
--		response = ezusb_writememory (serial, be32_to_cpu(record->addr),
--					      (unsigned char *)record->data,
--					      be16_to_cpu(record->len), 0xa0);
-+		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
-+					     (unsigned char *)record->data,
-+					     be16_to_cpu(record->len), 0xa0);
- 		if (response < 0) {
- 			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
- 				"failed for second firmware step "
-@@ -268,7 +268,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		++record;
- 	}
- 	ret = 0;
--	response = ezusb_set_reset (serial, 0);
-+	response = ezusb_set_reset(serial->dev, 0);
-  out:
- 	release_firmware(loader_fw);
- 	release_firmware(firmware_fw);
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 86c0b45..a101507 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -301,9 +301,9 @@ extern void usb_serial_port_softint(struct usb_serial_port *port);
- extern int usb_serial_suspend(struct usb_interface *intf, pm_message_t message);
- extern int usb_serial_resume(struct usb_interface *intf);
- 
--extern int ezusb_writememory(struct usb_serial *serial, int address,
-+extern int ezusb_writememory(struct usb_device *dev, int address,
- 			     unsigned char *data, int length, __u8 bRequest);
--extern int ezusb_set_reset(struct usb_serial *serial, unsigned char reset_bit);
-+extern int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit);
- 
- /* USB Serial console functions */
- #ifdef CONFIG_USB_SERIAL_CONSOLE
+Ok, this is true for anon pages. But, if we really need to do the D/I
+flush for user mapped page cache pages in flush_dcache_page() then it
+should also be done by flush_kernel_dcache_page().  In general, both
+flush_dcache_page() and flush_kernel_dcache_page() need to handle the
+case in which the kernel modifies such a page. (This means that in
+effect, both functions should be the same in the arm64 case.)
+
+> > If now we could additionally avoid to flush the entire I-cache for
+> > every page in direct I/O operations with user mapped page cache
+> > pages (e.g. direct I/O read into an mmap region)...
+> 
+> If the page is already mapped, we don't have a later hook to be able to
+> flush the caches, so we do it here. We can avoid the I-cache operation
+> only if we are sure that the user would not execute code from such page.
+> IOW the direct I/O wouldn't write any instructions.
+> 
+> The powerpc implementation of flush_dcache_page() doesn't even check for
+> the existence of a mapping, it always marks the page as dirty. We can do
+> the same on arm64 (only leave the clear_bit part of the condition) as
+> long as we know that the kernel wouldn't write new code into a page that
+> is already mapped.
+
+Yes, but how do we know?
+
+
+- Simon
