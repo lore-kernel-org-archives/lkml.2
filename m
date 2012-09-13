@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2IMGD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:03:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60386 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662Ab2IMGD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:03:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,415,1344236400"; 
-   d="scan'208";a="221528632"
-Date: Thu, 13 Sep 2012 14:03:51 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120913060351.GA23682@localhost>
-References: <87wr002z39.fsf@devron.myhome.or.jp>
- <20120912024249.GB17922@localhost>
- <87sjan3c27.fsf@devron.myhome.or.jp>
- <20120913003337.GA16363@localhost>
- <87a9wueayc.fsf@devron.myhome.or.jp>
+	id S1752399Ab2IMGGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:06:39 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17454 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab2IMGGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:06:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 12 Sep 2012 23:06:34 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+Date: Thu, 13 Sep 2012 15:08:23 +0900
+Message-ID: <1464760.6eqxJ2IzZ2@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.1 (Linux/3.5.3-1-ARCH; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <1347515139.7471.7.camel@lappyti>
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <1347443867-18868-2-git-send-email-acourbot@nvidia.com> <1347515139.7471.7.camel@lappyti>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9wueayc.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 02:41:31PM +0900, OGAWA Hirofumi wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
+On Thursday 13 September 2012 13:45:39 Tomi Valkeinen wrote:
+> * PGP Signed by an unknown key
 > 
-> >> If used custom bdi with BDI_CAP_NO_WRITEBACK, wait_for_completion()
-> >> (e.g. sync_inodes_sb()) will be blocked forever.
-> >
-> > The sync(2) block cannot be fixed by this patch?
+> On Wed, 2012-09-12 at 18:57 +0900, Alexandre Courbot wrote:
 > 
-> This patch fixes block problem too.
-
-Ah OK, my sight was somehow limited by the screen size and only saw
-the first chunk...
-
-> >> I tested by custom bdi with BDI_CAP_NO_WRITEBACK - sync(2) blocked
-> >> forever by this reason.
-> >
-> > What's your test script? How do you create/use that custom bdi?
+> > Some device drivers (panel backlights especially) need to follow precise
+> > sequences for powering on and off, involving gpios, regulators, PWMs
+> > with a precise powering order and delays to respect between each steps.
+> > These sequences are board-specific, and do not belong to a particular
+> > driver - therefore they have been performed by board-specific hook
+> > functions to far.
 > 
-> Ah, I wrote my kernel module to test. I guess there is no users in
-> current kernel for now, because it doesn't work.
+> 
+> The sequences are not board-specific, they are device (backlight, etc.)
+> specific. The sequences have been handled in board-specific hook
+> functions so far because there hasn't been proper drivers for the
+> devices.
+> 
+> If I were to take the same panel (and backlight) you have and install it
+> on my board, I would need the same power sequence.
 
-OK. Got it. So I'd suggest to change the first chunk to a VM_BUG_ON(),
-which should be enough to catch new bad callers. The other two chunks
-look fine.
+You could also have power sequences that control a set of GPIOs for an 
+external interface (and would then be more board-specific), but you are right 
+that for most of the case power seqs apply to devices and this statement is 
+misleading. I will fix that in the commit message and wherever this might 
+appear.
 
-Thanks,
-Fengguang
+Alex.
+
