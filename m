@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab2IMESd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 00:18:33 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37304 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab2IMESb (ORCPT
+	id S1751322Ab2IMEVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 00:21:22 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52888 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab2IMEVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 00:18:31 -0400
-Message-ID: <50515E92.1090404@pobox.com>
-Date: Thu, 13 Sep 2012 00:18:26 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 13 Sep 2012 00:21:20 -0400
+X-AuditID: 9c93016f-b7b16ae000007205-7a-50515f3d969d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, mingo@kernel.org, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: [PATCH] perf record: Add missing perf_hpp__init for pipe-mode
+References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
+	<tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
+	<20120912172641.GB29278@erda.amd.com>
+	<20120912184815.GC557@infradead.org>
+	<87y5ke8wxv.fsf@sejong.aot.lge.com>
+Date: Thu, 13 Sep 2012 13:14:30 +0900
+In-Reply-To: <87y5ke8wxv.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Thu, 13 Sep 2012 11:43:08 +0900")
+Message-ID: <87txv28spl.fsf_-_@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        trivial@kernel.org, lucas.demarchi@profusion.mobi,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 2/2] [trivial] Documentation: broken URL in libata
-References: <1329124192-27461-1-git-send-email-michael.opdenacker@free-electrons.com> <1329124192-27461-3-git-send-email-michael.opdenacker@free-electrons.com> <4F3946DC.3090102@xenotime.net>
-In-Reply-To: <4F3946DC.3090102@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2012 12:22 PM, Randy Dunlap wrote:
-> On 02/13/2012 01:09 AM, Michael Opdenacker wrote:
->> Fix broken link to license text:
->> http://www.opensource.org/licenses/osl-1.1.txt
->> The text for version 1.1 of the Open Sofware license doesn't seem
->> to be available anywhere on http://www.opensource.org/ any more.
->> Replace it with a snapshot from the Internet Wayback Machine.
->
-> That's one option.
-> Too bad opensource.org doesn't provide archives.
->
-> OSL v1.1 is also available here:
-> http://fedoraproject.org/wiki/Licensing:OSL1.1
->
-> and here:
-> http://www.samurajdata.se/opensource/mirror/licenses/osl.php
->
-> Jeff, I don't suppose there is any chance of changing this file's license?
-> (since the Debian people found it to be a problem .. long ago)
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Yeah, that's fine...
+The perf_hpp__init() function was only called from setup_browser() so
+that the pipe-mode missed the initialization thus didn't respond to
+related options.  Fix it.
 
+Reported-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 97b2e6300f4c..279155a47d1c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -689,8 +689,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	if (strcmp(report.input_name, "-") != 0)
+ 		setup_browser(true);
+-	else
++	else {
+ 		use_browser = 0;
++		perf_hpp__init(false, false);
++	}
+ 
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+-- 
+1.7.11.4
 
