@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab2IMHJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 03:09:32 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:44587 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756044Ab2IMHJa (ORCPT
+	id S1756106Ab2IMHJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:09:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35955 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755935Ab2IMHJw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 03:09:30 -0400
+	Thu, 13 Sep 2012 03:09:52 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "S, Venkatraman" <svenkatr@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "cjb@laptop.org" <cjb@laptop.org>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Subject: RE: [PATCH] mmc: omap_hsmmc: Pass on the suspend failure to the PM
+ core
+Thread-Topic: [PATCH] mmc: omap_hsmmc: Pass on the suspend failure to the PM
+ core
+Thread-Index: AQHNiqDoryyfomQXhEW/H9a3NyB6nZeET0QAgAOW/QA=
+Date: Thu, 13 Sep 2012 07:09:41 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA81214@DBDE01.ent.ti.com>
+References: <1346764109-21174-1-git-send-email-gururaja.hebbar@ti.com>
+ <CANfBPZ93ONzeYj=kD_7pbq=VBQLd98YM9BE9S+sPb3rrrXNFzQ@mail.gmail.com>
+In-Reply-To: <CANfBPZ93ONzeYj=kD_7pbq=VBQLd98YM9BE9S+sPb3rrrXNFzQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Thu, 13 Sep 2012 12:39:29 +0530
-Message-ID: <CADysL2Y=aLJ8Eq5aJhB28VhwBvVY+4DyMFpu=MyOg6Sj+D+rYg@mail.gmail.com>
-Subject: [PATCH v6 0/2] ARM: New cache API for iommu
-From: "Gupta, Ramesh" <grgupta@ti.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From a00cbfadc0053a3c21812593997a1b7338234a9f Mon Sep 17 00:00:00 2001
-From: Ramesh Gupta G <grgupta@ti.com>
-Date: Thu, 13 Sep 2012 11:43:20 +0530
-Subject: [PATCH v6  0/2] ARM: New cache API for iommu
+On Tue, Sep 11, 2012 at 11:13:26, S, Venkatraman wrote:
+> On Tue, Sep 4, 2012 at 6:38 PM, Hebbar, Gururaja <gururaja.hebbar@ti.com> wrote:
+> > From: Vaibhav Bedia <vaibhav.bedia@ti.com>
+> >
+> > In some cases mmc_suspend_host() is not able to claim the
+> > host and proceed with the suspend process. The core returns
+> > -EBUSY to the host controller driver. Unfortunately, the
+> > host controller driver does not pass on this information
+> > to the PM core and hence the system suspend process continues.
+> >
+> > In these cases the MMC core gets to an unexpected state
+> > during resume and multiple issues related to MMC crop up.
+> > 1. Host controller driver starts accessing the device registers
+> > before the clocks are enabled which leads to a prefetch abort.
+> > 2. A file copy thread which was launched before suspend gets
+> > stuck due to the host not being reclaimed during resume.
+> >
+> > To avoid such problems pass on the -EBUSY status to the PM core
+> > from the host controller driver. With this change, MMC core
+> > suspend might still fail but it does not end up making the
+> > system unusable. Suspend gets aborted and the user can try
+> > suspending the system again.
+> >
+> 
+> The last time we discussed this, didn't we plan to fix this differently ?
+> Holding the return code of mmc_suspend_host in a separate variable and
+> passing it to the caller
+> of omap_hsmmc_suspend looks more sane to me.
 
-This patch series is the next version to
-- add a new cache maintenance api to support non-coherent iommu drivers.
-- flush both L1 and L2 caches from OMAP iommu whenever the page table
-  memory is updated.
+I just pushed a new revision (V2) with above changes. I also added extra information 
+(explanation with code snippet). Kindly let me know your review for the same.
 
-Changes since the previous patch set (v5)
-- Fixed the RMK's comments on the flush function names in omap-iommu
-to reflect the
-  purpose.
+> 
 
-The implementation of the new api is based on
-the approach[1] discussed.
-
-[1]http://marc.info/?l=linux-kernel&m=131316512713815&w=2
-
-Ramesh Gupta G (2):
-  ARM: new cache maintenance api for iommu
-  OMAP:IOMMU:flush L1 and L2 caches
-
- arch/arm/include/asm/cacheflush.h |   21 +++++++++++++++++++
- arch/arm/include/asm/glue-cache.h |    1 +
- arch/arm/mm/cache-fa.S            |   16 ++++++++++++++
- arch/arm/mm/cache-v3.S            |   14 ++++++++++++-
- arch/arm/mm/cache-v4.S            |   15 +++++++++++++
- arch/arm/mm/cache-v4wb.S          |   22 ++++++++++++++++++++
- arch/arm/mm/cache-v4wt.S          |   18 ++++++++++++++++
- arch/arm/mm/cache-v6.S            |   21 +++++++++++++++++++
- arch/arm/mm/cache-v7.S            |   22 ++++++++++++++++++++
- arch/arm/mm/proc-arm1020.S        |   23 +++++++++++++++++++++
- arch/arm/mm/proc-arm1020e.S       |   21 +++++++++++++++++++
- arch/arm/mm/proc-arm1022.S        |   21 +++++++++++++++++++
- arch/arm/mm/proc-arm1026.S        |   20 ++++++++++++++++++
- arch/arm/mm/proc-arm920.S         |   18 ++++++++++++++++
- arch/arm/mm/proc-arm922.S         |   18 ++++++++++++++++
- arch/arm/mm/proc-arm925.S         |   23 +++++++++++++++++++++
- arch/arm/mm/proc-arm926.S         |   23 +++++++++++++++++++++
- arch/arm/mm/proc-arm940.S         |   26 ++++++++++++++++++++++++
- arch/arm/mm/proc-arm946.S         |   25 +++++++++++++++++++++++
- arch/arm/mm/proc-feroceon.S       |   32 +++++++++++++++++++++++++++++
- arch/arm/mm/proc-macros.S         |    1 +
- arch/arm/mm/proc-mohawk.S         |   19 +++++++++++++++++
- arch/arm/mm/proc-xsc3.S           |   18 ++++++++++++++++
- arch/arm/mm/proc-xscale.S         |   20 ++++++++++++++++++
- drivers/iommu/omap-iommu.c        |   40 ++++++++++++++++--------------------
- 25 files changed, 475 insertions(+), 23 deletions(-)
-
-
--- 
-regards
-Ramesh Gupta G
+Regards, 
+Gururaja
