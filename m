@@ -1,116 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2IMIBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:01:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20936 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab2IMIBJ (ORCPT
+	id S1756714Ab2IMIBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:01:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36350 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab2IMIBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:01:09 -0400
-Date: Thu, 13 Sep 2012 11:00:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Bruce Humphrey <brucehum@gmail.com>
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: Comedi: dyna_pci10xx: Replace printk with
- dev_info
-Message-ID: <20120913080041.GI19396@mwanda>
-References: <1347500760-4394-1-git-send-email-brucehum@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347500760-4394-1-git-send-email-brucehum@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 13 Sep 2012 04:01:32 -0400
+Date: Thu, 13 Sep 2012 18:01:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20120913180121.7ef388cab4e6af2b8c52c93e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 03:46:00AM +0200, Bruce Humphrey wrote:
-> Replace printk(KERN_XXX with dev_info, dev_warn, dev_dbg as appropiate in dyna_pci10xx
-> 
-> Signed-off-by: Bruce Humphrey Ventura <brucehum@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/dyna_pci10xx.c |   14 ++++++--------
->  1 file changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> index 064be9a..bfa62d1 100644
-> --- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> +++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-> @@ -140,8 +140,7 @@ static int dyna_pci10xx_insn_read_ai(struct comedi_device *dev,
->  				goto conv_finish;
->  		}
->  		data[n] = 0;
-> -		printk(KERN_DEBUG "comedi: dyna_pci10xx: "
-> -			"timeout reading analog input\n");
-> +		dev_dbg(dev->class_dev, "timeout reading analog input\n");
+--Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The trick with removing the "comedi: dyna_pci10xx: " prefix is that
-you need to put this at the top of the file before the includes.
+Hi all,
 
-#define pr_fmt(fmt) "comedi: dyna_pci10xx: " fmt
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-You would need to remove the prefix from the other pr_info printk
-as well so it's not included twice.
+mm/internal.h: In function 'swap_cache_hit':
+mm/internal.h:377:3: error: implicit declaration of function 'atomic_dec_if=
+_positive' [-Werror=3Dimplicit-function-declaration]
 
->  		continue;
->  conv_finish:
->  		/* mask the first 4 bits - EOC bits */
-> @@ -262,8 +261,7 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
->  	int ret;
->  
->  	if (alloc_private(dev, sizeof(struct dyna_pci10xx_private)) < 0) {
-> -		printk(KERN_ERR "comedi: dyna_pci10xx: "
-> -			"failed to allocate memory!\n");
-> +		dev_err(dev->class_dev, "failed to allocate memory!\n");
+Caused by commit "swap: add a simple detector for inappropriate swapin
+readahead" from the akmp tree.  atomic_dec_if_positive() appears to only
+exist on avr32, microblaze, mips, powerpc and x86 ...
 
-No need.  Kmalloc has it's own printk().
+I have reverted that commit (and the following trivial fix commit) for
+today.
 
->  		return -ENOMEM;
->  	}
->  
-> @@ -276,14 +274,14 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
->  	dev->irq = 0;
->  
->  	if (comedi_pci_enable(pcidev, DRV_NAME)) {
-> -		printk(KERN_ERR "comedi: dyna_pci10xx: "
-> -			"failed to enable PCI device and request regions!");
-> +		dev_err(dev->class_dev,
-> +			"failed to enable PCI device and request regions!\n");
->  		return -EIO;
->  	}
->  
->  	mutex_init(&devpriv->mutex);
->  
-> -	printk(KERN_INFO "comedi: dyna_pci10xx: device found!\n");
-> +	pr_info("comedi: dyna_pci10xx: device found!\n");
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-No need.
+--Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx
+Content-Type: application/pgp-signature
 
->  
->  	dev->iobase = pci_resource_start(pcidev, 2);
->  	devpriv->BADR3 = pci_resource_start(pcidev, 3);
-> @@ -333,7 +331,7 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
->  	s->state = 0;
->  	s->insn_bits = dyna_pci10xx_do_insn_bits;
->  
-> -	printk(KERN_INFO "comedi: dyna_pci10xx: %s - device setup completed!\n",
-> +	dev_info(dev->class_dev, "%s - device setup completed!\n",
->  		thisboard->name);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-No need for this either.
+iQIcBAEBCAAGBQJQUZLRAAoJEECxmPOUX5FElZEP/3/C9ZflT2l4QzZx8+7qIawX
+wb3M99kDUQ159Pya+1LolEWSk9tjg+S9EG0H0cUUxQv2MlODOb8umBepNhqP177J
+wOJs9wa3hOKaHJV+cb061wcotBF8lkFAtKXoriz0RU0gz1GCXQChVbwfyt7wYd/D
+n0UKr471Whd1D2foiTbd6D6A4ksx4JmAMD3yP+WRhu3p4ksICxJuUgNHKDK9xtI4
+85tHp0E8hdqRcHtpAQb8HPkCWoq8RvCPpBJc38LZL4nmoQV0Nm30i1VK3+qttSkj
+bLiM/AICNQR+AMDi0esBSBtqrufoiNxr65SDLhBnIkk91GlSDtdxhRkJyWNMnCa8
+cB/40XIurDxhaTnwH9RaMOuprvo/rPeHDQBvhQ0vmcySfLrgsoYdiq/31vibd9m/
+w1vzonMq7QSpR9BJjfQTpVOTJyMayEoxMzxm1pPLPhgA6huWmjFMv529zGKm4BX4
+E4IuYMRVNJgznzdkScjzEgIoyob1IKxOl1cgeTIJ6VcSbsVsEnKugDioA3WCdpAK
+cCQ2tPuRP251Iq3mqtKaMIph76CLquknX0nwLKqzXF1MnpbwJqYwCyx8u3SsI6lV
+yj5xaqa1MRlnBF5ry0gjKvXMjndL1uP7I/s867sV300vk7FmC2h7WLmH7S7I+1WV
+p0sVhKnmcfUUDzg+2gn/
+=BmV9
+-----END PGP SIGNATURE-----
 
-regards,
-dan carpenter
-
->  
->  	return 1;
-> -- 
-> 1.7.9.5
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+--Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx--
