@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2IMCpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:45:00 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50417 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab2IMCo6 (ORCPT
+	id S1753487Ab2IMCuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:50:05 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64876 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab2IMCuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:44:58 -0400
-X-AuditID: 9c93016f-b7b16ae000007205-7d-505148a70686
+	Wed, 12 Sep 2012 22:50:03 -0400
+X-AuditID: 9c930179-b7b30ae000004aa7-2c-505149d4d7f9
 From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 2/3] perf: require exclude_guest to use PEBS - kernel side enforcement
-References: <1347462990-29481-1-git-send-email-dsahern@gmail.com>
-	<1347462990-29481-3-git-send-email-dsahern@gmail.com>
-Date: Thu, 13 Sep 2012 11:38:08 +0900
-In-Reply-To: <1347462990-29481-3-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Wed, 12 Sep 2012 09:16:29 -0600")
-Message-ID: <87392mabqn.fsf@sejong.aot.lge.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, mingo@kernel.org, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf hists: Introduce perf_hpp for hist period printing
+References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
+	<tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
+	<20120912172641.GB29278@erda.amd.com>
+	<20120912184815.GC557@infradead.org>
+Date: Thu, 13 Sep 2012 11:43:08 +0900
+In-Reply-To: <20120912184815.GC557@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Wed, 12 Sep 2012 15:48:15 -0300")
+Message-ID: <87y5ke8wxv.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -29,35 +31,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi Arnaldo and Robert,
 
-On Wed, 12 Sep 2012 09:16:29 -0600, David Ahern wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
+On Wed, 12 Sep 2012 15:48:15 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Sep 12, 2012 at 07:26:41PM +0200, Robert Richter escreveu:
+>> On 09.09.12 01:54:39, tip-bot for Namhyung Kim wrote:
+>> 
+>>  # perf record -e cycles -aq sleep 1 ; perf report -n --sort comm,dso | sed '/%/q;d' ; \
+>>    perf record -e cycles -aq sleep 1 | perf report -n --sort comm,dso | sed '/%/q;d'
+>>      99.86%        11804       swapper  [kernel.kallsyms]
+>>      91.57%      swapper  [kernel.kallsyms]
+>>            ^^^^^^
+>>            number of samples missing
+>> 
+>> Moving and changing the code at the same time make the patch
+>> unreviewable. So no clue that's the problem here.
 >
-> Per Peter:
->   "Intel PEBS in VT-x context uses the DS address as a guest linear address,
->   even though its programmed by the host as a host linear address. This
->   either results in guest memory corruption and or the hardware faulting and
->   'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
->   enter and re-enable on VT-x exit, enforcing a strict exclude_guest.
->
-> This patch enforces exclude_guest kernel side.
->
-[snip]
-> @@ -380,6 +383,9 @@ int x86_pmu_hw_config(struct perf_event *event)
->  	if (event->attr.precise_ip) {
->  		int precise = 0;
->  
-> +		if (!event->attr.exclude_guest)
-> +				return -EOPNOTSUPP;
+> Yeah, that was unfortunate (movind and changing), we need to try hard
+> not to do that...
 
-I see a whitespace problem here. :)
+Okay, will be careful next time.
+
+
+>
+> Anyway, Namhyung, can you take a look at this?
+
+Sure, I'll take a look.
 
 Thanks,
 Namhyung
-
-
-> +
->  		/* Support for constant skid */
->  		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
->  			precise++;
