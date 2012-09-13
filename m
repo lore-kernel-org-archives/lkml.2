@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab2IMUPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:15:52 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:43541 "EHLO
+	id S932166Ab2IMURa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:17:30 -0400
+Received: from shmail0.sohard.de ([212.114.139.117]:43565 "EHLO
 	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840Ab2IMUPu convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757215Ab2IMUR2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:15:50 -0400
-Date: Thu, 13 Sep 2012 22:15:47 +0200 (CEST)
+	Thu, 13 Sep 2012 16:17:28 -0400
+Date: Thu, 13 Sep 2012 22:17:25 +0200 (CEST)
 From: Rene Buergel <rene.buergel@sohard.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/4]: add support for Cypress FX2LP
-Message-ID: <cc3ba139-4ad3-4c24-ba89-009f59abbe14@shmail0>
+Subject: Re: [PATCH v2 3/4]: add functions for firmware download
+Message-ID: <cae8a33c-29d7-4f8a-abc8-ce17613c3cf9@shmail0>
 In-Reply-To: <7120fd46-da21-4203-8293-7dcdb70f02dc@shmail0>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
@@ -22,215 +22,339 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This Patch adds support for the newer Cypress FX2LP. It also adapts 
-three drivers currently using ezusb to the interface change. (whiteheat 
-and keyspan[_pda])
+This patch adds new functions to upload firmware to the controller. The 
+drivers currently using ezusb are adapted to use these new functions.
 
-Signed-off-by: René Bürgel <rene.buergel@...>
+This also fixes a bug occuring during firmware loading in the 
+whiteheat-driver:
+The driver iterates over an ihex-formatted firmware using ++ on a "const 
+struct ihex_binrec*" which leads to faulty results, because ihex data is 
+read as length. The function "ihex_next_binrec(record)" has so be used 
+to work correctly
+
+Signed-off-by: René Bürgel <rene.buergel@sohard.de>
 --
 diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/serial/ezusb.c
-index 3048b52d..351988d 100644
+index 351988d..867a3e1 100644
 --- a/drivers/usb/serial/ezusb.c
 +++ b/drivers/usb/serial/ezusb.c
-@@ -14,11 +14,25 @@
+@@ -13,6 +13,8 @@
+ #include <linux/slab.h>
  #include <linux/module.h>
  #include <linux/usb.h>
++#include <linux/firmware.h>
++#include <linux/ihex.h>
  
--/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
--#define CPUCS_REG    0x7F92
-+struct ezusb_fx_type {
-+	/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
-+	unsigned short cpucs_reg;
-+	unsigned short max_internal_adress;
-+};
- 
--/* Command for writing to internal memory */
-+struct ezusb_fx_type ezusb_fx1 = {
-+	.cpucs_reg = 0x7F92,
-+	.max_internal_adress = 0x1B3F,
-+};
-+
-+struct ezusb_fx_type ezusb_fx2 = {
-+	.cpucs_reg = 0xE600,
-+	.max_internal_adress = 0x3FFF,
-+};
-+
-+/* Commands for writing to memory */
- #define WRITE_INT_RAM 0xA0
-+#define WRITE_EXT_RAM 0xA3
- 
- int ezusb_writememory(struct usb_device *dev, int address,
- 				unsigned char *data, int length, __u8 request)
-@@ -47,13 +61,24 @@ int ezusb_writememory(struct usb_device *dev, int address,
+ struct ezusb_fx_type {
+ 	/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
+@@ -82,3 +84,80 @@ int ezusb_fx2_set_reset(struct usb_device *dev, unsigned char reset_bit)
+ 	return ezusb_set_reset(dev, ezusb_fx2.cpucs_reg, reset_bit);
  }
- EXPORT_SYMBOL_GPL(ezusb_writememory);
- 
--int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit)
-+int ezusb_set_reset(struct usb_device *dev, unsigned short cpucs_reg,
-+			 unsigned char reset_bit)
- {
--	int response = ezusb_writememory(dev, CPUCS_REG, &reset_bit, 1, WRITE_INT_RAM);
-+	int response = ezusb_writememory(dev, cpucs_reg, &reset_bit, 1, WRITE_INT_RAM);
- 	if (response < 0)
- 		dev_err(&dev->dev, "%s-%d failed: %d\n",
- 						__func__, reset_bit, response);
- 	return response;
- }
--EXPORT_SYMBOL_GPL(ezusb_set_reset);
- 
-+int ezusb_fx1_set_reset(struct usb_device *dev, unsigned char reset_bit)
-+{
-+	return ezusb_set_reset(dev, ezusb_fx1.cpucs_reg, reset_bit);
-+}
-+EXPORT_SYMBOL_GPL(ezusb_fx1_set_reset);
+ EXPORT_SYMBOL_GPL(ezusb_fx2_set_reset);
 +
-+int ezusb_fx2_set_reset(struct usb_device *dev, unsigned char reset_bit)
++static int ezusb_ihex_firmware_download(struct usb_device *dev,
++					struct ezusb_fx_type fx,
++					const char *firmware_path)
 +{
-+	return ezusb_set_reset(dev, ezusb_fx2.cpucs_reg, reset_bit);
++	int ret = -ENOENT;
++	const struct firmware *firmware = NULL;
++	const struct ihex_binrec *record;
++
++	if (request_ihex_firmware(&firmware, firmware_path,
++				  &dev->dev)) {
++		dev_err(&dev->dev,
++			"%s - request \"%s\" failed\n",
++			__func__, firmware_path);
++		goto out;
++	}
++
++	ret = ezusb_set_reset(dev, fx.cpucs_reg, 0);
++	if (ret < 0)
++		goto out;
++
++	record = (const struct ihex_binrec *)firmware->data;
++	for (; record; record = ihex_next_binrec(record)) {
++		if (be32_to_cpu(record->addr) > fx.max_internal_adress) {
++			ret = ezusb_writememory(dev, be32_to_cpu(record->addr),
++						(unsigned char *)record->data,
++						be16_to_cpu(record->len), WRITE_EXT_RAM);
++			if (ret < 0) {
++				dev_err(&dev->dev, "%s - ezusb_writememory "
++					"failed writing internal memory "
++					"(%d %04X %p %d)\n", __func__, ret,
++					be32_to_cpu(record->addr), record->data,
++					be16_to_cpu(record->len));
++				goto out;
++			}
++		}
++	}
++
++	ret = ezusb_set_reset(dev, fx.cpucs_reg, 1);
++	if (ret < 0)
++		goto out;
++	record = (const struct ihex_binrec *)firmware->data;
++	for (; record; record = ihex_next_binrec(record)) {
++		if (be32_to_cpu(record->addr) <= fx.max_internal_adress) {
++			ret = ezusb_writememory(dev, be32_to_cpu(record->addr),
++						(unsigned char *)record->data,
++						be16_to_cpu(record->len), WRITE_INT_RAM);
++			if (ret < 0) {
++				dev_err(&dev->dev, "%s - ezusb_writememory "
++					"failed writing external memory "
++					"(%d %04X %p %d)\n", __func__, ret,
++					be32_to_cpu(record->addr), record->data,
++					be16_to_cpu(record->len));
++				goto out;
++			}
++		}
++	}
++	ret = ezusb_set_reset(dev, fx.cpucs_reg, 0);
++out:
++	release_firmware(firmware);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(ezusb_fx2_set_reset);
++
++int ezusb_fx1_ihex_firmware_download(struct usb_device *dev,
++				     const char *firmware_path)
++{
++	return ezusb_ihex_firmware_download(dev, ezusb_fx1, firmware_path);
++}
++EXPORT_SYMBOL_GPL(ezusb_fx1_ihex_firmware_download);
++
++int ezusb_fx2_ihex_firmware_download(struct usb_device *dev,
++				     const char *firmware_path)
++{
++	return ezusb_ihex_firmware_download(dev, ezusb_fx2, firmware_path);
++}
++EXPORT_SYMBOL_GPL(ezusb_fx2_ihex_firmware_download);
++
 diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index f0d4f3f..32bebde 100644
+index 32bebde..523586d 100644
 --- a/drivers/usb/serial/keyspan.c
 +++ b/drivers/usb/serial/keyspan.c
-@@ -43,6 +43,7 @@
+@@ -38,8 +38,6 @@
+ #include <linux/tty_flip.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+-#include <linux/firmware.h>
+-#include <linux/ihex.h>
  #include <linux/uaccess.h>
  #include <linux/usb.h>
  #include <linux/usb/serial.h>
-+#include <linux/usb/ezusb.h>
- #include "keyspan.h"
+@@ -1163,10 +1161,7 @@ static void keyspan_close(struct usb_serial_port *port)
+ /* download the firmware to a pre-renumeration device */
+ static int keyspan_fake_startup(struct usb_serial *serial)
+ {
+-	int 				response;
+-	const struct ihex_binrec 	*record;
+-	char				*fw_name;
+-	const struct firmware		*fw;
++	char	*fw_name;
  
- static bool debug;
-@@ -1241,7 +1242,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
+ 	dbg("Keyspan startup version %04x product %04x",
+ 	    le16_to_cpu(serial->dev->descriptor.bcdDevice),
+@@ -1234,34 +1229,16 @@ static int keyspan_fake_startup(struct usb_serial *serial)
+ 		return 1;
+ 	}
+ 
+-	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev, "Required keyspan firmware image (%s) unavailable.\n", fw_name);
+-		return 1;
+-	}
+-
  	dbg("Uploading Keyspan %s firmware.", fw_name);
  
- 		/* download the firmware image */
--	response = ezusb_set_reset(serial->dev, 1);
-+	response = ezusb_fx1_set_reset(serial->dev, 1);
- 
- 	record = (const struct ihex_binrec *)fw->data;
- 
-@@ -1260,7 +1261,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
- 	release_firmware(fw);
- 		/* bring device out of reset. Renumeration will occur in a
- 		   moment and the new device will bind to the real driver */
--	response = ezusb_set_reset(serial->dev, 0);
-+	response = ezusb_fx1_set_reset(serial->dev, 0);
+-		/* download the firmware image */
+-	response = ezusb_fx1_set_reset(serial->dev, 1);
+-
+-	record = (const struct ihex_binrec *)fw->data;
+-
+-	while (record) {
+-		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
+-					     (unsigned char *)record->data,
+-					     be16_to_cpu(record->len), 0xa0);
+-		if (response < 0) {
+-			dev_err(&serial->dev->dev, "ezusb_writememory failed for Keyspan firmware (%d %04X %p %d)\n",
+-				response, be32_to_cpu(record->addr),
+-				record->data, be16_to_cpu(record->len));
+-			break;
+-		}
+-		record = ihex_next_binrec(record);
++	if (ezusb_fx1_ihex_firmware_download(serial->dev, fw_name) < 0) {
++		dev_err(&serial->dev->dev, "failed to load firmware \"%s\"\n",
++			fw_name);
++		return -ENOENT;
+ 	}
+-	release_firmware(fw);
+-		/* bring device out of reset. Renumeration will occur in a
+-		   moment and the new device will bind to the real driver */
+-	response = ezusb_fx1_set_reset(serial->dev, 0);
++
++	/* after downloading firmware Renumeration will occur in a
++	  moment and the new device will bind to the real driver */
  
  	/* we don't want this device to have a driver assigned to it. */
  	return 1;
 diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
-index 1290b6f..87c5812 100644
+index 87c5812..bf0bb37 100644
 --- a/drivers/usb/serial/keyspan_pda.c
 +++ b/drivers/usb/serial/keyspan_pda.c
-@@ -30,6 +30,7 @@
+@@ -25,8 +25,6 @@
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/workqueue.h>
+-#include <linux/firmware.h>
+-#include <linux/ihex.h>
  #include <linux/uaccess.h>
  #include <linux/usb.h>
  #include <linux/usb/serial.h>
-+#include <linux/usb/ezusb.h>
- 
- static bool debug;
- 
-@@ -682,7 +683,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
- 	const struct firmware *fw;
+@@ -679,8 +677,6 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
+ {
+ 	int response;
+ 	const char *fw_name;
+-	const struct ihex_binrec *record;
+-	const struct firmware *fw;
  
  	/* download the firmware here ... */
--	response = ezusb_set_reset(serial->dev, 1);
-+	response = ezusb_fx1_set_reset(serial->dev, 1);
- 
- 	if (0) { ; }
- #ifdef KEYSPAN
-@@ -722,7 +723,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
- 	release_firmware(fw);
- 	/* bring device out of reset. Renumeration will occur in a moment
- 	   and the new device will bind to the real driver */
--	response = ezusb_set_reset(serial->dev, 0);
-+	response = ezusb_fx1_set_reset(serial->dev, 0);
+ 	response = ezusb_fx1_set_reset(serial->dev, 1);
+@@ -700,30 +696,15 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
+ 			__func__);
+ 		return -ENODEV;
+ 	}
+-	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
++
++	if (ezusb_fx1_ihex_firmware_download(serial->dev, fw_name) < 0) {
+ 		dev_err(&serial->dev->dev, "failed to load firmware \"%s\"\n",
+ 			fw_name);
+ 		return -ENOENT;
+ 	}
+-	record = (const struct ihex_binrec *)fw->data;
+-
+-	while (record) {
+-		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
+-					     (unsigned char *)record->data,
+-					     be16_to_cpu(record->len), 0xa0);
+-		if (response < 0) {
+-			dev_err(&serial->dev->dev, "ezusb_writememory failed "
+-				"for Keyspan PDA firmware (%d %04X %p %d)\n",
+-				response, be32_to_cpu(record->addr),
+-				record->data, be16_to_cpu(record->len));
+-			break;
+-		}
+-		record = ihex_next_binrec(record);
+-	}
+-	release_firmware(fw);
+-	/* bring device out of reset. Renumeration will occur in a moment
+-	   and the new device will bind to the real driver */
+-	response = ezusb_fx1_set_reset(serial->dev, 0);
++
++	/* after downloading firmware Renumeration will occur in a
++	  moment and the new device will bind to the real driver */
  
  	/* we want this device to fail to have a driver assigned to it. */
  	return 1;
 diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
-index fc72591..228eb64 100644
+index b34665c..a9ad0c5 100644
 --- a/drivers/usb/serial/whiteheat.c
 +++ b/drivers/usb/serial/whiteheat.c
-@@ -32,6 +32,7 @@
- #include <linux/serial_reg.h>
+@@ -33,8 +33,6 @@
  #include <linux/serial.h>
  #include <linux/usb/serial.h>
-+#include <linux/usb/ezusb.h>
- #include <linux/firmware.h>
- #include <linux/ihex.h>
+ #include <linux/usb/ezusb.h>
+-#include <linux/firmware.h>
+-#include <linux/ihex.h>
  #include "whiteheat.h"			/* WhiteHEAT specific commands */
-@@ -213,7 +214,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		goto out;
- 	}
- 	ret = 0;
--	response = ezusb_set_reset(serial->dev, 1);
-+	response = ezusb_fx1_set_reset(serial->dev, 1);
  
- 	record = (const struct ihex_binrec *)loader_fw->data;
- 	while (record) {
-@@ -230,7 +231,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		record = ihex_next_binrec(record);
- 	}
+ static bool debug;
+@@ -196,84 +194,15 @@ static int firm_report_tx_done(struct usb_serial_port *port);
+ static int whiteheat_firmware_download(struct usb_serial *serial,
+ 					const struct usb_device_id *id)
+ {
+-	int response, ret = -ENOENT;
+-	const struct firmware *loader_fw = NULL, *firmware_fw = NULL;
+-	const struct ihex_binrec *record;
++	int response;
  
--	response = ezusb_set_reset(serial->dev, 0);
-+	response = ezusb_fx1_set_reset(serial->dev, 0);
- 
- 	record = (const struct ihex_binrec *)firmware_fw->data;
- 	while (record && be32_to_cpu(record->addr) < 0x1b40)
-@@ -250,7 +251,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		++record;
- 	}
- 
--	response = ezusb_set_reset(serial->dev, 1);
-+	response = ezusb_fx1_set_reset(serial->dev, 1);
- 
- 	record = (const struct ihex_binrec *)firmware_fw->data;
- 	while (record && be32_to_cpu(record->addr) < 0x1b40) {
-@@ -268,7 +269,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
- 		++record;
- 	}
- 	ret = 0;
--	response = ezusb_set_reset(serial->dev, 0);
-+	response = ezusb_fx1_set_reset(serial->dev, 0);
-  out:
- 	release_firmware(loader_fw);
- 	release_firmware(firmware_fw);
-diff --git a/include/linux/usb/ezusb.h b/include/linux/usb/ezusb.h
-new file mode 100644
-index 0000000..fc618d8
---- /dev/null
-+++ b/include/linux/usb/ezusb.h
-@@ -0,0 +1,16 @@
-+#ifndef __EZUSB_H
-+#define __EZUSB_H
-+
-+
-+extern int ezusb_writememory(struct usb_device *dev, int address,
-+			     unsigned char *data, int length, __u8 bRequest);
-+
-+extern int ezusb_fx1_set_reset(struct usb_device *dev, unsigned char reset_bit);
-+extern int ezusb_fx2_set_reset(struct usb_device *dev, unsigned char reset_bit);
-+
-+extern int ezusb_fx1_ihex_firmware_download(struct usb_device *dev,
-+					    const char *firmware_path);
-+extern int ezusb_fx2_ihex_firmware_download(struct usb_device *dev,
-+					    const char *firmware_path);
-+
-+#endif /* __EZUSB_H */
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index a101507..588861c 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -301,10 +301,6 @@ extern void usb_serial_port_softint(struct usb_serial_port *port);
- extern int usb_serial_suspend(struct usb_interface *intf, pm_message_t message);
- extern int usb_serial_resume(struct usb_interface *intf);
- 
--extern int ezusb_writememory(struct usb_device *dev, int address,
--			     unsigned char *data, int length, __u8 bRequest);
--extern int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit);
+-	if (request_ihex_firmware(&firmware_fw, "whiteheat.fw",
+-				  &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev,
+-			"%s - request \"whiteheat.fw\" failed\n", __func__);
+-		goto out;
+-	}
+-	if (request_ihex_firmware(&loader_fw, "whiteheat_loader.fw",
+-			     &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev,
+-			"%s - request \"whiteheat_loader.fw\" failed\n",
+-			__func__);
+-		goto out;
+-	}
+-	ret = 0;
+-	response = ezusb_fx1_set_reset(serial->dev, 1);
 -
- /* USB Serial console functions */
- #ifdef CONFIG_USB_SERIAL_CONSOLE
- extern void usb_serial_console_init(int debug, int minor);
+-	record = (const struct ihex_binrec *)loader_fw->data;
+-	while (record) {
+-		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
+-					     (unsigned char *)record->data,
+-					     be16_to_cpu(record->len), 0xa0);
+-		if (response < 0) {
+-			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
+-				"failed for loader (%d %04X %p %d)\n",
+-				__func__, response, be32_to_cpu(record->addr),
+-				record->data, be16_to_cpu(record->len));
+-			break;
+-		}
+-		record = ihex_next_binrec(record);
+-	}
+-
+-	response = ezusb_fx1_set_reset(serial->dev, 0);
+-
+-	record = (const struct ihex_binrec *)firmware_fw->data;
+-	while (record && be32_to_cpu(record->addr) < 0x1b40)
+-		record = ihex_next_binrec(record);
+-	while (record) {
+-		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
+-					     (unsigned char *)record->data,
+-					     be16_to_cpu(record->len), 0xa3);
+-		if (response < 0) {
+-			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
+-				"failed for first firmware step "
+-				"(%d %04X %p %d)\n", __func__, response,
+-				be32_to_cpu(record->addr), record->data,
+-				be16_to_cpu(record->len));
+-			break;
+-		}
+-		++record;
+-	}
+-
+-	response = ezusb_fx1_set_reset(serial->dev, 1);
+-
+-	record = (const struct ihex_binrec *)firmware_fw->data;
+-	while (record && be32_to_cpu(record->addr) < 0x1b40) {
+-		response = ezusb_writememory(serial->dev, be32_to_cpu(record->addr),
+-					     (unsigned char *)record->data,
+-					     be16_to_cpu(record->len), 0xa0);
+-		if (response < 0) {
+-			dev_err(&serial->dev->dev, "%s - ezusb_writememory "
+-				"failed for second firmware step "
+-				"(%d %04X %p %d)\n", __func__, response,
+-				be32_to_cpu(record->addr), record->data,
+-				be16_to_cpu(record->len));
+-			break;
+-		}
+-		++record;
++	response = ezusb_fx1_ihex_firmware_download(serial->dev, "whiteheat_loader.fw");
++	if (response >= 0) {
++		response = ezusb_fx1_ihex_firmware_download(serial->dev, "whiteheat.fw");
++		if (response >= 0)
++			return 0;
+ 	}
+-	ret = 0;
+-	response = ezusb_fx1_set_reset(serial->dev, 0);
+- out:
+-	release_firmware(loader_fw);
+-	release_firmware(firmware_fw);
+-	return ret;
++	return -ENOENT;
+ }
+ 
+ 
