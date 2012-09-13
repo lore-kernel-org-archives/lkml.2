@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab2IMILn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:11:43 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42357 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2IMILg (ORCPT
+	id S1756736Ab2IMIMC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:12:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39161 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753275Ab2IMILu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:11:36 -0400
-Date: Thu, 13 Sep 2012 18:11:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Fries <david@fries.net>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20120913181127.862265ddb9a08758ada8405c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Sep_2012_18_11_27_+1000_nRiYuamSGOnGGKcu"
+	Thu, 13 Sep 2012 04:11:50 -0400
+Date: Thu, 13 Sep 2012 16:11:43 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>
+Subject: Re: [PATCH 00/11] ASoC: OMAP: Convert to use dmaengine
+Message-ID: <20120913081141.GD20959@opensource.wolfsonmicro.com>
+References: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347450427-27627-1-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Sep_2012_18_11_27_+1000_nRiYuamSGOnGGKcu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 12, 2012 at 02:46:56PM +0300, Peter Ujfalusi wrote:
+> Hello,
+> 
+> This series will switch the OMAP audio to use dmaengine.
+> The final patch which does the switch was based on Russell King's earlier patch.
 
-Hi all,
-
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
-
-drivers/built-in.o: In function `rtc_hctosys':
-hctosys.c:(.init.text+0x4a98): undefined reference to `rtc_hctosys_ret'
-hctosys.c:(.init.text+0x4b54): undefined reference to `rtc_hctosys_ret'
-hctosys.c:(.init.text+0x4b58): undefined reference to `rtc_hctosys_ret'
-
-Caused by commit "rtc_sysfs_show_hctosys(): display 0 if resume failed"
-from the akpm tree.  rtc_hctosys_ret was moved into class.c but protected
-by defined(CONFIG_PM) && defined(CONFIG_RTC_HCTOSYS_DEVICE) and this
-build does not have CONFIG_PM set.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__13_Sep_2012_18_11_27_+1000_nRiYuamSGOnGGKcu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUZUvAAoJEECxmPOUX5FEAbwP/j5HkGY5jcCWCVaL8THaFOei
-iWYpUcXq29dswNgz/60zTMsk6LewIgn3oVTv/cLufYCfeoXCgKP/zr8NSbL+sxG+
-J5NEbMkZhhdcwthLMf3ViRKaPUc5hDkhCKvDW7AUyxwGgCfBGkf4YWSj4134UDMh
-bhx1yvEbu4GeRZNVLxXGZ7TXV//jIZrxonEYTF6AJ83/reMzLIB6gvaxlUzUWd0Q
-R+Zyu6Ku8WMZPSrneJ436tZZWiaPpgDhtUdeXk0WjDzhO7BZmDHiOS/o3sDz1iX/
-c8qrtHgdevxPUm8ucJVA8Mz7BDTY26JZGn8buOQxTaO7TdnWBWS+ygqEJ9kCwBct
-gCDuD+fdf19tzF9OxRUeEEIJ2w50T6sz0phZX5Y4FAXFKouTnZK6Okv6ZBSYZFYl
-O8fm6QKEC5IJn7nALUiGyYbnqxVaCVuXNbcrqs+N7x3L7y9YHexcP+zmiHHy9OYn
-hwlvxYBi3ftqrk0/yiDCsW+4AvKDy/zuQQy6BfaTRcqOdWAm+SwMVKysUDlTwYPh
-GvJY7fPLNP9RYQsaLj2Oln7oUuRy4KBclgul6HliN1R/VsBd3f+ggW7x9SXtiu3a
-qsOGZe1hXBb/tT/1FzVS+e+PujpDdrxWKrHjxxoBS0cs79JjgB/mCd61P5fLxOC0
-sFsV5Ty+Jd7XPwgY5ob/
-=kJoV
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_Sep_2012_18_11_27_+1000_nRiYuamSGOnGGKcu--
+I'm fine with this from the ASoC side but it sounds like you're going to
+respin anyway.  Are the earlier bits of the series safe to apply without
+the last bit, it seems like that's the only bit that really needs a
+respin so we may as well go ahead and apply the earlier bits now?
