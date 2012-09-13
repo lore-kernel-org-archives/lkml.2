@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758415Ab2IMRwd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 13:52:33 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:35272 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219Ab2IMRwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 13:52:31 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlupAOgcUlBV5h1yPGdsb2JhbABFhR4jhQCwOAEBAnoZAQEBATc0giABAQQBJxMcIwULCANGFCUKGogaCrtwFIsuAlFdg3VgA5VfhXCNGg
-X-IronPort-AV: E=Sophos;i="4.80,418,1344204000"; 
-   d="scan'208";a="408968784"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 13 Sep 2012 19:59:31 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 05/20] Input: Send events one packet at a time
-Message-ID: <20120913175931.GA3178@polaris.bitmath.org>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
- <1346528835-363-6-git-send-email-rydberg@euromail.se>
- <20120913065613.GG17105@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913065613.GG17105@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757966Ab2IMRx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 13:53:56 -0400
+Received: from tex.lwn.net ([70.33.254.29]:34810 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754504Ab2IMRxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 13:53:54 -0400
+Date: Thu, 13 Sep 2012 11:54:38 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Federico Vaga <federico.vaga@gmail.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory
+ allocator
+Message-ID: <20120913115438.0557462f@lwn.net>
+In-Reply-To: <17733334.UmoCxqVfBu@harkonnen>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
+	<1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
+	<201209131608.05869.hverkuil@xs4all.nl>
+	<17733334.UmoCxqVfBu@harkonnen>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Filter handlers do not typically have ->event() methods, that's the
-> reason for reported panic.
+On Thu, 13 Sep 2012 17:42:33 +0200
+Federico Vaga <federico.vaga@gmail.com> wrote:
 
-If we decide to rewind the tree, I will amend the fix here.
+> > The header and esp. the source could really do with more
+> > documentation. It is not at all clear from the code what the
+> > dma-streaming allocator does and how it differs from other
+> > allocators.  
+> 
+> The other allocators are not documented and to understand them I read 
+> the code. All the memory allocators reflect a kind of DMA interface: SG 
+> for scatter/gather, contig for choerent and (now) streaming for 
+> streaming. So, I'm not sure to understand what do you think is the 
+> correct way to document a memory allocator; I can write one or two lines 
+> of comment to summarize each function. what do you think?
+
+Well, there is some documentation here:
+
+	https://lwn.net/Articles/447435/
+
+This reminds me that I've always meant to turn it into something to put
+into Documentation/.  I'll try to get to that soon.
+
+In general, the fact that a subsystem is insufficiently documented is not
+a good reason to add more poorly-documented code.  We are, after all,
+trying to make the kernel better over time...  
 
 Thanks,
-Henrik
+
+jon
