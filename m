@@ -1,149 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab2IMMDv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 08:03:51 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:65202 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757666Ab2IMMD1 (ORCPT
+	id S1757804Ab2IMMEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 08:04:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51008 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755032Ab2IMMEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 08:03:27 -0400
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Sep 2012 08:03:27 EDT
-X-IronPort-AV: E=Sophos;i="4.80,416,1344211200"; 
-   d="scan'208";a="143752268"
-From: Hans Verkuil <hansverk@cisco.com>
-Organization: Cisco Systems Norway
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-Subject: Re: [PATCH v3] media: v4l2-ctrl: add a helper function to modify the menu
-Date: Thu, 13 Sep 2012 13:53:34 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        LMML <linux-media@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
-        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        "Sakari Ailus" <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
-        Rob Landley <rob@landley.net>
-References: <1347373418-18927-1-git-send-email-prabhakar.lad@ti.com> <1481481.zLUeB0rsrG@avalon> <5051C6E8.8030109@ti.com>
-In-Reply-To: <5051C6E8.8030109@ti.com>
+	Thu, 13 Sep 2012 08:04:00 -0400
+Date: Thu, 13 Sep 2012 20:03:53 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: Add DA9055 codec driver
+Message-ID: <20120913120351.GA8374@opensource.wolfsonmicro.com>
+References: <1347375823.12329.14.camel@matrix>
+ <20120912025709.GD9162@opensource.wolfsonmicro.com>
+ <1347538116.16763.6.camel@matrix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209131353.34497.hansverk@cisco.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347538116.16763.6.camel@matrix>
+X-Cookie: You will be surrounded by luxury.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13 September 2012 13:43:36 Prabhakar Lad wrote:
-> Hi Laurent,
-> 
-> Thanks for the review.
-> 
-> On Thursday 13 September 2012 06:45 AM, Laurent Pinchart wrote:
-> > Hi Prabhakar,
-> > 
-> > Thanks for the patch.
-> > 
-> > On Tuesday 11 September 2012 19:53:38 Prabhakar Lad wrote:
-> >> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> >>
-> >> Add a helper function to modify the menu, max and default value
-> >> to set.
-> >>
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> >> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> >> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> >> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> >> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> >> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> >> Cc: Hans de Goede <hdegoede@redhat.com>
-> >> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> >> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> >> Cc: Rob Landley <rob@landley.net>
-> >> ---
-> >> Changes for v3:
-> >> 1: Fixed style/grammer issues as pointed by Hans.
-> >>    Thanks Hans for providing the description.
-> >>
-> >> Changes for v2:
-> >> 1: Fixed review comments from Hans, to have return type as
-> >>    void, add WARN_ON() for fail conditions, allow this fucntion
-> >>    to modify the menu of custom controls.
-> >>
-> >>  Documentation/video4linux/v4l2-controls.txt |   29 ++++++++++++++++++++++++
-> >>  drivers/media/v4l2-core/v4l2-ctrls.c        |   17 +++++++++++++++
-> >>  include/media/v4l2-ctrls.h                  |   11 ++++++++++
-> >>  3 files changed, 57 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/Documentation/video4linux/v4l2-controls.txt
-> >> b/Documentation/video4linux/v4l2-controls.txt index 43da22b..01d0a82 100644
-> >> --- a/Documentation/video4linux/v4l2-controls.txt
-> >> +++ b/Documentation/video4linux/v4l2-controls.txt
-> >> @@ -367,6 +367,35 @@ it to 0 means that all menu items are supported.
-> >>  You set this mask either through the v4l2_ctrl_config struct for a custom
-> >>  control, or by calling v4l2_ctrl_new_std_menu().
-> >>
-> >> +There are situations where menu items may be device specific. In such cases
-> >> the
-> >> +framework provides a helper function to change the menu:
-> >> +
-> >> +void v4l2_ctrl_modify_menu(struct v4l2_ctrl *ctrl, const char * const
-> >> *qmenu,
-> >> +	s32 max, u32 menu_skip_mask, s32 def);
-> > 
-> > Sorry if this is a stupid question, but wouldn't it be better to add a 
-> > function to create a custom menu instead of modifying it afterwards ?
-> > 
-> Create a custom menu? eventually everything boils down to modifying the
-> menu itself.
+On Thu, Sep 13, 2012 at 05:38:36PM +0530, Ashish Chavan wrote:
+> On Wed, 2012-09-12 at 10:57 +0800, Mark Brown wrote:
 
-Laurent, the reason we went for modifying a standard control is that that
-ensures that the control name and type is all standardized. The only thing
-that can be changed later is the menu contents.
+> > > +	aif_ctrl |= (DA9055_AIF_OE | DA9055_AIF_EN);
 
-Regards,
+> > DAPM.
 
-	Hans
+> Here the trouble in making it DAPM based is that there is no separate
+> control for AIF input and output. It is confirmed that AIF_EN is the
+> master control bit, which enables both output as well as input. The AIF
+> _OE bit is redundant. If we use the same control bit(i.e AIF_EN) for
+> both DAPM_AIF_IN and DAPM_AIF_OUT, there will be obvious side effects.
+> Is there any other way to take care of this? Or should we leave it
+> outside DAPM?
 
-> 
-> Regards,
-> --Prabhakar Lad
-> 
-> >> +
-> >> +A good example is the test pattern control for capture/display/sensors
-> >> devices
-> >> +that have the capability to generate test patterns. These test patterns are
-> >> +hardware specific, so the contents of the menu will vary from device to
-> >> device.
-> >> +
-> >> +This helper function is used to modify the menu, max, mask and the default
-> >> +value of the control.
-> >> +
-> >> +Example:
-> >> +
-> >> +	static const char * const test_pattern[] = {
-> >> +		"Disabled",
-> >> +		"Vertical Bars",
-> >> +		"Solid Black",
-> >> +		"Solid White",
-> >> +		NULL,
-> >> +	};
-> >> +	struct v4l2_ctrl *test_pattern_ctrl =
-> >> +		v4l2_ctrl_new_std_menu(&foo->ctrl_handler, &foo_ctrl_ops,
-> >> +			V4L2_CID_TEST_PATTERN, V4L2_TEST_PATTERN_DISABLED, 0,
-> >> +			V4L2_TEST_PATTERN_DISABLED);
-> >> +
-> >> +	v4l2_ctrl_modify_menu(test_pattern_ctrl, test_pattern, 3, 0,
-> >> +		V4L2_TEST_PATTERN_DISABLED);
-> >>
-> >>  Custom Controls
-> >>  ===============
-> > 
-> 
-> 
+Use a supply widget.
