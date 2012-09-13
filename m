@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab2IMHcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 03:32:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46467 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab2IMH1E (ORCPT
+	id S1756381Ab2IMHdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:33:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45273 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab2IMHdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 03:27:04 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-f1-50518ac65cdd
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 03/15] perf hists: Move he->stat.nr_events initialization to a template
-Date: Thu, 13 Sep 2012 16:19:59 +0900
-Message-Id: <1347520811-28150-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 13 Sep 2012 03:33:09 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2001:470:1f05:1640:d9d2:3ecd:9fd1:b4c3]
+In-Reply-To: <20120913073103.GA10231@codeaurora.org>
+References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
+	<CAOesGMhyQd=p23uy1Lj9iq6PKgS+kJ+xh4Z10e4XbSk50E=U7Q@mail.gmail.com>
+	<20120913073103.GA10231@codeaurora.org>
+Date: Thu, 13 Sep 2012 00:33:07 -0700
+Message-ID: <CAOesGMjPX=9h0N8f50wf_efxmR9qgH8c3fyKDbePMC7sPprjLg@mail.gmail.com>
+Subject: Re: [GIT PULL] msm-core changes for v3.7
+From: Olof Johansson <olof@lixom.net>
+To: David Brown <davidb@codeaurora.org>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Thu, Sep 13, 2012 at 12:31 AM, David Brown <davidb@codeaurora.org> wrote:
+> On Wed, Sep 12, 2012 at 11:36:28PM -0700, Olof Johansson wrote:
+>
+>> I think it could be a good idea to split off the cleanups and fixes to
+>> a separate branch. For the other patches there seems to be enough for
+>> at least a 'dt' branch and either a multi-platform topic branch or a
+>> 'boards' topic branch -- probably the former. So see my annotation
+>> below for suggested sorting (I didn't check for
+>> conflicts/dependencies).
+>
+> I'll give a go at splitting things up tomorrow, then.  I'd held off on
+> making separate branches because there are a bunch of changes to
+> similar stuff.  Even if I get them separated, they are unlikely to
+> build without all being applied.
+>
+> But, I'll see what I can do.
 
-Since it is set to 1 for a new hist entry, no need to set to
-separately.  Move it to a template entry.
+Ok. If it's too hairy this time around, let us know and we can figure
+something out. Over time hopefully it'll get easier to sort patches in
+buckets.
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/hist.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index ab3d11491991..ef39e6714cbb 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -223,7 +223,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 
- 	if (he != NULL) {
- 		*he = *template;
--		he->stat.nr_events = 1;
-+
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 		if (symbol_conf.use_callchain)
-@@ -323,6 +323,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- 		.level	= al->level,
- 		.stat = {
- 			.period	= period,
-+			.nr_events = 1,
- 		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
-@@ -347,6 +348,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		.level	= al->level,
- 		.stat = {
- 			.period	= period,
-+			.nr_events = 1,
- 		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
--- 
-1.7.11.4
-
+-Olof
