@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab2IMJsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:48:39 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:56950
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753091Ab2IMJsg (ORCPT
+	id S1752185Ab2IMJwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:52:44 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42188 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751154Ab2IMJwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:48:36 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432I4015Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MAA8KQ-02-0RK-02
-X-M-MSG: 
-Date: Thu, 13 Sep 2012 11:48:26 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, <mingo@kernel.org>,
-        <hpa@zytor.com>, <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
-        <a.p.zijlstra@chello.nl>, <namhyung.kim@lge.com>, <tglx@linutronix.de>,
-        <linux-tip-commits@vger.kernel.org>
-Subject: Re: [PATCH] perf record: Add missing perf_hpp__init for pipe-mode
-Message-ID: <20120913094826.GD8285@erda.amd.com>
-References: <1346640790-17197-2-git-send-email-namhyung@kernel.org>
- <tip-ea251d51d2c7d7233790123227f787c477f567f5@git.kernel.org>
- <20120912172641.GB29278@erda.amd.com>
- <20120912184815.GC557@infradead.org>
- <87y5ke8wxv.fsf@sejong.aot.lge.com>
- <87txv28spl.fsf_-_@sejong.aot.lge.com>
+	Thu, 13 Sep 2012 05:52:42 -0400
+X-Sasl-enc: LukDOj9URAJE00y7uPgqeRFb1pnlwyYKEze8LTGg8+e7 1347529961
+Message-ID: <5051ACDB.5030407@imap.cc>
+Date: Thu, 13 Sep 2012 11:52:27 +0200
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <87txv28spl.fsf_-_@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: Hansjoerg Lipp <hjlipp@web.de>, kernel-janitors@vger.kernel.org,
+        Karsten Keil <isdn@linux-pingi.de>,
+        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] drivers/isdn/gigaset/common.c: Remove useless kfree
+References: <1347462407-13499-9-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1347462407-13499-9-git-send-email-peter.senna@gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig82CCBC75DD5C689D2297D630"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.09.12 13:14:30, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> The perf_hpp__init() function was only called from setup_browser() so
-> that the pipe-mode missed the initialization thus didn't respond to
-> related options.  Fix it.
-> 
-> Reported-by: Robert Richter <robert.richter@amd.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-report.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig82CCBC75DD5C689D2297D630
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-This patch fixes it.
+Am 12.09.2012 17:06, schrieb Peter Senna Tschudin:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>=20
+> Remove useless kfree() and clean up code related to the removal.
+>=20
+> The semantic patch that finds this problem is as follows:
+[...]
+>=20
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+Acked-by: Tilman Schmidt <tilman@imap.cc>
+
+> ---
+>  drivers/isdn/gigaset/common.c |    1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/commo=
+n.c
+> index aa41485..30a6b17 100644
+> --- a/drivers/isdn/gigaset/common.c
+> +++ b/drivers/isdn/gigaset/common.c
+> @@ -1123,7 +1123,6 @@ struct gigaset_driver *gigaset_initdriver(unsigne=
+d minor, unsigned minors,
+>  	return drv;
+> =20
+>  error:
+> -	kfree(drv->cs);
+>  	kfree(drv);
+>  	return NULL;
+>  }
+
+This is indeed vestigial code, left in when another error path
+that needed it was removed. Though innocuous, it's better to
+remove it.
 
 Thanks,
+Tilman
 
--Robert
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
 
-> 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 97b2e6300f4c..279155a47d1c 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -689,8 +689,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
->  
->  	if (strcmp(report.input_name, "-") != 0)
->  		setup_browser(true);
-> -	else
-> +	else {
->  		use_browser = 0;
-> +		perf_hpp__init(false, false);
-> +	}
->  
->  	/*
->  	 * Only in the newt browser we are doing integrated annotation,
-> -- 
-> 1.7.11.4
-> 
-> 
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
+
+--------------enig82CCBC75DD5C689D2297D630
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlBRrOcACgkQMdB4Whm86/ntSwCfT5hw2bM/EQH3o+ymlNaygg8j
+VyEAnjBVSKhlpTSGCaEJ4rFqXEDnyRSI
+=spk4
+-----END PGP SIGNATURE-----
+
+--------------enig82CCBC75DD5C689D2297D630--
