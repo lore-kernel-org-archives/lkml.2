@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab2IMPpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:45:15 -0400
+	id S1755691Ab2IMPpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:45:42 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:48693 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2IMPmQ (ORCPT
+	with ESMTP id S1754719Ab2IMPmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:42:16 -0400
+	Thu, 13 Sep 2012 11:42:08 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -21,9 +21,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 03/10] pinctrl: mvebu: kirkwood pinctrl driver
-Date: Thu, 13 Sep 2012 17:41:45 +0200
-Message-Id: <1347550912-18021-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 01/10] pinctrl: mvebu: pinctrl driver core
+Date: Thu, 13 Sep 2012 17:41:43 +0200
+Message-Id: <1347550912-18021-2-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -32,22 +32,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a SoC specific pinctrl driver for Marvell Kirkwood SoCs
-plus DT binding documentation. This driver will use the mvebu pinctrl
-driver core.
+This patch adds a pinctrl driver core for Marvell SoCs plus DT
+binding documentation. This core driver will be used by SoC family
+specific drivers, i.e. Armada XP, Armada 370, Dove, Kirkwood, aso.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
 v2:
-- restructured pinctrl/Kconfig to hide pinctrl driver as it will be
-  always selected by arch/arm/mach-mvebu/Kconfig
-- use enum for kirkwood variants instead of defines
+- restructured Kconfig to have a common PINCTRL_MVEBU that are selected by
+  SoC specific drivers.
+- cleaned pinctrl-mvebu and replaced 'magic numbers' by defines
+- make use of of_iomap instead of get_resource/ioremap
+- extended include documentation and checked with scripts/kernel-doc
+- cleaned devicetree binding documentation
 
 v3:
-- moved variant specific data to DT match struct
+- list of functions is now built out of pin groups passed to core driver
+  instead of parsing DT node.
 
 v4:
 - fix bogus v3 patch set
+- mark internal functions as static
+- add a note to devicetree documentation for "default" pinctrl-name
+- use function name instead of DT node name for DT mapping
 
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
@@ -67,335 +75,120 @@ Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |  279 ++++++++++++
- drivers/pinctrl/Kconfig                            |    4 +
+ .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   46 ++
+ arch/arm/Kconfig                                   |    1 +
+ drivers/pinctrl/Kconfig                            |    6 +
  drivers/pinctrl/Makefile                           |    1 +
- drivers/pinctrl/pinctrl-kirkwood.c                 |  472 ++++++++++++++++++++
- 4 files changed, 756 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
- create mode 100644 drivers/pinctrl/pinctrl-kirkwood.c
+ drivers/pinctrl/pinctrl-mvebu.c                    |  754 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.h                    |  192 +++++
+ 6 files changed, 1000 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.h
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
 new file mode 100644
-index 0000000..361bccb
+index 0000000..0a26c3a
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
-@@ -0,0 +1,279 @@
-+* Marvell Kirkwood SoC pinctrl driver for mpp
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+@@ -0,0 +1,46 @@
++* Marvell SoC pinctrl core driver for mpp
 +
-+Please refer to marvell,mvebu-pinctrl.txt in this directory for common binding
-+part and usage.
++The pinctrl driver enables Marvell SoCs to configure the multi-purpose pins
++(mpp) to a specific function. For each SoC family there is a SoC specific
++driver using this core driver.
 +
-+Required properties:
-+- compatible: "marvell,88f6180-pinctrl",
-+              "marvell,88f6190-pinctrl", "marvell,88f6192-pinctrl",
-+              "marvell,88f6281-pinctrl", "marvell,88f6282-pinctrl"
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
 +
-+This driver supports all kirkwood variants, i.e. 88f6180, 88f619x, and 88f628x.
++A Marvell SoC pin configuration node is a node of a group of pins which can
++be used for a specific device or function. Each node requires one or more
++mpp pins or group of pins and a mpp function common to all pins.
 +
-+Available mpp pins/groups and functions:
-+Note: brackets (x) are not part of the mpp name for marvell,function and given
-+only for more detailed description in this document.
++Required properties for pinctrl driver:
++- compatible: "marvell,<soc>-pinctrl"
++  Please refer to each marvell,<soc>-pinctrl.txt binding doc for supported SoCs.
 +
-+* Marvell Kirkwood 88f6180
++Required properties for pin configuration node:
++- marvell,pins: string array of mpp pins or group of pins to be muxed.
++- marvell,function: string representing a function to mux to for all
++    marvell,pins given in this pin configuration node. The function has to be
++    common for all marvell,pins. Please refer to marvell,<soc>-pinctrl.txt for
++    valid pin/pin group names and available function names for each SoC.
 +
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs)
-+mpp17         17       gpio, sdio(d3)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, mii(rxerr)
-+mpp21         21       gpio, audio(spdifi)
-+mpp22         22       gpio, audio(spdifo)
-+mpp23         23       gpio, audio(rmclk)
-+mpp24         24       gpio, audio(bclk)
-+mpp25         25       gpio, audio(sdo)
-+mpp26         26       gpio, audio(lrclk)
-+mpp27         27       gpio, audio(mclk)
-+mpp28         28       gpio, audio(sdi)
-+mpp29         29       gpio, audio(extclk)
++Examples:
 +
-+* Marvell Kirkwood 88f6190
++uart1: serial@12100 {
++	compatible = "ns16550a";
++	reg = <0x12100 0x100>;
++	reg-shift = <2>;
++	interrupts = <7>;
 +
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0)
-+mpp21         21       gpio, ge1(txd1), sata0(act)
-+mpp22         22       gpio, ge1(txd2)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt)
-+mpp24         24       gpio, ge1(rxd0)
-+mpp25         25       gpio, ge1(rxd1)
-+mpp26         26       gpio, ge1(rxd2)
-+mpp27         27       gpio, ge1(rxd3)
-+mpp28         28       gpio, ge1(col)
-+mpp29         29       gpio, ge1(txclk)
-+mpp30         30       gpio, ge1(rxclk)
-+mpp31         31       gpio, ge1(rxclk)
-+mpp32         32       gpio, ge1(txclko)
-+mpp33         33       gpo, ge1(txclk)
-+mpp34         34       gpio, ge1(txen)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr)
++	pinctrl-0 = <&pmx_uart1_sw>;
++	pinctrl-names = "default";
++};
 +
-+* Marvell Kirkwood 88f6192
++pinctrl: pinctrl@d0200 {
++	compatible = "marvell,dove-pinctrl";
++	reg = <0xd0200 0x20>;
 +
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk), sata1(act)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpo, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx)
-+mpp33         33       gpo, ge1(txclk), tdm(drx)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql)
-+
-+* Marvell Kirkwood 88f6281
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), ptp(clk), sata1(act)
-+mpp5          5        gpo, nand(io7), uart0(txd), ptp(trig), sata0(act)
-+mpp6          6        sysrst(out), spi(mosi), ptp(trig)
-+mpp7          7        gpo, pex(rsto), spi(cs), ptp(trig)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), ptp(clk),
-+                       mii(col), mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), ptp(evreq),
-+                       mii(crs), sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), ptp(trig), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), ptp(clk), ptp-1(evreq),
-+                       ptp-2(trig), sata0(act)
-+mpp12         12       gpio, sdio(clk)
-+mpp13         13       gpio, sdio(cmd), uart1(txd)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt)
-+mpp18         18       gpo, nand(io0)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx)
-+mpp33         33       gpo, ge1(txclk), tdm(drx)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1), sata1(act)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql)
-+mpp36         36       gpio, ts(mp0), tdm(spi-cs1), audio(spdifi)
-+mpp37         37       gpio, ts(mp1), tdm(tx2ql), audio(spdifo)
-+mpp38         38       gpio, ts(mp2), tdm(rx2ql), audio(rmclk)
-+mpp39         39       gpio, ts(mp3), tdm(spi-cs0), audio(bclk)
-+mpp40         40       gpio, ts(mp4), tdm(spi-sck), audio(sdo)
-+mpp41         41       gpio, ts(mp5), tdm(spi-miso), audio(lrclk)
-+mpp42         42       gpio, ts(mp6), tdm(spi-mosi), audio(mclk)
-+mpp43         43       gpio, ts(mp7), tdm(int), audio(sdi)
-+mpp44         44       gpio, ts(mp8), tdm(rst), audio(extclk)
-+mpp45         45       gpio, ts(mp9), tdm(pclk)
-+mpp46         46       gpio, ts(mp10), tdm(fs)
-+mpp47         47       gpio, ts(mp11), tdm(drx)
-+mpp48         48       gpio, ts(mp12), tdm(dtx)
-+mpp49         49       gpio, ts(mp9), tdm(rx0ql), ptp(clk)
-+
-+* Marvell Kirkwood 88f6282
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, nand(io2), spi(cs)
-+mpp1          1        gpo, nand(io3), spi(mosi)
-+mpp2          2        gpo, nand(io4), spi(sck)
-+mpp3          3        gpo, nand(io5), spi(miso)
-+mpp4          4        gpio, nand(io6), uart0(rxd), sata1(act), lcd(hsync)
-+mpp5          5        gpo, nand(io7), uart0(txd), sata0(act), lcd(vsync)
-+mpp6          6        sysrst(out), spi(mosi)
-+mpp7          7        gpo, spi(cs), lcd(pwm)
-+mpp8          8        gpio, twsi0(sda), uart0(rts), uart1(rts), mii(col),
-+                       mii-1(rxerr), sata1(prsnt)
-+mpp9          9        gpio, twsi(sck), uart0(cts), uart1(cts), mii(crs),
-+                       sata0(prsnt)
-+mpp10         10       gpo, spi(sck), uart0(txd), sata1(act)
-+mpp11         11       gpio, spi(miso), uart0(rxd), sata0(act)
-+mpp12         12       gpo, sdio(clk), audio(spdifo), spi(mosi), twsi(sda)
-+mpp13         13       gpio, sdio(cmd), uart1(txd), audio(rmclk), lcd(pwm)
-+mpp14         14       gpio, sdio(d0), uart1(rxd), mii(col), sata1(prsnt),
-+                       audio(spdifi), audio-1(sdi)
-+mpp15         15       gpio, sdio(d1), uart0(rts), uart1(txd), sata0(act),
-+                       spi(cs)
-+mpp16         16       gpio, sdio(d2), uart0(cts), uart1(rxd), mii(crs),
-+                       sata1(act), lcd(extclk)
-+mpp17         17       gpio, sdio(d3), sata0(prsnt), sata1(act), twsi1(sck)
-+mpp18         18       gpo, nand(io0), pex(clkreq)
-+mpp19         19       gpo, nand(io1)
-+mpp20         20       gpio, ge1(txd0), ts(mp0), tdm(tx0ql), audio(spdifi),
-+                       sata1(act), lcd(d0)
-+mpp21         21       gpio, ge1(txd1), sata0(act), ts(mp1), tdm(rx0ql),
-+                       audio(spdifo), lcd(d1)
-+mpp22         22       gpio, ge1(txd2), ts(mp2), tdm(tx2ql), audio(rmclk),
-+                       sata1(prsnt), lcd(d2)
-+mpp23         23       gpio, ge1(txd3), sata0(prsnt), ts(mp3), tdm(rx2ql),
-+                       audio(bclk), lcd(d3)
-+mpp24         24       gpio, ge1(rxd0), ts(mp4), tdm(spi-cs0), audio(sdo),
-+                       lcd(d4)
-+mpp25         25       gpio, ge1(rxd1), ts(mp5), tdm(spi-sck), audio(lrclk),
-+                       lcd(d5)
-+mpp26         26       gpio, ge1(rxd2), ts(mp6), tdm(spi-miso), audio(mclk),
-+                       lcd(d6)
-+mpp27         27       gpio, ge1(rxd3), ts(mp7), tdm(spi-mosi), audio(sdi),
-+                       lcd(d7)
-+mpp28         28       gpio, ge1(col), ts(mp8), tdm(int), audio(extclk),
-+                       lcd(d8)
-+mpp29         29       gpio, ge1(txclk), ts(mp9), tdm(rst), lcd(d9)
-+mpp30         30       gpio, ge1(rxclk), ts(mp10), tdm(pclk), lcd(d10)
-+mpp31         31       gpio, ge1(rxclk), ts(mp11), tdm(fs), lcd(d11)
-+mpp32         32       gpio, ge1(txclko), ts(mp12), tdm(drx), lcd(d12)
-+mpp33         33       gpo, ge1(txclk), tdm(drx), lcd(d13)
-+mpp34         34       gpio, ge1(txen), tdm(spi-cs1), sata1(act), lcd(d14)
-+mpp35         35       gpio, ge1(rxerr), sata0(act), mii(rxerr), tdm(tx0ql),
-+                       lcd(d15)
-+mpp36         36       gpio, ts(mp0), tdm(spi-cs1), audio(spdifi), twsi1(sda)
-+mpp37         37       gpio, ts(mp1), tdm(tx2ql), audio(spdifo), twsi1(sck)
-+mpp38         38       gpio, ts(mp2), tdm(rx2ql), audio(rmclk), lcd(d18)
-+mpp39         39       gpio, ts(mp3), tdm(spi-cs0), audio(bclk), lcd(d19)
-+mpp40         40       gpio, ts(mp4), tdm(spi-sck), audio(sdo), lcd(d20)
-+mpp41         41       gpio, ts(mp5), tdm(spi-miso), audio(lrclk), lcd(d21)
-+mpp42         42       gpio, ts(mp6), tdm(spi-mosi), audio(mclk), lcd(d22)
-+mpp43         43       gpio, ts(mp7), tdm(int), audio(sdi), lcd(d23)
-+mpp44         44       gpio, ts(mp8), tdm(rst), audio(extclk), lcd(clk)
-+mpp45         45       gpio, ts(mp9), tdm(pclk), lcd(e)
-+mpp46         46       gpio, ts(mp10), tdm(fs), lcd(hsync)
-+mpp47         47       gpio, ts(mp11), tdm(drx), lcd(vsync)
-+mpp48         48       gpio, ts(mp12), tdm(dtx), lcd(d16)
-+mpp49         49       gpo, tdm(rx0ql), pex(clkreq), lcd(d17)
++	pmx_uart1_sw: pmx-uart1-sw {
++		marvell,pins = "mpp_uart1";
++		marvell,function = "uart1";
++	};
++};
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a2b6f74..2eb3f6b 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -574,6 +574,7 @@ config ARCH_MVEBU
+ 	select IRQ_DOMAIN
+ 	select COMMON_CLK
+ 	select PLAT_ORION
++	select PINCTRL
+ 	help
+ 	  Support for the Marvell SoC Family with device tree support
+ 
 diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index f15eba4..31c0bba 100644
+index 54e3588..20bfdc3 100644
 --- a/drivers/pinctrl/Kconfig
 +++ b/drivers/pinctrl/Kconfig
-@@ -155,6 +155,10 @@ config PINCTRL_DOVE
- 	bool
- 	select PINCTRL_MVEBU
+@@ -145,6 +145,12 @@ config PINCTRL_COH901
+ 	  COH 901 335 and COH 901 571/3. They contain 3, 5 or 7
+ 	  ports of 8 GPIO pins each.
  
-+config PINCTRL_KIRKWOOD
++config PINCTRL_MVEBU
 +	bool
-+	select PINCTRL_MVEBU
++	depends on ARCH_MVEBU
++	select PINMUX
++	select PINCONF
 +
  source "drivers/pinctrl/spear/Kconfig"
  
  endmenu
 diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index d1327df..3006294 100644
+index f40b1f8..007ed32 100644
 --- a/drivers/pinctrl/Makefile
 +++ b/drivers/pinctrl/Makefile
-@@ -31,5 +31,6 @@ obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
+@@ -29,5 +29,6 @@ obj-$(CONFIG_PINCTRL_TEGRA20)	+= pinctrl-tegra20.o
+ obj-$(CONFIG_PINCTRL_TEGRA30)	+= pinctrl-tegra30.o
+ obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
  obj-$(CONFIG_PINCTRL_COH901)	+= pinctrl-coh901.o
- obj-$(CONFIG_PINCTRL_MVEBU)	+= pinctrl-mvebu.o
- obj-$(CONFIG_PINCTRL_DOVE)	+= pinctrl-dove.o
-+obj-$(CONFIG_PINCTRL_KIRKWOOD)	+= pinctrl-kirkwood.o
++obj-$(CONFIG_PINCTRL_MVEBU)	+= pinctrl-mvebu.o
  
  obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/pinctrl/pinctrl-kirkwood.c b/drivers/pinctrl/pinctrl-kirkwood.c
+diff --git a/drivers/pinctrl/pinctrl-mvebu.c b/drivers/pinctrl/pinctrl-mvebu.c
 new file mode 100644
-index 0000000..9a74ef6
+index 0000000..8e6266c
 --- /dev/null
-+++ b/drivers/pinctrl/pinctrl-kirkwood.c
-@@ -0,0 +1,472 @@
++++ b/drivers/pinctrl/pinctrl-mvebu.c
+@@ -0,0 +1,754 @@
 +/*
-+ * Marvell Kirkwood pinctrl driver based on mvebu pinctrl core
++ * Marvell MVEBU pinctrl core driver
 + *
-+ * Author: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ * Authors: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *          Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -403,467 +196,946 @@ index 0000000..9a74ef6
 + * (at your option) any later version.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/io.h>
 +#include <linux/of.h>
-+#include <linux/of_device.h>
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/pinctrl/machine.h>
++#include <linux/pinctrl/pinconf.h>
 +#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
 +
++#include "core.h"
 +#include "pinctrl-mvebu.h"
 +
-+#define V(f6180, f6190, f6192, f6281, f6282)		\
-+	((f6180 << 0) | (f6190 << 1) | (f6192 << 2) |	\
-+	 (f6281 << 3) | (f6282 << 4))
++#define MPPS_PER_REG	8
++#define MPP_BITS	4
++#define MPP_MASK	0xf
 +
-+enum kirkwood_variant {
-+	VARIANT_MV88F6180 = V(1, 0, 0, 0, 0),
-+	VARIANT_MV88F6190 = V(0, 1, 0, 0, 0),
-+	VARIANT_MV88F6192 = V(0, 0, 1, 0, 0),
-+	VARIANT_MV88F6281 = V(0, 0, 0, 1, 0),
-+	VARIANT_MV88F6282 = V(0, 0, 0, 0, 1),
++struct mvebu_pinctrl_function {
++	const char *name;
++	const char **groups;
++	unsigned num_groups;
 +};
 +
-+static struct mvebu_mpp_mode mv88f6xxx_mpp_modes[] = {
-+	MPP_MODE(0,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io2",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "cs",       V(1, 1, 1, 1, 1))),
-+	MPP_MODE(1,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io3",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "mosi",     V(1, 1, 1, 1, 1))),
-+	MPP_MODE(2,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io4",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "sck",      V(1, 1, 1, 1, 1))),
-+	MPP_MODE(3,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io5",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "miso",     V(1, 1, 1, 1, 1))),
-+	MPP_MODE(4,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io6",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "hsync",    V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "ptp", "clk",      V(1, 1, 1, 1, 0))),
-+	MPP_MODE(5,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io7",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "ptp", "trig",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "vsync",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(6,
-+		MPP_VAR_FUNCTION(0x0, "sysrst", "out",   V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "spi", "mosi",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "ptp", "trig",     V(1, 1, 1, 1, 0))),
-+	MPP_MODE(7,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "pex", "rsto",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "cs",       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ptp", "trig",     V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "pwm",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(8,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "twsi0", "sda",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "mii-1", "rxerr",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "clk",      V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "col",      V(1, 1, 1, 1, 1))),
-+	MPP_MODE(9,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "twsi0", "sck",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "evreq",    V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "crs",      V(1, 1, 1, 1, 1))),
-+	MPP_MODE(10,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "sck",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0X3, "uart0", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xc, "ptp", "trig",     V(1, 1, 1, 1, 0))),
-+	MPP_MODE(11,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "spi", "miso",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart0", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "ptp-1", "evreq",  V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xc, "ptp-2", "trig",   V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0xd, "ptp", "clk",      V(1, 1, 1, 1, 0)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1))),
-+	MPP_MODE(12,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 0, 1)),
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "clk",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "spdifo", V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "spi", "mosi",     V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "twsi1", "sda",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(13,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "cmd",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "rmclk",  V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "pwm",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(14,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d0",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "audio", "spdifi", V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "audio-1", "sdi",  V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "col",      V(1, 1, 1, 1, 1))),
-+	MPP_MODE(15,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d1",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "rts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "txd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "spi", "cs",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(16,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d2",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "uart0", "cts",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "uart1", "rxd",    V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "extclk",   V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "mii", "crs",      V(1, 1, 1, 1, 1))),
-+	MPP_MODE(17,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "sdio", "d3",      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xa, "sata1", "act",    V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xd, "twsi1", "sck",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(18,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io0",     V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "pex", "clkreq",   V(0, 0, 0, 0, 1))),
-+	MPP_MODE(19,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "nand", "io1",     V(1, 1, 1, 1, 1))),
-+	MPP_MODE(20,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp0",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd0",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d0",       V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xc, "mii", "rxerr",    V(1, 0, 0, 0, 0))),
-+	MPP_MODE(21,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp1",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd1",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d1",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(22,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp2",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx2ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd2",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "prsnt",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d2",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(23,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp3",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx2ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txd3",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "prsnt",  V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d3",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(24,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp4",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs0",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd0",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d4",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(25,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp5",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-sck",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd1",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d5",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(26,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp6",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-miso", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd2",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d6",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(27,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp7",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-mosi", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxd3",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d7",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(28,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp8",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "int",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "col",      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d8",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(29,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(1, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rst",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txclk",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(1, 0, 0, 0, 0)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d9",       V(0, 0, 0, 0, 1))),
-+	MPP_MODE(30,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp10",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "pclk",     V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxctl",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d10",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(31,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp11",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "fs",       V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxclk",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d11",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(32,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp12",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "drx",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txclko",   V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d12",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(33,
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "dtx",      V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txctl",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d13",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(34,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs1",  V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "txen",     V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata1", "act",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d14",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(35,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx0ql",    V(0, 0, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x3, "ge1", "rxerr",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "sata0", "act",    V(0, 1, 1, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d15",      V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xc, "mii", "rxerr",    V(0, 1, 1, 1, 1))),
-+	MPP_MODE(36,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp0",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs1",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifi", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "twsi1", "sda",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(37,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp1",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "tx2ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "spdifo", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "twsi1", "sck",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(38,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp2",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx2ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "rmclk",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d18",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(39,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp3",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-cs0",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "bclk",   V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d19",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(40,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp4",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-sck",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdo",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d20",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(41,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp5",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-miso", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "lrclk",  V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d21",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(42,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp6",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "spi-mosi", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "mclk",   V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d22",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(43,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp7",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "int",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "sdi",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d23",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(44,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp8",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rst",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x4, "audio", "extclk", V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "clk",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(45,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "pclk",     V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "e",        V(0, 0, 0, 0, 1))),
-+	MPP_MODE(46,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp10",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "fs",       V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "hsync",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(47,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp11",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "drx",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "vsync",    V(0, 0, 0, 0, 1))),
-+	MPP_MODE(48,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp12",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "dtx",      V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d16",      V(0, 0, 0, 0, 1))),
-+	MPP_MODE(49,
-+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x0, "gpo", NULL,       V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0x1, "ts", "mp9",       V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0x2, "tdm", "rx0ql",    V(0, 0, 0, 1, 1)),
-+		MPP_VAR_FUNCTION(0x5, "ptp", "clk",      V(0, 0, 0, 1, 0)),
-+		MPP_VAR_FUNCTION(0xa, "pex", "clkreq",   V(0, 0, 0, 0, 1)),
-+		MPP_VAR_FUNCTION(0xb, "lcd", "d17",      V(0, 0, 0, 0, 1))),
++struct mvebu_pinctrl_group {
++	const char *name;
++	struct mvebu_mpp_ctrl *ctrl;
++	struct mvebu_mpp_ctrl_setting *settings;
++	unsigned num_settings;
++	unsigned gid;
++	unsigned *pins;
++	unsigned npins;
 +};
 +
-+static struct mvebu_mpp_ctrl mv88f6180_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 29),
++struct mvebu_pinctrl {
++	struct device *dev;
++	struct pinctrl_dev *pctldev;
++	struct pinctrl_desc desc;
++	void __iomem *base;
++	struct mvebu_pinctrl_group *groups;
++	unsigned num_groups;
++	struct mvebu_pinctrl_function *functions;
++	unsigned num_functions;
++	u8 variant;
 +};
 +
-+static struct pinctrl_gpio_range mv88f6180_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0, 0, 0, 30),
-+};
-+
-+static struct mvebu_mpp_ctrl mv88f619x_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 35),
-+};
-+
-+static struct pinctrl_gpio_range mv88f619x_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,  0,  0, 32),
-+	MPP_GPIO_RANGE(1, 32, 32,  4),
-+};
-+
-+static struct mvebu_mpp_ctrl mv88f628x_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 49),
-+};
-+
-+static struct pinctrl_gpio_range mv88f628x_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,  0,  0, 32),
-+	MPP_GPIO_RANGE(1, 32, 32, 18),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6180_info = {
-+	.variant = VARIANT_MV88F6180,
-+	.controls = mv88f6180_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f6180_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f6180_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f6180_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6190_info = {
-+	.variant = VARIANT_MV88F6190,
-+	.controls = mv88f619x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f619x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6192_info = {
-+	.variant = VARIANT_MV88F6192,
-+	.controls = mv88f619x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f619x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6281_info = {
-+	.variant = VARIANT_MV88F6281,
-+	.controls = mv88f628x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f628x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges),
-+};
-+
-+static struct mvebu_pinctrl_soc_info mv88f6282_info = {
-+	.variant = VARIANT_MV88F6282,
-+	.controls = mv88f628x_mpp_controls,
-+	.ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls),
-+	.modes = mv88f6xxx_mpp_modes,
-+	.nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes),
-+	.gpioranges = mv88f628x_gpio_ranges,
-+	.ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges),
-+};
-+
-+static struct of_device_id kirkwood_pinctrl_of_match[] __devinitdata = {
-+	{ .compatible = "marvell,88f6180-pinctrl", .data = &mv88f6180_info },
-+	{ .compatible = "marvell,88f6190-pinctrl", .data = &mv88f6190_info },
-+	{ .compatible = "marvell,88f6192-pinctrl", .data = &mv88f6192_info },
-+	{ .compatible = "marvell,88f6281-pinctrl", .data = &mv88f6281_info },
-+	{ .compatible = "marvell,88f6282-pinctrl", .data = &mv88f6282_info },
-+	{ }
-+};
-+
-+static int __devinit kirkwood_pinctrl_probe(struct platform_device *pdev)
++static struct mvebu_pinctrl_group *mvebu_pinctrl_find_group_by_pid(
++	struct mvebu_pinctrl *pctl, unsigned pid)
 +{
-+	const struct of_device_id *match =
-+		of_match_device(kirkwood_pinctrl_of_match, &pdev->dev);
-+	pdev->dev.platform_data = match->data;
-+	return mvebu_pinctrl_probe(pdev);
++	unsigned n;
++	for (n = 0; n < pctl->num_groups; n++) {
++		if (pid >= pctl->groups[n].pins[0] &&
++		    pid < pctl->groups[n].pins[0] +
++			pctl->groups[n].npins)
++			return &pctl->groups[n];
++	}
++	return NULL;
 +}
 +
-+static int __devexit kirkwood_pinctrl_remove(struct platform_device *pdev)
++static struct mvebu_pinctrl_group *mvebu_pinctrl_find_group_by_name(
++	struct mvebu_pinctrl *pctl, const char *name)
 +{
-+	return mvebu_pinctrl_remove(pdev);
++	unsigned n;
++	for (n = 0; n < pctl->num_groups; n++) {
++		if (strcmp(name, pctl->groups[n].name) == 0)
++			return &pctl->groups[n];
++	}
++	return NULL;
 +}
 +
-+static struct platform_driver kirkwood_pinctrl_driver = {
-+	.driver = {
-+		.name = "kirkwood-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(kirkwood_pinctrl_of_match),
-+	},
-+	.probe = kirkwood_pinctrl_probe,
-+	.remove = __devexit_p(kirkwood_pinctrl_remove),
++static struct mvebu_mpp_ctrl_setting *mvebu_pinctrl_find_setting_by_val(
++	struct mvebu_pinctrl *pctl, struct mvebu_pinctrl_group *grp,
++	unsigned long config)
++{
++	unsigned n;
++	for (n = 0; n < grp->num_settings; n++) {
++		if (config == grp->settings[n].val) {
++			if (!pctl->variant || (pctl->variant &
++					       grp->settings[n].variant))
++				return &grp->settings[n];
++		}
++	}
++	return NULL;
++}
++
++static struct mvebu_mpp_ctrl_setting *mvebu_pinctrl_find_setting_by_name(
++	struct mvebu_pinctrl *pctl, struct mvebu_pinctrl_group *grp,
++	const char *name)
++{
++	unsigned n;
++	for (n = 0; n < grp->num_settings; n++) {
++		if (strcmp(name, grp->settings[n].name) == 0) {
++			if (!pctl->variant || (pctl->variant &
++					       grp->settings[n].variant))
++				return &grp->settings[n];
++		}
++	}
++	return NULL;
++}
++
++static struct mvebu_mpp_ctrl_setting *mvebu_pinctrl_find_gpio_setting(
++	struct mvebu_pinctrl *pctl, struct mvebu_pinctrl_group *grp)
++{
++	unsigned n;
++	for (n = 0; n < grp->num_settings; n++) {
++		if (grp->settings[n].flags &
++			(MVEBU_SETTING_GPO | MVEBU_SETTING_GPI)) {
++			if (!pctl->variant || (pctl->variant &
++						grp->settings[n].variant))
++				return &grp->settings[n];
++		}
++	}
++	return NULL;
++}
++
++static struct mvebu_pinctrl_function *mvebu_pinctrl_find_function_by_name(
++	struct mvebu_pinctrl *pctl, const char *name)
++{
++	unsigned n;
++	for (n = 0; n < pctl->num_functions; n++) {
++		if (strcmp(name, pctl->functions[n].name) == 0)
++			return &pctl->functions[n];
++	}
++	return NULL;
++}
++
++/*
++ * Common mpp pin configuration registers on MVEBU are
++ * registers of eight 4-bit values for each mpp setting.
++ * Register offset and bit mask are calculated accordingly below.
++ */
++static int mvebu_common_mpp_get(struct mvebu_pinctrl *pctl,
++				struct mvebu_pinctrl_group *grp,
++				unsigned long *config)
++{
++	unsigned pin = grp->gid;
++	unsigned off = (pin / MPPS_PER_REG) * MPP_BITS;
++	unsigned shift = (pin % MPPS_PER_REG) * MPP_BITS;
++
++	*config = readl(pctl->base + off);
++	*config >>= shift;
++	*config &= MPP_MASK;
++
++	return 0;
++}
++
++static int mvebu_common_mpp_set(struct mvebu_pinctrl *pctl,
++				struct mvebu_pinctrl_group *grp,
++				unsigned long config)
++{
++	unsigned pin = grp->gid;
++	unsigned off = (pin / MPPS_PER_REG) * MPP_BITS;
++	unsigned shift = (pin % MPPS_PER_REG) * MPP_BITS;
++	unsigned long reg;
++
++	reg = readl(pctl->base + off);
++	reg &= ~(MPP_MASK << shift);
++	reg |= (config << shift);
++	writel(reg, pctl->base + off);
++
++	return 0;
++}
++
++static int mvebu_pinconf_group_get(struct pinctrl_dev *pctldev,
++				unsigned gid, unsigned long *config)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_group *grp = &pctl->groups[gid];
++
++	if (!grp->ctrl)
++		return -EINVAL;
++
++	if (grp->ctrl->mpp_get)
++		return grp->ctrl->mpp_get(grp->ctrl, config);
++
++	return mvebu_common_mpp_get(pctl, grp, config);
++}
++
++static int mvebu_pinconf_group_set(struct pinctrl_dev *pctldev,
++				unsigned gid, unsigned long config)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_group *grp = &pctl->groups[gid];
++
++	if (!grp->ctrl)
++		return -EINVAL;
++
++	if (grp->ctrl->mpp_set)
++		return grp->ctrl->mpp_set(grp->ctrl, config);
++
++	return mvebu_common_mpp_set(pctl, grp, config);
++}
++
++static void mvebu_pinconf_group_dbg_show(struct pinctrl_dev *pctldev,
++					struct seq_file *s, unsigned gid)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_group *grp = &pctl->groups[gid];
++	struct mvebu_mpp_ctrl_setting *curr;
++	unsigned long config;
++	unsigned n;
++
++	if (mvebu_pinconf_group_get(pctldev, gid, &config))
++		return;
++
++	curr = mvebu_pinctrl_find_setting_by_val(pctl, grp, config);
++
++	if (curr) {
++		seq_printf(s, "current: %s", curr->name);
++		if (curr->subname)
++			seq_printf(s, "(%s)", curr->subname);
++		if (curr->flags & (MVEBU_SETTING_GPO | MVEBU_SETTING_GPI)) {
++			seq_printf(s, "(");
++			if (curr->flags & MVEBU_SETTING_GPI)
++				seq_printf(s, "i");
++			if (curr->flags & MVEBU_SETTING_GPO)
++				seq_printf(s, "o");
++			seq_printf(s, ")");
++		}
++	} else
++		seq_printf(s, "current: UNKNOWN");
++
++	if (grp->num_settings > 1) {
++		seq_printf(s, ", available = [");
++		for (n = 0; n < grp->num_settings; n++) {
++			if (curr == &grp->settings[n])
++				continue;
++
++			/* skip unsupported settings for this variant */
++			if (pctl->variant &&
++			    !(pctl->variant & grp->settings[n].variant))
++				continue;
++
++			seq_printf(s, " %s", grp->settings[n].name);
++			if (grp->settings[n].subname)
++				seq_printf(s, "(%s)", grp->settings[n].subname);
++			if (grp->settings[n].flags &
++				(MVEBU_SETTING_GPO | MVEBU_SETTING_GPI)) {
++				seq_printf(s, "(");
++				if (grp->settings[n].flags & MVEBU_SETTING_GPI)
++					seq_printf(s, "i");
++				if (grp->settings[n].flags & MVEBU_SETTING_GPO)
++					seq_printf(s, "o");
++				seq_printf(s, ")");
++			}
++		}
++		seq_printf(s, " ]");
++	}
++	return;
++}
++
++static struct pinconf_ops mvebu_pinconf_ops = {
++	.pin_config_group_get = mvebu_pinconf_group_get,
++	.pin_config_group_set = mvebu_pinconf_group_set,
++	.pin_config_group_dbg_show = mvebu_pinconf_group_dbg_show,
 +};
 +
-+module_platform_driver(kirkwood_pinctrl_driver);
++static int mvebu_pinmux_get_funcs_count(struct pinctrl_dev *pctldev)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
 +
-+MODULE_AUTHOR("Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>");
-+MODULE_DESCRIPTION("Marvell Kirkwood pinctrl driver");
-+MODULE_LICENSE("GPL v2");
++	return pctl->num_functions;
++}
++
++static const char *mvebu_pinmux_get_func_name(struct pinctrl_dev *pctldev,
++					unsigned fid)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++
++	return pctl->functions[fid].name;
++}
++
++static int mvebu_pinmux_get_groups(struct pinctrl_dev *pctldev, unsigned fid,
++				const char * const **groups,
++				unsigned * const num_groups)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++
++	*groups = pctl->functions[fid].groups;
++	*num_groups = pctl->functions[fid].num_groups;
++	return 0;
++}
++
++static int mvebu_pinmux_enable(struct pinctrl_dev *pctldev, unsigned fid,
++			unsigned gid)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_function *func = &pctl->functions[fid];
++	struct mvebu_pinctrl_group *grp = &pctl->groups[gid];
++	struct mvebu_mpp_ctrl_setting *setting;
++	int ret;
++
++	setting = mvebu_pinctrl_find_setting_by_name(pctl, grp,
++						     func->name);
++	if (!setting) {
++		dev_err(pctl->dev,
++			"unable to find setting %s in group %s\n",
++			func->name, func->groups[gid]);
++		return -EINVAL;
++	}
++
++	ret = mvebu_pinconf_group_set(pctldev, grp->gid, setting->val);
++	if (ret) {
++		dev_err(pctl->dev, "cannot set group %s to %s\n",
++			func->groups[gid], func->name);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int mvebu_pinmux_gpio_request_enable(struct pinctrl_dev *pctldev,
++			struct pinctrl_gpio_range *range, unsigned offset)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_group *grp;
++	struct mvebu_mpp_ctrl_setting *setting;
++
++	grp = mvebu_pinctrl_find_group_by_pid(pctl, offset);
++	if (!grp)
++		return -EINVAL;
++
++	if (grp->ctrl->mpp_gpio_req)
++		return grp->ctrl->mpp_gpio_req(grp->ctrl, offset);
++
++	setting = mvebu_pinctrl_find_gpio_setting(pctl, grp);
++	if (!setting)
++		return -ENOTSUPP;
++
++	return mvebu_pinconf_group_set(pctldev, grp->gid, setting->val);
++}
++
++static int mvebu_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
++	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct mvebu_pinctrl_group *grp;
++	struct mvebu_mpp_ctrl_setting *setting;
++
++	grp = mvebu_pinctrl_find_group_by_pid(pctl, offset);
++	if (!grp)
++		return -EINVAL;
++
++	if (grp->ctrl->mpp_gpio_dir)
++		return grp->ctrl->mpp_gpio_dir(grp->ctrl, offset, input);
++
++	setting = mvebu_pinctrl_find_gpio_setting(pctl, grp);
++	if (!setting)
++		return -ENOTSUPP;
++
++	if ((input && (setting->flags & MVEBU_SETTING_GPI)) ||
++	    (!input && (setting->flags & MVEBU_SETTING_GPO)))
++		return 0;
++
++	return -ENOTSUPP;
++}
++
++static struct pinmux_ops mvebu_pinmux_ops = {
++	.get_functions_count = mvebu_pinmux_get_funcs_count,
++	.get_function_name = mvebu_pinmux_get_func_name,
++	.get_function_groups = mvebu_pinmux_get_groups,
++	.gpio_request_enable = mvebu_pinmux_gpio_request_enable,
++	.gpio_set_direction = mvebu_pinmux_gpio_set_direction,
++	.enable = mvebu_pinmux_enable,
++};
++
++static int mvebu_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	return pctl->num_groups;
++}
++
++static const char *mvebu_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
++						unsigned gid)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	return pctl->groups[gid].name;
++}
++
++static int mvebu_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
++					unsigned gid, const unsigned **pins,
++					unsigned *num_pins)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	*pins = pctl->groups[gid].pins;
++	*num_pins = pctl->groups[gid].npins;
++	return 0;
++}
++
++static int mvebu_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
++					struct device_node *np,
++					struct pinctrl_map **map,
++					unsigned *num_maps)
++{
++	struct mvebu_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
++	struct property *prop;
++	const char *function;
++	const char *group;
++	int ret, nmaps, n;
++
++	*map = NULL;
++	*num_maps = 0;
++
++	ret = of_property_read_string(np, "marvell,function", &function);
++	if (ret) {
++		dev_err(pctl->dev,
++			"missing marvell,function in node %s\n", np->name);
++		return 0;
++	}
++
++	nmaps = of_property_count_strings(np, "marvell,pins");
++	if (nmaps < 0) {
++		dev_err(pctl->dev,
++			"missing marvell,pins in node %s\n", np->name);
++		return 0;
++	}
++
++	*map = kmalloc(nmaps * sizeof(struct pinctrl_map), GFP_KERNEL);
++	if (map == NULL) {
++		dev_err(pctl->dev,
++			"cannot allocate pinctrl_map memory for %s\n",
++			np->name);
++		return -ENOMEM;
++	}
++
++	n = 0;
++	of_property_for_each_string(np, "marvell,pins", prop, group) {
++		struct mvebu_pinctrl_group *grp =
++			mvebu_pinctrl_find_group_by_name(pctl, group);
++
++		if (!grp) {
++			dev_err(pctl->dev, "unknown pin %s", group);
++			continue;
++		}
++
++		if (!mvebu_pinctrl_find_setting_by_name(pctl, grp, function)) {
++			dev_err(pctl->dev, "unsupported function %s on pin %s",
++				function, group);
++			continue;
++		}
++
++		(*map)[n].type = PIN_MAP_TYPE_MUX_GROUP;
++		(*map)[n].data.mux.group = group;
++		(*map)[n].data.mux.function = function;
++		n++;
++	}
++
++	*num_maps = nmaps;
++
++	return 0;
++}
++
++static void mvebu_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
++				struct pinctrl_map *map, unsigned num_maps)
++{
++	kfree(map);
++}
++
++static struct pinctrl_ops mvebu_pinctrl_ops = {
++	.get_groups_count = mvebu_pinctrl_get_groups_count,
++	.get_group_name = mvebu_pinctrl_get_group_name,
++	.get_group_pins = mvebu_pinctrl_get_group_pins,
++	.dt_node_to_map = mvebu_pinctrl_dt_node_to_map,
++	.dt_free_map = mvebu_pinctrl_dt_free_map,
++};
++
++static int __devinit _add_function(struct mvebu_pinctrl_function *funcs,
++				   const char *name)
++{
++	while (funcs->num_groups) {
++		/* function already there */
++		if (strcmp(funcs->name, name) == 0) {
++			funcs->num_groups++;
++			return -EEXIST;
++		}
++		funcs++;
++	}
++	funcs->name = name;
++	funcs->num_groups = 1;
++	return 0;
++}
++
++static int __devinit mvebu_pinctrl_build_functions(struct platform_device *pdev,
++						   struct mvebu_pinctrl *pctl)
++{
++	struct mvebu_pinctrl_function *funcs;
++	int num = 0;
++	int n, s;
++
++	/* we allocate functions for number of pins and hope
++	 * there are less unique functions than pins available */
++	funcs = devm_kzalloc(&pdev->dev, pctl->desc.npins *
++			     sizeof(struct mvebu_pinctrl_function), GFP_KERNEL);
++	if (!funcs)
++		return -ENOMEM;
++
++	for (n = 0; n < pctl->num_groups; n++) {
++		struct mvebu_pinctrl_group *grp = &pctl->groups[n];
++		for (s = 0; s < grp->num_settings; s++) {
++			/* skip unsupported settings on this variant */
++			if (pctl->variant &&
++			    !(pctl->variant & grp->settings[s].variant))
++				continue;
++
++			/* check for unique functions and count groups */
++			if (_add_function(funcs, grp->settings[s].name))
++				continue;
++
++			num++;
++		}
++	}
++
++	/* with the number of unique functions and it's groups known,
++	   reallocate functions and assign group names */
++	funcs = krealloc(funcs, num * sizeof(struct mvebu_pinctrl_function),
++			 GFP_KERNEL);
++	if (!funcs)
++		return -ENOMEM;
++
++	pctl->num_functions = num;
++	pctl->functions = funcs;
++
++	for (n = 0; n < pctl->num_groups; n++) {
++		struct mvebu_pinctrl_group *grp = &pctl->groups[n];
++		for (s = 0; s < grp->num_settings; s++) {
++			struct mvebu_pinctrl_function *f;
++			const char **groups;
++
++			/* skip unsupported settings on this variant */
++			if (pctl->variant &&
++			    !(pctl->variant & grp->settings[s].variant))
++				continue;
++
++			f = mvebu_pinctrl_find_function_by_name(pctl,
++							grp->settings[s].name);
++
++			/* allocate group name array if not done already */
++			if (!f->groups) {
++				f->groups = devm_kzalloc(&pdev->dev,
++						 f->num_groups * sizeof(char *),
++						 GFP_KERNEL);
++				if (!f->groups)
++					return -ENOMEM;
++			}
++
++			/* find next free group name and assign current name */
++			groups = f->groups;
++			while (*groups)
++				groups++;
++			*groups = grp->name;
++		}
++	}
++
++	return 0;
++}
++
++int __devinit mvebu_pinctrl_probe(struct platform_device *pdev)
++{
++	struct mvebu_pinctrl_soc_info *soc = dev_get_platdata(&pdev->dev);
++	struct device_node *np = pdev->dev.of_node;
++	struct mvebu_pinctrl *pctl;
++	void __iomem *base;
++	struct pinctrl_pin_desc *pdesc;
++	unsigned gid, n, k;
++	int ret;
++
++	if (!soc || !soc->controls || !soc->modes) {
++		dev_err(&pdev->dev, "wrong pinctrl soc info\n");
++		return -EINVAL;
++	}
++
++	base = of_iomap(np, 0);
++	if (!base) {
++		dev_err(&pdev->dev, "unable to get base address\n");
++		return -ENODEV;
++	}
++
++	pctl = devm_kzalloc(&pdev->dev, sizeof(struct mvebu_pinctrl),
++			GFP_KERNEL);
++	if (!pctl) {
++		dev_err(&pdev->dev, "unable to alloc driver\n");
++		return -ENOMEM;
++	}
++
++	pctl->desc.name = dev_name(&pdev->dev);
++	pctl->desc.owner = THIS_MODULE;
++	pctl->desc.pctlops = &mvebu_pinctrl_ops;
++	pctl->desc.pmxops = &mvebu_pinmux_ops;
++	pctl->desc.confops = &mvebu_pinconf_ops;
++	pctl->variant = soc->variant;
++	pctl->base = base;
++	pctl->dev = &pdev->dev;
++	platform_set_drvdata(pdev, pctl);
++
++	/* count controls and create names for mvebu generic
++	   register controls; also does sanity checks */
++	pctl->num_groups = 0;
++	pctl->desc.npins = 0;
++	for (n = 0; n < soc->ncontrols; n++) {
++		struct mvebu_mpp_ctrl *ctrl = &soc->controls[n];
++		char *names;
++
++		pctl->desc.npins += ctrl->npins;
++		/* initial control pins */
++		for (k = 0; k < ctrl->npins; k++)
++			ctrl->pins[k] = ctrl->pid + k;
++
++		/* special soc specific control */
++		if (ctrl->mpp_get || ctrl->mpp_set) {
++			if (!ctrl->name || !ctrl->mpp_set || !ctrl->mpp_set) {
++				dev_err(&pdev->dev, "wrong soc control info\n");
++				return -EINVAL;
++			}
++			pctl->num_groups += 1;
++			continue;
++		}
++
++		/* generic mvebu register control */
++		names = devm_kzalloc(&pdev->dev, ctrl->npins * 8, GFP_KERNEL);
++		if (!names) {
++			dev_err(&pdev->dev, "failed to alloc mpp names\n");
++			return -ENOMEM;
++		}
++		for (k = 0; k < ctrl->npins; k++)
++			sprintf(names + 8*k, "mpp%d", ctrl->pid+k);
++		ctrl->name = names;
++		pctl->num_groups += ctrl->npins;
++	}
++
++	pdesc = devm_kzalloc(&pdev->dev, pctl->desc.npins *
++			     sizeof(struct pinctrl_pin_desc), GFP_KERNEL);
++	if (!pdesc) {
++		dev_err(&pdev->dev, "failed to alloc pinctrl pins\n");
++		return -ENOMEM;
++	}
++
++	for (n = 0; n < pctl->desc.npins; n++)
++		pdesc[n].number = n;
++	pctl->desc.pins = pdesc;
++
++	pctl->groups = devm_kzalloc(&pdev->dev, pctl->num_groups *
++			     sizeof(struct mvebu_pinctrl_group), GFP_KERNEL);
++	if (!pctl->groups) {
++		dev_err(&pdev->dev, "failed to alloc pinctrl groups\n");
++		return -ENOMEM;
++	}
++
++	/* assign mpp controls to groups */
++	gid = 0;
++	for (n = 0; n < soc->ncontrols; n++) {
++		struct mvebu_mpp_ctrl *ctrl = &soc->controls[n];
++		pctl->groups[gid].gid = gid;
++		pctl->groups[gid].ctrl = ctrl;
++		pctl->groups[gid].name = ctrl->name;
++		pctl->groups[gid].pins = ctrl->pins;
++		pctl->groups[gid].npins = ctrl->npins;
++
++		/* generic mvebu register control maps to a number of groups */
++		if (!ctrl->mpp_get && !ctrl->mpp_set) {
++			pctl->groups[gid].npins = 1;
++
++			for (k = 1; k < ctrl->npins; k++) {
++				gid++;
++				pctl->groups[gid].gid = gid;
++				pctl->groups[gid].ctrl = ctrl;
++				pctl->groups[gid].name = &ctrl->name[8*k];
++				pctl->groups[gid].pins = &ctrl->pins[k];
++				pctl->groups[gid].npins = 1;
++			}
++		}
++		gid++;
++	}
++
++	/* assign mpp modes to groups */
++	for (n = 0; n < soc->nmodes; n++) {
++		struct mvebu_mpp_mode *mode = &soc->modes[n];
++		struct mvebu_pinctrl_group *grp =
++			mvebu_pinctrl_find_group_by_pid(pctl, mode->pid);
++		unsigned num_settings;
++
++		if (!grp) {
++			dev_warn(&pdev->dev, "unknown pinctrl group %d\n",
++				mode->pid);
++			continue;
++		}
++
++		for (num_settings = 0; ;) {
++			struct mvebu_mpp_ctrl_setting *set =
++				&mode->settings[num_settings];
++
++			if (!set->name)
++				break;
++			num_settings++;
++
++			/* skip unsupported settings for this variant */
++			if (pctl->variant && !(pctl->variant & set->variant))
++				continue;
++
++			/* find gpio/gpo/gpi settings */
++			if (strcmp(set->name, "gpio") == 0)
++				set->flags = MVEBU_SETTING_GPI |
++					MVEBU_SETTING_GPO;
++			else if (strcmp(set->name, "gpo") == 0)
++				set->flags = MVEBU_SETTING_GPO;
++			else if (strcmp(set->name, "gpi") == 0)
++				set->flags = MVEBU_SETTING_GPI;
++		}
++
++		grp->settings = mode->settings;
++		grp->num_settings = num_settings;
++	}
++
++	ret = mvebu_pinctrl_build_functions(pdev, pctl);
++	if (ret) {
++		dev_err(&pdev->dev, "unable to build functions\n");
++		return ret;
++	}
++
++	pctl->pctldev = pinctrl_register(&pctl->desc, &pdev->dev, pctl);
++	if (!pctl->pctldev) {
++		dev_err(&pdev->dev, "unable to register pinctrl driver\n");
++		return -EINVAL;
++	}
++
++	dev_info(&pdev->dev, "registered pinctrl driver\n");
++
++	/* register gpio ranges */
++	for (n = 0; n < soc->ngpioranges; n++)
++		pinctrl_add_gpio_range(pctl->pctldev, &soc->gpioranges[n]);
++
++	return 0;
++}
++
++int __devexit mvebu_pinctrl_remove(struct platform_device *pdev)
++{
++	struct mvebu_pinctrl *pctl = platform_get_drvdata(pdev);
++	pinctrl_unregister(pctl->pctldev);
++	return 0;
++}
+diff --git a/drivers/pinctrl/pinctrl-mvebu.h b/drivers/pinctrl/pinctrl-mvebu.h
+new file mode 100644
+index 0000000..90bd3be
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-mvebu.h
+@@ -0,0 +1,192 @@
++/*
++ * Marvell MVEBU pinctrl driver
++ *
++ * Authors: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *          Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __PINCTRL_MVEBU_H__
++#define __PINCTRL_MVEBU_H__
++
++/**
++ * struct mvebu_mpp_ctrl - describe a mpp control
++ * @name: name of the control group
++ * @pid: first pin id handled by this control
++ * @npins: number of pins controlled by this control
++ * @mpp_get: (optional) special function to get mpp setting
++ * @mpp_set: (optional) special function to set mpp setting
++ * @mpp_gpio_req: (optional) special function to request gpio
++ * @mpp_gpio_dir: (optional) special function to set gpio direction
++ *
++ * A mpp_ctrl describes a muxable unit, e.g. pin, group of pins, or
++ * internal function, inside the SoC. Each muxable unit can be switched
++ * between two or more different settings, e.g. assign mpp pin 13 to
++ * uart1 or sata.
++ *
++ * If optional mpp_get/_set functions are set these are used to get/set
++ * a specific mode. Otherwise it is assumed that the mpp control is based
++ * on 4-bit groups in subsequent registers. The optional mpp_gpio_req/_dir
++ * functions can be used to allow pin settings with varying gpio pins.
++ */
++struct mvebu_mpp_ctrl {
++	const char *name;
++	u8 pid;
++	u8 npins;
++	unsigned *pins;
++	int (*mpp_get)(struct mvebu_mpp_ctrl *ctrl, unsigned long *config);
++	int (*mpp_set)(struct mvebu_mpp_ctrl *ctrl, unsigned long config);
++	int (*mpp_gpio_req)(struct mvebu_mpp_ctrl *ctrl, u8 pid);
++	int (*mpp_gpio_dir)(struct mvebu_mpp_ctrl *ctrl, u8 pid, bool input);
++};
++
++/**
++ * struct mvebu_mpp_ctrl_setting - describe a mpp ctrl setting
++ * @val: ctrl setting value
++ * @name: ctrl setting name, e.g. uart2, spi0 - unique per mpp_mode
++ * @subname: (optional) additional ctrl setting name, e.g. rts, cts
++ * @variant: (optional) variant identifier mask
++ * @flags: (private) flags to store gpi/gpo/gpio capabilities
++ *
++ * A ctrl_setting describes a specific internal mux function that a mpp pin
++ * can be switched to. The value (val) will be written in the corresponding
++ * register for common mpp pin configuration registers on MVEBU. SoC specific
++ * mpp_get/_set function may use val to distinguish between different settings.
++ *
++ * The name will be used to switch to this setting in DT description, e.g.
++ * marvell,function = "uart2". subname is only for debugging purposes.
++ *
++ * If name is one of "gpi", "gpo", "gpio" gpio capabilities are
++ * parsed during initialization and stored in flags.
++ *
++ * The variant can be used to combine different revisions of one SoC to a
++ * common pinctrl driver. It is matched (AND) with variant of soc_info to
++ * determine if a setting is available on the current SoC revision.
++ */
++struct mvebu_mpp_ctrl_setting {
++	u8 val;
++	const char *name;
++	const char *subname;
++	u8 variant;
++	u8 flags;
++#define  MVEBU_SETTING_GPO	(1 << 0)
++#define  MVEBU_SETTING_GPI	(1 << 1)
++};
++
++/**
++ * struct mvebu_mpp_mode - link ctrl and settings
++ * @pid: first pin id handled by this mode
++ * @settings: list of settings available for this mode
++ *
++ * A mode connects all available settings with the corresponding mpp_ctrl
++ * given by pid.
++ */
++struct mvebu_mpp_mode {
++	u8 pid;
++	struct mvebu_mpp_ctrl_setting *settings;
++};
++
++/**
++ * struct mvebu_pinctrl_soc_info - SoC specific info passed to pinctrl-mvebu
++ * @variant: variant mask of soc_info
++ * @controls: list of available mvebu_mpp_ctrls
++ * @ncontrols: number of available mvebu_mpp_ctrls
++ * @modes: list of available mvebu_mpp_modes
++ * @nmodes: number of available mvebu_mpp_modes
++ * @gpioranges: list of pinctrl_gpio_ranges
++ * @ngpioranges: number of available pinctrl_gpio_ranges
++ *
++ * This struct describes all pinctrl related information for a specific SoC.
++ * If variant is unequal 0 it will be matched (AND) with variant of each
++ * setting and allows to distinguish between different revisions of one SoC.
++ */
++struct mvebu_pinctrl_soc_info {
++	u8 variant;
++	struct mvebu_mpp_ctrl *controls;
++	int ncontrols;
++	struct mvebu_mpp_mode *modes;
++	int nmodes;
++	struct pinctrl_gpio_range *gpioranges;
++	int ngpioranges;
++};
++
++#define MPP_REG_CTRL(_idl, _idh)				\
++	{							\
++		.name = NULL,					\
++		.pid = _idl,					\
++		.npins = _idh - _idl + 1,			\
++		.pins = (unsigned[_idh - _idl + 1]) { },	\
++		.mpp_get = NULL,				\
++		.mpp_set = NULL,				\
++		.mpp_gpio_req = NULL,				\
++		.mpp_gpio_dir = NULL,				\
++	}
++
++#define MPP_FUNC_CTRL(_idl, _idh, _name, _func)			\
++	{							\
++		.name = _name,					\
++		.pid = _idl,					\
++		.npins = _idh - _idl + 1,			\
++		.pins = (unsigned[_idh - _idl + 1]) { },	\
++		.mpp_get = _func ## _get,			\
++		.mpp_set = _func ## _set,			\
++		.mpp_gpio_req = NULL,				\
++		.mpp_gpio_dir = NULL,				\
++	}
++
++#define MPP_FUNC_GPIO_CTRL(_idl, _idh, _name, _func)		\
++	{							\
++		.name = _name,					\
++		.pid = _idl,					\
++		.npins = _idh - _idl + 1,			\
++		.pins = (unsigned[_idh - _idl + 1]) { },	\
++		.mpp_get = _func ## _get,			\
++		.mpp_set = _func ## _set,			\
++		.mpp_gpio_req = _func ## _gpio_req,		\
++		.mpp_gpio_dir = _func ## _gpio_dir,		\
++	}
++
++#define _MPP_VAR_FUNCTION(_val, _name, _subname, _mask)		\
++	{							\
++		.val = _val,					\
++		.name = _name,					\
++		.subname = _subname,				\
++		.variant = _mask,				\
++		.flags = 0,					\
++	}
++
++#if defined(CONFIG_DEBUG_FS)
++#define MPP_VAR_FUNCTION(_val, _name, _subname, _mask)		\
++	_MPP_VAR_FUNCTION(_val, _name, _subname, _mask)
++#else
++#define MPP_VAR_FUNCTION(_val, _name, _subname, _mask)		\
++	_MPP_VAR_FUNCTION(_val, _name, NULL, _mask)
++#endif
++
++#define MPP_FUNCTION(_val, _name, _subname)			\
++	MPP_VAR_FUNCTION(_val, _name, _subname, (u8)-1)
++
++#define MPP_MODE(_id, ...)					\
++	{							\
++		.pid = _id,					\
++		.settings = (struct mvebu_mpp_ctrl_setting[]){	\
++			__VA_ARGS__, { } },			\
++	}
++
++#define MPP_GPIO_RANGE(_id, _pinbase, _gpiobase, _npins)	\
++	{							\
++		.name = "mvebu-gpio",				\
++		.id = _id,					\
++		.pin_base = _pinbase,				\
++		.base = _gpiobase,				\
++		.npins = _npins,				\
++	}
++
++int mvebu_pinctrl_probe(struct platform_device *pdev);
++int mvebu_pinctrl_remove(struct platform_device *pdev);
++
++#endif
 -- 
 1.7.10.4
 
