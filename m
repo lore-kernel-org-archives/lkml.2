@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2IMOYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:24:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63121 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab2IMOYK convert rfc822-to-8bit (ORCPT
+	id S1757977Ab2IMOYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:24:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45471 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757777Ab2IMOYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:24:10 -0400
-Subject: Re: [PATCH] Xen backend support for paged out grant targets.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Andres Lagar-Cavilla <andres.lagarcavilla@gmail.com>
-In-Reply-To: <1347520482.25803.46.camel@dagon.hellion.org.uk>
-Date: Thu, 13 Sep 2012 10:24:08 -0400
-Cc: Andres Lagar-Cavilla <andres@lagarcavilla.org>, xen-devel@xen.lists.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <3B5D2C51-899F-47AF-BD59-36D7F9E3C045@gmail.com>
-References: <1347479153-441-1-git-send-email-andres@lagarcavilla.org> <1347520482.25803.46.camel@dagon.hellion.org.uk>
-To: Ian Campbell <ian.campbell@citrix.com>
-X-Mailer: Apple Mail (2.1278)
+	Thu, 13 Sep 2012 10:24:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ehm6p15v.fsf@devron.myhome.or.jp>
+References: <871ui84l4l.fsf@devron.myhome.or.jp>
+	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
+	<20120912143227.GE3009@fieldses.org>
+	<87vcfjfa14.fsf@devron.myhome.or.jp>
+	<20120912171128.GG3009@fieldses.org>
+	<87r4q7f8fw.fsf@devron.myhome.or.jp>
+	<20120912174556.GH3009@fieldses.org>
+	<87ipbjf54f.fsf@devron.myhome.or.jp>
+	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
+	<87txv2cog1.fsf@devron.myhome.or.jp>
+	<20120913112024.GA24684@fieldses.org>
+	<87ehm6p15v.fsf@devron.myhome.or.jp>
+Date: Thu, 13 Sep 2012 23:24:30 +0900
+Message-ID: <CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 13, 2012, at 3:14 AM, Ian Campbell wrote:
+2012/9/13, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+>
+>>> >> Grepping around... Documentation/sysctl/vm.txt mentions a
+>>> >> vfs_cache_pressure parameter.
+>>> >> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
+>>> > I am worrying if it could lead to OOM condition on embedded
+>>> > system(short memory(DRAM) and support 3TB HDD disk of big size.)
+>>> >
+>>> > Please let me know if any issues or queries.
+>>>
+>>> So, now I think stable inode number may be useful if there are users of
+>>> it. And I guess those functionality is no collisions with -mm. And I
+>>> suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
+>>>
+>>> If nfs=1, works like current -mm without no limited operations.
+>>
+>> Apologies, I haven't been following the conversation carefully: remind
+>> me what "works like current -mm" means?
+>
+> Current -mm means the best-effort work only if inode cache is not
+> evicted.  I.e. if there is no inode cache anymore on server, server
+> would return ESTALE. So I guess the behavior would not be stable
+> relatively.
+Hi OGAWA.
+Sorry for late response.
+Okay, I will resend patchset include your suggeston.(-o nfs=2)
+Do you mind adding busy list patch to avoid unlink issue ?
+And in case of rename, FAT retrun EBUSY while opening file.
+We can limit only rename.
+Let me know your opinion.
 
-> On Wed, 2012-09-12 at 20:45 +0100, Andres Lagar-Cavilla wrote:
->> diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
->> index 7da811b..66cb734 100644
->> --- a/include/xen/interface/grant_table.h
->> +++ b/include/xen/interface/grant_table.h
->> @@ -520,6 +520,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
->> #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
->> #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
->> #define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary */
-> 
-> What is -11?
+Thanks OGAWA!
 
--11 is something called GNTST_address_too_big on the xen public includes. Since it is not relevant too this patch I decided to skip over it. I will add a "placeholder" entry to the message array below to keep things properly aligned.
-
-Thanks
-Andres
-> 
-> Because...
-> 
->> +#define GNTST_eagain          (-12) /* Retry.                                */
->> 
->> #define GNTTABOP_error_msgs {                   \
->>     "okay",                                     \
->> @@ -533,6 +534,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
->>     "permission denied",                        \
->>     "bad page",                                 \
->>     "copy arguments cross page boundary"        \
-> 
-> ... it should go here, otherwise retry is in the wrong place.
-> 
-> Perhaps we should switch this to the 
-> 	[GNTTABOP_foo] = "foo"
-> style of initialiser?
-> 
->> +    "retry"                                     \
->> }
->> 
->> #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */ 
-> 
-
+>
+> Thanks.
+>
+>>> If nfs=2, try to make stable FH and limit some operations
+>>>
+>>> (option name doesn't matter here.)
+>>>
+>>> Does this work fine?
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
