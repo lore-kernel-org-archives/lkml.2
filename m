@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab2IMKTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:19:06 -0400
-Received: from mailrelayi.jaist.ac.jp ([150.65.19.7]:6528 "EHLO
-	mailrelayi.jaist.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab2IMKTD (ORCPT
+	id S1757252Ab2IMKVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:21:14 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:29870
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753138Ab2IMKVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:19:03 -0400
-X-IronPort-AV: E=Sophos;i="4.80,416,1344178800"; 
-   d="scan'208";a="122817509"
-Date: Thu, 13 Sep 2012 19:18:42 +0900
-To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: rtl8192se: ping router gives mdev of 25387.102???
-Message-ID: <20120913101828.GA3309@gandalf.dynalias.org>
+	Thu, 13 Sep 2012 06:21:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah11b5h121eh1288h12a5h12bdh12e5h1155h)
+X-WSS-ID: 0MAAA2Z-02-2FC-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] perf record: Change error message on failure
+Date: Thu, 13 Sep 2012 12:20:54 +0200
+Message-ID: <1347531654-16024-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: Norbert Preining <preining@logic.at>
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Only report
 
-(please cc)
+ No CONFIG_PERF_EVENTS=y kernel support configured?
 
-see $subject ...
+if the syscall fails with ENOSYS. In other cases CONFIG_PERF_EVENTS is
+set and might confuse users. The default message is now:
 
-No warning, nothing in the logs, but pinging my router I get
-things like:
---- 192.168.0.1 ping statistics ---
-376 packets transmitted, 315 received, +33 errors, 16% packet loss, time 405164ms
-rtt min/avg/max/mdev = 0.873/10077.793/95935.698/25387.102 ms, pipe 68
+ Not all events could be opened.
 
-or
---- 192.168.0.1 ping statistics ---
-1252 packets transmitted, 1225 received, 2% packet loss, time 1252976ms
-rtt min/avg/max/mdev = 0.941/764.171/19929.265/2758.225 ms, pipe 20
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/builtin-record.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index ae7c1c9..0290c91 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -305,19 +305,19 @@ try_again:
+ 			error("sys_perf_event_open() syscall returned with %d (%s).  /bin/dmesg may provide additional information.\n",
+ 			      err, strerror(err));
+ 
++			if (err == ENOSYS)
++				pr_err("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+ #if defined(__i386__) || defined(__x86_64__)
+-			if (attr->type == PERF_TYPE_HARDWARE &&
+-			    err == EOPNOTSUPP) {
++			else if (attr->type == PERF_TYPE_HARDWARE &&
++				 err == EOPNOTSUPP)
+ 				pr_err("No hardware sampling interrupt available."
+ 				       " No APIC? If so then you can boot the kernel"
+ 				       " with the \"lapic\" boot parameter to"
+ 				       " force-enable it.\n");
+-				rc = -err;
+-				goto out;
+-			}
+ #endif
++			else
++				pr_err("Not all events could be opened.\n");
+ 
+-			pr_err("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+ 			rc = -err;
+ 			goto out;
+ 		}
+-- 
+1.7.8.6
 
 
-Has anyone *ever* seen a mdev of 25387.102 ms ???
-
-At the same time I am pinging the same router from an iphone with a 
-steady stream of 40ms or so, no problem whatsoever ...
-
-$ lspci -v -s 03:00.0
-03:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller (rev 10)
-	Subsystem: Realtek Semiconductor Co., Ltd. Device e020
-	Flags: bus master, fast devsel, latency 0, IRQ 17
- 	I/O ports at 2000 [size=256]
- 	Memory at f0500000 (32-bit, non-prefetchable) [size=16K]
- 	Capabilities: [40] Power Management version 3
- 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
- 	Capabilities: [70] Express Legacy Endpoint, MSI 00
- 	Capabilities: [100] Advanced Error Reporting
- 	Capabilities: [140] Virtual Channel
- 	Capabilities: [160] Device Serial Number 88-55-22-fe-ff-4c-e0-00
- 	Kernel driver in use: rtl8192se
-
-That is with git from yesterday or so.
-
-Best wishes
-
-Norbert
-
-----------------------------------------------------------------------------
-Norbert Preining                preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                   TeX Live and Debian Developer
-gpg DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-----------------------------------------------------------------------------
-`Ford, you're turning into a penguin. Stop it.'
-                 --- Arthur experiences the improbability drive at work.
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
