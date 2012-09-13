@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab2IMMwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 08:52:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21851 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757689Ab2IMMwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 08:52:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,416,1344236400"; 
-   d="scan'208";a="192522735"
-Date: Thu, 13 Sep 2012 14:52:01 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org,
-        linux-can@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd/janz-cmodio: fix MODULBus number sysfs entry
-Message-ID: <20120913125201.GB3647@sortiz-mobl>
-References: <1347404295-7985-1-git-send-email-iws@ovro.caltech.edu>
- <1347404295-7985-2-git-send-email-iws@ovro.caltech.edu>
- <5051C9F0.3050600@pengutronix.de>
+	id S1757893Ab2IMMyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 08:54:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34278 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab2IMMyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 08:54:09 -0400
+Date: Thu, 13 Sep 2012 16:54:01 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [RFC] tty: Add get- ioctls to fetch tty status
+Message-ID: <20120913125401.GK19956@moon>
+References: <20120913095623.GB28508@moon>
+ <20120913135131.5b251797@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5051C9F0.3050600@pengutronix.de>
+In-Reply-To: <20120913135131.5b251797@pyramind.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 01:56:32PM +0200, Marc Kleine-Budde wrote:
-> On 09/12/2012 12:58 AM, Ira W. Snyder wrote:
-> > From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-> > 
-> > Revision 1.0 of the Janz CMOD-IO Carrier Board does not contain zeroes
-> > in the top 4 bits of the modulbus_num (int_enable) register. Mask off
-> > the unused bits so that the correct value is displayed in sysfs.
-> > 
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+On Thu, Sep 13, 2012 at 01:51:31PM +0100, Alan Cox wrote:
+> > +static int pty_get_lock(struct tty_struct *tty, int __user *arg)
+> > +{
+> > +	int locked = test_bit(TTY_PTY_LOCK, &tty->flags);
+> > +	if (put_user(locked, arg))
+> > +		return -EFAULT;
 > 
-> Who will take care of this patch?
-I will.
+> Now explain exactly how this doesn't race with another thread chanigng
+> the lock setting ?
 
-Cheers,
-Samuel.
+It's the same as to set/clear this bit, isn't it? Please correct me
+if I'm wrong.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> The other comment I have is that it might be better put these in now
+> there are sysfs patches for the tty layer bouncing about to provide the
+> needed infrastructure ?
+
+Alan, could you please point me where these patches are living, so I would
+take a look and check them out.
+
+	Cyrill
