@@ -1,265 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab2IMLwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 07:52:21 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52690 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757711Ab2IMLwP (ORCPT
+	id S1757792Ab2IML4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 07:56:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50939 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757744Ab2IML4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 07:52:15 -0400
-Date: Thu, 13 Sep 2012 17:18:14 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
-Message-ID: <20120913114813.GA11797@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <504A37B0.7020605@linux.vnet.ibm.com>
- <1347046931.7332.51.camel@oc2024037011.ibm.com>
- <20120908084345.GU30238@linux.vnet.ibm.com>
- <1347283005.10325.55.camel@oc6622382223.ibm.com>
- <1347293035.2124.22.camel@twins>
- <20120910165653.GA28033@linux.vnet.ibm.com>
- <1347297124.2124.42.camel@twins>
- <1347307972.7332.78.camel@oc2024037011.ibm.com>
- <504ED54E.6040608@linux.vnet.ibm.com>
- <1347388061.19098.20.camel@oc2024037011.ibm.com>
+	Thu, 13 Sep 2012 07:56:42 -0400
+Message-ID: <5051C9F0.3050600@pengutronix.de>
+Date: Thu, 13 Sep 2012 13:56:32 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1347388061.19098.20.camel@oc2024037011.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091311-7606-0000-0000-0000039E85CA
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 1/2] mfd/janz-cmodio: fix MODULBus number sysfs entry
+References: <1347404295-7985-1-git-send-email-iws@ovro.caltech.edu> <1347404295-7985-2-git-send-email-iws@ovro.caltech.edu>
+In-Reply-To: <1347404295-7985-2-git-send-email-iws@ovro.caltech.edu>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigFB7AD0A080C12FDDAC84541C"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Theurer <habanero@linux.vnet.ibm.com> [2012-09-11 13:27:41]:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigFB7AD0A080C12FDDAC84541C
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, 2012-09-11 at 11:38 +0530, Raghavendra K T wrote:
-> > On 09/11/2012 01:42 AM, Andrew Theurer wrote:
-> > > On Mon, 2012-09-10 at 19:12 +0200, Peter Zijlstra wrote:
-> > >> On Mon, 2012-09-10 at 22:26 +0530, Srikar Dronamraju wrote:
-> > >>>> +static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p)
-> > >>>> +{
-> > >>>> +     if (!curr->sched_class->yield_to_task)
-> > >>>> +             return false;
-> > >>>> +
-> > >>>> +     if (curr->sched_class != p->sched_class)
-> > >>>> +             return false;
-> > >>>
-> > >>>
-> > >>> Peter,
-> > >>>
-> > >>> Should we also add a check if the runq has a skip buddy (as pointed out
-> > >>> by Raghu) and return if the skip buddy is already set.
-> > >>
-> > >> Oh right, I missed that suggestion.. the performance improvement went
-> > >> from 81% to 139% using this, right?
-> > >>
-> > >> It might make more sense to keep that separate, outside of this
-> > >> function, since its not a strict prerequisite.
-> > >>
-> > >>>>
-> > >>>> +     if (task_running(p_rq, p) || p->state)
-> > >>>> +             return false;
-> > >>>> +
-> > >>>> +     return true;
-> > >>>> +}
-> > >>
-> > >>
-> > >>>> @@ -4323,6 +4340,10 @@ bool __sched yield_to(struct task_struct *p,
-> > >>> bool preempt)
-> > >>>>        rq = this_rq();
-> > >>>>
-> > >>>>   again:
-> > >>>> +     /* optimistic test to avoid taking locks */
-> > >>>> +     if (!__yield_to_candidate(curr, p))
-> > >>>> +             goto out_irq;
-> > >>>> +
-> > >>
-> > >> So add something like:
-> > >>
-> > >> 	/* Optimistic, if we 'raced' with another yield_to(), don't bother */
-> > >> 	if (p_rq->cfs_rq->skip)
-> > >> 		goto out_irq;
-> > >>>
-> > >>>
-> > >>>>        p_rq = task_rq(p);
-> > >>>>        double_rq_lock(rq, p_rq);
-> > >>>
-> > >>>
-> > >> But I do have a question on this optimization though,.. Why do we check
-> > >> p_rq->cfs_rq->skip and not rq->cfs_rq->skip ?
-> > >>
-> > >> That is, I'd like to see this thing explained a little better.
-> > >>
-> > >> Does it go something like: p_rq is the runqueue of the task we'd like to
-> > >> yield to, rq is our own, they might be the same. If we have a ->skip,
-> > >> there's nothing we can do about it, OTOH p_rq having a ->skip and
-> > >> failing the yield_to() simply means us picking the next VCPU thread,
-> > >> which might be running on an entirely different cpu (rq) and could
-> > >> succeed?
-> > >
-> > > Here's two new versions, both include a __yield_to_candidate(): "v3"
-> > > uses the check for p_rq->curr in guest mode, and "v4" uses the cfs_rq
-> > > skip check.  Raghu, I am not sure if this is exactly what you want
-> > > implemented in v4.
-> > >
-> > 
-> > Andrew, Yes that is what I had. I think there was a mis-understanding. 
-> > My intention was to if there is a directed_yield happened in runqueue 
-> > (say rqA), do not bother to directed yield to that. But unfortunately as 
-> > PeterZ pointed that would have resulted in setting next buddy of a 
-> > different run queue than rqA.
-> > So we can drop this "skip" idea. Pondering more over what to do? can we 
-> > use next buddy itself ... thinking..
-> 
-> As I mentioned earlier today, I did not have your changes from kvm.git
-> tree when I tested my changes.  Here are your changes and my changes
-> compared:
-> 
-> 			  throughput in MB/sec
-> 
-> kvm_vcpu_on_spin changes:  4636 +/- 15.74%
-> yield_to changes:	   4515 +/- 12.73%
-> 
-> I would be inclined to stick with your changes which are kept in kvm
-> code.  I did try both combined, and did not get good results:
-> 
-> both changes:		   4074 +/- 19.12%
-> 
-> So, having both is probably not a good idea.  However, I feel like
-> there's more work to be done.  With no over-commit (10 VMs), total
-> throughput is 23427 +/- 2.76%.  A 2x over-commit will no doubt have some
-> overhead, but a reduction to ~4500 is still terrible.  By contrast,
-> 8-way VMs with 2x over-commit have a total throughput roughly 10% less
-> than 8-way VMs with no overcommit (20 vs 10 8-way VMs on 80 cpu-thread
-> host).  We still have what appears to be scalability problems, but now
-> it's not so much in runqueue locks for yield_to(), but now
-> get_pid_task():
->
+On 09/12/2012 12:58 AM, Ira W. Snyder wrote:
+> From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+>=20
+> Revision 1.0 of the Janz CMOD-IO Carrier Board does not contain zeroes
+> in the top 4 bits of the modulbus_num (int_enable) register. Mask off
+> the unused bits so that the correct value is displayed in sysfs.
+>=20
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 
-Hi Andrew,
-IMHO, reducing the double runqueue lock overhead is a good idea,
-and may be  we see the benefits when we increase the overcommit further.
+Who will take care of this patch?
 
-The explaination for not seeing good benefit on top of PLE handler
-optimization patch is because we filter the yield_to candidates,
-and hence resulting in less contention for double runqueue lock.
-and extra code overhead during genuine yield_to might have resulted in
-some degradation in the case you tested.
+Marc
 
-However, did you use cfs.next also?. I hope it helps, when we combine.
+> ---
+>  drivers/mfd/janz-cmodio.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
+> index 2ea9998..32d0efd 100644
+> --- a/drivers/mfd/janz-cmodio.c
+> +++ b/drivers/mfd/janz-cmodio.c
+> @@ -216,7 +216,7 @@ static int __devinit cmodio_pci_probe(struct pci_de=
+v *dev,
+>  	}
+> =20
+>  	/* Read the hex switch on the carrier board */
+> -	priv->hex =3D ioread8(&priv->ctrl->int_enable);
+> +	priv->hex =3D ioread8(&priv->ctrl->int_enable) & 0x0f;
+> =20
+>  	/* Add the MODULbus number (hex switch value) to the device's sysfs *=
+/
+>  	ret =3D sysfs_create_group(&dev->dev.kobj, &cmodio_sysfs_attr_group);=
 
-Here is the result that is showing positive benefit.
-I experimented on a 32 core (no HT) PLE machine with 32 vcpu guest(s).
-  
-+-----------+-----------+-----------+------------+-----------+
-        kernbench time in sec, lower is better 
-+-----------+-----------+-----------+------------+-----------+
-       base      stddev     patched     stddev      %improve
-+-----------+-----------+-----------+------------+-----------+
-1x    44.3880     1.8699    40.8180     1.9173	   8.04271
-2x    96.7580     4.2787    93.4188     3.5150	   3.45108
-+-----------+-----------+-----------+------------+-----------+
+>=20
 
 
-+-----------+-----------+-----------+------------+-----------+
-        ebizzy record/sec higher is better
-+-----------+-----------+-----------+------------+-----------+
-       base      stddev     patched     stddev      %improve
-+-----------+-----------+-----------+------------+-----------+
-1x  2374.1250    50.9718   3816.2500    54.0681	  60.74343
-2x  2536.2500    93.0403   2789.3750   204.7897	   9.98029
-+-----------+-----------+-----------+------------+-----------+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-Below is the patch which combine suggestions of peterZ on your
-original approach with cfs.next (already posted by Srikar in the other
-thread)
+--------------enigFB7AD0A080C12FDDAC84541C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-----8<----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fbf1fd0..8551f57 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4820,6 +4820,24 @@ void __sched yield(void)
- }
- EXPORT_SYMBOL(yield);
- 
-+/*
-+ * Tests preconditions required for sched_class::yield_to().
-+ */
-+static bool __yield_to_candidate(struct task_struct *curr, struct task_struct *p,
-+					 struct rq *p_rq)
-+{
-+	if (!curr->sched_class->yield_to_task)
-+		return false;
-+
-+	if (curr->sched_class != p->sched_class)
-+		return false;
-+
-+	if (task_running(p_rq, p) || p->state)
-+		return false;
-+
-+	return true;
-+}
-+
- /**
-  * yield_to - yield the current processor to another thread in
-  * your thread group, or accelerate that thread toward the
-@@ -4844,20 +4862,24 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
- 
- again:
- 	p_rq = task_rq(p);
-+
-+	/* optimistic test to avoid taking locks */
-+	if (!__yield_to_candidate(curr, p, p_rq))
-+		goto out_irq;
-+
-+	/* if next buddy is set, assume yield is in progress */
-+	if (p_rq->cfs.next)
-+		goto out_irq;
-+
- 	double_rq_lock(rq, p_rq);
- 	while (task_rq(p) != p_rq) {
- 		double_rq_unlock(rq, p_rq);
- 		goto again;
- 	}
- 
--	if (!curr->sched_class->yield_to_task)
--		goto out;
--
--	if (curr->sched_class != p->sched_class)
--		goto out;
--
--	if (task_running(p_rq, p) || p->state)
--		goto out;
-+	/* validate state, holding p_rq ensures p's state cannot change */
-+	if (!__yield_to_candidate(curr, p, p_rq))
-+		goto out_unlock;
- 
- 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
- 	if (yielded) {
-@@ -4877,8 +4899,9 @@ again:
- 		rq->skip_clock_update = 0;
- 	}
- 
--out:
-+out_unlock:
- 	double_rq_unlock(rq, p_rq);
-+out_irq:
- 	local_irq_restore(flags);
- 
- 	if (yielded)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
 
+iEYEARECAAYFAlBRyfAACgkQjTAFq1RaXHMAugCdFXAAw1GBtox/bqwWVCbgLrY9
+qoYAniVdmc4G7TK3xzbDlvwGyG4HECH9
+=u09E
+-----END PGP SIGNATURE-----
+
+--------------enigFB7AD0A080C12FDDAC84541C--
