@@ -1,143 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab2IMJpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:45:55 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:43062 "EHLO
+	id S1757148Ab2IMJpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:45:53 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:38978 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756822Ab2IMJpY (ORCPT
+	with ESMTP id S1756834Ab2IMJpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Sep 2012 05:45:24 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkCAL6qUVBbdWObgWdsb2JhbABFu3AiAQEWJieCIAEtUjCBDhOIEbwakUcDlV+JM4lU
+X-IronPort-Anti-Spam-Result: ApkCAL6qUVBbdWObgWdsb2JhbABFu3AiAQEWJieCIAEBBSdSECAxVwYTiBG8GpFHA5Vfkwc
 X-IronPort-AV: E=Sophos;i="4.80,416,1344204000"; 
-   d="scan'208";a="1043297975"
+   d="scan'208";a="1043297972"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         industrypack-devel@lists.sourceforge.net,
         Jens Taprogge <jens.taprogge@taprogge.org>,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 1/5] Staging: ipack: Add IPACK_INT_SPACE memory space.
-Date: Thu, 13 Sep 2012 11:46:24 +0200
-Message-Id: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 2/5] Staging: ipack: move the responsibility to clear interrupts to the IPack devices.
+Date: Thu, 13 Sep 2012 11:46:25 +0200
+Message-Id: <1347529588-21212-2-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
+References: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jens Taprogge <jens.taprogge@taprogge.org>
 
-This will allow us to correctly access the IPack INT space.
+Now the IPack device acknowledges its own IRQ.
 
 Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/bridges/tpci200.c |   29 +++++++++++++++++++++++++++++
- drivers/staging/ipack/bridges/tpci200.h |    2 ++
- drivers/staging/ipack/ipack.h           |    2 ++
- 3 files changed, 33 insertions(+)
+ drivers/staging/ipack/bridges/tpci200.c |    4 ----
+ drivers/staging/ipack/devices/ipoctal.c |   19 +++++++++++++++++--
+ drivers/staging/ipack/devices/scc2698.h |    3 +++
+ 3 files changed, 20 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 21b2b75..3462783 100644
+index 3462783..43f2f38 100644
 --- a/drivers/staging/ipack/bridges/tpci200.c
 +++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -95,6 +95,8 @@ static void tpci200_unregister(struct tpci200_board *tpci200)
- 		tpci200->slots[i].io_phys.size = 0;
- 		tpci200->slots[i].id_phys.address = NULL;
- 		tpci200->slots[i].id_phys.size = 0;
-+		tpci200->slots[i].int_phys.address = NULL;
-+		tpci200->slots[i].int_phys.size = 0;
- 		tpci200->slots[i].mem_phys.address = NULL;
- 		tpci200->slots[i].mem_phys.size = 0;
+@@ -126,10 +126,6 @@ static irqreturn_t tpci200_slot_irq(struct slot_irq *slot_irq)
+ 		return -ENODEV;
+ 	ret = slot_irq->handler(slot_irq->arg);
+ 
+-	/* Clear the IPack device interrupt */
+-	readw(slot_irq->holder->io_space.address + 0xC0);
+-	readw(slot_irq->holder->io_space.address + 0xC2);
+-
+ 	return ret;
+ }
+ 
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index 0292364..30d8d42 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -252,6 +252,10 @@ static irqreturn_t ipoctal_irq_handler(void *arg)
+ 	for (i = 0; i < NR_CHANNELS; i++)
+ 		ipoctal_irq_channel(&ipoctal->channel[i]);
+ 
++	/* Clear the IPack device interrupt */
++	readw(ipoctal->dev->int_space.address + ACK_INT_REQ0);
++	readw(ipoctal->dev->int_space.address + ACK_INT_REQ1);
++
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -264,7 +268,6 @@ static int ipoctal_check_model(struct ipack_device *dev, unsigned char *id)
+ 	manufacturerID = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MANUFACTURER_ID);
+ 	if (manufacturerID != IPACK1_VENDOR_ID_SBS)
+ 		return -ENODEV;
+-
+ 	board_id = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MODEL);
+ 	switch (board_id) {
+ 	case IPACK1_DEVICE_ID_SBS_OCTAL_232:
+@@ -322,13 +325,22 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 		goto out_unregister_id_space;
  	}
-@@ -331,6 +333,11 @@ static int tpci200_register(struct tpci200_board *tpci200)
- 			TPCI200_ID_SPACE_OFF + TPCI200_ID_SPACE_GAP*i;
- 		tpci200->slots[i].id_phys.size = TPCI200_ID_SPACE_SIZE;
  
-+		tpci200->slots[i].int_phys.address =
-+			(void __iomem *)ioidint_base +
-+			TPCI200_INT_SPACE_OFF + TPCI200_INT_SPACE_GAP * i;
-+		tpci200->slots[i].int_phys.size = TPCI200_INT_SPACE_SIZE;
++	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev, 0,
++						IPACK_INT_SPACE);
++	if (res) {
++		dev_err(&ipoctal->dev->dev,
++			"Unable to map slot [%d:%d] INT space!\n",
++			bus_nr, slot);
++		goto out_unregister_io_space;
++	}
 +
- 		tpci200->slots[i].mem_phys.address =
- 			(void __iomem *)mem_base + TPCI200_MEM8_GAP*i;
- 		tpci200->slots[i].mem_phys.size = TPCI200_MEM8_SIZE;
-@@ -391,6 +398,15 @@ static int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
- 		}
- 		virt_addr_space = &dev->id_space;
- 		break;
-+	case IPACK_INT_SPACE:
-+		if (dev->int_space.address == NULL) {
-+			dev_info(&dev->dev,
-+				 "Slot [%d:%d] INT space not mapped !\n",
-+				 dev->bus_nr, dev->slot);
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->int_space;
-+		break;
- 	case IPACK_MEM_SPACE:
- 		if (dev->mem_space.address == NULL) {
- 			dev_info(&dev->dev,
-@@ -460,6 +476,19 @@ static int tpci200_slot_map_space(struct ipack_device *dev,
- 		phys_address = tpci200->slots[dev->slot].id_phys.address;
- 		size_to_map = tpci200->slots[dev->slot].id_phys.size;
- 		break;
-+	case IPACK_INT_SPACE:
-+		if (dev->int_space.address != NULL) {
-+			dev_err(&dev->dev,
-+				"Slot [%d:%d] INT space already mapped !\n",
-+				tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->int_space;
+ 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev,
+ 					   0x8000, IPACK_MEM_SPACE);
+ 	if (res) {
+ 		dev_err(&ipoctal->dev->dev,
+ 			"Unable to map slot [%d:%d] MEM space!\n",
+ 			bus_nr, slot);
+-		goto out_unregister_io_space;
++		goto out_unregister_int_space;
+ 	}
+ 
+ 	/* Save the virtual address to access the registers easily */
+@@ -450,6 +462,8 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 
+ out_unregister_slot_unmap:
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
++out_unregister_int_space:
++	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
+ out_unregister_io_space:
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
+ out_unregister_id_space:
+@@ -735,6 +749,7 @@ static void __ipoctal_remove(struct ipoctal *ipoctal)
+ 	tty_unregister_driver(ipoctal->tty_drv);
+ 	put_tty_driver(ipoctal->tty_drv);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_MEM_SPACE);
++	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
+ 	kfree(ipoctal);
+diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
+index 223838a..96e8d8c 100644
+--- a/drivers/staging/ipack/devices/scc2698.h
++++ b/drivers/staging/ipack/devices/scc2698.h
+@@ -221,4 +221,7 @@ union scc2698_block {
+ #define ISR_DELTA_BREAK_B           (0x1 << 6)
+ #define ISR_INPUT_PORT_CHANGE       (0x1 << 7)
+ 
++#define ACK_INT_REQ0			0
++#define ACK_INT_REQ1			2
 +
-+		phys_address = tpci200->slots[dev->slot].int_phys.address;
-+		size_to_map = tpci200->slots[dev->slot].int_phys.size;
-+		break;
- 	case IPACK_MEM_SPACE:
- 		if (dev->mem_space.address != NULL) {
- 			dev_err(&dev->dev,
-diff --git a/drivers/staging/ipack/bridges/tpci200.h b/drivers/staging/ipack/bridges/tpci200.h
-index e1f60f3..235d1fe 100644
---- a/drivers/staging/ipack/bridges/tpci200.h
-+++ b/drivers/staging/ipack/bridges/tpci200.h
-@@ -132,6 +132,7 @@ struct slot_irq {
-  * @irq		Slot IRQ infos
-  * @io_phys	IO physical base address register of the slot
-  * @id_phys	ID physical base address register of the slot
-+ * @int_phys	INT physical base address register of the slot
-  * @mem_phys	MEM physical base address register of the slot
-  *
-  */
-@@ -139,6 +140,7 @@ struct tpci200_slot {
- 	struct slot_irq		*irq;
- 	struct ipack_addr_space io_phys;
- 	struct ipack_addr_space id_phys;
-+	struct ipack_addr_space int_phys;
- 	struct ipack_addr_space mem_phys;
- };
- 
-diff --git a/drivers/staging/ipack/ipack.h b/drivers/staging/ipack/ipack.h
-index 9c3079d..f8405df 100644
---- a/drivers/staging/ipack/ipack.h
-+++ b/drivers/staging/ipack/ipack.h
-@@ -35,6 +35,7 @@ enum ipack_space {
- 	IPACK_IO_SPACE    = 0,
- 	IPACK_ID_SPACE    = 1,
- 	IPACK_MEM_SPACE   = 2,
-+	IPACK_INT_SPACE,
- };
- 
- /**
-@@ -71,6 +72,7 @@ struct ipack_device {
- 	struct ipack_bus_device *bus;
- 	struct ipack_addr_space id_space;
- 	struct ipack_addr_space io_space;
-+	struct ipack_addr_space int_space;
- 	struct ipack_addr_space mem_space;
- 	struct device dev;
- 	u8                      *id;
+ #endif /* SCC2698_H_ */
 -- 
 1.7.10.4
 
