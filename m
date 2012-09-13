@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab2IMP66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:58:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19881 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758106Ab2IMP64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:58:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,417,1344236400"; 
-   d="scan'208";a="192385276"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, dsahern@gmail.com, namhyung@kernel.org,
+	id S1758522Ab2IMP7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:59:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19044 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab2IMP7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 11:59:00 -0400
+X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=JBLNcV8zRgkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=B2NTZjWQ9qwA:10 a=16kj1NKcxtvoXTIdzgUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347551937.10751.80.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/7] perf: Enable function tracing for perf core
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Stop perf stat -p when profiled process exits v3
-Date: Thu, 13 Sep 2012 08:58:51 -0700
-Message-Id: <1347551931-7666-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+Date: Thu, 13 Sep 2012 11:58:57 -0400
+In-Reply-To: <20120908130646.GA2122@somewhere.redhat.com>
+References: <20120908115515.211175517@goodmis.org>
+	 <20120908115640.032328533@goodmis.org>
+	 <20120908130646.GA2122@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, 2012-09-08 at 15:06 +0200, Frederic Weisbecker wrote:
+> On Sat, Sep 08, 2012 at 07:55:16AM -0400, Steven Rostedt wrote:
+> > According to Steven R. there is no reason left to not support
+> > function tracing for the perf core. This makes it easier to debug
+> > perf.
+> > 
+> > Don't remove -pg for the x86 and generic perf core.
+> 
+> Actually, perf can use function tracing. A good reason for disabling
+> function tracing in perf is to avoid the overhead of recursive function
+> tracing, even though we are protected against tracing re-entrancy, this
+> still result in some overhead.
 
-When counting a process with perf stat -p check if the process died
-and exit collection if yes.
+As I believe the patch set is being held off due to whether or not to
+function trace perf, I'll rebase without it, and push the result again.
+I'll add this to the queue of patches I have to trace the event
+functions as well, as they seem to do the same things.
 
-v2: Add more checks, handle non -p again. Handle /proc not there.
-v3: Handle multi pid case. Fix non /proc error path
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/builtin-stat.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+-- Steve
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 861f0ae..b5e7df2 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -536,7 +536,19 @@ static int run_perf_stat(int argc __used, const char **argv)
- 		if (WIFSIGNALED(status))
- 			psignal(WTERMSIG(status), argv[0]);
- 	} else {
--		while(!done) sleep(1);
-+		char piddir[40];
-+		int check_proc = target.pid &&
-+				 access("/proc", X_OK) == 0 &&
-+				 !strchr(target.pid, ',');
-+		if (check_proc)
-+			snprintf(piddir, sizeof piddir, "/proc/%d", 
-+				 atoi(target.pid));
-+		while(!done) {
-+			sleep(1);
-+			if (check_proc && access(piddir, X_OK) < 0 && 
-+			    errno == ENOENT)
-+				break;
-+		}
- 	}
- 
- 	t1 = rdclock();
--- 
-1.7.7.6
 
