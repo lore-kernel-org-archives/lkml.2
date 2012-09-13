@@ -1,59 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab2IMC2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:28:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab2IMC2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:28:33 -0400
-Message-ID: <505144D0.4080908@redhat.com>
-Date: Thu, 13 Sep 2012 10:28:32 +0800
-From: hank <pyu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1753830Ab2IMCee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:34:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50462 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2IMCec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 22:34:32 -0400
+Message-ID: <50514634.3080303@gmail.com>
+Date: Wed, 12 Sep 2012 21:34:28 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: neilb@suse.de, miku@iki.fi, jakob@ostenfeld.dk, ptb@it.uc3m.es
-CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug
- in fix_read_error function
-References: <5045708C.10705@redhat.com>
-In-Reply-To: <5045708C.10705@redhat.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Tim (Xen.org)" <tim@xen.org>, David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
+References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com> <503BFCD8.5090804@gmail.com> <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com> <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 11:07 AM, hank wrote:
+On 09/12/2012 01:14 PM, Stefano Stabellini wrote:
+> On Wed, 12 Sep 2012, Stefano Stabellini wrote:
+>> On Tue, 28 Aug 2012, Rob Herring wrote:
+>>> You should look at ePAPR 1.1 which defines hypervisor related bindings.
+>>> While it is a PPC doc, we should reuse or extend what makes sense.
+>>>
+>>> See section 7.5:
+>>>
+>>> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
+>>
+>> Thanks for the link, I wasn't aware of ePAPR.
+>>
+>> The hypervisor node defined by ePAPR is not very different from what I
+>> am proposing. Should I try to be compatible with the hypervisor
+>> specification above (as in compatible = "epapr,hypervisor-1.1")?
+>> Or should I just use it as a reference for my own specification?
+>>
+>> Personally I would rather avoid full compatibility with ePAPR.
+> 
+> In particular reading section 7.5, these are the required properties of
+> the ePAPR hypervisor node:
+> 
+> - compatible = "epapr,hypervisor-1.1"
+> compared to what I am proposing, it is laking information about what
+> hypervisor we are talking about (xen, kvm, vmware, etc) and the version
+> of the ABI (xen-4.2).
 
-> From 0ba5879082544dc3aa13807087563b1258124b1e Mon Sep 17 00:00:00 2001
-> From: hank <pyu@redhat.com>
-> Date: Tue, 4 Sep 2012 10:23:45 +0800
-> Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug in
->  fix_read_error function
+compatible properties are often changed. If we do deviate on the rest of
+the binding, then it needs to be different.
+
+Turns out that powerpc KVM guests use "linux,kvm" and "epapr,hypervisor"
+doesn't even appear in the kernel.
+
+We also perhaps have to consider the possibility of Xen on PowerPC. Then
+alignment is more important.
+
+> - hcall-instructions
+> potentially interesting, but given that for Xen we are quite happy with
+> HVC, we are not going to add any secondary hypercall mechanisms,
+> therefore at the moment it would just result in a BUG if the specified
+> hcall instruction is != HVC. Besides if somebody else wanted to
+> implemented the Xen hypercall interface in a different way they could
+> just reimplement the hypercall wrappers, that would be easier than
+> trying to do it with this property.
+
+It's really about the parameters passed with the HVC. The ePAPR may be a
+good model for defining this. Just grepping "hypervisor" under
+arch/powerpc, it's pretty clear hypervisor support happened first and
+the ePAPR came second. Hopefully we can avoid that for ARM.
+
+> - guest-id
+> we usually make a point in trying not to tell the guest its own domid
+> because if the VM gets migrated to a different host it acquires a new
+> domid, therefore it should not rely on it.
 > 
-> in fix_read_error function, the conf->mirrors[read_disk].rdev may
-> become NULL, as in this function, rdev->nr_pending may be zero, anyone
-> can delete it. So should check if it is NULL before use.
+> - guest-name
+> we could pass the guest name here, but I don't see how it could be
+> of any use.
 > 
-> Signed-off-by: hank <pyu@redhat.com>
+
+I have no issue with these being optional.
+
+> 
+> On the other hand, thinking more about what Xen needs in the device
+> tree, I think we could improve the current spec by clarifying the
+> meaning of the memory region and interrupt properties we currently
+> require. I thought about moving them to two separate children node with
+> an explicit name:
+> 
 > ---
->  drivers/md/raid1.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index 611b5f7..fd8de28 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -2005,7 +2005,7 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
->  		if (!success) {
->  			/* Cannot read from anywhere - mark it bad */
->  			struct md_rdev *rdev = conf->mirrors[read_disk].rdev;
-> -			if (!rdev_set_badblocks(rdev, sect, s, 0))
-> +			if (!rdev || !rdev_set_badblocks(rdev, sect, s, 0))
->  				md_error(mddev, rdev);
->  			break;
->  		}
+> * Xen hypervisor device tree bindings
+> 
 
+I really think we need to define ARM hypervisor device tree bindings
+first, then Xen specific bindings as an addition to that. I worry that
+the KVM folks aren't paying attention and then want something different
+later on.
 
+> Xen ARM virtual platforms shall have the following properties and
+> children nodes:
+> 
+> - compatible property:
+> 	compatible = "xen,xen", "xen,xen-<version>";
 
-Anyone can review this patch? I think it is a bug and should be fixed.
+"xen,xen" should be last as it is less specific.
+
+>   where <version> is the version of the Xen ABI of the platform.
+> 
+> - grant_table child with the following properties:
+>     - name:
+> 	    name = "grant_table";
+
+What's a grant table?
+
+> 	- reg: specifies the base physical address and size of a region in
+> 	    memory where the grant table should be mapped to, using an
+>         HYPERVISOR_memory_op hypercall. 
+> 
+> - events child with the following properties:
+>     - name:
+>         name = "events";
+> 	- interrupts: the interrupt used by Xen to inject event notifications.
+
+Why a child node? Just an interrupts property alone should be fine. If
+you have cases with different number of interrupts, the compatible
+property can distinguish that.
+
+Rob
+
+> 
+> 
+> Example:
+> hypervisor {
+> 		compatible = "xen,xen", "xen,xen-4.2";
+> 		#address-cells = <1>;
+> 		#size-cells = <1>;
+> 		#interrupt-cells = <3>;
+> 		ranges = <0xb0000000 0xb0000000 0x20000>;
+> 
+> 		grant_table {
+> 			name = "grant_table";
+> 			reg = <0xb0000000 0x20000>;
+> 		};
+> 
+> 		events {
+> 			name = "events";
+> 			interrupts = <1 15 0xf08>;
+> 		};
+> 	};
+> 
+
