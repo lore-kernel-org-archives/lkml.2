@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2IMD4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 23:56:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53523 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab2IMD4W (ORCPT
+	id S1750858Ab2IMELj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 00:11:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65333 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2IMELh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 23:56:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF49D3@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF49D3@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 13 Sep 2012 11:56:01 +0800
-X-Google-Sender-Auth: VP3lCp1hxkwrrTuTQgLEwO81z1I
-Message-ID: <CAK5ve-KfmgGOVSS4ic1-qiSXaGcbmnu17C9CBhcYoZEtr0fPbQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] leds-lp5523: Fix riskiness of the page fault
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Sep 2012 00:11:37 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Cc: peterz@infradead.org, mingo@redhat.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [RFC] sched: nohz_idle_balance
+Date: Thu, 13 Sep 2012 06:11:26 +0200
+Message-Id: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 8:16 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->  The last attribute should be terminated as NULL because any member of
->  attribute structure is accessed while adding the sysfs file.
->  If not, invalid address may cause the page fault problem.
->
+On tickless system, one CPU runs load balance for all idle CPUs.
+The cpu_load of this CPU is updated before starting the load balance
+of each other idle CPUs. We should instead update the cpu_load of the balance_cpu.
 
-Thanks, applied
--Bryan
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lp5523.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-> index 5ebdc92..97994ff 100644
-> --- a/drivers/leds/leds-lp5523.c
-> +++ b/drivers/leds/leds-lp5523.c
-> @@ -759,6 +759,7 @@ static struct attribute *lp5523_attributes[] = {
->         &dev_attr_engine2_leds.attr,
->         &dev_attr_engine3_load.attr,
->         &dev_attr_engine3_leds.attr,
-> +       NULL,
->  };
->
->  static const struct attribute_group lp5523_group = {
-> --
-> 1.7.9.5
->
->
-> Best Regards,
-> Milo
->
->
-
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1ca4fe4..9ae3a5b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4794,14 +4794,15 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+ 		if (need_resched())
+ 			break;
+ 
+-		raw_spin_lock_irq(&this_rq->lock);
+-		update_rq_clock(this_rq);
+-		update_idle_cpu_load(this_rq);
+-		raw_spin_unlock_irq(&this_rq->lock);
++		rq = cpu_rq(balance_cpu);
++
++		raw_spin_lock_irq(&rq->lock);
++		update_rq_clock(rq);
++		update_idle_cpu_load(rq);
++		raw_spin_unlock_irq(&rq->lock);
+ 
+ 		rebalance_domains(balance_cpu, CPU_IDLE);
+ 
+-		rq = cpu_rq(balance_cpu);
+ 		if (time_after(this_rq->next_balance, rq->next_balance))
+ 			this_rq->next_balance = rq->next_balance;
+ 	}
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+1.7.9.5
+
