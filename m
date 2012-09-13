@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2IMFRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 01:17:46 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:34160 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab2IMFRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 01:17:44 -0400
-Date: Thu, 13 Sep 2012 01:17:43 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [git patches] libata new PCI IDs
-Message-ID: <20120913051743.GA23786@havoc.gtf.org>
-Mime-Version: 1.0
+	id S1755483Ab2IMFTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 01:19:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35358 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab2IMFTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 01:19:32 -0400
+Date: Wed, 12 Sep 2012 22:19:28 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 03/20] Input: Make sure we follow all EV_KEY events
+Message-ID: <20120913051928.GE17105@core.coreip.homeip.net>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
+ <1346528835-363-4-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1346528835-363-4-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 01, 2012 at 09:46:58PM +0200, Henrik Rydberg wrote:
+> For some EV_KEY types, sending a larger-than-one value causes the
+> input state to oscillate. This patch makes sure this cannot happen,
+> clearing up the autorepeat bypass logic in the process.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-Please pull 7b4f6ecacb14f384adc1a5a67ad95eb082c02bd1 from
-git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git tags/upstream-linus
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
+> ---
+>  drivers/input/input.c | 20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index 8ebf116..4d64500 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -239,24 +239,30 @@ static void input_handle_event(struct input_dev *dev,
+>  		break;
+>  
+>  	case EV_KEY:
+> -		if (is_event_supported(code, dev->keybit, KEY_MAX) &&
+> -		    !!test_bit(code, dev->key) != value) {
+> +		if (is_event_supported(code, dev->keybit, KEY_MAX)) {
+> +
+> +			/* auto-repeat bypasses state updates */
+> +			if (value == 2) {
+> +				disposition = INPUT_PASS_TO_HANDLERS;
+> +				break;
+> +			}
+> +
+> +			if (!!test_bit(code, dev->key) != !!value) {
+>  
+> -			if (value != 2) {
+>  				__change_bit(code, dev->key);
+> +				disposition = INPUT_PASS_TO_HANDLERS;
+> +
+>  				if (value)
+>  					input_start_autorepeat(dev, code);
+>  				else
+>  					input_stop_autorepeat(dev);
+>  			}
+> -
+> -			disposition = INPUT_PASS_TO_HANDLERS;
+>  		}
+>  		break;
+>  
+>  	case EV_SW:
+>  		if (is_event_supported(code, dev->swbit, SW_MAX) &&
+> -		    !!test_bit(code, dev->sw) != value) {
+> +		    !!test_bit(code, dev->sw) != !!value) {
+>  
+>  			__change_bit(code, dev->sw);
+>  			disposition = INPUT_PASS_TO_HANDLERS;
+> @@ -283,7 +289,7 @@ static void input_handle_event(struct input_dev *dev,
+>  
+>  	case EV_LED:
+>  		if (is_event_supported(code, dev->ledbit, LED_MAX) &&
+> -		    !!test_bit(code, dev->led) != value) {
+> +		    !!test_bit(code, dev->led) != !!value) {
+>  
+>  			__change_bit(code, dev->led);
+>  			disposition = INPUT_PASS_TO_ALL;
+> -- 
+> 1.7.12
+> 
 
-to receive the following updates:
-
- drivers/ata/ahci.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
-
-Alan Cox (2):
-      ahci: Add alternate identifier for the 88SE9172
-      ahci: Add identifiers for ASM106x devices
-
-Ben Hutchings (1):
-      ahci: Add JMicron 362 device IDs
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 50d5dea..7862d17 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -268,6 +268,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci_ign_iferr },
-+	/* JMicron 362B and 362C have an AHCI function with IDE class code */
-+	{ PCI_VDEVICE(JMICRON, 0x2362), board_ahci_ign_iferr },
-+	{ PCI_VDEVICE(JMICRON, 0x236f), board_ahci_ign_iferr },
- 
- 	/* ATI */
- 	{ PCI_VDEVICE(ATI, 0x4380), board_ahci_sb600 }, /* ATI SB600 */
-@@ -393,6 +396,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
- 	{ PCI_DEVICE(0x1b4b, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
-+	{ PCI_DEVICE(0x1b4b, 0x9192),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
- 
-@@ -400,7 +405,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
- 
- 	/* Asmedia */
--	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0602), board_ahci },	/* ASM1060 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
-+	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
- 
- 	/* Generic, PCI class code for AHCI */
- 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+Dmitry
