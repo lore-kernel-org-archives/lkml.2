@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2IMPUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:20:36 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34136 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2IMPUf (ORCPT
+	id S1755899Ab2IMPWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:22:06 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:17153
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752287Ab2IMPWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:20:35 -0400
-Date: Thu, 13 Sep 2012 17:20:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH][GIT PULL][v3.7] trace: Don't declare trace_*_rcuidle
- functions in modules
-Message-ID: <20120913152028.GB27521@gmail.com>
-References: <1347475616.10751.74.camel@gandalf.local.home>
+	Thu, 13 Sep 2012 11:22:04 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAAO0K-02-I91-02
+X-M-MSG: 
+Date: Thu, 13 Sep 2012 17:21:45 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] perf record: Change error message on failure
+Message-ID: <20120913152145.GG8285@erda.amd.com>
+References: <1347531654-16024-1-git-send-email-robert.richter@amd.com>
+ <20120913150720.GA27411@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1347475616.10751.74.camel@gandalf.local.home>
+In-Reply-To: <20120913150720.GA27411@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> Ingo,
+On 13.09.12 17:07:20, Ingo Molnar wrote:
 > 
-> Josh made a change to the tracing code that affects both the 
-> work Paul McKenney and I are currently doing. At the last 
-> Kernel Summit back in August, Linus said when such a case 
-> exists, it is best to make a separate branch based off of his 
-> tree and place the change there. This way, the repositories 
-> that need to share the change can both pull them in and the 
-> SHA1 will match for both. Whichever branch is pulled in first 
-> by Linus will also pull in the necessary change for the other 
-> branch as well.
+> * Robert Richter <robert.richter@amd.com> wrote:
 > 
-> I made a separate branch from Linus's v3.6-rc5 (called 
-> tip/perf/rcu) and applied Josh's change to it. Could you 
-> please pull this into perf/core and whatever branch that Paul 
-> needs it in. Or just have Paul pull this change as well.
+> > Only report
+> > 
+> >  No CONFIG_PERF_EVENTS=y kernel support configured?
+> > 
+> > if the syscall fails with ENOSYS. In other cases CONFIG_PERF_EVENTS is
+> > set and might confuse users. The default message is now:
+> > 
+> >  Not all events could be opened.
+> 
+> Indeed, and it would be nice to be even less passive-aggressive 
+> and figure out and display the exact error condition?
 
-Ok, pulled it into tip:core/rcu and then merged core/rcu into 
-perf/core.
+The complete error message shows the error condition and is like the
+following:
 
-Thanks,
+ # perf record -e cycles:ppk sleep 1
+ 
+   Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
+ 
+ Not all events could be opened.
+ sleep: Terminated
 
-	Ingo
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
