@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2IMFcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 01:32:20 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18541 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab2IMFcT (ORCPT
+	id S1755557Ab2IMFlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 01:41:42 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:38269 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab2IMFlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 01:32:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 12 Sep 2012 22:32:18 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] arm: tegra: fixing compilation error
-Date: Thu, 13 Sep 2012 10:46:25 +0530
-Message-ID: <1347513385-14158-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Thu, 13 Sep 2012 01:41:40 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
+References: <87wr002z39.fsf@devron.myhome.or.jp>
+	<20120912024249.GB17922@localhost>
+	<87sjan3c27.fsf@devron.myhome.or.jp>
+	<20120913003337.GA16363@localhost>
+Date: Thu, 13 Sep 2012 14:41:31 +0900
+In-Reply-To: <20120913003337.GA16363@localhost> (Fengguang Wu's message of
+	"Thu, 13 Sep 2012 08:33:37 +0800")
+Message-ID: <87a9wueayc.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As usb_phy.h got moved from mach to include/linux/usb
-and renamed as tegra_usb_phy.h, correcting it in the include
-path.
+Fengguang Wu <fengguang.wu@intel.com> writes:
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
- arch/arm/mach-tegra/board-dt-tegra20.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> If used custom bdi with BDI_CAP_NO_WRITEBACK, wait_for_completion()
+>> (e.g. sync_inodes_sb()) will be blocked forever.
+>
+> The sync(2) block cannot be fixed by this patch?
 
-diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
-index adc6b98..3308a65 100644
---- a/arch/arm/mach-tegra/board-dt-tegra20.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra20.c
-@@ -41,7 +41,7 @@
- 
- #include <mach/iomap.h>
- #include <mach/irqs.h>
--#include <mach/usb_phy.h>
-+#include <linux/usb/tegra_usb_phy.h>
- 
- #include "board.h"
- #include "clock.h"
+This patch fixes block problem too.
+
+>> I tested by custom bdi with BDI_CAP_NO_WRITEBACK - sync(2) blocked
+>> forever by this reason.
+>
+> What's your test script? How do you create/use that custom bdi?
+
+Ah, I wrote my kernel module to test. I guess there is no users in
+current kernel for now, because it doesn't work.
+
+Thanks.
 -- 
-1.7.1.1
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
