@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2IMEgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 00:36:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55547 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2IMEgp (ORCPT
+	id S1752812Ab2IMEkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 00:40:09 -0400
+Received: from fbvrgw.firstserver.ne.jp ([164.46.1.51]:56946 "EHLO
+	fbvrgw.firstserver.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab2IMEkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 00:36:45 -0400
-Message-ID: <505162DC.3060007@wwwdotorg.org>
-Date: Wed, 12 Sep 2012 22:36:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] USB: phy: re-organize tegra phy driver
-References: <1347447481-25574-1-git-send-email-vbyravarasu@nvidia.com> <5050D622.7080704@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6DDEFB8D80@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDEFB8D80@BGMAIL02.nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 00:40:07 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Sep 2012 00:40:06 EDT
+From: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+To: greg@kroah.com
+Cc: will.deacon@arm.com, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+Subject: [PATCH] ARM: fix bad applied patch for arch/arm/Kconfig of stable 3.0.y tree.
+Date: Thu, 13 Sep 2012 13:29:30 +0900
+Message-Id: <1347510570-9272-1-git-send-email-koba@kmckk.co.jp>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 09:49 PM, Venu Byravarasu wrote:
-> Stephen Warren wrote at Thursday, September 13, 2012 12:06 AM:
->> On 09/12/2012 04:58 AM, Venu Byravarasu wrote:
->>> Nvidia produces several Tegra SOCs viz Tegra2, Tegra3 etc.
->>> In order to support USB phy drivers on these SOCs, existing
->>> phy driver is split into SOC agnostic common USB phy driver and
->>> tegra2 specific USB phy driver.
->>> This will facilitate easy addition & deletion of phy drivers for
->>> Tegra SOCs.
->>
->> For capitalization/related reasons, I would re-write the commit
->> description as:
->>
->> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
->> In order to support USB PHY drivers on these SoCs, existing
-> 
-> Will change tegra2 to Tegra20 and similar for Tegra30 & NVIDIA.
-> However as phy is not an acronym, should we still have it in Caps?
+ARM_ERRATA_764369 and PL310_ERRATA_769419 do not appear in config menu in stable 3.0.y tree.
+This is because backported patch for arm/arm/Kconfig applied wrong place.
+This patch solves it.
 
-I'd certainly expect to see PHY in all-caps, yes. As entirely arbitrary
-justification, see the precedent at:
+Signed-off-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+---
+Hello, Greg
+This is patch for stable 3.0.y tree. 3.2.y, 3.4.y and 3.5.y do not have this problem. Only 3.0.y.
 
-https://en.wikipedia.org/wiki/PHY_(chip)
+ arch/arm/Kconfig |   52 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
 
-Sorry for bike-shedding, but I'm picky about that kind of thing, at
-least sometimes.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 7692bca..85368ed 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1234,6 +1234,32 @@ config ARM_ERRATA_754327
+ 	  This workaround defines cpu_relax() as smp_mb(), preventing correctly
+ 	  written polling loops from denying visibility of updates to memory.
+ 
++config ARM_ERRATA_764369
++	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
++	depends on CPU_V7 && SMP
++	help
++	  This option enables the workaround for erratum 764369
++	  affecting Cortex-A9 MPCore with two or more processors (all
++	  current revisions). Under certain timing circumstances, a data
++	  cache line maintenance operation by MVA targeting an Inner
++	  Shareable memory region may fail to proceed up to either the
++	  Point of Coherency or to the Point of Unification of the
++	  system. This workaround adds a DSB instruction before the
++	  relevant cache maintenance functions and sets a specific bit
++	  in the diagnostic control register of the SCU.
++
++config PL310_ERRATA_769419
++	bool "PL310 errata: no automatic Store Buffer drain"
++	depends on CACHE_L2X0
++	help
++	  On revisions of the PL310 prior to r3p2, the Store Buffer does
++	  not automatically drain. This can cause normal, non-cacheable
++	  writes to be retained when the memory system is idle, leading
++	  to suboptimal I/O performance for drivers using coherent DMA.
++	  This option adds a write barrier to the cpu_idle loop so that,
++	  on systems with an outer cache, the store buffer is drained
++	  explicitly.
++
+ endmenu
+ 
+ source "arch/arm/common/Kconfig"
+@@ -1298,32 +1324,6 @@ source "drivers/pci/Kconfig"
+ 
+ source "drivers/pcmcia/Kconfig"
+ 
+-config ARM_ERRATA_764369
+-	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
+-	depends on CPU_V7 && SMP
+-	help
+-	  This option enables the workaround for erratum 764369
+-	  affecting Cortex-A9 MPCore with two or more processors (all
+-	  current revisions). Under certain timing circumstances, a data
+-	  cache line maintenance operation by MVA targeting an Inner
+-	  Shareable memory region may fail to proceed up to either the
+-	  Point of Coherency or to the Point of Unification of the
+-	  system. This workaround adds a DSB instruction before the
+-	  relevant cache maintenance functions and sets a specific bit
+-	  in the diagnostic control register of the SCU.
+-
+-config PL310_ERRATA_769419
+-	bool "PL310 errata: no automatic Store Buffer drain"
+-	depends on CACHE_L2X0
+-	help
+-	  On revisions of the PL310 prior to r3p2, the Store Buffer does
+-	  not automatically drain. This can cause normal, non-cacheable
+-	  writes to be retained when the memory system is idle, leading
+-	  to suboptimal I/O performance for drivers using coherent DMA.
+-	  This option adds a write barrier to the cpu_idle loop so that,
+-	  on systems with an outer cache, the store buffer is drained
+-	  explicitly.
+-
+ endmenu
+ 
+ menu "Kernel Features"
+-- 
+1.7.9.5
+
