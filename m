@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab2IMOqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:46:11 -0400
-Received: from fieldses.org ([174.143.236.118]:36544 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab2IMOqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:46:08 -0400
-Date: Thu, 13 Sep 2012 10:46:02 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-Message-ID: <20120913144602.GD24684@fieldses.org>
-References: <87vcfjfa14.fsf@devron.myhome.or.jp>
- <20120912171128.GG3009@fieldses.org>
- <87r4q7f8fw.fsf@devron.myhome.or.jp>
- <20120912174556.GH3009@fieldses.org>
- <87ipbjf54f.fsf@devron.myhome.or.jp>
- <CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
- <87txv2cog1.fsf@devron.myhome.or.jp>
- <20120913112024.GA24684@fieldses.org>
- <87ehm6p15v.fsf@devron.myhome.or.jp>
- <CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
+	id S1758094Ab2IMOvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:51:12 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:53452 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758052Ab2IMOvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 10:51:10 -0400
+Date: Thu, 13 Sep 2012 17:51:05 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH 1/4] i2c: introduce i2c-cbus driver
+Message-ID: <20120913145104.GA8849@blackmetal.musicnaut.iki.fi>
+References: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
+ <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
+ <20120913105309.GF14237@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120913105309.GF14237@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 11:24:30PM +0900, Namjae Jeon wrote:
-> 2012/9/13, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> > "J. Bruce Fields" <bfields@fieldses.org> writes:
-> >
-> >>> >> Grepping around... Documentation/sysctl/vm.txt mentions a
-> >>> >> vfs_cache_pressure parameter.
-> >>> >> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
-> >>> > I am worrying if it could lead to OOM condition on embedded
-> >>> > system(short memory(DRAM) and support 3TB HDD disk of big size.)
-> >>> >
-> >>> > Please let me know if any issues or queries.
-> >>>
-> >>> So, now I think stable inode number may be useful if there are users of
-> >>> it. And I guess those functionality is no collisions with -mm. And I
-> >>> suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
-> >>>
-> >>> If nfs=1, works like current -mm without no limited operations.
-> >>
-> >> Apologies, I haven't been following the conversation carefully: remind
-> >> me what "works like current -mm" means?
-> >
-> > Current -mm means the best-effort work only if inode cache is not
-> > evicted.  I.e. if there is no inode cache anymore on server, server
-> > would return ESTALE. So I guess the behavior would not be stable
-> > relatively.
-> Hi OGAWA.
-> Sorry for late response.
-> Okay, I will resend patchset include your suggeston.(-o nfs=2)
-> Do you mind adding busy list patch to avoid unlink issue ?
-> And in case of rename, FAT retrun EBUSY while opening file.
-> We can limit only rename.
-
-The server doesn't necessarily know whether a client has the file open,
-so does that really help?
-
---b.
-
-> Let me know your opinion.
+On Thu, Sep 13, 2012 at 12:53:09PM +0200, Wolfram Sang wrote:
+> On Mon, Sep 03, 2012 at 11:23:22PM +0300, Aaro Koskinen wrote:
+> > Add i2c driver to enable access to devices behind CBUS on Nokia Internet
+> > Tablets.
+> > 
+> > The patch also adds CBUS I2C configuration for N8x0 which is one of the
+> > users of this driver.
+> > 
+> > Cc: linux-i2c@vger.kernel.org
+> > Acked-by: Felipe Balbi <balbi@ti.com>
+> > Acked-by: Tony Lindgren <tony@atomide.com>
+> > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 > 
-> Thanks OGAWA!
-> 
-> >
-> > Thanks.
-> >
-> >>> If nfs=2, try to make stable FH and limit some operations
-> >>>
-> >>> (option name doesn't matter here.)
-> >>>
-> >>> Does this work fine?
-> > --
-> > OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> >
+> My main question is: what is CBUS? It doesn't look like an I2C/SMBUS
+> host controller, but some bit-banging protocol? As such, it shouldn't go
+> to i2c/busses/. And the protocol doesn't look much like I2C, neither.
+> There is no ACK/NACK/START/STOP, so I wonder if it should be in i2c
+> after all...
+
+It's some legacy 3-wire bus protocol. Not much info is available,
+there's some references to CBUS in i2c spec, so I thought it wouldn't
+be a completly wrong place for it...
+
+A.
