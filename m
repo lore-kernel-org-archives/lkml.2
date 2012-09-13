@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab2IMOzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:55:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab2IMOzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:55:07 -0400
-Date: Thu, 13 Sep 2012 10:53:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Block IO controller hierarchy suppport (Was: Re: [PATCH RFC
- cgroup/for-3.7] cgroup: mark subsystems with broken hierarchy support and
- whine if cgroups are nested for them)
-Message-ID: <20120913145340.GI4396@redhat.com>
-References: <20120910223125.GC7677@google.com>
- <20120911145106.GG12039@redhat.com>
- <20120911171601.GN7677@google.com>
- <20120911173524.GJ12039@redhat.com>
- <20120911175515.GP7677@google.com>
- <50505C39.1050600@parallels.com>
- <20120912170933.GO7677@google.com>
+	id S1758082Ab2IMPAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:00:13 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:52296
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753900Ab2IMPAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 11:00:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAAN03-01-KTJ-02
+X-M-MSG: 
+Date: Thu, 13 Sep 2012 10:00:01 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 00/14] x86, mm: init_memory_mapping cleanup
+Message-ID: <20120913150001.GA779@jshin-Toonie>
+References: <1346823991-22911-1-git-send-email-yinghai@kernel.org>
+ <20120905200815.GA2457@jshin-Toonie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120912170933.GO7677@google.com>
+In-Reply-To: <20120905200815.GA2457@jshin-Toonie>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 10:09:33AM -0700, Tejun Heo wrote:
-
-[..]
-> Yeah, it's mostly that cfq was already a hairy monster before blkcg
-> was added to it and unfortunately we didn't make it any cleaner in the
-> process and blkcg itself has a lot of other issues including being
-> completely broken w.r.t. writeback writes.  In addition there are two
-> sub-controllers - the cfq one and blk-throttle.  So, it's just that
-> there are too many scary things to do and not enough man power or
-> maybe interest.  I hope we could just declare cgroup isn't supported
-> on block devices but that doesn't seem feasible at this point either.
+On Wed, Sep 05, 2012 at 03:08:15PM -0500, Jacob Shin wrote:
+> On Tue, Sep 04, 2012 at 10:46:17PM -0700, Yinghai Lu wrote:
+> > Only create mapping for E820_820 and E820_RESERVED_KERN.
+> > 
+> > Seperate calculate_table_space_size and find_early_page_table out with
+> > init_memory_mapping.
+> > 
+> > For all ranges, will allocate page table one time, but init mapping
+> > only for E820 RAM and E820_RESERVED_KERN.
+> > 
+> > Could be found at:
+> > git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+> > 
+> > Thanks
+> >         Yinghai
+> > 
+> > 
+> > Jacob Shin (4):
+> >   x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+> >   x86: Fixup code testing if a pfn is direct mapped
+> >   x86: Only direct map addresses that are marked as E820_RAM
+> >   x86/mm: calculate_table_space_size based on memory ranges that are being mapped
+> > 
+> > Yinghai Lu (10):
+> >   x86, mm: Add global page_size_mask
+> >   x86, mm: Split out split_mem_range
+> >   x86, mm: Moving init_memory_mapping calling
+> >   x86, mm: Revert back good_end setting for 64bit
+> >   x86, mm: Find early page table only one time
+> >   x86, mm: Separate out calculate_table_space_size()
+> >   x86, mm: Move down two calculate_table_space_size down.
+> >   x86, mm: set memblock initial limit to 1M
+> >   x86, mm: Use func pointer to table size calculation and mapping
+> >   x86, mm: Map ISA area with connected ram range at the same time
+> > 
+> >  arch/x86/include/asm/init.h       |    1 -
+> >  arch/x86/include/asm/page_types.h |    2 +
+> >  arch/x86/include/asm/pgtable.h    |    1 +
+> >  arch/x86/kernel/cpu/amd.c         |    8 +-
+> >  arch/x86/kernel/setup.c           |   36 +++--
+> >  arch/x86/mm/init.c                |  357 +++++++++++++++++++++++++------------
+> >  arch/x86/mm/init_64.c             |    6 +-
+> >  arch/x86/platform/efi/efi.c       |    8 +-
+> >  8 files changed, 280 insertions(+), 139 deletions(-)
+> > 
+> > -- 
+> > 1.7.7
+> > 
+> > 
 > 
-> I might / probably work on it and am hoping to coerce Vivek into it
-> too.  If you wanna jump in, please be my guest.
+> Tested -v3 on our (AMD) machines and everything looks good.
 
-Biggest problem with blkcg CFQ implementation is idling on cgroup. If
-we don't idle on cgroup, then we don't get the service differentiaton
-for most of the workloads and if we do idle then performance starts
-to suck very soon (The moment few cgroups are created). And hierarchy
-will just exacertbate this problem because then one will try to idle
-at each group in hierarchy.
+Hi, hpa, wondering if this version finally looks okay to you for 3.7 ?
 
-This problem is something similar to CFQ's idling on sequential queues
-and iopriority. Because we never idled on random IO queue, ioprios never
-worked on random IO queues. And same is true for buffered write queues.
-Similary, if you don't idle on groups, then for most of the workloads,
-service differentiation is not visible. Only the one which are highly
-sequential on nature, one can see service differentiation.
+Thanks,
 
-That's one fundamental problem for which we need to have a good answer
-before we try to do more work on blkcg. Because we can write as much
-code but at the end of the day it might still not be useful because
-of the above mentioned issue I faced.
+-Jacob
 
-And that's the reason I think blkcg is primarly useful when you create
-number of cgroups very small and move offending/problem creating worklods
-in that cgroup and keep all other running in root cgroup. That way you
-get less idling due to less number of cgroups at the same time you have
-provided more isolation from offending workloads.
-
-So if anybody has ideas on how to address above issue, I am all ears.
-
-Thanks
-Vivek
