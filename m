@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab2IMHap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 03:30:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65285 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362Ab2IMHal (ORCPT
+	id S1756616Ab2IMHbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:31:05 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57860 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab2IMH1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 03:30:41 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:d9d2:3ecd:9fd1:b4c3]
-Date: Thu, 13 Sep 2012 00:30:40 -0700
-Message-ID: <CAOesGMhWHQROj_UHisStW_U9PUBgY9W0mvenzuqiwVoTKR-w1Q@mail.gmail.com>
-Subject: [GIT PULL] ARM: SoC fixes for 3.6-rc6
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Sep 2012 03:27:06 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-fe-50518ac714d8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 06/15] perf hists: Add support for accumulated stat of hist entry
+Date: Thu, 13 Sep 2012 16:20:02 +0900
+Message-Id: <1347520811-28150-7-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
+References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The following changes since commit 55d512e245bc7699a8800e23df1a24195dd08217:
+Maintain accumulated stat information in hist_entry->stat_acc if
+symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
+vaules initially, and will be updated as callchain is processed later.
 
-  Linux 3.6-rc5 (2012-09-08 16:43:45 -0700)
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c   | 18 ++++++++++++++++++
+ tools/perf/util/sort.h   |  1 +
+ tools/perf/util/symbol.h |  1 +
+ 3 files changed, 20 insertions(+)
 
-are available in the git repository at:
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 9df0a503e159..2802302e5904 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -181,6 +181,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ 		return true;
+ 
+ 	hist_entry__decay(&he->stat);
++	if (symbol_conf.cumulate_callchain)
++		hist_entry__decay(he->stat_acc);
+ 
+ 	if (!he->filtered)
+ 		hists->stats.total_period -= prev_period - he->stat.period;
+@@ -239,6 +241,14 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 
+ 	if (he != NULL) {
+ 		*he = *template;
++		if (symbol_conf.cumulate_callchain) {
++			he->stat_acc = malloc(sizeof(he->stat));
++			if (he->stat_acc == NULL) {
++				free(he);
++				return NULL;
++			}
++			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++		}
+ 
+ 		if (he->ms.map)
+ 			he->ms.map->referenced = true;
+@@ -287,6 +297,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 
+ 		if (!cmp) {
+ 			hist_entry__add_period(&he->stat, period);
++			if (symbol_conf.cumulate_callchain)
++				hist_entry__add_period(he->stat_acc, period);
+ 
+ 			/* If the map of an existing hist_entry has
+ 			 * become out-of-date due to an exec() or
+@@ -316,6 +328,9 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+ 	hist_entry__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (symbol_conf.cumulate_callchain)
++		hist_entry__add_cpumode_period(he->stat_acc, al->cpumode,
++					       period);
+ out_unlock:
+ 	pthread_mutex_unlock(&hists->lock);
+ 	return he;
+@@ -432,6 +447,9 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+ 
+ 		if (!cmp) {
+ 			hist_entry__add_stat(&iter->stat, &he->stat);
++			if (symbol_conf.cumulate_callchain)
++				hist_entry__add_stat(iter->stat_acc,
++						     he->stat_acc);
+ 
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 2356d085bc54..65b69824bc87 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -61,6 +61,7 @@ struct hist_entry {
+ 	struct rb_node		rb_node_in;
+ 	struct rb_node		rb_node;
+ 	struct he_stat		stat;
++	struct he_stat		*stat_acc;
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	u64			ip;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 4ff45e30c726..d0d65c4ebe6a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -91,6 +91,7 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			show_total_period,
+ 			use_callchain,
++			cumulate_callchain,
+ 			exclude_other,
+ 			show_cpu_utilization,
+ 			initialized,
+-- 
+1.7.11.4
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/fixes-for-linus
-
-for you to fetch changes up to 2bc733e8b443e77db5bb18e1bb8f1c535a92eb8c:
-
-  Merge tag 'imx-fixes' of git://git.pengutronix.de/git/imx/linux-2.6
-into fixes (2012-09-12 22:00:07 -0700)
-
-----------------------------------------------------------------
-
-arm-soc: bug fixes for v3.6-rc
-
-- A set of OMAP fixes, about half of them PM/clock related, the rest
-  scattered over the platform code but all small and targeted to real bugs.
-- Two small i.MX fixes for SSI device clock setup.
-
-----------------------------------------------------------------
-Aaro Koskinen (2):
-      ARM: OMAP: sram: fix OMAP4 errata handling
-      ARM: OMAP: sram: skip the first 16K on OMAP3 HS
-
-Fabio Estevam (2):
-      ARM: clk-imx25: Fix SSI clock registration
-      ARM: clk-imx35: Fix SSI clock registration
-
-Igor Grinberg (1):
-      ARM: OMAP: timer: obey the !CONFIG_OMAP_32K_TIMER
-
-Misael Lopez Cruz (1):
-      ARM: OMAP: hwmod code: Disable module when hwmod enable fails
-
-Olof Johansson (2):
-      Merge tag 'omap-fixes-for-v3.6-rc4' of
-git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'imx-fixes' of
-git://git.pengutronix.de/git/imx/linux-2.6 into fixes
-
-Paul Walmsley (2):
-      ARM: OMAP3xxx: clockdomain: fix software supervised wakeup/sleep
-      Merge branches 'clkdev_fixes_3.6rc', 'clkdm_fixes_3.6rc' and
-'hwmod_data_fixes_a_3.6rc' into omap_fixes_a_3.6rc
-
-Radek Pilar (1):
-      ARM: OMAP: Config fix for omap3-touchbook board
-
-Tero Kristo (2):
-      ARM: OMAP3: hwmod data: fix iva2 reset info
-      ARM: OMAP4: hwmod data: temporarily comment out data for the
-sl2if IP block
-
-Tony Lindgren (3):
-      ARM: OMAP4: Fix array size for irq_target_cpu
-      Merge branch 'fixes-wakeupgen' into fixes
-      Merge tag 'omap-fixes-a-for-3.6rc' of
-git://git.kernel.org/.../pjw/omap-pending into fixes
-
-Vaibhav Hiremath (1):
-      ARM: OMAP2+: am33xx: Fix the timer fck clock naming convention
-
- arch/arm/mach-imx/clk-imx25.c              |  6 ++--
- arch/arm/mach-imx/clk-imx35.c              |  6 ++--
- arch/arm/mach-omap2/Kconfig                |  3 +-
- arch/arm/mach-omap2/Makefile               |  2 +-
- arch/arm/mach-omap2/clock33xx_data.c       | 14 ++++-----
- arch/arm/mach-omap2/clockdomain2xxx_3xxx.c | 50 ++++++++++++++++++++++++++++--
- arch/arm/mach-omap2/cm-regbits-34xx.h      |  1 +
- arch/arm/mach-omap2/omap-wakeupgen.c       |  2 +-
- arch/arm/mach-omap2/omap_hwmod.c           |  1 +
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 15 +++++++--
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c | 12 +++----
- arch/arm/mach-omap2/timer.c                |  7 +++++
- arch/arm/plat-omap/sram.c                  | 11 +++++--
- 13 files changed, 98 insertions(+), 32 deletions(-)
