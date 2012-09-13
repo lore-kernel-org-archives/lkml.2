@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab2IMA2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 20:28:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64318 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118Ab2ILXeV (ORCPT
+	id S1758171Ab2IMA25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 20:28:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63788 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757705Ab2IMA2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 19:34:21 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Mack <zonque@gmail.com>,
-        "Robert M. Albrecht" <linux@romal.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 077/108] ALSA: snd-usb: fix cross-interface streaming devices
-Date: Wed, 12 Sep 2012 16:29:15 -0700
-Message-Id: <20120912232458.579694714@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120912232450.500619493@linuxfoundation.org>
-References: <20120912232816.GA1655@kroah.com>
- <20120912232450.500619493@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 12 Sep 2012 20:28:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
+References: <CALF0-+VMtUPuLHg3CwDxFm-TjbN1=YavGO79Oo3GuymOLvikeA@mail.gmail.com>
+Date: Wed, 12 Sep 2012 21:28:47 -0300
+Message-ID: <CALF0-+W10VNUxm5oT+kmiSUwRqwdZhxgDu5jQjD5ao_w1b7dNA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/10] mm: SLxB cleaning and trace accuracy improvement
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: JoonSoo Kim <js1304@gmail.com>, Tim Bird <tim.bird@am.sony.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Glauber Costa <glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Hi Pekka,
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Sep 8, 2012 at 5:49 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
+> Hi everyone,
+>
+> This is the second spin of my patchset to clean SLxB and improve kmem
+> trace events accuracy.
+>
+> For this v2, the most relevant stuff is:
+>
+> I've dropped two patches that were not very well received:
+> Namely this two are now gone:
+>   mm, slob: Use only 'ret' variable for both slob object and returned pointer
+>   mm, slob: Trace allocation failures consistently
+> I believe consistency is important but perhaps this is just me being paranoid.
+>
+> There's a lot of dumb movement and renaming. This might seem stupid
+> (and maybe it is) but it's necessary to create some common code between SLAB
+> and SLUB, and then factor it out.
+>
+> Also, there's a patch to add a new option to disable gcc auto-inlining.
+> I know we hate to add new options, but this is necessary to get
+> accurate call site
+> traces. Plus, the option is in "Kernel Hacking", so it's for kernel
+> developers only.
+>
+> This work is part of CELF Workgroup Project:
+> "Kernel_dynamic_memory_allocation_tracking_and_reduction" [1]
+>
+> Feedback, comments, suggestions are very welcome.
+>
+> Ezequiel Garcia (10):
+>  mm: Factor SLAB and SLUB common code
+>  mm, slub: Rename slab_alloc() -> slab_alloc_node() to match SLAB
+>  mm, slab: Rename __cache_alloc() -> slab_alloc()
+>  mm, slab: Match SLAB and SLUB kmem_cache_alloc_xxx_trace() prototype
+>  mm, slab: Replace 'caller' type, void* -> unsigned long
+>  mm, util: Use dup_user to duplicate user memory
+>  mm, slob: Add support for kmalloc_track_caller()
+>  mm, slab: Remove silly function slab_buffer_size()
+>  mm, slob: Use NUMA_NO_NODE instead of -1
+>  Makefile: Add option CONFIG_DISABLE_GCC_AUTOMATIC_INLINING
+>
 
-------------------
+Can you pick patches 2, 3, 4, and 5?
+Namely only those related to SLOB and to simple cleanups.
 
-From: Daniel Mack <zonque@gmail.com>
+I'll redo SLAB/SLUB commonization, as Christoph requested.
 
-commit 2e4a263ca80a203ac6109f5932722a716c265395 upstream.
-
-Commit 68e67f40b ("ALSA: snd-usb: move calls to usb_set_interface")
-saved us some unnecessary calls to snd_usb_set_interface() but ignored
-the fact that there is at least one device out there which operates on
-two endpoint in different interfaces simultaniously.
-
-Take care for this by catching the case where data and sync endpoints
-are located on different interfaces and calling snd_usb_set_interface()
-between the start of the two endpoints.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Robert M. Albrecht <linux@romal.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/usb/pcm.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -236,6 +236,21 @@ static int start_endpoints(struct snd_us
- 	    !test_and_set_bit(SUBSTREAM_FLAG_SYNC_EP_STARTED, &subs->flags)) {
- 		struct snd_usb_endpoint *ep = subs->sync_endpoint;
- 
-+		if (subs->data_endpoint->iface != subs->sync_endpoint->iface ||
-+		    subs->data_endpoint->alt_idx != subs->sync_endpoint->alt_idx) {
-+			err = usb_set_interface(subs->dev,
-+						subs->sync_endpoint->iface,
-+						subs->sync_endpoint->alt_idx);
-+			if (err < 0) {
-+				snd_printk(KERN_ERR
-+					   "%d:%d:%d: cannot set interface (%d)\n",
-+					   subs->dev->devnum,
-+					   subs->sync_endpoint->iface,
-+					   subs->sync_endpoint->alt_idx, err);
-+				return -EIO;
-+			}
-+		}
-+
- 		snd_printdd(KERN_DEBUG "Starting sync EP @%p\n", ep);
- 
- 		ep->sync_slave = subs->data_endpoint;
-
-
+Thanks,
+Ezequiel.
