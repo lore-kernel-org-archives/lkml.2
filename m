@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab2IMGVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:21:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505Ab2IMGVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:21:05 -0400
-Message-ID: <50517B51.4000805@redhat.com>
-Date: Thu, 13 Sep 2012 14:21:05 +0800
-From: hank <pyu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1755561Ab2IMGVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:21:16 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18584 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab2IMGVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:21:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 12 Sep 2012 23:21:12 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 0/4] Runtime Interpreted Power Sequences
+Date: Thu, 13 Sep 2012 15:23:06 +0900
+Message-ID: <1749811.4qrG1GZfBf@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.1 (Linux/3.5.3-1-ARCH; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <1347515447.7471.12.camel@lappyti>
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com> <1347515447.7471.12.camel@lappyti>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: miku@iki.fi, jakob@ostenfeld.dk, ptb@it.uc3m.es,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug
- in fix_read_error function
-References: <5045708C.10705@redhat.com>	<505144D0.4080908@redhat.com> <20120913154417.3f886f8d@notabene.brown>
-In-Reply-To: <20120913154417.3f886f8d@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2012 01:44 PM, NeilBrown wrote:
-
-> On Thu, 13 Sep 2012 10:28:32 +0800 hank <pyu@redhat.com> wrote:
+On Thursday 13 September 2012 13:50:47 Tomi Valkeinen wrote:
+> * PGP Signed by an unknown key
 > 
->> On 09/04/2012 11:07 AM, hank wrote:
->>
->>> From 0ba5879082544dc3aa13807087563b1258124b1e Mon Sep 17 00:00:00 2001
->>> From: hank <pyu@redhat.com>
->>> Date: Tue, 4 Sep 2012 10:23:45 +0800
->>> Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug in
->>>  fix_read_error function
->>>
->>> in fix_read_error function, the conf->mirrors[read_disk].rdev may
->>> become NULL, as in this function, rdev->nr_pending may be zero, anyone
->>> can delete it. So should check if it is NULL before use.
->>>
->>> Signed-off-by: hank <pyu@redhat.com>
->>> ---
->>>  drivers/md/raid1.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
->>> index 611b5f7..fd8de28 100644
->>> --- a/drivers/md/raid1.c
->>> +++ b/drivers/md/raid1.c
->>> @@ -2005,7 +2005,7 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
->>>  		if (!success) {
->>>  			/* Cannot read from anywhere - mark it bad */
->>>  			struct md_rdev *rdev = conf->mirrors[read_disk].rdev;
->>> -			if (!rdev_set_badblocks(rdev, sect, s, 0))
->>> +			if (!rdev || !rdev_set_badblocks(rdev, sect, s, 0))
->>>  				md_error(mddev, rdev);
->>>  			break;
->>>  		}
->>
->>
->>
->> Anyone can review this patch? I think it is a bug and should be fixed.
+> On Wed, 2012-09-12 at 18:57 +0900, Alexandre Courbot wrote:
 > 
-> I agree there is a bug there but I don't think this is the right fix.
-> If rdev could be NULL there, then it could also be NULL in
-> 		md_error(mddev, conf->mirrors[r1_bio->read_disk].rdev);
-> in handle_read_error().
-> I think we should just hold on to the reference to the rdev until we are
-> done with it, like the follow.
+> > New revision of the power sequences, taking as usual the feedback that
+> > was
+> > kindly provided about the last version.
+> > 
+> > I think now is a good time to discuss integrating this and to start
+> > looking for a maintainer who would be willing to merge this into his/her
+> > tree (I am especially thinking about the power framework maintainers,
+> > since this is where the code is right now. The second patch in this
+> > series enables the pwm_backlight driver to be used with the device tree,
+> > without relying on board-dependent callbacks to support complex power
+> > sequences. We also plan to use power sequences in other Tegra drivers,
+> > and other people have expressed interest in this work during earlier
+> > reviews. See for instance
+> > 
+> > https://lists.ozlabs.org/pipermail/devicetree-discuss/2012-
+August/018532.html 
+> > and
+> > 
+> > https://lkml.org/lkml/2012/9/6/270
+> > 
+> > There is probably some more details to fix and improve, but the current
+> > shape should be enough to know if we want this and where - therefore any
+> > sign from a maintainer would be greatly appreciated!
 > 
-> Would you agree?
 > 
-> Thanks,
-> NeilBrown
-> 
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index 611b5f7..eb1f8a3 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -333,9 +333,10 @@ static void raid1_end_read_request(struct bio *bio, int error)
->  		spin_unlock_irqrestore(&conf->device_lock, flags);
->  	}
->  
-> -	if (uptodate)
-> +	if (uptodate) {
->  		raid_end_bio_io(r1_bio);
-> -	else {
-> +		rdev_dec_pending(conf->mirrors[mirror].rdev, conf->mddev);
-> +	} else {
->  		/*
->  		 * oops, read error:
->  		 */
-> @@ -349,9 +350,8 @@ static void raid1_end_read_request(struct bio *bio, int error)
->  			(unsigned long long)r1_bio->sector);
->  		set_bit(R1BIO_ReadError, &r1_bio->state);
->  		reschedule_retry(r1_bio);
-> +		/* don't drop the reference on read_disk yet */
->  	}
-> -
-> -	rdev_dec_pending(conf->mirrors[mirror].rdev, conf->mddev);
->  }
->  
->  static void close_write(struct r1bio *r1_bio)
-> @@ -2220,6 +2220,7 @@ static void handle_read_error(struct r1conf *conf, struct r1bio *r1_bio)
->  		unfreeze_array(conf);
->  	} else
->  		md_error(mddev, conf->mirrors[r1_bio->read_disk].rdev);
-> +	rdev_dec_pending(conf->mirrors[r1_bio->read_disk].rdev, conf->mddev);
->  
->  	bio = r1_bio->bios[r1_bio->read_disk];
->  	bdevname(bio->bi_bdev, b);
+> I want to reiterate my opinion that I think power sequences in DT data
+> is the wrong way to go. Powering sequences are device specific issues
+> and should be handled in the device driver. But I also think that power
+> sequences inside the drivers would probably be useful.
 
+I understand the logic behind handling powering sequences in the device 
+driver, but as we discussed for some classes of devices this might just not 
+scale. I don't know how many different panels (each with different powering 
+sequences) are relying on pwm_backlight, but the alternative of embedding 
+support for all of them into the kernel (and bloating the kernel image) or 
+having a 3 kilometers list in the kernel configuration to individually chose 
+which panel to support (which would be cumbersome and make the kernel less 
+portable across boards) does not look much appealing to me. With power 
+sequences encoded in the DT, we could have one .dtsi file per panel that would 
+be included from the board's .dts file - no bloat, no drivers explosion, 
+portability preserved.
 
-The md_error function will check if rdev is NULL, if it is NULL,
-md_error will return directly, so I think it is doesn't matther if we
-pass a NULL rdev to md_error function.
+DT support is actually the main point of power sequences, as outside of the DT 
+we can always work the old way and use callbacks. If we were to remove DT 
+support, I am not sure this work would still be worth being merged.
 
-But anyway, I can't find any problem in your patch, it is correct doubtless.
+Alex.
 
-Best Regards.
-Hank.
