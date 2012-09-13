@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab2IMKsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:48:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2IMKs2 (ORCPT
+	id S1757106Ab2IMKxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:53:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42406 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab2IMKxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:48:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 26/31] arm64: Miscellaneous library functions
-Date: Thu, 13 Sep 2012 10:48:22 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1347035226-18649-1-git-send-email-catalin.marinas@arm.com> <201209071952.14309.arnd@arndb.de> <20120912211259.GA8252@arm.com>
-In-Reply-To: <20120912211259.GA8252@arm.com>
+	Thu, 13 Sep 2012 06:53:14 -0400
+Date: Thu, 13 Sep 2012 12:53:09 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH 1/4] i2c: introduce i2c-cbus driver
+Message-ID: <20120913105309.GF14237@pengutronix.de>
+References: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
+ <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209131048.22385.arnd@arndb.de>
-X-Provags-ID: V02:K0:6a4EtwHjX+cGB4oWVL31jQxA86oPU0mNZR8qz98V25t
- gg89Slh11j1ynVGYpe2jnIl2bn5Qjn9kCjtViulO3nWZI2Latl
- kGFNVEC0Ah/HETj0UMnni1GNbIuVBeE9XVRkJO/wj6GAWDXuDb
- pcXF1NjcMI9SejbZ7gkQAXZ0AiPijRDX8MO+qjK+Zq24rRP+ai
- osTwU9UMlfOouLGoDn25FeYhi567bcPUz2l+1Z5rMOdp1Wv2pJ
- SE1oFKfD4wPwGVO+8/M1Wk4aCQKdHsA0Eici6w62lirVcM5Awr
- mfB9EthR6ddRb9I1ZGAKMl4PRkpwqEhjROldFH/UwN8GfqpKim
- APQwAUAfkB9XzbCPWTPU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="juZjCTNxrMaZdGZC"
+Content-Disposition: inline
+In-Reply-To: <1346703805-31598-2-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 September 2012, Catalin Marinas wrote:
-> From 64ec78a2fce931e0148db90747c69688f248a531 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Wed, 12 Sep 2012 22:00:53 +0100
-> Subject: [PATCH 1/2] Implement generic ffs/fls using __builtin_* functions
-> 
-> This patch implements ffs, __ffs, fls, __fls using __builtin_* gcc
-> functions. These header files can be used by other architectures that
-> rely on the gcc builtins.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
 
-Very good.
+--juZjCTNxrMaZdGZC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, Sep 03, 2012 at 11:23:22PM +0300, Aaro Koskinen wrote:
+> Add i2c driver to enable access to devices behind CBUS on Nokia Internet
+> Tablets.
+>=20
+> The patch also adds CBUS I2C configuration for N8x0 which is one of the
+> users of this driver.
+>=20
+> Cc: linux-i2c@vger.kernel.org
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+My main question is: what is CBUS? It doesn't look like an I2C/SMBUS
+host controller, but some bit-banging protocol? As such, it shouldn't go
+to i2c/busses/. And the protocol doesn't look much like I2C, neither.
+There is no ACK/NACK/START/STOP, so I wonder if it should be in i2c
+after all...
+
+Jean, maybe you want to have a glimpse on this as well?
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--juZjCTNxrMaZdGZC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlBRuxUACgkQD27XaX1/VRuuYwCfYxpuY6TytsCY+hsOIPbu/Jp5
+Z2kAoIE9EVeyC8gLZV38/galqUxZmMud
+=vXgG
+-----END PGP SIGNATURE-----
+
+--juZjCTNxrMaZdGZC--
