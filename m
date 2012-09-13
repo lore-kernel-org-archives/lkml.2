@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab2IMJoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:44:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46692 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab2IMJoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:44:17 -0400
-Date: Thu, 13 Sep 2012 11:44:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sid Boyce <sboyce@blueyonder.co.uk>
-Cc: LKML Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: AMD Bulldozer FX-8150 Powers off during kernel build
-Message-ID: <20120913094413.GB15810@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sid Boyce <sboyce@blueyonder.co.uk>,
-	LKML Mailing List <linux-kernel@vger.kernel.org>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <50513733.8040801@blueyonder.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50513733.8040801@blueyonder.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756792Ab2IMJpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:45:22 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:43062 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2IMJpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 05:45:20 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkCAL6qUVBbdWObgWdsb2JhbABFu3AiAQEWJieCIQEFJ1IQUVcGE4gRvBqRRwOVX4kziVQ
+X-IronPort-AV: E=Sophos;i="4.80,416,1344204000"; 
+   d="scan'208";a="1043297973"
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH 5/5] Staging: ipack/devices/ipoctal: simplify ipoctal_write_tty()
+Date: Thu, 13 Sep 2012 11:46:28 +0200
+Message-Id: <1347529588-21212-5-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
+References: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 02:30:27AM +0100, Sid Boyce wrote:
-> I have a huge heatsink and large CPU fan plus lots of cooling fans
-> in the case and nothing gets hot.
-> If I build e.g 3.6-rc5 with 8 or 6 cores, part way through it
-> suddenly powers off.
+Remove count_wr and the assigment of nb_bytes = 0 in that function as is
+useless. Now it returns the count of the characters actually sent.
 
-Ok, can you catch the whole dmesg when you boot the machine _after_ the
-sudden poweroff? You can send it to me and Andreas (on CC) privately if
-you prefer.
+There is other nb_bytes = 0 deleted that has a duplicate a few lines before.
 
-Important: make sure the kernel has CONFIG_X86_MCE and
-CONFIG_EDAC_DECODE_MCE built-in.
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/staging/ipack/devices/ipoctal.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-Please make sure to use a recent kernel, i.e. 3.4, 3.5 is fine.
-
-Thanks.
-
-(Leaving in the rest for reference)
-
-> I have checked hwmon/k10temp.c to see if I could see where these
-> values were defined.
-> 
-> k10temp.h is 0 bytes.
-> -rw-r--r-- 1 root root 0 Sep  9 01:59
-> /usr/src/linux-3.6.0-rc5/include/config/sensors/k10temp.h
-> 
-> Currently I build with "make -j 1" and temperature and power values
-> are around those below.
-> # sensors
-> k10temp-pci-00c3
-> Adapter: PCI adapter
-> temp1:        +60.4°C  (high = +70.0°C)
->                        (crit = +90.0°C, hyst = +87.0°C)
-> 
-> fam15h_power-pci-00c4
-> Adapter: PCI adapter
-> power1:      127.49 W  (crit = 124.77 W)
-> 
-> # cat /proc/cpuinfo
-> processor       : 0
-> vendor_id       : AuthenticAMD
-> cpu family      : 21
-> model           : 1
-> model name      : AMD FX(tm)-8150 Eight-Core Processor
-> stepping        : 2
-> microcode       : 0x6000626
-> cpu MHz         : 3600.000
-> cache size      : 2048 KB
-> 
-> from .config:-
-> # grep HWMON .config
-> CONFIG_IXGBE_HWMON=y
-> CONFIG_HWMON=y
-> CONFIG_HWMON_VID=m
-> # CONFIG_HWMON_DEBUG_CHIP is not set
-> CONFIG_THERMAL_HWMON=y
-> 
-> # grep POWERSAVE .config
-> # CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE is not set
-> CONFIG_CPU_FREQ_GOV_POWERSAVE=m
-> # CONFIG_PCIEASPM_POWERSAVE is not set
-> CONFIG_DEVFREQ_GOV_POWERSAVE=y
-> 
-> On another 6-core box I can build kernels with "make -j 6" without problems.
-> # cat /proc/cpuinfo
-> processor       : 0
-> vendor_id       : AuthenticAMD
-> cpu family      : 21
-> model           : 1
-> model name      : AMD FX(tm)-6100 Six-Core Processor
-> stepping        : 2
-> microcode       : 0x6000623
-> cpu MHz         : 3300.000
-> cache size      : 2048 KB
-> 
-> With a kernel build going on six core box, temperature and power
-> hover around the values below.
-> sabre:~ # sensors
-> k10temp-pci-00c3
-> Adapter: PCI adapter
-> temp1:        +50.2°C  (high = +70.0°C)
->                        (crit = +90.0°C, hyst = +87.0°C)
-> 
-> fam15h_power-pci-00c4
-> Adapter: PCI adapter
-> power1:       94.40 W  (crit =  95.01 W)
-> 
-> 73 ... Sid.
-> 
-> -- 
-> Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-> Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-> Senior Staff Specialist, Cricket Coach
-> Microsoft Windows Free Zone - Linux used for all Computing Tasks
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index 5f4545a..150fc75 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -33,7 +33,6 @@ static const struct tty_operations ipoctal_fops;
+ struct ipoctal_channel {
+ 	struct ipoctal_stats		stats;
+ 	unsigned int			nb_bytes;
+-	unsigned int			count_wr;
+ 	wait_queue_head_t		queue;
+ 	spinlock_t			lock;
+ 	unsigned int			pointer_read;
+@@ -189,7 +188,6 @@ static void ipoctal_irq_tx(struct ipoctal_channel *channel)
+ 	value = channel->tty_port.xmit_buf[*pointer_write];
+ 	iowrite8(value, &channel->regs->w.thr);
+ 	channel->stats.tx++;
+-	channel->count_wr++;
+ 	(*pointer_write)++;
+ 	*pointer_write = *pointer_write % PAGE_SIZE;
+ 	channel->nb_bytes--;
+@@ -444,7 +442,6 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 		spin_lock_init(&channel->lock);
+ 		channel->pointer_read = 0;
+ 		channel->pointer_write = 0;
+-		channel->nb_bytes = 0;
+ 		tty_dev = tty_register_device(tty, i, NULL);
+ 		if (IS_ERR(tty_dev)) {
+ 			dev_err(&ipoctal->dev->dev, "Failed to register tty device.\n");
+@@ -499,11 +496,9 @@ static int ipoctal_write_tty(struct tty_struct *tty,
+ 			     const unsigned char *buf, int count)
+ {
+ 	struct ipoctal_channel *channel = tty->driver_data;
++	unsigned int char_copied;
+ 
+-	channel->nb_bytes = 0;
+-	channel->count_wr = 0;
+-
+-	ipoctal_copy_write_buffer(channel, buf, count);
++	char_copied = ipoctal_copy_write_buffer(channel, buf, count);
+ 
+ 	/* As the IP-OCTAL 485 only supports half duplex, do it manually */
+ 	if (channel->board_id == IPACK1_DEVICE_ID_SBS_OCTAL_485) {
+@@ -520,7 +515,7 @@ static int ipoctal_write_tty(struct tty_struct *tty,
+ 	iowrite8(CR_DISABLE_TX, &channel->regs->w.cr);
+ 
+ 	*channel->board_write = 0;
+-	return channel->count_wr;
++	return char_copied;
+ }
+ 
+ static int ipoctal_write_room(struct tty_struct *tty)
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
+
