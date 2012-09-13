@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2IMKRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:17:33 -0400
-Received: from [205.233.59.134] ([205.233.59.134]:58375 "EHLO
-	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab2IMKR1 convert rfc822-to-8bit (ORCPT
+	id S1757311Ab2IMKRz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:17:55 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59417 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab2IMKQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:17:27 -0400
-Message-ID: <1347531392.15764.119.camel@twins>
-Subject: Re: [PATCH] lockdep: Check if nested lock is actually held
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Sep 2012 12:16:32 +0200
-In-Reply-To: <5051B101.4030806@canonical.com>
-References: <5051A9E7.5040501@canonical.com>
-	 <1347530393.15764.115.camel@twins> <5051B101.4030806@canonical.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 06:16:50 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        linux-kernel@vger.kernel.org, Manjunath Hadli <manjunath.hadli@ti.com>,
+        linux-doc@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v3] media: v4l2-ctrl: add a helper function to modify the menu
+Date: Thu, 13 Sep 2012 03:15:57 +0200
+Message-ID: <1481481.zLUeB0rsrG@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <1347373418-18927-1-git-send-email-prabhakar.lad@ti.com>
+References: <1347373418-18927-1-git-send-email-prabhakar.lad@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 12:10 +0200, Maarten Lankhorst wrote:
-> Hey,
-> 
-> Op 13-09-12 11:59, Peter Zijlstra schreef:
-> > On Thu, 2012-09-13 at 11:39 +0200, Maarten Lankhorst wrote:
-> >> It is considered good form to lock the lock you claim to be nested in.
-> > Uhm yeah.. cute. You actually found a site where this triggered?
-> >
-> Not in mainline, I was working on some lockdep annotations for my work on
-> moving ttm reservations to base kernel, and I wrote a whole bunch of tests
-> to stress interaction between reservations and locks, one of the tests I
-> was doing was taking a spinlock without the nested object:
-> 
-> static void reservation_test_fence_nest_unreserved(void)
-> {
-> 	struct reservation_object o;
-> 
-> 	reservation_object_init(&o);
-> 
-> 	spin_lock_nest_lock(&o.fence_lock, &o);
-> 	spin_unlock(&o.fence_lock);
-> }
-> 
-> I would have expected it to fail, and the patch fixed it. As a nice side effect
-> it also complained about another hack I was doing elsewhere with reservations to
-> tests for deadlocks, and it forced me to fix it in a slightly less hacky way.
+Hi Prabhakar,
 
-Nice.. thanks for noticing!
+Thanks for the patch.
+
+On Tuesday 11 September 2012 19:53:38 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> Add a helper function to modify the menu, max and default value
+> to set.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Rob Landley <rob@landley.net>
+> ---
+> Changes for v3:
+> 1: Fixed style/grammer issues as pointed by Hans.
+>    Thanks Hans for providing the description.
+> 
+> Changes for v2:
+> 1: Fixed review comments from Hans, to have return type as
+>    void, add WARN_ON() for fail conditions, allow this fucntion
+>    to modify the menu of custom controls.
+> 
+>  Documentation/video4linux/v4l2-controls.txt |   29 ++++++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c        |   17 +++++++++++++++
+>  include/media/v4l2-ctrls.h                  |   11 ++++++++++
+>  3 files changed, 57 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/video4linux/v4l2-controls.txt
+> b/Documentation/video4linux/v4l2-controls.txt index 43da22b..01d0a82 100644
+> --- a/Documentation/video4linux/v4l2-controls.txt
+> +++ b/Documentation/video4linux/v4l2-controls.txt
+> @@ -367,6 +367,35 @@ it to 0 means that all menu items are supported.
+>  You set this mask either through the v4l2_ctrl_config struct for a custom
+>  control, or by calling v4l2_ctrl_new_std_menu().
+> 
+> +There are situations where menu items may be device specific. In such cases
+> the
+> +framework provides a helper function to change the menu:
+> +
+> +void v4l2_ctrl_modify_menu(struct v4l2_ctrl *ctrl, const char * const
+> *qmenu,
+> +	s32 max, u32 menu_skip_mask, s32 def);
+
+Sorry if this is a stupid question, but wouldn't it be better to add a 
+function to create a custom menu instead of modifying it afterwards ?
+
+> +
+> +A good example is the test pattern control for capture/display/sensors
+> devices
+> +that have the capability to generate test patterns. These test patterns are
+> +hardware specific, so the contents of the menu will vary from device to
+> device.
+> +
+> +This helper function is used to modify the menu, max, mask and the default
+> +value of the control.
+> +
+> +Example:
+> +
+> +	static const char * const test_pattern[] = {
+> +		"Disabled",
+> +		"Vertical Bars",
+> +		"Solid Black",
+> +		"Solid White",
+> +		NULL,
+> +	};
+> +	struct v4l2_ctrl *test_pattern_ctrl =
+> +		v4l2_ctrl_new_std_menu(&foo->ctrl_handler, &foo_ctrl_ops,
+> +			V4L2_CID_TEST_PATTERN, V4L2_TEST_PATTERN_DISABLED, 0,
+> +			V4L2_TEST_PATTERN_DISABLED);
+> +
+> +	v4l2_ctrl_modify_menu(test_pattern_ctrl, test_pattern, 3, 0,
+> +		V4L2_TEST_PATTERN_DISABLED);
+> 
+>  Custom Controls
+>  ===============
+
+-- 
+Regards,
+
+Laurent Pinchart
+
