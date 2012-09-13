@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab2IMJcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 05:32:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34802 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab2IMJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 05:32:46 -0400
-Date: Thu, 13 Sep 2012 11:32:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: Leonard Tse <xiehao5@gmail.com>, ftpadmin@kernel.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com, leoli@freescale.com,
-        triplex@zh-kernel.org, tshibata@ab.jp.nec.com, k-keiichi@bx.jp.nec.com,
-        minchan.kim@gmail.com
-Subject: Re: [PATCH]URL is unavailable
-Message-ID: <20120913093241.GA15810@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konstantin Ryabitsev <mricon@kernel.org>,
-	Leonard Tse <xiehao5@gmail.com>, ftpadmin@kernel.org,
-	linux-kernel@vger.kernel.org, greg@kroah.com, leoli@freescale.com,
-	triplex@zh-kernel.org, tshibata@ab.jp.nec.com,
-	k-keiichi@bx.jp.nec.com, minchan.kim@gmail.com
-References: <CAHVxiJCv+tzx4rtL2Mu0zAYEurrSwHANwvL_bpDUR7ZMXJdAyg@mail.gmail.com>
- <20120912160306.GA16482@x1.osrc.amd.com>
- <5051334E.4010802@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5051334E.4010802@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756153Ab2IMJdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:33:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34195 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2IMJds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 05:33:48 -0400
+Subject: Re: xt_nat_init: BUG: unable to handle kernel NULL pointer
+ dereference at 00000000000000e0
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Patrick McHardy <kaber@trash.net>, networking <netdev@vger.kernel.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Netfilter Development Maili..." <netfilter-devel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120913091629.GA28022@localhost>
+References: <20120913091629.GA28022@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Sep 2012 11:33:43 +0200
+Message-ID: <1347528823.13103.1427.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 09:13:50PM -0400, Konstantin Ryabitsev wrote:
-> On 12/09/12 12:03 PM, Borislav Petkov wrote:
-> > Dear KORG admins, what are the chances of userweb.kernel.org coming back
-> > online?
+On Thu, 2012-09-13 at 17:16 +0800, Fengguang Wu wrote:
+> Hi Patrick,
 > 
-> Hello:
+> This happens in today's linux-next tree and is pretty reproducible.
+> Bisection has been started.
 > 
-> There is no ETA on that service being available. It may not ever come
-> back, at least not in the way it was before.
+> [    1.834544] nf_conntrack version 0.5.0 (1786 buckets, 7144 max)
+> [    1.835406] ctnetlink v0.93: registering with nfnetlink.
+> [    1.836202] BUG: unable to handle kernel NULL pointer dereference at 00000000000000e0
+> [    1.837539] IP: [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
+> [    1.838493] PGD 0 
+> [    1.838983] Oops: 0002 [#1] PREEMPT SMP 
+> [    1.839786] CPU 0 
+> [    1.840050] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc5-07686-gdbf978b #58 Bochs Bochs
+> [    1.840172] RIP: 0010:[<ffffffff81a19123>]  [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
+> [    1.840172] RSP: 0018:ffff88000d845e40  EFLAGS: 00010202
+> [    1.840172] RAX: 0000000000000246 RBX: 00000000000000e0 RCX: ffff88000d848000
+> [    1.840172] RDX: 0000000000000000 RSI: 0000000000000175 RDI: ffffffff81e6bc88
+> [    1.840172] RBP: ffff88000d845e50 R08: ffffffff821bd170 R09: 0000000000000000
+> [    1.840172] R10: 0000000000000000 R11: dead000000200200 R12: 00000000ffffffff
+> [    1.840172] R13: 0000000000000004 R14: ffffffff821c1ce0 R15: 0000000000000000
+> [    1.840172] FS:  0000000000000000(0000) GS:ffff88000de00000(0000) knlGS:0000000000000000
+> [    1.840172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    1.840172] CR2: 00000000000000e0 CR3: 000000000200b000 CR4: 00000000000006f0
+> [    1.840172] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [    1.840172] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [    1.840172] Process swapper/0 (pid: 1, threadinfo ffff88000d844000, task ffff88000d848000)
+> [    1.840172] Stack:
+> [    1.840172]  00000000000000e0 ffffffff821c1ce0 ffff88000d845e80 ffffffff8187c204
+> [    1.840172]  0000000000000000 ffffffff820f7ea0 0000000000000000 ffffffff821c1ce0
+> [    1.840172]  ffff88000d845ec0 ffffffff8187c334 ffff88000d845eb0 0000000000000000
+> [    1.840172] Call Trace:
+> [    1.840172]  [<ffffffff8187c204>] xt_register_target+0x34/0x70
+> [    1.840172]  [<ffffffff8187c334>] xt_register_targets+0x34/0x70
+> [    1.840172]  [<ffffffff8221f336>] ? nf_nat_init+0x12c/0x12c
+> [    1.840172]  [<ffffffff8221f34b>] xt_nat_init+0x15/0x17
+> [    1.840172]  [<ffffffff821dcc3e>] do_one_initcall+0x7a/0x134
+> [    1.840172]  [<ffffffff821dcdfb>] kernel_init+0x103/0x187
+> [    1.864014]  [<ffffffff821dc615>] ? do_early_param+0x8d/0x8d
+> [    1.864014]  [<ffffffff81a1dc44>] kernel_thread_helper+0x4/0x10
+> [    1.864014]  [<ffffffff821dccf8>] ? do_one_initcall+0x134/0x134
+> [    1.864014]  [<ffffffff81a1dc40>] ? gs_change+0x13/0x13
+> [    1.864014] Code: 8b 65 f8 c9 c3 0f 1f 00 55 31 d2 be 75 01 00 00 48 89 e5 41 54 41 bc ff ff ff ff 53 48 89 fb 48 c7 c7 88 bc e6 81 e8 dd 73 6e ff <f0> 44 0f c1 23 41 83 ec 01 31 d2 48 c7 c7 c8 b7 13 82 41 c1 ec 
+> [    1.864014] RIP  [<ffffffff81a19123>] mutex_lock_interruptible+0x23/0x70
+> [    1.864014]  RSP <ffff88000d845e40>
+> [    1.864014] CR2: 00000000000000e0
 > 
-> That being said, I'm perfectly willing to set up a few redirects in
-> place if broken URLs are causing problems. I just cannot use any of the
-> existing backups of userweb data, as it is under a strict "do not use,
-> ever" quarantine.
-> 
-> If someone can provide me with trusted backups of that data, I will
-> provide hosting and redirects to unbreak the URLs.
+> Thanks,
+> Fengguang
 
-My memory is hazy on this, but after the move, what's the policy on
-enabling users.kernel.org or userweb.kernel org or some other user web
-serving thing? I vaguely remember that we don't want to do this anymore
-but I'm not sure.
+Wasnt it already solved ?
 
-In any case, if we do, it would probably be better to have a whole
-different machine for such stuff and let users upload their stuff again
-without touching the old backups at all...
+http://1984.lsi.us.es/git/nf-next/commit/?id=00545bec9412d130c77f72a08d6c8b6ad21d4a1
 
-Hmm.
+Just have to wait that netfilter fixes are pushed upstream
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks
+
+
+
