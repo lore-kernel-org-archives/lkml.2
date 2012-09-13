@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab2IMT0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 15:26:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53481 "EHLO
+	id S1754727Ab2IMTcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 15:32:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47947 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2IMT0D (ORCPT
+	with ESMTP id S1752410Ab2IMTcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 15:26:03 -0400
-Date: Thu, 13 Sep 2012 12:25:58 -0700
+	Thu, 13 Sep 2012 15:32:14 -0400
+Date: Thu, 13 Sep 2012 12:32:09 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Cc: NeilBrown <neilb@suse.de>, Kent Overstreet <koverstreet@google.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Vivek Goyal <vgoyal@redhat.com>, drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] FLUSH/FUA documentation & code discrepancy
-Message-ID: <20120913192558.GK7677@google.com>
-References: <20120910230654.GF7677@google.com>
- <20120910233159.GE19739@google.com>
- <20120911155820.74f1f918@notabene.brown>
- <20120911082501.GH7028@soda.linbit>
- <20120912185824.GS7677@google.com>
- <CAOzFzEjCf7ZPbheq-tfhts-E=Ep1kvn0muksaaTFqJ=cMm772w@mail.gmail.com>
- <20120912232019.GW7677@google.com>
- <CAOzFzEhfoCpGCy0n5cu60xz+tSbB26g1f2ztcD1DwZOY-6aTwQ@mail.gmail.com>
- <CAOzFzEhU6Y2hbRKU9qdFbtx_A-+wgs14E8Xza107G+z7uHzs_w@mail.gmail.com>
- <CAOzFzEg754UM_+Zzet2XB_gNOui3-hURskP2GAhr49J6-PBBHA@mail.gmail.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, davem@davemloft.net, eric.dumazet@gmail.com,
+        hannes@cmpxchg.org, shangw@linux.vnet.ibm.com, vitalya@ti.com
+Subject: Re: [PATCH] mm: bootmem: use phys_addr_t for physical addresses
+Message-ID: <20120913193209.GL7677@google.com>
+References: <1347466008-7231-1-git-send-email-cyril@ti.com>
+ <20120912203920.GU7677@google.com>
+ <505123FE.2090305@ti.com>
+ <20120913003400.GA25889@localhost>
+ <50512B9A.9060905@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOzFzEg754UM_+Zzet2XB_gNOui3-hURskP2GAhr49J6-PBBHA@mail.gmail.com>
+In-Reply-To: <50512B9A.9060905@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Joseph.
+Hello, Cyril.
 
-On Thu, Sep 13, 2012 at 01:10:13PM +1000, Joseph Glanville wrote:
-> While reviewing some of the documentation in Documentation/block I
-> found there is still out of date references to the old barrier code.
-> Should this also be removed?
-> I am not sufficiently confident of my understanding of the block layer
-> to do a through review/update of the Documentation/block stuff but my
-> untrained eye suggests maybe that such a undertaking is probably abit
-> overdue.
+On Wed, Sep 12, 2012 at 08:40:58PM -0400, Cyril Chemparathy wrote:
+> You probably missed the lowmem bit from my response?
+> 
+> This system has all of its memory outside the 4GB physical address
+> space.  This includes lowmem, which is permanently mapped into the
+> kernel virtual address space as usual.
 
-Please be my guest.  I'll be happy to review it.
+Yeah, I understand that and as a short-term solution we maybe can add
+a check to verify that the goal and limits are under lowmem and fail
+with NULL if not, but it still is a broken interface and I'd rather
+not mess with it when memblock is already there.  Converting to
+memblock usually isn't too much work although it expectedly involves
+some subtleties and fallouts for a while.
+
+Do you recall what the problem was with sparsemem and memblock?  I
+don't think I'll directly work on arm but I'll be happy to help on
+memblock issues.
 
 Thanks.
 
