@@ -1,178 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2IMBPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:15:53 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37346 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab2IMBPv (ORCPT
+	id S1754830Ab2IMBRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:17:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39249 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab2IMBRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:15:51 -0400
-X-AuditID: b753bd60-95de8ba00000739e-95-505133c506fe
-X-AuditID: b753bd60-95de8ba00000739e-95-505133c506fe
-Message-ID: <505133C5.5080402@hitachi.com>
-Date: Thu, 13 Sep 2012 10:15:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 12 Sep 2012 21:17:52 -0400
+Date: Thu, 13 Sep 2012 09:17:46 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 10/13] ARM: SoC: convert imx6q to SoC descriptor
+Message-ID: <20120913011742.GB2725@S2101-09.ap.freescale.net>
+References: <1347461906-13527-1-git-send-email-arnd@arndb.de>
+ <1347461906-13527-11-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
-References: <1347417671-22998-1-git-send-email-dhsharp@google.com> <1347492720-26078-1-git-send-email-dhsharp@google.com> <1347492720-26078-3-git-send-email-dhsharp@google.com>
-In-Reply-To: <1347492720-26078-3-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347461906-13527-11-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/13 8:31), David Sharp wrote:
-> In order to promote interoperability between userspace tracers and ftrace,
-> add a trace_clock that reports raw TSC values which will then be recorded
-> in the ring buffer. Userspace tracers that also record TSCs are then on
-> exactly the same time base as the kernel and events can be unambiguously
-> interlaced.
+On Wed, Sep 12, 2012 at 04:58:23PM +0200, Arnd Bergmann wrote:
+> From: Marc Zyngier <marc.zyngier@arm.com>
 > 
-> Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
-> timestamp values.
-
-Yeah, this is what I need!
-
-BTW, could you add your signed-off-by signature to your patches?
-
-Thank you,
-
+> Convert the imx6q platform to use the SoC descriptor to provide
+> its SMP and CPU hotplug operations.
 > 
-> v2:
-> Move arch-specific bits out of generic code.
-> 
-> Google-Bug-Id: 6980623
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 > ---
->  arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
->  arch/x86/kernel/Makefile           |    1 +
->  arch/x86/kernel/trace_clock.c      |   20 ++++++++++++++++++++
->  include/asm-generic/trace_clock.h  |   15 +++++++++++++++
->  include/linux/trace_clock.h        |    2 ++
->  kernel/trace/trace.c               |    1 +
->  6 files changed, 55 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/trace_clock.h
->  create mode 100644 arch/x86/kernel/trace_clock.c
->  create mode 100644 include/asm-generic/trace_clock.h
+>  arch/arm/mach-imx/hotplug.c             |   16 +---------------
+>  arch/arm/mach-imx/mach-imx6q.c          |    1 +
+>  arch/arm/mach-imx/platsmp.c             |   18 ++++++++++++++----
+>  arch/arm/plat-mxc/include/mach/common.h |    4 ++++
+>  4 files changed, 20 insertions(+), 19 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
-> new file mode 100644
-> index 0000000..0b1f391
-> --- /dev/null
-> +++ b/arch/x86/include/asm/trace_clock.h
-> @@ -0,0 +1,16 @@
-> +#ifndef _ASM_X86_TRACE_CLOCK_H
-> +#define _ASM_X86_TRACE_CLOCK_H
-> +
-> +#include <linux/compiler.h>
-> +#include <linux/types.h>
-> +
-> +#ifdef CONFIG_X86_TSC
-> +
-> +extern u64 notrace trace_clock_x86_tsc(void);
-> +
-> +# define ARCH_TRACE_CLOCKS \
-> +	{ trace_clock_x86_tsc,	"tsc" },
-> +
-> +#endif
-> +
-> +#endif  /* _ASM_X86_TRACE_CLOCK_H */
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index 8215e56..0ee9344 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
->  obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
->  obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
->  obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
-> +obj-$(CONFIG_X86_TSC)		+= trace_clock.o
->  obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
->  obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
->  obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
-> diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
-> new file mode 100644
-> index 0000000..b8959f8
-> --- /dev/null
-> +++ b/arch/x86/kernel/trace_clock.c
-> @@ -0,0 +1,20 @@
-> +/*
-> + * X86 trace clocks
-> + */
-> +#include <asm/trace_clock.h>
-> +#include <asm/barrier.h>
-> +#include <asm/msr.h>
-> +
-> +/*
-> + * trace_clock_x86_tsc(): A clock that is just the cycle counter.
-> + *
-> + * Unlike the other clocks, this is not in nanoseconds.
-> + */
-> +u64 notrace trace_clock_x86_tsc(void)
-> +{
-> +	u64 ret;
-> +	rdtsc_barrier();
-> +	rdtscll(ret);
-> +
-> +	return ret;
-> +}
-> diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
-> new file mode 100644
-> index 0000000..648cdcd
-> --- /dev/null
-> +++ b/include/asm-generic/trace_clock.h
-> @@ -0,0 +1,15 @@
-> +/*
-> + * Arch-specific trace clocks.
-> + */
-> +#ifndef _ASM_GENERIC_TRACE_CLOCK_H
-> +#define _ASM_GENERIC_TRACE_CLOCK_H
-> +
-> +/*
-> + * Additional trace clocks added to the trace_clocks
-> + * array in kernel/trace/trace.c
-> + */
-> +#ifndef ARCH_TRACE_CLOCKS
-> +# define ARCH_TRACE_CLOCKS
-> +#endif
-> +
-> +#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
-> diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
-> index 4eb4902..d563f37 100644
-> --- a/include/linux/trace_clock.h
-> +++ b/include/linux/trace_clock.h
-> @@ -12,6 +12,8 @@
->  #include <linux/compiler.h>
->  #include <linux/types.h>
+> diff --git a/arch/arm/mach-imx/hotplug.c b/arch/arm/mach-imx/hotplug.c
+> index f8f7437..b07b778 100644
+> --- a/arch/arm/mach-imx/hotplug.c
+> +++ b/arch/arm/mach-imx/hotplug.c
+> @@ -15,11 +15,6 @@
+>  #include <asm/cp15.h>
+>  #include <mach/common.h>
 >  
-> +#include <asm/trace_clock.h>
-> +
->  extern u64 notrace trace_clock_local(void);
->  extern u64 notrace trace_clock(void);
->  extern u64 notrace trace_clock_global(void);
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 5c38c81..92fb08e 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -480,6 +480,7 @@ static struct {
->  	{ trace_clock_local,	"local" },
->  	{ trace_clock_global,	"global" },
->  	{ trace_clock_counter,	"counter" },
-> +	ARCH_TRACE_CLOCKS
+> -int platform_cpu_kill(unsigned int cpu)
+> -{
+> -	return 1;
+> -}
+> -
+>  static inline void cpu_enter_lowpower(void)
+>  {
+>  	unsigned int v;
+> @@ -47,7 +42,7 @@ static inline void cpu_enter_lowpower(void)
+>   *
+>   * Called with IRQs disabled
+>   */
+> -void platform_cpu_die(unsigned int cpu)
+> +void imx_cpu_die(unsigned int cpu)
+>  {
+>  	cpu_enter_lowpower();
+>  	imx_enable_cpu(cpu, false);
+> @@ -56,12 +51,3 @@ void platform_cpu_die(unsigned int cpu)
+>  	while (1)
+>  		;
+>  }
+> -
+> -int platform_cpu_disable(unsigned int cpu)
+> -{
+> -	/*
+> -	 * we don't allow CPU 0 to be shutdown (it is still too special
+> -	 * e.g. clock tick interrupts)
+> -	 */
+> -	return cpu == 0 ? -EPERM : 0;
+> -}
+> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> index 045b3f6..ef0b52f 100644
+> --- a/arch/arm/mach-imx/mach-imx6q.c
+> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> @@ -226,6 +226,7 @@ static const char *imx6q_dt_compat[] __initdata = {
 >  };
 >  
->  int trace_clock_id;
+>  DT_MACHINE_START(IMX6Q, "Freescale i.MX6 Quad (Device Tree)")
+> +	.smp		= smp_ops(imx6q_soc_desc),
+
+s/imx6q_soc_desc/imx_smp_ops
+
+Otherwise,
+
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Regards,
+Shawn
+
+>  	.map_io		= imx6q_map_io,
+>  	.init_irq	= imx6q_init_irq,
+>  	.handle_irq	= imx6q_handle_irq,
+> diff --git a/arch/arm/mach-imx/platsmp.c b/arch/arm/mach-imx/platsmp.c
+> index ab98c6f..2ac43e1 100644
+> --- a/arch/arm/mach-imx/platsmp.c
+> +++ b/arch/arm/mach-imx/platsmp.c
+> @@ -41,7 +41,7 @@ void __init imx_scu_map_io(void)
+>  	scu_base = IMX_IO_ADDRESS(base);
+>  }
+>  
+> -void __cpuinit platform_secondary_init(unsigned int cpu)
+> +static void __cpuinit imx_secondary_init(unsigned int cpu)
+>  {
+>  	/*
+>  	 * if any interrupts are already enabled for the primary
+> @@ -51,7 +51,7 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
+>  	gic_secondary_init(0);
+>  }
+>  
+> -int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+> +static int __cpuinit imx_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  {
+>  	imx_set_cpu_jump(cpu, v7_secondary_startup);
+>  	imx_enable_cpu(cpu, true);
+> @@ -62,7 +62,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+>   * Initialise the CPU possible map early - this describes the CPUs
+>   * which may be present or become present in the system.
+>   */
+> -void __init smp_init_cpus(void)
+> +static void __init imx_smp_init_cpus(void)
+>  {
+>  	int i, ncores;
+>  
+> @@ -79,7 +79,17 @@ void imx_smp_prepare(void)
+>  	scu_enable(scu_base);
+>  }
+>  
+> -void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+> +static void __init imx_smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>  	imx_smp_prepare();
+>  }
+> +
+> +struct smp_operations  imx_smp_ops __initdata = {
+> +	.smp_init_cpus		= imx_smp_init_cpus,
+> +	.smp_prepare_cpus	= imx_smp_prepare_cpus,
+> +	.smp_secondary_init	= imx_secondary_init,
+> +	.smp_boot_secondary	= imx_boot_secondary,
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +	.cpu_die		= imx_cpu_die,
+> +#endif
+> +};
+> diff --git a/arch/arm/plat-mxc/include/mach/common.h b/arch/arm/plat-mxc/include/mach/common.h
+> index 7128e97..e8b5150 100644
+> --- a/arch/arm/plat-mxc/include/mach/common.h
+> +++ b/arch/arm/plat-mxc/include/mach/common.h
+> @@ -145,6 +145,8 @@ extern void imx53_smd_common_init(void);
+>  extern int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode);
+>  extern void imx6q_clock_map_io(void);
+>  
+> +extern void imx_cpu_die(unsigned int cpu);
+> +
+>  #ifdef CONFIG_PM
+>  extern void imx6q_pm_init(void);
+>  extern void imx51_pm_init(void);
+> @@ -161,4 +163,6 @@ extern int mx51_neon_fixup(void);
+>  static inline int mx51_neon_fixup(void) { return 0; }
+>  #endif
+>  
+> +extern struct smp_operations imx_smp_ops;
+> +
+>  #endif
+> -- 
+> 1.7.10
 > 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
