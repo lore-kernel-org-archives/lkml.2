@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab2IMVk3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:40:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50559 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab2IMVk1 (ORCPT
+	id S1754856Ab2IMVmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:42:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61419 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab2IMVmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:40:27 -0400
-Date: Thu, 13 Sep 2012 14:40:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mhocko@suse.cz, Steve Capper <steve.capper@arm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
-Message-Id: <20120913144025.b1760af4.akpm@linux-foundation.org>
-In-Reply-To: <20120914072732.637f4225c32565468f468305@canb.auug.org.au>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
-	<1347382036-18455-4-git-send-email-will.deacon@arm.com>
-	<20120913120514.135d2c38.akpm@linux-foundation.org>
-	<20120914072732.637f4225c32565468f468305@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Sep 2012 17:42:47 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        stable@vger.kernel.org
+Subject: [PATCH] xfrm_user: return error pointer instead of NULL
+Date: Thu, 13 Sep 2012 23:41:26 +0200
+Message-Id: <1347572486-1628-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012 07:27:32 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+When dump_one_state() returns an error, e.g. because of a too small
+buffer to dump the whole xfrm state, xfrm_state_netlink() returns NULL
+instead of an error pointer. But its callers expect an error pointer
+and therefore continue to operate on a NULL skbuff.
 
-> Hi Andrew,
-> 
-> On Thu, 13 Sep 2012 12:05:14 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > diff -puN arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage arch/x86/Kconfig
-> > --- a/arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage
-> > +++ a/arch/x86/Kconfig
-> > @@ -83,7 +83,6 @@ config X86
-> >  	select IRQ_FORCED_THREADING
-> >  	select USE_GENERIC_SMP_HELPERS if SMP
-> >  	select HAVE_BPF_JIT if X86_64
-> > -	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
-> 
-> Why not
-> 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if MMU
-> 
+This could lead to a privilege escalation (execution of user code in
+kernel context) if the attacker has CAP_NET_ADMIN and is able to map
+address 0.
 
-Well, this is in arch/x86/Kconfig, where MMU is known to always be set.
+Cc: stable@vger.kernel.org
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
 
-Yes, I think Gerald's patch will suffice:
+A test case can be provided on request.
 
---- a/arch/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
-+++ a/arch/Kconfig
-@@ -326,4 +326,7 @@ config HAVE_RCU_USER_QS
- 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
- 	  preemption or signal handling on irq exit still need to be protected.
+ net/xfrm/xfrm_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index e75d8e4..dac08e2 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -878,6 +878,7 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
+ {
+ 	struct xfrm_dump_info info;
+ 	struct sk_buff *skb;
++	int err;
  
-+config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-+	bool
-+
- source "kernel/gcov/Kconfig"
---- a/arch/x86/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
-+++ a/arch/x86/Kconfig
-@@ -83,6 +83,7 @@ config X86
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select HAVE_BPF_JIT if X86_64
-+	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
---- a/mm/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
-+++ a/mm/Kconfig
-@@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC);
+ 	if (!skb)
+@@ -888,9 +889,10 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
+ 	info.nlmsg_seq = seq;
+ 	info.nlmsg_flags = 0;
  
- config TRANSPARENT_HUGEPAGE
- 	bool "Transparent Hugepage Support"
--	depends on X86 && MMU
-+	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
- 	select COMPACTION
- 	help
- 	  Transparent Hugepages allows the kernel to use huge pages and
-_
+-	if (dump_one_state(x, 0, &info)) {
++	err = dump_one_state(x, 0, &info);
++	if (err) {
+ 		kfree_skb(skb);
+-		return NULL;
++		return ERR_PTR(err);
+ 	}
+ 
+ 	return skb;
+-- 
+1.7.10.4
 
