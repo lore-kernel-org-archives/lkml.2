@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2IMV1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:27:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45028 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2IMV1o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:27:44 -0400
-Date: Fri, 14 Sep 2012 07:27:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mhocko@suse.cz, Steve Capper <steve.capper@arm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
-Message-Id: <20120914072732.637f4225c32565468f468305@canb.auug.org.au>
-In-Reply-To: <20120913120514.135d2c38.akpm@linux-foundation.org>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
-	<1347382036-18455-4-git-send-email-will.deacon@arm.com>
-	<20120913120514.135d2c38.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Sep_2012_07_27_32_+1000_pgH6OJmezGaynvnj"
+	id S1753404Ab2IMV2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:28:06 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22705 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab2IMV2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 17:28:01 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Vagin <avagin@openvz.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH] tcp: restore rcv_wscale in a repair mode
+Date: Fri, 14 Sep 2012 01:28:07 +0400
+Message-Id: <1347571687-3539973-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Sep_2012_07_27_32_+1000_pgH6OJmezGaynvnj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+rcv_wscale is a symetric parameter with snd_wscale.
 
-Hi Andrew,
+Both this parameters are set on a connection handshake.
 
-On Thu, 13 Sep 2012 12:05:14 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> diff -puN arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage ar=
-ch/x86/Kconfig
-> --- a/arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage
-> +++ a/arch/x86/Kconfig
-> @@ -83,7 +83,6 @@ config X86
->  	select IRQ_FORCED_THREADING
->  	select USE_GENERIC_SMP_HELPERS if SMP
->  	select HAVE_BPF_JIT if X86_64
-> -	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Without this value a remote window size can not be interpreted correctly,
+because a value from a packet should be shifted on rcv_wscale.
 
-Why not
-	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if MMU
+And one more thing is that wscale_ok should be set too.
 
->  	select CLKEVT_I8253
->  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
->  	select GENERIC_IOMAP
-> @@ -1330,6 +1329,10 @@ config ILLEGAL_POINTER_VALUE
->         default 0 if X86_32
->         default 0xdead000000000000 if X86_64
-> =20
-> +config HAVE_ARCH_TRANSPARENT_HUGEPAGE
-> +       def_bool y
-> +       depends on MMU
-> +
+This patch doesn't break a backward compatibility.
+If someone uses it in a old scheme, a rcv window
+will be restored with the same bug (rcv_wscale = 0).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ net/ipv4/tcp.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
 
---Signature=_Fri__14_Sep_2012_07_27_32_+1000_pgH6OJmezGaynvnj
-Content-Type: application/pgp-signature
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index df83d74..ed22cd7 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2348,10 +2348,22 @@ static int tcp_repair_options_est(struct tcp_sock *tp,
+ 			tp->rx_opt.mss_clamp = opt.opt_val;
+ 			break;
+ 		case TCPOPT_WINDOW:
+-			if (opt.opt_val > 14)
+-				return -EFBIG;
+-
+-			tp->rx_opt.snd_wscale = opt.opt_val;
++			{
++				union {
++					struct {
++						u16 snd_wscale;
++						u16 rcv_wscale;
++					};
++					u32 raw;
++				} val = { .raw = opt.opt_val };
++
++				if (val.snd_wscale > 14 || val.rcv_wscale > 14)
++					return -EFBIG;
++
++				tp->rx_opt.snd_wscale = val.snd_wscale;
++				tp->rx_opt.rcv_wscale = val.rcv_wscale;
++				tp->rx_opt.wscale_ok = 1;
++			}
+ 			break;
+ 		case TCPOPT_SACK_PERM:
+ 			if (opt.opt_val != 0)
+-- 
+1.7.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUk/EAAoJEECxmPOUX5FEPhYQAKmhRet965FrG861C8FuoYks
-GP51hrnL0c5SRIzL/QQt+efYxh0tjFkShopokmeJBbiC71ffwY+YTGDeL5SsH4h/
-rSj3qmFgxfb0HUzJeOgp9BuIn3RsKEY4Auj2k9KYR3ryFcXz+ZOeTLCBuNARXKEf
-BKufAnbL56fDoV0c3RDvinTT2Sf42hxmpRQLLF1nQeoxRtF9zYmKH29hEYMFgU7a
-23tAtS+HQd5tfJPi+C1Xc1YNXlXCTSVG8057VC/XdOfggOY5bx2AU4CX3dDiL5zV
-4FczjZStLfPac/GXVlGJ6/D4Et+GSi8VrsUkBsHtgJgmv7w9fjrx2+ZOn3mR6Fny
-oefCKHQF7OVC7EzaGXC1lW2CsiHEJGjd2V7XS0b36W9SCWZlNzsM670VysyS8Uwa
-ykeemA+L+02aCPu3lUopPPzOHymoDxrDXUo5vV3CX9v5LHDIsTY7zgo0Po8nQAf4
-gH+EghqvXWKAp0cia5vDuA1mCDMnx49HljEfErhc5eXxxwzDXTNfUk+zKKJxns8K
-c7SmqhR4eW/FRxMoretS7Usx5us/USeOtKM85bwd0UUJ/8ILX94aozA1lvgmKhO9
-iQ06oEYJ7Pxlmme39Bmnat/qst6f3+BntlMxQaUV62gOog2qgDFsLNHJhDqFtbiW
-Qc5NLVwF52sAdlsi1zS2
-=U84r
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Sep_2012_07_27_32_+1000_pgH6OJmezGaynvnj--
