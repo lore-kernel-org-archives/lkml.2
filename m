@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab2IMVRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:17:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42409 "EHLO mx1.redhat.com"
+	id S1751986Ab2IMVTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:19:18 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:58129 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab2IMVRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:17:16 -0400
-Date: Thu, 13 Sep 2012 23:17:05 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20120913211705.GM3388@redhat.com>
-References: <1347282813-21935-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1347444473-26468-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120913171613.GJ3388@redhat.com>
- <20120913173758.GA4181@shutemov.name>
+	id S1751148Ab2IMVTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 17:19:16 -0400
+Date: Thu, 13 Sep 2012 16:20:03 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, alex.shi@intel.com, jbeulich@suse.com,
+        tglx@linutronix.de, hpa@zytor.com
+Subject: Re: [alex.shi@intel.com: Re: [PATCH] UV: fix incorrect tlb flush
+	all issue]
+Message-ID: <20120913212003.GA16789@sgi.com>
+References: <20120913155310.GA4081@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120913173758.GA4181@shutemov.name>
+In-Reply-To: <20120913155310.GA4081@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On Thu, Sep 13, 2012 at 05:53:10PM +0200, Ingo Molnar wrote:
+> 
+> Ack?
+> 
+> Thanks,
+> 
+> 	Ingo
 
-On Thu, Sep 13, 2012 at 08:37:58PM +0300, Kirill A. Shutemov wrote:
-> On Thu, Sep 13, 2012 at 07:16:13PM +0200, Andrea Arcangeli wrote:
-> > Hi Kirill,
-> > 
-> > On Wed, Sep 12, 2012 at 01:07:53PM +0300, Kirill A. Shutemov wrote:
-> > > -	hpage = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-> > 
-> > The page is likely as large as a pageblock so it's unlikely to create
-> > much fragmentation even if the __GFP_MOVABLE is set. Said that I guess
-> > it would be more correct if __GFP_MOVABLE was clear, like
-> > (GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE because this page isn't
-> > really movable (it's only reclaimable).
-> 
-> Good point. I'll update the patchset.
-> 
-> > The xchg vs xchgcmp locking also looks good.
-> > 
-> > Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> Is it for the whole patchset? :)
+Ack.
+But with the adjustment below.  The 'end' argument was not declared long.
 
-It was meant for this one, but I reviewed the whole patchset and it
-looks fine to me, so in this case it can apply to the whole patchset ;)
+I tested the patch on a UV.
+It has the effect of either clearing 1 or all TLBs in a cpu.
+I added some debugging to test for the cases when clearing all TLBs is
+overkill, and in practice it happens very seldom.
+
+Sorry I didn't participate in this patch earlier.  Jack Steiner was
+copied, I believe.  But steiner@sgi.com is no longer active. Jack has
+retired -- congratulations to him, but a very big loss to us, both 
+professionally and personally.
+
+-Cliff
+
+Reported-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Cliff Wickman <cpw@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/include/asm/uv/uv.h  |    2 +-
+ arch/x86/platform/uv/tlb_uv.c |   10 +++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c
++++ linux/arch/x86/platform/uv/tlb_uv.c
+@@ -1034,7 +1034,8 @@ static int set_distrib_bits(struct cpuma
+  * globally purge translation cache of a virtual address or all TLB's
+  * @cpumask: mask of all cpu's in which the address is to be removed
+  * @mm: mm_struct containing virtual address range
+- * @va: virtual address to be removed (or TLB_FLUSH_ALL for all TLB's on cpu)
++ * @start: start virtual address to be removed from TLB
++ * @end: end virtual address to be remove from TLB
+  * @cpu: the current cpu
+  *
+  * This is the entry point for initiating any UV global TLB shootdown.
+@@ -1056,7 +1057,7 @@ static int set_distrib_bits(struct cpuma
+  */
+ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 				struct mm_struct *mm, unsigned long start,
+-				unsigned end, unsigned int cpu)
++				unsigned long end, unsigned int cpu)
+ {
+ 	int locals = 0;
+ 	int remotes = 0;
+@@ -1113,7 +1114,10 @@ const struct cpumask *uv_flush_tlb_other
+ 
+ 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
+ 
+-	bau_desc->payload.address = start;
++	if (!end || (end - start) <= PAGE_SIZE)
++		bau_desc->payload.address = start;
++	else
++		bau_desc->payload.address = TLB_FLUSH_ALL;
+ 	bau_desc->payload.sending_cpu = cpu;
+ 	/*
+ 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
+Index: linux/arch/x86/include/asm/uv/uv.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv.h
++++ linux/arch/x86/include/asm/uv/uv.h
+@@ -16,7 +16,7 @@ extern void uv_system_init(void);
+ extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 						 struct mm_struct *mm,
+ 						 unsigned long start,
+-						 unsigned end,
++						 unsigned long end,
+ 						 unsigned int cpu);
+ 
+ #else	/* X86_UV */
