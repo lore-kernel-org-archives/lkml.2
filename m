@@ -1,107 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab2IMK3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:29:46 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34311 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757341Ab2IMK3o (ORCPT
+	id S1757354Ab2IMKbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:31:11 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:13502 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab2IMKbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:29:44 -0400
-Date: Thu, 13 Sep 2012 11:29:38 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
-Message-ID: <20120913102938.GB2470@linaro.org>
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
- <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <503BFCD8.5090804@gmail.com>
- <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
- <50514634.3080303@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50514634.3080303@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Sep 2012 06:31:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkCAMO0UVBbdWObgWdsb2JhbABFu3AiAQEWJieCIAEBBSdSECAxVwYTiBG8HZFHA5Vfkwc
+X-IronPort-AV: E=Sophos;i="4.80,416,1344204000"; 
+   d="scan'208";a="951021176"
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH v2 2/5] Staging: ipack: move the responsibility to clear interrupts to the IPack devices.
+Date: Thu, 13 Sep 2012 12:32:20 +0200
+Message-Id: <1347532343-22948-2-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1347532343-22948-1-git-send-email-siglesias@igalia.com>
+References: <1347532343-22948-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 09:34:28PM -0500, Rob Herring wrote:
-> On 09/12/2012 01:14 PM, Stefano Stabellini wrote:
-> > On Wed, 12 Sep 2012, Stefano Stabellini wrote:
-> >> On Tue, 28 Aug 2012, Rob Herring wrote:
-> >>> You should look at ePAPR 1.1 which defines hypervisor related bindings.
-> >>> While it is a PPC doc, we should reuse or extend what makes sense.
-> >>>
-> >>> See section 7.5:
-> >>>
-> >>> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
-> >>
-> >> Thanks for the link, I wasn't aware of ePAPR.
-> >>
-> >> The hypervisor node defined by ePAPR is not very different from what I
-> >> am proposing. Should I try to be compatible with the hypervisor
-> >> specification above (as in compatible = "epapr,hypervisor-1.1")?
-> >> Or should I just use it as a reference for my own specification?
-> >>
-> >> Personally I would rather avoid full compatibility with ePAPR.
-> > 
-> > In particular reading section 7.5, these are the required properties of
-> > the ePAPR hypervisor node:
-> > 
-> > - compatible = "epapr,hypervisor-1.1"
-> > compared to what I am proposing, it is laking information about what
-> > hypervisor we are talking about (xen, kvm, vmware, etc) and the version
-> > of the ABI (xen-4.2).
-> 
-> compatible properties are often changed. If we do deviate on the rest of
-> the binding, then it needs to be different.
-> 
-> Turns out that powerpc KVM guests use "linux,kvm" and "epapr,hypervisor"
-> doesn't even appear in the kernel.
-> 
-> We also perhaps have to consider the possibility of Xen on PowerPC. Then
-> alignment is more important.
-> 
-> > - hcall-instructions
-> > potentially interesting, but given that for Xen we are quite happy with
-> > HVC, we are not going to add any secondary hypercall mechanisms,
-> > therefore at the moment it would just result in a BUG if the specified
-> > hcall instruction is != HVC. Besides if somebody else wanted to
-> > implemented the Xen hypercall interface in a different way they could
-> > just reimplement the hypercall wrappers, that would be easier than
-> > trying to do it with this property.
-> 
-> It's really about the parameters passed with the HVC. The ePAPR may be a
-> good model for defining this. Just grepping "hypervisor" under
-> arch/powerpc, it's pretty clear hypervisor support happened first and
-> the ePAPR came second. Hopefully we can avoid that for ARM.
+From: Jens Taprogge <jens.taprogge@taprogge.org>
 
-Do you think it's feasible to standardise on some interoperable ABI for
-kvm and Xen?  This sounds pretty optimistic, but I'm not aware of all
-the technicalities, or what possible third-party hypervisors are out
-there.
+Now the IPack device acknowledges its own IRQ.
 
-If we could do it, it would be good.  But I have my doubts about the
-feasibility and the benefits.  If different hypervisors are significantly
-imcompatible, then having a common low-level ABI doesn't help all that
-much.
+Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/staging/ipack/bridges/tpci200.c |    4 ----
+ drivers/staging/ipack/devices/ipoctal.c |   19 +++++++++++++++++--
+ drivers/staging/ipack/devices/scc2698.h |    3 +++
+ 3 files changed, 20 insertions(+), 6 deletions(-)
 
-Cheers
----Dave
+diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
+index 3462783..43f2f38 100644
+--- a/drivers/staging/ipack/bridges/tpci200.c
++++ b/drivers/staging/ipack/bridges/tpci200.c
+@@ -126,10 +126,6 @@ static irqreturn_t tpci200_slot_irq(struct slot_irq *slot_irq)
+ 		return -ENODEV;
+ 	ret = slot_irq->handler(slot_irq->arg);
+ 
+-	/* Clear the IPack device interrupt */
+-	readw(slot_irq->holder->io_space.address + 0xC0);
+-	readw(slot_irq->holder->io_space.address + 0xC2);
+-
+ 	return ret;
+ }
+ 
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index 0292364..30d8d42 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -252,6 +252,10 @@ static irqreturn_t ipoctal_irq_handler(void *arg)
+ 	for (i = 0; i < NR_CHANNELS; i++)
+ 		ipoctal_irq_channel(&ipoctal->channel[i]);
+ 
++	/* Clear the IPack device interrupt */
++	readw(ipoctal->dev->int_space.address + ACK_INT_REQ0);
++	readw(ipoctal->dev->int_space.address + ACK_INT_REQ1);
++
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -264,7 +268,6 @@ static int ipoctal_check_model(struct ipack_device *dev, unsigned char *id)
+ 	manufacturerID = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MANUFACTURER_ID);
+ 	if (manufacturerID != IPACK1_VENDOR_ID_SBS)
+ 		return -ENODEV;
+-
+ 	board_id = ioread8(dev->id_space.address + IPACK_IDPROM_OFFSET_MODEL);
+ 	switch (board_id) {
+ 	case IPACK1_DEVICE_ID_SBS_OCTAL_232:
+@@ -322,13 +325,22 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 		goto out_unregister_id_space;
+ 	}
+ 
++	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev, 0,
++						IPACK_INT_SPACE);
++	if (res) {
++		dev_err(&ipoctal->dev->dev,
++			"Unable to map slot [%d:%d] INT space!\n",
++			bus_nr, slot);
++		goto out_unregister_io_space;
++	}
++
+ 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev,
+ 					   0x8000, IPACK_MEM_SPACE);
+ 	if (res) {
+ 		dev_err(&ipoctal->dev->dev,
+ 			"Unable to map slot [%d:%d] MEM space!\n",
+ 			bus_nr, slot);
+-		goto out_unregister_io_space;
++		goto out_unregister_int_space;
+ 	}
+ 
+ 	/* Save the virtual address to access the registers easily */
+@@ -450,6 +462,8 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 
+ out_unregister_slot_unmap:
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
++out_unregister_int_space:
++	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
+ out_unregister_io_space:
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
+ out_unregister_id_space:
+@@ -735,6 +749,7 @@ static void __ipoctal_remove(struct ipoctal *ipoctal)
+ 	tty_unregister_driver(ipoctal->tty_drv);
+ 	put_tty_driver(ipoctal->tty_drv);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_MEM_SPACE);
++	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_INT_SPACE);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
+ 	ipoctal->dev->bus->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
+ 	kfree(ipoctal);
+diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
+index 223838a..96e8d8c 100644
+--- a/drivers/staging/ipack/devices/scc2698.h
++++ b/drivers/staging/ipack/devices/scc2698.h
+@@ -221,4 +221,7 @@ union scc2698_block {
+ #define ISR_DELTA_BREAK_B           (0x1 << 6)
+ #define ISR_INPUT_PORT_CHANGE       (0x1 << 7)
+ 
++#define ACK_INT_REQ0			0
++#define ACK_INT_REQ1			2
++
+ #endif /* SCC2698_H_ */
+-- 
+1.7.10.4
+
