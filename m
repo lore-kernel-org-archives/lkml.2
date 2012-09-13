@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab2IMQXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 12:23:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56343 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab2IMQXa (ORCPT
+	id S1758585Ab2IMQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 12:38:56 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56075 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758253Ab2IMQiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 12:23:30 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH] eeepc-laptop: fix device reference count leakage in eeepc_rfkill_hotplug()
-Date: Fri, 14 Sep 2012 00:21:59 +0800
-Message-Id: <1347553319-6867-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 13 Sep 2012 12:38:54 -0400
+Date: Thu, 13 Sep 2012 20:38:48 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 2/2] checksyscalls: ignore kcmp system call
+Message-ID: <20120913163848.GM19956@moon>
+References: <1347017491-11354-1-git-send-email-heiko.carstens@de.ibm.com>
+ <1347017491-11354-2-git-send-email-heiko.carstens@de.ibm.com>
+ <20120907120234.GB2121@moon>
+ <20120913160237.GA10145@osiris.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120913160237.GA10145@osiris.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a device reference count leakage issue in function
-eeepc_rfkill_hotplug().
+On Thu, Sep 13, 2012 at 06:02:37PM +0200, Heiko Carstens wrote:
+> On Fri, Sep 07, 2012 at 04:02:34PM +0400, Cyrill Gorcunov wrote:
+> > On Fri, Sep 07, 2012 at 01:31:31PM +0200, Heiko Carstens wrote:
+> > > Now that the checksyscalls script works again it will warn about the missing
+> > > "kcmp" system call on all architectures but x86.
+> > > Since according to git commit d97b46a6 "syscalls, x86: add __NR_kcmp syscall"
+> > > only x86 is currently supported don't emit any warning for this system call.
+> [...]
+> > > diff --git a/scripts/checksyscalls.sh b/scripts/checksyscalls.sh
+> > > index fd8fa9a..c7cda79 100755
+> > > --- a/scripts/checksyscalls.sh
+> > > +++ b/scripts/checksyscalls.sh
+> > > @@ -194,6 +194,9 @@ cat << EOF
+> > >  #define __IGNORE_getpmsg
+> > >  #define __IGNORE_putpmsg
+> > >  #define __IGNORE_vserver
+> > > +
+> > > +/* kcmp is currently x86 only */
+> > > +#define __IGNORE_kcmp
+> 
+> Ok, I wired the system call up on s390 and the test case passed.
+> Below is the patch that is needed to actually reach the system call from
+> other architectures than x86.
+> Andrew, can you pick this one up as well?
+> 
+> The code that wires the system call up on s390 will go upstream via the
+> s390 tree. Thanks to kcmp being a cond_syscall there is no compile
+> time dependency.
+> 
+> From 1ff800597ea8f678a179387e3cf2ae663531e2fe Mon Sep 17 00:00:00 2001
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Date: Thu, 13 Sep 2012 09:37:38 +0200
+> Subject: [PATCH] syscalls: make kcmp syscall available for all architectures
+> 
+> Remove the x86 dependency, since the system call is not
+> architecture dependend.
+> 
+> Also add a ptrace.h include, so it compiles at least also on s390.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/platform/x86/eeepc-laptop.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index dab91b4..5ca2641 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -610,12 +610,12 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- 
- 		if (!bus) {
- 			pr_warn("Unable to find PCI bus 1?\n");
--			goto out_unlock;
-+			goto out_put_dev;
- 		}
- 
- 		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
- 			pr_err("Unable to read PCI config space?\n");
--			goto out_unlock;
-+			goto out_put_dev;
- 		}
- 
- 		absent = (l == 0xffffffff);
-@@ -627,7 +627,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- 				absent ? "absent" : "present");
- 			pr_warn("skipped wireless hotplug as probably "
- 				"inappropriate for this model\n");
--			goto out_unlock;
-+			goto out_put_dev;
- 		}
- 
- 		if (!blocked) {
-@@ -635,7 +635,7 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- 			if (dev) {
- 				/* Device already present */
- 				pci_dev_put(dev);
--				goto out_unlock;
-+				goto out_put_dev;
- 			}
- 			dev = pci_scan_single_device(bus, 0);
- 			if (dev) {
-@@ -650,6 +650,8 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- 				pci_dev_put(dev);
- 			}
- 		}
-+out_put_dev:
-+		pci_dev_put(port);
- 	}
- 
- out_unlock:
--- 
-1.7.9.5
-
+Thanks a lot!
