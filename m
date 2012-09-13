@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab2IMUWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:22:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9405 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758112Ab2IMUWB (ORCPT
+	id S932213Ab2IMUX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:23:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42104 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab2IMUX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:22:01 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BrQD0zwlEycA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CGgBco54DJ0A:10 a=VwQbUJbxAAAA:8 a=ieozS7MuqSy_348GjZkA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347567719.10751.85.camel@gandalf.local.home>
-Subject: Re: [PATCH RT 0/2] [ANNOUNCE] 3.2.28-rt43-rc1 stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 13 Sep 2012 16:21:59 -0400
-In-Reply-To: <20120913185721.264108744@goodmis.org>
-References: <20120913185721.264108744@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 16:23:26 -0400
+Message-ID: <505240BA.1010804@gmail.com>
+Date: Thu, 13 Sep 2012 14:23:22 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, tools: Stop perf stat -p when profiled process
+ exits v3
+References: <1347551931-7666-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1347551931-7666-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 14:57 -0400, Steven Rostedt wrote:
+On 9/13/12 9:58 AM, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> When counting a process with perf stat -p check if the process died
+> and exit collection if yes.
+>
+> v2: Add more checks, handle non -p again. Handle /proc not there.
+> v3: Handle multi pid case. Fix non /proc error path
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>   tools/perf/builtin-stat.c |   14 +++++++++++++-
+>   1 files changed, 13 insertions(+), 1 deletions(-)
+>
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 861f0ae..b5e7df2 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -536,7 +536,19 @@ static int run_perf_stat(int argc __used, const char **argv)
+>   		if (WIFSIGNALED(status))
+>   			psignal(WTERMSIG(status), argv[0]);
+>   	} else {
+> -		while(!done) sleep(1);
+> +		char piddir[40];
+> +		int check_proc = target.pid &&
+> +				 access("/proc", X_OK) == 0 &&
+> +				 !strchr(target.pid, ',');
+> +		if (check_proc)
+> +			snprintf(piddir, sizeof piddir, "/proc/%d",
+> +				 atoi(target.pid));
+> +		while(!done) {
+> +			sleep(1);
+> +			if (check_proc && access(piddir, X_OK) < 0 &&
+> +			    errno == ENOENT)
+> +				break;
+> +		}
+>   	}
 
-> ----
-> Note: The patches have not been uploaded to kernel.org yet. I've
-> recently changed the subkey that I use to sign the patches as the
-> old subkey is about to expire. But unfortunately, kernel.org has
-> not updated its key ring, and is refusing my current subkey.
-> 
-> I have a ticket open with kernel.org to resolve the issue. But until
-> then, this mailing is the only place the patches exist.
-> ----
+I still think this is the wrong approach. A more complete solution would 
+monitor all of the targets given by the user. e.g.,
 
-Issue is solved, patches are up.
+1. create a perf_target__parse_pid - all it needs to do is:
+    struct strlist *slist = strlist__new(false, pid_str);
+and save that into the target struct. That line is currently done in 
+thread_map.c, thread_map__new_by_pid_str() and 
+thread_map__new_by_tid_str. Those functions can be altered to take the 
+slist instead of the string.
 
--- Steve
+2. create a perf_target__is_alive that runs through each entry in the 
+slist (strlist__for_each(pos, slist)) and checks that it still exists. 
+As long as 1 target is alive it returns true. If no pid or tid is 
+specified it always returns true.
 
-
-> To build 3.2.28-rt43-rc1 directly, the following patches should be applied:
-> 
->   http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-> 
->   http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.28.xz
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.28-rt43-rc1.patch.xz
-> 
-> You can also build from 3.2.28-rt42 by applying the incremental patch:
-> 
-> http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.28-rt42-rt43-rc1.patch.xz
-> 
+The is_alive function can be used by perf-top, perf-stat and perf-record 
+to know that its target has died so it can stop monitoring.
 
 
+David
