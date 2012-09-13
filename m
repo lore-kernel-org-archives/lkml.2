@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab2IMIqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:46:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40255 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab2IMIpz convert rfc822-to-8bit (ORCPT
+	id S1757107Ab2IMIqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:46:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53535 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab2IMIqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:45:55 -0400
-Message-ID: <1347525949.15764.109.camel@twins>
-Subject: Re: [RFC] sched: nohz_idle_balance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, mingo@redhat.com,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 13 Sep 2012 10:45:49 +0200
-In-Reply-To: <CAKfTPtCoYjiZphPqyYtmEN-jR=hbAUMLbWSkD9BoWRiVkmE=3Q@mail.gmail.com>
-References: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
-	 <1347518991.6821.45.camel@marge.simpson.net>
-	 <CAKfTPtBQ7Y1xGOe9NZw8AhNbOzGgkVMgYyXjVa1d308kdG6bfQ@mail.gmail.com>
-	 <1347521382.6821.61.camel@marge.simpson.net>
-	 <CAKfTPtCvg1qxUv02-dO9qD2HiFzS_bA2Gr0mrN=8LEA3eXA7Bg@mail.gmail.com>
-	 <1347522994.6821.67.camel@marge.simpson.net>
-	 <CAKfTPtCoYjiZphPqyYtmEN-jR=hbAUMLbWSkD9BoWRiVkmE=3Q@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 04:46:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <5050CF0E.3080502@xenotime.net>
+References: <20120912184644.48e4e2e7d59b12893a42f60a@canb.auug.org.au>
+	<5050CF0E.3080502@xenotime.net>
+Date: Thu, 13 Sep 2012 17:46:02 +0900
+Message-ID: <CAK44p21WAmcvFFqVOwhUfT8onR9QxgTPcAM8ernRGtw4s396bw@mail.gmail.com>
+Subject: Re: [PATCH -next] thermal: cpu_cooling.c needs to select CPU_FREQ_TABLE
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 10:37 +0200, Vincent Guittot wrote:
-> > I think you need to present numbers showing benefit.  Crawling all over
-> > a mostly idle (4096p?) box is decidedly bad thing to do. 
+On 13 September 2012 03:06, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>
+> cpu_cooling.c (CONFIG_CPU_THERMAL) uses cpu frequency table
+> intefaces so it should select CPU_FREQ_TABLE.
+> Fixes these build errors:
+>
+> drivers/built-in.o: In function `cpufreq_get_max_state':
+> cpu_cooling.c:(.text+0x4e1297): undefined reference to `cpufreq_frequency_get_table'
+> drivers/built-in.o: In function `cpufreq_set_cur_state':
+> cpu_cooling.c:(.text+0x4e138b): undefined reference to `cpufreq_frequency_get_table'
+>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Amit Daniel <amit.kachhap@linaro.org>
+> ---
+>  drivers/thermal/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> Also, please add info in the MAINTAINERS file for drivers/thermal/.
+>
+> --- linux-next-20120912.orig/drivers/thermal/Kconfig
+> +++ linux-next-20120912/drivers/thermal/Kconfig
+> @@ -22,6 +22,7 @@ config THERMAL_HWMON
+>  config CPU_THERMAL
+>         bool "generic cpu cooling support"
+>         depends on THERMAL && CPU_FREQ
+> +       select CPU_FREQ_TABLE
 
-Yeah, but we're already doing that anyway.. we know nohz idle balance
-doesn't scale. Venki and Suresh were working on that, but with Venki
-switching jobs this work got dropped.
+This change looks good to me. Even similar select is present platform
+cpufreq drivers which uses the cpufreq API's.
 
-I did talk to Suresh about it a week or so ago.. I think he was going to
-look at it again.
+Thanks,
+Amit Daniel
+>         help
+>           This implements the generic cpu cooling mechanism through frequency
+>           reduction, cpu hotplug and any other ways of reducing temperature. An
