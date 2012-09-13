@@ -1,61 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517Ab2IMLTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 07:19:51 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:42738 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062Ab2IMLTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 07:19:50 -0400
-X-IronPort-AV: E=Sophos;i="4.80,416,1344211200"; 
-   d="scan'208";a="14517836"
-Date: Thu, 13 Sep 2012 12:19:06 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Dave Martin <dave.martin@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
-In-Reply-To: <20120913102938.GB2470@linaro.org>
-Message-ID: <alpine.DEB.2.02.1209131215360.15568@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com> <503BFCD8.5090804@gmail.com> <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com> <50514634.3080303@gmail.com> <20120913102938.GB2470@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757585Ab2IMLUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 07:20:37 -0400
+Received: from fieldses.org ([174.143.236.118]:38115 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756872Ab2IMLUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 07:20:35 -0400
+Date: Thu, 13 Sep 2012 07:20:25 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Namjae Jeon <linkinjeon@gmail.com>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+Message-ID: <20120913112024.GA24684@fieldses.org>
+References: <871ui84l4l.fsf@devron.myhome.or.jp>
+ <CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
+ <20120912143227.GE3009@fieldses.org>
+ <87vcfjfa14.fsf@devron.myhome.or.jp>
+ <20120912171128.GG3009@fieldses.org>
+ <87r4q7f8fw.fsf@devron.myhome.or.jp>
+ <20120912174556.GH3009@fieldses.org>
+ <87ipbjf54f.fsf@devron.myhome.or.jp>
+ <CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
+ <87txv2cog1.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87txv2cog1.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Sep 2012, Dave Martin wrote:
-> Do you think it's feasible to standardise on some interoperable ABI for
-> kvm and Xen?  This sounds pretty optimistic, but I'm not aware of all
-> the technicalities, or what possible third-party hypervisors are out
-> there.
+On Thu, Sep 13, 2012 at 05:33:02PM +0900, OGAWA Hirofumi wrote:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
 > 
-> If we could do it, it would be good.  But I have my doubts about the
-> feasibility and the benefits.  If different hypervisors are significantly
-> imcompatible, then having a common low-level ABI doesn't help all that
-> much.
+> >> I see. So, client can't solve the ESTALE if inode cache was evicted,
+> >> right? (without application changes)
+> >
+> > There can be situation where we may get not only ESTALE but EIO also.
+> >
+> > For example,
+> > -------------------------------
+> > fd = open(“foo.txt”);
+> > while (1) {
+> >        sleep(1);
+> >        write(fd..);
+> > }
+> > --------------------------------
+> >
+> > Here “write” may fail when inode number of “foo.txt” is changed at
+> > server due to cache eviction under memory pressure.
+> > When we tried a similar test, we found that “write” is retuning “EIO”
+> > instead of “ESTALE”
+> >
+> > ---------------------------------------------------------------------------------------------------------
+> > #> ./write_test_dbg bbb 1000 0
+> > FILE : bbb, SIZE : 1048576000 , FSYNC : OFF , RECORD_SIZE = 4096
+> > 106264 -rwxr-xr-x 1 root 0 0 Jan 1 00:14 bbb
+> > write failed after 60080128 bytes:, errno = 5: Input/output error
+> > ---------------------------------------------------------------------------------------------------------
+> >
+> >  As we get EIO instead of ESTALE, it may be difficult to decide when
+> > "restart from LOOKUP” in such situation.
+> > Also, as per Bruce opinion, we can not avoid ESTALE from inode number
+> > change in rebooted server case.
+> > In reboot case, it is worst as it may attempt to write in a different
+> > file if NFS handle at NFS client match with inode number of some other
+> > file at NFS server.
+> 
+> I see.
+> 
+> >> Grepping around... Documentation/sysctl/vm.txt mentions a
+> >> vfs_cache_pressure parameter.
+> >> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
+> > I am worrying if it could lead to OOM condition on embedded
+> > system(short memory(DRAM) and support 3TB HDD disk of big size.)
+> >
+> > Please let me know if any issues or queries.
+> 
+> So, now I think stable inode number may be useful if there are users of
+> it. And I guess those functionality is no collisions with -mm. And I
+> suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
+> 
+> If nfs=1, works like current -mm without no limited operations.
 
-It is not really possible because each hypervisor offers a different set
-of hypercalls and has a different calling convention, so there is very
-little we can do to unify them.
+Apologies, I haven't been following the conversation carefully: remind
+me what "works like current -mm" means?
 
-For example many of the current Xen hypercalls are to deal with the grant
-table and event channels, that are Xen specific concepts completely
-missing in KVM.
+--b.
+
+> If nfs=2, try to make stable FH and limit some operations
+> 
+> (option name doesn't matter here.)
+> 
+> Does this work fine?
+> -- 
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
