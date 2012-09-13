@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab2IMHdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 03:33:12 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45273 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab2IMHdJ (ORCPT
+	id S1756337Ab2IMHfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:35:46 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:59665 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754592Ab2IMHfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 03:33:09 -0400
+	Thu, 13 Sep 2012 03:35:44 -0400
+Message-ID: <50518CF8.2050106@ti.com>
+Date: Thu, 13 Sep 2012 10:36:24 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:d9d2:3ecd:9fd1:b4c3]
-In-Reply-To: <20120913073103.GA10231@codeaurora.org>
-References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
-	<CAOesGMhyQd=p23uy1Lj9iq6PKgS+kJ+xh4Z10e4XbSk50E=U7Q@mail.gmail.com>
-	<20120913073103.GA10231@codeaurora.org>
-Date: Thu, 13 Sep 2012 00:33:07 -0700
-Message-ID: <CAOesGMjPX=9h0N8f50wf_efxmR9qgH8c3fyKDbePMC7sPprjLg@mail.gmail.com>
-Subject: Re: [GIT PULL] msm-core changes for v3.7
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] pinctrl: pinctrl-single: Add pinctrl-single,bits type
+ of mux
+References: <1347353664-15906-1-git-send-email-peter.ujfalusi@ti.com> <20120912202700.GD5997@atomide.com> <CACRpkdZjd5FANymXQOuz0nH+d_r6O6GdXrcnZObhq6mZ9cmH7A@mail.gmail.com>
+In-Reply-To: <CACRpkdZjd5FANymXQOuz0nH+d_r6O6GdXrcnZObhq6mZ9cmH7A@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 12:31 AM, David Brown <davidb@codeaurora.org> wrote:
-> On Wed, Sep 12, 2012 at 11:36:28PM -0700, Olof Johansson wrote:
->
->> I think it could be a good idea to split off the cleanups and fixes to
->> a separate branch. For the other patches there seems to be enough for
->> at least a 'dt' branch and either a multi-platform topic branch or a
->> 'boards' topic branch -- probably the former. So see my annotation
->> below for suggested sorting (I didn't check for
->> conflicts/dependencies).
->
-> I'll give a go at splitting things up tomorrow, then.  I'd held off on
-> making separate branches because there are a bunch of changes to
-> similar stuff.  Even if I get them separated, they are unlikely to
-> build without all being applied.
->
-> But, I'll see what I can do.
+On 09/13/2012 09:52 AM, Linus Walleij wrote:
+> On Wed, Sep 12, 2012 at 10:27 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Peter Ujfalusi <peter.ujfalusi@ti.com> [120911 01:54]:
+>>> With pinctrl-single,bits it is possible to update just part of the register
+>>> within the pinctrl-single,function-mask area.
+>>> This is useful when one register configures mmore than one pin's mux.
+>>
+>>>       size /= sizeof(*mux);   /* Number of elements in array */
+>>> -     rows = size / 2;        /* Each row is a key value pair */
+>>> +     rows = size / params;   /* Each row is a key value pair */
+>>
+>> Maybe just remove the comment:  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>
+>> I don't think it's needed any longer. Other than that,
+>> thanks for updating the patch:
+>>
+>> Acked-by: Tony Lindgren <tony@atomide.com>
+> 
+> Applied minus the comment, plus Tony's ACK, thanks!
 
-Ok. If it's too hairy this time around, let us know and we can figure
-something out. Over time hopefully it'll get easier to sort patches in
-buckets.
+Thank you Linus, I was about to send the v3 with the removed comment.
 
-
--Olof
+-- 
+Péter
