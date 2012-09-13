@@ -1,174 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2IMDON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 23:14:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58591 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752764Ab2IMDOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 23:14:11 -0400
-Message-ID: <1347506051.2749.6.camel@joe2Laptop>
-Subject: [PATCH 5/5] device and dynamic_debug: Use dev_vprintk_emit and
- dev_printk_emit
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Baron <jbaron@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 12 Sep 2012 20:14:11 -0700
-In-Reply-To: <cover.1345978012.git.joe@perches.com>
-References: <cover.1345978012.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755328Ab2IMDaE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 23:30:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64875 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab2IMDaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 23:30:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ligefz34.fsf@xmission.com>
+References: <87lih2h6i4.fsf@xmission.com>
+	<87mx1iecwi.fsf@xmission.com>
+	<CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
+	<87ligefz34.fsf@xmission.com>
+Date: Thu, 13 Sep 2012 13:29:59 +1000
+Message-ID: <CAPM=9tyF=R7KespXvS6FmU0d4KOcu=NT_Y4zm9gbwvfze64hOw@mail.gmail.com>
+Subject: Re: [REVIEW][PATCH 12/15] userns: Convert drm to use kuid and kgid
+ and struct pid where appropriate
+From: Dave Airlie <airlied@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        David Miller <davem@davemloft.net>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert direct calls of vprintk_emit and printk_emit to the
-dev_ equivalents.
+On Thu, Sep 13, 2012 at 12:14 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Dave Airlie <airlied@gmail.com> writes:
+>
+>>> Blink Blink this had not been converted to use struct pid ages ago?
+>>>
+>>> - On drm open capture the openers kuid and struct pid.
+>>> - On drm close release the kuid and struct pid
+>>> - When reporting the uid and pid convert the kuid and struct pid
+>>>   into values in the appropriate namespace.
+>>>
+>>
+>> Hi Eric,
+>>
+>> I'm fine with this seems okay, do you want me to merge it via
+>> drm-next?
+>
+> My plan is to merge it via my user namespace tree.  And since you have
+> responed positively I will add your acked-by.  There are some nice
+> synergies when I get all of the changes in one tree.
+>
+> If for some reason you want to carry this in your drm tree we can work
+> something out.
+>
+> In this case I expect the change isn't big enough to worry about.
 
-Make create_syslog_header static.
+No all fine by me,
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Tested-by: Jim Cromie <jim.cromie@gmail.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
----
- drivers/base/core.c    |   14 +++++---------
- include/linux/device.h |    2 --
- lib/dynamic_debug.c    |   31 +++++++++++--------------------
- net/core/dev.c         |   16 ++++++----------
- 4 files changed, 22 insertions(+), 41 deletions(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index ffccb64..65f82e3 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1861,7 +1861,8 @@ void device_shutdown(void)
-  */
- 
- #ifdef CONFIG_PRINTK
--int create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
-+static int
-+create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
- {
- 	const char *subsys;
- 	size_t pos = 0;
-@@ -1939,17 +1940,12 @@ EXPORT_SYMBOL(dev_printk_emit);
- static int __dev_printk(const char *level, const struct device *dev,
- 			struct va_format *vaf)
- {
--	char hdr[128];
--	size_t hdrlen;
--
- 	if (!dev)
- 		return printk("%s(NULL device *): %pV", level, vaf);
- 
--	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
--
--	return printk_emit(0, level[1] - '0', hdrlen ? hdr : NULL, hdrlen,
--			   "%s %s: %pV",
--			   dev_driver_string(dev), dev_name(dev), vaf);
-+	return dev_printk_emit(level[1] - '0', dev,
-+			       "%s %s: %pV",
-+			       dev_driver_string(dev), dev_name(dev), vaf);
- }
- 
- int dev_printk(const char *level, const struct device *dev,
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 0063d01..2da4589 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -891,8 +891,6 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int create_syslog_header(const struct device *dev,
--				char *hdr, size_t hdrlen);
- extern int dev_vprintk_emit(int level, const struct device *dev,
- 			    const char *fmt, va_list args);
- extern __printf(3, 4)
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 6b3ebab..e7f7d99 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -591,15 +591,11 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
- 	} else {
- 		char buf[PREFIX_SIZE];
--		char dict[128];
--		size_t dictlen;
- 
--		dictlen = create_syslog_header(dev, dict, sizeof(dict));
--
--		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
--				  "%s%s %s: %pV",
--				  dynamic_emit_prefix(descriptor, buf),
--				  dev_driver_string(dev), dev_name(dev), &vaf);
-+		res = dev_printk_emit(7, dev, "%s%s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev), dev_name(dev),
-+				      &vaf);
- 	}
- 
- 	va_end(args);
-@@ -627,18 +623,13 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 
- 	if (dev && dev->dev.parent) {
- 		char buf[PREFIX_SIZE];
--		char dict[128];
--		size_t dictlen;
--
--		dictlen = create_syslog_header(dev->dev.parent,
--					       dict, sizeof(dict));
--
--		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
--				  "%s%s %s %s: %pV",
--				  dynamic_emit_prefix(descriptor, buf),
--				  dev_driver_string(dev->dev.parent),
--				  dev_name(dev->dev.parent),
--				  netdev_name(dev), &vaf);
-+
-+		res = dev_printk_emit(7, dev->dev.parent,
-+				      "%s%s %s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev->dev.parent),
-+				      dev_name(dev->dev.parent),
-+				      netdev_name(dev), &vaf);
- 	} else if (dev) {
- 		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
- 	} else {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 1ec186a..8ad42fd 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6428,16 +6428,12 @@ static int __netdev_printk(const char *level, const struct net_device *dev,
- 	int r;
- 
- 	if (dev && dev->dev.parent) {
--		char dict[128];
--		size_t dictlen = create_syslog_header(dev->dev.parent,
--						      dict, sizeof(dict));
--
--		r = printk_emit(0, level[1] - '0',
--				dictlen ? dict : NULL, dictlen,
--				"%s %s %s: %pV",
--				dev_driver_string(dev->dev.parent),
--				dev_name(dev->dev.parent),
--				netdev_name(dev), vaf);
-+		r = dev_printk_emit(level[1] - '0',
-+				    dev->dev.parent,
-+				    "%s %s %s: %pV",
-+				    dev_driver_string(dev->dev.parent),
-+				    dev_name(dev->dev.parent),
-+				    netdev_name(dev), vaf);
- 	} else if (dev) {
- 		r = printk("%s%s: %pV", level, netdev_name(dev), vaf);
- 	} else {
--- 
-1.7.8.111.gad25c.dirty
-
-
+for formality sake:
+Acked-by: Dave Airlie <airlied@redhat.com>
