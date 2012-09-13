@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab2IMVC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:02:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58916 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab2IMVCy (ORCPT
+	id S1758877Ab2IMVDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:03:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52637 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab2IMVDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:02:54 -0400
-Message-ID: <505249F9.7050201@gmail.com>
-Date: Thu, 13 Sep 2012 16:02:49 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 13 Sep 2012 17:03:49 -0400
+Message-ID: <50524A31.1080403@gmail.com>
+Date: Thu, 13 Sep 2012 15:03:45 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Cyril Chemparathy <cyril@ti.com>, linux-mips@linux-mips.org,
-        x86@kernel.org, a-jacquiot@ti.com, mahesh@linux.vnet.ibm.com,
-        linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        paul.gortmaker@windriver.com, paulus@samba.org, hpa@zytor.com,
-        m.szyprowski@samsung.com, jonas@southpole.se, linux@arm.linux.org.uk,
-        linux-c6x-dev@linux-c6x.org, nico@linaro.org, david.daney@cavium.com,
-        mingo@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        benh@kernel.crashing.org, suzuki@in.ibm.com, linux@openrisc.net,
-        arnd@arndb.de, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, msalter@redhat.com,
-        rob.herring@calxeda.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        dhowells@redhat.com, monstr@monstr.eu, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, tj@kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] of: specify initrd location using 64-bit
-References: <1347465937-7056-1-git-send-email-cyril@ti.com> <CAMuHMdUuQzD0bq8PifBea2-0Pk7RhmPA0-GAFprsk+vMxMGjGw@mail.gmail.com> <5050CE33.9060909@ti.com> <5050E965.5080405@linutronix.de> <505107DF.5020105@gmail.com> <5051816A.3050705@linutronix.de>
-In-Reply-To: <5051816A.3050705@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Jovi Zhang <bookjovi@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: add /proc/perf_events file for dump perf events
+ info
+References: <CACV3sbLSzPoYYFJky=sFpca4L2gKdoOoEySn+mVHh1aphQLkyw@mail.gmail.com> <1341476877.7709.0.camel@twins> <CACV3sb+aadXJYu7_JUedCodgQmF8d1q7OxSVoz=vwfc+Ow_caA@mail.gmail.com> <CACV3sbLJpv2KSSkrRRDVuJ6xtJOSwCKaJfhO1wMF6DgAU9eCBw@mail.gmail.com>
+In-Reply-To: <CACV3sbLJpv2KSSkrRRDVuJ6xtJOSwCKaJfhO1wMF6DgAU9eCBw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2012 01:47 AM, Sebastian Andrzej Siewior wrote:
-> On 09/13/2012 12:08 AM, Rob Herring wrote:
->>> Geert is right here. If it is a physical address, it should be
->>> phys_addr_t.
->>
->> While generally true, for the DT specific code I think it should be a
->> fixed u64. The size of the address is defined by the FDT, not the
->> kernel. It is very likely we could have a FDT that specifies addresses
->> in 64-bit values, but then we boot a kernel is compiled for !LPAE.
->> phys_addr_t is currently sized based on LPAE setting.
-> 
-> If your kernel is 32bit without PAE and your DTB address is >32ibt than
-> you can't handle it. If you don't notice this in your dt code than you
-> remap the wrong memory ioremap().
+On 7/5/12 7:02 AM, Jovi Zhang wrote:
+>   From 91fbcca37a2c9979083f4b9a6fa9c1875fc2886f Mon Sep 17 00:00:00 2001
+> From: Jovi Zhang <bookjovi@gmail.com>
+> Date: Fri, 6 Jul 2012 00:05:40 +0800
+> Subject: [PATCH] perf: add /proc/perf_events file for dump perf events info
+>
+> This new /proc/perf_events file is used for real time dump all
+> perf events info in whole system wide machine, this patch also add
+> a new field perf_entry in struct perf_event, for connect to
+> global list perf_events_list.
 
-The size of the initrd fields are set by #address-cells properties and
-determined when you create the dtb. The address to load the initrd is
-decided by the bootloader/user and set at that point later in time. The
-dtb should not be tied to the kernel you are booting. Obviously, if you
-want to boot a non-PAE kernel, everything has to be placed at <4GB.
+Applied your patch to see if sheds light on a problem. Saw this 
+compiling the kernel:
 
-I can boot i386 and i386-pae kernels on an i386-pae machines. I expect
-to generally be able to do that on ARM. Perhaps some SOCs like this one
-will not allow that, it is not always true.
+kernel/events/proc_perf_events.c: In function ‘perf_events_proc_show’:
+kernel/events/proc_perf_events.c:175:5: warning: format ‘%llu’ expects 
+argument of type ‘long long unsigned int’, but argument 3 has type ‘long 
+int’ [-Wformat]
 
-Rob
-
+David
