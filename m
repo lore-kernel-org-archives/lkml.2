@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2IMIxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:53:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40438 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab2IMIxr convert rfc822-to-8bit (ORCPT
+	id S1755425Ab2IMJDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 05:03:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48724 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751339Ab2IMJDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:53:47 -0400
-Message-ID: <1347526421.15764.112.camel@twins>
-Subject: Re: [RFC] sched: nohz_idle_balance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, mingo@redhat.com,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 13 Sep 2012 10:53:41 +0200
-In-Reply-To: <1347525949.15764.109.camel@twins>
-References: <1347509486-8688-1-git-send-email-vincent.guittot@linaro.org>
-	 <1347518991.6821.45.camel@marge.simpson.net>
-	 <CAKfTPtBQ7Y1xGOe9NZw8AhNbOzGgkVMgYyXjVa1d308kdG6bfQ@mail.gmail.com>
-	 <1347521382.6821.61.camel@marge.simpson.net>
-	 <CAKfTPtCvg1qxUv02-dO9qD2HiFzS_bA2Gr0mrN=8LEA3eXA7Bg@mail.gmail.com>
-	 <1347522994.6821.67.camel@marge.simpson.net>
-	 <CAKfTPtCoYjiZphPqyYtmEN-jR=hbAUMLbWSkD9BoWRiVkmE=3Q@mail.gmail.com>
-	 <1347525949.15764.109.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 05:03:13 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAK44p21WAmcvFFqVOwhUfT8onR9QxgTPcAM8ernRGtw4s396bw@mail.gmail.com>
+References: <20120912184644.48e4e2e7d59b12893a42f60a@canb.auug.org.au>
+	<5050CF0E.3080502@xenotime.net>
+	<CAK44p21WAmcvFFqVOwhUfT8onR9QxgTPcAM8ernRGtw4s396bw@mail.gmail.com>
+Date: Thu, 13 Sep 2012 11:03:10 +0200
+Message-ID: <CA+icZUX4Q0zLX4=oM5MUsefvQUVz7nDv0R01AOYNFurYYP3T8g@mail.gmail.com>
+Subject: Re: [PATCH -next] thermal: cpu_cooling.c needs to select CPU_FREQ_TABLE
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 10:45 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-09-13 at 10:37 +0200, Vincent Guittot wrote:
-> > > I think you need to present numbers showing benefit.  Crawling all over
-> > > a mostly idle (4096p?) box is decidedly bad thing to do. 
-> 
-> Yeah, but we're already doing that anyway.. we know nohz idle balance
-> doesn't scale. Venki and Suresh were working on that, but with Venki
-> switching jobs this work got dropped.
-> 
-> I did talk to Suresh about it a week or so ago.. I think he was going to
-> look at it again.
+On Thu, Sep 13, 2012 at 10:46 AM, Amit Kachhap <amit.kachhap@linaro.org> wrote:
+> On 13 September 2012 03:06, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> cpu_cooling.c (CONFIG_CPU_THERMAL) uses cpu frequency table
+>> intefaces so it should select CPU_FREQ_TABLE.
+>> Fixes these build errors:
+>>
+>> drivers/built-in.o: In function `cpufreq_get_max_state':
+>> cpu_cooling.c:(.text+0x4e1297): undefined reference to `cpufreq_frequency_get_table'
+>> drivers/built-in.o: In function `cpufreq_set_cur_state':
+>> cpu_cooling.c:(.text+0x4e138b): undefined reference to `cpufreq_frequency_get_table'
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>> Cc: Amit Daniel <amit.kachhap@linaro.org>
 
-As a reminder to Suresh.. please also consider calc_load_{idle,idx} in
-this work, its another nohz 'feature' that doesn't scale for pretty much
-the same reason.
+Feel free to add:
 
-That is, I'm fine with the initial patches not actually fixing that, but
-the structure put in place for the ILB should allow for it.
+      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+
+>> ---
+>>  drivers/thermal/Kconfig |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> Also, please add info in the MAINTAINERS file for drivers/thermal/.
+>>
+>> --- linux-next-20120912.orig/drivers/thermal/Kconfig
+>> +++ linux-next-20120912/drivers/thermal/Kconfig
+>> @@ -22,6 +22,7 @@ config THERMAL_HWMON
+>>  config CPU_THERMAL
+>>         bool "generic cpu cooling support"
+>>         depends on THERMAL && CPU_FREQ
+>> +       select CPU_FREQ_TABLE
+>
+> This change looks good to me. Even similar select is present platform
+> cpufreq drivers which uses the cpufreq API's.
+>
+> Thanks,
+> Amit Daniel
+>>         help
+>>           This implements the generic cpu cooling mechanism through frequency
+>>           reduction, cpu hotplug and any other ways of reducing temperature. An
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
