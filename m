@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab2IMCUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:20:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52667 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2IMCUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:20:32 -0400
+	id S1752519Ab2IMC2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:28:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab2IMC2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Sep 2012 22:28:33 -0400
+Message-ID: <505144D0.4080908@redhat.com>
+Date: Thu, 13 Sep 2012 10:28:32 +0800
+From: hank <pyu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20120912094648.GX13739@n2100.arm.linux.org.uk>
-References: <1347434328-7207-1-git-send-email-wzch@marvell.com>
-	<CAMQu2gwK+TP+7qQG0cET04y7+BYn--5UwkVuffOUu0kuv8Ps6A@mail.gmail.com>
-	<20120912085445.GW13739@n2100.arm.linux.org.uk>
-	<CAMQu2gx_Wk259F2PNY-T5H1N04i-JwseO5mPNw7xZ__tjonw1A@mail.gmail.com>
-	<20120912094648.GX13739@n2100.arm.linux.org.uk>
-Date: Thu, 13 Sep 2012 10:20:30 +0800
-Message-ID: <CAG9bXv=UzR1iDJ_+6JAC5Ue2caZs7JvGOMjABidsbgRKNhxJrA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: suspend: use flush range instead of flush all
-From: Raul Xiong <raulxiong@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        wzch <wzch@marvell.com>, linux-arm-kernel@lists.infradead.org
+To: neilb@suse.de, miku@iki.fi, jakob@ostenfeld.dk, ptb@it.uc3m.es
+CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug
+ in fix_read_error function
+References: <5045708C.10705@redhat.com>
+In-Reply-To: <5045708C.10705@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/12 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Wed, Sep 12, 2012 at 02:40:45PM +0530, Shilimkar, Santosh wrote:
->> On Wed, Sep 12, 2012 at 2:24 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > On Wed, Sep 12, 2012 at 01:13:33PM +0530, Shilimkar, Santosh wrote:
->> >> On Wed, Sep 12, 2012 at 12:48 PM, wzch <wzch@marvell.com> wrote:
->> >> >  void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
->> >> >  {
->> >> > +       u32 *ptr_orig = ptr;
->> >> >         *save_ptr = virt_to_phys(ptr);
->> >> >
->> >> >         /* This must correspond to the LDM in cpu_resume() assembly */
->> >> > @@ -26,7 +27,8 @@ void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
->> >> >
->> >> >         cpu_do_suspend(ptr);
->> >> >
->> >> > -       flush_cache_all();
->> >> Lorenzo's patch was limiting above flush to local cache (LOUs) instead
->> >> of dropping it completely.
->> >
->> > Err, that is wrong.  Normally, when CPUs go into suspend, the L1 cache is
->> > lost entirely.  This is the only flush which many CPUs see of the L1
->> > cache.
->> >
->> > So removing this flush _will_ break suspend to RAM on existing CPUs.
->>
->> As mentioned, keeping that flush till inner shareability domain(L1) should be
->> enough. In fact if that part gets pushed down to the finisher() which any
->> way needs to take care of the cache maintenance, we can get rid of completely.
->
-> It is difficult to call the cache maintenance functions from assembly.
-> Why not have the generic code do the inner shareability flush, and then
-> leave the responsibility for any further cache maintenance caused by the
-> actions of the finisher to the finisher to deal with - as it is now.
->
-> That way we end up with more generic code, and don't go back to the
-> rediculous situation where we had everyone implementing this crap in
-> their own broken way time and time again in their platform code.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+On 09/04/2012 11:07 AM, hank wrote:
 
-Hi Russell/All,
+> From 0ba5879082544dc3aa13807087563b1258124b1e Mon Sep 17 00:00:00 2001
+> From: hank <pyu@redhat.com>
+> Date: Tue, 4 Sep 2012 10:23:45 +0800
+> Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug in
+>  fix_read_error function
+> 
+> in fix_read_error function, the conf->mirrors[read_disk].rdev may
+> become NULL, as in this function, rdev->nr_pending may be zero, anyone
+> can delete it. So should check if it is NULL before use.
+> 
+> Signed-off-by: hank <pyu@redhat.com>
+> ---
+>  drivers/md/raid1.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> index 611b5f7..fd8de28 100644
+> --- a/drivers/md/raid1.c
+> +++ b/drivers/md/raid1.c
+> @@ -2005,7 +2005,7 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
+>  		if (!success) {
+>  			/* Cannot read from anywhere - mark it bad */
+>  			struct md_rdev *rdev = conf->mirrors[read_disk].rdev;
+> -			if (!rdev_set_badblocks(rdev, sect, s, 0))
+> +			if (!rdev || !rdev_set_badblocks(rdev, sect, s, 0))
+>  				md_error(mddev, rdev);
+>  			break;
+>  		}
 
-I have several questions:
-1. Even we call flush_calche_all in __cpu_suspend_save, since later we
-will outer_clean_range which may cause cache operations so we still
-need to flush again in finisher, right?
-2. Not every platform the L1 will be lost, we have the option to keep
-L1 retentive, right? Just consider single core CA9. So we may not need
-to flush all every time.
-3. Why it's difficult to call cache maintenance in assembly? Moreover,
-not every finisher is assembly, right?
+
+
+Anyone can review this patch? I think it is a bug and should be fixed.
