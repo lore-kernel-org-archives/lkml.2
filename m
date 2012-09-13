@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab2IMIBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:01:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36350 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab2IMIBc (ORCPT
+	id S1756677Ab2IMIDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:03:43 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18670 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245Ab2IMIDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:01:32 -0400
-Date: Thu, 13 Sep 2012 18:01:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20120913180121.7ef388cab4e6af2b8c52c93e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx"
+	Thu, 13 Sep 2012 04:03:40 -0400
+Date: Thu, 13 Sep 2012 11:03:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Bruce Humphrey <brucehum@gmail.com>
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: comedi: fl512: Replace printk with dev_info
+ et al
+Message-ID: <20120913080309.GJ19396@mwanda>
+References: <1347500796-4432-1-git-send-email-brucehum@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347500796-4432-1-git-send-email-brucehum@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 13, 2012 at 03:46:36AM +0200, Bruce Humphrey wrote:
+> Replace printk(KERN_XXX with the appropiate dev_info, dev_warn, dev_dbg in fl512.c
+> 
+> Signed-off-by: Bruce Humphrey Ventura <brucehum@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/fl512.c |   12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/fl512.c b/drivers/staging/comedi/drivers/fl512.c
+> index d1da809..5a8e0ae 100644
+> --- a/drivers/staging/comedi/drivers/fl512.c
+> +++ b/drivers/staging/comedi/drivers/fl512.c
+> @@ -118,9 +118,9 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  	struct comedi_subdevice *s;
+>  
+>  	iobase = it->options[0];
+> -	printk(KERN_INFO "comedi:%d fl512: 0x%04lx", dev->minor, iobase);
+> +	dev_info(dev->class_dev, "%s: 0x%04lx\n", dev->board_name, iobase);
 
-Hi all,
+Only print this at the end when it succeeds.
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+>  	if (!request_region(iobase, FL512_SIZE, "fl512")) {
+> -		printk(KERN_WARNING " I/O port conflict\n");
+> +		dev_warn(dev->class_dev, " I/O port conflict\n");
+                                          ^
+Bogus space.
 
-mm/internal.h: In function 'swap_cache_hit':
-mm/internal.h:377:3: error: implicit declaration of function 'atomic_dec_if=
-_positive' [-Werror=3Dimplicit-function-declaration]
+>  		return -EIO;
+>  	}
+>  	dev->iobase = iobase;
+> @@ -129,7 +129,7 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  		return -ENOMEM;
+>  
+>  #if DEBUG
+> -	printk(KERN_DEBUG "malloc ok\n");
+> +	dev_dbg(dev->class_dev, "malloc ok\n");
+>  #endif
 
-Caused by commit "swap: add a simple detector for inappropriate swapin
-readahead" from the akmp tree.  atomic_dec_if_positive() appears to only
-exist on avr32, microblaze, mips, powerpc and x86 ...
+Remove this section.
 
-I have reverted that commit (and the following trivial fix commit) for
-today.
+>  
+>  	ret = comedi_alloc_subdevices(dev, 2);
+> @@ -153,7 +153,8 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  	s->range_table = &range_fl512;
+>  	/* function to call when read AD */
+>  	s->insn_read = fl512_ai_insn;
+> -	printk(KERN_INFO "comedi: fl512: subdevice 0 initialized\n");
+> +	dev_info(dev->class_dev, "%s: subdevice 0 initialized\n",
+> +		dev->board_name);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Delete.
 
---Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx
-Content-Type: application/pgp-signature
+>  
+>  	/* Analog output */
+>  	s = dev->subdevices + 1;
+> @@ -171,7 +172,8 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  	s->insn_write = fl512_ao_insn;
+>  	/* function to call when reading DA */
+>  	s->insn_read = fl512_ao_insn_readback;
+> -	printk(KERN_INFO "comedi: fl512: subdevice 1 initialized\n");
+> +	dev_info(dev->class_dev, "%s: subdevice 1 initialized\n",
+> +		dev->board_name);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Move the print from the start down to here.  Re-word it.  Copy from
+one that Hartley has worked on.
 
-iQIcBAEBCAAGBQJQUZLRAAoJEECxmPOUX5FElZEP/3/C9ZflT2l4QzZx8+7qIawX
-wb3M99kDUQ159Pya+1LolEWSk9tjg+S9EG0H0cUUxQv2MlODOb8umBepNhqP177J
-wOJs9wa3hOKaHJV+cb061wcotBF8lkFAtKXoriz0RU0gz1GCXQChVbwfyt7wYd/D
-n0UKr471Whd1D2foiTbd6D6A4ksx4JmAMD3yP+WRhu3p4ksICxJuUgNHKDK9xtI4
-85tHp0E8hdqRcHtpAQb8HPkCWoq8RvCPpBJc38LZL4nmoQV0Nm30i1VK3+qttSkj
-bLiM/AICNQR+AMDi0esBSBtqrufoiNxr65SDLhBnIkk91GlSDtdxhRkJyWNMnCa8
-cB/40XIurDxhaTnwH9RaMOuprvo/rPeHDQBvhQ0vmcySfLrgsoYdiq/31vibd9m/
-w1vzonMq7QSpR9BJjfQTpVOTJyMayEoxMzxm1pPLPhgA6huWmjFMv529zGKm4BX4
-E4IuYMRVNJgznzdkScjzEgIoyob1IKxOl1cgeTIJ6VcSbsVsEnKugDioA3WCdpAK
-cCQ2tPuRP251Iq3mqtKaMIph76CLquknX0nwLKqzXF1MnpbwJqYwCyx8u3SsI6lV
-yj5xaqa1MRlnBF5ry0gjKvXMjndL1uP7I/s867sV300vk7FmC2h7WLmH7S7I+1WV
-p0sVhKnmcfUUDzg+2gn/
-=BmV9
------END PGP SIGNATURE-----
+regards,
+dan carpenter
 
---Signature=_Thu__13_Sep_2012_18_01_21_+1000_HrnNuS_bqXRSNYzx--
+>  
+>  	return 1;
+>  }
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
