@@ -1,86 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2IMHAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 03:00:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57914 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2IMHAx (ORCPT
+	id S1755727Ab2IMHCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:02:00 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:47558 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751103Ab2IMHB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 03:00:53 -0400
-Date: Thu, 13 Sep 2012 09:00:12 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
-Message-ID: <20120913070012.GC6180@pengutronix.de>
-References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
- <1464760.6eqxJ2IzZ2@percival>
- <1347517377.7471.23.camel@lappyti>
- <2689722.93BQTh4lSC@percival>
- <1347519249.7471.42.camel@lappyti>
+	Thu, 13 Sep 2012 03:01:57 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: document semantics vs GPIO
+Date: Thu, 13 Sep 2012 09:01:26 +0200
+Message-ID: <1347519686-10170-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347519249.7471.42.camel@lappyti>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:57:45 up 81 days, 22:09, 60 users,  load average: 0.60, 0.44,
- 0.40
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 09:54:09AM +0300, Tomi Valkeinen wrote:
-> On Thu, 2012-09-13 at 15:36 +0900, Alex Courbot wrote:
-> > On Thursday 13 September 2012 14:22:57 Tomi Valkeinen wrote:
-> >  
-> > > However, I fear these board specific things may be quite a bit anything,
-> > > so it may well be pwm, gpios and regulators are not enough for them. For
-> > > example, there could be an FPGA on the board which requires some
-> > > configuration to accomplish the task at hand. It could be rather
-> > > difficult to handle it with a generic power sequence.
-> > 
-> > Right. Note that this framework is supposed to be extended - I would like to 
-> > at least add regulator voltage setting, and maybe even support for clocks and 
-> > pinmux (but that might be out of place).
-> 
-> Yes, that's one concern of mine... I already can imagine someone
-> suggesting adding conditionals to the power sequence data. Perhaps also
-> direct memory read/writes so you can twiddle registers directly. And so
-> on. Where's the limit what it should contain? Can we soon write full
-> drivers with the DT data? =)
+From: Linus Walleij <linus.walleij@linaro.org>
 
-I have this concern aswell, that's why I'm sceptical about this patch
-set. But what are the alternatives? Adding power code to the drivers and
-thus adding board specific code to them is backwards.
+The semantics of the interactions between GPIO and pinctrl may be
+unclear, e.g. which one do you request first? This amends the
+documentation to make this clear.
 
-Sascha
+Reported-by: Domenico Andreoli <cavokz@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+This is an attempt to write up some of the unclarities that surfaced
+in recent discussions into the documentation proper.
+---
+ Documentation/pinctrl.txt | 52 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 50 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 1479aca..24c5995 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -289,6 +289,11 @@ Interaction with the GPIO subsystem
+ The GPIO drivers may want to perform operations of various types on the same
+ physical pins that are also registered as pin controller pins.
+ 
++First and foremost, the two subsystems can be used as completely orthogonal,
++see the section named "pin control requests from drivers" and
++"drivers needing both pin control and GPIOs" below for details. But in some
++situations a cross-subsystem mapping between pins and GPIOs is needed.
++
+ Since the pin controller subsystem have its pinspace local to the pin
+ controller we need a mapping so that the pin control subsystem can figure out
+ which pin controller handles control of a certain GPIO pin. Since a single
+@@ -359,6 +364,7 @@ will get an pin number into its handled number range. Further it is also passed
+ the range ID value, so that the pin controller knows which range it should
+ deal with.
+ 
++
+ PINMUX interfaces
+ =================
+ 
+@@ -960,8 +966,8 @@ all get selected, and they all get enabled and disable simultaneously by the
+ pinmux core.
+ 
+ 
+-Pinmux requests from drivers
+-============================
++Pin control requests from drivers
++=================================
+ 
+ Generally it is discouraged to let individual drivers get and enable pin
+ control. So if possible, handle the pin control in platform code or some other
+@@ -969,6 +975,11 @@ place where you have access to all the affected struct device * pointers. In
+ some cases where a driver needs to e.g. switch between different mux mappings
+ at runtime this is not possible.
+ 
++A typical case is if a driver needs to switch bias of pins from normal
++operation and going to sleep, moving from the PINCTRL_STATE_DEFAULT to
++PINCTRL_STATE_SLEEP at runtime, re-biasing or even re-muxing pins to save
++current in sleep mode.
++
+ A driver may request a certain control state to be activated, usually just the
+ default state like this:
+ 
+@@ -1058,6 +1069,43 @@ registered. Thus make sure that the error path in your driver gracefully
+ cleans up and is ready to retry the probing later in the startup process.
+ 
+ 
++Drivers needing both pin control and GPIOs
++==========================================
++
++Again, it is discouraged to let drivers lookup and select pin control states
++themselves, but again sometimes this is unavoidable.
++
++So say that your driver is fetching its resources like this:
++
++#include <linux/pinctrl/consumer.h>
++#include <linux/gpio.h>
++
++struct pinctrl *pinctrl;
++int gpio;
++
++pinctrl = devm_pinctrl_get_select_default(&dev);
++gpio = devm_gpio_request(&dev, 14, "foo");
++
++Here we first request a certain pin state and then request GPIO 14 to be
++used. If you're using the subsystems orthogonally like this, always get
++your pinctrl handle and select the desired pinctrl state BEFORE requesting
++the GPIO. This is a semantic convention to avoid situations that can be
++electrically unpleasant, you will certainly want to mux in and bias pins
++in a certain way before the GPIO subsystems starts to deal with them.
++
++The above can be hidden: using pinctrl hogs, the driver may be setting
++up the config and muxing for the pins when the pinctrl driver is probing,
++nevertheless orthogonal to the GPIO subsystem.
++
++But there are also situations where it makes sense for the GPIO subsystem
++to communicate directly with with the pinctrl subsystem, using the latter
++as a back-end. This is when the GPIO driver may call out to the functions
++described in the section "Pin control interaction with the GPIO subsystem"
++above. This only involves per-pin multiplexing, and will be completely
++hidden behind the gpio_*() function namespace. In this case, the driver
++need not interact with the pin control subsystem at all.
++
++
+ System pin control hogging
+ ==========================
+ 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.11.3
+
