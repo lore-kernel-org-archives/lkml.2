@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2IMG71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:59:27 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49006 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2IMG7Z convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 13 Sep 2012 02:59:25 -0400
-Message-Id: <5051A0A2020000780009AF6B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 13 Sep 2012 08:00:18 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Randy Dunlap" <rdunlap@xenotime.net>
-Cc: "Linus Walleij" <linus.walleij@linaro.org>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] allow gpiolib to be a module
-References: <504DF63A020000780009A30B@nat28.tlf.novell.com>
- <CACRpkdbCmou3wTXJjPhSaCH0kH1VrU5n-9t7NTJOjFQs1xH+cA@mail.gmail.com>
- <50505959020000780009AC53@nat28.tlf.novell.com>
- <5050C94F.4060403@xenotime.net>
-In-Reply-To: <5050C94F.4060403@xenotime.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755693Ab2IMHAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 03:00:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57914 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab2IMHAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 03:00:53 -0400
+Date: Thu, 13 Sep 2012 09:00:12 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
+Message-ID: <20120913070012.GC6180@pengutronix.de>
+References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
+ <1464760.6eqxJ2IzZ2@percival>
+ <1347517377.7471.23.camel@lappyti>
+ <2689722.93BQTh4lSC@percival>
+ <1347519249.7471.42.camel@lappyti>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1347519249.7471.42.camel@lappyti>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:57:45 up 81 days, 22:09, 60 users,  load average: 0.60, 0.44,
+ 0.40
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12.09.12 at 19:41, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 09/12/2012 12:43 AM, Jan Beulich wrote:
->>>>> On 11.09.12 at 19:38, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> On Mon, Sep 10, 2012 at 2:16 PM, Jan Beulich <JBeulich@suse.com> wrote:
->>>> +       return gpiolib_sysfs_init() ?: gpiolib_debugfs_init();
->>>
->>> I can't parse this, sorry the gpio subsystem maintainer is too bad coder.
->>> What about something more readable?
->>>
->>> int ret;
->>>
->>> ret = gpiolib_sysfs_init();
->>> if (ret)
->>>    return ret;
->>> return gpiolib_debugfs_init();
->>>
->>> I know it doesn't look as cool but it's easier for me to understand.
->> 
->> Okay, since you're the second one to complain despite there
->> being other uses of the construct in the same source file, I'll
->> replace it, ...
+On Thu, Sep 13, 2012 at 09:54:09AM +0300, Tomi Valkeinen wrote:
+> On Thu, 2012-09-13 at 15:36 +0900, Alex Courbot wrote:
+> > On Thursday 13 September 2012 14:22:57 Tomi Valkeinen wrote:
+> >  
+> > > However, I fear these board specific things may be quite a bit anything,
+> > > so it may well be pwm, gpios and regulators are not enough for them. For
+> > > example, there could be an FPGA on the board which requires some
+> > > configuration to accomplish the task at hand. It could be rather
+> > > difficult to handle it with a generic power sequence.
+> > 
+> > Right. Note that this framework is supposed to be extended - I would like to 
+> > at least add regulator voltage setting, and maybe even support for clocks and 
+> > pinmux (but that might be out of place).
 > 
-> 
-> Does C just use the value generated from the left side of a ?:
-> expression for the middle (empty) expression or does it call the
-> function again (which would usually be bad)?
+> Yes, that's one concern of mine... I already can imagine someone
+> suggesting adding conditionals to the power sequence data. Perhaps also
+> direct memory read/writes so you can twiddle registers directly. And so
+> on. Where's the limit what it should contain? Can we soon write full
+> drivers with the DT data? =)
 
-It's the purpose of omitting the middle expression to avoid the
-second evaluation of that expression (and obviously the compiler
-can't generally do this on its own when seeing the same
-expression used twice).
+I have this concern aswell, that's why I'm sceptical about this patch
+set. But what are the alternatives? Adding power code to the drivers and
+thus adding board specific code to them is backwards.
 
-Jan
+Sascha
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
