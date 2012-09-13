@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab2IMRyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 13:54:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50166 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758102Ab2IMRyG (ORCPT
+	id S1758432Ab2IMSCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 14:02:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39612 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910Ab2IMSCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 13:54:06 -0400
-Date: Thu, 13 Sep 2012 10:54:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
- hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120913175401.GC7677@google.com>
-References: <20120910223125.GC7677@google.com>
- <20120911145106.GG12039@redhat.com>
- <20120911171601.GN7677@google.com>
- <20120911173524.GJ12039@redhat.com>
- <20120911175515.GP7677@google.com>
- <50505C39.1050600@parallels.com>
- <20120912170933.GO7677@google.com>
- <5051CBAA.5040308@parallels.com>
+	Thu, 13 Sep 2012 14:02:11 -0400
+Date: Thu, 13 Sep 2012 14:01:48 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Kelly <alex.page.kelly@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Cong Wang <amwang@redhat.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Jiri Moskovcak <jmoskovc@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm] coredump: add support for %d=__get_dumpable() in
+ core name
+Message-ID: <20120913180148.GB2761@neilslaptop.think-freely.org>
+References: <20120913172817.GA11337@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5051CBAA.5040308@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120913172817.GA11337@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Glauber.
-
-On Thu, Sep 13, 2012 at 04:03:54PM +0400, Glauber Costa wrote:
-> > I might / probably work on it and am hoping to coerce Vivek into it
-> > too.  If you wanna jump in, please be my guest.
+On Thu, Sep 13, 2012 at 07:28:17PM +0200, Oleg Nesterov wrote:
+> https://bugzilla.redhat.com/show_bug.cgi?id=787135
 > 
-> I am devoting part of my time to general cgroup stuff, I can definitely
-> help you with that. Advantage is that you won't have to coerce me.
+> Some coredump handlers want to create a core file in a way compatible
+> with standard behavior. Standard behavior with fs.suid_dumpable = 2
+> is to create core file with uid=gid=0. However, there was no way for
+> coredump handler to know that the process being dumped was suid'ed.
+> 
+> This patch adds the new %d specifier for format_corename() which
+> simply reports __get_dumpable(mm->flags), this is compatible with
+> /proc/sys/fs/suid_dumpable we already have.
+> 
+> By-discussion-with: Denys Vlasenko <vda.linux@googlemail.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  fs/coredump.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/coredump.c b/fs/coredump.c
+> index 1935b4d..aad8715 100644
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -149,7 +149,7 @@ put_exe_file:
+>   * name into corename, which must have space for at least
+>   * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
+>   */
+> -static int format_corename(struct core_name *cn, long signr)
+> +static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+>  {
+>  	const struct cred *cred = current_cred();
+>  	const char *pat_ptr = core_pattern;
+> @@ -194,9 +194,13 @@ static int format_corename(struct core_name *cn, long signr)
+>  			case 'g':
+>  				err = cn_printf(cn, "%d", cred->gid);
+>  				break;
+> +			case 'd':
+> +				err = cn_printf(cn, "%d",
+> +					__get_dumpable(cprm->mm_flags));
+> +				break;
+>  			/* signal that caused the coredump */
+>  			case 's':
+> -				err = cn_printf(cn, "%ld", signr);
+> +				err = cn_printf(cn, "%ld", cprm->signr);
+>  				break;
+>  			/* UNIX time of coredump */
+>  			case 't': {
+> @@ -524,7 +528,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  	 */
+>  	clear_thread_flag(TIF_SIGPENDING);
+>  
+> -	ispipe = format_corename(&cn, signr);
+> +	ispipe = format_corename(&cn, &cprm);
+>  
+>   	if (ispipe) {
+>  		int dump_count;
+> -- 
+> 1.5.5.1
+> 
+> 
+> 
+Looks reasonable
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Yeah, that's awesome.  Would you be interested in looking into
-implementing hierarchy support for blkcg too?  Or are you more
-interested mostly in cgroup core and memcg?
-
-Thanks!
-
--- 
-tejun
