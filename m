@@ -1,185 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2IML3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 07:29:44 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:27826
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756994Ab2IML3h (ORCPT
+	id S1757628Ab2IMLeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 07:34:50 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:41351 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab2IMLes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 07:29:37 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzd6f1izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah107ah1288h12a5h12bdh12e5h1155h)
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: <linux-edac@vger.kernel.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
-        <avorontsov@mvista.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, Shaohui Xie <Shaohui.Xie@freescale.com>
-Subject: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
-Date: Thu, 13 Sep 2012 18:55:29 +0800
-Message-ID: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
-X-Mailer: git-send-email 1.6.4
+	Thu, 13 Sep 2012 07:34:48 -0400
+X-IronPort-AV: E=Sophos;i="4.80,416,1344211200"; 
+   d="scan'208";a="14518187"
+Date: Thu, 13 Sep 2012 12:33:47 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rob Herring <robherring2@gmail.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Tim (Xen.org)" <tim@xen.org>, David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
+In-Reply-To: <50514634.3080303@gmail.com>
+Message-ID: <alpine.DEB.2.02.1209131213260.15568@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com> <503BFCD8.5090804@gmail.com> <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com> <50514634.3080303@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handle in case of DDR ECC off is wrong, sysfs entries have not been
-created, so edac_mc_free which frees a mci instance should not be called.
-Also, free mci's memory in this case.
+On Thu, 13 Sep 2012, Rob Herring wrote:
+> On 09/12/2012 01:14 PM, Stefano Stabellini wrote:
+> > On Wed, 12 Sep 2012, Stefano Stabellini wrote:
+> >> On Tue, 28 Aug 2012, Rob Herring wrote:
+> >>> You should look at ePAPR 1.1 which defines hypervisor related bindings.
+> >>> While it is a PPC doc, we should reuse or extend what makes sense.
+> >>>
+> >>> See section 7.5:
+> >>>
+> >>> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
+> >>
+> >> Thanks for the link, I wasn't aware of ePAPR.
+> >>
+> >> The hypervisor node defined by ePAPR is not very different from what I
+> >> am proposing. Should I try to be compatible with the hypervisor
+> >> specification above (as in compatible = "epapr,hypervisor-1.1")?
+> >> Or should I just use it as a reference for my own specification?
+> >>
+> >> Personally I would rather avoid full compatibility with ePAPR.
+> > 
+> > In particular reading section 7.5, these are the required properties of
+> > the ePAPR hypervisor node:
+> > 
+> > - compatible = "epapr,hypervisor-1.1"
+> > compared to what I am proposing, it is laking information about what
+> > hypervisor we are talking about (xen, kvm, vmware, etc) and the version
+> > of the ABI (xen-4.2).
+> 
+> compatible properties are often changed. If we do deviate on the rest of
+> the binding, then it needs to be different.
+> 
+> Turns out that powerpc KVM guests use "linux,kvm" and "epapr,hypervisor"
+> doesn't even appear in the kernel.
+> 
+> We also perhaps have to consider the possibility of Xen on PowerPC. Then
+> alignment is more important.
 
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
----
- drivers/edac/edac_core.h    |    1 +
- drivers/edac/edac_mc.c      |   53 ++++++++++++++++++++++++++++--------------
- drivers/edac/mpc85xx_edac.c |   14 +++++++----
- 3 files changed, 45 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 23bb99f..108c4e2 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -448,6 +448,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 				   unsigned sz_pvt);
- extern int edac_mc_add_mc(struct mem_ctl_info *mci);
- extern void edac_mc_free(struct mem_ctl_info *mci);
-+extern void edac_mc_free_mem(struct mem_ctl_info *mci);
- extern struct mem_ctl_info *edac_mc_find(int idx);
- extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
- extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 616d90b..a2488b2 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -199,6 +199,40 @@ void *edac_align_ptr(void **p, unsigned size, int n_elems)
- 	return (void *)(((unsigned long)ptr) + align - r);
- }
- 
-+/*
-+ * edac_mc_free_mem
-+ *	'Free' a previously allocated 'mci' memory
-+ * @mci: pointer to a struct mem_ctl_info structure
-+ */
-+void edac_mc_free_mem(struct mem_ctl_info *mci)
-+{
-+	int i = 0, tot_dimms, chn, tot_channels;
-+	struct csrow_info *csr;
-+
-+	tot_dimms = mci->tot_dimms;
-+	tot_channels = mci->num_cschannel;
-+
-+	if (mci->dimms) {
-+		for (i = 0; i < tot_dimms; i++)
-+			kfree(mci->dimms[i]);
-+		kfree(mci->dimms);
-+	}
-+	if (mci->csrows) {
-+		for (chn = 0; chn < tot_channels; chn++) {
-+			csr = mci->csrows[chn];
-+			if (csr) {
-+				for (chn = 0; chn < tot_channels; chn++)
-+					kfree(csr->channels[chn]);
-+				kfree(csr);
-+			}
-+			kfree(mci->csrows[i]);
-+		}
-+		kfree(mci->csrows);
-+	}
-+	kfree(mci);
-+}
-+EXPORT_SYMBOL_GPL(edac_mc_free_mem);
-+
- /**
-  * edac_mc_alloc: Allocate and partially fill a struct mem_ctl_info structure
-  * @mc_num:		Memory controller number
-@@ -413,24 +447,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 	return mci;
- 
- error:
--	if (mci->dimms) {
--		for (i = 0; i < tot_dimms; i++)
--			kfree(mci->dimms[i]);
--		kfree(mci->dimms);
--	}
--	if (mci->csrows) {
--		for (chn = 0; chn < tot_channels; chn++) {
--			csr = mci->csrows[chn];
--			if (csr) {
--				for (chn = 0; chn < tot_channels; chn++)
--					kfree(csr->channels[chn]);
--				kfree(csr);
--			}
--			kfree(mci->csrows[i]);
--		}
--		kfree(mci->csrows);
--	}
--	kfree(mci);
-+	edac_mc_free_mem(mci);
- 
- 	return NULL;
- }
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index a1e791e..402b3f5 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -1012,7 +1012,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 	if (res) {
- 		printk(KERN_ERR "%s: Unable to get resource for MC err regs\n",
- 		       __func__);
--		goto err;
-+		goto err1;
- 	}
- 
- 	if (!devm_request_mem_region(&op->dev, r.start, resource_size(&r),
-@@ -1020,14 +1020,14 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 		printk(KERN_ERR "%s: Error while requesting mem region\n",
- 		       __func__);
- 		res = -EBUSY;
--		goto err;
-+		goto err1;
- 	}
- 
- 	pdata->mc_vbase = devm_ioremap(&op->dev, r.start, resource_size(&r));
- 	if (!pdata->mc_vbase) {
- 		printk(KERN_ERR "%s: Unable to setup MC err regs\n", __func__);
- 		res = -ENOMEM;
--		goto err;
-+		goto err1;
- 	}
- 
- 	sdram_ctl = in_be32(pdata->mc_vbase + MPC85XX_MC_DDR_SDRAM_CFG);
-@@ -1035,7 +1035,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 		/* no ECC */
- 		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
- 		res = -ENODEV;
--		goto err;
-+		goto err1;
- 	}
- 
- 	edac_dbg(3, "init mci\n");
-@@ -1065,7 +1065,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 
- 	if (edac_mc_add_mc(mci)) {
- 		edac_dbg(3, "failed edac_mc_add_mc()\n");
--		goto err;
-+		goto err1;
- 	}
- 
- 	if (mpc85xx_create_sysfs_attributes(mci)) {
-@@ -1115,6 +1115,10 @@ err:
- 	devres_release_group(&op->dev, mpc85xx_mc_err_probe);
- 	edac_mc_free(mci);
- 	return res;
-+err1:
-+	devres_release_group(&op->dev, mpc85xx_mc_err_probe);
-+	edac_mc_free_mem(mci);
-+	return res;
- }
- 
- static int mpc85xx_mc_err_remove(struct platform_device *op)
--- 
-1.6.4
+OK. In that case I think that we can just use "xen,xen-4.2".
 
 
+> > - hcall-instructions
+> > potentially interesting, but given that for Xen we are quite happy with
+> > HVC, we are not going to add any secondary hypercall mechanisms,
+> > therefore at the moment it would just result in a BUG if the specified
+> > hcall instruction is != HVC. Besides if somebody else wanted to
+> > implemented the Xen hypercall interface in a different way they could
+> > just reimplement the hypercall wrappers, that would be easier than
+> > trying to do it with this property.
+> 
+> It's really about the parameters passed with the HVC. The ePAPR may be a
+> good model for defining this. Just grepping "hypervisor" under
+> arch/powerpc, it's pretty clear hypervisor support happened first and
+> the ePAPR came second. Hopefully we can avoid that for ARM.
+
+Right. As I wrote in the other email, we could have a new property to
+select the calling convention (and therefore the hypercall wrappers) to
+be used with the hypervisor.
+
+
+> > - guest-id
+> > we usually make a point in trying not to tell the guest its own domid
+> > because if the VM gets migrated to a different host it acquires a new
+> > domid, therefore it should not rely on it.
+> > 
+> > - guest-name
+> > we could pass the guest name here, but I don't see how it could be
+> > of any use.
+> > 
+> 
+> I have no issue with these being optional.
+
+OK, good.
+
+
+> > On the other hand, thinking more about what Xen needs in the device
+> > tree, I think we could improve the current spec by clarifying the
+> > meaning of the memory region and interrupt properties we currently
+> > require. I thought about moving them to two separate children node with
+> > an explicit name:
+> > 
+> > ---
+> > 
+> > * Xen hypervisor device tree bindings
+> > 
+> 
+> I really think we need to define ARM hypervisor device tree bindings
+> first, then Xen specific bindings as an addition to that. I worry that
+> the KVM folks aren't paying attention and then want something different
+> later on.
+
+The problem is that there isn't much in common between Xen and KVM at
+least from the DT point of view. I am not sure what would go into this
+common hypervisor node.
+The three key pieces of information that we are currently passing in the
+DT (xen-4.2, a memory region, a PPI) are Xen specific.
+
+If one day KVM (or another hypervisor vendor) decides to support the Xen
+interface, can't they just have the Xen specific binding with a slightly
+different compatible node?
+For example:
+
+compatible = "linux,kvm", "xen,xen-4.2"
+
+wouldn't that mean "I am KVM but I can support the Xen interface"?
+
+
+> > Xen ARM virtual platforms shall have the following properties and
+> > children nodes:
+> > 
+> > - compatible property:
+> > 	compatible = "xen,xen", "xen,xen-<version>";
+> 
+> "xen,xen" should be last as it is less specific.
+
+Ah OK, thanks.
+
+
+> >   where <version> is the version of the Xen ABI of the platform.
+> > 
+> > - grant_table child with the following properties:
+> >     - name:
+> > 	    name = "grant_table";
+> 
+> What's a grant table?
+
+A Xen specific mechanism to share pages between guests.
+
+
+> > 	- reg: specifies the base physical address and size of a region in
+> > 	    memory where the grant table should be mapped to, using an
+> >         HYPERVISOR_memory_op hypercall. 
+> > 
+> > - events child with the following properties:
+> >     - name:
+> >         name = "events";
+> > 	- interrupts: the interrupt used by Xen to inject event notifications.
+> 
+> Why a child node? Just an interrupts property alone should be fine. If
+> you have cases with different number of interrupts, the compatible
+> property can distinguish that.
+
+I see, that's a good point. In that case maybe it doesn't make sense to
+move the memory region and the interrupt into two different children
+nodes after all. I should probably leave the spec as it was.
+ 
+
+> > 
+> > 
+> > Example:
+> > hypervisor {
+> > 		compatible = "xen,xen", "xen,xen-4.2";
+> > 		#address-cells = <1>;
+> > 		#size-cells = <1>;
+> > 		#interrupt-cells = <3>;
+> > 		ranges = <0xb0000000 0xb0000000 0x20000>;
+> > 
+> > 		grant_table {
+> > 			name = "grant_table";
+> > 			reg = <0xb0000000 0x20000>;
+> > 		};
+> > 
+> > 		events {
+> > 			name = "events";
+> > 			interrupts = <1 15 0xf08>;
+> > 		};
+> > 	};
+> > 
+> 
