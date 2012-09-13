@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2IMGyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:54:18 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:34016 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755656Ab2IMGyP (ORCPT
+	id S1752181Ab2IMG4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:56:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46700 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2IMG4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:54:15 -0400
-Message-ID: <1347519249.7471.42.camel@lappyti>
-Subject: Re: [PATCH v6 1/4] Runtime Interpreted Power Sequences
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Thu, 13 Sep 2012 09:54:09 +0300
-In-Reply-To: <2689722.93BQTh4lSC@percival>
-References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
-	 <1464760.6eqxJ2IzZ2@percival> <1347517377.7471.23.camel@lappyti>
-	 <2689722.93BQTh4lSC@percival>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Z7zQN41Yy4VWSEps7HLu"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 02:56:18 -0400
+Date: Wed, 12 Sep 2012 23:56:13 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 05/20] Input: Send events one packet at a time
+Message-ID: <20120913065613.GG17105@core.coreip.homeip.net>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
+ <1346528835-363-6-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346528835-363-6-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 01, 2012 at 09:47:00PM +0200, Henrik Rydberg wrote:
+> On heavy event loads, such as a multitouch driver, the irqsoff latency
+> can be as high as 250 us.  By accumulating a frame worth of data
+> before passing it on, the latency can be dramatically reduced.  As a
+> side effect, the special EV_SYN handling can be removed, since the
+> frame is now atomic.
+> 
+> This patch adds the events() handler callback and uses it if it
+> exists. The latency is improved by 50 us even without the callback.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/input/input.c | 176 +++++++++++++++++++++++++++++++++++---------------
+>  include/linux/input.h |  24 ++++++-
+>  2 files changed, 144 insertions(+), 56 deletions(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index a57c4a5..5b66b2f 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -47,6 +47,8 @@ static DEFINE_MUTEX(input_mutex);
+>  
+>  static struct input_handler *input_table[8];
+>  
+> +static const struct input_value input_value_sync = { EV_SYN, SYN_REPORT, 1 };
+> +
+>  static inline int is_event_supported(unsigned int code,
+>  				     unsigned long *bm, unsigned int max)
+>  {
+> @@ -90,46 +92,81 @@ static void input_stop_autorepeat(struct input_dev *dev)
+>   * filtered out, through all open handles. This function is called with
+>   * dev->event_lock held and interrupts disabled.
+>   */
+> -static void input_pass_event(struct input_dev *dev,
+> -			     unsigned int type, unsigned int code, int value)
+> +static unsigned int input_to_handler(struct input_handle *handle,
+> +			struct input_value *vals, unsigned int count)
+>  {
+> -	struct input_handler *handler;
+> -	struct input_handle *handle;
+> +	struct input_handler *handler = handle->handler;
+> +	struct input_value *end = vals;
+> +	struct input_value *v;
+>  
+> -	rcu_read_lock();
+> +	for (v = vals; v != vals + count; v++) {
+> +		if (handler->filter &&
+> +		    handler->filter(handle, v->type, v->code, v->value))
+> +			continue;
+> +		if (end != v)
+> +			*end = *v;
+> +		end++;
+> +	}
+>  
+> -	handle = rcu_dereference(dev->grab);
+> -	if (handle)
+> -		handle->handler->event(handle, type, code, value);
+> -	else {
+> -		bool filtered = false;
+> +	count = end - vals;
+> +	if (!count)
+> +		return 0;
+>  
+> -		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
+> -			if (!handle->open)
+> -				continue;
+> +	if (handler->events)
+> +		handler->events(handle, vals, count);
+> +	else
+> +		for (v = vals; v != end; v++)
+> +			handler->event(handle, v->type, v->code, v->value);
 
---=-Z7zQN41Yy4VWSEps7HLu
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Filter handlers do not typically have ->event() methods, that's the
+reason for reported panic.
 
-On Thu, 2012-09-13 at 15:36 +0900, Alex Courbot wrote:
-> On Thursday 13 September 2012 14:22:57 Tomi Valkeinen wrote:
-> =20
-> > However, I fear these board specific things may be quite a bit anything=
-,
-> > so it may well be pwm, gpios and regulators are not enough for them. Fo=
-r
-> > example, there could be an FPGA on the board which requires some
-> > configuration to accomplish the task at hand. It could be rather
-> > difficult to handle it with a generic power sequence.
->=20
-> Right. Note that this framework is supposed to be extended - I would like=
- to=20
-> at least add regulator voltage setting, and maybe even support for clocks=
- and=20
-> pinmux (but that might be out of place).
+Thanks.
 
-Yes, that's one concern of mine... I already can imagine someone
-suggesting adding conditionals to the power sequence data. Perhaps also
-direct memory read/writes so you can twiddle registers directly. And so
-on. Where's the limit what it should contain? Can we soon write full
-drivers with the DT data? =3D)
-
- Tomi
-
-
---=-Z7zQN41Yy4VWSEps7HLu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQUYMRAAoJEPo9qoy8lh71/G0QAK/iACEID25N+9nv22F94xd8
-XJaD08QNPvPVBn6i2ImESx9GyIC0MW38txdKcNLWsoEmxiTTUiHZt9ORH5uihGMZ
-0etZRUzuFZKgYLXfpMR57Np+23j55w51vYYjBsmrRooDsWxdcXO6CDTJQEzVctya
-SJg4LjH/HznrwMsSbtFsmWEO2RIO9ukM4kHqTCRgYOdVfmRP8il/rpMyTBCneZ2y
-qfEHkWIUtwmdDuzOj45c8G0apugUmb0eBGai5xc7PkXng5zfveZZNiBSlt4Z+CQ5
-C9+PElyF+6NOEtHV1J0OCz3njOJnGGUjqPpoaP5SSSRKtqdzh5ypmM59O9SWHx08
-AIaWBZkbctf21EWyRoLsXKckn2JC9NUR7qCNyOTLbH5wPwXdhA5o6wehuZMOTNk/
-AsGpl0W/fL+sxZ9OerIYCZhiLpIO28pA9X1TuUOEsPqFjod1CCgKVrm+xwephZn1
-VuRFOAYTYf/OYo2ahcSxZ9+s3q3vkCQMsiqdtFK7TaLE7YdTPDGQBKHfEzSICIeQ
-DLvmaldw9MuhwsxF+HAtzdIUlzwtJ2UfIcFNoHY57iYCf8lrfbV2DdwL4f/FCk43
-lhEeZryEkqDhnLCEw8LdjkxDY+o+8lcm1uY6YhG6dNtFpeMbbHR24p8SNtAZ0lZu
-exN3o8jW2fuTRlnisslK
-=deQn
------END PGP SIGNATURE-----
-
---=-Z7zQN41Yy4VWSEps7HLu--
-
+-- 
+Dmitry
