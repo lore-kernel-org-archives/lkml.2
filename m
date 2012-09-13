@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2IMNiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 09:38:07 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:49066 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752657Ab2IMNiA (ORCPT
+	id S1755756Ab2IMNiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 09:38:25 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:41807 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754972Ab2IMNiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 09:38:00 -0400
+	Thu, 13 Sep 2012 09:38:12 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 06/15] ASoC: omap-mcbsp: Use sDMA packet mode instead of frame mode
-Date: Thu, 13 Sep 2012 16:37:56 +0300
-Message-Id: <1347543485-339-7-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 09/15] ASoC: omap-pcm: Prepare to configure the DMA data_type based on stream properties
+Date: Thu, 13 Sep 2012 16:37:59 +0300
+Message-Id: <1347543485-339-10-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,87 +28,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When McBSP is configured in threshold mode we can use sDMA packet mode in
-all cases.
+Based on the format of the stream the omap-pcm can decide alone what data
+type should be used with by the sDMA.
+Keep the possibility for OMAP dai drivers to tell omap-pcm if they want to
+use different data type. This is needed for the omap-hdmi for example which
+needs 32bit data type even if the stream format is S16_LE.
+
+The check if (dma_data->data_type) is safe at the moment since omap-pcm
+does not support 8bit samples (OMAP_DMA_DATA_TYPE_S8 == 0x00).
+
+The next step is to redefine the meaning of dma_data->data_type to unblock
+this limitation.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- sound/soc/omap/omap-mcbsp.c | 47 ++++++++++++++++-----------------------------
- 1 file changed, 17 insertions(+), 30 deletions(-)
+ sound/soc/omap/omap-pcm.c | 31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
-index 2e91a86..fe3debc 100644
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -81,9 +81,6 @@ static void omap_mcbsp_set_threshold(struct snd_pcm_substream *substream)
- 	 */
- 	if (dma_data->packet_size)
- 		words = dma_data->packet_size;
--	else if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD)
--		words = snd_pcm_lib_period_bytes(substream) /
--						(mcbsp->wlen / 8);
- 	else
- 		words = 1;
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index 02eeb2e..4c13a5f 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -149,6 +149,24 @@ static int omap_pcm_hw_free(struct snd_pcm_substream *substream)
+ 	return 0;
+ }
  
-@@ -251,6 +248,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
- 		dma_data->set_threshold = omap_mcbsp_set_threshold;
- 		if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD) {
- 			int period_words, max_thrsh;
-+			int divider = 0;
- 
- 			period_words = params_period_bytes(params) / (wlen / 8);
- 			if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-@@ -258,34 +256,23 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
- 			else
- 				max_thrsh = mcbsp->max_rx_thres;
- 			/*
--			 * If the period contains less or equal number of words,
--			 * we are using the original threshold mode setup:
--			 * McBSP threshold = sDMA frame size = period_size
--			 * Otherwise we switch to sDMA packet mode:
--			 * McBSP threshold = sDMA packet size
--			 * sDMA frame size = period size
-+			 * Use sDMA packet mode if McBSP is in threshold mode:
-+			 * If period words less than the FIFO size the packet
-+			 * size is set to the number of period words, otherwise
-+			 * Look for the biggest threshold value which divides
-+			 * the period size evenly.
- 			 */
--			if (period_words > max_thrsh) {
--				int divider = 0;
--
--				/*
--				 * Look for the biggest threshold value, which
--				 * divides the period size evenly.
--				 */
--				divider = period_words / max_thrsh;
--				if (period_words % max_thrsh)
--					divider++;
--				while (period_words % divider &&
--					divider < period_words)
--					divider++;
--				if (divider == period_words)
--					return -EINVAL;
--
--				pkt_size = period_words / divider;
--				sync_mode = OMAP_DMA_SYNC_PACKET;
--			} else {
--				sync_mode = OMAP_DMA_SYNC_FRAME;
--			}
-+			divider = period_words / max_thrsh;
-+			if (period_words % max_thrsh)
-+				divider++;
-+			while (period_words % divider &&
-+				divider < period_words)
-+				divider++;
-+			if (divider == period_words)
-+				return -EINVAL;
++static int omap_pcm_get_dma_type(int num_bits)
++{
++	int data_type;
 +
-+			pkt_size = period_words / divider;
-+			sync_mode = OMAP_DMA_SYNC_PACKET;
- 		} else if (channels > 1) {
- 			/* Use packet mode for non mono streams */
- 			pkt_size = channels;
++	switch (num_bits) {
++	case 16:
++		data_type = OMAP_DMA_DATA_TYPE_S16;
++		break;
++	case 32:
++		data_type = OMAP_DMA_DATA_TYPE_S32;
++		break;
++	default:
++		data_type = -EINVAL;
++		break;
++	}
++	return data_type;
++}
++
+ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+@@ -163,7 +181,16 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ 		return 0;
+ 
+ 	memset(&dma_params, 0, sizeof(dma_params));
+-	dma_params.data_type			= dma_data->data_type;
++
++	if (dma_data->data_type)
++		dma_params.data_type = dma_data->data_type;
++	else
++		dma_params.data_type = omap_pcm_get_dma_type(
++				snd_pcm_format_physical_width(runtime->format));
++
++	if (dma_params.data_type < 0)
++		return dma_params.data_type;
++
+ 	dma_params.trigger			= dma_data->dma_req;
+ 
+ 	if (dma_data->packet_size)
+@@ -195,7 +222,7 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ 	 * still can get an interrupt at each period bounary
+ 	 */
+ 	bytes = snd_pcm_lib_period_bytes(substream);
+-	dma_params.elem_count	= bytes >> dma_data->data_type;
++	dma_params.elem_count	= bytes >> dma_params.data_type;
+ 	dma_params.frame_count	= runtime->periods;
+ 	omap_set_dma_params(prtd->dma_ch, &dma_params);
+ 
 -- 
 1.7.12
 
