@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2IMGbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:31:44 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38297 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab2IMGbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:31:42 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-References: <87wr002z39.fsf@devron.myhome.or.jp>
-	<20120912024249.GB17922@localhost>
-	<87sjan3c27.fsf@devron.myhome.or.jp>
-	<20120913003337.GA16363@localhost>
-	<87a9wueayc.fsf@devron.myhome.or.jp>
-	<20120913060351.GA23682@localhost>
-Date: Thu, 13 Sep 2012 15:31:37 +0900
-In-Reply-To: <20120913060351.GA23682@localhost> (Fengguang Wu's message of
-	"Thu, 13 Sep 2012 14:03:51 +0800")
-Message-ID: <87627ie8mu.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1755909Ab2IMGcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:32:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:37065 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754377Ab2IMGcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:32:05 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        kernel-janitors@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] module: report -EFAULT on bytes remaining
+In-Reply-To: <20120912154023.GL19410@mwanda>
+References: <20120912150616.GA27343@www.outflux.net> <20120912154023.GL19410@mwanda>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 13 Sep 2012 16:01:24 +0930
+Message-ID: <87pq5qsabn.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fengguang Wu <fengguang.wu@intel.com> writes:
+Dan Carpenter <dan.carpenter@oracle.com> writes:
 
->> >> I tested by custom bdi with BDI_CAP_NO_WRITEBACK - sync(2) blocked
->> >> forever by this reason.
->> >
->> > What's your test script? How do you create/use that custom bdi?
+> On Wed, Sep 12, 2012 at 08:06:16AM -0700, Kees Cook wrote:
+>> Caught by smatch:
+>> kernel/module.c:2450 copy_module_from_user() warn: maybe return -EFAULT instead of the bytes remaining?  
 >> 
->> Ah, I wrote my kernel module to test. I guess there is no users in
->> current kernel for now, because it doesn't work.
->
-> OK. Got it. So I'd suggest to change the first chunk to a VM_BUG_ON(),
-> which should be enough to catch new bad callers. The other two chunks
-> look fine.
+>> Clean up the copy_from_user() call to not report a positive value.
+>> With this patch, init_module() will report errors from copy_from_user
+>> (before it would always only report -EFAULT when err != 0).
+>> 
+>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> This change is on top of the finit_module patch series.
+>> ---
+>>  kernel/module.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index 0ad03c4..05b8dde 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -2441,8 +2441,11 @@ int copy_module_from_user(const void __user *umod, unsigned long len,
+>>  		return -ENOMEM;
+>>  
+>>  	err = copy_from_user(info->hdr, umod, info->len);
+>> -	if (err)
+>> +	if (err) {
+>> +		if (err > 0)
+>                 ^^^^^^^^^^^
+> This condition is always true because copy_to/from_user() returns
+> the number of bytes remaining to be copied.  (It never returns a
+> negative error code).
 
-Hm, if it changed to VM_BUG_ON(), we can't use BDI_CAP_NO_WRITEBACK to
-disable the writeback task (but allow inode cache reclaim) after all.
+Yes, I made the obvious fix (eliminating the >0 check).
 
-Or you meant we don't allow to disable the writeback task?
+This "copy_from_user is stupid" was a debate a lost long ago, but it
+still annoys me.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Applied,
+Rusty.
