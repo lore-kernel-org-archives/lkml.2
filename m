@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab2IMSLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 14:11:46 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:28482 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758709Ab2IMSLl (ORCPT
+	id S1758758Ab2IMSLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 14:11:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45870 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758716Ab2IMSLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 14:11:41 -0400
-X-IronPort-AV: E=Sophos;i="4.80,417,1344211200"; 
-   d="scan'208";a="14529011"
-Message-ID: <1347559899.25803.64.camel@dagon.hellion.org.uk>
-Subject: Re: [PATCH] Xen backend support for paged out grant targets.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-CC: "xen-devel@xen.lists.org" <xen-devel@xen.lists.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Thu, 13 Sep 2012 19:11:39 +0100
-In-Reply-To: <1347557306-25453-1-git-send-email-andres@lagarcavilla.org>
-References: <1347557306-25453-1-git-send-email-andres@lagarcavilla.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.4.3-1 
+	Thu, 13 Sep 2012 14:11:45 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+Date: Thu, 13 Sep 2012 20:14:57 +0200
+Message-ID: <2025764.e9gFDuMQWu@harkonnen>
+User-Agent: KMail/4.8.5 (Linux/3.5.3-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120913115438.0557462f@lwn.net>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com> <17733334.UmoCxqVfBu@harkonnen> <20120913115438.0557462f@lwn.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 18:28 +0100, Andres Lagar-Cavilla wrote:
+> Well, there is some documentation here:
 > 
-> * Add placeholder in array of grant table error descriptions for
-> unrelated error code we jump over. 
+> 	https://lwn.net/Articles/447435/
 
-Why not just define it, it's listed here:
-http://xenbits.xen.org/docs/unstable/hypercall/include,public,grant_table.h.html#Enum_grant_status
+I know this, I learned from this page :)
 
-I notice the specific wording of the error msg is different here too.
-It'd probably be best to use the same wording as the Xen definition, so
-all OSes end up with the same name for the same condition (else bug
-reports will be confusing).
+What I'm saying is that I don't know what to write inside the code to 
+make it clearer than now. I think is clear, because if you know the 
+videobuf2, you know what I'm doing in each vb2_mem_ops. I suppose that 
+this is the reason why there are no comments inside the other memory 
+allocator. Maybe I am wrong.
 
-Ian.
-
+-- 
+Federico Vaga
