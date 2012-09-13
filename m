@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab2IMUVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 16:21:41 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:43636 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758593Ab2IMUVi convert rfc822-to-8bit (ORCPT
+	id S1758806Ab2IMUWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 16:22:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9405 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758112Ab2IMUWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 16:21:38 -0400
-Date: Thu, 13 Sep 2012 22:21:35 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4]: ezusb cleanup, FX2 support, firmware downloading support
-Message-ID: <4e986477-1ffd-4b2b-b904-989253e3f884@shmail0>
-In-Reply-To: <25c2a6f7-a559-4222-9c69-fb1c8229c238@shmail0>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [77.190.106.167]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
+	Thu, 13 Sep 2012 16:22:01 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BrQD0zwlEycA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=CGgBco54DJ0A:10 a=VwQbUJbxAAAA:8 a=ieozS7MuqSy_348GjZkA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347567719.10751.85.camel@gandalf.local.home>
+Subject: Re: [PATCH RT 0/2] [ANNOUNCE] 3.2.28-rt43-rc1 stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 13 Sep 2012 16:21:59 -0400
+In-Reply-To: <20120913185721.264108744@goodmis.org>
+References: <20120913185721.264108744@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-please ignore this thread, i'm still new to this mailing list stuff :/
-I'll do my best to avoid such noise in the future
+On Thu, 2012-09-13 at 14:57 -0400, Steven Rostedt wrote:
 
------ Ursprüngliche Mail -----
-> Hello,
+> ----
+> Note: The patches have not been uploaded to kernel.org yet. I've
+> recently changed the subkey that I use to sign the patches as the
+> old subkey is about to expire. But unfortunately, kernel.org has
+> not updated its key ring, and is refusing my current subkey.
 > 
-> this is V2 of a patches-series for controllers using the
-> ezusb-functions.
+> I have a ticket open with kernel.org to resolve the issue. But until
+> then, this mailing is the only place the patches exist.
+> ----
+
+Issue is solved, patches are up.
+
+-- Steve
+
+
+> To build 3.2.28-rt43-rc1 directly, the following patches should be applied:
 > 
-> ezusb: remove dependency to usb_serial interface
-> euzsb: add support for Cypress FX2LP
-> ezusb: add functions for firmware download
-> ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
+>   http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
 > 
-> --
-> René Bürgel
+>   http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.28.xz
 > 
-> SOHARD Embedded Systems GmbH
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.28-rt43-rc1.patch.xz
 > 
+> You can also build from 3.2.28-rt42 by applying the incremental patch:
+> 
+> http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.28-rt42-rt43-rc1.patch.xz
+> 
+
+
