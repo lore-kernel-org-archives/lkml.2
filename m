@@ -1,169 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab2IMCee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:34:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50462 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2IMCec (ORCPT
+	id S1754159Ab2IMCfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:35:19 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50012 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab2IMCfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:34:32 -0400
-Message-ID: <50514634.3080303@gmail.com>
-Date: Wed, 12 Sep 2012 21:34:28 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 12 Sep 2012 22:35:16 -0400
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Tim (Xen.org)" <tim@xen.org>, David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com> <503BFCD8.5090804@gmail.com> <alpine.DEB.2.02.1208281823270.15568@kaball.uk.xensource.com> <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1209121849200.15568@kaball.uk.xensource.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA0381@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120912232816.GA1655@kroah.com>
+	<20120912232450.500619493@linuxfoundation.org>
+	<20120912232454.947953753@linuxfoundation.org>
+	<CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA908FA0381@SACEXCMBX04-PRD.hq.netapp.com>
+Date: Wed, 12 Sep 2012 22:35:15 -0400
+Message-ID: <CA+5PVA7OF-JeVb3mB7XxMZVRy=SQHzqV8ppvER2uJjhydYC03w@mail.gmail.com>
+Subject: Re: [ 042/108] NFS: Alias the nfs module to nfs4
+From: Josh Boyer <jwboyer@gmail.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 01:14 PM, Stefano Stabellini wrote:
-> On Wed, 12 Sep 2012, Stefano Stabellini wrote:
->> On Tue, 28 Aug 2012, Rob Herring wrote:
->>> You should look at ePAPR 1.1 which defines hypervisor related bindings.
->>> While it is a PPC doc, we should reuse or extend what makes sense.
->>>
->>> See section 7.5:
->>>
->>> https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
+On Wed, Sep 12, 2012 at 9:24 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Wed, 2012-09-12 at 21:08 -0400, Josh Boyer wrote:
+>> On Wed, Sep 12, 2012 at 7:28 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > From: Greg KH <gregkh@linuxfoundation.org>
+>> >
+>> > 3.5-stable review patch.  If anyone has any objections, please let me know.
+>> >
+>> > ------------------
+>> >
+>> > commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
+>> >
+>> > This allows distros to remove the line from their modprobe
+>> > configuration.
+>> >
+>> > Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+>> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+>> > [bwh: Backported to 3.2: adjust context]
+>> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+>> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 >>
->> Thanks for the link, I wasn't aware of ePAPR.
+>> Could someone elaborate why this is acceptable now, while it wasn't
+>> during the timeframe I sent an identical patch months ago?
 >>
->> The hypervisor node defined by ePAPR is not very different from what I
->> am proposing. Should I try to be compatible with the hypervisor
->> specification above (as in compatible = "epapr,hypervisor-1.1")?
->> Or should I just use it as a reference for my own specification?
+>> http://lkml.indiana.edu/hypermail/linux/kernel/1204.3/02064.html
 >>
->> Personally I would rather avoid full compatibility with ePAPR.
-> 
-> In particular reading section 7.5, these are the required properties of
-> the ePAPR hypervisor node:
-> 
-> - compatible = "epapr,hypervisor-1.1"
-> compared to what I am proposing, it is laking information about what
-> hypervisor we are talking about (xen, kvm, vmware, etc) and the version
-> of the ABI (xen-4.2).
+>> We had some trouble in Fedora 17 because of this and would up with
+>> patches to nfs-utils because the modalias was NAKed.  If we're bringing
+>> it into stable (and upstream) at this point, it would be good to know
+>> what changed so I can go and undo what we did because I was told no.
+>>
+>> Please don't get me wrong, I'm all for simplicity.  I'm just perhaps
+>> so simple that the brief changelog confuses me because it doesn't
+>> actually describe why the original solution wasn't followed up on.
+>
+> Linux-3.6 converts NFSv2/v3/v4 into modules, and so modprobe.conf
+> entries of the form
+>
+>   alias nfs4 nfs
+>
+> will now fail to ensure that 'mount -t nfs4 ...' works. In order to
 
-compatible properties are often changed. If we do deviate on the rest of
-the binding, then it needs to be different.
+Ah, ok.  That makes sense.
 
-Turns out that powerpc KVM guests use "linux,kvm" and "epapr,hypervisor"
-doesn't even appear in the kernel.
+> facilitate the task for the distros when dealing with kernels >= 3.5.x,
+> we've added the automatic module alias so that they can remove the
+> hard-coded aliases in modprobe.conf while remaining backward-compatible.
 
-We also perhaps have to consider the possibility of Xen on PowerPC. Then
-alignment is more important.
+This is queued for 3.5.x, 3.4.x, 3.2.x, and 3.0.x.  That's probably OK,
+but it's a slightly broader scope that what you mentioned above.
 
-> - hcall-instructions
-> potentially interesting, but given that for Xen we are quite happy with
-> HVC, we are not going to add any secondary hypercall mechanisms,
-> therefore at the moment it would just result in a BUG if the specified
-> hcall instruction is != HVC. Besides if somebody else wanted to
-> implemented the Xen hypercall interface in a different way they could
-> just reimplement the hypercall wrappers, that would be easier than
-> trying to do it with this property.
+At any rate, I'm glad to see this go in.  It will make things easier
+going forward.  Thanks for the reply.
 
-It's really about the parameters passed with the HVC. The ePAPR may be a
-good model for defining this. Just grepping "hypervisor" under
-arch/powerpc, it's pretty clear hypervisor support happened first and
-the ePAPR came second. Hopefully we can avoid that for ARM.
-
-> - guest-id
-> we usually make a point in trying not to tell the guest its own domid
-> because if the VM gets migrated to a different host it acquires a new
-> domid, therefore it should not rely on it.
-> 
-> - guest-name
-> we could pass the guest name here, but I don't see how it could be
-> of any use.
-> 
-
-I have no issue with these being optional.
-
-> 
-> On the other hand, thinking more about what Xen needs in the device
-> tree, I think we could improve the current spec by clarifying the
-> meaning of the memory region and interrupt properties we currently
-> require. I thought about moving them to two separate children node with
-> an explicit name:
-> 
-> ---
-> 
-> * Xen hypervisor device tree bindings
-> 
-
-I really think we need to define ARM hypervisor device tree bindings
-first, then Xen specific bindings as an addition to that. I worry that
-the KVM folks aren't paying attention and then want something different
-later on.
-
-> Xen ARM virtual platforms shall have the following properties and
-> children nodes:
-> 
-> - compatible property:
-> 	compatible = "xen,xen", "xen,xen-<version>";
-
-"xen,xen" should be last as it is less specific.
-
->   where <version> is the version of the Xen ABI of the platform.
-> 
-> - grant_table child with the following properties:
->     - name:
-> 	    name = "grant_table";
-
-What's a grant table?
-
-> 	- reg: specifies the base physical address and size of a region in
-> 	    memory where the grant table should be mapped to, using an
->         HYPERVISOR_memory_op hypercall. 
-> 
-> - events child with the following properties:
->     - name:
->         name = "events";
-> 	- interrupts: the interrupt used by Xen to inject event notifications.
-
-Why a child node? Just an interrupts property alone should be fine. If
-you have cases with different number of interrupts, the compatible
-property can distinguish that.
-
-Rob
-
-> 
-> 
-> Example:
-> hypervisor {
-> 		compatible = "xen,xen", "xen,xen-4.2";
-> 		#address-cells = <1>;
-> 		#size-cells = <1>;
-> 		#interrupt-cells = <3>;
-> 		ranges = <0xb0000000 0xb0000000 0x20000>;
-> 
-> 		grant_table {
-> 			name = "grant_table";
-> 			reg = <0xb0000000 0x20000>;
-> 		};
-> 
-> 		events {
-> 			name = "events";
-> 			interrupts = <1 15 0xf08>;
-> 		};
-> 	};
-> 
-
+josh
