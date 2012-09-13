@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2IMG4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:56:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46700 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2IMG4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:56:18 -0400
-Date: Wed, 12 Sep 2012 23:56:13 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 05/20] Input: Send events one packet at a time
-Message-ID: <20120913065613.GG17105@core.coreip.homeip.net>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
- <1346528835-363-6-git-send-email-rydberg@euromail.se>
+	id S1752640Ab2IMG5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:57:00 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:19729 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436Ab2IMG45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 02:56:57 -0400
+From: "Henrik Rydberg" <rydberg@bitmath.se>
+Date: Thu, 13 Sep 2012 09:04:10 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Minchan Kim <minchan@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Ping Cheng <pingc@wacom.com>
+Subject: Re: linux-next: Tree for Sept 12 (kernel-panic after pressing any
+ key at X login)
+Message-ID: <20120913070410.GA309@polaris.bitmath.org>
+References: <CA+icZUVEQNPGL7_BbLA-urgP6rFvdOh0SUtYESUv6ZJc+w78Nw@mail.gmail.com>
+ <CA+icZUXqzV=YFjHT=5QxUf1_WHwS1-DhuXkhN8QAhn1t9+-PYA@mail.gmail.com>
+ <20120913060412.GB5085@bbox>
+ <CA+icZUUF=vTwSoNrs-+F08H7LAO0RUwztJ3M1_iyNR28TsrFMw@mail.gmail.com>
+ <20120913064909.GF17105@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346528835-363-6-git-send-email-rydberg@euromail.se>
+In-Reply-To: <20120913064909.GF17105@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 01, 2012 at 09:47:00PM +0200, Henrik Rydberg wrote:
-> On heavy event loads, such as a multitouch driver, the irqsoff latency
-> can be as high as 250 us.  By accumulating a frame worth of data
-> before passing it on, the latency can be dramatically reduced.  As a
-> side effect, the special EV_SYN handling can be removed, since the
-> frame is now atomic.
+> > >> > this weeks linux-next seems to bring new and new issues, yay :-)!
+> > >> >
+> > >> > I have taken a photo, but can't say what can have caused.
+> > >> > The issue is reproducible...
+> > >> > Immediately, after pressing any key (when X-display-manager (lightdm)
+> > >> > and X-greeter are up) my machine panics and is no more usable (cold
+> > >> > rough brutal killer restart).
+> > >> > Note: Using upstart or systemd does not matter.
+> > >> >
+> > >> > Any pointer to an area where to dig into or any feedback in general is welcome!
+> > >> >
+> > >> > Kind Regards,
+> > >> > - Sedat -
+> > 
+> > Hey, cool. Thanks for the pointer in the source-code and the call-trace!
+> > I had reverted [1], but anyway input folks should look at this.
+> > 
+> > Kind Regards,
+> > - Sedat -
+> > 
+> > [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=b276fc1e875a51e4a9dc3322ed008bf4ae481baf
 > 
-> This patch adds the events() handler callback and uses it if it
-> exists. The latency is improved by 50 us even without the callback.
+> Henrik,
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/input/input.c | 176 +++++++++++++++++++++++++++++++++++---------------
->  include/linux/input.h |  24 ++++++-
->  2 files changed, 144 insertions(+), 56 deletions(-)
-> 
-> diff --git a/drivers/input/input.c b/drivers/input/input.c
-> index a57c4a5..5b66b2f 100644
-> --- a/drivers/input/input.c
-> +++ b/drivers/input/input.c
-> @@ -47,6 +47,8 @@ static DEFINE_MUTEX(input_mutex);
->  
->  static struct input_handler *input_table[8];
->  
-> +static const struct input_value input_value_sync = { EV_SYN, SYN_REPORT, 1 };
-> +
->  static inline int is_event_supported(unsigned int code,
->  				     unsigned long *bm, unsigned int max)
->  {
-> @@ -90,46 +92,81 @@ static void input_stop_autorepeat(struct input_dev *dev)
->   * filtered out, through all open handles. This function is called with
->   * dev->event_lock held and interrupts disabled.
->   */
-> -static void input_pass_event(struct input_dev *dev,
-> -			     unsigned int type, unsigned int code, int value)
-> +static unsigned int input_to_handler(struct input_handle *handle,
-> +			struct input_value *vals, unsigned int count)
->  {
-> -	struct input_handler *handler;
-> -	struct input_handle *handle;
-> +	struct input_handler *handler = handle->handler;
-> +	struct input_value *end = vals;
-> +	struct input_value *v;
->  
-> -	rcu_read_lock();
-> +	for (v = vals; v != vals + count; v++) {
-> +		if (handler->filter &&
-> +		    handler->filter(handle, v->type, v->code, v->value))
-> +			continue;
-> +		if (end != v)
-> +			*end = *v;
-> +		end++;
-> +	}
->  
-> -	handle = rcu_dereference(dev->grab);
-> -	if (handle)
-> -		handle->handler->event(handle, type, code, value);
-> -	else {
-> -		bool filtered = false;
-> +	count = end - vals;
-> +	if (!count)
-> +		return 0;
->  
-> -		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
-> -			if (!handle->open)
-> -				continue;
-> +	if (handler->events)
-> +		handler->events(handle, vals, count);
-> +	else
-> +		for (v = vals; v != end; v++)
-> +			handler->event(handle, v->type, v->code, v->value);
+> It looks like your changes are causing the panic.
 
-Filter handlers do not typically have ->event() methods, that's the
-reason for reported panic.
+Indeed, I have pushed the fix below to next already. Thanks for Sedat,
+and sorry for not catching this earlier. :-(
 
-Thanks.
+Henrik
 
+--
+
+>From ccc6557bfd02efdca4d9dfda6cfdfe5a08d0193b Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Thu, 13 Sep 2012 08:59:40 +0200
+Subject: [PATCH] Input: Fix oops caused by missing null test
+
+Found in linux-next on September 12, thanks Sedat.
+
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/input/input.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 5b66b2f..2dff71b 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -114,7 +114,7 @@ static unsigned int input_to_handler(struct input_handle *handle,
+ 
+ 	if (handler->events)
+ 		handler->events(handle, vals, count);
+-	else
++	else if (handler->event)
+ 		for (v = vals; v != end; v++)
+ 			handler->event(handle, v->type, v->code, v->value);
+ 
 -- 
-Dmitry
+1.7.12
+
