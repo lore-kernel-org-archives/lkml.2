@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab2IMVhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:37:09 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59486 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2IMVhF (ORCPT
+	id S1754484Ab2IMVk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:40:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50559 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab2IMVk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:37:05 -0400
-Message-ID: <505251FD.2090901@lwfinger.net>
-Date: Thu, 13 Sep 2012 16:37:01 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
-MIME-Version: 1.0
-To: Norbert Preining <preining@logic.at>
-CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: rtl8192se: ping router gives mdev of 25387.102???
-References: <20120913101828.GA3309@gandalf.dynalias.org>
-In-Reply-To: <20120913101828.GA3309@gandalf.dynalias.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 13 Sep 2012 17:40:27 -0400
+Date: Thu, 13 Sep 2012 14:40:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mhocko@suse.cz, Steve Capper <steve.capper@arm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Subject: Re: [PATCH 3/3] mm: Introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Message-Id: <20120913144025.b1760af4.akpm@linux-foundation.org>
+In-Reply-To: <20120914072732.637f4225c32565468f468305@canb.auug.org.au>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+	<1347382036-18455-4-git-send-email-will.deacon@arm.com>
+	<20120913120514.135d2c38.akpm@linux-foundation.org>
+	<20120914072732.637f4225c32565468f468305@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2012 05:18 AM, Norbert Preining wrote:
-> Hi everyone,
->
-> (please cc)
->
-> see $subject ...
->
-> No warning, nothing in the logs, but pinging my router I get
-> things like:
-> --- 192.168.0.1 ping statistics ---
-> 376 packets transmitted, 315 received, +33 errors, 16% packet loss, time 405164ms
-> rtt min/avg/max/mdev = 0.873/10077.793/95935.698/25387.102 ms, pipe 68
->
-> or
-> --- 192.168.0.1 ping statistics ---
-> 1252 packets transmitted, 1225 received, 2% packet loss, time 1252976ms
-> rtt min/avg/max/mdev = 0.941/764.171/19929.265/2758.225 ms, pipe 20
->
->
-> Has anyone *ever* seen a mdev of 25387.102 ms ???
+On Fri, 14 Sep 2012 07:27:32 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-No, but packets that are not returned for 19+ or 95+ seconds are usually counted 
-as lost.
+> Hi Andrew,
+> 
+> On Thu, 13 Sep 2012 12:05:14 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > diff -puN arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage arch/x86/Kconfig
+> > --- a/arch/x86/Kconfig~mm-introduce-have_arch_transparent_hugepage
+> > +++ a/arch/x86/Kconfig
+> > @@ -83,7 +83,6 @@ config X86
+> >  	select IRQ_FORCED_THREADING
+> >  	select USE_GENERIC_SMP_HELPERS if SMP
+> >  	select HAVE_BPF_JIT if X86_64
+> > -	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+> 
+> Why not
+> 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if MMU
+> 
 
-I have 4 different cards that use rtl8192se. With the current wireless-testing 
-git, I get the following:
+Well, this is in arch/x86/Kconfig, where MMU is known to always be set.
 
-Card 1: Antenna config not known
---------------------------------
-Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless 
-LAN Controller [10ec:8172] (rev 10)
+Yes, I think Gerald's patch will suffice:
 
-100 packets transmitted, 100 received, 0% packet loss, time 99138ms
-rtt min/avg/max/mdev = 1.106/2.824/107.634/10.684 ms
-
-Card 2: Labeled 1x1
--------------------
-Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvA Wireless 
-LAN Controller [10ec:8171] (rev 10)
-
-100 packets transmitted, 100 received, 0% packet loss, time 99139ms
-rtt min/avg/max/mdev = 0.986/1.954/26.982/3.005 ms
-
-Card 3: Labeled 1x2
--------------------
-Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless 
-LAN Controller [10ec:8172] (rev 10)
-
-100 packets transmitted, 100 received, 0% packet loss, time 99141ms
-rtt min/avg/max/mdev = 0.996/2.507/50.636/5.989 ms
-
-Card 4: Labeled 2x2
--------------------
-Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8192SE Wireless 
-LAN Controller [10ec:8174] (rev 10)
-
-100 packets transmitted, 99 received, 1% packet loss, time 99146ms
-rtt min/avg/max/mdev = 0.974/1.768/31.183/3.016 ms
-
-My AP is a Netgear WNDR3300 with a max rate of 270 Mbps in the 2.4 GHz band. The 
-distance between my laptop and the AP is about 2m. The card is on an Express 
-Card PCIe extender, and I have 2 7 dBi antennas connected. They likely boost the 
-signal more than the ordinary laptop antennas would. The iwconfig output for 
-card 4 is
-
-wlan26    IEEE 802.11bgn  ESSID:"lwfdjf-n"
-           Mode:Managed  Frequency:2.422 GHz  Access Point: C0:3F:0E:BE:2B:44
-           Bit Rate=270 Mb/s   Tx-Power=20 dBm
-           Retry  long limit:7   RTS thr=2347 B   Fragment thr:off
-           Power Management:off
-           Link Quality=70/70  Signal level=-35 dBm
-           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-           Tx excessive retries:0  Invalid misc:0   Missed beacon:0
-
- From what you posted earlier, I think your card is like my Cards 1 & 3, but the 
-PCI ID will tell for sure. These tests were run with commit 0a92aec2f22d of 
-wireless-testing. There are some test patches installed, but non of them affect 
-rtl8192se.
-
-Larry
-
+--- a/arch/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
++++ a/arch/Kconfig
+@@ -326,4 +326,7 @@ config HAVE_RCU_USER_QS
+ 	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
+ 	  preemption or signal handling on irq exit still need to be protected.
+ 
++config HAVE_ARCH_TRANSPARENT_HUGEPAGE
++	bool
++
+ source "kernel/gcov/Kconfig"
+--- a/arch/x86/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
++++ a/arch/x86/Kconfig
+@@ -83,6 +83,7 @@ config X86
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select HAVE_BPF_JIT if X86_64
++	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
+--- a/mm/Kconfig~thp-x86-introduce-have_arch_transparent_hugepage
++++ a/mm/Kconfig
+@@ -318,7 +318,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ 
+ config TRANSPARENT_HUGEPAGE
+ 	bool "Transparent Hugepage Support"
+-	depends on X86 && MMU
++	depends on HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	select COMPACTION
+ 	help
+ 	  Transparent Hugepages allows the kernel to use huge pages and
+_
 
