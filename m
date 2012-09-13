@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab2IMKcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 06:32:18 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:7529 "EHLO smtp4.mundo-r.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757343Ab2IMKcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 06:32:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgDAOe1UVBbdWObgWdsb2JhbABFhUBHrVQih3MiAQEWJieCIAEBBSMEUhALFQMqAgJXBhOIEakAkxyLEIUlgRIDnxKJVA
-X-IronPort-AV: E=Sophos;i="4.80,416,1344204000"; 
-   d="asc'?scan'208";a="951021500"
-Message-ID: <1347532384.4539.218.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH 3/5] staging: ipack: remove irq field in struct
- ipack_device.
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
-        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
-Date: Thu, 13 Sep 2012 12:33:04 +0200
-In-Reply-To: <20120913100145.GL19396@mwanda>
-References: <1347529588-21212-1-git-send-email-siglesias@igalia.com>
-	 <1347529588-21212-3-git-send-email-siglesias@igalia.com>
-	 <20120913100145.GL19396@mwanda>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Z8/3cMdvt0JXFlXIMVYa"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1757438Ab2IMKgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 06:36:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57823 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757385Ab2IMKgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 06:36:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH 1/2] ARM: SoC: convert MSM SMP to SoC descriptor
+Date: Thu, 13 Sep 2012 08:47:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+References: <1347461906-13527-7-git-send-email-arnd@arndb.de> <1347490900-8409-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1347490900-8409-1-git-send-email-davidb@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209130847.20087.arnd@arndb.de>
+X-Provags-ID: V02:K0:wm328bdLhIs/htR8UUaQ6/J4OKP4tPXoChxm9/UdoN+
+ BF3cQeB6VUZT6KEwrH/vXJXxm7a72RK/KTiSbF0d9HRyxQFanm
+ G4xEeguJn06rdYP9Oez2PiD6Ia2a6gjPismeNK+wuQ9oTlO3pI
+ S3nuDf/I6dAa/omQ0cO2qQd21mN2q3M6ZFtRVSAxYaJCLps54c
+ ee8jrg2nKovHwnfLmsqZ7a21fLebFeTt2f5126D3QSarVI3flC
+ d7h4NEDOUA0KXedJreFIISPpqDrQtnlTrTD5umFQ7GHZuG633h
+ RQDTOgTW2Mid8f3bOv+INfIyIm10reT5n5nr2vRwYSHDy5XXNP
+ a+lvmGTSb3N0+geIhMss=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 12 September 2012, David Brown wrote:
+> 
+> From: Marc Zyngier <marc.zyngier@arm.com>
+> 
+> Convert MSM SMP platforms to use the SoC descriptor to provide
+> their SMP and CPU hotplug operations.
+> 
+> Cc: David Brown <davidb@codeaurora.org>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+> This is an adaptation of this change on top of the msm-for-3.7 tree I
+> recently sent out a pull request for.  The only real change is to
+> resolve the conflicts with the simplified board files.
 
---=-Z8/3cMdvt0JXFlXIMVYa
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Not sure what I'm supposed to do with this patch, it doesn't apply
+unless I rebase all of the SMP patches on top of your msm-for-3.7 branch,
+which would be rather odd.
 
-On Thu, 2012-09-13 at 13:01 +0300, Dan Carpenter wrote:
-> On Thu, Sep 13, 2012 at 11:46:26AM +0200, Samuel Iglesias Gonsalvez wrote=
-:
-> > From: Jens Taprogge <jens.taprogge@taprogge.org>
-> >=20
-> > The field irq currently is identical to the slot number.  It does not s=
-eem to
-> > have any real use.  The number is written to hardware in ipoctal but it=
- seems
-> > the value that is written does not matter.
-> >=20
-> > Signed-off-by: Jens Taprogge <jens.taprogge@taprogge.org>
-> > Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-> > ---
-> > -	iowrite8(vector, ipoctal->dev->mem_space.address + 1);
-> > +	iowrite8(1, ipoctal->dev->mem_space.address + 1);
->=20
-> It might be nice to put a /* dummy write */ comment here.
->=20
+I'll make sure the branches merge fine and then apply your patch 2/2
+on top of the merge, ok?
 
-Added! Thanks for the suggestion,
-
-Sam
-
-
---=-Z8/3cMdvt0JXFlXIMVYa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlBRtmAACgkQWrfbyfmd9eKq0gCglNGIDbLEYgHeJQH6ZdbPKuvo
-XtYAn39I58pLRUiRb/H9/H6gCA6nVYqo
-=y+QD
------END PGP SIGNATURE-----
-
---=-Z8/3cMdvt0JXFlXIMVYa--
+	Arnd
 
