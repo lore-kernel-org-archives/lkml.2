@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759088Ab2IMXsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:48:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39701 "EHLO mx1.redhat.com"
+	id S1759140Ab2IMXst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:48:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53732 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759053Ab2IMXsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:48:35 -0400
+	id S1759110Ab2IMXso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:48:44 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 02/16] MPILIB: Provide count_leading/trailing_zeros() based on
- arch functions
+Subject: [PATCH 03/16] KEYS: Document asymmetric key type
 To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
 Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:48:22 +0100
-Message-ID: <20120913234822.3575.92227.stgit@warthog.procyon.org.uk>
+Date: Fri, 14 Sep 2012 00:48:31 +0100
+Message-ID: <20120913234831.3575.12142.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,357 +23,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide count_leading/trailing_zeros() macros based on extant arch bit scanning
-functions rather than reimplementing from scratch in MPILIB.
+In-source documentation for the asymmetric key type.  This will be located in:
 
-Whilst we're at it, turn count_foo_zeros(n, x) into n = count_foo_zeros(x).
-
-Also move the definition to asm-generic as other people may be interested in
-using it.
+	Documentation/crypto/asymmetric-keys.txt
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.com>
 ---
 
- include/asm-generic/bitops/count_zeros.h |   57 ++++++++++++
- lib/mpi/longlong.h                       |  138 ------------------------------
- lib/mpi/mpi-bit.c                        |    2 
- lib/mpi/mpi-pow.c                        |    4 -
- 4 files changed, 62 insertions(+), 139 deletions(-)
- create mode 100644 include/asm-generic/bitops/count_zeros.h
+ Documentation/crypto/asymmetric-keys.txt |  312 ++++++++++++++++++++++++++++++
+ 1 file changed, 312 insertions(+)
+ create mode 100644 Documentation/crypto/asymmetric-keys.txt
 
 
-diff --git a/include/asm-generic/bitops/count_zeros.h b/include/asm-generic/bitops/count_zeros.h
+diff --git a/Documentation/crypto/asymmetric-keys.txt b/Documentation/crypto/asymmetric-keys.txt
 new file mode 100644
-index 0000000..97520d2
+index 0000000..b767590
 --- /dev/null
-+++ b/include/asm-generic/bitops/count_zeros.h
-@@ -0,0 +1,57 @@
-+/* Count leading and trailing zeros functions
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
++++ b/Documentation/crypto/asymmetric-keys.txt
+@@ -0,0 +1,312 @@
++		=============================================
++		ASYMMETRIC / PUBLIC-KEY CRYPTOGRAPHY KEY TYPE
++		=============================================
 +
-+#ifndef _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
-+#define _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
++Contents:
 +
-+#include <asm/bitops.h>
++  - Overview.
++  - Key identification.
++  - Accessing asymmetric keys.
++    - Signature verification.
++  - Asymmetric key subtypes.
++  - Instantiation data parsers.
 +
-+/**
-+ * count_leading_zeros - Count the number of zeros from the MSB back
-+ * @x: The value
-+ *
-+ * Count the number of leading zeros from the MSB going towards the LSB in @x.
-+ *
-+ * If the MSB of @x is set, the result is 0.
-+ * If only the LSB of @x is set, then the result is BITS_PER_LONG-1.
-+ * If @x is 0 then the result is COUNT_LEADING_ZEROS_0.
-+ */
-+static inline int count_leading_zeros(unsigned long x)
-+{
-+	if (sizeof(x) == 4)
-+		return BITS_PER_LONG - fls(x);
-+	else
-+		return BITS_PER_LONG - fls64(x);
-+}
 +
-+#define COUNT_LEADING_ZEROS_0 BITS_PER_LONG
++========
++OVERVIEW
++========
 +
-+/**
-+ * count_trailing_zeros - Count the number of zeros from the LSB forwards
-+ * @x: The value
-+ *
-+ * Count the number of trailing zeros from the LSB going towards the MSB in @x.
-+ *
-+ * If the LSB of @x is set, the result is 0.
-+ * If only the MSB of @x is set, then the result is BITS_PER_LONG-1.
-+ * If @x is 0 then the result is COUNT_TRAILING_ZEROS_0.
-+ */
-+static inline int count_trailing_zeros(unsigned long x)
-+{
-+#define COUNT_TRAILING_ZEROS_0 (-1)
++The "asymmetric" key type is designed to be a container for the keys used in
++public-key cryptography, without imposing any particular restrictions on the
++form or mechanism of the cryptography or form of the key.
 +
-+	if (sizeof(x) == 4)
-+		return ffs(x);
-+	else
-+		return (x != 0) ? __ffs(x) : COUNT_TRAILING_ZEROS_0;
-+}
++The asymmetric key is given a subtype that defines what sort of data is
++associated with the key and provides operations to describe and destroy it.
++However, no requirement is made that the key data actually be stored in the
++key.
 +
-+#endif /* _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_ */
-diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
-index 29f9862..678ce4f 100644
---- a/lib/mpi/longlong.h
-+++ b/lib/mpi/longlong.h
-@@ -19,6 +19,8 @@
-  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-  * MA 02111-1307, USA. */
- 
-+#include <asm-generic/bitops/count_zeros.h>
++A completely in-kernel key retention and operation subtype can be defined, but
++it would also be possible to provide access to cryptographic hardware (such as
++a TPM) that might be used to both retain the relevant key and perform
++operations using that key.  In such a case, the asymmetric key would then
++merely be an interface to the TPM driver.
 +
- /* You have to define the following before including this file:
-  *
-  * UWtype -- An unsigned type, default type for operations (typically a "word")
-@@ -146,12 +148,6 @@ do { \
- 	: "1" ((USItype)(n1)), \
- 		"r" ((USItype)(n0)), \
- 		"r" ((USItype)(d)))
--
--#define count_leading_zeros(count, x) \
--	__asm__ ("clz %0,%1" \
--	: "=r" ((USItype)(count)) \
--	: "r" ((USItype)(x)))
--#define COUNT_LEADING_ZEROS_0 32
- #endif /* __a29k__ */
- 
- #if defined(__alpha) && W_TYPE_SIZE == 64
-@@ -298,11 +294,6 @@ extern UDItype __udiv_qrnnd();
- 	: "1" ((USItype)(nh)), \
- 		"0" ((USItype)(nl)), \
- 		"g" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--	__asm__ ("bsch/1 %1,%0" \
--	: "=g" (count) \
--	: "g" ((USItype)(x)), \
--	     "0" ((USItype)0))
- #endif
- 
- /***************************************
-@@ -354,27 +345,6 @@ do { USItype __r; \
- } while (0)
- extern USItype __udiv_qrnnd();
- #endif /* LONGLONG_STANDALONE */
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __tmp; \
--	__asm__ ( \
--	"ldi             1,%0\n" \
--	"extru,=	%1,15,16,%%r0  ; Bits 31..16 zero?\n" \
--	"extru,tr	%1,15,16,%1    ; No.  Shift down, skip add.\n" \
--	"ldo		16(%0),%0      ; Yes.	Perform add.\n" \
--	"extru,=	%1,23,8,%%r0   ; Bits 15..8 zero?\n" \
--	"extru,tr	%1,23,8,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		8(%0),%0       ; Yes.	Perform add.\n" \
--	"extru,=	%1,27,4,%%r0   ; Bits 7..4 zero?\n" \
--	"extru,tr	%1,27,4,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		4(%0),%0       ; Yes.	Perform add.\n" \
--	"extru,=	%1,29,2,%%r0   ; Bits 3..2 zero?\n" \
--	"extru,tr	%1,29,2,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		2(%0),%0       ; Yes.	Perform add.\n" \
--	"extru		%1,30,1,%1     ; Extract bit 1.\n" \
--	"sub		%0,%1,%0       ; Subtract it.              " \
--	: "=r" (count), "=r" (__tmp) : "1" (x)); \
--} while (0)
- #endif /* hppa */
- 
- /***************************************
-@@ -457,15 +427,6 @@ do { \
- 	: "0" ((USItype)(n0)), \
- 	     "1" ((USItype)(n1)), \
- 	     "rm" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("bsrl %1,%0" \
--	: "=r" (__cbtmp) : "rm" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define count_trailing_zeros(count, x) \
--	__asm__ ("bsfl %1,%0" : "=r" (count) : "rm" ((USItype)(x)))
- #ifndef UMUL_TIME
- #define UMUL_TIME 40
- #endif
-@@ -536,15 +497,6 @@ do { \
- 	     "dI" ((USItype)(d))); \
- 	(r) = __rq.__i.__l; (q) = __rq.__i.__h; \
- } while (0)
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("scanbit %1,%0" \
--	: "=r" (__cbtmp) \
--	: "r" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define COUNT_LEADING_ZEROS_0 (-32)	/* sic */
- #if defined(__i960mx)		/* what is the proper symbol to test??? */
- #define rshift_rhlc(r, h, l, c) \
- do { \
-@@ -603,11 +555,6 @@ do { \
- 	: "0" ((USItype)(n0)), \
- 	     "1" ((USItype)(n1)), \
- 	     "dmi" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--	__asm__ ("bfffo %1{%b2:%b2},%0" \
--	: "=d" ((USItype)(count)) \
--	: "od" ((USItype)(x)), "n" (0))
--#define COUNT_LEADING_ZEROS_0 32
- #else /* not mc68020 */
- #define umul_ppmm(xh, xl, a, b) \
- do { USItype __umul_tmp1, __umul_tmp2; \
-@@ -664,15 +611,6 @@ do { USItype __umul_tmp1, __umul_tmp2; \
- 	     "rJ" ((USItype)(bh)), \
- 	     "rJ" ((USItype)(al)), \
- 	     "rJ" ((USItype)(bl)))
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("ff1 %0,%1" \
--	: "=r" (__cbtmp) \
--	: "r" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define COUNT_LEADING_ZEROS_0 63	/* sic */
- #if defined(__m88110__)
- #define umul_ppmm(wh, wl, u, v) \
- do { \
-@@ -779,12 +717,6 @@ do { \
- 	: "0" (__xx.__ll), \
- 	     "g" ((USItype)(d))); \
- 	(r) = __xx.__i.__l; (q) = __xx.__i.__h; })
--#define count_trailing_zeros(count, x) \
--do { \
--	__asm__("ffsd      %2,%0" \
--	: "=r"((USItype) (count)) \
--	: "0"((USItype) 0), "r"((USItype) (x))); \
--	} while (0)
- #endif /* __ns32000__ */
- 
- /***************************************
-@@ -855,11 +787,6 @@ do { \
- 		"rI" ((USItype)(al)), \
- 		"r" ((USItype)(bl))); \
- } while (0)
--#define count_leading_zeros(count, x) \
--	__asm__ ("{cntlz|cntlzw} %0,%1" \
--	: "=r" ((USItype)(count)) \
--	: "r" ((USItype)(x)))
--#define COUNT_LEADING_ZEROS_0 32
- #if defined(_ARCH_PPC)
- #define umul_ppmm(ph, pl, m0, m1) \
- do { \
-@@ -1001,19 +928,6 @@ do { \
- } while (0)
- #define UMUL_TIME 20
- #define UDIV_TIME 200
--#define count_leading_zeros(count, x) \
--do { \
--	if ((x) >= 0x10000) \
--		__asm__ ("clz     %0,%1" \
--		: "=r" ((USItype)(count)) \
--		: "r" ((USItype)(x) >> 16)); \
--	else { \
--		__asm__ ("clz   %0,%1" \
--		: "=r" ((USItype)(count)) \
--		: "r" ((USItype)(x))); \
--		(count) += 16; \
--	} \
--} while (0)
- #endif /* RT/ROMP */
- 
- /***************************************
-@@ -1142,13 +1056,6 @@ do { \
- 	"rI" ((USItype)(d)) \
- 	: "%g1" __AND_CLOBBER_CC)
- #define UDIV_TIME 37
--#define count_leading_zeros(count, x) \
--	__asm__ ("scan %1,0,%0" \
--	: "=r" ((USItype)(x)) \
--	: "r" ((USItype)(count)))
--/* Early sparclites return 63 for an argument of 0, but they warn that future
--	implementations might change this.  Therefore, leave COUNT_LEADING_ZEROS_0
--	undefined.  */
- #endif /* __sparclite__ */
- #endif /* __sparc_v8__ */
- 	/* Default to sparc v7 versions of umul_ppmm and udiv_qrnnd.  */
-@@ -1454,47 +1361,6 @@ do { \
- #define udiv_qrnnd __udiv_qrnnd_c
- #endif
- 
--#undef count_leading_zeros
--#if !defined(count_leading_zeros)
--	extern
--#ifdef __STDC__
--			const
--#endif
--			unsigned char __clz_tab[];
--#define count_leading_zeros(count, x) \
--do { \
--	UWtype __xr = (x); \
--	UWtype __a; \
--	\
--	if (W_TYPE_SIZE <= 32) { \
--		__a = __xr < ((UWtype) 1 << 2*__BITS4) \
--		? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
--		: (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
--	} \
--	else { \
--		for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
--			if (((__xr >> __a) & 0xff) != 0) \
--				break; \
--	} \
--	\
--	(count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
--} while (0)
--	/* This version gives a well-defined value for zero. */
--#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
--#endif
--
--#if !defined(count_trailing_zeros)
--/* Define count_trailing_zeros using count_leading_zeros.  The latter might be
--	defined in asm, but if it is not, the C version above is good enough.  */
--#define count_trailing_zeros(count, x) \
--do { \
--	UWtype __ctz_x = (x); \
--	UWtype __ctz_c; \
--	count_leading_zeros(__ctz_c, __ctz_x & -__ctz_x); \
--	(count) = W_TYPE_SIZE - 1 - __ctz_c; \
--} while (0)
--#endif
--
- #ifndef UDIV_NEEDS_NORMALIZATION
- #define UDIV_NEEDS_NORMALIZATION 0
- #endif
-diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
-index 5687248..503537e 100644
---- a/lib/mpi/mpi-bit.c
-+++ b/lib/mpi/mpi-bit.c
-@@ -45,7 +45,7 @@ unsigned mpi_get_nbits(MPI a)
- 	if (a->nlimbs) {
- 		mpi_limb_t alimb = a->d[a->nlimbs - 1];
- 		if (alimb)
--			count_leading_zeros(n, alimb);
-+			n = count_leading_zeros(alimb);
- 		else
- 			n = BITS_PER_MPI_LIMB;
- 		n = BITS_PER_MPI_LIMB - n + (a->nlimbs - 1) * BITS_PER_MPI_LIMB;
-diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
-index 67f3e79..5464c87 100644
---- a/lib/mpi/mpi-pow.c
-+++ b/lib/mpi/mpi-pow.c
-@@ -77,7 +77,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
- 	mp = mp_marker = mpi_alloc_limb_space(msize);
- 	if (!mp)
- 		goto enomem;
--	count_leading_zeros(mod_shift_cnt, mod->d[msize - 1]);
-+	mod_shift_cnt = count_leading_zeros(mod->d[msize - 1]);
- 	if (mod_shift_cnt)
- 		mpihelp_lshift(mp, mod->d, msize, mod_shift_cnt);
- 	else
-@@ -169,7 +169,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
- 
- 		i = esize - 1;
- 		e = ep[i];
--		count_leading_zeros(c, e);
-+		c = count_leading_zeros(e);
- 		e = (e << c) << 1;	/* shift the exp bits to the left, lose msb */
- 		c = BITS_PER_MPI_LIMB - 1 - c;
- 
++Also provided is the concept of a data parser.  Data parsers are responsible
++for extracting information from the blobs of data passed to the instantiation
++function.  The first data parser that recognises the blob gets to set the
++subtype of the key and define the operations that can be done on that key.
++
++A data parser may interpret the data blob as containing the bits representing a
++key, or it may interpret it as a reference to a key held somewhere else in the
++system (for example, a TPM).
++
++
++==================
++KEY IDENTIFICATION
++==================
++
++If a key is added with an empty name, the instantiation data parsers are given
++the opportunity to pre-parse a key and to determine the description the key
++should be given from the content of the key.
++
++This can then be used to refer to the key, either by complete match or by
++partial match.  The key type may also use other criteria to refer to a key.
++
++The asymmetric key type's match function can then perform a wider range of
++comparisons than just the straightforward comparison of the description with
++the criterion string:
++
++ (1) If the criterion string is of the form "id:<hexdigits>" then the match
++     function will examine a key's fingerprint to see if the hex digits given
++     after the "id:" match the tail.  For instance:
++
++	keyctl search @s asymmetric id:5acc2142
++
++     will match a key with fingerprint:
++
++	1A00 2040 7601 7889 DE11  882C 3823 04AD 5ACC 2142
++
++ (2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
++     match will match the ID as in (1), but with the added restriction that
++     only keys of the specified subtype (e.g. tpm) will be matched.  For
++     instance:
++
++	keyctl search @s asymmetric tpm:5acc2142
++
++Looking in /proc/keys, the last 8 hex digits of the key fingerprint are
++displayed, along with the subtype:
++
++	1a39e171 I-----     1 perm 3f010000     0     0 asymmetri modsign.0: DSA 5acc2142 []
++
++
++=========================
++ACCESSING ASYMMETRIC KEYS
++=========================
++
++For general access to asymmetric keys from within the kernel, the following
++inclusion is required:
++
++	#include <crypto/public_key.h>
++
++This gives access to functions for dealing with asymmetric / public keys.
++Three enums are defined there for representing public-key cryptography
++algorithms:
++
++	enum pkey_algo
++
++digest algorithms used by those:
++
++	enum pkey_hash_algo
++
++and key identifier representations:
++
++	enum pkey_id_type
++
++Note that the key type representation types are required because key
++identifiers from different standards aren't necessarily compatible.  For
++instance, PGP generates key identifiers by hashing the key data plus some
++PGP-specific metadata, whereas X.509 has arbitrary certificate identifiers.
++
++The operations defined upon a key are:
++
++ (1) Signature verification.
++
++Other operations are possible (such as encryption) with the same key data
++required for verification, but not currently supported, and others
++(eg. decryption and signature generation) require extra key data.
++
++
++SIGNATURE VERIFICATION
++----------------------
++
++An operation is provided to perform cryptographic signature verification, using
++an asymmetric key to provide or to provide access to the public key.
++
++	int verify_signature(const struct key *key,
++			     const struct public_key_signature *sig);
++
++The caller must have already obtained the key from some source and can then use
++it to check the signature.  The caller must have parsed the signature and
++transferred the relevant bits to the structure pointed to by sig.
++
++	struct public_key_signature {
++		u8 *digest;
++		u8 digest_size;
++		enum pkey_hash_algo pkey_hash_algo : 8;
++		u8 nr_mpi;
++		union {
++			MPI mpi[2];
++			...
++		};
++	};
++
++The algorithm used must be noted in sig->pkey_hash_algo, and all the MPIs that
++make up the actual signature must be stored in sig->mpi[] and the count of MPIs
++placed in sig->nr_mpi.
++
++In addition, the data must have been digested by the caller and the resulting
++hash must be pointed to by sig->digest and the size of the hash be placed in
++sig->digest_size.
++
++The function will return 0 upon success or -EKEYREJECTED if the signature
++doesn't match.
++
++The function may also return -ENOTSUPP if an unsupported public-key algorithm
++or public-key/hash algorithm combination is specified or the key doesn't
++support the operation; -EBADMSG or -ERANGE if some of the parameters have weird
++data; or -ENOMEM if an allocation can't be performed.  -EINVAL can be returned
++if the key argument is the wrong type or is incompletely set up.
++
++
++=======================
++ASYMMETRIC KEY SUBTYPES
++=======================
++
++Asymmetric keys have a subtype that defines the set of operations that can be
++performed on that key and that determines what data is attached as the key
++payload.  The payload format is entirely at the whim of the subtype.
++
++The subtype is selected by the key data parser and the parser must initialise
++the data required for it.  The asymmetric key retains a reference on the
++subtype module.
++
++The subtype definition structure can be found in:
++
++	#include <keys/asymmetric-subtype.h>
++
++and looks like the following:
++
++	struct asymmetric_key_subtype {
++		struct module		*owner;
++		const char		*name;
++
++		void (*describe)(const struct key *key, struct seq_file *m);
++		void (*destroy)(void *payload);
++		int (*verify_signature)(const struct key *key,
++					const struct public_key_signature *sig);
++	};
++
++Asymmetric keys point to this with their type_data[0] member.
++
++The owner and name fields should be set to the owning module and the name of
++the subtype.  Currently, the name is only used for print statements.
++
++There are a number of operations defined by the subtype:
++
++ (1) describe().
++
++     Mandatory.  This allows the subtype to display something in /proc/keys
++     against the key.  For instance the name of the public key algorithm type
++     could be displayed.  The key type will display the tail of the key
++     identity string after this.
++
++ (2) destroy().
++
++     Mandatory.  This should free the memory associated with the key.  The
++     asymmetric key will look after freeing the fingerprint and releasing the
++     reference on the subtype module.
++
++ (3) verify_signature().
++
++     Optional.  These are the entry points for the key usage operations.
++     Currently there is only the one defined.  If not set, the caller will be
++     given -ENOTSUPP.  The subtype may do anything it likes to implement an
++     operation, including offloading to hardware.
++
++
++==========================
++INSTANTIATION DATA PARSERS
++==========================
++
++The asymmetric key type doesn't generally want to store or to deal with a raw
++blob of data that holds the key data.  It would have to parse it and error
++check it each time it wanted to use it.  Further, the contents of the blob may
++have various checks that can be performed on it (eg. self-signatures, validity
++dates) and may contain useful data about the key (identifiers, capabilities).
++
++Also, the blob may represent a pointer to some hardware containing the key
++rather than the key itself.
++
++Examples of blob formats for which parsers could be implemented include:
++
++ - OpenPGP packet stream [RFC 4880].
++ - X.509 ASN.1 stream.
++ - Pointer to TPM key.
++ - Pointer to UEFI key.
++
++During key instantiation each parser in the list is tried until one doesn't
++return -EBADMSG.
++
++The parser definition structure can be found in:
++
++	#include <keys/asymmetric-parser.h>
++
++and looks like the following:
++
++	struct asymmetric_key_parser {
++		struct module	*owner;
++		const char	*name;
++
++		int (*parse)(struct key_preparsed_payload *prep);
++	};
++
++The owner and name fields should be set to the owning module and the name of
++the parser.
++
++There is currently only a single operation defined by the parser, and it is
++mandatory:
++
++ (1) parse().
++
++     This is called to preparse the key from the key creation and update paths.
++     In particular, it is called during the key creation _before_ a key is
++     allocated, and as such, is permitted to provide the key's description in
++     the case that the caller declines to do so.
++
++     The caller passes a pointer to the following struct with all of the fields
++     cleared, except for data, datalen and quotalen [see
++     Documentation/security/keys.txt].
++
++	struct key_preparsed_payload {
++		char		*description;
++		void		*type_data[2];
++		void		*payload;
++		const void	*data;
++		size_t		datalen;
++		size_t		quotalen;
++	};
++
++     The instantiation data is in a blob pointed to by data and is datalen in
++     size.  The parse() function is not permitted to change these two values at
++     all, and shouldn't change any of the other values _unless_ they are
++     recognise the blob format and will not return -EBADMSG to indicate it is
++     not theirs.
++
++     If the parser is happy with the blob, it should propose a description for
++     the key and attach it to ->description, ->type_data[0] should be set to
++     point to the subtype to be used, ->payload should be set to point to the
++     initialised data for that subtype, ->type_data[1] should point to a hex
++     fingerprint and quotalen should be updated to indicate how much quota this
++     key should account for.
++
++     When clearing up, the data attached to ->type_data[1] and ->description
++     will be kfree()'d and the data attached to ->payload will be passed to the
++     subtype's ->destroy() method to be disposed of.  A module reference for
++     the subtype pointed to by ->type_data[0] will be put.
++
++
++     If the data format is not recognised, -EBADMSG should be returned.  If it
++     is recognised, but the key cannot for some reason be set up, some other
++     negative error code should be returned.  On success, 0 should be returned.
++
++     The key's fingerprint string may be partially matched upon.  For a
++     public-key algorithm such as RSA and DSA this will likely be a printable
++     hex version of the key's fingerprint.
++
++Functions are provided to register and unregister parsers:
++
++	int register_asymmetric_key_parser(struct asymmetric_key_parser *parser);
++	void unregister_asymmetric_key_parser(struct asymmetric_key_parser *subtype);
++
++Parsers may not have the same name.  The names are otherwise only used for
++displaying in debugging messages.
 
