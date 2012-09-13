@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab2IMBIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 21:08:20 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45047 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab2IMBIS (ORCPT
+	id S1754314Ab2IMBMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 21:12:51 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53004 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab2IMBMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 21:08:18 -0400
+	Wed, 12 Sep 2012 21:12:49 -0400
+Date: Wed, 12 Sep 2012 18:12:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, bbruce@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        santosh.shilimkar@ti.com, jon-hunter@ti.com, snijsure@grid-net.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+Message-ID: <20120913011208.GT4257@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com>
 MIME-Version: 1.0
-In-Reply-To: <20120912232454.947953753@linuxfoundation.org>
-References: <20120912232816.GA1655@kroah.com>
-	<20120912232450.500619493@linuxfoundation.org>
-	<20120912232454.947953753@linuxfoundation.org>
-Date: Wed, 12 Sep 2012 21:08:17 -0400
-Message-ID: <CA+5PVA5TuUo329wGe6UGCbrq1o7rOs5uMosNtv-38ZqhrVPUAQ@mail.gmail.com>
-Subject: Re: [ 042/108] NFS: Alias the nfs module to nfs4
-From: Josh Boyer <jwboyer@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091301-4242-0000-0000-000002E67600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 7:28 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
->
-> 3.5-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> commit 425e776d93a7a5070b77d4f458a5bab0f924652c upstream.
->
-> This allows distros to remove the line from their modprobe
-> configuration.
->
-> Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> [bwh: Backported to 3.2: adjust context]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Wed, Sep 12, 2012 at 10:51:30PM +0000, Paul Walmsley wrote:
+> 
+> Hi Paul
+> 
+> Recently several of us have been seeing "INFO: rcu_sched self-detected
+> stall on CPU { 0} (t=20611 jiffies)" stack tracebacks on various OMAP3
+> and 4 board.
+> 
+> I only noticed it during v3.6-rc3, but I suspect it's been happening 
+> for users at least since May:
+> 
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg68942.html
+> 
+> 
+> The only quasi-reproducible test case that I've found so far 
+> is to boot the board with serial console enabled to a login prompt, then 
+> wait for a few minutes, then send a keypress to the board via serial.
+> The tracebacks I get look like this:
 
-Could someone elaborate why this is acceptable now, while it wasn't
-during the timeframe I sent an identical patch months ago?
+Interesting.  I am assuming that the interrupt in the stack below came
+from idle, if not, please let me know what.
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1204.3/02064.html
+Could you please reproduce with CONFIG_RCU_CPU_STALL_INFO=y?  That would
+give me a bit more information about why RCU thought that there was
+a stall.  (CCing Becky Bruce, who saw something similar recently.)
 
-We had some trouble in Fedora 17 because of this and would up with
-patches to nfs-utils because the modalias was NAKed.  If we're bringing
-it into stable (and upstream) at this point, it would be good to know
-what changed so I can go and undo what we did because I was told no.
+Subodh Nijsure (also CCed) reported something that might be similar on
+ARM, and also reported that setting the following got rid of the stalls:
 
-Please don't get me wrong, I'm all for simplicity.  I'm just perhaps
-so simple that the brief changelog confuses me because it doesn't
-actually describe why the original solution wasn't followed up on.
+	CONFIG_CPU_IDLE=y
+	CONFIG_CPU_IDLE_GOV_LADDER=y
+	CONFIG_CPU_IDLE_GOV_MENU=y
 
-josh
+At which point he was happy, which was good, but which also left the
+underlying problem unsolved.  Do these affect your system?  If so,
+do they cause a different ARM idle loop to be executed?
+
+							Thanx, Paul
+
+> [  467.480712] INFO: rcu_sched self-detected stall on CPU { 0}  (t=20611 jiffies)
+> [  467.484741] [<c001b7cc>] (unwind_backtrace+0x0/0xf0) from [<c00acc94>] (rcu_check_callbacks+0x180/0x630)
+> [  467.489929] [<c00acc94>] (rcu_check_callbacks+0x180/0x630) from [<c0052b18>] (update_process_times+0x38/0x68)
+> [  467.495361] [<c0052b18>] (update_process_times+0x38/0x68) from [<c008c04c>] (tick_sched_timer+0x80/0xec)
+> [  467.500518] [<c008c04c>] (tick_sched_timer+0x80/0xec) from [<c0068544>] (__run_hrtimer+0x7c/0x1e0)
+> [  467.505401] [<c0068544>] (__run_hrtimer+0x7c/0x1e0) from [<c0069328>] (hrtimer_interrupt+0x11c/0x2d0)
+> [  467.510437] [<c0069328>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a04c>] (twd_handler+0x30/0x44)
+> [  467.515350] [<c001a04c>] (twd_handler+0x30/0x44) from [<c00a71a0>] (handle_percpu_devid_irq+0x90/0x13c)
+> [  467.520477] [<c00a71a0>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a3914>] (generic_handle_irq+0x30/0x48)
+> [  467.525939] [<c00a3914>] (generic_handle_irq+0x30/0x48) from [<c0014c58>] (handle_IRQ+0x4c/0xac)
+> [  467.530731] [<c0014c58>] (handle_IRQ+0x4c/0xac) from [<c0008478>] (gic_handle_irq+0x28/0x5c)
+> [  467.535339] [<c0008478>] (gic_handle_irq+0x28/0x5c) from [<c04f8ce4>] (__irq_svc+0x44/0x5c)
+> [  467.539886] Exception stack(0xc0729f58 to 0xc0729fa0)
+> [  467.542663] 9f40:                                                       00047f2a 00000001
+> [  467.547119] 9f60: 00000000 c074a940 c0728000 c07c4b08 c05045a0 c074be20 00000000 411fc092
+> [  467.551574] 9f80: c074c040 00000000 00000001 c0729fa0 00047f2b c0014f50 20000113 ffffffff
+> [  467.556030] [<c04f8ce4>] (__irq_svc+0x44/0x5c) from [<c0014f50>] (default_idle+0x20/0x44)
+> [  467.560485] [<c0014f50>] (default_idle+0x20/0x44) from [<c001517c>] (cpu_idle+0x9c/0x114)
+> [  467.564971] [<c001517c>] (cpu_idle+0x9c/0x114) from [<c06d77b0>] (start_kernel+0x2b4/0x304)
+> 
+> Looks like this message was added as of commit
+> a858af2875fb291d0f4b0a4419fefbf03c2379c0 ("rcu: Print scheduling-clock
+> information on RCU CPU stall-warning messages").
+> 
+> Do you have any suggestions for how we can determine what is causing
+> this?
+> 
+> Here's an example of a kernel config that we use:
+> 
+> http://www.pwsan.com/omap/testlogs/am33xx_hwmod_clock_devel_3.7/20120912092510/build/omap2plus_defconfig/Kconfig
+> 
+> A few observations that may or may not be relevant: we use NO_HZ, and 
+> we also have a clockevents timer that is relatively slow to program.
+> 
+> 
+> regards,
+> 
+> - Paul
+> 
+
