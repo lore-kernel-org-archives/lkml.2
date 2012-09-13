@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2IMOYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 10:24:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45471 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757777Ab2IMOYb (ORCPT
+	id S1757619Ab2IMOas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 10:30:48 -0400
+Received: from shetland.sei.cmu.edu ([192.58.107.44]:38061 "EHLO
+	shetland.sei.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab2IMOaq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 10:24:31 -0400
+	Thu, 13 Sep 2012 10:30:46 -0400
+From: "Jonathan M. Foote" <jmfoote@cert.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Sep 2012 10:31:01 -0400
+Subject: Re: [PATCH 2/2] coredump: add a new elf note with siginfo fields of
+ the signal
+Thread-Topic: Re: [PATCH 2/2] coredump: add a new elf note with siginfo
+ fields of the signal
+Thread-Index: Ac2RvD5I9gzZ7f8ZSSOQTnsoCACSjA==
+Message-ID: <A32A045574615B4FAB96C4952BA5768BB9A1746DE9@EXCHANGE.sei.cmu.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <87ehm6p15v.fsf@devron.myhome.or.jp>
-References: <871ui84l4l.fsf@devron.myhome.or.jp>
-	<CAKYAXd89CKZa9nV3pBiFgcpGsYzX1-iCB+UJ8bBvst88GnB4mg@mail.gmail.com>
-	<20120912143227.GE3009@fieldses.org>
-	<87vcfjfa14.fsf@devron.myhome.or.jp>
-	<20120912171128.GG3009@fieldses.org>
-	<87r4q7f8fw.fsf@devron.myhome.or.jp>
-	<20120912174556.GH3009@fieldses.org>
-	<87ipbjf54f.fsf@devron.myhome.or.jp>
-	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
-	<87txv2cog1.fsf@devron.myhome.or.jp>
-	<20120913112024.GA24684@fieldses.org>
-	<87ehm6p15v.fsf@devron.myhome.or.jp>
-Date: Thu, 13 Sep 2012 23:24:30 +0900
-Message-ID: <CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/13, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
->
->>> >> Grepping around... Documentation/sysctl/vm.txt mentions a
->>> >> vfs_cache_pressure parameter.
->>> >> Yeah. And dirty hack will be possible to adjust sb->s_shrink.batch.
->>> > I am worrying if it could lead to OOM condition on embedded
->>> > system(short memory(DRAM) and support 3TB HDD disk of big size.)
->>> >
->>> > Please let me know if any issues or queries.
->>>
->>> So, now I think stable inode number may be useful if there are users of
->>> it. And I guess those functionality is no collisions with -mm. And I
->>> suppose we can add two modes for "nfs" option (e.g. nfs=1 and nfs=2).
->>>
->>> If nfs=1, works like current -mm without no limited operations.
->>
->> Apologies, I haven't been following the conversation carefully: remind
->> me what "works like current -mm" means?
->
-> Current -mm means the best-effort work only if inode cache is not
-> evicted.  I.e. if there is no inode cache anymore on server, server
-> would return ESTALE. So I guess the behavior would not be stable
-> relatively.
-Hi OGAWA.
-Sorry for late response.
-Okay, I will resend patchset include your suggeston.(-o nfs=2)
-Do you mind adding busy list patch to avoid unlink issue ?
-And in case of rename, FAT retrun EBUSY while opening file.
-We can limit only rename.
-Let me know your opinion.
+Hello,
 
-Thanks OGAWA!
+I am the author of the CERT 'exploitable' GDB extension (code here: http://www.cert.org/vuls/discovery/triage.html). The extension uses GDB to give developers information about how exploitable an application crash might be. Right now the extension can only supply useful information for live GDB targets. Denys's patches will allow the extension to work on core files as well, which will enable more teams performing crash triage to use the tool.
 
->
-> Thanks.
->
->>> If nfs=2, try to make stable FH and limit some operations
->>>
->>> (option name doesn't matter here.)
->>>
->>> Does this work fine?
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+As a specific example of how this is useful, in the case of an access violation the extension applies heuristics that try to determine if the access violation was due to a read (si_addr == op.source) or a write (si_addr == op.dest). Write access violations _generally_ require less effort to exploit than read access violations, so, depending on what other heuristics can be applied, the extension may consider a write access violation to be more "more exploitable" than a read access violation. This information is helpful to developers who may have large numbers of crashing test cases to deal with and need to decide which ones to address first. 
+
+As it stands, core files do not include si_addr, and so the 'exploitable' GDB extension is unable to produce even the most basic analysis when applied to them. Denys's patch aims to address this issue, and will therefore allow the 'exploitable' extension to produce some useful information when executed against core files. Since core files have become the standard method of communicating crash information in many contexts, these patches will allow for increased application of the 'exploitable' extension and in a small way promote greater software security for Linux applications.
+
+Please consider accepting these patches.
+
+Thanks,
+Jonathan
+
