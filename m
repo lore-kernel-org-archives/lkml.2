@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758524Ab2IMQC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 12:02:27 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:56374 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab2IMQCZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 12:02:25 -0400
-Date: Thu, 13 Sep 2012 18:02:37 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 2/2] checksyscalls: ignore kcmp system call
-Message-ID: <20120913160237.GA10145@osiris.de.ibm.com>
-References: <1347017491-11354-1-git-send-email-heiko.carstens@de.ibm.com>
- <1347017491-11354-2-git-send-email-heiko.carstens@de.ibm.com>
- <20120907120234.GB2121@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120907120234.GB2121@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12091316-1948-0000-0000-000002F28C61
+	id S932195Ab2IMQGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 12:06:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41387 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758472Ab2IMQGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 12:06:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,417,1344236400"; 
+   d="scan'208";a="192610588"
+Subject: Re: [PATCH 1/3 v2] mm: Batch unmapping of file mapped pages in
+ shrink_page_list
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+In-Reply-To: <20120911110535.GO11157@csn.ul.ie>
+References: <1347293965.9977.71.camel@schen9-DESK>
+	 <20120911110535.GO11157@csn.ul.ie>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Sep 2012 09:06:10 -0700
+Message-ID: <1347552370.9977.99.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 04:02:34PM +0400, Cyrill Gorcunov wrote:
-> On Fri, Sep 07, 2012 at 01:31:31PM +0200, Heiko Carstens wrote:
-> > Now that the checksyscalls script works again it will warn about the missing
-> > "kcmp" system call on all architectures but x86.
-> > Since according to git commit d97b46a6 "syscalls, x86: add __NR_kcmp syscall"
-> > only x86 is currently supported don't emit any warning for this system call.
-[...]
-> > diff --git a/scripts/checksyscalls.sh b/scripts/checksyscalls.sh
-> > index fd8fa9a..c7cda79 100755
-> > --- a/scripts/checksyscalls.sh
-> > +++ b/scripts/checksyscalls.sh
-> > @@ -194,6 +194,9 @@ cat << EOF
-> >  #define __IGNORE_getpmsg
-> >  #define __IGNORE_putpmsg
-> >  #define __IGNORE_vserver
-> > +
-> > +/* kcmp is currently x86 only */
-> > +#define __IGNORE_kcmp
+On Tue, 2012-09-11 at 12:05 +0100, Mel Gorman wrote:
 
-Ok, I wired the system call up on s390 and the test case passed.
-Below is the patch that is needed to actually reach the system call from
-other architectures than x86.
-Andrew, can you pick this one up as well?
+> 
+> One *massive* change here that is not called out in the changelog is that
+> the reclaim path now holds the page lock on multiple pages at the same
+> time waiting for them to be batch unlocked in __remove_mapping_batch.
+> This is suspicious for two reasons.
+> 
+> The first suspicion is that it is expected that there are filesystems
+> that lock multiple pages in page->index order and page reclaim tries to
+> lock pages in a random order.  You are "ok" because you trylock the pages
+> but there should be a comment explaining the situation and why you're
+> ok.
+> 
+> My *far* greater concern is that the hold time for a locked page is
+> now potentially much longer. You could lock a bunch of filesystem pages
+> and then call pageout() on an swapcache page that takes a long time to
+> write. This potentially causes a filesystem (or flusher threads etc)
+> to stall on lock_page and that could cause all sorts of latency trouble.
+> It will be hard to hit this bug and diagnose it but I believe it's
+> there.
+> 
+> That second risk *really* must be commented upon and ideally reviewed by
+> the filesystem people. However, I very strongly suspect that the outcome
+> of such a review will be a suggestion to unlock the pages and reacquire
+> the lock in __remove_mapping_batch(). Bear in mind that if you take this
+> approach that you *must* use trylock when reacquiring the page lock and
+> handle being unable to lock the page.
+> 
 
-The code that wires the system call up on s390 will go upstream via the
-s390 tree. Thanks to kcmp being a cond_syscall there is no compile
-time dependency.
+Mel,
 
->From 1ff800597ea8f678a179387e3cf2ae663531e2fe Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Thu, 13 Sep 2012 09:37:38 +0200
-Subject: [PATCH] syscalls: make kcmp syscall available for all architectures
+Thanks for your detailed comments and analysis.  If I unlock the pages,
+will flusher threads be the only things that will touch them?  Or do I
+have to worry about potentially other things done to the pages that will
+make it invalid for me to unmap the pages later and put them on free
+list?
 
-Remove the x86 dependency, since the system call is not
-architecture dependend.
-
-Also add a ptrace.h include, so it compiles at least also on s390.
-
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- kernel/Makefile | 4 +---
- kernel/kcmp.c   | 1 +
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..eb4138b 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -25,9 +25,7 @@ endif
- obj-y += sched/
- obj-y += power/
- 
--ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
--obj-$(CONFIG_X86) += kcmp.o
--endif
-+obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
- obj-$(CONFIG_FREEZER) += freezer.o
- obj-$(CONFIG_PROFILING) += profile.o
- obj-$(CONFIG_STACKTRACE) += stacktrace.o
-diff --git a/kernel/kcmp.c b/kernel/kcmp.c
-index 30b7b22..e30ac0f 100644
---- a/kernel/kcmp.c
-+++ b/kernel/kcmp.c
-@@ -4,6 +4,7 @@
- #include <linux/string.h>
- #include <linux/random.h>
- #include <linux/module.h>
-+#include <linux/ptrace.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/cache.h>
--- 
-1.7.11.6
+Tim
 
