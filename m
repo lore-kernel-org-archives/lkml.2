@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2IMGsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 02:48:23 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:52607 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755976Ab2IMGsO (ORCPT
+	id S1756024Ab2IMGtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 02:49:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:29220 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab2IMGtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 02:48:14 -0400
-Message-ID: <1347518888.7471.38.camel@lappyti>
-Subject: Re: [PATCH v6 0/4] Runtime Interpreted Power Sequences
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Thu, 13 Sep 2012 09:48:08 +0300
-In-Reply-To: <1749811.4qrG1GZfBf@percival>
-References: <1347443867-18868-1-git-send-email-acourbot@nvidia.com>
-	 <1347515447.7471.12.camel@lappyti> <1749811.4qrG1GZfBf@percival>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-fAdGNzRhttcXPFVhUejd"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 02:49:15 -0400
+Message-ID: <505181A2.1040004@huawei.com>
+Date: Thu, 13 Sep 2012 14:48:02 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+References: <20120910223125.GC7677@google.com> <20120910223355.GD7677@google.com> <504F30DB.60808@huawei.com> <20120911170837.GM7677@google.com> <20120911174319.GO7677@google.com> <505057D8.4010908@parallels.com> <20120912163433.GL7677@google.com>
+In-Reply-To: <20120912163433.GL7677@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012/9/13 0:34, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Sep 12, 2012 at 01:37:28PM +0400, Glauber Costa wrote:
+>> "If a cpuset is cpu or mem exclusive, no other cpuset, other than
+>> a direct ancestor or descendant, may share any of the same CPUs or
+>> Memory Nodes."
+>>
+>> So I think it tricked me as well. I was under the impression that
+>> "exclusive" would also disallow the kids.
+> 
+> You two are confusing me even more.  AFAICS, the hierarchical
+> properties don't seem to change whether exclusive is set or not.  It
+> still ensures children can't have something parent doesn't allow and
+> exclusive applies to whether to share something with siblings, so I
+> don't think anything is broken hierarchy-wise.  Am I missing
+> something?  If so, please be explicit and elaborate where and how it's
+> broken.
+> 
 
---=-fAdGNzRhttcXPFVhUejd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2012-09-13 at 15:23 +0900, Alex Courbot wrote:
-
-> DT support is actually the main point of power sequences, as outside of t=
-he DT=20
-> we can always work the old way and use callbacks. If we were to remove DT=
-=20
-> support, I am not sure this work would still be worth being merged.
-
-Ah, I guess you meant hooks in the driver, not hooks to board files?
-Yes, that would work, but if all the hooks do essentially the same
-things with just minor modifications like sleep-time, it makes more
-sense to have just one piece of code which gets the sequence as data.
-
- Tomi
-
-
---=-fAdGNzRhttcXPFVhUejd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQUYGoAAoJEPo9qoy8lh71l38P/3+BcNUPNUVaUMSBT8HhxKR4
-StxDb/+IIhZUkkauxkGOflFlQdp7oQtkoV28/5+R5khDzbUNCA2shDCLGq22xg3o
-SN44j9UbySCjwbqwLnhCph2B4g+dvVLilS6bYieQaL2oCJAoJVJ54UKLC+DMmGdj
-J+vlHx+byyWEq57/EY7Nk8/qMMHVYRLV+yaSz5vct+AEmQIDNEou6yQHYOEtUml/
-juK/KIE6dR41NEwc/+nhchao5PwUlhdiVGCImtqJS+9h1xLxtFbNYti6fcnxgryK
-1HSBK+jbTVGB09+zwqGiX4/hXGTr3L1ASXGBgMFjq8/I9UQU4u4PJ4RZ2ZhPxxyS
-DFRljioAQbyys5RMwyjqIAvwid3yd3g786WEeSphggB/tUxKRm7HObcaclhgdeEL
-D7N1/UUrbSUPSgNTVndXAW09IQfr4vpAg/V4gUQkRRqDlhkMR5xYHli1DH2L0M8g
-Lgx//ha90WgTCpxRinl+NzUzuByM4L+m75Ud73NntU1Vpgn4PQak5jcdsWkokVfo
-yqioF32iHq4r1i1aI8o8sjFaqYzqLjNGGVc6jVwtJdm1UysyGjy8beRJ59oHWq+r
-C8zxeAmb+IH1/V/uXN366y2KXXsAv8BpO/istze+M4kXMeXxVZBDRXj0aSlqbJiO
-vnWS0FGfYFh47qrNdiwJ
-=vBoM
------END PGP SIGNATURE-----
-
---=-fAdGNzRhttcXPFVhUejd--
+Ignore it. I misunderstood the exclusive flag. Sorry for the noise.
 
