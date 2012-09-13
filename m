@@ -1,53 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab2IMPjl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 11:39:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60442 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab2IMPjk (ORCPT
+	id S932076Ab2IMPmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 11:42:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50161 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2IMPmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 11:39:40 -0400
-Date: Thu, 13 Sep 2012 16:38:24 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to
-	dmaengine_prep_dma_cyclic()
-Message-ID: <20120913153824.GK28448@n2100.arm.linux.org.uk>
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com> <5051FB4D.3000009@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5051FB4D.3000009@metafoo.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 13 Sep 2012 11:42:05 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 00/10] pinctrl: mvebu: pinctrl driver
+Date: Thu, 13 Sep 2012 17:41:42 +0200
+Message-Id: <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 05:27:09PM +0200, Lars-Peter Clausen wrote:
-> Hm... Do you think it would work as well if we implement this by setting the
-> callback for the descriptor to NULL? If the callback is NULL there is
-> nothing to at the end of a transfer/period and the dma engine driver may
-> choose to disable interrupts. This would also benefit non cyclic transfers
-> where the callback is NULL and we do not need add the new parameter to
-> dmaengine_prep_dma_cyclic.
+This patch set adds a core pinctrl driver for Marvell MVEBU SoCs and
+SoC specific stubs for Armada 370, Armada XP, Dove, and Kirkwood.
+The SoC specific stubs use the pinctrl-mvebu core driver that handles
+pinctrl API and register accesses for common pinctrl registers.
 
-Actually, there's a way to do that already.  DMA_PREP_INTERRUPT.
-Unfortunately, most DMA engine slave API users don't set it when they
-setup their transfer:
+As especially Dove has some pinctrl registers that do not match the
+common pinctrl register layout the core driver has been extended by
+some callbacks to allow uncommon Dove pinctrl registers.
 
- * @DMA_PREP_INTERRUPT - trigger an interrupt (callback) upon completion of
- *  this transaction
+DT binding documentation is added for all supported SoCs but as
+Dove and Kirkwood are not yet ready for full DT support, the pinctrl
+driver is only activated for Armada 370 and XP.
 
-if we fixed that, then we could use the lack of it to avoid the interrupt.
+The driver of latest patch v4 has been tested on Dove, Armada 370, 
+Armada XP, and 88f6281 variant of Kirkwood.
 
-However, cyclic transfers don't have the flags parameter used to pass this
-bit.  Yet another bit of yucky inconsistent design in DMA engine land...
+Changelog:
+v2:
+- rebased on git://git.infradead.org/users/jcooper/linux.git boards-for-3.7
+- removed arch/arm/*/Kconfig patches that enable PINCTRL_ on MACH_MVEBU
+  (those will be sent as a different patch set)
+- reworked patches wrt reviews from Andrew Lunn and Linus Walleij
+
+v3:
+- parse functions from SoC specific pin groups instead of DT node
+- move kirkwood variants to DT match data
+- respect Armada XP variant in DTs
+- cleaned whitespaces in DTs
+- rebased to jcooper/boards-for-v3.7-v2
+
+v4:
+- fix bogus v3 patch set with respect to pinctrl-mvebu, and pinctrl-kirkwood
+  (my deep appologies to all reviewers that wasted their time with reviewing v3)
+- mark internal functions in pinctrl-mvebu as static
+- split up Kconfig of Armada 370 and XP
+- enable pinctrl drivers for Armada 370 and XP
+
+Sebastian Hesselbarth (3):
+  pinctrl: mvebu: pinctrl driver core
+  pinctrl: mvebu: dove pinctrl driver
+  pinctrl: mvebu: kirkwood pinctrl driver
+
+Thomas Petazzoni (7):
+  pinctrl: mvebu: add pinctrl driver for Armada 370
+  pinctrl: mvebu: add pinctrl driver for Armada XP
+  ARM: mvebu: Add pinctrl support to Armada XP SoCs
+  ARM: mvebu: Add pinctrl support to Armada 370 SoC
+  ARM: mvebu: adjust Armada XP evaluation board DTS
+  arm: mvebu: split Kconfig options for Armada 370 and XP
+  arm: mvebu: select the pinctrl drivers for Armada 370 and Armada XP
+    platforms
+
+ .../pinctrl/marvell,armada-370-pinctrl.txt         |   95 +++
+ .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |  100 +++
+ .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   72 ++
+ .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |  279 ++++++++
+ .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   46 ++
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/armada-370.dtsi                  |    7 +
+ arch/arm/boot/dts/armada-xp-db.dts                 |    4 +-
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi           |   30 +
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi           |   30 +
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi           |   30 +
+ arch/arm/mach-mvebu/Kconfig                        |   18 +-
+ drivers/pinctrl/Kconfig                            |   22 +
+ drivers/pinctrl/Makefile                           |    5 +
+ drivers/pinctrl/pinctrl-armada-370.c               |  421 +++++++++++
+ drivers/pinctrl/pinctrl-armada-xp.c                |  468 ++++++++++++
+ drivers/pinctrl/pinctrl-dove.c                     |  620 ++++++++++++++++
+ drivers/pinctrl/pinctrl-kirkwood.c                 |  472 ++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.c                    |  754 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.h                    |  192 +++++
+ 20 files changed, 3661 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78230.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78260.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78460.dtsi
+ create mode 100644 drivers/pinctrl/pinctrl-armada-370.c
+ create mode 100644 drivers/pinctrl/pinctrl-armada-xp.c
+ create mode 100644 drivers/pinctrl/pinctrl-dove.c
+ create mode 100644 drivers/pinctrl/pinctrl-kirkwood.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.h
+---
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Lior Amsalem <alior@marvell.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+-- 
+1.7.10.4
+
