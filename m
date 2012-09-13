@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759038Ab2IMXtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:49:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12183 "EHLO mx1.redhat.com"
+	id S1759127Ab2IMXtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:49:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759018Ab2IMXtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:49:01 -0400
+	id S1759054Ab2IMXtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:49:18 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/16] KEYS: Asymmetric key pluggable data parsers
+Subject: [PATCH 06/16] KEYS: Asymmetric public-key algorithm crypto key subtype
 To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
 Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:48:49 +0100
-Message-ID: <20120913234849.3575.32721.stgit@warthog.procyon.org.uk>
+Date: Fri, 14 Sep 2012 00:48:57 +0100
+Message-ID: <20120913234857.3575.38851.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,227 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The instantiation data passed to the asymmetric key type are expected to be
-formatted in some way, and there are several possible standard ways to format
-the data.
-
-The two obvious standards are OpenPGP keys and X.509 certificates.  The latter
-is especially useful when dealing with UEFI, and the former might be useful
-when dealing with, say, eCryptfs.
-
-Further, it might be desirable to provide formatted blobs that indicate
-hardware is to be accessed to retrieve the keys or that the keys live
-unretrievably in a hardware store, but that the keys can be used by means of
-the hardware.
-
->From userspace, the keys can be loaded using the keyctl command, for example,
-an X.509 binary certificate:
-
-	keyctl padd asymmetric foo @s <dhowells.pem
-
-or a PGP key:
-
-	keyctl padd asymmetric bar @s <dhowells.pub
-
-or a pointer into the contents of the TPM:
-
-	keyctl add asymmetric zebra "TPM:04982390582905f8" @s
-
-Inside the kernel, pluggable parsers register themselves and then get to
-examine the payload data to see if they can handle it.  If they can, they get
-to:
-
-  (1) Propose a name for the key, to be used it the name is "" or NULL.
-
-  (2) Specify the key subtype.
-
-  (3) Provide the data for the subtype.
-
-The key type asks the parser to do its stuff before a key is allocated and thus
-before the name is set.  If successful, the parser stores the suggested data
-into the key_preparsed_payload struct, which will be either used (if the key is
-successfully created and instantiated or updated) or discarded.
+Add a subtype for supporting asymmetric public-key encryption algorithms such
+as DSA (FIPS-186) and RSA (PKCS#1 / RFC1337).
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |  120 ++++++++++++++++++++++++++++++
- include/keys/asymmetric-parser.h         |   37 +++++++++
- 2 files changed, 156 insertions(+), 1 deletion(-)
- create mode 100644 include/keys/asymmetric-parser.h
+ crypto/asymmetric_keys/Kconfig      |    8 +++
+ crypto/asymmetric_keys/Makefile     |    2 +
+ crypto/asymmetric_keys/public_key.c |  108 +++++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/public_key.h |   28 +++++++++
+ include/crypto/public_key.h         |  109 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 255 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/public_key.c
+ create mode 100644 crypto/asymmetric_keys/public_key.h
+ create mode 100644 include/crypto/public_key.h
 
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index bfb0424..cf80765 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -11,6 +11,7 @@
-  * 2 of the Licence, or (at your option) any later version.
-  */
- #include <keys/asymmetric-subtype.h>
-+#include <keys/asymmetric-parser.h>
- #include <linux/seq_file.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-@@ -18,6 +19,9 @@
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index cad29b3..bbfccaa 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -9,5 +9,13 @@ menuconfig ASYMMETRIC_KEY_TYPE
  
- MODULE_LICENSE("GPL");
+ if ASYMMETRIC_KEY_TYPE
  
-+static LIST_HEAD(asymmetric_key_parsers);
-+static DECLARE_RWSEM(asymmetric_key_parsers_sem);
-+
- /*
-  * Match asymmetric keys on (part of) their name
-  * We have some shorthand methods for matching keys.  We allow:
-@@ -107,12 +111,79 @@ static void asymmetric_key_describe(const struct key *key, struct seq_file *m)
- }
++config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
++	tristate "Asymmetric public-key crypto algorithm subtype"
++	select MPILIB
++	help
++	  This option provides support for asymmetric public key type handling.
++	  If signature generation and/or verification are to be used,
++	  appropriate hash algorithms (such as SHA-1) must be available.
++	  ENOPKG will be reported if the requisite algorithm is unavailable.
  
- /*
-+ * Preparse a asymmetric payload to get format the contents appropriately for the
-+ * internal payload to cut down on the number of scans of the data performed.
-+ *
-+ * We also generate a proposed description from the contents of the key that
-+ * can be used to name the key if the user doesn't want to provide one.
-+ */
-+static int asymmetric_key_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct asymmetric_key_parser *parser;
-+	int ret;
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	if (prep->datalen == 0)
-+		return -EINVAL;
-+
-+	down_read(&asymmetric_key_parsers_sem);
-+
-+	ret = -EBADMSG;
-+	list_for_each_entry(parser, &asymmetric_key_parsers, link) {
-+		pr_debug("Trying parser '%s'\n", parser->name);
-+
-+		ret = parser->parse(prep);
-+		if (ret != -EBADMSG) {
-+			pr_debug("Parser recognised the format (ret %d)\n",
-+				 ret);
-+			break;
-+		}
-+	}
-+
-+	up_read(&asymmetric_key_parsers_sem);
-+	pr_devel("<==%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * Clean up the preparse data
-+ */
-+static void asymmetric_key_free_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct asymmetric_key_subtype *subtype = prep->type_data[0];
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	if (subtype) {
-+		subtype->destroy(prep->payload);
-+		module_put(subtype->owner);
-+	}
-+	kfree(prep->type_data[1]);
-+	kfree(prep->description);
-+}
-+
-+/*
-  * Instantiate a asymmetric_key defined key.  The key was preparsed, so we just
-  * have to transfer the data here.
-  */
- static int asymmetric_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- {
--	return -EOPNOTSUPP;
-+	int ret;
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	ret = key_payload_reserve(key, prep->quotalen);
-+	if (ret == 0) {
-+		key->type_data.p[0] = prep->type_data[0];
-+		key->type_data.p[1] = prep->type_data[1];
-+		key->payload.data = prep->payload;
-+		prep->type_data[0] = NULL;
-+		prep->type_data[1] = NULL;
-+		prep->payload = NULL;
-+	}
-+	pr_devel("<==%s() = %d\n", __func__, ret);
-+	return ret;
- }
+ endif # ASYMMETRIC_KEY_TYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index b725bcc..5ed46ee 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -5,3 +5,5 @@
+ obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys.o
  
- /*
-@@ -132,6 +203,8 @@ static void asymmetric_key_destroy(struct key *key)
- 
- struct key_type key_type_asymmetric = {
- 	.name		= "asymmetric",
-+	.preparse	= asymmetric_key_preparse,
-+	.free_preparse	= asymmetric_key_free_preparse,
- 	.instantiate	= asymmetric_key_instantiate,
- 	.match		= asymmetric_key_match,
- 	.destroy	= asymmetric_key_destroy,
-@@ -139,6 +212,51 @@ struct key_type key_type_asymmetric = {
- };
- EXPORT_SYMBOL_GPL(key_type_asymmetric);
- 
-+/**
-+ * register_asymmetric_key_parser - Register a asymmetric key blob parser
-+ * @parser: The parser to register
-+ */
-+int register_asymmetric_key_parser(struct asymmetric_key_parser *parser)
-+{
-+	struct asymmetric_key_parser *cursor;
-+	int ret;
+ asymmetric_keys-y := asymmetric_type.o
 +
-+	down_write(&asymmetric_key_parsers_sem);
-+
-+	list_for_each_entry(cursor, &asymmetric_key_parsers, link) {
-+		if (strcmp(cursor->name, parser->name) == 0) {
-+			pr_err("Asymmetric key parser '%s' already registered\n",
-+			       parser->name);
-+			ret = -EEXIST;
-+			goto out;
-+		}
-+	}
-+
-+	list_add_tail(&parser->link, &asymmetric_key_parsers);
-+
-+	pr_notice("Asymmetric key parser '%s' registered\n", parser->name);
-+	ret = 0;
-+
-+out:
-+	up_write(&asymmetric_key_parsers_sem);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(register_asymmetric_key_parser);
-+
-+/**
-+ * unregister_asymmetric_key_parser - Unregister a asymmetric key blob parser
-+ * @parser: The parser to unregister
-+ */
-+void unregister_asymmetric_key_parser(struct asymmetric_key_parser *parser)
-+{
-+	down_write(&asymmetric_key_parsers_sem);
-+	list_del(&parser->link);
-+	up_write(&asymmetric_key_parsers_sem);
-+
-+	pr_notice("Asymmetric key parser '%s' unregistered\n", parser->name);
-+}
-+EXPORT_SYMBOL_GPL(unregister_asymmetric_key_parser);
-+
- /*
-  * Module stuff
-  */
-diff --git a/include/keys/asymmetric-parser.h b/include/keys/asymmetric-parser.h
++obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
 new file mode 100644
-index 0000000..09b3b48
+index 0000000..cb2e291
 --- /dev/null
-+++ b/include/keys/asymmetric-parser.h
-@@ -0,0 +1,37 @@
-+/* Asymmetric public-key cryptography data parser
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -0,0 +1,108 @@
++/* In-software asymmetric public-key crypto subtype
 + *
 + * See Documentation/crypto/asymmetric-keys.txt
 + *
@@ -256,28 +87,248 @@ index 0000000..09b3b48
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#ifndef _KEYS_ASYMMETRIC_PARSER_H
-+#define _KEYS_ASYMMETRIC_PARSER_H
++#define pr_fmt(fmt) "PKEY: "fmt
++#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/seq_file.h>
++#include <keys/asymmetric-subtype.h>
++#include "public_key.h"
++
++MODULE_LICENSE("GPL");
++
++const char *const pkey_algo[PKEY_ALGO__LAST] = {
++	[PKEY_ALGO_DSA]		= "DSA",
++	[PKEY_ALGO_RSA]		= "RSA",
++};
++EXPORT_SYMBOL_GPL(pkey_algo);
++
++const char *const pkey_hash_algo[PKEY_HASH__LAST] = {
++	[PKEY_HASH_MD4]		= "md4",
++	[PKEY_HASH_MD5]		= "md5",
++	[PKEY_HASH_SHA1]	= "sha1",
++	[PKEY_HASH_RIPE_MD_160]	= "rmd160",
++	[PKEY_HASH_SHA256]	= "sha256",
++	[PKEY_HASH_SHA384]	= "sha384",
++	[PKEY_HASH_SHA512]	= "sha512",
++	[PKEY_HASH_SHA224]	= "sha224",
++};
++EXPORT_SYMBOL_GPL(pkey_hash_algo);
++
++const char *const pkey_id_type[PKEY_ID_TYPE__LAST] = {
++	[PKEY_ID_PGP]		= "PGP",
++	[PKEY_ID_X509]		= "X509",
++};
++EXPORT_SYMBOL_GPL(pkey_id_type);
 +
 +/*
-+ * Key data parser.  Called during key instantiation.
++ * Provide a part of a description of the key for /proc/keys.
 + */
-+struct asymmetric_key_parser {
-+	struct list_head	link;
-+	struct module		*owner;
-+	const char		*name;
++static void public_key_describe(const struct key *asymmetric_key,
++				struct seq_file *m)
++{
++	struct public_key *key = asymmetric_key->payload.data;
 +
-+	/* Attempt to parse a key from the data blob passed to add_key() or
-+	 * keyctl_instantiate().  Should also generate a proposed description
-+	 * that the caller can optionally use for the key.
-+	 *
-+	 * Return EBADMSG if not recognised.
-+	 */
-+	int (*parse)(struct key_preparsed_payload *prep);
++	if (key)
++		seq_printf(m, "%s.%s",
++			   pkey_id_type[key->id_type], key->algo->name);
++}
++
++/*
++ * Destroy a public key algorithm key.
++ */
++void public_key_destroy(void *payload)
++{
++	struct public_key *key = payload;
++	int i;
++
++	if (key) {
++		for (i = 0; i < ARRAY_SIZE(key->mpi); i++)
++			mpi_free(key->mpi[i]);
++		kfree(key);
++	}
++}
++EXPORT_SYMBOL_GPL(public_key_destroy);
++
++/*
++ * Verify a signature using a public key.
++ */
++static int public_key_verify_signature(const struct key *key,
++				       const struct public_key_signature *sig)
++{
++	const struct public_key *pk = key->payload.data;
++
++	if (!pk->algo->verify_signature)
++		return -ENOTSUPP;
++
++	if (sig->nr_mpi != pk->algo->n_sig_mpi) {
++		pr_debug("Signature has %u MPI not %u\n",
++			 sig->nr_mpi, pk->algo->n_sig_mpi);
++		return -EINVAL;
++	}
++
++	return pk->algo->verify_signature(pk, sig);
++}
++
++/*
++ * Public key algorithm asymmetric key subtype
++ */
++struct asymmetric_key_subtype public_key_subtype = {
++	.owner			= THIS_MODULE,
++	.name			= "public_key",
++	.describe		= public_key_describe,
++	.destroy		= public_key_destroy,
++	.verify_signature	= public_key_verify_signature,
++};
++EXPORT_SYMBOL_GPL(public_key_subtype);
+diff --git a/crypto/asymmetric_keys/public_key.h b/crypto/asymmetric_keys/public_key.h
+new file mode 100644
+index 0000000..1f86aad
+--- /dev/null
++++ b/crypto/asymmetric_keys/public_key.h
+@@ -0,0 +1,28 @@
++/* Public key algorithm internals
++ *
++ * See Documentation/crypto/asymmetric-keys.txt
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#include <crypto/public_key.h>
++
++extern struct asymmetric_key_subtype public_key_subtype;
++
++/*
++ * Public key algorithm definition.
++ */
++struct public_key_algorithm {
++	const char	*name;
++	u8		n_pub_mpi;	/* Number of MPIs in public key */
++	u8		n_sec_mpi;	/* Number of MPIs in secret key */
++	u8		n_sig_mpi;	/* Number of MPIs in a signature */
++	int (*verify_signature)(const struct public_key *key,
++				const struct public_key_signature *sig);
++};
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+new file mode 100644
+index 0000000..65d9879
+--- /dev/null
++++ b/include/crypto/public_key.h
+@@ -0,0 +1,109 @@
++/* Asymmetric public-key algorithm definitions
++ *
++ * See Documentation/crypto/asymmetric-keys.txt
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _LINUX_PUBLIC_KEY_H
++#define _LINUX_PUBLIC_KEY_H
++
++#include <linux/mpi.h>
++
++enum pkey_algo {
++	PKEY_ALGO_DSA,
++	PKEY_ALGO_RSA,
++	PKEY_ALGO__LAST
 +};
 +
-+extern int register_asymmetric_key_parser(struct asymmetric_key_parser *);
-+extern void unregister_asymmetric_key_parser(struct asymmetric_key_parser *);
++extern const char *const pkey_algo[PKEY_ALGO__LAST];
 +
-+#endif /* _KEYS_ASYMMETRIC_PARSER_H */
++enum pkey_hash_algo {
++	PKEY_HASH_MD4,
++	PKEY_HASH_MD5,
++	PKEY_HASH_SHA1,
++	PKEY_HASH_RIPE_MD_160,
++	PKEY_HASH_SHA256,
++	PKEY_HASH_SHA384,
++	PKEY_HASH_SHA512,
++	PKEY_HASH_SHA224,
++	PKEY_HASH__LAST
++};
++
++extern const char *const pkey_hash_algo[PKEY_HASH__LAST];
++
++enum pkey_id_type {
++	PKEY_ID_PGP,		/* OpenPGP generated key ID */
++	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
++	PKEY_ID_TYPE__LAST
++};
++
++extern const char *const pkey_id_type[PKEY_ID_TYPE__LAST];
++
++/*
++ * Cryptographic data for the public-key subtype of the asymmetric key type.
++ *
++ * Note that this may include private part of the key as well as the public
++ * part.
++ */
++struct public_key {
++	const struct public_key_algorithm *algo;
++	u8	capabilities;
++#define PKEY_CAN_ENCRYPT	0x01
++#define PKEY_CAN_DECRYPT	0x02
++#define PKEY_CAN_ENCDEC		(PKEY_CAN_ENCRYPT | PKEY_CAN_DECRYPT)
++#define PKEY_CAN_SIGN		0x04
++#define PKEY_CAN_VERIFY		0x08
++#define PKEY_CAN_SIGVER		(PKEY_CAN_SIGN | PKEY_CAN_VERIFY)
++	enum pkey_id_type id_type : 8;
++	union {
++		MPI	mpi[5];
++		struct {
++			MPI	p;	/* DSA prime */
++			MPI	q;	/* DSA group order */
++			MPI	g;	/* DSA group generator */
++			MPI	y;	/* DSA public-key value = g^x mod p */
++			MPI	x;	/* DSA secret exponent (if present) */
++		} dsa;
++		struct {
++			MPI	n;	/* RSA public modulus */
++			MPI	e;	/* RSA public encryption exponent */
++			MPI	d;	/* RSA secret encryption exponent (if present) */
++			MPI	p;	/* RSA secret prime (if present) */
++			MPI	q;	/* RSA secret prime (if present) */
++		} rsa;
++	};
++
++	u8	key_id[8];	/* ID of this key pair */
++	u8	key_id_size;	/* Number of bytes in key_id */
++};
++
++extern void public_key_destroy(void *payload);
++
++/*
++ * Public key cryptography signature data
++ */
++struct public_key_signature {
++	u8 *digest;
++	u8 digest_size;			/* Number of bytes in digest */
++	u8 nr_mpi;			/* Occupancy of mpi[] */
++	enum pkey_hash_algo pkey_hash_algo : 8;
++	union {
++		MPI mpi[2];
++		struct {
++			MPI s;		/* m^d mod n */
++		} rsa;
++		struct {
++			MPI r;
++			MPI s;
++		} dsa;
++	};
++};
++
++#endif /* _LINUX_PUBLIC_KEY_H */
 
