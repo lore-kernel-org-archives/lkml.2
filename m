@@ -1,108 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2IMIDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 04:03:43 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:18670 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245Ab2IMIDk (ORCPT
+	id S1756735Ab2IMIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 04:04:29 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57141
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756631Ab2IMIEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 04:03:40 -0400
-Date: Thu, 13 Sep 2012 11:03:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Bruce Humphrey <brucehum@gmail.com>
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+	Thu, 13 Sep 2012 04:04:21 -0400
+Date: Thu, 13 Sep 2012 04:04:20 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: comedi: fl512: Replace printk with dev_info
- et al
-Message-ID: <20120913080309.GJ19396@mwanda>
-References: <1347500796-4432-1-git-send-email-brucehum@gmail.com>
+Subject: XFS status update for August 2012
+Message-ID: <20120913080420.GA9775@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347500796-4432-1-git-send-email-brucehum@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 03:46:36AM +0200, Bruce Humphrey wrote:
-> Replace printk(KERN_XXX with the appropiate dev_info, dev_warn, dev_dbg in fl512.c
-> 
-> Signed-off-by: Bruce Humphrey Ventura <brucehum@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/fl512.c |   12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/fl512.c b/drivers/staging/comedi/drivers/fl512.c
-> index d1da809..5a8e0ae 100644
-> --- a/drivers/staging/comedi/drivers/fl512.c
-> +++ b/drivers/staging/comedi/drivers/fl512.c
-> @@ -118,9 +118,9 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  	struct comedi_subdevice *s;
->  
->  	iobase = it->options[0];
-> -	printk(KERN_INFO "comedi:%d fl512: 0x%04lx", dev->minor, iobase);
-> +	dev_info(dev->class_dev, "%s: 0x%04lx\n", dev->board_name, iobase);
+After the release of Linux 3.5 in July, August saw the big XFS merge for
+the Linux 3.6 merge window.  In the meantime the XFS tree has seen low
+activity, with refined support for SEEK_HOLE/SEEK_DATA that takes unwritten
+extents into account as the main feature.  A couple of fixes also went in
+and mostly got back ported to mainline for Linux 3.5 as well.
 
-Only print this at the end when it succeeds.
+The mailing list had a lot of traffic about interesting updates that didn't
+make it into the tree yet, with the most interesting being: remount support
+for the inode64 option, a patch series allowing to trim back large
+preallocations when the filesystem is out of space, and a large rewrite
+of the XFS-internal sync code.
 
->  	if (!request_region(iobase, FL512_SIZE, "fl512")) {
-> -		printk(KERN_WARNING " I/O port conflict\n");
-> +		dev_warn(dev->class_dev, " I/O port conflict\n");
-                                          ^
-Bogus space.
-
->  		return -EIO;
->  	}
->  	dev->iobase = iobase;
-> @@ -129,7 +129,7 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  		return -ENOMEM;
->  
->  #if DEBUG
-> -	printk(KERN_DEBUG "malloc ok\n");
-> +	dev_dbg(dev->class_dev, "malloc ok\n");
->  #endif
-
-Remove this section.
-
->  
->  	ret = comedi_alloc_subdevices(dev, 2);
-> @@ -153,7 +153,8 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  	s->range_table = &range_fl512;
->  	/* function to call when read AD */
->  	s->insn_read = fl512_ai_insn;
-> -	printk(KERN_INFO "comedi: fl512: subdevice 0 initialized\n");
-> +	dev_info(dev->class_dev, "%s: subdevice 0 initialized\n",
-> +		dev->board_name);
-
-Delete.
-
->  
->  	/* Analog output */
->  	s = dev->subdevices + 1;
-> @@ -171,7 +172,8 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  	s->insn_write = fl512_ao_insn;
->  	/* function to call when reading DA */
->  	s->insn_read = fl512_ao_insn_readback;
-> -	printk(KERN_INFO "comedi: fl512: subdevice 1 initialized\n");
-> +	dev_info(dev->class_dev, "%s: subdevice 1 initialized\n",
-> +		dev->board_name);
-
-Move the print from the start down to here.  Re-word it.  Copy from
-one that Hartley has worked on.
-
-regards,
-dan carpenter
-
->  
->  	return 1;
->  }
-> -- 
-> 1.7.9.5
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+On the user land side xfs_db saw a fix for a very long standing bug go into
+the tree and xfstests saw a few fixes.  The mailing list list saw various other
+interesting updates including a German translation for the xfsdump messages,
+32-bit project ID support in xfsdump, a lot of xfstests updates including a
+patch to use the upstream util-linux version of fstrim in xfstests, support
+for tmpfs in xfstests, various ext3 and btrfs updates, but none of them
+made it into the git tree.  There also was a lot of discussion of older
+patch to reorganize the xfstests source tree.
