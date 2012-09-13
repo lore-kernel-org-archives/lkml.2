@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2IMNtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 09:49:50 -0400
+	id S1754696Ab2IMNuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 09:50:07 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:42751 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab2IMNts (ORCPT
+	with ESMTP id S1753518Ab2IMNuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 09:49:48 -0400
+	Thu, 13 Sep 2012 09:50:03 -0400
 From: Federico Vaga <federico.vaga@gmail.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>,
         Pawel Osciak <pawel@osciak.com>,
@@ -15,89 +15,35 @@ To: Mauro Carvalho Chehab <mchehab@infradead.org>,
 Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
         Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH 1/4] v4l: vb2: add prepare/finish callbacks to allocators
-Date: Thu, 13 Sep 2012 15:52:45 +0200
-Message-Id: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
+Subject: [PATCH 2/4] adv7180: remove {query/g_/s_}ctrl
+Date: Thu, 13 Sep 2012 15:52:46 +0200
+Message-Id: <1347544368-30583-2-git-send-email-federico.vaga@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for prepare/finish callbacks in VB2 allocators.
-These callback are used for buffer flushing.
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Acked-by: Federico Vaga <federico.vaga@gmail.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 ---
- drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++++++
- include/media/videobuf2-core.h           |  7 +++++++
- 2 file modificati, 18 inserzioni(+)
+ drivers/media/i2c/adv7180.c | 3 ---
+ 1 file modificato, 3 rimozioni(-)
 
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 4da3df6..079fa79 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -790,6 +790,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
- {
- 	struct vb2_queue *q = vb->vb2_queue;
- 	unsigned long flags;
-+	unsigned int plane;
+diff --git a/drivers/media/i2c/adv7180.c b/drivers/media/i2c/adv7180.c
+index 45ecf8d..43bc2b9 100644
+--- a/drivers/media/i2c/adv7180.c
++++ b/drivers/media/i2c/adv7180.c
+@@ -402,9 +402,6 @@ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
+ static const struct v4l2_subdev_core_ops adv7180_core_ops = {
+ 	.g_chip_ident = adv7180_g_chip_ident,
+ 	.s_std = adv7180_s_std,
+-	.queryctrl = v4l2_subdev_queryctrl,
+-	.g_ctrl = v4l2_subdev_g_ctrl,
+-	.s_ctrl = v4l2_subdev_s_ctrl,
+ };
  
- 	if (vb->state != VB2_BUF_STATE_ACTIVE)
- 		return;
-@@ -800,6 +801,10 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
- 	dprintk(4, "Done processing on buffer %d, state: %d\n",
- 			vb->v4l2_buf.index, vb->state);
- 
-+	/* sync buffers */
-+	for (plane = 0; plane < vb->num_planes; ++plane)
-+		call_memop(q, finish, vb->planes[plane].mem_priv);
-+
- 	/* Add the buffer to the done buffers list */
- 	spin_lock_irqsave(&q->done_lock, flags);
- 	vb->state = state;
-@@ -975,9 +980,15 @@ static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
- static void __enqueue_in_driver(struct vb2_buffer *vb)
- {
- 	struct vb2_queue *q = vb->vb2_queue;
-+	unsigned int plane;
- 
- 	vb->state = VB2_BUF_STATE_ACTIVE;
- 	atomic_inc(&q->queued_count);
-+
-+	/* sync buffers */
-+	for (plane = 0; plane < vb->num_planes; ++plane)
-+		call_memop(q, prepare, vb->planes[plane].mem_priv);
-+
- 	q->ops->buf_queue(vb);
- }
- 
-diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
-index 8dd9b6c..f374f99 100644
---- a/include/media/videobuf2-core.h
-+++ b/include/media/videobuf2-core.h
-@@ -41,6 +41,10 @@ struct vb2_fileio_data;
-  *		 argument to other ops in this structure
-  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
-  *		 be used
-+ * @prepare:	called everytime the buffer is passed from userspace to the
-+ *		driver, usefull for cache synchronisation, optional
-+ * @finish:	called everytime the buffer is passed back from the driver
-+ *		to the userspace, also optional
-  * @vaddr:	return a kernel virtual address to a given memory buffer
-  *		associated with the passed private structure or NULL if no
-  *		such mapping exists
-@@ -65,6 +69,9 @@ struct vb2_mem_ops {
- 					unsigned long size, int write);
- 	void		(*put_userptr)(void *buf_priv);
- 
-+	void		(*prepare)(void *buf_priv);
-+	void		(*finish)(void *buf_priv);
-+
- 	void		*(*vaddr)(void *buf_priv);
- 	void		*(*cookie)(void *buf_priv);
- 
+ static const struct v4l2_subdev_ops adv7180_ops = {
 -- 
 1.7.11.4
 
