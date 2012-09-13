@@ -1,82 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2IMMOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 08:14:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756814Ab2IMMOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 08:14:48 -0400
-Date: Thu, 13 Sep 2012 14:14:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
- broken hierarchy support and whine if cgroups are nested for them
-Message-ID: <20120913121438.GC8055@dhcp22.suse.cz>
-References: <20120910223125.GC7677@google.com>
- <20120910223355.GD7677@google.com>
- <20120911100433.GC8058@dhcp22.suse.cz>
- <5050568B.9090601@parallels.com>
- <20120912154907.GW21579@dhcp22.suse.cz>
- <20120912171120.GP7677@google.com>
+	id S1757929Ab2IMMO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 08:14:58 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36611 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757902Ab2IMMOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 08:14:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912171120.GP7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120912114720.a5c14a63.akpm@linux-foundation.org>
+References: <1347009393-8751-1-git-send-email-benjamin.gaignard@stericsson.com>
+	<1347240876.28607.26.camel@yhuang-dev>
+	<CA+M3ks7mYF1q3VOgA65V5DOj_1-MFDnqweoM+UMA_YHveOm+rw@mail.gmail.com>
+	<CA+M3ks6G1+gYQAEPfEpfLEDUi+ktKtVisF9vU_Kf=kahv-M_fQ@mail.gmail.com>
+	<20120912114720.a5c14a63.akpm@linux-foundation.org>
+Date: Thu, 13 Sep 2012 14:14:52 +0200
+Message-ID: <CA+M3ks7i-px=7LeiHw=3ZS3UEEpJFAa4A5yJFQDqut+6Dxv_gg@mail.gmail.com>
+Subject: Re: [PATCH] genalloc: make possible to use a custom allocation algorithm
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-09-12 10:11:20, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Sep 12, 2012 at 05:49:07PM +0200, Michal Hocko wrote:
-> > > While I respect your goal of not warning about any configuration
-> > > with max_level = 1, I believe the only sane configuration as soon
-> > > as we get any 2nd-level child is use_hierarchy = 1 for everybody.
-> > > 
-> > > Everything aside from it should be warned.
-> > 
-> > Defintely. And that what the above guarantess, doesn't it?
-> 
-> I'm getting a bit worried that I might not be fully understanding what
-> your concern is.  Can you please elaborate what your worries are and
-> the transition plan that you have in your mind regarding
-> .use_hierarchy?
+>From b78b2fea3899c5170b780f5ff138490ac6cf4cb7 Mon Sep 17 00:00:00 2001
+From: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Date: Thu, 13 Sep 2012 11:29:03 +0200
+Subject: [PATCH] genalloc: make possible to use a custom allocation algorithm
 
-I would like to see use_hierarchy go away. The only concern I have is 
-to warn only if somebody is doing something wrong (aka flat
-hierarchies). Or better put it this way. Do not warn in cases which do
-not change if use_hierarchy is gone or default changes to 1.
-An example:
-root (use_hierarchy=0)
- | \
- |  A (use_hierarchy=0)
- |
- B (use_hierarachy=1)
- |\
- C D
+This patch allow to use another algorithm than the default first-fit one.
+For example a custom algorithm could be used to manage alignment requirements.
+As I can't predict all the possible requirements/needs for all allocation
+uses cases, I add a "free" field 'void *data' to pass any needed information
+to the allocation function. For example 'data' could be used to handle
+a structure
+where you store the alignment, the expected memory bank, the requester
+device, or any information that could influence the allocation algorithm.
 
-is a perfectly sane configuration and I do not see any reason to fill
-logs with some scary warnings when A is created. There will be no
-semantical change in this setup When use_hierchy is gone.
+An usage example may look like this:
+struct my_pool_constraints {
+	int align;
+	int bank;
+	...
+};
 
-So the only thing I am proposing here is to warn only if something
-should be fixed in the configuration in order to be prepared for fully
-hierarchical (and that is a second level of children from root with
-use_hierachy==0).
+unsigned long my_custom_algo(unsigned long *map, unsigned long size,
+		unsigned long start, unsigned int nr, void *data)
+{
+	struct my_pool_constraints *constraints = data;
+	...
+	deal with allocation contraints
+	...
+	return the index in bitmap where perform the allocation
+}
 
-Does it make more sense now?
+void create_my_pool()
+{
+	struct my_pool_constraints c;
+	struct gen_pool *pool = gen_pool_create(...);
+	gen_pool_add(pool, ...);
+	gen_pool_set_algo(pool, my_custom_algo, &c);
+}
+
+Add of best-fit algorithm function:
+most of the time best-fit is slower then first-fit but memory fragmentation
+is lower. The random buffer allocation/free tests don't show any arithmetic
+relation between the allocation time and fragmentation but the
+best-fit algorithm
+is sometime able to perform the allocation when the first-fit can't.
+
+This new algorithm help to remove static allocations on ESRAM, a small but
+fast on-chip RAM of few KB, used for high-performance uses cases like DMA
+linked lists, graphic accelerators, encoders/decoders. On the Ux500
+(in the ARM tree) we have define 5 ESRAM banks of 128 KB each and use of
+static allocations becomes unmaintainable:
+cd arch/arm/mach-ux500 && grep -r ESRAM .
+./include/mach/db8500-regs.h:/* Base address and bank offsets for ESRAM */
+./include/mach/db8500-regs.h:#define U8500_ESRAM_BASE   0x40000000
+./include/mach/db8500-regs.h:#define U8500_ESRAM_BANK_SIZE      0x00020000
+./include/mach/db8500-regs.h:#define U8500_ESRAM_BANK0  U8500_ESRAM_BASE
+./include/mach/db8500-regs.h:#define
+U8500_ESRAM_BANK1       (U8500_ESRAM_BASE + U8500_ESRAM_BANK_SIZE)
+./include/mach/db8500-regs.h:#define
+U8500_ESRAM_BANK2       (U8500_ESRAM_BANK1 + U8500_ESRAM_BANK_SIZE)
+./include/mach/db8500-regs.h:#define
+U8500_ESRAM_BANK3       (U8500_ESRAM_BANK2 + U8500_ESRAM_BANK_SIZE)
+./include/mach/db8500-regs.h:#define
+U8500_ESRAM_BANK4       (U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
+./include/mach/db8500-regs.h:#define U8500_ESRAM_DMA_LCPA_OFFSET     0x10000
+./include/mach/db8500-regs.h:#define U8500_DMA_LCPA_BASE
+(U8500_ESRAM_BANK0 + U8500_ESRAM_DMA_LCPA_OFFSET)
+./include/mach/db8500-regs.h:#define U8500_DMA_LCLA_BASE U8500_ESRAM_BANK4
+
+I want to use genalloc to do dynamic allocations but I need to be able to
+fine tune the allocation algorithm. I my case best-fit algorithm give
+better results than first-fit, but it will not be true for every use case.
+
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+---
+ include/linux/genalloc.h |   27 ++++++++++++++
+ lib/genalloc.c           |   88 +++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 111 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 5e98eeb..dd7c569 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -29,6 +29,20 @@
+
+ #ifndef __GENALLOC_H__
+ #define __GENALLOC_H__
++/**
++ * Allocation callback function type definition
++ * @map: Pointer to bitmap
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: optional additional data used by @genpool_algo_t
++ */
++typedef unsigned long (*genpool_algo_t)(unsigned long *map,
++			unsigned long size,
++			unsigned long start,
++			unsigned int nr,
++			void *data);
++
+ /*
+  *  General purpose special memory pool descriptor.
+  */
+@@ -36,6 +50,9 @@ struct gen_pool {
+ 	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
++
++	genpool_algo_t algo;		/* allocation function */
++	void *data;
+ };
+
+ /*
+@@ -78,4 +95,14 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
+ 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
+ extern size_t gen_pool_avail(struct gen_pool *);
+ extern size_t gen_pool_size(struct gen_pool *);
++
++extern void gen_pool_set_algo(struct gen_pool *pool, genpool_algo_t algo,
++		void *data);
++
++extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data);
++
++extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data);
++
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 6bc04aa..ca208a9 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -152,6 +152,8 @@ struct gen_pool *gen_pool_create(int
+min_alloc_order, int nid)
+ 		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
++		pool->algo = gen_pool_first_fit;
++		pool->data = NULL;
+ 	}
+ 	return pool;
+ }
+@@ -255,8 +257,9 @@ EXPORT_SYMBOL(gen_pool_destroy);
+  * @size: number of bytes to allocate from the pool
+  *
+  * Allocate the requested number of bytes from the specified pool.
+- * Uses a first-fit algorithm. Can not be used in NMI handler on
+- * architectures without NMI-safe cmpxchg implementation.
++ * Uses the pool allocation function (with first-fit algorithm by default).
++ * Can not be used in NMI handler on architectures without
++ * NMI-safe cmpxchg implementation.
+  */
+ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ {
+@@ -280,8 +283,8 @@ unsigned long gen_pool_alloc(struct gen_pool
+*pool, size_t size)
+
+ 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+ retry:
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
+-						       start_bit, nbits, 0);
++		start_bit = pool->algo(chunk->bits, end_bit, start_bit, nbits,
++				pool->data);
+ 		if (start_bit >= end_bit)
+ 			continue;
+ 		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
+@@ -400,3 +403,80 @@ size_t gen_pool_size(struct gen_pool *pool)
+ 	return size;
+ }
+ EXPORT_SYMBOL_GPL(gen_pool_size);
++
++/**
++ * gen_pool_set_algo - set the allocation algorithm
++ * @pool: pool to change allocation algorithm
++ * @algo: custom algorithm function
++ * @data: additional data used by @algo
++ *
++ * Call @algo for each memory allocation in the pool.
++ * If @algo is NULL use gen_pool_first_fit as default
++ * memory allocation function.
++ */
++void gen_pool_set_algo(struct gen_pool *pool, genpool_algo_t algo, void *data)
++{
++	rcu_read_lock();
++
++	pool->algo = algo;
++	if (!pool->algo)
++		pool->algo = gen_pool_first_fit;
++
++	pool->data = data;
++
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL(gen_pool_set_algo);
++
++/**
++ * gen_pool_first_fit - find the first available region
++ * of memory matching the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ */
++unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	return bitmap_find_next_zero_area(map, size, start, nr, 0);
++}
++EXPORT_SYMBOL(gen_pool_first_fit);
++
++/**
++ * gen_pool_best_fit - find the best fitting region of memory
++ * macthing the size requirement (no alignment constraint)
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ *
++ * Iterate over the bitmap to find the smallest free region
++ * which we can allocate the memory.
++ */
++unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
++		unsigned long start, unsigned int nr, void *data)
++{
++	unsigned long start_bit = size;
++	unsigned long len = size + 1;
++	unsigned long index;
++
++	index = bitmap_find_next_zero_area(map, size, start, nr, 0);
++
++	while (index < size) {
++		int next_bit = find_next_bit(map, size, index + nr);
++		if ((next_bit - index) < len) {
++			len = next_bit - index;
++			start_bit = index;
++			if (len == nr)
++				return start_bit;
++		}
++		index = bitmap_find_next_zero_area(map, size,
++						   next_bit + 1, nr, 0);
++	}
++
++	return start_bit;
++}
++EXPORT_SYMBOL(gen_pool_best_fit);
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10
