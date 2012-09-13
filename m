@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab2IMCPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Sep 2012 22:15:16 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:59241 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab2IMCPL (ORCPT
+	id S1755206Ab2IMCQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Sep 2012 22:16:09 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46927 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab2IMCQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Sep 2012 22:15:11 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-References: <87lih2h6i4.fsf@xmission.com> <87mx1iecwi.fsf@xmission.com>
-	<CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
-Date: Wed, 12 Sep 2012 19:14:55 -0700
-In-Reply-To: <CAPM=9ty=0=+w8VaFC9QhajUkYwmym_JaWR9sbwmgw5tCKg5nGw@mail.gmail.com>
-	(Dave Airlie's message of "Thu, 13 Sep 2012 11:31:36 +1000")
-Message-ID: <87ligefz34.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 12 Sep 2012 22:16:05 -0400
+Date: Wed, 12 Sep 2012 19:16:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] memory-hotplug: don't replace lowmem pages with
+ highmem
+In-Reply-To: <1347414231-31451-2-git-send-email-minchan@kernel.org>
+Message-ID: <alpine.DEB.2.00.1209121915420.22590@chino.kir.corp.google.com>
+References: <1347414231-31451-1-git-send-email-minchan@kernel.org> <1347414231-31451-2-git-send-email-minchan@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18KYFflSIiqzSVbqQ7DGyoOouYmSZDb1Tg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0454]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Dave Airlie <airlied@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [REVIEW][PATCH 12/15] userns: Convert drm to use kuid and kgid and struct pid where appropriate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie <airlied@gmail.com> writes:
+On Wed, 12 Sep 2012, Minchan Kim wrote:
 
->> Blink Blink this had not been converted to use struct pid ages ago?
->>
->> - On drm open capture the openers kuid and struct pid.
->> - On drm close release the kuid and struct pid
->> - When reporting the uid and pid convert the kuid and struct pid
->>   into values in the appropriate namespace.
->>
->
-> Hi Eric,
->
-> I'm fine with this seems okay, do you want me to merge it via
-> drm-next?
+> [1] reporeted that lowmem pages could be replaced by
+> highmem pages during migration of CMA and fixed.
+> 
+> Quote from [1]'s description
+> "
+>     The filesystem layer expects pages in the block device's mapping to not
+>     be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
+>     currently replace lowmem pages with highmem pages, leading to crashes in
+>     filesystem code such as the one below:
+> 
+>       Unable to handle kernel NULL pointer dereference at virtual address 00000400
+>       pgd = c0c98000
+>       [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
+>       Internal error: Oops: 817 [#1] PREEMPT SMP ARM
+>       CPU: 0    Not tainted  (3.5.0-rc5+ #80)
+>       PC is at __memzero+0x24/0x80
+>       ...
+>       Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
+>       Backtrace:
+>       [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
+>       [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
+>        r4:c15337f0
+>       [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
+>       [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
+>        r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
+>       [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
+>        r6:beccdcf0 r5:00074000 r4:beccdbbc
+>       [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
+> "
+> 
+> Memory-hotplug has same problem with CMA so [1]'s fix could be applied
+> with memory-hotplug, too.
+> 
+> Fix it by reusing.
+> 
+> [1] 6a6dccba2, mm: cma: don't replace lowmem pages with highmem
+> 
+> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-My plan is to merge it via my user namespace tree.  And since you have
-responed positively I will add your acked-by.  There are some nice
-synergies when I get all of the changes in one tree.
-
-If for some reason you want to carry this in your drm tree we can work
-something out.
-
-In this case I expect the change isn't big enough to worry about.
-
-Eric
+Acked-by: David Rientjes <rientjes@google.com>
