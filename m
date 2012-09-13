@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab2IMVTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 17:19:18 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:58129 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab2IMVTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 17:19:16 -0400
-Date: Thu, 13 Sep 2012 16:20:03 -0500
-From: Cliff Wickman <cpw@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, alex.shi@intel.com, jbeulich@suse.com,
-        tglx@linutronix.de, hpa@zytor.com
-Subject: Re: [alex.shi@intel.com: Re: [PATCH] UV: fix incorrect tlb flush
-	all issue]
-Message-ID: <20120913212003.GA16789@sgi.com>
-References: <20120913155310.GA4081@gmail.com>
+	id S1752557Ab2IMV0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 17:26:24 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43924 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab2IMV0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 17:26:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913155310.GA4081@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+From: Paolo Giarrusso <p.giarrusso@gmail.com>
+Date: Thu, 13 Sep 2012 23:26:01 +0200
+Message-ID: <CAAcnjCR2c0qVCJEwH91ajnZ_vKHNFiUv8EUUU7x9ZTD+L5nOBg@mail.gmail.com>
+Subject: Linux hfsplus corrupts chflags bits?
+To: fs_hfs@kernel-bugs.osdl.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Matthew Garrett <mjg@redhat.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 05:53:10PM +0200, Ingo Molnar wrote:
-> 
-> Ack?
-> 
-> Thanks,
-> 
-> 	Ingo
+[Please CC me on replies as I'm not subscribed.]
 
-Ack.
-But with the adjustment below.  The 'end' argument was not declared long.
+The Linux hfsplus implementation seems to repeatedly corrupt
+hfsplus_perm->rootflags; when the same filesystem is read on Mac OS X,
+this changes the attribs touched by chflags and makes a random
+selection of files "locked" and thus untouchable. This happened for me
+on Ubuntu 12.04 "Precise Pangolin", based on a 3.2.0 kernel, reports
+appear from various other versions and the source doesn't seem heavily
+changed.
 
-I tested the patch on a UV.
-It has the effect of either clearing 1 or all TLBs in a cpu.
-I added some debugging to test for the cases when clearing all TLBs is
-overkill, and in practice it happens very seldom.
+I've had experience of this, shared by other users on this
+superuser.com discussion:
+http://superuser.com/a/457494/46794
 
-Sorry I didn't participate in this patch earlier.  Jack Steiner was
-copied, I believe.  But steiner@sgi.com is no longer active. Jack has
-retired -- congratulations to him, but a very big loss to us, both 
-professionally and personally.
+Given that hfsplus isn't even mentioned in MAINTAINERS, I've used
+./scripts/get_maintainer.pl to select recipients.
 
--Cliff
+To convince you that the flags are in fact set randomly, here's a
+listing of the backup of my home created through rsync on Linux (which
+supposedly isn't even aware of these flags). Notice: none of these
+flags are supposed to be set.
 
-Reported-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Acked-by: Cliff Wickman <cpw@sgi.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
- arch/x86/include/asm/uv/uv.h  |    2 +-
- arch/x86/platform/uv/tlb_uv.c |   10 +++++++---
- 2 files changed, 8 insertions(+), 4 deletions(-)
+# 'ls' -ld -O /Volumes/HFS+Backup/Users/pgiarrusso/*
+drwx------   31 pgiarrusso  staff  uchg,nodump,opaque         1054 Aug
+13 02:00 /Volumes/HFS+Backup/Users/pgiarrusso/Desktop
+drwx------   36 pgiarrusso  staff  nodump                     1224 Jul
+22 16:04 /Volumes/HFS+Backup/Users/pgiarrusso/Documents
+drwx------  108 pgiarrusso  staff  uappnd                     3672 Aug
+13 11:43 /Volumes/HFS+Backup/Users/pgiarrusso/Downloads
+drwx------   13 pgiarrusso  staff  uappnd,uchg,opaque          442 Jul
+22 05:04 /Volumes/HFS+Backup/Users/pgiarrusso/Dropbox
+drwx------   53 pgiarrusso  staff  -                          1802 Aug
+12 00:58 /Volumes/HFS+Backup/Users/pgiarrusso/Library
+drwx------   11 pgiarrusso  staff  uchg,nodump,opaque          374 Jul
+22 17:25 /Volumes/HFS+Backup/Users/pgiarrusso/Movies
+drwx------   13 pgiarrusso  staff  uappnd,uchg,nodump          442 Jun
+10 12:05 /Volumes/HFS+Backup/Users/pgiarrusso/Music
+drwx------   15 pgiarrusso  staff  uappnd,nodump,opaque        510 Jun
+10 12:05 /Volumes/HFS+Backup/Users/pgiarrusso/Pictures
+drwxr-x---   11 pgiarrusso  staff  opaque                      374 Jul
+ 6 15:33 /Volumes/HFS+Backup/Users/pgiarrusso/Public
+drwxr-xr-x   34 pgiarrusso  staff  uappnd,uchg,opaque         1156 May
+27 12:39 /Volumes/HFS+Backup/Users/pgiarrusso/Sites
+drwxr-xr-x    2 pgiarrusso  staff  uappnd,nodump,opaque         68 Jun
+10 21:43 /Volumes/HFS+Backup/Users/pgiarrusso/VirtualBox VMs
+-rwxr-xr-x    1 pgiarrusso  staff  uappnd,nodump,opaque       1703 Feb
+19  2012 /Volumes/HFS+Backup/Users/pgiarrusso/bash-prompt.sh
+drwxr-xr-x   22 pgiarrusso  staff  -                           748 Aug
+10 19:47 /Volumes/HFS+Backup/Users/pgiarrusso/bin
+lrwxrwxrwx    1 pgiarrusso  staff  nodump,opaque                37 Sep
+27  2011 /Volumes/HFS+Backup/Users/pgiarrusso/default.sfx ->
+/Users/pgiarrusso/opt/rar/default.sfx
+-rw-r--r--    1 pgiarrusso  staff  uappnd,uchg          1375563169 Aug
+ 2 18:52 /Volumes/HFS+Backup/Users/pgiarrusso/heapdump-1343925310626.hprof
+drwxr-xr-x   22 pgiarrusso  staff  uappnd,nodump               748 Aug
+ 1 22:15 /Volumes/HFS+Backup/Users/pgiarrusso/opt
+drwxr-xr-x    7 pgiarrusso  staff  uappnd                      238 Apr
+19 20:00 /Volumes/HFS+Backup/Users/pgiarrusso/share
+drwxr-xr-x   35 pgiarrusso  staff  nodump,opaque              1190 Aug
+10 00:06 /Volumes/HFS+Backup/Users/pgiarrusso/tmp
 
-Index: linux/arch/x86/platform/uv/tlb_uv.c
-===================================================================
---- linux.orig/arch/x86/platform/uv/tlb_uv.c
-+++ linux/arch/x86/platform/uv/tlb_uv.c
-@@ -1034,7 +1034,8 @@ static int set_distrib_bits(struct cpuma
-  * globally purge translation cache of a virtual address or all TLB's
-  * @cpumask: mask of all cpu's in which the address is to be removed
-  * @mm: mm_struct containing virtual address range
-- * @va: virtual address to be removed (or TLB_FLUSH_ALL for all TLB's on cpu)
-+ * @start: start virtual address to be removed from TLB
-+ * @end: end virtual address to be remove from TLB
-  * @cpu: the current cpu
-  *
-  * This is the entry point for initiating any UV global TLB shootdown.
-@@ -1056,7 +1057,7 @@ static int set_distrib_bits(struct cpuma
-  */
- const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 				struct mm_struct *mm, unsigned long start,
--				unsigned end, unsigned int cpu)
-+				unsigned long end, unsigned int cpu)
- {
- 	int locals = 0;
- 	int remotes = 0;
-@@ -1113,7 +1114,10 @@ const struct cpumask *uv_flush_tlb_other
- 
- 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
- 
--	bau_desc->payload.address = start;
-+	if (!end || (end - start) <= PAGE_SIZE)
-+		bau_desc->payload.address = start;
-+	else
-+		bau_desc->payload.address = TLB_FLUSH_ALL;
- 	bau_desc->payload.sending_cpu = cpu;
- 	/*
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
-Index: linux/arch/x86/include/asm/uv/uv.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv.h
-+++ linux/arch/x86/include/asm/uv/uv.h
-@@ -16,7 +16,7 @@ extern void uv_system_init(void);
- extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 						 struct mm_struct *mm,
- 						 unsigned long start,
--						 unsigned end,
-+						 unsigned long end,
- 						 unsigned int cpu);
- 
- #else	/* X86_UV */
+Cheers,
+-- 
+Paolo 'Blaisorblade' Giarrusso - Ph.D. Student
+http://www.informatik.uni-marburg.de/~pgiarrusso/
