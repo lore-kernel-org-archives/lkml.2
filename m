@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759020Ab2INDWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:22:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10138 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756979Ab2INDWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:22:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,420,1344236400"; 
-   d="scan'208";a="221880861"
-Subject: Re: [PATCH 03/16] ARM: ep93xx: move platform_data definitions
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>, Dan Williams <djbw@fb.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Axel Lin <axel.lin@gmail.com>
-In-Reply-To: <1347368390-31252-3-git-send-email-arnd@arndb.de>
-References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
-	 <1347368390-31252-1-git-send-email-arnd@arndb.de>
-	 <1347368390-31252-3-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 08:48:20 +0530
-Message-ID: <1347592700.1943.20.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1759052Ab2INDX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 23:23:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53589 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab2INDXZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 23:23:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPgLHd-ac3JYu4SEQd0pPO-YBW4kM+DqcjHs3QzPdLWqc+CXfw@mail.gmail.com>
+References: <CAPgLHd-ac3JYu4SEQd0pPO-YBW4kM+DqcjHs3QzPdLWqc+CXfw@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 14 Sep 2012 11:23:03 +0800
+Message-ID: <CAMPhdO8G_GzOBKB=pdWgKv5GxnYoSNC2mRVwpHYqz4d648pwkA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mmp: using for_each_set_bit to simplify the code
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: haojian.zhuang@gmail.com, linux@arm.linux.org.uk,
+        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-11 at 14:59 +0200, Arnd Bergmann wrote:
-> Platform data for device drivers should be defined in
-> include/linux/platform_data/*.h, not in the architecture
-> and platform specific directories.
-> 
-> This moves such data out of the ep93xx include directories
-> 
+On Fri, Sep 14, 2012 at 10:30 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Using for_each_set_bit() to simplify the code.
+>
+> spatch with a semantic match is used to found this.
+> (http://coccinelle.lip6.fr/)
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
->  drivers/dma/ep93xx_dma.c                                         |    2 +-
-Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+Great API, this is good. Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
-
-
-
--- 
-~Vinod
-
+> ---
+>  arch/arm/mach-mmp/irq.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-mmp/irq.c b/arch/arm/mach-mmp/irq.c
+> index e60c7d9..3c71246 100644
+> --- a/arch/arm/mach-mmp/irq.c
+> +++ b/arch/arm/mach-mmp/irq.c
+> @@ -153,10 +153,8 @@ static void icu_mux_irq_demux(unsigned int irq, struct irq_desc *desc)
+>                 status = readl_relaxed(data->reg_status) & ~mask;
+>                 if (status == 0)
+>                         break;
+> -               n = find_first_bit(&status, BITS_PER_LONG);
+> -               while (n < BITS_PER_LONG) {
+> +               for_each_set_bit(n, &status, BITS_PER_LONG) {
+>                         generic_handle_irq(icu_data[i].virq_base + n);
+> -                       n = find_next_bit(&status, BITS_PER_LONG, n + 1);
+>                 }
+>         }
+>  }
+>
