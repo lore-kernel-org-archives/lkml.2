@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2INU7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 16:59:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33931 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2INU7c (ORCPT
+	id S1755325Ab2INVL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:11:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49981 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2INVLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 16:59:32 -0400
-Date: Fri, 14 Sep 2012 13:59:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vikram Mulukutla <markivx@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        sboyd@codeaurora.org
-Subject: Re: [PATCH] lib: spinlock_debug: Avoid livelock in do_raw_spin_lock
-Message-Id: <20120914135931.262f6d0c.akpm@linux-foundation.org>
-In-Reply-To: <1347592526-7592-1-git-send-email-markivx@codeaurora.org>
-References: <1347592526-7592-1-git-send-email-markivx@codeaurora.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Sep 2012 17:11:24 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: pci: Keep pci_common_init() around after init
+Date: Fri, 14 Sep 2012 23:11:17 +0200
+Message-Id: <1347657078-32230-2-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:3TTDdCh81rXSl0ULxXVNV8ZuQz5IkDCCOKcoE9dFqhm
+ h2IifN6BKi/PDYrRsGTz5cxA/hAxHDe7oEOB4Im9Qzq9PYc78I
+ hj2znS+AyZaV8+zvCoHYPgaKc+jyYGEjPBJsFGLfkcbWj5drSA
+ 4JD1aptO3D1pEtEOzmF2vsnTwTbVPMWqzwiTlabO3odRCs+GpP
+ Qr42nhqUvaH7RQQV0wcSYac2W8L/cL6eOv/MbGUKNvqGayGa+D
+ 9MgrS2QFmUSUtMkjWzzuH4f1o+Fv7ZoeHGNbZbRVnB9E23Cxe8
+ KaRhkcFbJs+7rrQYOiFGvmwNkze+2NdZ4pQMXn/QLrA7h1y7Pt
+ QjaWHxeI36r/RyGlfojj+b/qycrCuIjrcN0vNo2V7LyLXEjNo7
+ rjRsKMtH2oETkRftxV5nX1SB8WlIvHXWSjfB0ijW3fWZ+KtEBa
+ hxwJn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Sep 2012 20:15:26 -0700
-Vikram Mulukutla <markivx@codeaurora.org> wrote:
+When using deferred driver probing, PCI host controller drivers may
+actually require this function after the init stage.
 
-> The logic in do_raw_spin_lock attempts to acquire a spinlock
-> by invoking arch_spin_trylock in a loop with a delay between
-> each attempt. Now consider the following situation in a 2
-> CPU system:
-> 
-> 1. CPU-0 continually acquires and releases a spinlock in a
->    tight loop; it stays in this loop until some condition X
->    is satisfied. X can only be satisfied by another CPU.
-> 
-> 2. CPU-1 tries to acquire the same spinlock, in an attempt
->    to satisfy the aforementioned condition X. However, it
->    never sees the unlocked value of the lock because the
->    debug spinlock code uses trylock instead of just lock;
->    it checks at all the wrong moments - whenever CPU-0 has
->    locked the lock.
-> 
-> Now in the absence of debug spinlocks, the architecture specific
-> spinlock code can correctly allow CPU-1 to wait in a "queue"
-> (e.g., ticket spinlocks), ensuring that it acquires the lock at
-> some point. However, with the debug spinlock code, livelock
-> can easily occur due to the use of try_lock, which obviously
-> cannot put the CPU in that "queue". This queueing mechanism is
-> implemented in both x86 and ARM spinlock code.
-> 
-> Note that the situation mentioned above is not hypothetical.
-> A real problem was encountered where CPU-0 was running
-> hrtimer_cancel with interrupts disabled, and CPU-1 was attempting
-> to run the hrtimer that CPU-0 was trying to cancel.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ arch/arm/kernel/bios32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I'm surprised.  Yes, I guess it will happen if both CPUs have local
-interrupts disabled.  And perhaps serialisation of the locked operation
-helps.
-
-> ...
->
-> --- a/lib/spinlock_debug.c
-> +++ b/lib/spinlock_debug.c
-> @@ -107,23 +107,27 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
->  {
->  	u64 i;
->  	u64 loops = loops_per_jiffy * HZ;
-> -	int print_once = 1;
->  
-> -	for (;;) {
-> -		for (i = 0; i < loops; i++) {
-> -			if (arch_spin_trylock(&lock->raw_lock))
-> -				return;
-> -			__delay(1);
-> -		}
-> -		/* lockup suspected: */
-> -		if (print_once) {
-> -			print_once = 0;
-> -			spin_dump(lock, "lockup suspected");
-> +	for (i = 0; i < loops; i++) {
-> +		if (arch_spin_trylock(&lock->raw_lock))
-> +			return;
-> +		__delay(1);
-> +	}
-> +	/* lockup suspected: */
-> +	spin_dump(lock, "lockup suspected");
->  #ifdef CONFIG_SMP
-> -			trigger_all_cpu_backtrace();
-> +	trigger_all_cpu_backtrace();
->  #endif
-> -		}
-> -	}
-> +
-> +	/*
-> +	 * In case the trylock above was causing a livelock, give the lower
-> +	 * level arch specific lock code a chance to acquire the lock. We have
-> +	 * already printed a warning/backtrace at this point. The non-debug arch
-> +	 * specific code might actually succeed in acquiring the lock. If it is
-> +	 * not successful, the end-result is the same - there is no forward
-> +	 * progress.
-> +	 */
-> +	arch_spin_lock(&lock->raw_lock);
->  }
-
-The change looks reasonable to me.  I suggest we disambiguate that
-comment a bit:
-
---- a/lib/spinlock_debug.c~lib-spinlock_debug-avoid-livelock-in-do_raw_spin_lock-fix
-+++ a/lib/spinlock_debug.c
-@@ -120,7 +120,7 @@ static void __spin_lock_debug(raw_spinlo
- #endif
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 2b2f25e..7288093 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -423,7 +423,7 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ 	return irq;
+ }
  
- 	/*
--	 * In case the trylock above was causing a livelock, give the lower
-+	 * The trylock above was causing a livelock.  Give the lower
- 	 * level arch specific lock code a chance to acquire the lock. We have
- 	 * already printed a warning/backtrace at this point. The non-debug arch
- 	 * specific code might actually succeed in acquiring the lock. If it is
-_
+-static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
++static void __devinit pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+ {
+ 	struct pci_sys_data *sys = NULL;
+ 	int ret;
+@@ -472,7 +472,7 @@ static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+ 	}
+ }
+ 
+-void __init pci_common_init(struct hw_pci *hw)
++void __devinit pci_common_init(struct hw_pci *hw)
+ {
+ 	struct pci_sys_data *sys;
+ 	LIST_HEAD(head);
+-- 
+1.7.12
 
