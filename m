@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab2INHDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:03:06 -0400
-Received: from mail.bmw-carit.de ([62.245.222.98]:37855 "EHLO
-	mail.bmw-carit.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2INHDD (ORCPT
+	id S1752243Ab2INHGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:06:47 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:48250 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754569Ab2INHGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:03:03 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Sep 2012 03:03:03 EDT
-X-CTCH-RefID: str=0001.0A0B020D.5052D51E.0012,ss=1,re=0.000,fgs=0
-Message-ID: <5052D51D.3060106@bmw-carit.de>
-Date: Fri, 14 Sep 2012 08:56:29 +0200
-From: Daniel Wagner <daniel.wagner@bmw-carit.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 14 Sep 2012 03:06:45 -0400
+Message-ID: <5052D7AB.1090804@ti.com>
+Date: Fri, 14 Sep 2012 10:07:23 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: linux-next: build failure after merge of the cgroup tree
-References: <20120914131700.dd3d01a7d17b78082a9bcd55@canb.auug.org.au>
-In-Reply-To: <20120914131700.dd3d01a7d17b78082a9bcd55@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via device_prep_dma_cyclic()
+ callback
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>  <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com> <1347593040.1943.24.camel@vkoul-udesk3>
+In-Reply-To: <1347593040.1943.24.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 09/14/2012 06:24 AM, Vinod Koul wrote:
+> On Thu, 2012-09-13 at 16:37 +0300, Peter Ujfalusi wrote:
+>> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+>> can receive the no_wakeup request coming from client drivers.
+>> This feature can be used during audio operation to disable all audio
+>> related interrupts.
+> We already have a flag to indicate this, see 
+> * @DMA_PREP_INTERRUPT - trigger an interrupt (callback) upon completion  of
+> *  this transaction
 
-On 14.09.2012 05:17, Stephen Rothwell wrote:
-> Hi Tejun,
->
-> After merging the cgroup tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->
-> drivers/net/tun.c: In function 'tun_alloc_skb':
-> drivers/net/tun.c:589:2: error: implicit declaration of function 'sock_update_classid' [-Werror=implicit-function-declaration]
->
-> Caused by commit 1f66c0a8833c ("cgroup: net_cls: Move sock_update_classid()
-> declaration to cls_cgroup.h").  Grep is your friend ...
+I have also noticed this flag. It is not really a direct match for our case
+since the notion of "completion of this transfer" is not applicable for cyclic
+mode, but it is close enough.
 
-Sorry about missing to update tun.c. I *swear* I used grep to search
-for sock_update_classid() users. It is not the tool's fault when my
-brain is not able to decode the things it wants to tell me.
+> Unfortunately, the addition of cyclic API missed having this flag. So
+> right way would be to add flag argument in the API.
 
-> I have used the cgroup tree from next-20120913 for today.
+I have not looked at the non cyclic APIs, but I think I can modify the
+dmaengine_prep_dma_cyclic() to pass the flags instead of the 'bool no_wakeup'.
+If the DMA_PREP_INTERRUPT is not set dma drivers can interpret it in a way
+that they will disable all interrupts during cyclic mode.
+None of the dma drivers in cyclic mode cares about the flags AFAIK or they can
+just ignore this parameter for now (as they did with my no_wakeup parameter).
+Will resend the series soon with this change.
 
-Obviously, it is straight forward to fix this but I do not know what is 
-the preferred solution. Shall I spin an updated version of this patch or 
-add a patch on top of the series?
-
-sorry again,
-daniel
-
+-- 
+Péter
