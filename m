@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab2INLmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:42:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51334 "EHLO
+	id S932102Ab2INLm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:42:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51348 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757942Ab2INLmD (ORCPT
+	with ESMTP id S1754137Ab2INLmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:42:03 -0400
-Date: Fri, 14 Sep 2012 04:41:36 -0700
-From: tip-bot for Josh Triplett <josh@joshtriplett.org>
-Message-ID: <tip-ea632e9f12033346cc68247faa3b924d54936b8b@git.kernel.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, viro@zeniv.linux.org.uk,
-        ebiederm@xmission.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de, josh@joshtriplett.org
+	Fri, 14 Sep 2012 07:42:51 -0400
+Date: Fri, 14 Sep 2012 04:42:33 -0700
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Message-ID: <tip-a5e37863ab31d78faddff15675c89979792bc0bd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, viro@zeniv.linux.org.uk,
-        ebiederm@xmission.com, fweisbec@gmail.com, akpm@linux-foundation.org,
-        rostedt@goodmis.org, josh@joshtriplett.org, tglx@linutronix.de
-In-Reply-To: <20120903024513.GA19583@leaf>
-References: <20120903024513.GA19583@leaf>
+        fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <20120905143100.10329.60109.stgit@localhost.localdomain>
+References: <20120905143100.10329.60109.stgit@localhost.localdomain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] trace:
-  Stop compiling in trace_clock unconditionally
-Git-Commit-ID: ea632e9f12033346cc68247faa3b924d54936b8b
+Subject: [tip:perf/core] ftrace/x86: Adjust x86 regs.ip as like as x86-64
+Git-Commit-ID: a5e37863ab31d78faddff15675c89979792bc0bd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,98 +29,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 14 Sep 2012 04:41:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 14 Sep 2012 04:42:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ea632e9f12033346cc68247faa3b924d54936b8b
-Gitweb:     http://git.kernel.org/tip/ea632e9f12033346cc68247faa3b924d54936b8b
-Author:     Josh Triplett <josh@joshtriplett.org>
-AuthorDate: Sun, 2 Sep 2012 19:45:14 -0700
+Commit-ID:  a5e37863ab31d78faddff15675c89979792bc0bd
+Gitweb:     http://git.kernel.org/tip/a5e37863ab31d78faddff15675c89979792bc0bd
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Wed, 5 Sep 2012 23:31:00 +0900
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 13 Sep 2012 22:52:08 -0400
+CommitDate: Thu, 13 Sep 2012 22:52:09 -0400
 
-trace: Stop compiling in trace_clock unconditionally
+ftrace/x86: Adjust x86 regs.ip as like as x86-64
 
-Commit 56449f437 "tracing: make the trace clocks available generally",
-in April 2009, made trace_clock available unconditionally, since
-CONFIG_X86_DS used it too.
+Adjust x86 regs.ip to ip + MCOUNT_INSN_SIZE as like as
+on x86-64. This helps us to consolidate codes which use
+regs->ip on both of x86/x86-64.
 
-Commit faa4602e47 "x86, perf, bts, mm: Delete the never used BTS-ptrace code",
-in March 2010, removed CONFIG_X86_DS, and now only CONFIG_RING_BUFFER (split
-out from CONFIG_TRACING for general use) has a dependency on trace_clock. So,
-only compile in trace_clock with CONFIG_RING_BUFFER or CONFIG_TRACING
-enabled.
+Link: http://lkml.kernel.org/r/20120905143100.10329.60109.stgit@localhost.localdomain
 
-Link: http://lkml.kernel.org/r/20120903024513.GA19583@leaf
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/Makefile       |    2 +-
- kernel/trace/Kconfig  |    5 +++++
- kernel/trace/Makefile |    6 +-----
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kernel/entry_32.S |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..29d993b 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -98,7 +98,7 @@ obj-$(CONFIG_COMPAT_BINFMT_ELF) += elfcore.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC) += elfcore.o
- obj-$(CONFIG_FUNCTION_TRACER) += trace/
- obj-$(CONFIG_TRACING) += trace/
--obj-$(CONFIG_X86_DS) += trace/
-+obj-$(CONFIG_TRACE_CLOCK) += trace/
- obj-$(CONFIG_RING_BUFFER) += trace/
- obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_IRQ_WORK) += irq_work.o
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 9301a0e..4cea4f4 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -62,8 +62,12 @@ config HAVE_C_RECORDMCOUNT
- config TRACER_MAX_TRACE
- 	bool
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 061ac17..f438a44 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1148,7 +1148,6 @@ ENTRY(ftrace_regs_caller)
+ 	 * ip location, and move flags into the return ip location.
+ 	 */
+ 	pushl 4(%esp)	/* save return ip into ip slot */
+-	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
  
-+config TRACE_CLOCK
-+	bool
-+
- config RING_BUFFER
- 	bool
-+	select TRACE_CLOCK
+ 	pushl $0	/* Load 0 into orig_ax */
+ 	pushl %gs
+@@ -1169,6 +1168,7 @@ ENTRY(ftrace_regs_caller)
+ 	movl $__KERNEL_CS,13*4(%esp)
  
- config FTRACE_NMI_ENTER
-        bool
-@@ -114,6 +118,7 @@ config TRACING
- 	select NOP_TRACER
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
-+	select TRACE_CLOCK
+ 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
++	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
+ 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+ 	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+ 	pushl %esp		/* Save pt_regs as 4th parameter */
+@@ -1180,7 +1180,6 @@ GLOBAL(ftrace_regs_call)
+ 	movl 14*4(%esp), %eax	/* Move flags back into cs */
+ 	movl %eax, 13*4(%esp)	/* Needed to keep addl from modifying flags */
+ 	movl 12*4(%esp), %eax	/* Get return ip from regs->ip */
+-	addl $MCOUNT_INSN_SIZE, %eax
+ 	movl %eax, 14*4(%esp)	/* Put return ip back for ret */
  
- config GENERIC_TRACER
- 	bool
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index 8370908..d7e2068 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -19,11 +19,7 @@ endif
- 
- CFLAGS_trace_events_filter.o := -I$(src)
- 
--#
--# Make the trace clocks available generally: it's infrastructure
--# relied on by ptrace for example:
--#
--obj-y += trace_clock.o
-+obj-$(CONFIG_TRACE_CLOCK) += trace_clock.o
- 
- obj-$(CONFIG_FUNCTION_TRACER) += libftrace.o
- obj-$(CONFIG_RING_BUFFER) += ring_buffer.o
+ 	popl %ebx
