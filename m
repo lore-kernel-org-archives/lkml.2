@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2INQAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:00:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51611 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab2INQAn (ORCPT
+	id S1758729Ab2INQBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:01:24 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38208 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab2INQBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:00:43 -0400
-Message-ID: <505354A7.3090502@wwwdotorg.org>
-Date: Fri, 14 Sep 2012 10:00:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 14 Sep 2012 12:01:23 -0400
+X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
+   d="scan'208";a="14551368"
+Date: Fri, 14 Sep 2012 17:00:39 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH 05/10] xen/swiotlb: Move the error strings to its own
+ function.
+In-Reply-To: <1347306367-28669-6-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1209141700320.29232@kaball.uk.xensource.com>
+References: <1347306367-28669-1-git-send-email-konrad.wilk@oracle.com> <1347306367-28669-6-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, olof@lixom.net,
-        grant.likely@secretlab.ca, lrg@ti.com, vinod.koul@linux.intel.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 5/5] ASoC: tegra: remove support of legacy DMA driver
- based access
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-6-git-send-email-ldewangan@nvidia.com> <50526DFE.5030709@wwwdotorg.org> <20120914155335.GB4684@opensource.wolfsonmicro.com>
-In-Reply-To: <20120914155335.GB4684@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 09:53 AM, Mark Brown wrote:
-> On Thu, Sep 13, 2012 at 05:36:30PM -0600, Stephen Warren wrote:
+On Mon, 10 Sep 2012, Konrad Rzeszutek Wilk wrote:
+> That way we can more easily reuse those errors when using the
+> late SWIOTLB init.
 > 
->> Please note that I've applied this to Tegra's for-3.7/dmaengine branch,
->> even though it hasn't been ack'd by an ASoC maintainer.
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+>  drivers/xen/swiotlb-xen.c |   35 +++++++++++++++++++++++++++--------
+>  1 files changed, 27 insertions(+), 8 deletions(-)
 > 
-> Please don't apply this without review, we've got quite enough problems
-> with the dmaengine stuff as it is unfortunately so I want to keep a
-> handle on what's going on.  I didn't look at it since when it was
-> originally posted people found problems in testing so I was expecting a
-> respin of the series.
-
-OK, I'll remove the series from next then.
-
-But do note that I pinged 8 days ago for an ack, and received no
-objections, and you were well aware that the bug was fixed since you
-applied the fix to the Tegra ASoC PCM driver yourself, and we had
-discussed this being a dependency for the dmaengine patches, and you'd
-told me to just base the Tegra branch on top of your tree until a signed
-tag was available for me to base upon.
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index a2aad6e..701b103 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -154,11 +154,33 @@ static unsigned long xen_set_nslabs(unsigned long nr_tbl)
+>  
+>  	return xen_io_tlb_nslabs << IO_TLB_SHIFT;
+>  }
+> +
+> +enum xen_swiotlb_err {
+> +	XEN_SWIOTLB_UNKNOWN = 0,
+> +	XEN_SWIOTLB_ENOMEM,
+> +	XEN_SWIOTLB_EFIXUP
+> +};
+> +
+> +static const char *xen_swiotlb_error(enum xen_swiotlb_err err)
+> +{
+> +	switch (err) {
+> +	case XEN_SWIOTLB_ENOMEM:
+> +		return "Cannot allocate Xen-SWIOTLB buffer\n";
+> +	case XEN_SWIOTLB_EFIXUP:
+> +		return "Failed to get contiguous memory for DMA from Xen!\n"\
+> +		    "You either: don't have the permissions, do not have"\
+> +		    " enough free memory under 4GB, or the hypervisor memory"\
+> +		    " is too fragmented!";
+> +	default:
+> +		break;
+> +	}
+> +	return "";
+> +}
+>  void __init xen_swiotlb_init(int verbose)
+>  {
+>  	unsigned long bytes;
+>  	int rc = -ENOMEM;
+> -	char *m = NULL;
+> +	enum xen_swiotlb_err m_ret = XEN_SWIOTLB_UNKNOWN;
+>  	unsigned int repeat = 3;
+>  
+>  	xen_io_tlb_nslabs = swiotlb_nr_tbl();
+> @@ -169,7 +191,7 @@ retry:
+>  	 */
+>  	xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
+>  	if (!xen_io_tlb_start) {
+> -		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
+> +		m_ret = XEN_SWIOTLB_ENOMEM;
+>  		goto error;
+>  	}
+>  	xen_io_tlb_end = xen_io_tlb_start + bytes;
+> @@ -181,10 +203,7 @@ retry:
+>  			       xen_io_tlb_nslabs);
+>  	if (rc) {
+>  		free_bootmem(__pa(xen_io_tlb_start), PAGE_ALIGN(bytes));
+> -		m = "Failed to get contiguous memory for DMA from Xen!\n"\
+> -		    "You either: don't have the permissions, do not have"\
+> -		    " enough free memory under 4GB, or the hypervisor memory"\
+> -		    "is too fragmented!";
+> +		m_ret = XEN_SWIOTLB_EFIXUP;
+>  		goto error;
+>  	}
+>  	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
+> @@ -199,8 +218,8 @@ error:
+>  		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
+>  		goto retry;
+>  	}
+> -	xen_raw_printk("%s (rc:%d)", m, rc);
+> -	panic("%s (rc:%d)", m, rc);
+> +	xen_raw_printk("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
+> +	panic("%s (rc:%d)", xen_swiotlb_error(m_ret), rc);
+>  }
+>  
+>  void *
+> -- 
+> 1.7.7.6
+> 
