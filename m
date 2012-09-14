@@ -1,47 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2INA0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 20:26:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60087 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932365Ab2INAZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 20:25:07 -0400
-Message-ID: <1347582306.9481.0.camel@joe2Laptop>
-Subject: Re: [PATCH 07/24] Staging: ipack/devices/ipoctal: Store isr masks
- in ipoctal_channel
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        industrypack-devel@lists.sourceforge.net
-Date: Thu, 13 Sep 2012 17:25:06 -0700
-In-Reply-To: <20120913191717.GB13767@mwanda>
-References: <1347454546-23236-1-git-send-email-siglesias@igalia.com>
-	 <1347454546-23236-7-git-send-email-siglesias@igalia.com>
-	 <20120913174312.GB4587@mwanda> <20120913174927.GA13767@mwanda>
-	 <1347560357.5884.7.camel@joe2Laptop>
-	 <20120913184346.GA11613@endeavour.taprogge.org>
-	 <20120913191717.GB13767@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1759263Ab2INA2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 20:28:40 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:24592 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab2INA2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 20:28:38 -0400
+Message-ID: <1347582132.3569.13.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
+ hotplug testing.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
+Date: Thu, 13 Sep 2012 18:22:12 -0600
+In-Reply-To: <1346794495.4732.221.camel@misato.fc.hp.com>
+References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
+	 <1346776024.4732.196.camel@misato.fc.hp.com>
+	 <CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
+	 <1346794495.4732.221.camel@misato.fc.hp.com>
+Content-Type: multipart/mixed; boundary="=-9GC13nXKRrnpgBHzmF7/"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 22:17 +0300, Dan Carpenter wrote:
 
-> If it weren't in staging-next then, yeah, it probably would have
-> been better to resend those two patches.  You could send them by
-> themselves without resending any of the others.  But once they hit
-> staging-next, it's too late.
+--=-9GC13nXKRrnpgBHzmF7/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+> > >> +
+> > >> +     /*
+> > >> +      * Check for internal object and make sure there is a handler
+> > >> +      * registered for this object
+> > >> +      */
+> > >> +     obj_desc = acpi_ns_get_attached_object(node);
+> > >> +     if (obj_desc) {
+> > >> +             if (obj_desc->common_notify.notify_list[0]) {
+> > >
+> > > Is the above check necessary?  acpi_ev_queue_notify_request() sets up to
+> > > call the global handler, acpi_gbl_global_notify[0], even if the object
+> > > does not have a local handler registered.
+> > 
+> > Not sure.
+> > 
+> > maybe Len or other acpi guyes could answer your questions.
 > 
-> No stress.
+> I think this check should be removed, but would like someone to
+> verify...
 
-What Dan said.  I didn't know it was already picked up.
 
-cheers, Joe
+Hi Yinghai,
+
+Attached is my suggested update to your patch. It allows a SCI to be
+sent to any object, and therefore can be used for testing the global
+notify handler. Some drivers such as dock.c only register their handler
+to the global notify handler. I also made a few minor changes. I have
+been testing with this update and it is working fine. I like this
+feature, so I hope we can make progress with this update.
+
+Thanks,
+-Toshi
+
+--=-9GC13nXKRrnpgBHzmF7/
+Content-Disposition: attachment;
+	filename="0001-ACPI-Update-CONFIG_ACPI_SCI_EMULATE-patch.patch"
+Content-Type: text/x-patch; name="0001-ACPI-Update-CONFIG_ACPI_SCI_EMULATE-patch.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From 2bd8a7998696c413dcc0bea089d7d9f8e548afcd Mon Sep 17 00:00:00 2001
+From: Toshi Kani <toshi.kani@hp.com>
+Date: Thu, 13 Sep 2012 17:45:38 -0600
+Subject: [PATCH] ACPI: Update CONFIG_ACPI_SCI_EMULATE patch
+
+---
+ drivers/acpi/sci_emu.c |   47 +++++++++++++++--------------------------------
+ 1 files changed, 15 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/acpi/sci_emu.c b/drivers/acpi/sci_emu.c
+index 2f13ca1..efa0f6a 100644
+--- a/drivers/acpi/sci_emu.c
++++ b/drivers/acpi/sci_emu.c
+@@ -23,16 +23,12 @@ static struct dentry *sci_notify_dentry;
+ static void sci_notify_client(char *acpi_name, u32 event)
+ {
+ 	struct acpi_namespace_node *node;
+-	acpi_status status, status1;
+-	acpi_handle hlsb, hsb;
+-	union acpi_operand_object *obj_desc;
+-
+-	status = acpi_get_handle(NULL, "\\_SB", &hsb);
+-	status1 = acpi_get_handle(hsb, acpi_name, &hlsb);
+-	if (ACPI_FAILURE(status) || ACPI_FAILURE(status1)) {
+-		pr_err(PREFIX
+-	"acpi getting handle to <\\_SB.%s> failed inside notify_client\n",
+-			acpi_name);
++	acpi_status status;
++	acpi_handle handle;
++
++	status = acpi_get_handle(NULL, acpi_name, &handle);
++	if (ACPI_FAILURE(status)) {
++		pr_err(PREFIX "Invalid ACPI device name <%s>\n", acpi_name);
+ 		return;
+ 	}
+ 
+@@ -42,7 +38,7 @@ static void sci_notify_client(char *acpi_name, u32 event)
+ 		return;
+ 	}
+ 
+-	node = acpi_ns_validate_handle(hlsb);
++	node = acpi_ns_validate_handle(handle);
+ 	if (!node) {
+ 		acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+ 		pr_err(PREFIX "Mapping handle to node failed\n");
+@@ -50,29 +46,16 @@ static void sci_notify_client(char *acpi_name, u32 event)
+ 	}
+ 
+ 	/*
+-	 * Check for internal object and make sure there is a handler
+-	 * registered for this object
++	 * Release the lock and queue the item for later
++	 * exectuion
+ 	 */
+-	obj_desc = acpi_ns_get_attached_object(node);
+-	if (obj_desc) {
+-		if (obj_desc->common_notify.notify_list[0]) {
+-			/*
+-			 * Release the lock and queue the item for later
+-			 * exectuion
+-			 */
+-			acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+-			status = acpi_ev_queue_notify_request(node, event);
+-			if (ACPI_FAILURE(status))
+-				pr_err(PREFIX "acpi_ev_queue_notify_request failed\n");
+-			else
+-				pr_info(PREFIX "Notify event is queued\n");
+-			return;
+-		}
+-	} else {
+-		pr_info(PREFIX "Notify handler not registered for this device\n");
+-	}
+-
+ 	acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
++	status = acpi_ev_queue_notify_request(node, event);
++	if (ACPI_FAILURE(status))
++		pr_err(PREFIX "acpi_ev_queue_notify_request failed\n");
++	else
++		pr_info(PREFIX "Notify event is queued\n");
++
+ 	return;
+ }
+ 
+-- 
+1.7.7.6
+
+
+--=-9GC13nXKRrnpgBHzmF7/--
 
