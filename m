@@ -1,82 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2INOVF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:21:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49010 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2INOVC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:21:02 -0400
-Message-ID: <50533D46.5000704@arm.com>
-Date: Fri, 14 Sep 2012 15:20:54 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1755740Ab2INOZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:25:20 -0400
+Received: from ares07.inai.de ([5.9.24.206]:51831 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab2INOZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:25:18 -0400
+Date: Fri, 14 Sep 2012 16:25:15 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Jim Rees <rees@umich.edu>
+cc: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+In-Reply-To: <20120914134637.GA8943@umich.edu>
+Message-ID: <alpine.LNX.2.01.1209141624530.18169@frira.zrqbmnf.qr>
+References: <20120821212910.GD18637@fieldses.org> <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr> <1347614276.26071.15.camel@thorin> <alpine.LNX.2.01.1209141456290.18169@frira.zrqbmnf.qr> <20120914134637.GA8943@umich.edu>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 16/24] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-16-git-send-email-stefano.stabellini@eu.citrix.com> <505338E6.4050504@arm.com> <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com>
-X-Enigmail-Version: 1.5a1pre
-X-OriginalArrivalTime: 14 Sep 2012 14:20:57.0799 (UTC) FILETIME=[2897D570:01CD9284]
-X-MC-Unique: 112091415210007201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/09/12 15:13, Stefano Stabellini wrote:
-> On Fri, 14 Sep 2012, Marc Zyngier wrote:
->> On 14/09/12 12:13, Stefano Stabellini wrote:
->>> Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
->>> default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
->>> irq_startup, that is responsible for calling irq_unmask at startup time.
->>> As a result event channels remain masked.
->>>
->>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> ---
->>>  drivers/xen/events.c |    1 +
->>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
->>> index 5ecb596..8ffb7b7 100644
->>> --- a/drivers/xen/events.c
->>> +++ b/drivers/xen/events.c
->>> @@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
->>>  		struct irq_info *info = info_for_irq(irq);
->>>  		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
->>>  	}
->>> +	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
->>
->> This one just sent a shiver down my spine. Are you doing this for a PPI?
-> 
-> Not really: even though there is just one source of event notifications
-> (that is a PPI), we have many event channels. When a domain receives a
-> notification (via the PPI), it checks on a bitmask to which event channel
-> it corresponds. From the Linux point of view every event channel is a
-> Linux irq belonging to the xen_dynamic_chip (see
-> drivers/xen/events.c:xen_dynamic_chip).
-> 
-> So here I am not doing this for the one PPI, but I am doing this for
-> every Linux irq (of chip xen_dynamic_chip) that represents an event
-> channel.
+On Friday 2012-09-14 15:46, Jim Rees wrote:
 
-So this is some sort of secondary interrupt controller, cascaded into
-your GIC emulation, and this patch only affects the xen_dynamic_chip?
+>Jan Engelhardt wrote:
+>
+>  >A pure K&R-C version would use a string:
+>  >#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
+>  >(if I converted them properly into hexadecimal)
+>  The syntax is \x01\x03\x05...
+>
+>K&R doesn't have the \x escape, only \0 (octal).
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+People recommend K&R only for the introductory reading, not for its 
+actuality.
