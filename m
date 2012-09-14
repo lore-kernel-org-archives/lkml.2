@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab2INVcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 17:32:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41391 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab2INVcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 17:32:41 -0400
-Date: Fri, 14 Sep 2012 23:32:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/asm] x86: Prefer TZCNT over BFS
-Message-ID: <20120914213239.GB29307@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>, mingo@kernel.org,
-	hpa@zytor.com, linux-kernel@vger.kernel.org, JBeulich@suse.com,
-	tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-References: <504DEA1B020000780009A277@nat28.tlf.novell.com>
- <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org>
- <CA+55aFxs3FUETs830p-ow29RDibu9=d77gxqaueX-wZyr8-40A@mail.gmail.com>
+	id S1756871Ab2INVea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:34:30 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:31059 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab2INVe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 17:34:28 -0400
+Subject: [PATCH] hpsa: fix handling of protocol error
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Fri, 14 Sep 2012 16:34:25 -0500
+Message-ID: <20120914213424.12032.43765.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxs3FUETs830p-ow29RDibu9=d77gxqaueX-wZyr8-40A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 02:14:57PM -0700, Linus Torvalds wrote:
-> On Thu, Sep 13, 2012 at 11:23 PM, tip-bot for Jan Beulich
-> <JBeulich@suse.com> wrote:
-> >
-> > x86: Prefer TZCNT over BFS
-> 
-> This patch is insane.
-> 
-> > For the moment, only do this when the respective generic-CPU
-> > option is selected (as there are no specific-CPU options
-> > covering the CPUs supporting TZCNT), and don't do that when size
-> > optimization was requested.
-> 
-> This is pure garbage.
-> 
-> Anybody who thinks this:
-> 
-> > +#if (defined(CONFIG_X86_GENERIC) || defined(CONFIG_GENERIC_CPU)) \
-> > +    && !defined(CONFIG_CC_OPTIMIZE_FOR_SIZE)
-> 
-> is a good idea should be shot. Don't do it.
-> 
-> Introduce a new CONFIG variable with a sane name, for chrissake, the
-> same way we have CONFIG_X86_XADD etc. It would be logical to call it
-> X86_TZCNT, wouldn't it?
-> 
-> And then add sane rules for that in the x86 config file. And no, the
-> above is *NOT* a sane rule at all. If I read that right, it will
-> enable TZCNT even for old 32-bit CPU's, for example. That's just
-> f*cking insane.
-> 
-> Stop this kind of idiocy. The code looks bad, and the logic is pure shit too.
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-And the other important question is, is this even worth the complexity?
-I mean "may execute that faster than 'bsf ...'" doesn't mean a lot so
-can anyone remind me again why we're doing this?
+If a command status of CMD_PROTOCOL_ERR is received, this
+information should be conveyed to the SCSI mid layer, not
+dropped on the floor.  CMD_PROTOCOL_ERR may be received
+from the Smart Array for any commands destined for an external
+RAID controller such as a P2000, or commands destined for tape
+drives or CD/DVD-ROM drives, if for instance a cable is
+disconnected.  This mostly affects multipath configurations, as
+disconnecting a cable on a non-multipath configuration is not
+going to do anything good regardless of whether CMD_PROTOCOL_ERR
+is handled correctly or not.  Not handling CMD_PROTOCOL_ERR
+correctly in a multipath configaration involving external RAID
+controllers may cause data corruption, so this is quite a serious
+bug.  This bug should not normally cause a problem for direct
+attached disk storage.
 
-Any hot paths I've missed?
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/scsi/hpsa.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks.
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 796482b..d3e0377 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1315,6 +1315,7 @@ static void complete_scsi_command(struct CommandList *cp)
+ 	}
+ 		break;
+ 	case CMD_PROTOCOL_ERR:
++		cmd->result = DID_ERROR << 16;
+ 		dev_warn(&h->pdev->dev, "cp %p has "
+ 			"protocol error \n", cp);
+ 		break;
 
--- 
-Regards/Gruss,
-    Boris.
