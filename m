@@ -1,78 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2INNZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:25:10 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27543 "EHLO
+	id S1754298Ab2INNZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:25:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28011 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2INNZB (ORCPT
+	with ESMTP id S1751349Ab2INNZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:25:01 -0400
-Date: Fri, 14 Sep 2012 09:13:57 -0400
+	Fri, 14 Sep 2012 09:25:55 -0400
+Date: Fri, 14 Sep 2012 09:14:53 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: arnd@arndb.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
         linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
         tim@xen.org, Ian.Campbell@citrix.com, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 23/24] xen: update xen_add_to_physmap interface
-Message-ID: <20120914131357.GO25249@phenom.dumpdata.com>
+Subject: Re: [PATCH v4 15/24] xen/arm: receive Xen events on ARM
+Message-ID: <20120914131453.GP25249@phenom.dumpdata.com>
 References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
- <1347621207-11294-23-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1347621207-11294-15-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347621207-11294-23-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1347621207-11294-15-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 12:13:25PM +0100, Stefano Stabellini wrote:
-> Update struct xen_add_to_physmap to be in sync with Xen's version of the
-> structure.
-> The size field was introduced by:
-> 
-> changeset:   24164:707d27fe03e7
-> user:        Jean Guyader <jean.guyader@eu.citrix.com>
-> date:        Fri Nov 18 13:42:08 2011 +0000
-> summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-> 
-> According to the comment:
-> 
-> "This new field .size is located in the 16 bits padding between .domid
-> and .space in struct xen_add_to_physmap to stay compatible with older
-> versions."
-> 
-> Note: this patch should be already in Konrad's tree, it is here just for
-> convenience.
-> 
-> Changes in v2:
-> 
-> - remove erroneous comment in the commit message.
+On Fri, Sep 14, 2012 at 12:13:17PM +0100, Stefano Stabellini wrote:
+> Compile events.c on ARM.
+> Parse, map and enable the IRQ to get event notifications from the device
+> tree (node "/xen").
 > 
 > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-.. and I already have this queued for 3.7.
 > ---
->  include/xen/interface/memory.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  arch/arm/include/asm/xen/events.h |   18 ++++++++++++++++++
+>  arch/arm/xen/enlighten.c          |   33 +++++++++++++++++++++++++++++++++
+>  arch/x86/xen/enlighten.c          |    1 +
+>  arch/x86/xen/irq.c                |    1 +
+>  arch/x86/xen/xen-ops.h            |    1 -
+>  drivers/xen/events.c              |   17 ++++++++++++++---
+>  include/xen/events.h              |    2 ++
+>  7 files changed, 69 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/include/asm/xen/events.h
 > 
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index b5c3098..b66d04c 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
->      /* Which domain to change the mapping for. */
->      domid_t domid;
->  
-> +    /* Number of pages to go through for gmfn_range */
-> +    uint16_t    size;
+> diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+> new file mode 100644
+> index 0000000..94b4e90
+> --- /dev/null
+> +++ b/arch/arm/include/asm/xen/events.h
+> @@ -0,0 +1,18 @@
+> +#ifndef _ASM_ARM_XEN_EVENTS_H
+> +#define _ASM_ARM_XEN_EVENTS_H
 > +
->      /* Source mapping space. */
->  #define XENMAPSPACE_shared_info 0 /* shared info page */
->  #define XENMAPSPACE_grant_table 1 /* grant table page */
+> +#include <asm/ptrace.h>
+> +
+> +enum ipi_vector {
+> +	XEN_PLACEHOLDER_VECTOR,
+> +
+> +	/* Xen IPIs go here */
+> +	XEN_NR_IPIS,
+> +};
+> +
+> +static inline int xen_irqs_disabled(struct pt_regs *regs)
+> +{
+> +	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+> +}
+> +
+> +#endif /* _ASM_ARM_XEN_EVENTS_H */
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index 036a4d8..bad67ad 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -1,4 +1,5 @@
+>  #include <xen/xen.h>
+> +#include <xen/events.h>
+>  #include <xen/grant_table.h>
+>  #include <xen/hvm.h>
+>  #include <xen/interface/xen.h>
+> @@ -9,6 +10,8 @@
+>  #include <xen/xenbus.h>
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irqreturn.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/of_irq.h>
+> @@ -33,6 +36,8 @@ EXPORT_SYMBOL_GPL(xen_have_vector_callback);
+>  int xen_platform_pci_unplug = XEN_UNPLUG_ALL;
+>  EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
+>  
+> +static __read_mostly int xen_events_irq = -1;
+> +
+>  int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>  			       unsigned long addr,
+>  			       unsigned long mfn, int nr,
+> @@ -74,6 +79,9 @@ static int __init xen_guest_init(void)
+>  	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
+>  		return 0;
+>  	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
+> +	xen_events_irq = irq_of_parse_and_map(node, 0);
+> +	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
+> +			version, xen_events_irq, xen_hvm_resume_frames);
+>  	xen_domain_type = XEN_HVM_DOMAIN;
+>  
+>  	xen_setup_features();
+> @@ -115,3 +123,28 @@ static int __init xen_guest_init(void)
+>  	return 0;
+>  }
+>  core_initcall(xen_guest_init);
+> +
+> +static irqreturn_t xen_arm_callback(int irq, void *arg)
+> +{
+> +	xen_hvm_evtchn_do_upcall();
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __init xen_init_events(void)
+> +{
+> +	if (!xen_domain() || xen_events_irq < 0)
+> +		return -ENODEV;
+> +
+> +	xen_init_IRQ();
+> +
+> +	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
+> +			"events", xen_vcpu)) {
+> +		pr_err("Error requesting IRQ %d\n", xen_events_irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	enable_percpu_irq(xen_events_irq, 0);
+> +
+> +	return 0;
+> +}
+> +postcore_initcall(xen_init_events);
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 9642d4a..3f8263e 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/memblock.h>
+>  
+>  #include <xen/xen.h>
+> +#include <xen/events.h>
+>  #include <xen/interface/xen.h>
+>  #include <xen/interface/version.h>
+>  #include <xen/interface/physdev.h>
+> diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
+> index 1573376..01a4dc0 100644
+> --- a/arch/x86/xen/irq.c
+> +++ b/arch/x86/xen/irq.c
+> @@ -5,6 +5,7 @@
+>  #include <xen/interface/xen.h>
+>  #include <xen/interface/sched.h>
+>  #include <xen/interface/vcpu.h>
+> +#include <xen/events.h>
+>  
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/hypervisor.h>
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 202d4c1..2368295 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -35,7 +35,6 @@ void xen_set_pat(u64);
+>  
+>  char * __init xen_memory_setup(void);
+>  void __init xen_arch_setup(void);
+> -void __init xen_init_IRQ(void);
+>  void xen_enable_sysenter(void);
+>  void xen_enable_syscall(void);
+>  void xen_vcpu_restore(void);
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 7595581..5ecb596 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -31,14 +31,16 @@
+>  #include <linux/irqnr.h>
+>  #include <linux/pci.h>
+>  
+> +#ifdef CONFIG_X86
+>  #include <asm/desc.h>
+>  #include <asm/ptrace.h>
+>  #include <asm/irq.h>
+>  #include <asm/idle.h>
+>  #include <asm/io_apic.h>
+> -#include <asm/sync_bitops.h>
+>  #include <asm/xen/page.h>
+>  #include <asm/xen/pci.h>
+> +#endif
+> +#include <asm/sync_bitops.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/hypervisor.h>
+>  
+> @@ -50,6 +52,9 @@
+>  #include <xen/interface/event_channel.h>
+>  #include <xen/interface/hvm/hvm_op.h>
+>  #include <xen/interface/hvm/params.h>
+> +#include <xen/interface/physdev.h>
+> +#include <xen/interface/sched.h>
+> +#include <asm/hw_irq.h>
+>  
+>  /*
+>   * This lock protects updates to the following mapping and reference-count
+> @@ -1374,7 +1379,9 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+>  {
+>  	struct pt_regs *old_regs = set_irq_regs(regs);
+>  
+> +#ifdef CONFIG_X86
+>  	exit_idle();
+> +#endif
+>  	irq_enter();
+>  
+>  	__xen_evtchn_do_upcall();
+> @@ -1783,9 +1790,9 @@ void xen_callback_vector(void)
+>  void xen_callback_vector(void) {}
+>  #endif
+>  
+> -void __init xen_init_IRQ(void)
+> +void xen_init_IRQ(void)
+>  {
+> -	int i, rc;
+> +	int i;
+>  
+>  	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
+>  				    GFP_KERNEL);
+> @@ -1801,6 +1808,7 @@ void __init xen_init_IRQ(void)
+>  
+>  	pirq_needs_eoi = pirq_needs_eoi_flag;
+>  
+> +#ifdef CONFIG_X86
+>  	if (xen_hvm_domain()) {
+>  		xen_callback_vector();
+>  		native_init_IRQ();
+> @@ -1808,6 +1816,7 @@ void __init xen_init_IRQ(void)
+>  		 * __acpi_register_gsi can point at the right function */
+>  		pci_xen_hvm_init();
+>  	} else {
+> +		int rc;
+>  		struct physdev_pirq_eoi_gmfn eoi_gmfn;
+>  
+>  		irq_ctx_init(smp_processor_id());
+> @@ -1823,4 +1832,6 @@ void __init xen_init_IRQ(void)
+>  		} else
+>  			pirq_needs_eoi = pirq_check_eoi_map;
+>  	}
+> +#endif
+>  }
+> +EXPORT_SYMBOL_GPL(xen_init_IRQ);
+> diff --git a/include/xen/events.h b/include/xen/events.h
+> index 04399b2..c6bfe01 100644
+> --- a/include/xen/events.h
+> +++ b/include/xen/events.h
+> @@ -109,4 +109,6 @@ int xen_irq_from_gsi(unsigned gsi);
+>  /* Determine whether to ignore this IRQ if it is passed to a guest. */
+>  int xen_test_irq_shared(int irq);
+>  
+> +/* initialize Xen IRQ subsystem */
+> +void xen_init_IRQ(void);
+>  #endif	/* _XEN_EVENTS_H */
 > -- 
 > 1.7.2.5
