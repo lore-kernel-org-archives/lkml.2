@@ -1,101 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab2INMxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:53:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58393 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754309Ab2INMxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:53:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
-   d="scan'208";a="222147148"
-Date: Fri, 14 Sep 2012 20:53:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120914125312.GA20973@localhost>
-References: <87wr002z39.fsf@devron.myhome.or.jp>
- <20120913063906.GA24974@localhost>
- <871ui6e4tl.fsf@devron.myhome.or.jp>
- <20120914111429.GA19509@localhost>
- <87r4q4n6r1.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4q4n6r1.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756081Ab2INMyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:54:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36503 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2INMyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 08:54:10 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Rob Landley <rob@landley.net>,
+        <linux-doc@vger.kernel.org>
+Subject: [PATCH 14/14] [media] davinci: vpfe: Add documentation
+Date: Fri, 14 Sep 2012 18:16:44 +0530
+Message-Id: <1347626804-5703-15-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
+References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 09:12:02PM +0900, OGAWA Hirofumi wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
-> 
-> >> >> @@ -120,6 +120,9 @@ __bdi_start_writeback(struct backing_dev
-> >> >>  {
-> >> >>  	struct wb_writeback_work *work;
-> >> >>  
-> >> >> +	if (!bdi_cap_writeback_dirty(bdi))
-> >> >> +		return;
-> >> >
-> >> > Will someone in the current kernel actually call
-> >> > __bdi_start_writeback() on a BDI_CAP_NO_WRITEBACK bdi?
-> >> >
-> >> > If the answer is no, VM_BUG_ON(!bdi_cap_writeback_dirty(bdi)) looks better.
-> >> 
-> >> I guess nobody call it in current kernel though. Hmm.., but we also have
-> >> check in __mark_inode_dirty(), nobody should be using it, right?
-> >> 
-> >> If we defined it as the bug, I can't see what BDI_CAP_NO_WRITEBACK wants
-> >> to do actually.  We are not going to allow to disable the writeback task?
-> >
-> >> I was going to use this to disable writeback task on my developing FS...
-> >
-> > That sounds like an interesting use case. Can you elaborate a bit more?
-> >
-> > Note that even if you disable __bdi_start_writeback() here, the kernel
-> > may also start writeback in the page reclaim path, the fsync() path,
-> > and perhaps more.
-> 
-> page reclaim and fsync path have FS handler. So, FS can control those.
-> 
-> The modern FS have to control to flush carefully. Many FSes are already
-> ignoring if wbc->sync_mode != WB_SYNC_ALL (e.g. ext3_write_inode,
-> nilfs_writepages), and have own FS task to flush.
+From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Yeah, that test is mainly to improve IO efficiency for
-non-data-integrity writes.
+Add documentation on the Davinci VPFE driver. Document the subdevs,
+and private IOTCLs the driver implements
 
-> The writeback task is always called with sync_mode != WB_SYNC_ALL except
-> sync_inodes_sb(). But FS has sb->s_op->sync_fs() handler for
-> sync_inodes_sb() path. So, writeback task just bothers FS to control to
-> flush.
-> 
-> Also it wants to control the reclaimable of inode cache too, because FS
-> have to control to flush, and wants to use inode in own FS task, and it
-> knows when inode is cleaned and can be reclaimed.
-> 
-> I thought there are 2 options - 1) pin inode with iget(), and iput() on
-> own FS task, 2) disable writeback task and care about inode reclaim by
-> dirty flags.
-> 
-> (1) was complex (e.g. inode can be the orphan inode), and seems to be
-> ineffective workaround to survive with writeback task.
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: <linux-doc@vger.kernel.org>
+---
+ Documentation/video4linux/davinci-vpfe-mc.txt |   95 +++++++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/video4linux/davinci-vpfe-mc.txt
 
-In principle, the VFS should of course give enough flexibility for the
-FS. But it's all about the details that matter. As for the
-BDI_CAP_NO_WRITEBACK approach, I'm afraid you'll not get the expected
-"FS control" through it. Because the flusher thread may already have a
-long queue of works which will take long time to finish. It even have
-its internal background/periodic works that's not controllable this
-way, see wb_check_background_flush().
+diff --git a/Documentation/video4linux/davinci-vpfe-mc.txt b/Documentation/video4linux/davinci-vpfe-mc.txt
+new file mode 100644
+index 0000000..9dfc4f9
+--- /dev/null
++++ b/Documentation/video4linux/davinci-vpfe-mc.txt
+@@ -0,0 +1,95 @@
++Davinci Video processing Front End (VPFE) driver
++
++Copyright (C) 2012 Texas Instruments Inc
++
++Contacts: Manjunath Hadli <manjunath.hadli@ti.com>
++
++
++Introduction
++============
++
++This file documents the Texas Instruments Davinci Video processing Front End
++(VPFE) driver located under drivers/media/platform/davinci. The original driver
++exists for Davinci VPFE, which is now being changed to Media Controller
++Framework.
++
++Currently the driver has been successfully used on the following
++version of Davinci:
++
++	DM365/DM368
++
++The driver implements V4L2, Media controller and v4l2_subdev interfaces. Sensor,
++lens and flash drivers using the v4l2_subdev interface in the kernel are
++supported.
++
++
++Split to subdevs
++================
++
++The Davinci VPFE is split into V4L2 subdevs, each of the blocks inside the VPFE
++having one subdev to represent it. Each of the subdevs provide a V4L2 subdev
++interface to userspace.
++
++	DAVINCI CCDC
++	DAVINCI PREVIEWER
++	DAVINCI RESIZER
++
++Each possible link in the VPFE is modeled by a link in the Media controller
++interface. For an example program see [1].
++
++
++Private IOCTLs
++==============
++
++The Davinci Video processing Front End (VPFE) driver supports standard V4L2
++IOCTLs and controls where possible and practical. Much of the functions provided
++by the VPFE, however, does not fall under the standard IOCTL's.
++
++In general, there is a private ioctl for configuring each of the blocks
++containing hardware-dependent functions.
++
++The following private IOCTLs are supported:
++
++	VIDIOC_VPFE_CCDC_[S/G]_RAW_PARAMS
++	VIDIOC_VPFE_PRV_[S/G]_CONFIG
++	VIDIOC_VPFE_RSZ_[S/G]_CONFIG
++
++The parameter structures used by these ioctl's are described in
++include/linux/davinci_vpfe.h and include/linux/dm365_ccdc.h.
++
++The VIDIOC_VPFE_CCDC_S_RAW_PARAMS, VIDIOC_VPFE_PRV_S_CONFIG and
++VIDIOC_VPFE_RSZ_S_CONFIG are used to configure, enable and disable functions in
++the CCDC, preview and resizer blocks respectively. These IOCTL's control several
++functions in the blocks they control. VIDIOC_VPFE_CCDC_S_RAW_PARAMS IOCTL
++accepts a pointer to struct ccdc_config_params_raw as its argument. Similarly
++VIDIOC_VPFE_PRV_S_CONFIG accepts a pointer to struct vpfe_prev_config. And
++VIDIOC_VPFE_RSZ_S_CONFIG accepts a pointer to struct vpfe_rsz_config as its
++argument. Similarly VIDIOC_VPFE_CCDC_G_RAW_PARAMS, VIDIOC_VPFE_PRV_G_CONFIG and
++VIDIOC_VPFE_RSZ_G_CONFIG are used to get the current configuration set
++in the CCDC, preview and resizer blocks respectively.
++
++The detailed functions of the VPFE itself related to a given VPFE block is
++described in the Technical Reference Manuals (TRMs) --- see the end of the
++document for those.
++
++
++Technical reference manuals (TRMs) and other documentation
++==========================================================
++
++Davinci DM365 TRM:
++<URL:http://www.ti.com/lit/ds/sprs457e/sprs457e.pdf>
++Referenced MARCH 2009-REVISED JUNE 2011
++
++Davinci DM368 TRM:
++<URL:http://www.ti.com/lit/ds/sprs668c/sprs668c.pdf>
++Referenced APRIL 2010-REVISED JUNE 2011
++
++Davinci Video Processing Front End (VPFE) DM36x
++<URL:http://www.ti.com/lit/ug/sprufg8c/sprufg8c.pdf>
++
++
++References
++==========
++
++[1] http://git.ideasonboard.org/?p=media-ctl.git;a=summary
++[2] include/linux/davinci_vpfe.h & include/linux/dm365_ccdc.h
+-- 
+1.7.4.1
 
-And BDI_CAP_NO_WRITEBACK is expected to be a static/constant flag that
-always evaluate to true/false for a given bdi.  There will be
-correctness problems if you change the BDI_CAP_NO_WRITEBACK flag
-dynamically.
-
-Thanks,
-Fengguang
