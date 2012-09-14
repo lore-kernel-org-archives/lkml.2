@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab2INPbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:31:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36948 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757042Ab2INPbL (ORCPT
+	id S1758649Ab2INPen (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:34:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51710 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab2INPem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:31:11 -0400
-Message-ID: <50534DBB.6010700@wwwdotorg.org>
-Date: Fri, 14 Sep 2012 09:31:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: tegra: dt: Add pinmux entries for Vbus regulator
- controls
-References: <1347614754-26357-1-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1347614754-26357-1-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Sep 2012 11:34:42 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] i915: Don't register backlight when max PWM value is unknown
+Date: Fri, 14 Sep 2012 16:34:28 +0100
+Message-Id: <1347636868-3100-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 03:25 AM, Venu Byravarasu wrote:
-> Adding pinmux entries for PI4 and PH7 to enable Vbus for USB1
-> and USB3 controllers on Cardhu A02 board.
-> 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+When a backlight isn't connected to the i915 it doesn't make any sense
+to register the backlight device, but the driver currently tries to limp
+along using a max brightness value of 1. Instead, this patch makes it so
+that if the maximum PWM value cannot be determined, then the backlight
+will not be registered.
 
-Given our internal discussions about whether to and how to configure
-open-drain and enable-input on these pins, I'd like to hold off on this
-patch. Lets resolve this internally first.
+Tested on MacbookPro8,3.
 
-Also, I assume we'll need an equivalent patch for Cardhu A04 too.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/gpu/drm/i915/intel_panel.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 3df4f5f..f410c6e 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -168,13 +168,8 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+ 	u32 max;
+ 
+ 	max = i915_read_blc_pwm_ctl(dev_priv);
+-	if (max == 0) {
+-		/* XXX add code here to query mode clock or hardware clock
+-		 * and program max PWM appropriately.
+-		 */
+-		pr_warn_once("fixme: max PWM is zero\n");
+-		return 1;
+-	}
++	if (max == 0)
++		return 0; /* Cannot read max PWM. Assume no backlight */
+ 
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		max >>= 16;
+@@ -413,6 +408,12 @@ int intel_panel_setup_backlight(struct drm_device *dev)
+ 	struct backlight_properties props;
+ 	struct drm_connector *connector;
+ 
++	/* Is there a backlight present? max will be zero if not */
++	if (intel_panel_get_max_backlight(dev) == 0) {
++		DRM_INFO("i915 doesn't seem to be connected to backlight\n");
++		return 0;
++	}
++
+ 	intel_panel_init_backlight(dev);
+ 
+ 	if (dev_priv->int_lvds_connector)
+-- 
+1.7.9.5
+
