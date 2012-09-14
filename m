@@ -1,178 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab2INJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:18:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59061 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758311Ab2INJSQ (ORCPT
+	id S1758383Ab2INJUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:20:12 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1950 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754820Ab2INJUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:18:16 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: <linux-doc@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, Rob Landley <rob@landley.net>
-Subject: [PATCH] v4l: change path of video drivers
-Date: Fri, 14 Sep 2012 14:47:52 +0530
-Message-Id: <1347614272-24878-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 14 Sep 2012 05:20:10 -0400
+Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        Jim Rees <rees@umich.edu>
+Date: Fri, 14 Sep 2012 11:17:54 +0200
+In-Reply-To: <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
+References: <20120821212910.GD18637@fieldses.org>
+	 <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1347614276.26071.15.camel@thorin>
+Mime-Version: 1.0
+X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Mon, 2012-09-10 at 08:19 +0200, Jan Engelhardt wrote:
+> On Tuesday 2012-08-21 23:29, J. Bruce Fields wrote:
+[...]
+> >+/*
+> >+ * length of the decimal representation of an unsigned integer.  Just an
+> >+ * approximation, but it's right for types of size 1 to 36 bytes:
+> >+ */
+> >+#define base10len(i) (sizeof(i) * 24 / 10 + 1)
+> 
+> gcc provides... "interesting" features at times.
+> 
+> /* for unsigned "i"s */
+> #define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[i])
 
-due to structure change for video drivers, change the
-description with correct path.
+Shouldn't that have been
+----  snip ----
+#define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[sizeof(i)])
+----  snip ----
+?
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Rob Landley <rob@landley.net>
----
- Documentation/video4linux/CQcam.txt           |    2 +-
- Documentation/video4linux/README.davinci-vpbe |   20 ++++++++++----------
- Documentation/video4linux/fimc.txt            |   16 ++++++++--------
- Documentation/video4linux/omap3isp.txt        |    2 +-
- Documentation/video4linux/v4l2-framework.txt  |    2 +-
- Documentation/video4linux/videobuf            |    2 +-
- 6 files changed, 22 insertions(+), 22 deletions(-)
+A pure K&R-C version would use a string:
+----  snip ----
+#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
+----  snip ----
+(if I converted them properly into hexadecimal) and that gives a "char"
+which is happily promoted to whatever one needs in that place.
 
-diff --git a/Documentation/video4linux/CQcam.txt b/Documentation/video4linux/CQcam.txt
-index 6e680fe..0b69e4e 100644
---- a/Documentation/video4linux/CQcam.txt
-+++ b/Documentation/video4linux/CQcam.txt
-@@ -18,7 +18,7 @@ Table of Contents
- 
- 1.0 Introduction
- 
--  The file ../../drivers/media/video/c-qcam.c is a device driver for
-+  The file ../../drivers/media/parport/c-qcam.c is a device driver for
- the Logitech (nee Connectix) parallel port interface color CCD camera.
- This is a fairly inexpensive device for capturing images.  Logitech
- does not currently provide information for developers, but many people
-diff --git a/Documentation/video4linux/README.davinci-vpbe b/Documentation/video4linux/README.davinci-vpbe
-index 7a460b0..dc9a297 100644
---- a/Documentation/video4linux/README.davinci-vpbe
-+++ b/Documentation/video4linux/README.davinci-vpbe
-@@ -5,22 +5,22 @@
-  File partitioning
-  -----------------
-  V4L2 display device driver
--         drivers/media/video/davinci/vpbe_display.c
--         drivers/media/video/davinci/vpbe_display.h
-+         drivers/media/platform/davinci/vpbe_display.c
-+         drivers/media/platform/davinci/vpbe_display.h
- 
-  VPBE display controller
--         drivers/media/video/davinci/vpbe.c
--         drivers/media/video/davinci/vpbe.h
-+         drivers/media/platform/davinci/vpbe.c
-+         drivers/media/platform/davinci/vpbe.h
- 
-  VPBE venc sub device driver
--         drivers/media/video/davinci/vpbe_venc.c
--         drivers/media/video/davinci/vpbe_venc.h
--         drivers/media/video/davinci/vpbe_venc_regs.h
-+         drivers/media/platform/davinci/vpbe_venc.c
-+         drivers/media/platform/davinci/vpbe_venc.h
-+         drivers/media/platform/davinci/vpbe_venc_regs.h
- 
-  VPBE osd driver
--         drivers/media/video/davinci/vpbe_osd.c
--         drivers/media/video/davinci/vpbe_osd.h
--         drivers/media/video/davinci/vpbe_osd_regs.h
-+         drivers/media/platform/davinci/vpbe_osd.c
-+         drivers/media/platform/davinci/vpbe_osd.h
-+         drivers/media/platform/davinci/vpbe_osd_regs.h
- 
-  Functional partitioning
-  -----------------------
-diff --git a/Documentation/video4linux/fimc.txt b/Documentation/video4linux/fimc.txt
-index eb04970..fd02d9a 100644
---- a/Documentation/video4linux/fimc.txt
-+++ b/Documentation/video4linux/fimc.txt
-@@ -10,7 +10,7 @@ data from LCD controller (FIMD) through the SoC internal writeback data
- path.  There are multiple FIMC instances in the SoCs (up to 4), having
- slightly different capabilities, like pixel alignment constraints, rotator
- availability, LCD writeback support, etc. The driver is located at
--drivers/media/video/s5p-fimc directory.
-+drivers/media/platform/s5p-fimc directory.
- 
- 1. Supported SoCs
- =================
-@@ -36,21 +36,21 @@ Not currently supported:
- =====================
- 
- - media device driver
--  drivers/media/video/s5p-fimc/fimc-mdevice.[ch]
-+  drivers/media/platform/s5p-fimc/fimc-mdevice.[ch]
- 
-  - camera capture video device driver
--  drivers/media/video/s5p-fimc/fimc-capture.c
-+  drivers/media/platform/s5p-fimc/fimc-capture.c
- 
-  - MIPI-CSI2 receiver subdev
--  drivers/media/video/s5p-fimc/mipi-csis.[ch]
-+  drivers/media/platform/s5p-fimc/mipi-csis.[ch]
- 
-  - video post-processor (mem-to-mem)
--  drivers/media/video/s5p-fimc/fimc-core.c
-+  drivers/media/platform/s5p-fimc/fimc-core.c
- 
-  - common files
--  drivers/media/video/s5p-fimc/fimc-core.h
--  drivers/media/video/s5p-fimc/fimc-reg.h
--  drivers/media/video/s5p-fimc/regs-fimc.h
-+  drivers/media/platform/s5p-fimc/fimc-core.h
-+  drivers/media/platform/s5p-fimc/fimc-reg.h
-+  drivers/media/platform/s5p-fimc/regs-fimc.h
- 
- 4. User space interfaces
- ========================
-diff --git a/Documentation/video4linux/omap3isp.txt b/Documentation/video4linux/omap3isp.txt
-index 5dd1439..b9a9f83 100644
---- a/Documentation/video4linux/omap3isp.txt
-+++ b/Documentation/video4linux/omap3isp.txt
-@@ -12,7 +12,7 @@ Introduction
- ============
- 
- This file documents the Texas Instruments OMAP 3 Image Signal Processor (ISP)
--driver located under drivers/media/video/omap3isp. The original driver was
-+driver located under drivers/media/platform/omap3isp. The original driver was
- written by Texas Instruments but since that it has been rewritten (twice) at
- Nokia.
- 
-diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
-index 89318be..e7006ca 100644
---- a/Documentation/video4linux/v4l2-framework.txt
-+++ b/Documentation/video4linux/v4l2-framework.txt
-@@ -1054,4 +1054,4 @@ The first event type in the class is reserved for future use, so the first
- available event type is 'class base + 1'.
- 
- An example on how the V4L2 events may be used can be found in the OMAP
--3 ISP driver (drivers/media/video/omap3isp).
-+3 ISP driver (drivers/media/platform/omap3isp).
-diff --git a/Documentation/video4linux/videobuf b/Documentation/video4linux/videobuf
-index 1d00d7f..3ffe9e9 100644
---- a/Documentation/video4linux/videobuf
-+++ b/Documentation/video4linux/videobuf
-@@ -349,7 +349,7 @@ again.
- Developers who are interested in more information can go into the relevant
- header files; there are a few low-level functions declared there which have
- not been talked about here.  Also worthwhile is the vivi driver
--(drivers/media/video/vivi.c), which is maintained as an example of how V4L2
-+(drivers/media/platform/vivi.c), which is maintained as an example of how V4L2
- drivers should be written.  Vivi only uses the vmalloc() API, but it's good
- enough to get started with.  Note also that all of these calls are exported
- GPL-only, so they will not be available to non-GPL kernel modules.
+Kind regards,
+	Bernd
 -- 
-1.7.4.1
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
+
 
