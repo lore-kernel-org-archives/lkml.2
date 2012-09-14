@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab2INGXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:23:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49097 "EHLO
+	id S1755750Ab2INGYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:24:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49110 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab2INGXl (ORCPT
+	with ESMTP id S1755551Ab2INGYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:23:41 -0400
-Date: Thu, 13 Sep 2012 23:23:25 -0700
+	Fri, 14 Sep 2012 02:24:43 -0400
+Date: Thu, 13 Sep 2012 23:24:22 -0700
 From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org>
+Message-ID: <tip-3120e25efdc0834c88e1c0f8394e2087444f8c19@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, jbeulich@suse.com, JBeulich@suse.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, JBeulich@suse.com, jbeulich@suse.com,
         tglx@linutronix.de
-In-Reply-To: <504DEA1B020000780009A277@nat28.tlf.novell.com>
-References: <504DEA1B020000780009A277@nat28.tlf.novell.com>
+In-Reply-To: <504DEE19020000780009A285@nat28.tlf.novell.com>
+References: <504DEE19020000780009A285@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Prefer TZCNT over BFS
-Git-Commit-ID: 5870661c091e827973674cc3469b50c959008c2b
+Subject: [tip:x86/build] x86/Kconfig: Clean up Kconfig defaults
+Git-Commit-ID: 3120e25efdc0834c88e1c0f8394e2087444f8c19
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,86 +29,195 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:23:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:24:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5870661c091e827973674cc3469b50c959008c2b
-Gitweb:     http://git.kernel.org/tip/5870661c091e827973674cc3469b50c959008c2b
+Commit-ID:  3120e25efdc0834c88e1c0f8394e2087444f8c19
+Gitweb:     http://git.kernel.org/tip/3120e25efdc0834c88e1c0f8394e2087444f8c19
 Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Mon, 10 Sep 2012 12:24:43 +0100
+AuthorDate: Mon, 10 Sep 2012 12:41:45 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 13 Sep 2012 17:44:01 +0200
+CommitDate: Thu, 13 Sep 2012 17:45:33 +0200
 
-x86: Prefer TZCNT over BFS
+x86/Kconfig: Clean up Kconfig defaults
 
-Following a relatively recent compiler change, make use of the
-fact that for non-zero input BSF and TZCNT produce the same
-result, and that CPUs not knowing of TZCNT will treat the
-instruction as BSF (i.e. ignore what looks like a REP prefix to
-them). The assumption here is that TZCNT would never have worse
-performance than BSF.
+The main goal here is to have the resulting .config no carry any
+options that aren't enabled and can't be (i.e such where the
+default is "no" and can't be changed), so that if any such
+option later gets a user visible prompt, the user will actually
+be prompted on a "make ...oldconfig" rather than keeping the
+previously invisible option disabled.
 
-For the moment, only do this when the respective generic-CPU
-option is selected (as there are no specific-CPU options
-covering the CPUs supporting TZCNT), and don't do that when size
-optimization was requested.
+There's a little bit of other trivial cleanup mixed in here.
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/504DEA1B020000780009A277@nat28.tlf.novell.com
+Link: http://lkml.kernel.org/r/504DEE19020000780009A285@nat28.tlf.novell.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/bitops.h |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig     |   50 ++++++++++++++++++++++++++++++--------------------
+ arch/x86/Kconfig.cpu |    5 +++--
+ 2 files changed, 33 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index ebaee69..b2af664 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -347,6 +347,19 @@ static int test_bit(int nr, const volatile unsigned long *addr);
- 	 ? constant_test_bit((nr), (addr))	\
- 	 : variable_test_bit((nr), (addr)))
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1a..3fb8719 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -7,11 +7,13 @@ config 64BIT
+ 	  Say no to build a 32-bit kernel - formerly known as i386
  
-+#if (defined(CONFIG_X86_GENERIC) || defined(CONFIG_GENERIC_CPU)) \
-+    && !defined(CONFIG_CC_OPTIMIZE_FOR_SIZE)
-+/*
-+ * Since BSF and TZCNT have sufficiently similar semantics for the purposes
-+ * for which we use them here, BMI-capable hardware will decode the prefixed
-+ * variant as 'tzcnt ...' and may execute that faster than 'bsf ...', while
-+ * older hardware will ignore the REP prefix and decode it as 'bsf ...'.
-+ */
-+# define BSF_PREFIX "rep;"
-+#else
-+# define BSF_PREFIX
-+#endif
-+
- /**
-  * __ffs - find first set bit in word
-  * @word: The word to search
-@@ -355,7 +368,7 @@ static int test_bit(int nr, const volatile unsigned long *addr);
-  */
- static inline unsigned long __ffs(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm(BSF_PREFIX "bsf %1,%0"
- 		: "=r" (word)
- 		: "rm" (word));
- 	return word;
-@@ -369,12 +382,14 @@ static inline unsigned long __ffs(unsigned long word)
-  */
- static inline unsigned long ffz(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm(BSF_PREFIX "bsf %1,%0"
- 		: "=r" (word)
- 		: "r" (~word));
- 	return word;
- }
+ config X86_32
+-	def_bool !64BIT
++	def_bool y
++	depends on !64BIT
+ 	select CLKSRC_I8253
  
-+#undef BSF_PREFIX
-+
- /*
-  * __fls: find last set bit in word
-  * @word: The word to search
+ config X86_64
+-	def_bool 64BIT
++	def_bool y
++	depends on 64BIT
+ 	select X86_DEV_DMA_OPS
+ 
+ ### Arch settings
+@@ -99,7 +101,8 @@ config X86
+ 	select GENERIC_STRNLEN_USER
+ 
+ config INSTRUCTION_DECODER
+-	def_bool (KPROBES || PERF_EVENTS || UPROBES)
++	def_bool y
++	depends on KPROBES || PERF_EVENTS || UPROBES
+ 
+ config OUTPUT_FORMAT
+ 	string
+@@ -127,13 +130,15 @@ config SBUS
+ 	bool
+ 
+ config NEED_DMA_MAP_STATE
+-       def_bool (X86_64 || INTEL_IOMMU || DMA_API_DEBUG)
++	def_bool y
++	depends on X86_64 || INTEL_IOMMU || DMA_API_DEBUG
+ 
+ config NEED_SG_DMA_LENGTH
+ 	def_bool y
+ 
+ config GENERIC_ISA_DMA
+-	def_bool ISA_DMA_API
++	def_bool y
++	depends on ISA_DMA_API
+ 
+ config GENERIC_BUG
+ 	def_bool y
+@@ -150,13 +155,16 @@ config GENERIC_GPIO
+ 	bool
+ 
+ config ARCH_MAY_HAVE_PC_FDC
+-	def_bool ISA_DMA_API
++	def_bool y
++	depends on ISA_DMA_API
+ 
+ config RWSEM_GENERIC_SPINLOCK
+-	def_bool !X86_XADD
++	def_bool y
++	depends on !X86_XADD
+ 
+ config RWSEM_XCHGADD_ALGORITHM
+-	def_bool X86_XADD
++	def_bool y
++	depends on X86_XADD
+ 
+ config GENERIC_CALIBRATE_DELAY
+ 	def_bool y
+@@ -752,7 +760,8 @@ config SWIOTLB
+ 	  3 GB of memory. If unsure, say Y.
+ 
+ config IOMMU_HELPER
+-	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
++	def_bool y
++	depends on CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU
+ 
+ config MAXSMP
+ 	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
+@@ -1159,10 +1168,12 @@ config X86_PAE
+ 	  consumes more pagetable space per process.
+ 
+ config ARCH_PHYS_ADDR_T_64BIT
+-	def_bool X86_64 || X86_PAE
++	def_bool y
++	depends on X86_64 || X86_PAE
+ 
+ config ARCH_DMA_ADDR_T_64BIT
+-	def_bool X86_64 || HIGHMEM64G
++	def_bool y
++	depends on X86_64 || HIGHMEM64G
+ 
+ config DIRECT_GBPAGES
+ 	bool "Enable 1GB pages for kernel pagetables" if EXPERT
+@@ -1285,8 +1296,8 @@ config ARCH_SELECT_MEMORY_MODEL
+ 	depends on ARCH_SPARSEMEM_ENABLE
+ 
+ config ARCH_MEMORY_PROBE
+-	def_bool X86_64
+-	depends on MEMORY_HOTPLUG
++	def_bool y
++	depends on X86_64 && MEMORY_HOTPLUG
+ 
+ config ARCH_PROC_KCORE_TEXT
+ 	def_bool y
+@@ -1975,7 +1986,6 @@ config PCI_MMCONFIG
+ 
+ config PCI_CNB20LE_QUIRK
+ 	bool "Read CNB20LE Host Bridge Windows" if EXPERT
+-	default n
+ 	depends on PCI && EXPERIMENTAL
+ 	help
+ 	  Read the PCI windows out of the CNB20LE host bridge. This allows
+@@ -2186,18 +2196,18 @@ config COMPAT
+ 	depends on IA32_EMULATION || X86_X32
+ 	select ARCH_WANT_OLD_COMPAT_IPC
+ 
++if COMPAT
+ config COMPAT_FOR_U64_ALIGNMENT
+-	def_bool COMPAT
+-	depends on X86_64
++	def_bool y
+ 
+ config SYSVIPC_COMPAT
+ 	def_bool y
+-	depends on COMPAT && SYSVIPC
++	depends on SYSVIPC
+ 
+ config KEYS_COMPAT
+-	bool
+-	depends on COMPAT && KEYS
+-	default y
++	def_bool y
++	depends on KEYS
++endif
+ 
+ endmenu
+ 
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 706e12e..f3b86d0 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -306,7 +306,8 @@ config X86_INTERNODE_CACHE_SHIFT
+ 	default X86_L1_CACHE_SHIFT
+ 
+ config X86_CMPXCHG
+-	def_bool X86_64 || (X86_32 && !M386)
++	def_bool y
++	depends on X86_64 || (X86_32 && !M386)
+ 
+ config X86_L1_CACHE_SHIFT
+ 	int
+@@ -317,7 +318,7 @@ config X86_L1_CACHE_SHIFT
+ 
+ config X86_XADD
+ 	def_bool y
+-	depends on X86_64 || !M386
++	depends on !M386
+ 
+ config X86_PPRO_FENCE
+ 	bool "PentiumPro memory ordering errata workaround"
