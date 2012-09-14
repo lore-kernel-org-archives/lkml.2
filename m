@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab2INIyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 04:54:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1237 "EHLO mga01.intel.com"
+	id S1757284Ab2INI4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 04:56:45 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:40852 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab2INIyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 04:54:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
-   d="scan'208";a="221974649"
-Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to
- dmaengine_prep_dma_cyclic()
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-In-Reply-To: <5052E72A.8040207@metafoo.de>
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
-	 <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com>
-	 <5051FB4D.3000009@metafoo.de> <1347593217.1943.26.camel@vkoul-udesk3>
-	 <5052E72A.8040207@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 14:20:30 +0530
-Message-ID: <1347612630.1943.29.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756588Ab2INI4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 04:56:40 -0400
+Date: Fri, 14 Sep 2012 09:56:34 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 1/3 v2] mm: Batch unmapping of file mapped pages in
+ shrink_page_list
+Message-ID: <20120914085634.GM11157@csn.ul.ie>
+References: <1347293965.9977.71.camel@schen9-DESK>
+ <20120911110535.GO11157@csn.ul.ie>
+ <1347552370.9977.99.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1347552370.9977.99.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 10:13 +0200, Lars-Peter Clausen wrote:
-> On 09/14/2012 05:26 AM, Vinod Koul wrote:
-> > On Thu, 2012-09-13 at 17:27 +0200, Lars-Peter Clausen wrote:
-> >> Hi,
-> >>
-> >> Hm... Do you think it would work as well if we implement this by
-> >> setting the
-> >> callback for the descriptor to NULL? If the callback is NULL there is
-> >> nothing to at the end of a transfer/period and the dma engine driver
-> >> may
-> >> choose to disable interrupts. This would also benefit non cyclic
-> >> transfers
-> >> where the callback is NULL and we do not need add the new parameter to
-> >> dmaengine_prep_dma_cyclic.
-> > That will work too.... BUT the idea of no_wake mode in ALSA is that we
-> > should not have any interrupts, so anything which is going to cause
-> > interrupts to AP in undesired. The interrupts still happen and it just
-> > that dmaengine driver is not notifying client.
+On Thu, Sep 13, 2012 at 09:06:10AM -0700, Tim Chen wrote:
+> On Tue, 2012-09-11 at 12:05 +0100, Mel Gorman wrote:
 > 
-> Well, the idea was that the driver would disable interrupts if there is no
-> callback to call, since there would be nothing to do in the interrupt
-> handler anyway. But I guess the flags approach should work fine as well.
-Yes we _could_ do that, but this relies on dmaengine driver to have this
-implicit understanding. Anyone using dmaengine library in ASoC may or
-may not be aware of this, so i would consider it hackish.
+> > 
+> > One *massive* change here that is not called out in the changelog is that
+> > the reclaim path now holds the page lock on multiple pages at the same
+> > time waiting for them to be batch unlocked in __remove_mapping_batch.
+> > This is suspicious for two reasons.
+> > 
+> > The first suspicion is that it is expected that there are filesystems
+> > that lock multiple pages in page->index order and page reclaim tries to
+> > lock pages in a random order.  You are "ok" because you trylock the pages
+> > but there should be a comment explaining the situation and why you're
+> > ok.
+> > 
+> > My *far* greater concern is that the hold time for a locked page is
+> > now potentially much longer. You could lock a bunch of filesystem pages
+> > and then call pageout() on an swapcache page that takes a long time to
+> > write. This potentially causes a filesystem (or flusher threads etc)
+> > to stall on lock_page and that could cause all sorts of latency trouble.
+> > It will be hard to hit this bug and diagnose it but I believe it's
+> > there.
+> > 
+> > That second risk *really* must be commented upon and ideally reviewed by
+> > the filesystem people. However, I very strongly suspect that the outcome
+> > of such a review will be a suggestion to unlock the pages and reacquire
+> > the lock in __remove_mapping_batch(). Bear in mind that if you take this
+> > approach that you *must* use trylock when reacquiring the page lock and
+> > handle being unable to lock the page.
+> > 
+> 
+> Mel,
+> 
+> Thanks for your detailed comments and analysis.  If I unlock the pages,
+> will flusher threads be the only things that will touch them? 
 
-Using this flag explicitly makes everyone aware what the intended
-behaviour is.
+I don't think so. The pages are still in the mappings radix tree so
+potentially can be still read()/write() to and recreate empty buffers
+potentially. Something like;
+
+writepage handler
+-> block_write_full_page
+  -> block_write_full_page_endio
+    -> __block_write_full_page
+      -> create_empty_buffers
+
+Offhand I would also expect it's possible to fault the page again once
+the page lock is released.
+
+> Or do I
+> have to worry about potentially other things done to the pages that will
+> make it invalid for me to unmap the pages later and put them on free
+> list?
+> 
+
+I expect that you'll have to double check that the page is still eligible
+to be removed from the mapping and added to the free list.  This could get
+complex because you then have to retry reclaim with those pages without
+any batching and it may offset the advantage you are measuring.
+
+You have potentially another option as well that you should consider. I
+was complaining about holding multiple locks because of the potentially
+unbounded length of time you hold those locks.  It now occurs to me that
+you could hold these locks but call __remove_mapping_batch() and drain
+the list before calling long-lived operations like pageout(). That might
+be easier to implement.
 
 -- 
-~Vinod
-
+Mel Gorman
+SUSE Labs
