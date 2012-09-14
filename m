@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab2INCyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 22:54:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab2INCyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 22:54:21 -0400
-Date: Thu, 13 Sep 2012 22:53:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, rni@google.com,
-        ctalbott@google.com
-Subject: Re: Block IO controller hierarchy suppport (Was: Re: [PATCH RFC
- cgroup/for-3.7] cgroup: mark subsystems with broken hierarchy support and
- whine if cgroups are nested for them)
-Message-ID: <20120914025317.GB4333@redhat.com>
-References: <20120910223125.GC7677@google.com>
- <20120911145106.GG12039@redhat.com>
- <20120911171601.GN7677@google.com>
- <20120911173524.GJ12039@redhat.com>
- <20120911175515.GP7677@google.com>
- <50505C39.1050600@parallels.com>
- <20120912170933.GO7677@google.com>
- <20120913145340.GI4396@redhat.com>
- <20120913220613.GP7677@google.com>
+	id S1755190Ab2INC4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 22:56:22 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42141 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754838Ab2INC4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 22:56:20 -0400
+Message-ID: <50529CCB.1040708@linux.vnet.ibm.com>
+Date: Fri, 14 Sep 2012 10:56:11 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913220613.GP7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Ahern <dsahern@gmail.com>
+CC: Dong Hao <haodong@linux.vnet.ibm.com>, acme@infradead.org, avi@redhat.com,
+        mtosatti@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 3/3] KVM: perf: kvm events analysis tool
+References: <1346061106-5364-1-git-send-email-haodong@linux.vnet.ibm.com> <1346061106-5364-4-git-send-email-haodong@linux.vnet.ibm.com> <503FB105.9000205@gmail.com> <5051678C.1070209@gmail.com>
+In-Reply-To: <5051678C.1070209@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091402-1396-0000-0000-000001DEFA18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 03:06:13PM -0700, Tejun Heo wrote:
-> Hey, Vivek.
+On 09/13/2012 12:56 PM, David Ahern wrote:
+
 > 
-> (cc'ing Rakesh and Chad who work on iosched in google).
+> That suggests what is really needed is a 'live' mode - a continual updating of the output like perf top, not a record and analyze later mode. Which does come back to why I responded to this email -- the syntax is klunky and awkward.
 > 
-> On Thu, Sep 13, 2012 at 10:53:41AM -0400, Vivek Goyal wrote:
-> > Biggest problem with blkcg CFQ implementation is idling on cgroup. If
-> > we don't idle on cgroup, then we don't get the service differentiaton
-> > for most of the workloads and if we do idle then performance starts
-> > to suck very soon (The moment few cgroups are created). And hierarchy
-> > will just exacertbate this problem because then one will try to idle
-> > at each group in hierarchy.
-> > 
-> > This problem is something similar to CFQ's idling on sequential queues
-> > and iopriority. Because we never idled on random IO queue, ioprios never
-> > worked on random IO queues. And same is true for buffered write queues.
-> > Similary, if you don't idle on groups, then for most of the workloads,
-> > service differentiation is not visible. Only the one which are highly
-> > sequential on nature, one can see service differentiation.
-> > 
-> > That's one fundamental problem for which we need to have a good answer
-> > before we try to do more work on blkcg. Because we can write as much
-> > code but at the end of the day it might still not be useful because
-> > of the above mentioned issue I faced.
+> So, I spent a fair amount of time today implementing a live mode. And after a lot of swearing at the tracepoint processing code I finally have it working. And the format extends easily (meaning < day and the next step) to a perf-based kvm_stat replacement. Example syntax is:
 > 
-> I talked with Rakesh about this as the modified cfq-iosched used in
-> google supports proper hierarchy and the feature is heavily depended
-> upon.  I was told that nesting doesn't really change anything.  The
-> only thing which matters is the number of active cgroups and whether
-> they're nested or how deep doesn't matter - IIUC there's no need to
-> idle for internal nodes if they don't have IOs pending.
+>    perf kvm stat [-p <pid>|-a|...]
 > 
-> He draw me some diagrams which made sense for me and the code
-> apparently actually works, so there doesn't seem to be any fundamental
-> issue in implementing hierarchy support in cfq.
+> which defaults to an update delay of 1 second, and vmexit analysis.
 
-Hmm...., They probably are right. Idling only on leaf groups can make
-sure that none of the groups loses its fair share of quota. Thinking
-loud...
+Hi David,
 
+I am very glad to see the live mode, it is very similar with kvm_stat(*). I think
+kvm guys will like it.
 
-				root
-                                /  \
-                               T1  G1
-                                  /  \
-                                 T2   G2
-                                       \
-                                        T3 
+> 
+> The guts of the processing logic come from the existing kvm-events code. The changes focus on combining the record and report paths into one. The display needs some help (Arnaldo?), but it seems to work well.
+> 
+> I'd like to get opinions on what next? IMO, the record/report path should not get a foot hold from a backward compatibility perspective and having to maintain those options. I am willing to take the existing patches into git to maintain authorship and from there apply patches to make the live mode work - which includes a bit of refactoring of perf code (like the stats changes).
 
-So if task T3 finishes and there is no active IO from T3, we will idle
-on group G2 (in the hope that soon some IO will show up from T3 or from
-some other task in G2). And that alone should make sure all the group
-nodes in the path to root (G1) get their fair share at their respective
-level and no additional idling should be needed.
+We'd better keep the record/report function, sometimes, we can only get perf.data
+from the customers whose machine can not be reached for us.
 
-So sounds like hierarhcy will not cause additional idling. Idling will
-solely depend on leaf active groups. 
+Especially, other tracepoints are also interesting for us when the customers encounter
+the performance issue, we always ask costumes to use "perf kvm stat -e xxx" to append
+other events, like lock:*. Then, we can get not only the information of kvm events
+by using 'perf kvm stat' but also other informations like 'perf lock' or 'perf script'
+to get the whole sequences.
 
-So how bad group/no-idle service tree idling is proving to be. In my
-experience if we use it on anything other than single spindle sata disk,
-performance hit will start showing up immediately.
+> 
+> Before I march down this path, any objections, opinions, etc?
 
-Thanks
-Vivek
+And, i think "live mode" is also useful for 'perf lock/sched', could you implement it
+in perf core?
+
+By the way, the new version of our patchset is ready, do you want to add your implement
+after it is accepted by Arnaldo? Or are you going to post it with our patchset together?
+
+Thanks!
+
+* kvm_stat can be found at scripts/kvm/kvm_stat in the code of Qemu which locate at
+  https://git.kernel.org/pub/scm/virt/kvm/qemu-kvm.git.
+
