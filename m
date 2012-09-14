@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab2INHSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:18:55 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61874 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab2INHSw (ORCPT
+	id S1756542Ab2INHTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:19:08 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:5867 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab2INHTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:18:52 -0400
+	Fri, 14 Sep 2012 03:19:04 -0400
+X-IronPort-AV: E=Sophos;i="4.80,421,1344211200"; 
+   d="scan'208";a="14537719"
+Message-ID: <1347607141.25803.73.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH] Xen backend support for paged out grant targets.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Andres Lagar-Cavilla <andres.lagarcavilla@gmail.com>
+CC: Andres Lagar-Cavilla <andres@lagarcavilla.org>,
+        "xen-devel@xen.lists.org" <xen-devel@xen.lists.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "David Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Fri, 14 Sep 2012 08:19:01 +0100
+In-Reply-To: <B4C805E1-3390-4002-BECC-7D1AFF2BD56D@gmail.com>
+References: <1347557306-25453-1-git-send-email-andres@lagarcavilla.org>
+	 <1347559899.25803.64.camel@dagon.hellion.org.uk>
+	 <B4C805E1-3390-4002-BECC-7D1AFF2BD56D@gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <1347599944.9481.3.camel@joe2Laptop>
-References: <1347565754-9534-1-git-send-email-thomas.petazzoni@free-electrons.com>
-	<1347599944.9481.3.camel@joe2Laptop>
-Date: Fri, 14 Sep 2012 00:18:51 -0700
-Message-ID: <CAMbhsRSaHOgyTn56vQndn0TKh3AT9dk3pRVuJx3qJXWowsLVaA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: use kasprintf() in pinmux_request_gpio()
-From: Colin Cross <ccross@google.com>
-To: Joe Perches <joe@perches.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 10:19 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2012-09-13 at 21:49 +0200, Thomas Petazzoni wrote:
->> Instead of using a temporary buffer, snprintf() and kstrdup(), just
->> use kasprintf() that does the same thing in just oneline.
->>
->> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> ---
->>  drivers/pinctrl/pinmux.c |    5 +----
->>  1 file changed, 1 insertion(+), 4 deletions(-)
->>
->> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
->> index 3d5ac73..9301a7a 100644
->> --- a/drivers/pinctrl/pinmux.c
->> +++ b/drivers/pinctrl/pinmux.c
->> @@ -232,14 +232,11 @@ int pinmux_request_gpio(struct pinctrl_dev *pctldev,
->>                       struct pinctrl_gpio_range *range,
->>                       unsigned pin, unsigned gpio)
->>  {
->> -     char gpiostr[16];
->>       const char *owner;
->>       int ret;
->>
->>       /* Conjure some name stating what chip and pin this is taken by */
->> -     snprintf(gpiostr, 15, "%s:%d", range->name, gpio);
->> -
->> -     owner = kstrdup(gpiostr, GFP_KERNEL);
->> +     owner = kasprintf(GFP_KERNEL, "%s:%d", range->name, gpio);
->>       if (!owner)
->>               return -EINVAL;
->>
->
-> No not really.  It's a bit different because the first
-> snprintf is length limited but the kasprintf is not.
+On Thu, 2012-09-13 at 20:45 +0100, Andres Lagar-Cavilla wrote:
+> On Sep 13, 2012, at 2:11 PM, Ian Campbell wrote:
+> 
+> > On Thu, 2012-09-13 at 18:28 +0100, Andres Lagar-Cavilla wrote:
+> >> 
+> >> * Add placeholder in array of grant table error descriptions for
+> >> unrelated error code we jump over. 
+> > 
+> > Why not just define it, it's listed here:
+> > http://xenbits.xen.org/docs/unstable/hypercall/include,public,grant_table.h.html#Enum_grant_status
+> Well, a) we'd be defining something no one will be using (for the
+> moment)
 
-The one it's replacing is worse, it never sets gpiostr[15] to 0 and
-kstrdup will read past the end of the buffer if the string is
-truncated.
+Even if no one in the kernel is using it, having "placeholder" as an
+entry in GNTTABOP_error_msgs is just silly, even things which don't
+understand GNTST_address_too_big directly could end up looking it up
+here.
+
+>  b) I would be signing-off on something unrelated.
+
+Lets take this patch instead then.
+
+8<------------------------------------------------
+
+>From cb9daaf3029accb6d5fef58b450a625b27190429 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Fri, 14 Sep 2012 08:10:06 +0100
+Subject: [PATCH] xen: resynchronise grant table status codes with upstream
+
+Adds GNTST_address_too_big and GNTST_eagain.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+---
+ include/xen/interface/grant_table.h |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
+index a17d844..84a8fbf 100644
+--- a/include/xen/interface/grant_table.h
++++ b/include/xen/interface/grant_table.h
+@@ -519,7 +519,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+ #define GNTST_no_device_space  (-7) /* Out of space in I/O MMU.              */
+ #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
+ #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
+-#define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary */
++#define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary.   */
++#define GNTST_address_too_big (-11) /* transfer page address too large.      */
++#define GNTST_eagain          (-12) /* Operation not done; try again.        */
+ 
+ #define GNTTABOP_error_msgs {                   \
+     "okay",                                     \
+@@ -532,7 +534,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+     "no spare translation slot in the I/O MMU", \
+     "permission denied",                        \
+     "bad page",                                 \
+-    "copy arguments cross page boundary"        \
++    "copy arguments cross page boundary",       \
++    "page address size too large",              \
++    "operation not done; try again"             \
+ }
+ 
+ #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */
+-- 
+1.7.10.4
+
+
+
