@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2INQeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:34:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45137 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2INQeJ convert rfc822-to-8bit (ORCPT
+	id S1755435Ab2INQft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:35:49 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47330 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab2INQfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:34:09 -0400
-MIME-Version: 1.0
-Date: Fri, 14 Sep 2012 13:34:08 -0300
-Message-ID: <CAH0vN5KeV6HquKG2GVuzMWXaDXJ1mhQwKuedRg-B24kiT-tEfg@mail.gmail.com>
-Subject: Verify Seek Complete
-From: Marcos Souza <marcos.souza.org@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 14 Sep 2012 12:35:47 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [GIT PULL] rcu: idle changes v2
+Date: Fri, 14 Sep 2012 18:35:37 +0200
+Message-Id: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi media guys,
+Paul,
 
-I'm trying to test a radio driver that is not in the mainline(yet),
-and for it I'm making an application for the radio(because threre is
-not radio app for that device).
+This is the second version of my rcu/idle-for-v3.7 which rebases
+your rcu/idle to address reviews.
 
-Ad I have a doubt about the v4l2 seek: In the v4l2 framework, the
-driver should wait for the seek complete, or the framework don't want
-the driver do it?
-Or the app layer needs to handle this?
+It has the same modifications than rcu/idle-for-v3.7 plus
+an update of:
 
-Thanks since now!
+- "rcu: Exit RCU extended QS on user preemption" : update changelog
+and comments after a discussion with Peterz. And compile conditionally
+schedule_user().
 
--- 
-Att,
+- "x86: Use the new schedule_user API on userspace preemption" : build
+time choose between calling schedule and schedule_user.
 
-Marcos Paulo de Souza
-Acadêmico de Ciencia da Computação - FURB - SC
-"Uma vida sem desafios é uma vida sem razão"
-"A life without challenges, is a non reason life"
+I'm only reposting these two patches.
+
+The new branch is:
+
+git://github.com/fweisbec/linux-dynticks.git
+	rcu/idle-v2-for-v3.7
+
+Thanks.
