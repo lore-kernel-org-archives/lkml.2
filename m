@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab2INPqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:46:43 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57602 "EHLO zene.cmpxchg.org"
+	id S1758972Ab2INPs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:48:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31486 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758736Ab2INPqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:46:40 -0400
-Date: Fri, 14 Sep 2012 11:46:25 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, mhocko@suse.cz, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com
-Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
- onlined
-Message-ID: <20120914154625.GN1560@cmpxchg.org>
-References: <505187D4.7070404@cn.fujitsu.com>
- <20120913205935.GK1560@cmpxchg.org>
- <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+	id S1758760Ab2INPs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 11:48:57 -0400
+Date: Fri, 14 Sep 2012 11:48:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, hbabu@us.ibm.com,
+        ishii.hironobu@jp.fujitsu.com, martin.wilck@ts.fujitsu.com
+Subject: Re: [RFC][PATCH] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+Message-ID: <20120914154817.GE6221@redhat.com>
+References: <501BB4EF.7080909@jp.fujitsu.com>
+ <20120803114643.GA28330@redhat.com>
+ <501F4877.5050605@jp.fujitsu.com>
+ <20120806203902.GH25559@redhat.com>
+ <50473306.1070803@jp.fujitsu.com>
+ <20120910143604.GB639@redhat.com>
+ <504F1343.7030607@jp.fujitsu.com>
+ <20120911144323.GF12039@redhat.com>
+ <50504F47.80909@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+In-Reply-To: <50504F47.80909@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 06:36:34PM -0700, Hugh Dickins wrote:
-> On Thu, 13 Sep 2012, Johannes Weiner wrote:
-> > On Thu, Sep 13, 2012 at 03:14:28PM +0800, Wen Congyang wrote:
-> > > root_mem_cgroup->info.nodeinfo is initialized when the system boots.
-> > > But NODE_DATA(nid) is null if the node is not onlined, so
-> > > root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone contains
-> > > an invalid pointer. If we use numactl to bind a program to the node
-> > > after onlining the node and its memory, it will cause the kernel
-> > > panicked:
-> > 
-> > Is there any chance we could get rid of the zone backpointer in lruvec
-> > again instead?
+On Wed, Sep 12, 2012 at 06:00:55PM +0900, Takao Indoh wrote:
+> (2012/09/11 23:43), Vivek Goyal wrote:
+> >On Tue, Sep 11, 2012 at 07:32:35PM +0900, Takao Indoh wrote:
+> >
+> >[..]
+> >>I'll post new patch which clears bus master bit and resets devices in
+> >>second kernel.
+> >>
+> >>As to the boot parameter to enable this function, you suggested using
+> >>reset_devices. I found that on a certain platform resetting devices
+> >>caused PCIe error due to a hardware bug. Therefore I think we need
+> >>new parameter apart from reset_devices to disable this function on
+> >>such a machine.
+> >
+> >Can you explain a bit more how the error happens. I still don't think
+> >that because of a bug in a platform somewhere we should be introducing
+> >a separate command line parameter and not reuse the exisiting one. Also
+> >you have not explained what's the bug and how a new parameter will
+> >avoid the bug.
 > 
-> It could be done, but it would make me sad :(
+> The bug I mentioned is that ACS Violation occurs at PCIe switch when
+> reading PCI configuration after device reset. I got information that
+> this violation is caused by PCIe switch bug. The machine becomes fatal
+> status by this error.
+> 
+> The reason why I try to introduce new parameter is that I want to avoid
+> regression by this patch. Let's say this patch was included in kernel
+> and its reset function was enabled by reset_devices as you said. AFAIK
+> reset_devices is always needed for kdump, so it means that devices are
+> always reset at kdump boot time. It causes a regression that system
+> always becomes abnormal status when we run kdump on the machine which has
+> a bug I mentioned.
+> 
+> To avoid this regression, I want to separate reset_devices from this
+> reset function. Or how about this?
+> - if user specify reset_devices, devices are reset by this patch, as you
+>   said.
+> - To avoid a regression I said, add new parameter like "pci=noreset".
+>   If this parameter is specified, the reset function I add is disabled
+>   and we can avoid regression.
 
-We would not want that!
+Can we identify that particular switch in code and not reset it in code.
+Introducing new paramenters to avoid bugs really feels odd.
 
-> > But can't
-> > we just go back to passing the zone along with the lruvec down
-> > vmscan.c paths?  I agree it's ugly to pass both, given their
-> > relationship.  But I don't think the backpointer is any cleaner but in
-> > addition less robust.
-> 
-> It's like how we use vma->mm: we could change everywhere to pass mm with
-> vma, but it looks cleaner and cuts down on long arglists to have mm in vma.
-> >From past experience, one of the things I worried about was adding extra
-> args to the reclaim stack.
+Also, what was the conclusion to avoid double reset. I am assuming that
+we don't want to do bus level reset as well as driver level reset based
+on reset_devices. 
 
-Ok, you certainly have a point.
-
-> > That being said, the crashing code in particular makes me wonder:
-> > 
-> > static __always_inline void add_page_to_lru_list(struct page *page,
-> > 				struct lruvec *lruvec, enum lru_list lru)
-> > {
-> > 	int nr_pages = hpage_nr_pages(page);
-> > 	mem_cgroup_update_lru_size(lruvec, lru, nr_pages);
-> > 	list_add(&page->lru, &lruvec->lists[lru]);
-> > 	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, nr_pages);
-> > }
-> > 
-> > Why did we ever pass zone in here and then felt the need to replace it
-> > with lruvec->zone in fa9add6 "mm/memcg: apply add/del_page to lruvec"?
-> > A page does not roam between zones, its zone is a static property that
-> > can be retrieved with page_zone().
-> 
-> Just as in vmscan.c, we have the lruvec to hand, and that's what we
-> mainly want to operate upon, but there is also some need for zone.
-> 
-> (Both Konstantin and I were looking towards the day when we move the
-> lru_lock into the lruvec, removing more dependence on "zone".  Pretty
-> much the only reason that hasn't happened yet, is that we have not found
-> time to make a performance case convincingly - but that's another topic.)
-> 
-> Yes, page_zone(page) is a static property of the page, but it's not
-> necessarily cheap to evaluate: depends on how complex the memory model
-> and the spare page flags space, doesn't it?  We both preferred to
-> derive zone from lruvec where convenient.
-> 
-> How do you feel about this patch, and does it work for you guys?
-> 
-> You'd be right if you guessed that I started out without the
-> mem_cgroup_zone_lruvec part of it, but oops in get_scan_count
-> told me that's needed too.
-> 
-> Description to be filled in later: would it be needed for -stable,
-> or is onlining already broken in other ways that you're now fixing up?
-> 
-> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-
-This looks good to me, thanks.
-
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Thanks
+Vivek
