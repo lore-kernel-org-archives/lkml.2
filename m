@@ -1,617 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2INGe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:34:26 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:58703 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab2INGeW (ORCPT
+	id S1752089Ab2INGlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:41:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49346 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab2INGld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:34:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347451550-7785-2-git-send-email-gshark.jeong@gmail.com>
-References: <1347451550-7785-1-git-send-email-gshark.jeong@gmail.com> <1347451550-7785-2-git-send-email-gshark.jeong@gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 14 Sep 2012 14:33:59 +0800
-X-Google-Sender-Auth: fzkO47S98QaNl3DkuyaFNZRxreg
-Message-ID: <CAK5ve-JFvJEC-G=zS8Zp-HwTwdkVDpM1EEA27d1nWRPcxHaKYg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] leds: Add new LED driver for lm3642 chips
-To: "G.Shark Jeong" <gshark.jeong@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Sep 2012 02:41:33 -0400
+Date: Fri, 14 Sep 2012 16:41:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Jeff Garzik <jeff@garzik.org>, Rob Herring <rob.herring@calxeda.com>
+Subject: linux-next: manual merge of the dma-mapping tree with the libata
+ tree
+Message-Id: <20120914164122.51b19b8796752399e287af5a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Sep_2012_16_41_22_+1000_m1b8P_87P/sd0ckJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 8:05 PM, G.Shark Jeong <gshark.jeong@gmail.com> wrote:
-> From: "G.Shark Jeong" <gshark.jeong@gmail.com>
->
-> This driver is a general version for LM642 led chip of TI.
->
-> LM3642 :
-> The LM3642 is a 4MHz fixed-frequency synchronous boost
-> converter plus 1.5A constant current driver for a high-current
-> white LED.
-> The LM3642 is controlled via an I2C-compatible interface.
->
+--Signature=_Fri__14_Sep_2012_16_41_22_+1000_m1b8P_87P/sd0ckJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks, this patch looks fine to me. Applied to my for-next branch.
+Hi all,
 
--Bryan
+Today's linux-next merge of the dma-mapping tree got a conflict in
+Documentation/devicetree/bindings/ata/ahci-platform.txt between commit
+8996b89d6bc9 ("ata: add platform driver for Calxeda AHCI controller")
+from the  tree and commit 33e4628cc333 ("ARM: highbank: add coherent DMA
+setup") from the dma-mapping tree.
 
-> Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
-> ---
->  drivers/leds/Kconfig                      |   11 +
->  drivers/leds/Makefile                     |    1 +
->  drivers/leds/leds-lm3642.c                |  471 +++++++++++++++++++++++++++++
->  include/linux/platform_data/leds-lm3642.h |   38 +++
->  4 files changed, 521 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/leds/leds-lm3642.c
->  create mode 100644 include/linux/platform_data/leds-lm3642.h
->
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index c96bbaa..bdc05cb 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -63,6 +63,17 @@ config LEDS_LM3533
->           hardware-accelerated blinking with maximum on and off periods of 9.8
->           and 77 seconds respectively.
->
-> +config LEDS_LM3642
-> +       tristate "LED support for LM3642 Chip"
-> +       depends on LEDS_CLASS && I2C
-> +       select REGMAP_I2C
-> +       help
-> +         This option enables support for LEDs connected to LM3642.
-> +         The LM3642 is a 4MHz fixed-frequency synchronous boost
-> +         converter plus 1.5A constant current driver for a high-current
-> +         white LED.
-> +
-> +
->  config LEDS_LOCOMO
->         tristate "LED Support for Locomo device"
->         depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index a4429a9..9a01111 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -11,6 +11,7 @@ obj-$(CONFIG_LEDS_BD2802)             += leds-bd2802.o
->  obj-$(CONFIG_LEDS_LOCOMO)              += leds-locomo.o
->  obj-$(CONFIG_LEDS_LM3530)              += leds-lm3530.o
->  obj-$(CONFIG_LEDS_LM3533)              += leds-lm3533.o
-> +obj-$(CONFIG_LEDS_LM3642)              += leds-lm3642.o
->  obj-$(CONFIG_LEDS_MIKROTIK_RB532)      += leds-rb532.o
->  obj-$(CONFIG_LEDS_S3C24XX)             += leds-s3c24xx.o
->  obj-$(CONFIG_LEDS_NET48XX)             += leds-net48xx.o
-> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
-> new file mode 100644
-> index 0000000..924853b
-> --- /dev/null
-> +++ b/drivers/leds/leds-lm3642.c
-> @@ -0,0 +1,471 @@
-> +/*
-> +* Simple driver for Texas Instruments LM3642 LED Flash driver chip
-> +* Copyright (C) 2012 Texas Instruments
-> +*
-> +* This program is free software; you can redistribute it and/or modify
-> +* it under the terms of the GNU General Public License version 2 as
-> +* published by the Free Software Foundation.
-> +*
-> +*/
-> +#include <linux/module.h>
-> +#include <linux/delay.h>
-> +#include <linux/i2c.h>
-> +#include <linux/leds.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/fs.h>
-> +#include <linux/regmap.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/platform_data/leds-lm3642.h>
-> +
-> +#define        REG_FILT_TIME                   (0x0)
-> +#define        REG_IVFM_MODE                   (0x1)
-> +#define        REG_TORCH_TIME                  (0x6)
-> +#define        REG_FLASH                       (0x8)
-> +#define        REG_I_CTRL                      (0x9)
-> +#define        REG_ENABLE                      (0xA)
-> +#define        REG_FLAG                        (0xB)
-> +#define        REG_MAX                         (0xB)
-> +
-> +#define        UVLO_EN_SHIFT                   (7)
-> +#define        IVM_D_TH_SHIFT                  (2)
-> +#define        TORCH_RAMP_UP_TIME_SHIFT        (3)
-> +#define        TORCH_RAMP_DN_TIME_SHIFT        (0)
-> +#define        INDUCTOR_I_LIMIT_SHIFT          (6)
-> +#define        FLASH_RAMP_TIME_SHIFT           (3)
-> +#define        FLASH_TOUT_TIME_SHIFT           (0)
-> +#define        TORCH_I_SHIFT                   (4)
-> +#define        FLASH_I_SHIFT                   (0)
-> +#define        IVFM_SHIFT                      (7)
-> +#define        TX_PIN_EN_SHIFT                 (6)
-> +#define        STROBE_PIN_EN_SHIFT             (5)
-> +#define        TORCH_PIN_EN_SHIFT              (4)
-> +#define        MODE_BITS_SHIFT                 (0)
-> +
-> +#define        UVLO_EN_MASK                    (0x1)
-> +#define        IVM_D_TH_MASK                   (0x7)
-> +#define        TORCH_RAMP_UP_TIME_MASK         (0x7)
-> +#define        TORCH_RAMP_DN_TIME_MASK         (0x7)
-> +#define        INDUCTOR_I_LIMIT_MASK           (0x1)
-> +#define        FLASH_RAMP_TIME_MASK            (0x7)
-> +#define        FLASH_TOUT_TIME_MASK            (0x7)
-> +#define        TORCH_I_MASK                    (0x7)
-> +#define        FLASH_I_MASK                    (0xF)
-> +#define        IVFM_MASK                       (0x1)
-> +#define        TX_PIN_EN_MASK                  (0x1)
-> +#define        STROBE_PIN_EN_MASK              (0x1)
-> +#define        TORCH_PIN_EN_MASK               (0x1)
-> +#define        MODE_BITS_MASK                  (0x73)
-> +#define EX_PIN_CONTROL_MASK            (0x71)
-> +#define EX_PIN_ENABLE_MASK             (0x70)
-> +
-> +enum lm3642_mode {
-> +       MODES_STASNDBY = 0,
-> +       MODES_INDIC,
-> +       MODES_TORCH,
-> +       MODES_FLASH
-> +};
-> +
-> +struct lm3642_chip_data {
-> +       struct device *dev;
-> +
-> +       struct led_classdev cdev_flash;
-> +       struct led_classdev cdev_torch;
-> +       struct led_classdev cdev_indicator;
-> +
-> +       struct work_struct work_flash;
-> +       struct work_struct work_torch;
-> +       struct work_struct work_indicator;
-> +
-> +       u8 br_flash;
-> +       u8 br_torch;
-> +       u8 br_indicator;
-> +
-> +       enum lm3642_torch_pin_enable torch_pin;
-> +       enum lm3642_strobe_pin_enable strobe_pin;
-> +       enum lm3642_tx_pin_enable tx_pin;
-> +
-> +       struct lm3642_platform_data *pdata;
-> +       struct regmap *regmap;
-> +       struct mutex lock;
-> +
-> +       unsigned int last_flag;
-> +};
-> +
-> +/* chip initialize */
-> +static int __devinit lm3642_chip_init(struct lm3642_chip_data *chip)
-> +{
-> +       unsigned int reg_val;
-> +       int ret;
-> +       struct lm3642_platform_data *pdata = chip->pdata;
-> +
-> +       /* set enable register */
-> +       ret = regmap_read(chip->regmap, REG_ENABLE, &reg_val);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +       reg_val &= (~EX_PIN_ENABLE_MASK);
-> +       reg_val |= pdata->tx_pin;
-> +       ret = regmap_write(chip->regmap, REG_ENABLE, reg_val);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +out:
-> +       dev_err(chip->dev, "Failed to read REG_ENABLE Register\n");
-> +       return ret;
-> +}
-> +
-> +/* chip control */
-> +static int lm3642_control(struct lm3642_chip_data *chip,
-> +                         u8 brightness, enum lm3642_mode opmode)
-> +{
-> +       int ret;
-> +
-> +       ret = regmap_read(chip->regmap, REG_FLAG, &chip->last_flag);
-> +       if (ret < 0) {
-> +               dev_err(chip->dev, "Failed to read REG_FLAG Register\n");
-> +               goto out;
-> +       }
-> +
-> +       if (chip->last_flag)
-> +               dev_info(chip->dev, "Last FLAG is 0x%x\n", chip->last_flag);
-> +
-> +       /* brightness 0 means off-state */
-> +       if (!brightness)
-> +               opmode = MODES_STASNDBY;
-> +
-> +       switch (opmode) {
-> +       case MODES_TORCH:
-> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-> +                                        TORCH_I_MASK << TORCH_I_SHIFT,
-> +                                        (brightness - 1) << TORCH_I_SHIFT);
-> +
-> +               if (chip->torch_pin)
-> +                       opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
-> +               break;
-> +
-> +       case MODES_FLASH:
-> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-> +                                        FLASH_I_MASK << FLASH_I_SHIFT,
-> +                                        (brightness - 1) << FLASH_I_SHIFT);
-> +
-> +               if (chip->strobe_pin)
-> +                       opmode |= (STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT);
-> +               break;
-> +
-> +       case MODES_INDIC:
-> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
-> +                                        TORCH_I_MASK << TORCH_I_SHIFT,
-> +                                        (brightness - 1) << TORCH_I_SHIFT);
-> +               break;
-> +
-> +       case MODES_STASNDBY:
-> +
-> +               break;
-> +
-> +       default:
-> +               return ret;
-> +       }
-> +       if (ret < 0) {
-> +               dev_err(chip->dev, "Failed to write REG_I_CTRL Register\n");
-> +               goto out;
-> +       }
-> +
-> +       if (chip->tx_pin)
-> +               opmode |= (TX_PIN_EN_MASK << TX_PIN_EN_SHIFT);
-> +
-> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-> +                                MODE_BITS_MASK << MODE_BITS_SHIFT,
-> +                                opmode << MODE_BITS_SHIFT);
-> +out:
-> +       return ret;
-> +}
-> +
-> +/* torch */
-> +
-> +/* torch pin config for lm3642*/
-> +static ssize_t lm3642_torch_pin_store(struct device *dev,
-> +                                     struct device_attribute *devAttr,
-> +                                     const char *buf, size_t size)
-> +{
-> +       ssize_t ret;
-> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> +       struct lm3642_chip_data *chip =
-> +           container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
-> +       unsigned int state;
-> +
-> +       ret = kstrtouint(buf, 10, &state);
-> +       if (ret)
-> +               goto out_strtoint;
-> +       if (state != 0)
-> +               state = 0x01 << TORCH_PIN_EN_SHIFT;
-> +
-> +       chip->torch_pin = state;
-> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-> +                                TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT,
-> +                                state);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +       return size;
-> +out:
-> +       dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
-> +       return size;
-> +out_strtoint:
-> +       dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
-> +       return size;
-> +}
-> +
-> +static DEVICE_ATTR(torch_pin, 0666, NULL, lm3642_torch_pin_store);
-> +
-> +static void lm3642_deferred_torch_brightness_set(struct work_struct *work)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(work, struct lm3642_chip_data, work_torch);
-> +
-> +       mutex_lock(&chip->lock);
-> +       lm3642_control(chip, chip->br_torch, MODES_TORCH);
-> +       mutex_unlock(&chip->lock);
-> +}
-> +
-> +static void lm3642_torch_brightness_set(struct led_classdev *cdev,
-> +                                       enum led_brightness brightness)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(cdev, struct lm3642_chip_data, cdev_torch);
-> +
-> +       chip->br_torch = brightness;
-> +       schedule_work(&chip->work_torch);
-> +}
-> +
-> +/* flash */
-> +
-> +/* strobe pin config for lm3642*/
-> +static ssize_t lm3642_strobe_pin_store(struct device *dev,
-> +                                      struct device_attribute *devAttr,
-> +                                      const char *buf, size_t size)
-> +{
-> +       ssize_t ret;
-> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> +       struct lm3642_chip_data *chip =
-> +           container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
-> +       unsigned int state;
-> +
-> +       ret = kstrtouint(buf, 10, &state);
-> +       if (ret)
-> +               goto out_strtoint;
-> +       if (state != 0)
-> +               state = 0x01 << STROBE_PIN_EN_SHIFT;
-> +
-> +       chip->strobe_pin = state;
-> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
-> +                                STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT,
-> +                                state);
-> +       if (ret < 0)
-> +               goto out;
-> +
-> +       return size;
-> +out:
-> +       dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
-> +       return size;
-> +out_strtoint:
-> +       dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
-> +       return size;
-> +}
-> +
-> +static DEVICE_ATTR(strobe_pin, 0666, NULL, lm3642_strobe_pin_store);
-> +
-> +static void lm3642_deferred_strobe_brightness_set(struct work_struct *work)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(work, struct lm3642_chip_data, work_flash);
-> +
-> +       mutex_lock(&chip->lock);
-> +       lm3642_control(chip, chip->br_flash, MODES_FLASH);
-> +       mutex_unlock(&chip->lock);
-> +}
-> +
-> +static void lm3642_strobe_brightness_set(struct led_classdev *cdev,
-> +                                        enum led_brightness brightness)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(cdev, struct lm3642_chip_data, cdev_flash);
-> +
-> +       chip->br_flash = brightness;
-> +       schedule_work(&chip->work_flash);
-> +}
-> +
-> +/* indicator */
-> +static void lm3642_deferred_indicator_brightness_set(struct work_struct *work)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(work, struct lm3642_chip_data, work_indicator);
-> +
-> +       mutex_lock(&chip->lock);
-> +       lm3642_control(chip, chip->br_indicator, MODES_INDIC);
-> +       mutex_unlock(&chip->lock);
-> +}
-> +
-> +static void lm3642_indicator_brightness_set(struct led_classdev *cdev,
-> +                                           enum led_brightness brightness)
-> +{
-> +       struct lm3642_chip_data *chip =
-> +           container_of(cdev, struct lm3642_chip_data, cdev_indicator);
-> +
-> +       chip->br_indicator = brightness;
-> +       schedule_work(&chip->work_indicator);
-> +}
-> +
-> +static const struct regmap_config lm3642_regmap = {
-> +       .reg_bits = 8,
-> +       .val_bits = 8,
-> +       .max_register = REG_MAX,
-> +};
-> +
-> +static int __devinit lm3642_probe(struct i2c_client *client,
-> +                                 const struct i2c_device_id *id)
-> +{
-> +       struct lm3642_platform_data *pdata = client->dev.platform_data;
-> +       struct lm3642_chip_data *chip;
-> +
-> +       int err;
-> +
-> +       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-> +               dev_err(&client->dev, "i2c functionality check fail.\n");
-> +               return -EOPNOTSUPP;
-> +       }
-> +
-> +       if (pdata == NULL) {
-> +               dev_err(&client->dev, "needs Platform Data.\n");
-> +               return -ENODATA;
-> +       }
-> +
-> +       chip = devm_kzalloc(&client->dev,
-> +                           sizeof(struct lm3642_chip_data), GFP_KERNEL);
-> +       if (!chip)
-> +               return -ENOMEM;
-> +
-> +       chip->dev = &client->dev;
-> +       chip->pdata = pdata;
-> +
-> +       chip->tx_pin = pdata->tx_pin;
-> +       chip->torch_pin = pdata->torch_pin;
-> +       chip->strobe_pin = pdata->strobe_pin;
-> +
-> +       chip->regmap = devm_regmap_init_i2c(client, &lm3642_regmap);
-> +       if (IS_ERR(chip->regmap)) {
-> +               err = PTR_ERR(chip->regmap);
-> +               dev_err(&client->dev, "Failed to allocate register map: %d\n",
-> +                       err);
-> +               return err;
-> +       }
-> +
-> +       mutex_init(&chip->lock);
-> +       i2c_set_clientdata(client, chip);
-> +
-> +       err = lm3642_chip_init(chip);
-> +       if (err < 0)
-> +               goto err_out;
-> +
-> +       /* flash */
-> +       INIT_WORK(&chip->work_flash, lm3642_deferred_strobe_brightness_set);
-> +       chip->cdev_flash.name = "flash";
-> +       chip->cdev_flash.max_brightness = 16;
-> +       chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
-> +       err = led_classdev_register((struct device *)
-> +                                   &client->dev, &chip->cdev_flash);
-> +       if (err < 0) {
-> +               dev_err(chip->dev, "failed to register flash\n");
-> +               goto err_out;
-> +       }
-> +       err = device_create_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-> +       if (err < 0) {
-> +               dev_err(chip->dev, "failed to create strobe-pin file\n");
-> +               goto err_create_flash_pin_file;
-> +       }
-> +
-> +       /* torch */
-> +       INIT_WORK(&chip->work_torch, lm3642_deferred_torch_brightness_set);
-> +       chip->cdev_torch.name = "torch";
-> +       chip->cdev_torch.max_brightness = 8;
-> +       chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
-> +       err = led_classdev_register((struct device *)
-> +                                   &client->dev, &chip->cdev_torch);
-> +       if (err < 0) {
-> +               dev_err(chip->dev, "failed to register torch\n");
-> +               goto err_create_torch_file;
-> +       }
-> +       err = device_create_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-> +       if (err < 0) {
-> +               dev_err(chip->dev, "failed to create torch-pin file\n");
-> +               goto err_create_torch_pin_file;
-> +       }
-> +
-> +       /* indicator */
-> +       INIT_WORK(&chip->work_indicator,
-> +                 lm3642_deferred_indicator_brightness_set);
-> +       chip->cdev_indicator.name = "indicator";
-> +       chip->cdev_indicator.max_brightness = 8;
-> +       chip->cdev_indicator.brightness_set = lm3642_indicator_brightness_set;
-> +       err = led_classdev_register((struct device *)
-> +                                   &client->dev, &chip->cdev_indicator);
-> +       if (err < 0) {
-> +               dev_err(chip->dev, "failed to register indicator\n");
-> +               goto err_create_indicator_file;
-> +       }
-> +
-> +       dev_info(&client->dev, "LM3642 is initialized\n");
-> +       return 0;
-> +
-> +err_create_indicator_file:
-> +       device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-> +err_create_torch_pin_file:
-> +       led_classdev_unregister(&chip->cdev_torch);
-> +err_create_torch_file:
-> +       device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-> +err_create_flash_pin_file:
-> +       led_classdev_unregister(&chip->cdev_flash);
-> +err_out:
-> +       return err;
-> +}
-> +
-> +static int __devexit lm3642_remove(struct i2c_client *client)
-> +{
-> +       struct lm3642_chip_data *chip = i2c_get_clientdata(client);
-> +
-> +       led_classdev_unregister(&chip->cdev_indicator);
-> +       flush_work(&chip->work_indicator);
-> +       device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
-> +       led_classdev_unregister(&chip->cdev_torch);
-> +       flush_work(&chip->work_torch);
-> +       device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
-> +       led_classdev_unregister(&chip->cdev_flash);
-> +       flush_work(&chip->work_flash);
-> +       regmap_write(chip->regmap, REG_ENABLE, 0);
-> +       return 0;
-> +}
-> +
-> +static const struct i2c_device_id lm3642_id[] = {
-> +       {LM3642_NAME, 0},
-> +       {}
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, lm3642_id);
-> +
-> +static struct i2c_driver lm3642_i2c_driver = {
-> +       .driver = {
-> +                  .name = LM3642_NAME,
-> +                  .owner = THIS_MODULE,
-> +                  .pm = NULL,
-> +                  },
-> +       .probe = lm3642_probe,
-> +       .remove = __devexit_p(lm3642_remove),
-> +       .id_table = lm3642_id,
-> +};
-> +
-> +module_i2c_driver(lm3642_i2c_driver);
-> +
-> +MODULE_DESCRIPTION("Texas Instruments Flash Lighting driver for LM3642");
-> +MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
-> +MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/platform_data/leds-lm3642.h b/include/linux/platform_data/leds-lm3642.h
-> new file mode 100644
-> index 0000000..72d6ee6
-> --- /dev/null
-> +++ b/include/linux/platform_data/leds-lm3642.h
-> @@ -0,0 +1,38 @@
-> +/*
-> +* Copyright (C) 2012 Texas Instruments
-> +*
-> +* License Terms: GNU General Public License v2
-> +*
-> +* Simple driver for Texas Instruments LM3642 LED driver chip
-> +*
-> +* Author: G.Shark Jeong <gshark.jeong@gmail.com>
-> +*         Daniel Jeong <daniel.jeong@ti.com>
-> +*/
-> +
-> +#ifndef __LINUX_LM3642_H
-> +#define __LINUX_LM3642_H
-> +
-> +#define LM3642_NAME "leds-lm3642"
-> +
-> +enum lm3642_torch_pin_enable {
-> +       LM3642_TORCH_PIN_DISABLE = 0x00,
-> +       LM3642_TORCH_PIN_ENABLE = 0x10,
-> +};
-> +
-> +enum lm3642_strobe_pin_enable {
-> +       LM3642_STROBE_PIN_DISABLE = 0x00,
-> +       LM3642_STROBE_PIN_ENABLE = 0x20,
-> +};
-> +
-> +enum lm3642_tx_pin_enable {
-> +       LM3642_TX_PIN_DISABLE = 0x00,
-> +       LM3642_TX_PIN_ENABLE = 0x40,
-> +};
-> +
-> +struct lm3642_platform_data {
-> +       enum lm3642_torch_pin_enable torch_pin;
-> +       enum lm3642_strobe_pin_enable strobe_pin;
-> +       enum lm3642_tx_pin_enable tx_pin;
-> +};
-> +
-> +#endif /* __LINUX_LM3642_H */
-> --
-> 1.7.5.4
->
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 147c1f6,6c1ad01..0000000
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@@ -9,9 -9,7 +9,10 @@@ Required properties
+  - reg               : <registers mapping>
+ =20
+  Optional properties:
+ +- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+ +			SATA port to a combophy and a lane within that
+ +			combophy
++ - dma-coherent      : Present if dma operations are coherent
+ =20
+  Example:
+          sata@ffe08000 {
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+--Signature=_Fri__14_Sep_2012_16_41_22_+1000_m1b8P_87P/sd0ckJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUtGSAAoJEECxmPOUX5FEXS4P/29hgGMNpWNll4xRlxt7hZq6
+mfP6Lap/YcKW34MTldhQuHUHfLu9N08K7bPeQPTWQi/NWQGOaBzuLdnddb0Zlepa
+ZfjYiNWP3ABgzMlyHs8qRu4xfxjqRd3B7Tx9QT6F+iIjSjBnGbHh2hiOaWxjb3Yq
+FSRulxTgjcpbPxjYoeEQGW/GYS9RWvHHwX7J08A2+5JCW81UbGQWYna97J/4A3gp
+sn2vlIBYy8FjMc73JZNWEWfeOAG5otEBKaMs3jgqq1MJ+YeScy0VpJVgTX/aTyOC
+cGPky0urmZrlxCHopMmZ2O2vMVEfUiiNLYAZjV+0TSB5l//aq4rZizRwpiyRRCph
+0KOMC7F99QbTvRAJtSgEQGsd5ufYF/AIgFjgrruFqBIZWPO5cISf+2yhg1kEwDFi
+dKWXjH9aIWX7ZLvMrOEGxNH93OvS+MH8l91AIKcEsp9s5On+HUcfUZSIijNB3/ho
+NOLy41PXqX690hYHQWiwRaF1G1C9wULiQaeunEJpCZTframb3J+SIMGgFIpXk3wZ
+UOlDMzDOlzqx51c3dlw+Xl7Lv3XM/l701M/WAm4sS3Z/JPhTRSZqZnSmZoKa++rz
+P7KNl22pj+HNDYXFurm5fmaf33/jCfUtwlQmMSGt6tyBM+03jeSgUpEHl5ckxvNi
+y5I9o7isAw7YhQL+CXao
+=h0qy
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__14_Sep_2012_16_41_22_+1000_m1b8P_87P/sd0ckJ--
