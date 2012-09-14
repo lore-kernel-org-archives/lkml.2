@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab2INGWt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:22:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49087 "EHLO
+	id S1755675Ab2INGXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:23:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49097 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab2INGWr (ORCPT
+	with ESMTP id S1755443Ab2INGXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:22:47 -0400
-Date: Thu, 13 Sep 2012 23:22:30 -0700
+	Fri, 14 Sep 2012 02:23:41 -0400
+Date: Thu, 13 Sep 2012 23:23:25 -0700
 From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-1edfbb4153bd29bcf8d2236676238d5237972be1@git.kernel.org>
+Message-ID: <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, jbeulich@suse.com, JBeulich@suse.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, JBeulich@suse.com, jbeulich@suse.com,
         tglx@linutronix.de
-In-Reply-To: <504DE550020000780009A258@nat28.tlf.novell.com>
-References: <504DE550020000780009A258@nat28.tlf.novell.com>
+In-Reply-To: <504DEA1B020000780009A277@nat28.tlf.novell.com>
+References: <504DEA1B020000780009A277@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/64: Adjust types of temporaries used by ffs()/
- fls()/fls64()
-Git-Commit-ID: 1edfbb4153bd29bcf8d2236676238d5237972be1
+Subject: [tip:x86/asm] x86: Prefer TZCNT over BFS
+Git-Commit-ID: 5870661c091e827973674cc3469b50c959008c2b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,75 +29,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:22:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:23:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1edfbb4153bd29bcf8d2236676238d5237972be1
-Gitweb:     http://git.kernel.org/tip/1edfbb4153bd29bcf8d2236676238d5237972be1
+Commit-ID:  5870661c091e827973674cc3469b50c959008c2b
+Gitweb:     http://git.kernel.org/tip/5870661c091e827973674cc3469b50c959008c2b
 Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Mon, 10 Sep 2012 12:04:16 +0100
+AuthorDate: Mon, 10 Sep 2012 12:24:43 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 13 Sep 2012 17:43:58 +0200
+CommitDate: Thu, 13 Sep 2012 17:44:01 +0200
 
-x86/64: Adjust types of temporaries used by ffs()/fls()/fls64()
+x86: Prefer TZCNT over BFS
 
-The 64-bit special cases of the former two (the thrird one is
-64-bit only anyway) don't need to use "long" temporaries, as the
-result will always fit in a 32-bit variable, and the functions
-return plain "int". This avoids a few REX prefixes, i.e.
-minimally reduces code size.
+Following a relatively recent compiler change, make use of the
+fact that for non-zero input BSF and TZCNT produce the same
+result, and that CPUs not knowing of TZCNT will treat the
+instruction as BSF (i.e. ignore what looks like a REP prefix to
+them). The assumption here is that TZCNT would never have worse
+performance than BSF.
+
+For the moment, only do this when the respective generic-CPU
+option is selected (as there are no specific-CPU options
+covering the CPUs supporting TZCNT), and don't do that when size
+optimization was requested.
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/504DE550020000780009A258@nat28.tlf.novell.com
+Link: http://lkml.kernel.org/r/504DEA1B020000780009A277@nat28.tlf.novell.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/bitops.h |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/bitops.h |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 72f5009..ebaee69 100644
+index ebaee69..b2af664 100644
 --- a/arch/x86/include/asm/bitops.h
 +++ b/arch/x86/include/asm/bitops.h
-@@ -417,10 +417,9 @@ static inline int ffs(int x)
- 	 * We cannot do this on 32 bits because at the very least some
- 	 * 486 CPUs did not behave this way.
- 	 */
--	long tmp = -1;
- 	asm("bsfl %1,%0"
- 	    : "=r" (r)
--	    : "rm" (x), "0" (tmp));
-+	    : "rm" (x), "0" (-1));
- #elif defined(CONFIG_X86_CMOV)
- 	asm("bsfl %1,%0\n\t"
- 	    "cmovzl %2,%0"
-@@ -459,10 +458,9 @@ static inline int fls(int x)
- 	 * We cannot do this on 32 bits because at the very least some
- 	 * 486 CPUs did not behave this way.
- 	 */
--	long tmp = -1;
- 	asm("bsrl %1,%0"
- 	    : "=r" (r)
--	    : "rm" (x), "0" (tmp));
-+	    : "rm" (x), "0" (-1));
- #elif defined(CONFIG_X86_CMOV)
- 	asm("bsrl %1,%0\n\t"
- 	    "cmovzl %2,%0"
-@@ -490,13 +488,13 @@ static inline int fls(int x)
- #ifdef CONFIG_X86_64
- static __always_inline int fls64(__u64 x)
+@@ -347,6 +347,19 @@ static int test_bit(int nr, const volatile unsigned long *addr);
+ 	 ? constant_test_bit((nr), (addr))	\
+ 	 : variable_test_bit((nr), (addr)))
+ 
++#if (defined(CONFIG_X86_GENERIC) || defined(CONFIG_GENERIC_CPU)) \
++    && !defined(CONFIG_CC_OPTIMIZE_FOR_SIZE)
++/*
++ * Since BSF and TZCNT have sufficiently similar semantics for the purposes
++ * for which we use them here, BMI-capable hardware will decode the prefixed
++ * variant as 'tzcnt ...' and may execute that faster than 'bsf ...', while
++ * older hardware will ignore the REP prefix and decode it as 'bsf ...'.
++ */
++# define BSF_PREFIX "rep;"
++#else
++# define BSF_PREFIX
++#endif
++
+ /**
+  * __ffs - find first set bit in word
+  * @word: The word to search
+@@ -355,7 +368,7 @@ static int test_bit(int nr, const volatile unsigned long *addr);
+  */
+ static inline unsigned long __ffs(unsigned long word)
  {
--	long bitpos = -1;
-+	int bitpos = -1;
- 	/*
- 	 * AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
- 	 * dest reg is undefined if x==0, but their CPU architect says its
- 	 * value is written to set it to the same as before.
- 	 */
--	asm("bsrq %1,%0"
-+	asm("bsrq %1,%q0"
- 	    : "+r" (bitpos)
- 	    : "rm" (x));
- 	return bitpos + 1;
+-	asm("bsf %1,%0"
++	asm(BSF_PREFIX "bsf %1,%0"
+ 		: "=r" (word)
+ 		: "rm" (word));
+ 	return word;
+@@ -369,12 +382,14 @@ static inline unsigned long __ffs(unsigned long word)
+  */
+ static inline unsigned long ffz(unsigned long word)
+ {
+-	asm("bsf %1,%0"
++	asm(BSF_PREFIX "bsf %1,%0"
+ 		: "=r" (word)
+ 		: "r" (~word));
+ 	return word;
+ }
+ 
++#undef BSF_PREFIX
++
+ /*
+  * __fls: find last set bit in word
+  * @word: The word to search
