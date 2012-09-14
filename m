@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab2INRA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:00:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43825 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349Ab2INRAY (ORCPT
+	id S1757622Ab2INRBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:01:44 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32913 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab2INRBm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:00:24 -0400
-Date: Fri, 14 Sep 2012 10:00:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	Fri, 14 Sep 2012 13:01:42 -0400
+References: <20120914140811.10835.81465.stgit@localhost.localdomain>
+In-Reply-To: <20120914140811.10835.81465.stgit@localhost.localdomain>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
+Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: linux-next: build failure after merge of the cgroup tree
-Message-ID: <20120914170019.GA17747@google.com>
-References: <20120914131700.dd3d01a7d17b78082a9bcd55@canb.auug.org.au>
- <5052D51D.3060106@bmw-carit.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5052D51D.3060106@bmw-carit.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        "jlayton@redhat.com" <jlayton@redhat.com>
+X-Mailer: iPhone Mail (9B206)
+From: Chuck Lever <chuck.lever@oracle.com>
+Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
+Date: Fri, 14 Sep 2012 13:01:21 -0400
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+What happens if statd is restarted?
 
-On Fri, Sep 14, 2012 at 08:56:29AM +0200, Daniel Wagner wrote:
-> On 14.09.2012 05:17, Stephen Rothwell wrote:
-> >After merging the cgroup tree, today's linux-next build (powerpc
-> >ppc64_defconfig) failed like this:
-> >
-> >drivers/net/tun.c: In function 'tun_alloc_skb':
-> >drivers/net/tun.c:589:2: error: implicit declaration of function 'sock_update_classid' [-Werror=implicit-function-declaration]
-> >
-> >Caused by commit 1f66c0a8833c ("cgroup: net_cls: Move sock_update_classid()
-> >declaration to cls_cgroup.h").  Grep is your friend ...
+Sent from my iPhone
 
-My apologies.  Forgot allmod build.
+On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-> >I have used the cgroup tree from next-20120913 for today.
+> This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
 > 
-> Obviously, it is straight forward to fix this but I do not know what
-> is the preferred solution. Shall I spin an updated version of this
-> patch or add a patch on top of the series?
-
-I fixed the commit in tree.
-
-Thanks.
-
--- 
-tejun
+> The problem is that with NFSv4 mount in container (with separated mount
+> namesapce) and active lock on it, dying child reaped of this container will
+> try to umount NFS and doing this will try to create RPC client to send
+> unmonitor request to statd.
+> But creation of RCP client requires valid current->nsproxy (for operation with
+> utsname()) and during umount on child reaper exit it's equal to zero.
+> 
+> Proposed solution is to introduce refrence-counter per-net NSM client, which
+> is created on fist monitor call and destroyed after the lst monitor call.
+> 
+> The following series implements...
+> 
+> ---
+> 
+> Stanislav Kinsbursky (3):
+>      lockd: use rpc client's cl_nodename for id encoding
+>      lockd: per-net NSM client creation and destruction helpers introduced
+>      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
+> 
+> 
+> fs/lockd/mon.c   |   91 +++++++++++++++++++++++++++++++++++++++++++-----------
+> fs/lockd/netns.h |    4 ++
+> fs/lockd/svc.c   |    1 +
+> 3 files changed, 77 insertions(+), 19 deletions(-)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
