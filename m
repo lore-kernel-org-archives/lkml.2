@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab2INPLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:11:00 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:38848 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab2INPK6 (ORCPT
+	id S1754488Ab2INPOB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:14:01 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48636 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab2INPN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:10:58 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, viro@zeniv.linux.org.uk, hch@lst.de,
+	Fri, 14 Sep 2012 11:13:59 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: wharms@bfs.de, kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-References: <87wr002z39.fsf@devron.myhome.or.jp>
-	<20120913063906.GA24974@localhost>
-	<871ui6e4tl.fsf@devron.myhome.or.jp>
-	<20120914111429.GA19509@localhost>
-	<87r4q4n6r1.fsf@devron.myhome.or.jp>
-	<20120914131952.GA4952@quack.suse.cz>
-	<87ipbgn2gz.fsf@devron.myhome.or.jp>
-	<20120914144543.GB4952@quack.suse.cz>
-Date: Sat, 15 Sep 2012 00:10:53 +0900
-In-Reply-To: <20120914144543.GB4952@quack.suse.cz> (Jan Kara's message of
-	"Fri, 14 Sep 2012 16:45:43 +0200")
-Message-ID: <878vccmygy.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+Subject: [PATCH v3 5/9] drivers/staging/gdm72xx/gdm_sdio.c: Remove useless kfree
+Date: Fri, 14 Sep 2012 17:13:50 +0200
+Message-Id: <1347635630-19880-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
->> If flusher is working, it clears dirty flags of inode. But if those
->> handers can't flush at the time, we have to do redirty or something to
->> prevent the reclaim.
->   Well, if this is your only problem then I'd see better options than just
-> disabling flusher thread. If the inability to write inode is rare, then
-> redirtying seems like a reasonable option (despite I agree it's a bit
-> ugly). If the inability to write is common, then you'll probably have to do
-> the dirty inode tracking yourself in some list and expose inodes to VM when
-> they are ready to be written. Or you handle writing of inodes yourself but
-> leave writing of pages on flusher thread...
+Remove useless kfree() and clean up code related to the removal.
 
-Basically all data can be data-integrity write like data logging, so it
-would be more than common. And ->writepages() will also ignore WBC_SYNC_NONE.
+The semantic patch that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-> Because when you disable flusher thread completely you have to put all the
-> smarts to avoid livelocks, keep fairness among processes, write old data,
-> keep number of dirty pages under control into your filesystem which leads
-> to a lot of duplication.
+// <smpl>
+@r exists@
+position p1,p2;
+expression x;
+@@
 
-I'm not sure what you meant though. What is the difference with ignoring
-WBC_SYNC_NONE?
+if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+@unchanged exists@
+position r.p1,r.p2;
+expression e <= r.x,x,e1;
+iterator I;
+statement S;
+@@
+
+if (x@p1 == NULL) { ... when != I(x,...) S
+                        when != e = e1
+                        when != e += e1
+                        when != e -= e1
+                        when != ++e
+                        when != --e
+                        when != e++
+                        when != e--
+                        when != &e
+   kfree@p2(x); ... return ...; }
+
+@ok depends on unchanged exists@
+position any r.p1;
+position r.p2;
+expression x;
+@@
+
+... when != true x@p1 == NULL
+kfree@p2(x);
+
+@depends on !ok && unchanged@
+position r.p2;
+expression x;
+@@
+
+*kfree@p2(x);
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/staging/gdm72xx/gdm_sdio.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
+index f824290..2e1a964 100644
+--- a/drivers/staging/gdm72xx/gdm_sdio.c
++++ b/drivers/staging/gdm72xx/gdm_sdio.c
+@@ -91,20 +91,15 @@ static void free_tx_struct(struct sdio_tx *t)
+ 
+ static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
+ {
+-	struct sdio_rx *r = NULL;
+-
+-	r = kmalloc(sizeof(*r), GFP_ATOMIC);
+-	if (r == NULL)
+-		goto out;
++	struct sdio_rx *r;
+ 
+-	memset(r, 0, sizeof(*r));
++	r = kzalloc(sizeof(*r), GFP_ATOMIC);
++	if (!r)
++		return NULL;
+ 
+ 	r->rx_cxt = rx;
+ 
+ 	return r;
+-out:
+-	kfree(r);
+-	return NULL;
+ }
+ 
+ static void free_rx_struct(struct sdio_rx *r)
+
