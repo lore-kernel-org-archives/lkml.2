@@ -1,99 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2INFwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:52:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55317 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab2INFwQ (ORCPT
+	id S1754059Ab2INFyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 01:54:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48558 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2INFyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:52:16 -0400
-Date: Fri, 14 Sep 2012 07:52:10 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] Avoid cache trashing on clearing huge/gigantic
- page
-Message-ID: <20120914055210.GC9043@gmail.com>
-References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120913160506.d394392a.akpm@linux-foundation.org>
+	Fri, 14 Sep 2012 01:54:05 -0400
+Date: Thu, 13 Sep 2012 22:53:39 -0700
+From: tip-bot for Irina Tirdea <irina.tirdea@gmail.com>
+Message-ID: <tip-f8fcd776212bcaa1e2359e39a43c1dbd752b8773@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
+        rostedt@goodmis.org, irina.tirdea@intel.com, irina.tirdea@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, rostedt@goodmis.org,
+        irina.tirdea@intel.com, dsahern@gmail.com, irina.tirdea@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1347315303-29906-2-git-send-email-irina.tirdea@intel.com>
+References: <1347315303-29906-2-git-send-email-irina.tirdea@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: include wrapper for magic.h
+Git-Commit-ID: f8fcd776212bcaa1e2359e39a43c1dbd752b8773
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120913160506.d394392a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 22:53:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f8fcd776212bcaa1e2359e39a43c1dbd752b8773
+Gitweb:     http://git.kernel.org/tip/f8fcd776212bcaa1e2359e39a43c1dbd752b8773
+Author:     Irina Tirdea <irina.tirdea@gmail.com>
+AuthorDate: Tue, 11 Sep 2012 01:14:58 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 11 Sep 2012 11:38:10 -0300
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+perf tools: include wrapper for magic.h
 
-> On Mon, 20 Aug 2012 16:52:29 +0300
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > Clearing a 2MB huge page will typically blow away several levels of CPU
-> > caches.  To avoid this only cache clear the 4K area around the fault
-> > address and use a cache avoiding clears for the rest of the 2MB area.
-> > 
-> > This patchset implements cache avoiding version of clear_page only for
-> > x86. If an architecture wants to provide cache avoiding version of
-> > clear_page it should to define ARCH_HAS_USER_NOCACHE to 1 and implement
-> > clear_page_nocache() and clear_user_highpage_nocache().
-> 
-> Patchset looks nice to me, but the changelogs are terribly 
-> short of performance measurements.  For this sort of change I 
-> do think it is important that pretty exhaustive testing be 
-> performed, and that the results (or a readable summary of 
-> them) be shown.  And that testing should be designed to probe 
-> for slowdowns, not just the speedups!
+perf is currently including magic.h directly from the kernel. If the
+glibc magic.h is also included, this leads to warnings that the
+constants are redefined. This happens on some systems (e.g. Android).
 
-That is my general impression as well.
+Redefinition errors on Android:
+In file included from util/util.h:79:0,
+                 from util/cache.h:5,
+                 from util/abspath.c:1:
+util/../../../include/linux/magic.h:5:0:
+error: "AFFS_SUPER_MAGIC" redefined [-Werror]
+bionic/libc/include/sys/vfs.h:53:0:
+note: this is the location of the previous definition
+util/../../../include/linux/magic.h:19:0:
+error: "EFS_SUPER_MAGIC" redefined [-Werror]
+bionic/libc/include/sys/vfs.h:61:0:
+note: this is the location of the previous definition
+util/../../../include/linux/magic.h:26:0:
+error: "HPFS_SUPER_MAGIC" redefined [-Werror]
+bionic/libc/include/sys/vfs.h:67:0:
+note: this is the location of the previous definition
 
-Firstly, doing before/after "perf stat --repeat 3 ..." runs 
-showing a statistically significant effect on a workload that is 
-expected to win from this, and on a workload expected to be 
-hurting from this would go a long way towards convincing me.
+Only two constants from magic.h are used by perf (DEBUGFS_MAGIC and
+SYSFS_MAGIC). This fix provides a wrapper for magic.h that includes only
+these constants instead of including the kernel header file directly.
 
-Secondly, if you can find some user-space simulation of the 
-intended positive (and negative) effects then a 'perf bench' 
-testcase designed to show weakness of any such approach, running 
-the very kernel assembly code in user-space would also be rather 
-useful.
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1347315303-29906-2-git-send-email-irina.tirdea@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile                   |    1 +
+ tools/perf/util/include/linux/magic.h |   12 ++++++++++++
+ tools/perf/util/util.h                |    2 +-
+ 3 files changed, 14 insertions(+), 1 deletions(-)
 
-See:
-
-comet:~/tip> git grep x86 tools/perf/bench/ | grep inclu
-tools/perf/bench/mem-memcpy-arch.h:#include "mem-memcpy-x86-64-asm-def.h"
-tools/perf/bench/mem-memcpy-x86-64-asm.S:#include "../../../arch/x86/lib/memcpy_64.S"
-tools/perf/bench/mem-memcpy.c:#include "mem-memcpy-x86-64-asm-def.h"
-tools/perf/bench/mem-memset-arch.h:#include "mem-memset-x86-64-asm-def.h"
-tools/perf/bench/mem-memset-x86-64-asm.S:#include "../../../arch/x86/lib/memset_64.S"
-tools/perf/bench/mem-memset.c:#include "mem-memset-x86-64-asm-def.h"
-
-that code uses the kernel-side assembly code and runs it in 
-user-space.
-
-Although obviously clearing pages on page faults needs some care 
-to properly simulate in user-space.
-
-Without repeatable hard numbers such code just gets into the 
-kernel and bitrots there as new CPU generations come in - a few 
-years down the line the original decisions often degrade to pure 
-noise. We've been there, we've done that, we don't want to 
-repeat it.
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e4b2e8f..1d2723c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -264,6 +264,7 @@ LIB_H += util/include/linux/ctype.h
+ LIB_H += util/include/linux/kernel.h
+ LIB_H += util/include/linux/list.h
+ LIB_H += util/include/linux/export.h
++LIB_H += util/include/linux/magic.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
+diff --git a/tools/perf/util/include/linux/magic.h b/tools/perf/util/include/linux/magic.h
+new file mode 100644
+index 0000000..58b64ed
+--- /dev/null
++++ b/tools/perf/util/include/linux/magic.h
+@@ -0,0 +1,12 @@
++#ifndef _PERF_LINUX_MAGIC_H_
++#define _PERF_LINUX_MAGIC_H_
++
++#ifndef DEBUGFS_MAGIC
++#define DEBUGFS_MAGIC          0x64626720
++#endif
++
++#ifndef SYSFS_MAGIC
++#define SYSFS_MAGIC            0x62656572
++#endif
++
++#endif
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 67a3713..70fa70b 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -70,7 +70,7 @@
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+ #include <inttypes.h>
+-#include "../../../include/linux/magic.h"
++#include <linux/magic.h>
+ #include "types.h"
+ #include <sys/ttydefaults.h>
+ 
