@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759636Ab2INMIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:08:42 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:47784 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759514Ab2INMGJ (ORCPT
+	id S1759620Ab2INMJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:09:17 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:38695 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759552Ab2INMGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:06:09 -0400
+	Fri, 14 Sep 2012 08:06:06 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 09/15] ASoC: omap-pcm: Prepare to configure the DMA data_type based on stream properties
-Date: Fri, 14 Sep 2012 15:05:52 +0300
-Message-Id: <1347624358-25582-10-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 08/15] ASoC: OMAP: Remove sync_mode from omap_pcm_dma_data struct
+Date: Fri, 14 Sep 2012 15:05:51 +0300
+Message-Id: <1347624358-25582-9-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,78 +28,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on the format of the stream the omap-pcm can decide alone what data
-type should be used with by the sDMA.
-Keep the possibility for OMAP dai drivers to tell omap-pcm if they want to
-use different data type. This is needed for the omap-hdmi for example which
-needs 32bit data type even if the stream format is S16_LE.
-
-The check if (dma_data->data_type) is safe at the moment since omap-pcm
-does not support 8bit samples (OMAP_DMA_DATA_TYPE_S8 == 0x00).
-
-The next step is to redefine the meaning of dma_data->data_type to unblock
-this limitation.
+The omap-pcm platform driver no longer needs this parameter to select
+between ELEMENT and PACKET mode. The selection is based on the configured
+packet_size.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- sound/soc/omap/omap-pcm.c | 31 +++++++++++++++++++++++++++++--
- 1 file changed, 29 insertions(+), 2 deletions(-)
+ sound/soc/omap/omap-dmic.c  | 1 -
+ sound/soc/omap/omap-hdmi.c  | 1 -
+ sound/soc/omap/omap-mcbsp.c | 5 +----
+ sound/soc/omap/omap-mcpdm.c | 2 --
+ sound/soc/omap/omap-pcm.h   | 1 -
+ 5 files changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
-index 02eeb2e..4c13a5f 100644
---- a/sound/soc/omap/omap-pcm.c
-+++ b/sound/soc/omap/omap-pcm.c
-@@ -149,6 +149,24 @@ static int omap_pcm_hw_free(struct snd_pcm_substream *substream)
- 	return 0;
- }
+diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
+index 75f5dca..60b7b8c 100644
+--- a/sound/soc/omap/omap-dmic.c
++++ b/sound/soc/omap/omap-dmic.c
+@@ -64,7 +64,6 @@ struct omap_dmic {
+ static struct omap_pcm_dma_data omap_dmic_dai_dma_params = {
+ 	.name		= "DMIC capture",
+ 	.data_type	= OMAP_DMA_DATA_TYPE_S32,
+-	.sync_mode	= OMAP_DMA_SYNC_PACKET,
+ };
  
-+static int omap_pcm_get_dma_type(int num_bits)
-+{
-+	int data_type;
-+
-+	switch (num_bits) {
-+	case 16:
-+		data_type = OMAP_DMA_DATA_TYPE_S16;
-+		break;
-+	case 32:
-+		data_type = OMAP_DMA_DATA_TYPE_S32;
-+		break;
-+	default:
-+		data_type = -EINVAL;
-+		break;
-+	}
-+	return data_type;
-+}
-+
- static int omap_pcm_prepare(struct snd_pcm_substream *substream)
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
-@@ -163,7 +181,16 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
- 		return 0;
+ static inline void omap_dmic_write(struct omap_dmic *dmic, u16 reg, u32 val)
+diff --git a/sound/soc/omap/omap-hdmi.c b/sound/soc/omap/omap-hdmi.c
+index a08245d..b194646 100644
+--- a/sound/soc/omap/omap-hdmi.c
++++ b/sound/soc/omap/omap-hdmi.c
+@@ -290,7 +290,6 @@ static __devinit int omap_hdmi_probe(struct platform_device *pdev)
  
- 	memset(&dma_params, 0, sizeof(dma_params));
--	dma_params.data_type			= dma_data->data_type;
-+
-+	if (dma_data->data_type)
-+		dma_params.data_type = dma_data->data_type;
-+	else
-+		dma_params.data_type = omap_pcm_get_dma_type(
-+				snd_pcm_format_physical_width(runtime->format));
-+
-+	if (dma_params.data_type < 0)
-+		return dma_params.data_type;
-+
- 	dma_params.trigger			= dma_data->dma_req;
+ 	hdmi_data->dma_params.dma_req =  hdmi_rsrc->start;
+ 	hdmi_data->dma_params.name = "HDMI playback";
+-	hdmi_data->dma_params.sync_mode = OMAP_DMA_SYNC_PACKET;
  
- 	if (dma_data->packet_size)
-@@ -195,7 +222,7 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
- 	 * still can get an interrupt at each period bounary
- 	 */
- 	bytes = snd_pcm_lib_period_bytes(substream);
--	dma_params.elem_count	= bytes >> dma_data->data_type;
-+	dma_params.elem_count	= bytes >> dma_params.data_type;
- 	dma_params.frame_count	= runtime->periods;
- 	omap_set_dma_params(prtd->dma_ch, &dma_params);
+ 	/*
+ 	 * TODO: We assume that there is only one DSS HDMI device. Future
+diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
+index fe3debc..5b3bacc 100644
+--- a/sound/soc/omap/omap-mcbsp.c
++++ b/sound/soc/omap/omap-mcbsp.c
+@@ -225,7 +225,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 	struct omap_mcbsp *mcbsp = snd_soc_dai_get_drvdata(cpu_dai);
+ 	struct omap_mcbsp_reg_cfg *regs = &mcbsp->cfg_regs;
+ 	struct omap_pcm_dma_data *dma_data;
+-	int wlen, channels, wpf, sync_mode = OMAP_DMA_SYNC_ELEMENT;
++	int wlen, channels, wpf;
+ 	int pkt_size = 0;
+ 	unsigned int format, div, framesize, master;
+ 
+@@ -272,15 +272,12 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 				return -EINVAL;
+ 
+ 			pkt_size = period_words / divider;
+-			sync_mode = OMAP_DMA_SYNC_PACKET;
+ 		} else if (channels > 1) {
+ 			/* Use packet mode for non mono streams */
+ 			pkt_size = channels;
+-			sync_mode = OMAP_DMA_SYNC_PACKET;
+ 		}
+ 	}
+ 
+-	dma_data->sync_mode = sync_mode;
+ 	dma_data->packet_size = pkt_size;
+ 
+ 	snd_soc_dai_set_dma_data(cpu_dai, substream, dma_data);
+diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
+index f7babb3..baf92da 100644
+--- a/sound/soc/omap/omap-mcpdm.c
++++ b/sound/soc/omap/omap-mcpdm.c
+@@ -73,14 +73,12 @@ static struct omap_pcm_dma_data omap_mcpdm_dai_dma_params[] = {
+ 		.name = "Audio playback",
+ 		.dma_req = OMAP44XX_DMA_MCPDM_DL,
+ 		.data_type = OMAP_DMA_DATA_TYPE_S32,
+-		.sync_mode = OMAP_DMA_SYNC_PACKET,
+ 		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_DN_DATA,
+ 	},
+ 	{
+ 		.name = "Audio capture",
+ 		.dma_req = OMAP44XX_DMA_MCPDM_UP,
+ 		.data_type = OMAP_DMA_DATA_TYPE_S32,
+-		.sync_mode = OMAP_DMA_SYNC_PACKET,
+ 		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_UP_DATA,
+ 	},
+ };
+diff --git a/sound/soc/omap/omap-pcm.h b/sound/soc/omap/omap-pcm.h
+index b92248c..1bf47e4 100644
+--- a/sound/soc/omap/omap-pcm.h
++++ b/sound/soc/omap/omap-pcm.h
+@@ -33,7 +33,6 @@ struct omap_pcm_dma_data {
+ 	unsigned long	port_addr;	/* transmit/receive register */
+ 	void (*set_threshold)(struct snd_pcm_substream *substream);
+ 	int		data_type;	/* data type 8,16,32 */
+-	int		sync_mode;	/* DMA sync mode */
+ 	int		packet_size;	/* packet size only in PACKET mode */
+ };
  
 -- 
 1.7.12
