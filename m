@@ -1,106 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2INH1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:27:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51413 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab2INH1d (ORCPT
+	id S1756560Ab2INHfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:35:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43941 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab2INHfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:27:33 -0400
+	Fri, 14 Sep 2012 03:35:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120913165844.GW4257@linux.vnet.ibm.com>
-References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
-	<50520E8A.9030408@linaro.org>
-	<20120913165844.GW4257@linux.vnet.ibm.com>
-Date: Fri, 14 Sep 2012 09:27:32 +0200
-Message-ID: <CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
-Subject: Re: RCU lockup in the SMP idle thread, help...
-From: Linus Walleij <linus.walleij@linaro.org>
-To: paulmck@linux.vnet.ibm.com, John Stultz <john.stultz@linaro.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <CAEH94LgarUjzAY7iKeuztaQ3ZpPS-=v0wqBHZ=vqS4QvMg93Tg@mail.gmail.com>
+References: <1347373645-2119-1-git-send-email-zwu.kernel@gmail.com>
+	<CAEH94LgarUjzAY7iKeuztaQ3ZpPS-=v0wqBHZ=vqS4QvMg93Tg@mail.gmail.com>
+Date: Fri, 14 Sep 2012 15:35:40 +0800
+Message-ID: <CAEH94Li_wvu3B5N6sKG8ALbnkN0S9WFGp=yiEd7F4VE2jkhAvg@mail.gmail.com>
+Subject: Re: [RFC 00/11] VFS: hot data tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, hch@lst.de, chris.mason@fusionio.com,
+        cmm@us.ibm.com, linuxram@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+        tytso@mit.edu, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 6:58 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Sep 13, 2012 at 09:49:14AM -0700, John Stultz wrote:
->> I saw this once as well testing the fix to Daniel's deep idle hang
->> issue (also on 32 bit).
+hi, all maintainers.
 
-John, what system was this? If it's not Snowball/ux500 we can atleast
-conclude that
-it's a generic bug, not machine-specific...
+ping? any comments are appreciated, thanks.
 
->> Really briefly looking at the code in rcutree.c, I'm curious if
->> we're hitting a false positive on the 5 minute jiffies overflow?
+On Wed, Sep 12, 2012 at 10:31 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> Sorry, forgot CCed to Ted.
 >
-> Hmmm...  Might be.  Does the patch below help?
+> On Tue, Sep 11, 2012 at 10:27 PM,  <zwu.kernel@gmail.com> wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>> HI, folks
+>>   I have pushed the patchset to my kernel dev git tree:
+>> git@github.com:wuzhy/kernel.git
+>>
+>>   Also, you can review it via
+>> https://github.com/wuzhy/kernel/commits/hottrack
+>>
+>> NOTE:
+>>
+>> The patchset still has a lot of bugfix and cleanup to do. It is post
+>> out mainly to make sure it is going in the correct direction and
+>> hope to get some helpful comments from other guys.
+>>
+>> TODO List:
+>>
+>>  1.) Need to do scalability or performance tests.
+>>  2.) Fix up bugs.
+>>  3.) Strictly split this patchset to keep them in order
+>>         This patchset is in RFC state, i haven't strictly split it
+>>      When it is in PATCH state, i will strictly split it and let
+>>      them in order.
+>>  4.) Turn some Micro in to tunables
+>>         TIME_TO_KICK, and HEAT_UPDATE_DELAY
+>>  5.) Rafactor hot_hash_is_aging()
+>>         If you just made the timeout value a timespec and compared
+>>      the _timespecs_, you would be doing a lot fewer conversions.
+>>  6.) Cleanup some unnecessary lock protect
+>>  7.) Add more comments to explain how to calc temperature
+>>
+>> Ben Chociej, Matt Lupfer and Conor Scott originally wrote this code to
+>>  be very btrfs-specific.  I've taken their code and attempted to
+>> make it more generic and integrate it at the VFS level.
+>>
+>> INTRODUCTION:
+>>
+>> Essentially, this means maintaining some key stats
+>> (like number of reads/writes, last read/write time, frequency of
+>> reads/writes), then distilling those numbers down to a single
+>> "temperature" value that reflects what data is "hot," and using that
+>> temperature to move data to SSDs.
+>>
+>> The long-term goal of these patches is to allow some FSs,
+>> e.g. Btrfs to intelligently utilize SSDs in a heterogenous volume.
+>> Incidentally, this project has been motivated by
+>> the Project Ideas page on the Btrfs wiki.
+>>
+>> Of course, users are warned not to run this code outside of development
+>> environments. These patches are EXPERIMENTAL, and as such they might eat
+>> your data and/or memory. That said, the code should be relatively safe
+>> when the hottrack mount option are disabled.
+>>
+>> MOTIVATION:
+>>
+>> The overall goal of enabling hot data relocation to SSD has been
+>> motivated by the Project Ideas page on the Btrfs wiki at
+>> <https://btrfs.wiki.kernel.org/index.php/Project_ideas>.
+>> It will divide into two steps. VFS provide hot data tracking function
+>> while specific FS will provide hot data relocation function.
+>> So as the first step of this goal, it is hoped that the patchset
+>> for hot data tracking will eventually mature into VFS.
+>>
+>> This is essentially the traditional cache argument: SSD is fast and
+>> expensive; HDD is cheap but slow. ZFS, for example, can already take
+>> advantage of SSD caching. Btrfs should also be able to take advantage of
+>> hybrid storage without many broad, sweeping changes to existing code.
+>>
+>> SUMMARY:
+>>
+>> - Hooks in existing vfs functions to track data access frequency
+>>
+>> - New rbtrees for tracking access frequency of inodes and sub-file
+>> ranges (hot_rb.c)
+>>     The relationship between super_block and rbtree is as below:
+>>   super_block->s_hotinfo.hot_inode_tree
+>>     In include/linux/fs.h, one struct hot_info s_hotinfo is added to
+>>   super_block struct. Each FS instance can find hot tracking info
+>>   s_hotinfo via its super_block. In this hot_info, it store a lot of hot
+>>   tracking info such as hot_inode_tree, inode and range hash list, etc.
+>>
+>> - A hash list for indexing data by its temperature (hot_hash.c)
+>>
+>> - A debugfs interface for dumping data from the rbtrees (hot_debugfs.c)
+>>
+>> - A background kthread for updating inode heat info
+>>
+>> - Mount options for enabling temperature tracking(-o hottrack, default mean disabled)
+>>   (hot_track.c)
+>>
+>> - An ioctl to retrieve the frequency information collected for a certain
+>> file
+>>
+>> - Ioctls to enable/disable frequency tracking per inode.
+>>
+>> Usage syntax:
+>>
+>> root@debian-i386:~# mount -o hottrack /dev/sdb /mnt
+>> [ 1505.894078] device label test devid 1 transid 29 /dev/sdb
+>> [ 1505.952977] btrfs: disk space caching is enabled
+>> [ 1506.069678] vfs: turning on hot data tracking
+>> root@debian-i386:~# mount -t debugfs none /sys/kernel/debug
+>> root@debian-i386:~# ls -l /sys/kernel/debug/vfs_hotdata/
+>> total 0
+>> drwxr-xr-x 2 root root 0 Aug  8 04:40 sdb
+>> root@debian-i386:~# ls -l /sys/kernel/debug/vfs_hotdata/sdb
+>> total 0
+>> -rw-r--r-- 1 root root 0 Aug  8 04:40 inode_data
+>> -rw-r--r-- 1 root root 0 Aug  8 04:40 range_data
+>> root@debian-i386:~# vi /mnt/file
+>> root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/inode_data
+>> inode #279, reads 0, writes 1, avg read time 18446744073709551615,
+>> avg write time 5251566408153596, temp 109
+>> root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/range_data
+>> inode #279, range start 0 (range len 1048576) reads 0, writes 1,
+>> avg read time 18446744073709551615, avg write time 1128690176623144209, temp 64
+>> root@debian-i386:~# echo "hot data tracking test" >> /mnt/file
+>> root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/inode_data
+>> inode #279, reads 0, writes 2, avg read time 18446744073709551615,
+>> avg write time 4923343766042451, temp 109
+>> root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/range_data
+>> inode #279, range start 0 (range len 1048576) reads 0, writes 2,
+>> avg read time 18446744073709551615, avg write time 1058147040842596150, temp 64
+>> root@debian-i386:~#
+>>
+>> Zhi Yong Wu (11):
+>>   vfs: introduce one structure hot_info
+>>   vfs: introduce one rb tree - hot_inode_tree
+>>   vfs: introduce 2 rb tree items - inode and range
+>>   vfs: add support for updating access frequency
+>>   vfs: add one new mount option -o hottrack
+>>   vfs: add init and exit support
+>>   vfs: introduce one hash table
+>>   vfs: enable hot data tracking
+>>   vfs: fork one private kthread to update temperature info
+>>   vfs: add 3 new ioctl interfaces
+>>   vfs: add debugfs support
+>>
+>>  fs/Makefile               |    3 +-
+>>  fs/compat_ioctl.c         |    8 +
+>>  fs/dcache.c               |    2 +
+>>  fs/direct-io.c            |   10 +
+>>  fs/hot_debugfs.c          |  488 ++++++++++++++++++++++++++++++++++
+>>  fs/hot_debugfs.h          |   60 +++++
+>>  fs/hot_hash.c             |  382 ++++++++++++++++++++++++++
+>>  fs/hot_hash.h             |  112 ++++++++
+>>  fs/hot_rb.c               |  648 +++++++++++++++++++++++++++++++++++++++++++++
+>>  fs/hot_rb.h               |   81 ++++++
+>>  fs/hot_track.c            |   85 ++++++
+>>  fs/hot_track.h            |   23 ++
+>>  fs/ioctl.c                |  132 +++++++++
+>>  fs/namespace.c            |   10 +
+>>  fs/super.c                |   11 +
+>>  include/linux/fs.h        |   15 +
+>>  include/linux/hot_track.h |  169 ++++++++++++
+>>  mm/filemap.c              |    8 +
+>>  mm/page-writeback.c       |   21 ++
+>>  mm/readahead.c            |    9 +
+>>  20 files changed, 2276 insertions(+), 1 deletions(-)
+>>  create mode 100644 fs/hot_debugfs.c
+>>  create mode 100644 fs/hot_debugfs.h
+>>  create mode 100644 fs/hot_hash.c
+>>  create mode 100644 fs/hot_hash.h
+>>  create mode 100644 fs/hot_rb.c
+>>  create mode 100644 fs/hot_rb.h
+>>  create mode 100644 fs/hot_track.c
+>>  create mode 100644 fs/hot_track.h
+>>  create mode 100644 include/linux/hot_track.h
+>>
+>> --
+>> 1.7.6.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Regards,
+>
+> Zhi Yong Wu
 
-Sorry, nope, I get this:
 
-root@ME:/
-root@ME:/ INFO: rcu_preempt detected stalls on CPUs/tasks: { 0}
-(detected by 1, t=29545 jiffies)
-[<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c00686fc>]
-(rcu_check_callbacks+0x6e0/0x76c)
-[<c00686fc>] (rcu_check_callbacks+0x6e0/0x76c) from [<c0029cbc>]
-(update_process_times+0x38/0x4c)
-[<c0029cbc>] (update_process_times+0x38/0x4c) from [<c0055088>]
-(tick_sched_timer+0x80/0xe4)
-[<c0055088>] (tick_sched_timer+0x80/0xe4) from [<c003c120>]
-(__run_hrtimer.isra.18+0x44/0xd0)
-[<c003c120>] (__run_hrtimer.isra.18+0x44/0xd0) from [<c003cae0>]
-(hrtimer_interrupt+0x118/0x2b4)
-[<c003cae0>] (hrtimer_interrupt+0x118/0x2b4) from [<c0013658>]
-(twd_handler+0x30/0x44)
-[<c0013658>] (twd_handler+0x30/0x44) from [<c00638c8>]
-(handle_percpu_devid_irq+0x80/0xa0)
-[<c00638c8>] (handle_percpu_devid_irq+0x80/0xa0) from [<c00603b8>]
-(generic_handle_irq+0x20/0x30)
-[<c00603b8>] (generic_handle_irq+0x20/0x30) from [<c000ef58>]
-(handle_IRQ+0x4c/0xac)
-[<c000ef58>] (handle_IRQ+0x4c/0xac) from [<c00084bc>] (gic_handle_irq+0x24/0x58)
-[<c00084bc>] (gic_handle_irq+0x24/0x58) from [<c000dc80>] (__irq_svc+0x40/0x70)
-Exception stack(0xcf865f88 to 0xcf865fd0)
-5f80:                   00000020 c05c0a20 00000001 00000000 cf864000 cf864000
-5fa0: c05dfe48 c02de0bc c05c3e90 412fc091 cf864000 00000000 01000000 cf865fd0
-5fc0: c000f234 c000f238 60000013 ffffffff
-[<c000dc80>] (__irq_svc+0x40/0x70) from [<c000f238>] (default_idle+0x28/0x30)
-[<c000f238>] (default_idle+0x28/0x30) from [<c000f438>] (cpu_idle+0x98/0xe4)
-[<c000f438>] (cpu_idle+0x98/0xe4) from [<002d3094>] (0x2d3094)
-INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
-t=30029 jiffies)
-[<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c00686fc>]
-(rcu_check_callbacks+0x6e0/0x76c)
-[<c00686fc>] (rcu_check_callbacks+0x6e0/0x76c) from [<c0029cbc>]
-(update_process_times+0x38/0x4c)
-[<c0029cbc>] (update_process_times+0x38/0x4c) from [<c0055088>]
-(tick_sched_timer+0x80/0xe4)
-[<c0055088>] (tick_sched_timer+0x80/0xe4) from [<c003c120>]
-(__run_hrtimer.isra.18+0x44/0xd0)
-[<c003c120>] (__run_hrtimer.isra.18+0x44/0xd0) from [<c003cae0>]
-(hrtimer_interrupt+0x118/0x2b4)
-[<c003cae0>] (hrtimer_interrupt+0x118/0x2b4) from [<c0013658>]
-(twd_handler+0x30/0x44)
-[<c0013658>] (twd_handler+0x30/0x44) from [<c00638c8>]
-(handle_percpu_devid_irq+0x80/0xa0)
-[<c00638c8>] (handle_percpu_devid_irq+0x80/0xa0) from [<c00603b8>]
-(generic_handle_irq+0x20/0x30)
-[<c00603b8>] (generic_handle_irq+0x20/0x30) from [<c000ef58>]
-(handle_IRQ+0x4c/0xac)
-[<c000ef58>] (handle_IRQ+0x4c/0xac) from [<c00084bc>] (gic_handle_irq+0x24/0x58)
-[<c00084bc>] (gic_handle_irq+0x24/0x58) from [<c000dc80>] (__irq_svc+0x40/0x70)
-Exception stack(0xcf865f88 to 0xcf865fd0)
-5f80:                   00000020 c05c0a20 00000001 00000000 cf864000 cf864000
-5fa0: c05dfe48 c02de0bc c05c3e90 412fc091 cf864000 00000000 01000000 cf865fd0
-5fc0: c000f234 c000f238 60000013 ffffffff
-[<c000dc80>] (__irq_svc+0x40/0x70) from [<c000f238>] (default_idle+0x28/0x30)
-[<c000f238>] (default_idle+0x28/0x30) from [<c000f438>] (cpu_idle+0x98/0xe4)
-[<c000f438>] (cpu_idle+0x98/0xe4) from [<002d3094>] (0x2d3094)
 
-I'm all confused ..
+-- 
+Regards,
 
-Yours,
-Linus Walleij
+Zhi Yong Wu
