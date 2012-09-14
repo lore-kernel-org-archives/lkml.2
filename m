@@ -1,122 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab2INJ5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:57:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64203 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab2INJ5I (ORCPT
+	id S1756230Ab2INJ5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:57:24 -0400
+Received: from mga05.intel.com ([192.55.52.89]:24039 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755163Ab2INJ5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:57:08 -0400
-Date: Fri, 14 Sep 2012 10:57:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Ola Lilja <ola.o.lilja@stericsson.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 07/17] Documentation: Define the MSP Driver Device Tree
- bindings
-Message-ID: <20120914095659.GQ3374@gmail.com>
-References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
- <1345816913-4113-8-git-send-email-lee.jones@linaro.org>
- <20120910164333.GB24506@gmail.com>
- <504EFF86.10105@stericsson.com>
+	Fri, 14 Sep 2012 05:57:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <504EFF86.10105@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.02.1209131453160.9845@tundra.namei.org>
+References: <alpine.LRH.2.02.1209121333031.4482@tundra.namei.org>
+	<CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
+	<CALLzPKZ=rBqRUqb_G6U=5XWoC-ps0qGGphgsPz3iHmAGxSGQnw@mail.gmail.com>
+	<CA+55aFwrTXUigYtiSB7aS1BV6i7yrLZTgoWuEKgJ=XuCeEb4pw@mail.gmail.com>
+	<alpine.LRH.2.02.1209131453160.9845@tundra.namei.org>
+Date: Fri, 14 Sep 2012 12:57:17 +0300
+Message-ID: <CALLzPKbOfYhfGWj4KOs7NZwb--e9OreOn_A3=oi2pCaL293LaQ@mail.gmail.com>
+Subject: Re: [GIT] Digital signature library bugfix
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: James Morris <jmorris@namei.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 11:08:22AM +0200, Ola Lilja wrote:
-> On 09/10/2012 06:43 PM, Lee Jones wrote:
-> 
-> > Ola poke.
-> > 
-> > On Fri, Aug 24, 2012 at 03:01:43PM +0100, Lee Jones wrote:
-> >> Here we add the required documentation for the new Device Tree
-> >> bindings pertaining to the MSP CPU-side DAI Driver.
-> >> 
-> >> CC: alsa-devel@alsa-project.org
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >> ---
-> >>  .../devicetree/bindings/sound/ux500-msp.txt        |   43 ++++++++++++++++++++
-> >>  1 file changed, 43 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/sound/ux500-msp.txt
-> >> 
-> >> diff --git a/Documentation/devicetree/bindings/sound/ux500-msp.txt b/Documentation/devicetree/bindings/sound/ux500-msp.txt
-> >> new file mode 100644
-> >> index 0000000..99acd9c
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/sound/ux500-msp.txt
-> >> @@ -0,0 +1,43 @@
-> >> +* ux500 MSP (CPU-side Digital Audio Interface)
-> >> +
-> >> +Required properties:
-> >> + - compatible       :"stericsson,ux500-msp-i2s"
-> >> + - reg              : Physical base address and length of the device's registers.
-> >> +
-> >> +Optional properties:
-> >> + - interrupts       : The interrupt output from the device.
-> >> + - interrupt-parent : The parent interrupt controller.
-> >> + - <name>-supply    : Phandle to the regulator <name> supply
-> >> +
-> >> +Example:
-> >> +
-> >> +	sound {
-> >> +		compatible = "stericsson,snd-soc-mop500";
-> >> +
-> >> +		stericsson,platform-pcm-dma = <&pcm>;
-> >> +		stericsson,cpu-dai = <&msp1 &msp3>;
-> >> +		stericsson,audio-codec = <&codec>;
-> >> +	};
-> >> +
-> >> +	pcm: ux500-pcm {
-> >> +		compatible = "stericsson,ux500-pcm";
-> >> +	};
-> >> +
-> >> +	msp1: msp@80124000 {
-> >> +		compatible = "stericsson,ux500-msp-i2s";
-> >> +		reg = <0x80124000 0x1000>;
-> >> +		interrupts = <0 62 0x4>;
-> >> +		v-ape-supply = <&db8500_vape_reg>;
-> >> +	};
-> >> +
-> >> +	msp3: msp@80125000 {
-> >> +		compatible = "stericsson,ux500-msp-i2s";
-> >> +		reg = <0x80125000 0x1000>;
-> >> +		interrupts = <0 62 0x4>;
-> >> +		v-ape-supply = <&db8500_vape_reg>;
-> >> +	};
-> >> +
-> >> +	codec: ab8500-codec {
-> >> +		compatible = "stericsson,ab8500-codec";
-> >> +		stericsson,earpeice-cmv = <950>; /* Units in mV. */
-> 
-> 
-> This parameter has nothing to do with the ASoC platform-driver. Some way or the
-> other the earpiece-cmv should belong to the codec-driver. Also, this parameter
-> was set in the previous patch as well?!
+On Thu, Sep 13, 2012 at 7:53 AM, James Morris <jmorris@namei.org> wrote:
+> On Thu, 13 Sep 2012, Linus Torvalds wrote:
+>
+>> On Wed, Sep 12, 2012 at 6:22 PM, Kasatkin, Dmitry
+>> <dmitry.kasatkin@intel.com> wrote:
+>> >
+>> > But I will re-send updated patch in a moment.
+>>
+>> Ok, I took that updated patch instead of the pull request, since I
+>> liked that much more, and hadn't actually pushed out the pull yet.
+>
+> Thanks.
+>
+>
+>
+> --
+> James Morris
+> <jmorris@namei.org>
 
-You know that this is just a documentation patch right?
-
-It just shows how the pieces fit together. No settings will actually
-be read from here, it's just a .txt file used for reference.
-
-Kind regards,
-Lee
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks.
