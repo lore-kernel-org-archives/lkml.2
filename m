@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2INEkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 00:40:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52874 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2INEkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 00:40:43 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: patches@linaro.org, Kevin McKinney <klmckinney1@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] Staging: bcm: Fix udelay related compilation error
-Date: Fri, 14 Sep 2012 10:07:33 +0530
-Message-Id: <1347597453-19443-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753069Ab2INElo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 00:41:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48075 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab2INElm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 00:41:42 -0400
+Message-ID: <5052B576.8010500@zytor.com>
+Date: Thu, 13 Sep 2012 21:41:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: joeyli <jlee@suse.com>
+CC: Peter Jones <pjones@redhat.com>, jeremy.kerr@canonical.com,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        Matt Domsch <Matt_Domsch@Dell.com>, glin@suse.com
+Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
+References: <1346910035.47691.188651047712.1.gpush@pecola>  <CAGLnvc9BXAW8F8WWyDxuF1_J+0np3uqUBmknuJewOJHhe-mxvw@mail.gmail.com>  <1347523843.596.30.camel@linux-s257.site>  <1347544333.6707.1.camel@eddie.install.bos.redhat.com> <1347594342.705.33.camel@linux-s257.site>
+In-Reply-To: <1347594342.705.33.camel@linux-s257.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6788d7dab6a5 ("Staging: bcm: Use udelay instead of msleep for
-delays in nvm.c") replaces msleep with udelay values. udelay values
-of more than 1000 should be replaced by mdelay instead.
+On 09/13/2012 08:45 PM, joeyli wrote:
+> Hi Peter,
+>
+> 於 四，2012-09-13 於 09:52 -0400，Peter Jones 提到：
+>> On Thu, 2012-09-13 at 16:10 +0800, joeyli wrote:
+>>
+>>> Do we have plan to create a new kobject add to /sys/firmware/efi for
+>>> provide a fixed mount point to efivars fs?
+>>> e.g. /sys/firmware/efi/efivars
+>>>
+>>> Or we just direct reuse current /sys/firmeware/efi/vars? But, that means
+>>> we need think for the backward compatibility if choice reuse vars
+>>> folder.
+>>
+>> I'm not sure that's a terribly large concern - if you haven't updated
+>> your tools to use the new efivars, don't mount the new efivars.
+>>
+>
+> Thanks for your comment!
+>
 
-This fixes following build error.
-ERROR: "__bad_udelay" [drivers/staging/bcm/bcm_wimax.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+I think it is wrong.  The new API should have a different path.
 
-Cc: Kevin McKinney <klmckinney1@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/staging/bcm/nvm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+	-hpa
 
-diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-index b179dba..921e25e 100644
---- a/drivers/staging/bcm/nvm.c
-+++ b/drivers/staging/bcm/nvm.c
-@@ -577,7 +577,7 @@ static int FlashSectorErase(struct bcm_mini_adapter *Adapter,
- 			 * the sector erase cycle is 500 ms to 40000 msec. hence sleeping 10 ms
- 			 * won't hamper performance in any case.
- 			 */
--			udelay(10000);
-+			mdelay(10);
- 		} while ((uiStatus & 0x1) && (iRetries < 400));
- 
- 		if (uiStatus & 0x1) {
+
 -- 
-1.7.4.1
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
