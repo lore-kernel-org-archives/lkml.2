@@ -1,207 +1,617 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab2ING1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:27:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54776 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab2ING1L (ORCPT
+	id S1752715Ab2INGe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:34:26 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58703 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab2INGeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:27:11 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5052CE22.3060403@jp.fujitsu.com>
-Date: Fri, 14 Sep 2012 15:26:42 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 14 Sep 2012 02:34:22 -0400
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kvm@vger.kernel.org>
-Subject: Re: memory-hotplug : possible circular locking dependency detected
-References: <50517ADF.70201@jp.fujitsu.com> <5052C881.7070001@cn.fujitsu.com>
-In-Reply-To: <5052C881.7070001@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1347451550-7785-2-git-send-email-gshark.jeong@gmail.com>
+References: <1347451550-7785-1-git-send-email-gshark.jeong@gmail.com> <1347451550-7785-2-git-send-email-gshark.jeong@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 14 Sep 2012 14:33:59 +0800
+X-Google-Sender-Auth: fzkO47S98QaNl3DkuyaFNZRxreg
+Message-ID: <CAK5ve-JFvJEC-G=zS8Zp-HwTwdkVDpM1EEA27d1nWRPcxHaKYg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] leds: Add new LED driver for lm3642 chips
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
+On Wed, Sep 12, 2012 at 8:05 PM, G.Shark Jeong <gshark.jeong@gmail.com> wrote:
+> From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+>
+> This driver is a general version for LM642 led chip of TI.
+>
+> LM3642 :
+> The LM3642 is a 4MHz fixed-frequency synchronous boost
+> converter plus 1.5A constant current driver for a high-current
+> white LED.
+> The LM3642 is controlled via an I2C-compatible interface.
+>
 
-2012/09/14 15:02, Wen Congyang wrote:
-> At 09/13/2012 02:19 PM, Yasuaki Ishimatsu Wrote:
->> When I offline a memory on linux-3.6-rc5, "possible circular
->> locking dependency detected" messages are shown.
->> Are the messages known problem?
-> 
-> It is a known problem, but it doesn't cause a deadlock.
-> There is 3 locks: memory hotplug's lock, memory hotplug
-> notifier's lock, and ksm_thread_mutex.
-> 
-> ksm_thread_mutex is locked when the memory is going offline
-> and is unlocked when the memory is offlined or the offlining
-> is cancelled. So we meet the warning messages. But it
-> doesn't cause deadlock, because we lock mem_hotplug_mutex
-> first.
+Thanks, this patch looks fine to me. Applied to my for-next branch.
 
-Thank you for your clarification.
-I understand it. So I ignore the messages.
+-Bryan
 
-Thanks,
-Yasuaki Ishimatsu
+> Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
+> ---
+>  drivers/leds/Kconfig                      |   11 +
+>  drivers/leds/Makefile                     |    1 +
+>  drivers/leds/leds-lm3642.c                |  471 +++++++++++++++++++++++++++++
+>  include/linux/platform_data/leds-lm3642.h |   38 +++
+>  4 files changed, 521 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-lm3642.c
+>  create mode 100644 include/linux/platform_data/leds-lm3642.h
+>
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index c96bbaa..bdc05cb 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -63,6 +63,17 @@ config LEDS_LM3533
+>           hardware-accelerated blinking with maximum on and off periods of 9.8
+>           and 77 seconds respectively.
+>
+> +config LEDS_LM3642
+> +       tristate "LED support for LM3642 Chip"
+> +       depends on LEDS_CLASS && I2C
+> +       select REGMAP_I2C
+> +       help
+> +         This option enables support for LEDs connected to LM3642.
+> +         The LM3642 is a 4MHz fixed-frequency synchronous boost
+> +         converter plus 1.5A constant current driver for a high-current
+> +         white LED.
+> +
+> +
+>  config LEDS_LOCOMO
+>         tristate "LED Support for Locomo device"
+>         depends on LEDS_CLASS
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index a4429a9..9a01111 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -11,6 +11,7 @@ obj-$(CONFIG_LEDS_BD2802)             += leds-bd2802.o
+>  obj-$(CONFIG_LEDS_LOCOMO)              += leds-locomo.o
+>  obj-$(CONFIG_LEDS_LM3530)              += leds-lm3530.o
+>  obj-$(CONFIG_LEDS_LM3533)              += leds-lm3533.o
+> +obj-$(CONFIG_LEDS_LM3642)              += leds-lm3642.o
+>  obj-$(CONFIG_LEDS_MIKROTIK_RB532)      += leds-rb532.o
+>  obj-$(CONFIG_LEDS_S3C24XX)             += leds-s3c24xx.o
+>  obj-$(CONFIG_LEDS_NET48XX)             += leds-net48xx.o
+> diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
+> new file mode 100644
+> index 0000000..924853b
+> --- /dev/null
+> +++ b/drivers/leds/leds-lm3642.c
+> @@ -0,0 +1,471 @@
+> +/*
+> +* Simple driver for Texas Instruments LM3642 LED Flash driver chip
+> +* Copyright (C) 2012 Texas Instruments
+> +*
+> +* This program is free software; you can redistribute it and/or modify
+> +* it under the terms of the GNU General Public License version 2 as
+> +* published by the Free Software Foundation.
+> +*
+> +*/
+> +#include <linux/module.h>
+> +#include <linux/delay.h>
+> +#include <linux/i2c.h>
+> +#include <linux/leds.h>
+> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/fs.h>
+> +#include <linux/regmap.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/platform_data/leds-lm3642.h>
+> +
+> +#define        REG_FILT_TIME                   (0x0)
+> +#define        REG_IVFM_MODE                   (0x1)
+> +#define        REG_TORCH_TIME                  (0x6)
+> +#define        REG_FLASH                       (0x8)
+> +#define        REG_I_CTRL                      (0x9)
+> +#define        REG_ENABLE                      (0xA)
+> +#define        REG_FLAG                        (0xB)
+> +#define        REG_MAX                         (0xB)
+> +
+> +#define        UVLO_EN_SHIFT                   (7)
+> +#define        IVM_D_TH_SHIFT                  (2)
+> +#define        TORCH_RAMP_UP_TIME_SHIFT        (3)
+> +#define        TORCH_RAMP_DN_TIME_SHIFT        (0)
+> +#define        INDUCTOR_I_LIMIT_SHIFT          (6)
+> +#define        FLASH_RAMP_TIME_SHIFT           (3)
+> +#define        FLASH_TOUT_TIME_SHIFT           (0)
+> +#define        TORCH_I_SHIFT                   (4)
+> +#define        FLASH_I_SHIFT                   (0)
+> +#define        IVFM_SHIFT                      (7)
+> +#define        TX_PIN_EN_SHIFT                 (6)
+> +#define        STROBE_PIN_EN_SHIFT             (5)
+> +#define        TORCH_PIN_EN_SHIFT              (4)
+> +#define        MODE_BITS_SHIFT                 (0)
+> +
+> +#define        UVLO_EN_MASK                    (0x1)
+> +#define        IVM_D_TH_MASK                   (0x7)
+> +#define        TORCH_RAMP_UP_TIME_MASK         (0x7)
+> +#define        TORCH_RAMP_DN_TIME_MASK         (0x7)
+> +#define        INDUCTOR_I_LIMIT_MASK           (0x1)
+> +#define        FLASH_RAMP_TIME_MASK            (0x7)
+> +#define        FLASH_TOUT_TIME_MASK            (0x7)
+> +#define        TORCH_I_MASK                    (0x7)
+> +#define        FLASH_I_MASK                    (0xF)
+> +#define        IVFM_MASK                       (0x1)
+> +#define        TX_PIN_EN_MASK                  (0x1)
+> +#define        STROBE_PIN_EN_MASK              (0x1)
+> +#define        TORCH_PIN_EN_MASK               (0x1)
+> +#define        MODE_BITS_MASK                  (0x73)
+> +#define EX_PIN_CONTROL_MASK            (0x71)
+> +#define EX_PIN_ENABLE_MASK             (0x70)
+> +
+> +enum lm3642_mode {
+> +       MODES_STASNDBY = 0,
+> +       MODES_INDIC,
+> +       MODES_TORCH,
+> +       MODES_FLASH
+> +};
+> +
+> +struct lm3642_chip_data {
+> +       struct device *dev;
+> +
+> +       struct led_classdev cdev_flash;
+> +       struct led_classdev cdev_torch;
+> +       struct led_classdev cdev_indicator;
+> +
+> +       struct work_struct work_flash;
+> +       struct work_struct work_torch;
+> +       struct work_struct work_indicator;
+> +
+> +       u8 br_flash;
+> +       u8 br_torch;
+> +       u8 br_indicator;
+> +
+> +       enum lm3642_torch_pin_enable torch_pin;
+> +       enum lm3642_strobe_pin_enable strobe_pin;
+> +       enum lm3642_tx_pin_enable tx_pin;
+> +
+> +       struct lm3642_platform_data *pdata;
+> +       struct regmap *regmap;
+> +       struct mutex lock;
+> +
+> +       unsigned int last_flag;
+> +};
+> +
+> +/* chip initialize */
+> +static int __devinit lm3642_chip_init(struct lm3642_chip_data *chip)
+> +{
+> +       unsigned int reg_val;
+> +       int ret;
+> +       struct lm3642_platform_data *pdata = chip->pdata;
+> +
+> +       /* set enable register */
+> +       ret = regmap_read(chip->regmap, REG_ENABLE, &reg_val);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       reg_val &= (~EX_PIN_ENABLE_MASK);
+> +       reg_val |= pdata->tx_pin;
+> +       ret = regmap_write(chip->regmap, REG_ENABLE, reg_val);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +out:
+> +       dev_err(chip->dev, "Failed to read REG_ENABLE Register\n");
+> +       return ret;
+> +}
+> +
+> +/* chip control */
+> +static int lm3642_control(struct lm3642_chip_data *chip,
+> +                         u8 brightness, enum lm3642_mode opmode)
+> +{
+> +       int ret;
+> +
+> +       ret = regmap_read(chip->regmap, REG_FLAG, &chip->last_flag);
+> +       if (ret < 0) {
+> +               dev_err(chip->dev, "Failed to read REG_FLAG Register\n");
+> +               goto out;
+> +       }
+> +
+> +       if (chip->last_flag)
+> +               dev_info(chip->dev, "Last FLAG is 0x%x\n", chip->last_flag);
+> +
+> +       /* brightness 0 means off-state */
+> +       if (!brightness)
+> +               opmode = MODES_STASNDBY;
+> +
+> +       switch (opmode) {
+> +       case MODES_TORCH:
+> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
+> +                                        TORCH_I_MASK << TORCH_I_SHIFT,
+> +                                        (brightness - 1) << TORCH_I_SHIFT);
+> +
+> +               if (chip->torch_pin)
+> +                       opmode |= (TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT);
+> +               break;
+> +
+> +       case MODES_FLASH:
+> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
+> +                                        FLASH_I_MASK << FLASH_I_SHIFT,
+> +                                        (brightness - 1) << FLASH_I_SHIFT);
+> +
+> +               if (chip->strobe_pin)
+> +                       opmode |= (STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT);
+> +               break;
+> +
+> +       case MODES_INDIC:
+> +               ret = regmap_update_bits(chip->regmap, REG_I_CTRL,
+> +                                        TORCH_I_MASK << TORCH_I_SHIFT,
+> +                                        (brightness - 1) << TORCH_I_SHIFT);
+> +               break;
+> +
+> +       case MODES_STASNDBY:
+> +
+> +               break;
+> +
+> +       default:
+> +               return ret;
+> +       }
+> +       if (ret < 0) {
+> +               dev_err(chip->dev, "Failed to write REG_I_CTRL Register\n");
+> +               goto out;
+> +       }
+> +
+> +       if (chip->tx_pin)
+> +               opmode |= (TX_PIN_EN_MASK << TX_PIN_EN_SHIFT);
+> +
+> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
+> +                                MODE_BITS_MASK << MODE_BITS_SHIFT,
+> +                                opmode << MODE_BITS_SHIFT);
+> +out:
+> +       return ret;
+> +}
+> +
+> +/* torch */
+> +
+> +/* torch pin config for lm3642*/
+> +static ssize_t lm3642_torch_pin_store(struct device *dev,
+> +                                     struct device_attribute *devAttr,
+> +                                     const char *buf, size_t size)
+> +{
+> +       ssize_t ret;
+> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +       struct lm3642_chip_data *chip =
+> +           container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
+> +       unsigned int state;
+> +
+> +       ret = kstrtouint(buf, 10, &state);
+> +       if (ret)
+> +               goto out_strtoint;
+> +       if (state != 0)
+> +               state = 0x01 << TORCH_PIN_EN_SHIFT;
+> +
+> +       chip->torch_pin = state;
+> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
+> +                                TORCH_PIN_EN_MASK << TORCH_PIN_EN_SHIFT,
+> +                                state);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       return size;
+> +out:
+> +       dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
+> +       return size;
+> +out_strtoint:
+> +       dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
+> +       return size;
+> +}
+> +
+> +static DEVICE_ATTR(torch_pin, 0666, NULL, lm3642_torch_pin_store);
+> +
+> +static void lm3642_deferred_torch_brightness_set(struct work_struct *work)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(work, struct lm3642_chip_data, work_torch);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3642_control(chip, chip->br_torch, MODES_TORCH);
+> +       mutex_unlock(&chip->lock);
+> +}
+> +
+> +static void lm3642_torch_brightness_set(struct led_classdev *cdev,
+> +                                       enum led_brightness brightness)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(cdev, struct lm3642_chip_data, cdev_torch);
+> +
+> +       chip->br_torch = brightness;
+> +       schedule_work(&chip->work_torch);
+> +}
+> +
+> +/* flash */
+> +
+> +/* strobe pin config for lm3642*/
+> +static ssize_t lm3642_strobe_pin_store(struct device *dev,
+> +                                      struct device_attribute *devAttr,
+> +                                      const char *buf, size_t size)
+> +{
+> +       ssize_t ret;
+> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +       struct lm3642_chip_data *chip =
+> +           container_of(led_cdev, struct lm3642_chip_data, cdev_indicator);
+> +       unsigned int state;
+> +
+> +       ret = kstrtouint(buf, 10, &state);
+> +       if (ret)
+> +               goto out_strtoint;
+> +       if (state != 0)
+> +               state = 0x01 << STROBE_PIN_EN_SHIFT;
+> +
+> +       chip->strobe_pin = state;
+> +       ret = regmap_update_bits(chip->regmap, REG_ENABLE,
+> +                                STROBE_PIN_EN_MASK << STROBE_PIN_EN_SHIFT,
+> +                                state);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       return size;
+> +out:
+> +       dev_err(chip->dev, "%s:i2c access fail to register\n", __func__);
+> +       return size;
+> +out_strtoint:
+> +       dev_err(chip->dev, "%s: fail to change str to int\n", __func__);
+> +       return size;
+> +}
+> +
+> +static DEVICE_ATTR(strobe_pin, 0666, NULL, lm3642_strobe_pin_store);
+> +
+> +static void lm3642_deferred_strobe_brightness_set(struct work_struct *work)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(work, struct lm3642_chip_data, work_flash);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3642_control(chip, chip->br_flash, MODES_FLASH);
+> +       mutex_unlock(&chip->lock);
+> +}
+> +
+> +static void lm3642_strobe_brightness_set(struct led_classdev *cdev,
+> +                                        enum led_brightness brightness)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(cdev, struct lm3642_chip_data, cdev_flash);
+> +
+> +       chip->br_flash = brightness;
+> +       schedule_work(&chip->work_flash);
+> +}
+> +
+> +/* indicator */
+> +static void lm3642_deferred_indicator_brightness_set(struct work_struct *work)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(work, struct lm3642_chip_data, work_indicator);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3642_control(chip, chip->br_indicator, MODES_INDIC);
+> +       mutex_unlock(&chip->lock);
+> +}
+> +
+> +static void lm3642_indicator_brightness_set(struct led_classdev *cdev,
+> +                                           enum led_brightness brightness)
+> +{
+> +       struct lm3642_chip_data *chip =
+> +           container_of(cdev, struct lm3642_chip_data, cdev_indicator);
+> +
+> +       chip->br_indicator = brightness;
+> +       schedule_work(&chip->work_indicator);
+> +}
+> +
+> +static const struct regmap_config lm3642_regmap = {
+> +       .reg_bits = 8,
+> +       .val_bits = 8,
+> +       .max_register = REG_MAX,
+> +};
+> +
+> +static int __devinit lm3642_probe(struct i2c_client *client,
+> +                                 const struct i2c_device_id *id)
+> +{
+> +       struct lm3642_platform_data *pdata = client->dev.platform_data;
+> +       struct lm3642_chip_data *chip;
+> +
+> +       int err;
+> +
+> +       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+> +               dev_err(&client->dev, "i2c functionality check fail.\n");
+> +               return -EOPNOTSUPP;
+> +       }
+> +
+> +       if (pdata == NULL) {
+> +               dev_err(&client->dev, "needs Platform Data.\n");
+> +               return -ENODATA;
+> +       }
+> +
+> +       chip = devm_kzalloc(&client->dev,
+> +                           sizeof(struct lm3642_chip_data), GFP_KERNEL);
+> +       if (!chip)
+> +               return -ENOMEM;
+> +
+> +       chip->dev = &client->dev;
+> +       chip->pdata = pdata;
+> +
+> +       chip->tx_pin = pdata->tx_pin;
+> +       chip->torch_pin = pdata->torch_pin;
+> +       chip->strobe_pin = pdata->strobe_pin;
+> +
+> +       chip->regmap = devm_regmap_init_i2c(client, &lm3642_regmap);
+> +       if (IS_ERR(chip->regmap)) {
+> +               err = PTR_ERR(chip->regmap);
+> +               dev_err(&client->dev, "Failed to allocate register map: %d\n",
+> +                       err);
+> +               return err;
+> +       }
+> +
+> +       mutex_init(&chip->lock);
+> +       i2c_set_clientdata(client, chip);
+> +
+> +       err = lm3642_chip_init(chip);
+> +       if (err < 0)
+> +               goto err_out;
+> +
+> +       /* flash */
+> +       INIT_WORK(&chip->work_flash, lm3642_deferred_strobe_brightness_set);
+> +       chip->cdev_flash.name = "flash";
+> +       chip->cdev_flash.max_brightness = 16;
+> +       chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_flash);
+> +       if (err < 0) {
+> +               dev_err(chip->dev, "failed to register flash\n");
+> +               goto err_out;
+> +       }
+> +       err = device_create_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
+> +       if (err < 0) {
+> +               dev_err(chip->dev, "failed to create strobe-pin file\n");
+> +               goto err_create_flash_pin_file;
+> +       }
+> +
+> +       /* torch */
+> +       INIT_WORK(&chip->work_torch, lm3642_deferred_torch_brightness_set);
+> +       chip->cdev_torch.name = "torch";
+> +       chip->cdev_torch.max_brightness = 8;
+> +       chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_torch);
+> +       if (err < 0) {
+> +               dev_err(chip->dev, "failed to register torch\n");
+> +               goto err_create_torch_file;
+> +       }
+> +       err = device_create_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
+> +       if (err < 0) {
+> +               dev_err(chip->dev, "failed to create torch-pin file\n");
+> +               goto err_create_torch_pin_file;
+> +       }
+> +
+> +       /* indicator */
+> +       INIT_WORK(&chip->work_indicator,
+> +                 lm3642_deferred_indicator_brightness_set);
+> +       chip->cdev_indicator.name = "indicator";
+> +       chip->cdev_indicator.max_brightness = 8;
+> +       chip->cdev_indicator.brightness_set = lm3642_indicator_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_indicator);
+> +       if (err < 0) {
+> +               dev_err(chip->dev, "failed to register indicator\n");
+> +               goto err_create_indicator_file;
+> +       }
+> +
+> +       dev_info(&client->dev, "LM3642 is initialized\n");
+> +       return 0;
+> +
+> +err_create_indicator_file:
+> +       device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
+> +err_create_torch_pin_file:
+> +       led_classdev_unregister(&chip->cdev_torch);
+> +err_create_torch_file:
+> +       device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
+> +err_create_flash_pin_file:
+> +       led_classdev_unregister(&chip->cdev_flash);
+> +err_out:
+> +       return err;
+> +}
+> +
+> +static int __devexit lm3642_remove(struct i2c_client *client)
+> +{
+> +       struct lm3642_chip_data *chip = i2c_get_clientdata(client);
+> +
+> +       led_classdev_unregister(&chip->cdev_indicator);
+> +       flush_work(&chip->work_indicator);
+> +       device_remove_file(chip->cdev_torch.dev, &dev_attr_torch_pin);
+> +       led_classdev_unregister(&chip->cdev_torch);
+> +       flush_work(&chip->work_torch);
+> +       device_remove_file(chip->cdev_flash.dev, &dev_attr_strobe_pin);
+> +       led_classdev_unregister(&chip->cdev_flash);
+> +       flush_work(&chip->work_flash);
+> +       regmap_write(chip->regmap, REG_ENABLE, 0);
+> +       return 0;
+> +}
+> +
+> +static const struct i2c_device_id lm3642_id[] = {
+> +       {LM3642_NAME, 0},
+> +       {}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, lm3642_id);
+> +
+> +static struct i2c_driver lm3642_i2c_driver = {
+> +       .driver = {
+> +                  .name = LM3642_NAME,
+> +                  .owner = THIS_MODULE,
+> +                  .pm = NULL,
+> +                  },
+> +       .probe = lm3642_probe,
+> +       .remove = __devexit_p(lm3642_remove),
+> +       .id_table = lm3642_id,
+> +};
+> +
+> +module_i2c_driver(lm3642_i2c_driver);
+> +
+> +MODULE_DESCRIPTION("Texas Instruments Flash Lighting driver for LM3642");
+> +MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
+> +MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/platform_data/leds-lm3642.h b/include/linux/platform_data/leds-lm3642.h
+> new file mode 100644
+> index 0000000..72d6ee6
+> --- /dev/null
+> +++ b/include/linux/platform_data/leds-lm3642.h
+> @@ -0,0 +1,38 @@
+> +/*
+> +* Copyright (C) 2012 Texas Instruments
+> +*
+> +* License Terms: GNU General Public License v2
+> +*
+> +* Simple driver for Texas Instruments LM3642 LED driver chip
+> +*
+> +* Author: G.Shark Jeong <gshark.jeong@gmail.com>
+> +*         Daniel Jeong <daniel.jeong@ti.com>
+> +*/
+> +
+> +#ifndef __LINUX_LM3642_H
+> +#define __LINUX_LM3642_H
+> +
+> +#define LM3642_NAME "leds-lm3642"
+> +
+> +enum lm3642_torch_pin_enable {
+> +       LM3642_TORCH_PIN_DISABLE = 0x00,
+> +       LM3642_TORCH_PIN_ENABLE = 0x10,
+> +};
+> +
+> +enum lm3642_strobe_pin_enable {
+> +       LM3642_STROBE_PIN_DISABLE = 0x00,
+> +       LM3642_STROBE_PIN_ENABLE = 0x20,
+> +};
+> +
+> +enum lm3642_tx_pin_enable {
+> +       LM3642_TX_PIN_DISABLE = 0x00,
+> +       LM3642_TX_PIN_ENABLE = 0x40,
+> +};
+> +
+> +struct lm3642_platform_data {
+> +       enum lm3642_torch_pin_enable torch_pin;
+> +       enum lm3642_strobe_pin_enable strobe_pin;
+> +       enum lm3642_tx_pin_enable tx_pin;
+> +};
+> +
+> +#endif /* __LINUX_LM3642_H */
+> --
+> 1.7.5.4
+>
 
-> 
-> Thanks
-> Wen Congyang
-> 
->>
->> [  201.596363] Offlined Pages 32768
->> [  201.596373] remove from free list 140000 1024 148000
->> [  201.596493] remove from free list 140400 1024 148000
->> [  201.596612] remove from free list 140800 1024 148000
->> [  201.596730] remove from free list 140c00 1024 148000
->> [  201.596849] remove from free list 141000 1024 148000
->> [  201.596968] remove from free list 141400 1024 148000
->> [  201.597049] remove from free list 141800 1024 148000
->> [  201.597049] remove from free list 141c00 1024 148000
->> [  201.597049] remove from free list 142000 1024 148000
->> [  201.597049] remove from free list 142400 1024 148000
->> [  201.597049] remove from free list 142800 1024 148000
->> [  201.597049] remove from free list 142c00 1024 148000
->> [  201.597049] remove from free list 143000 1024 148000
->> [  201.597049] remove from free list 143400 1024 148000
->> [  201.597049] remove from free list 143800 1024 148000
->> [  201.597049] remove from free list 143c00 1024 148000
->> [  201.597049] remove from free list 144000 1024 148000
->> [  201.597049] remove from free list 144400 1024 148000
->> [  201.597049] remove from free list 144800 1024 148000
->> [  201.597049] remove from free list 144c00 1024 148000
->> [  201.597049] remove from free list 145000 1024 148000
->> [  201.597049] remove from free list 145400 1024 148000
->> [  201.597049] remove from free list 145800 1024 148000
->> [  201.597049] remove from free list 145c00 1024 148000
->> [  201.597049] remove from free list 146000 1024 148000
->> [  201.597049] remove from free list 146400 1024 148000
->> [  201.597049] remove from free list 146800 1024 148000
->> [  201.597049] remove from free list 146c00 1024 148000
->> [  201.597049] remove from free list 147000 1024 148000
->> [  201.597049] remove from free list 147400 1024 148000
->> [  201.597049] remove from free list 147800 1024 148000
->> [  201.597049] remove from free list 147c00 1024 148000
->> [  201.602143]
->> [  201.602150] ======================================================
->> [  201.602153] [ INFO: possible circular locking dependency detected ]
->> [  201.602157] 3.6.0-rc5 #1 Not tainted
->> [  201.602159] -------------------------------------------------------
->> [  201.602162] bash/2789 is trying to acquire lock:
->> [  201.602164]  ((memory_chain).rwsem){.+.+.+}, at: [<ffffffff8109fe16>] __blocking_notifier_call_chain+0x66/0xd0
->> [  201.602180]
->> [  201.602180] but task is already holding lock:
->> [  201.602182]  (ksm_thread_mutex/1){+.+.+.}, at: [<ffffffff811b41fa>] ksm_memory_callback+0x3a/0xc0
->> [  201.602194]
->> [  201.602194] which lock already depends on the new lock.
->> [  201.602194]
->> [  201.602197]
->> [  201.602197] the existing dependency chain (in reverse order) is:
->> [  201.602200]
->> [  201.602200] -> #1 (ksm_thread_mutex/1){+.+.+.}:
->> [  201.602208]        [<ffffffff810dbee9>] validate_chain+0x6d9/0x7e0
->> [  201.602214]        [<ffffffff810dc2e6>] __lock_acquire+0x2f6/0x4f0
->> [  201.602219]        [<ffffffff810dc57d>] lock_acquire+0x9d/0x190
->> [  201.602223]        [<ffffffff8166b4fc>] __mutex_lock_common+0x5c/0x420
->> [  201.602229]        [<ffffffff8166ba2a>] mutex_lock_nested+0x4a/0x60
->> [  201.602234]        [<ffffffff811b41fa>] ksm_memory_callback+0x3a/0xc0
->> [  201.602239]        [<ffffffff81673447>] notifier_call_chain+0x67/0x150
->> [  201.602244]        [<ffffffff8109fe2b>] __blocking_notifier_call_chain+0x7b/0xd0
->> [  201.602250]        [<ffffffff8109fe96>] blocking_notifier_call_chain+0x16/0x20
->> [  201.602255]        [<ffffffff8144c53b>] memory_notify+0x1b/0x20
->> [  201.602261]        [<ffffffff81653c51>] offline_pages+0x1b1/0x470
->> [  201.602267]        [<ffffffff811bfcae>] remove_memory+0x1e/0x20
->> [  201.602273]        [<ffffffff8144c661>] memory_block_action+0xa1/0x190
->> [  201.602278]        [<ffffffff8144c7c9>] memory_block_change_state+0x79/0xe0
->> [  201.602282]        [<ffffffff8144c8f2>] store_mem_state+0xc2/0xd0
->> [  201.602287]        [<ffffffff81436980>] dev_attr_store+0x20/0x30
->> [  201.602293]        [<ffffffff812498d3>] sysfs_write_file+0xa3/0x100
->> [  201.602299]        [<ffffffff811cba80>] vfs_write+0xd0/0x1a0
->> [  201.602304]        [<ffffffff811cbc54>] sys_write+0x54/0xa0
->> [  201.602309]        [<ffffffff81678529>] system_call_fastpath+0x16/0x1b
->> [  201.602315]
->> [  201.602315] -> #0 ((memory_chain).rwsem){.+.+.+}:
->> [  201.602322]        [<ffffffff810db7e7>] check_prev_add+0x527/0x550
->> [  201.602326]        [<ffffffff810dbee9>] validate_chain+0x6d9/0x7e0
->> [  201.602331]        [<ffffffff810dc2e6>] __lock_acquire+0x2f6/0x4f0
->> [  201.602335]        [<ffffffff810dc57d>] lock_acquire+0x9d/0x190
->> [  201.602340]        [<ffffffff8166c1a1>] down_read+0x51/0xa0
->> [  201.602345]        [<ffffffff8109fe16>] __blocking_notifier_call_chain+0x66/0xd0
->> [  201.602350]        [<ffffffff8109fe96>] blocking_notifier_call_chain+0x16/0x20
->> [  201.602355]        [<ffffffff8144c53b>] memory_notify+0x1b/0x20
->> [  201.602360]        [<ffffffff81653e67>] offline_pages+0x3c7/0x470
->> [  201.602365]        [<ffffffff811bfcae>] remove_memory+0x1e/0x20
->> [  201.602370]        [<ffffffff8144c661>] memory_block_action+0xa1/0x190
->> [  201.602375]        [<ffffffff8144c7c9>] memory_block_change_state+0x79/0xe0
->> [  201.602379]        [<ffffffff8144c8f2>] store_mem_state+0xc2/0xd0
->> [  201.602385]        [<ffffffff81436980>] dev_attr_store+0x20/0x30
->> [  201.602389]        [<ffffffff812498d3>] sysfs_write_file+0xa3/0x100
->> [  201.602394]        [<ffffffff811cba80>] vfs_write+0xd0/0x1a0
->> [  201.602398]        [<ffffffff811cbc54>] sys_write+0x54/0xa0
->> [  201.602403]        [<ffffffff81678529>] system_call_fastpath+0x16/0x1b
->> [  201.602408]
->> [  201.602408] other info that might help us debug this:
->> [  201.602408]
->> [  201.602412]  Possible unsafe locking scenario:
->> [  201.602412]
->> [  201.602414]        CPU0                    CPU1
->> [  201.602417]        ----                    ----
->> [  201.602419]   lock(ksm_thread_mutex/1);
->> [  201.602425]                                lock((memory_chain).rwsem);
->> [  201.602430]                                lock(ksm_thread_mutex/1);
->> [  201.602435]   lock((memory_chain).rwsem);
->> [  201.602440]
->> [  201.602440]  *** DEADLOCK ***
->> [  201.602440]
->> [  201.602444] 6 locks held by bash/2789:
->> [  201.602446]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff81249879>] sysfs_write_file+0x49/0x100
->> [  201.602456]  #1:  (s_active#212){.+.+.+}, at: [<ffffffff812498b7>] sysfs_write_file+0x87/0x100
->> [  201.602467]  #2:  (&mem->state_mutex){+.+.+.}, at: [<ffffffff8144c78e>] memory_block_change_state+0x3e/0xe0
->> [  201.602477]  #3:  (mem_hotplug_mutex){+.+.+.}, at: [<ffffffff811bf867>] lock_memory_hotplug+0x17/0x40
->> [  201.602487]  #4:  (pm_mutex){+.+.+.}, at: [<ffffffff811bf885>] lock_memory_hotplug+0x35/0x40
->> [  201.602497]  #5:  (ksm_thread_mutex/1){+.+.+.}, at: [<ffffffff811b41fa>] ksm_memory_callback+0x3a/0xc0
->> [  201.602508]
->> [  201.602508] stack backtrace:
->> [  201.602512] Pid: 2789, comm: bash Not tainted 3.6.0-rc5 #1
->> [  201.602515] Call Trace:
->> [  201.602522]  [<ffffffff810da119>] print_circular_bug+0x109/0x110
->> [  201.602527]  [<ffffffff810db7e7>] check_prev_add+0x527/0x550
->> [  201.602532]  [<ffffffff810dbee9>] validate_chain+0x6d9/0x7e0
->> [  201.602537]  [<ffffffff810dc2e6>] __lock_acquire+0x2f6/0x4f0
->> [  201.602543]  [<ffffffff8101f7c3>] ? native_sched_clock+0x13/0x80
->> [  201.602547]  [<ffffffff810dc57d>] lock_acquire+0x9d/0x190
->> [  201.602553]  [<ffffffff8109fe16>] ? __blocking_notifier_call_chain+0x66/0xd0
->> [  201.602558]  [<ffffffff8166c1a1>] down_read+0x51/0xa0
->> [  201.602563]  [<ffffffff8109fe16>] ? __blocking_notifier_call_chain+0x66/0xd0
->> [  201.602569]  [<ffffffff8109fe16>] __blocking_notifier_call_chain+0x66/0xd0
->> [  201.602574]  [<ffffffff81186dc6>] ? next_online_pgdat+0x26/0x50
->> [  201.602580]  [<ffffffff8109fe96>] blocking_notifier_call_chain+0x16/0x20
->> [  201.602585]  [<ffffffff8144c53b>] memory_notify+0x1b/0x20
->> [  201.602590]  [<ffffffff81653e67>] offline_pages+0x3c7/0x470
->> [  201.602596]  [<ffffffff811bfcae>] remove_memory+0x1e/0x20
->> [  201.602601]  [<ffffffff8144c661>] memory_block_action+0xa1/0x190
->> [  201.602606]  [<ffffffff8166ba2a>] ? mutex_lock_nested+0x4a/0x60
->> [  201.602611]  [<ffffffff8144c7c9>] memory_block_change_state+0x79/0xe0
->> [  201.602617]  [<ffffffff8118f3ec>] ? might_fault+0x5c/0xb0
->> [  201.602622]  [<ffffffff8144c8f2>] store_mem_state+0xc2/0xd0
->> [  201.602627]  [<ffffffff812498b7>] ? sysfs_write_file+0x87/0x100
->> [  201.602632]  [<ffffffff81436980>] dev_attr_store+0x20/0x30
->> [  201.602636]  [<ffffffff812498d3>] sysfs_write_file+0xa3/0x100
->> [  201.602641]  [<ffffffff811cba80>] vfs_write+0xd0/0x1a0
->> [  201.602646]  [<ffffffff811cbc54>] sys_write+0x54/0xa0
->> [  201.602652]  [<ffffffff81678529>] system_call_fastpath+0x16/0x1b
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
 
 
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
