@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab2INDvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:51:15 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:46476 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759279Ab2INDu6 (ORCPT
+	id S1750948Ab2INEDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 00:03:16 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29269 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2INEDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:50:58 -0400
-Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
-From: joeyli <jlee@suse.com>
-To: Peter Jones <pjones@redhat.com>
-Cc: jeremy.kerr@canonical.com, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Domsch <Matt_Domsch@Dell.com>, glin@suse.com
-In-Reply-To: <1347544333.6707.1.camel@eddie.install.bos.redhat.com>
-References: <1346910035.47691.188651047712.1.gpush@pecola>
-	 <CAGLnvc9BXAW8F8WWyDxuF1_J+0np3uqUBmknuJewOJHhe-mxvw@mail.gmail.com>
-	 <1347523843.596.30.camel@linux-s257.site>
-	 <1347544333.6707.1.camel@eddie.install.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 11:45:42 +0800
-Message-ID: <1347594342.705.33.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 14 Sep 2012 00:03:14 -0400
+X-AuditID: cbfee61b-b7f826d000005fb5-ed-5052ac8135e6
+From: kgene@kernel.org
+To: "'Julia Lawall'" <Julia.Lawall@lip6.fr>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+Cc: kernel-janitors@vger.kernel.org, "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1347478135-744-1-git-send-email-Julia.Lawall@lip6.fr>
+In-reply-to: <1347478135-744-1-git-send-email-Julia.Lawall@lip6.fr>
+Subject: RE: [PATCH] arch/arm/mach-s3c24xx/mach-h1940.c: delete double
+ assignment
+Date: Fri, 14 Sep 2012 13:03:12 +0900
+Message-id: <01a201cd922d$dc49a550$94dceff0$@org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2RHOAw1W2JFnMSToSCaF5aI0q3GQAZZx6w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jQd3GNUEBBkvu8FtsvSVtcXnXHDaL
+	Gef3MTkwe3zeJBfAGMVlk5Kak1mWWqRvl8CVcefvPPaCGZwVO/YdZGlgXM7excjJISFgInHi
+	6A9GCFtM4sK99WxdjFwcQgLTGSUOrG2Fcv4ySnS+v8LcxcjBwQZUNfWJNEiDsICWxMItTSwg
+	toiAj8Stw++YQOqZBbYzSjy9u4gZJCEk4CQx+1oj2AZOAWeJf/cOskA0B0tc29UCdgWLgKrE
+	0Re3mUBsXgFDietb17JC2IISPybfA6tnBlq2fudxJghbXmLzmrdg90gIqEs8+qsLcYORxO2z
+	l6HKRST2vXjHOIFReBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+du
+	YgSH/DPpHYyrGiwOMQpwMCrx8EawBgUIsSaWFVfmHmKU4GBWEuG11QYK8aYkVlalFuXHF5Xm
+	pBYfYpTmYFES5xX+FBggJJCeWJKanZpakFoEk2Xi4JRqYNT/WavgZzS/2LX+vIO17t5viyy6
+	Dl4ULtwqUn9jfejpL9Urp/ExKz0qmXSCjdF0Jff22QxP7ZtC2pd2zMv07pFM7e0y3jS3aEbN
+	qy0vlVgO7DDfUW7BlOrTFPVtIrtSoGX2252vJZYfEGjp2XDjtvq55q1tvjdjWR4WWV6xr9Nq
+	ZHjbf/nXdCWW4oxEQy3mouJEAIJ1D6N1AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter, 
-
-於 四，2012-09-13 於 09:52 -0400，Peter Jones 提到：
-> On Thu, 2012-09-13 at 16:10 +0800, joeyli wrote:
+Julia Lawall wrote:
 > 
-> > Do we have plan to create a new kobject add to /sys/firmware/efi for
-> > provide a fixed mount point to efivars fs?
-> > e.g. /sys/firmware/efi/efivars
-> > 
-> > Or we just direct reuse current /sys/firmeware/efi/vars? But, that means
-> > we need think for the backward compatibility if choice reuse vars
-> > folder.
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> I'm not sure that's a terribly large concern - if you haven't updated
-> your tools to use the new efivars, don't mount the new efivars.
+> Delete successive assignments to the same location.
 > 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression i;
+> @@
+> 
+> *i = ...;
+>  i = ...;
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> Not compiled, and this may change the behavior of the code.  Without this
+> change, check_gpio2 could possibly be used uninitialized later.
+> 
+>  arch/arm/mach-s3c24xx/mach-h1940.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-s3c24xx/mach-h1940.c b/arch/arm/mach-
+> s3c24xx/mach-h1940.c
+> index bb8d008..477778c 100644
+> --- a/arch/arm/mach-s3c24xx/mach-h1940.c
+> +++ b/arch/arm/mach-s3c24xx/mach-h1940.c
+> @@ -380,7 +380,7 @@ int h1940_led_blink_set(unsigned gpio, int state,
+>  	default:
+>  		blink_gpio = S3C2410_GPA(3);
+>  		check_gpio1 = S3C2410_GPA(1);
+> -		check_gpio1 = S3C2410_GPA(7);
+> +		check_gpio2 = S3C2410_GPA(7);
+>  		break;
+>  	}
+> 
+Applied, thanks.
 
-Thanks for your comment!
-
-Joey Lee
+K-Gene <kgene@kernel.org>
 
