@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab2INNxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:53:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60501 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2INNxk (ORCPT
+	id S1755621Ab2INNyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:54:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45446 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2INNyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:53:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAcnjCR1x5_0o13qM5UJsWBh2D2xoSMw5WE4ky0Mzfz_v=6PqQ@mail.gmail.com>
-References: <CAAcnjCR2c0qVCJEwH91ajnZ_vKHNFiUv8EUUU7x9ZTD+L5nOBg@mail.gmail.com>
- <20120913213535.GA21642@srcf.ucam.org> <CAAcnjCR1x5_0o13qM5UJsWBh2D2xoSMw5WE4ky0Mzfz_v=6PqQ@mail.gmail.com>
-From: Paolo Giarrusso <p.giarrusso@gmail.com>
-Date: Fri, 14 Sep 2012 15:53:19 +0200
-Message-ID: <CAAcnjCTc2MuqvpznuUwBzoSu2NcX-fZqWO=O8yQLzy+g076d-w@mail.gmail.com>
-Subject: Fwd: Linux hfsplus corrupts chflags bits?
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Sep 2012 09:54:07 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        David Oleszkiewicz <doleszki@adsyscontrols.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH] davinci: vpif: capture/display: fix race condition
+Date: Fri, 14 Sep 2012 19:23:56 +0530
+Message-Id: <1347630836-7545-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re-sending to LKML - it was rejected because my phone sent the mail
-also in HTML.]
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-On Thu, Sep 13, 2012 at 11:35 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> There was a similar problem with the userflags field - we were writing
-> random data.
-Ouch, sorry for the noise! I'm pretty sure it's exactly the same
-problem: I wrote rootflags but meant userflags.
-I might be wrong, but I think that's the case because your bugfix was
-merged after 3.3. Instead I was running 3.2.
+channel_first_int[][] variable is used as a flag for the ISR,
+This flag was being set after enabling the interrupts, There
+where suitaions when the isr ocuurend even before the flag was set
+dues to which it was causing the applicaiotn hang.
+This patch sets  channel_first_int[][] flag just before enabling the
+interrupt.
 
-Somewhat unrelatedly, I noticed that most flags can't be set even by
-ioctl, so Linux backup utilities can't preserve those flags.
-Is that something which could be fixed, say by exposing them as
-extended attributes?
+Reported-by: David Oleszkiewicz <doleszki@adsyscontrols.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ drivers/media/platform/davinci/vpif_capture.c |    2 +-
+ drivers/media/platform/davinci/vpif_display.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-I'll doublecheck that all randomly set flags are indeed userflags. To
-be sure: userflags contains flags which can be set by the owner, while
-rootflags can only be altered by the superuser, right? So I can check
-here on Darwin's man chflags
-(https://developer.apple.com/library/mac/#documentation/Darwin/Reference/ManPages/10.6/man1/chflags.1.html)
+diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+index 1b625b0..f64919b 100644
+--- a/drivers/media/platform/davinci/vpif_capture.c
++++ b/drivers/media/platform/davinci/vpif_capture.c
+@@ -339,6 +339,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	 * Set interrupt for both the fields in VPIF Register enable channel in
+ 	 * VPIF register
+ 	 */
++	channel_first_int[VPIF_VIDEO_INDEX][ch->channel_id] = 1;
+ 	if ((VPIF_CHANNEL0_VIDEO == ch->channel_id)) {
+ 		channel0_intr_assert();
+ 		channel0_intr_enable(1);
+@@ -350,7 +351,6 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 		channel1_intr_enable(1);
+ 		enable_channel1(1);
+ 	}
+-	channel_first_int[VPIF_VIDEO_INDEX][ch->channel_id] = 1;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
+index 4a24848..523a840 100644
+--- a/drivers/media/platform/davinci/vpif_display.c
++++ b/drivers/media/platform/davinci/vpif_display.c
+@@ -302,6 +302,7 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 
+ 	/* Set interrupt for both the fields in VPIF
+ 	    Register enable channel in VPIF register */
++	channel_first_int[VPIF_VIDEO_INDEX][ch->channel_id] = 1;
+ 	if (VPIF_CHANNEL2_VIDEO == ch->channel_id) {
+ 		channel2_intr_assert();
+ 		channel2_intr_enable(1);
+@@ -318,7 +319,6 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 		if (vpif_config_data->ch3_clip_en)
+ 			channel3_clipping_enable(1);
+ 	}
+-	channel_first_int[VPIF_VIDEO_INDEX][ch->channel_id] = 1;
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.1
 
-Cheers,
---
-Paolo 'Blaisorblade' Giarrusso - Ph.D. Student
-http://www.informatik.uni-marburg.de/~pgiarrusso/
