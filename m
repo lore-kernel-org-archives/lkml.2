@@ -1,100 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab2INM5R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:57:17 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50961 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2INM5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:57:14 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH] i915: Quirk out disconnected backlight
-Date: Fri, 14 Sep 2012 13:57:06 +0100
-Message-Id: <1347627426-3813-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752366Ab2INM7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:59:34 -0400
+Received: from ares07.inai.de ([5.9.24.206]:51104 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab2INM7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 08:59:32 -0400
+Date: Fri, 14 Sep 2012 14:59:28 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        Jim Rees <rees@umich.edu>
+Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+In-Reply-To: <1347614276.26071.15.camel@thorin>
+Message-ID: <alpine.LNX.2.01.1209141456290.18169@frira.zrqbmnf.qr>
+References: <20120821212910.GD18637@fieldses.org>  <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr> <1347614276.26071.15.camel@thorin>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms (for instance MacbookPros) have custom backlight drivers
-and don't use the integrated i915 backlight control. This patch adds a
-quirk to disable registering the intel backlight when unused on a
-platform.
 
-Tested on MacbookPro8,3. Without this patch both the intel_backlight and
-gmux_backlight devices get registered and userspace doesn't know which
-it should use.
+On Friday 2012-09-14 11:17, Bernd Petrovitsch wrote:
+>Shouldn't that have been
+>----  snip ----
+>#define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[sizeof(i)])
+>----  snip ----
+Yeah.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   10 ++++++++++
- drivers/gpu/drm/i915/intel_panel.c   |    3 +++
- 3 files changed, 14 insertions(+)
+>A pure K&R-C version would use a string:
+>#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
+>(if I converted them properly into hexadecimal)
+The syntax is \x01\x03\x05...
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 627fe35..48860a0 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -349,6 +349,7 @@ enum intel_pch {
- #define QUIRK_PIPEA_FORCE (1<<0)
- #define QUIRK_LVDS_SSC_DISABLE (1<<1)
- #define QUIRK_INVERT_BRIGHTNESS (1<<2)
-+#define QUIRK_NO_BACKLIGHT (2<<2)
- 
- struct intel_fbdev;
- struct intel_fbc_work;
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 2dfa6cf..c8153cd 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7088,6 +7088,13 @@ static void quirk_invert_brightness(struct drm_device *dev)
- 	DRM_INFO("applying inverted panel brightness quirk\n");
- }
- 
-+static void quirk_no_backlight(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	dev_priv->quirks |= QUIRK_NO_BACKLIGHT;
-+	DRM_INFO("applying no backlight quirk\n");
-+}
-+
- struct intel_quirk {
- 	int device;
- 	int subsystem_vendor;
-@@ -7123,6 +7130,9 @@ static struct intel_quirk intel_quirks[] = {
- 
- 	/* Acer Aspire 5734Z must invert backlight brightness */
- 	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
-+
-+	/* Apple MacbookPro8,3 doesn't have a backlight */
-+	{ 0x0126, 0x106b, 0x00de, quirk_no_backlight },
- };
- 
- static void intel_init_quirks(struct drm_device *dev)
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 3df4f5f..f116e2a 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -413,6 +413,9 @@ int intel_panel_setup_backlight(struct drm_device *dev)
- 	struct backlight_properties props;
- 	struct drm_connector *connector;
- 
-+	if (dev_priv->quirks & QUIRK_NO_BACKLIGHT)
-+		return 0;
-+
- 	intel_panel_init_backlight(dev);
- 
- 	if (dev_priv->int_lvds_connector)
--- 
-1.7.9.5
+>and that gives a "char"
+>which is happily promoted to whatever one needs in that place.
 
+So just convert it; there are no less than two ways to do so
+ ((const unsigned char *)"\x01\x03...")[sizeof(i)]
+ (boatfloating_t)("\x01\x03..."[sizeof(i)])
