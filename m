@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab2INJX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:23:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59413 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758462Ab2INJX1 (ORCPT
+	id S1759341Ab2INJXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:23:43 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34136 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759327Ab2INJXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:23:27 -0400
-Message-ID: <5052F78A.7010007@suse.cz>
-Date: Fri, 14 Sep 2012 11:23:22 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	Fri, 14 Sep 2012 05:23:40 -0400
+Date: Fri, 14 Sep 2012 10:23:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 06/19] ARM: ux500: Add nodes for the MSP into the HREF
+ Device Tree
+Message-ID: <20120914092332.GL3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-7-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbs9_hLB9c7WbWeR_6+Le4Svzc9Y5wTNVebOiRDB-o33g@mail.gmail.com>
 MIME-Version: 1.0
-To: aris@redhat.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: include/linux/cgroup.h:553 suspicious rcu_dereference_check() usage!
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbs9_hLB9c7WbWeR_6+Le4Svzc9Y5wTNVebOiRDB-o33g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 10, 2012 at 02:53:45AM -0700, Linus Walleij wrote:
+> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > This patch enables the two important MSP devices for ST-Ericsson's
+> > hardware reference development board.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/hrefv60plus.dts |    8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
+> > index 62b2ac1..4f0aee8 100644
+> > --- a/arch/arm/boot/dts/hrefv60plus.dts
+> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
+> > @@ -77,5 +77,13 @@
+> >
+> >                         status = "okay";
+> >                 };
+> > +
+> > +               msp1: msp@80124000 {
+> > +                       status = "okay";
+> > +               };
+> > +
+> > +               msp3: msp@80125000 {
+> > +                       status = "okay";
+> > +               };
+> >         };
+> >  };
+> 
+> Does this really "enable" the MSPs as the title claims?
 
-with current -next trees and LDEP enabled, I'm getting:
-===============================
-[ INFO: suspicious RCU usage. ]
-3.6.0-rc5-next-20120913+ #42 Not tainted
--------------------------------
-/home/latest/linux/include/linux/cgroup.h:553 suspicious
-rcu_dereference_check() usage!
+Yes they do.
 
-other info that might help us debug this:
+> Aren's there any kind of bindings needed, not even a
+> register base?
 
+All that information is in the "disabled" node contained in .dtsi file.
 
-rcu_scheduler_active = 1, debug_locks = 0
-2 locks held by kdevtmpfs/23:
- #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
-mnt_want_write+0x1f/0x50
- #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
-kern_path_create+0x7f/0x170
++               msp0: msp@80123000 {
++                       compatible = "stericsson,ux500-msp-i2s";
++                       reg = <0x80123000 0x1000>;
++                       interrupts = <0 31 0x4>;
++                       v-ape-supply = <&db8500_vape_reg>;
++                       status = "disabled";
 
-stack backtrace:
-Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
-Call Trace:
- [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
- [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
- [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
- [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
- [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
- [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
- [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
- [<ffffffff81093ad6>] kthread+0xd6/0xe0
- [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
- [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
- [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
- [<ffffffff81654f20>] ? gs_change+0xb/0xb
+Then this patch "enable"s it (as the title suggests). :)
 
-
-It's due to the commit "device_cgroup: convert device_cgroup internally
-to policy + exceptions". It removed rcu locks which are needed in
-task_devcgroup called in this chain: devcgroup_inode_mknod OR
-__devcgroup_inode_permission -> __devcgroup_inode_permission ->
-task_devcgroup -> task_subsys_state -> task_subsys_state_check.
-
-regards,
 -- 
-js
-suse labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
