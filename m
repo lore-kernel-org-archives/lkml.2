@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab2INRN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:13:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22190 "EHLO mx1.redhat.com"
+	id S1758850Ab2INROO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:14:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757669Ab2INRNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:13:53 -0400
-Date: Fri, 14 Sep 2012 19:15:51 +0200
+	id S1758471Ab2INROJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 13:14:09 -0400
+Date: Fri, 14 Sep 2012 19:15:54 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,9 +14,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] uprobes: Do not leak UTASK_BP_HIT if
-	find_active_uprobe() fails
-Message-ID: <20120914171551.GA29632@redhat.com>
+Subject: [PATCH 2/5] uprobes: Do not setup ->active_uprobe/state prematurely
+Message-ID: <20120914171554.GA29639@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,40 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If handle_swbp()->find_active_uprobe() fails we return with
-utask->state = UTASK_BP_HIT.
+handle_swbp() sets utask->active_uprobe before handler_chain(),
+and UTASK_SSTEP before pre_ssout(). This complicates the code
+for no reason,  arch_ hooks or consumer->handler() should not
+(and can't) use this info.
 
-Change handle_swbp() to reset utask->state at the start. Note
-that we do this unconditionally, see the next patch(es).
+Change handle_swbp() to initialize them after pre_ssout(), and
+remove the no longer needed cleanup-utask code.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ kernel/events/uprobes.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 26f06a6..760acc1 100644
+index 760acc1..9893cba 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1468,6 +1468,10 @@ static void handle_swbp(struct pt_regs *regs)
- 	bp_vaddr = uprobe_get_swbp_addr(regs);
- 	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
- 
-+	utask = current->utask;
-+	if (utask)
-+		utask->state = UTASK_RUNNING;
+@@ -1496,22 +1496,19 @@ static void handle_swbp(struct pt_regs *regs)
+ 		if (!utask)
+ 			goto cleanup_ret;
+ 	}
+-	utask->active_uprobe = uprobe;
 +
- 	if (!uprobe) {
- 		if (is_swbp > 0) {
- 			/* No matching uprobe; signal SIGTRAP. */
-@@ -1486,7 +1490,6 @@ static void handle_swbp(struct pt_regs *regs)
+ 	handler_chain(uprobe, regs);
+ 	if (uprobe->flags & UPROBE_SKIP_SSTEP && can_skip_sstep(uprobe, regs))
+ 		goto cleanup_ret;
+ 
+-	utask->state = UTASK_SSTEP;
+ 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+ 		arch_uprobe_enable_step(&uprobe->arch);
++		utask->active_uprobe = uprobe;
++		utask->state = UTASK_SSTEP;
  		return;
  	}
  
--	utask = current->utask;
- 	if (!utask) {
- 		utask = add_utask();
- 		/* Cannot allocate; re-execute the instruction. */
+ cleanup_ret:
+-	if (utask) {
+-		utask->active_uprobe = NULL;
+-		utask->state = UTASK_RUNNING;
+-	}
+ 	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
+ 
+ 		/*
 -- 
 1.5.5.1
 
