@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2INORb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:17:31 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64761 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751731Ab2INORX (ORCPT
+	id S1756827Ab2INOVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:21:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49010 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2INOVC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:17:23 -0400
-Message-ID: <50533C27.2040100@mvista.com>
-Date: Fri, 14 Sep 2012 18:16:07 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Fri, 14 Sep 2012 10:21:02 -0400
+Message-ID: <50533D46.5000704@arm.com>
+Date: Fri, 14 Sep 2012 15:20:54 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: navin patidar <navinp@cdac.in>
-CC: gregkh@linuxfoundation.org, mfm@muteddisk.com, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
- usbip_host
-References: <1347616403-3413-1-git-send-email-navinp@cdac.in> <50531832.3050902@mvista.com> <CAPV97yfV27x8hB2WUCVmGWEU7i21Y5K5trig2fzQBx+VB_Yk2g@mail.gmail.com>
-In-Reply-To: <CAPV97yfV27x8hB2WUCVmGWEU7i21Y5K5trig2fzQBx+VB_Yk2g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 16/24] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-16-git-send-email-stefano.stabellini@eu.citrix.com> <505338E6.4050504@arm.com> <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com>
+X-Enigmail-Version: 1.5a1pre
+X-OriginalArrivalTime: 14 Sep 2012 14:20:57.0799 (UTC) FILETIME=[2897D570:01CD9284]
+X-MC-Unique: 112091415210007201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 14/09/12 15:13, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Marc Zyngier wrote:
+>> On 14/09/12 12:13, Stefano Stabellini wrote:
+>>> Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
+>>> default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
+>>> irq_startup, that is responsible for calling irq_unmask at startup time.
+>>> As a result event channels remain masked.
+>>>
+>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> ---
+>>>  drivers/xen/events.c |    1 +
+>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+>>> index 5ecb596..8ffb7b7 100644
+>>> --- a/drivers/xen/events.c
+>>> +++ b/drivers/xen/events.c
+>>> @@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>>>  		struct irq_info *info = info_for_irq(irq);
+>>>  		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+>>>  	}
+>>> +	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+>>
+>> This one just sent a shiver down my spine. Are you doing this for a PPI?
+> 
+> Not really: even though there is just one source of event notifications
+> (that is a PPI), we have many event channels. When a domain receives a
+> notification (via the PPI), it checks on a bitmask to which event channel
+> it corresponds. From the Linux point of view every event channel is a
+> Linux irq belonging to the xen_dynamic_chip (see
+> drivers/xen/events.c:xen_dynamic_chip).
+> 
+> So here I am not doing this for the one PPI, but I am doing this for
+> every Linux irq (of chip xen_dynamic_chip) that represents an event
+> channel.
 
-On 09/14/2012 04:36 PM, navin patidar wrote:
+So this is some sort of secondary interrupt controller, cascaded into
+your GIC emulation, and this patch only affects the xen_dynamic_chip?
 
-> hi Sergei,
-> checkpatch.pl <http://checkpatch.pl> didn't complain any thing about patch
-> coding style.
-
-   checkpatch.pl only complains about // comments, IIRC. But see
-Documentation/CodingStyle chapter 8 about multi-line comments. As for adding
-spaces, it's more for aesthetic reasons...
-
-> Anyway  thanks for reviewing the patch.
-> i will send this patch again with corrections.
-
-  Thanks you.
-
-> --navin-patidar
-
-WBR, Sergei
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
