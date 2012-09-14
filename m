@@ -1,142 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab2INKNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 06:13:22 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54287 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab2INKNU (ORCPT
+	id S1759358Ab2INKOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 06:14:09 -0400
+Received: from mailsender.cdac.in ([196.1.113.117]:57025 "EHLO
+	mailsender.cdac.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758704Ab2INKOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 06:13:20 -0400
-Message-ID: <50530337.2080208@linux.vnet.ibm.com>
-Date: Fri, 14 Sep 2012 18:13:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 14 Sep 2012 06:14:05 -0400
+X-Greylist: delayed 1224 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Sep 2012 06:14:04 EDT
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org, mfm@muteddisk.com
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navinp@cdac.in>
+Subject: [PATCH] staging: usbip: vhci_hcd: Fixed oops during removal of vhci_hcd
+Date: Fri, 14 Sep 2012 15:21:37 +0530
+Message-Id: <1347616297-3339-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
-References: <5052FF61.3070600@linux.vnet.ibm.com> <5053000E.3050303@linux.vnet.ibm.com>
-In-Reply-To: <5053000E.3050303@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091410-2000-0000-0000-0000091D1544
+X-CDAC-PUNE-MailScanner-ID: q8E9rNqW005870
+X-CDAC-PUNE-MailScanner: Found to be clean, Found to be clean
+X-CDAC-PUNE-MailScanner-SpamCheck: not spam, SpamAssassin (cached,
+	score=1.352, required 6, autolearn=disabled, BAYES_00 -1.90,
+	FSL_HELO_NON_FQDN_1 0.00, HELO_NO_DOMAIN 0.00, RDNS_NONE 0.79,
+	TO_NO_BRKTS_DIRECT 2.46), not spam, SpamAssassin (cached,
+	score=3.856, required 6, autolearn=disabled, BAYES_40 -0.18,
+	HELO_LOCALHOST 3.94, RDNS_NONE 0.10)
+X-CDAC-PUNE-MailScanner-SpamScore: 1, 3
+X-CDAC-PUNE-MailScanner-Information: Please contact npsfhelp@cdac.in/mailadmin@cdac.in for more information
+X-MailScanner-ID: q8E9rNIJ020090
+X-CDAC-PUNE-MailScanner-From: navinp@cdac.in
+X-CDAC-MailScanner-Spam-Status: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 05:59 PM, Xiao Guangrong wrote:
+In response to "usbip detach -p [port_number]" user command,vhci_shoutdown_connection gets
+executed which kills tcp_tx,tcp_rx kernel threads and then vhci_device_reset resets
+all usb_device struct variables except kernel thread pointers.
 
-> +		return FNAME(prefetch_gpte)(vcpu, sp, spte, gptep[i], true);
+so, at the time of vhci_hcd removal vhci_shoutdown_connection tries to kill kernel threads
+which are already killed.
 
-Sorry, this was wrong. Update this patch.
-
-[PATCH v2 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
-
-The only different thing between FNAME(update_pte) and FNAME(pte_prefetch)
-is that the former is allowed to prefetch gfn from dirty logged slot, so
-introduce a common function to prefetch spte
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: navin patidar <navinp@cdac.in>
 ---
- arch/x86/kvm/paging_tmpl.h |   50 ++++++++++++++++---------------------------
- 1 files changed, 19 insertions(+), 31 deletions(-)
+ drivers/staging/usbip/vhci_hcd.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 1a738c5..32facf7 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -356,35 +356,45 @@ no_present:
- 	return true;
- }
-
--static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
--			      u64 *spte, const void *pte)
-+static void
-+FNAME(prefetch_gpte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+		     u64 *spte, pt_element_t gpte, bool no_dirty_log)
- {
--	pt_element_t gpte;
- 	unsigned pte_access;
-+	gfn_t gfn;
- 	pfn_t pfn;
-
--	gpte = *(const pt_element_t *)pte;
- 	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
- 		return;
-
- 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
-+
-+	gfn = gpte_to_gfn(gpte);
- 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte, true);
--	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
-+	pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
-+			no_dirty_log && (pte_access & ACC_WRITE_MASK));
- 	if (mmu_invalid_pfn(pfn))
- 		return;
-
- 	/*
- 	 * we call mmu_set_spte() with host_writable = true because that
--	 * vcpu->arch.update_pte.pfn was fetched from get_user_pages(write = 1).
-+	 * pte_prefetch_gfn_to_pfn always gets a writable pfn.
- 	 */
- 	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
--		     NULL, PT_PAGE_TABLE_LEVEL,
--		     gpte_to_gfn(gpte), pfn, true, true);
-+		     NULL, PT_PAGE_TABLE_LEVEL, gfn, pfn, true, true);
-
- 	if (!is_error_pfn(pfn))
- 		kvm_release_pfn_clean(pfn);
- }
-
-+static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+			      u64 *spte, const void *pte)
-+{
-+	pt_element_t gpte = *(const pt_element_t *)pte;
-+
-+	return FNAME(prefetch_gpte)(vcpu, sp, spte, gpte, false);
-+}
-+
- static bool FNAME(gpte_changed)(struct kvm_vcpu *vcpu,
- 				struct guest_walker *gw, int level)
- {
-@@ -428,35 +438,13 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- 	spte = sp->spt + i;
-
- 	for (i = 0; i < PTE_PREFETCH_NUM; i++, spte++) {
--		pt_element_t gpte;
--		unsigned pte_access;
--		gfn_t gfn;
--		pfn_t pfn;
--
- 		if (spte == sptep)
- 			continue;
-
- 		if (is_shadow_present_pte(*spte))
- 			continue;
-
--		gpte = gptep[i];
--
--		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
--			continue;
--
--		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte,
--								  true);
--		gfn = gpte_to_gfn(gpte);
--		pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
--				      pte_access & ACC_WRITE_MASK);
--		if (mmu_invalid_pfn(pfn))
--			break;
--
--		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
--			     NULL, PT_PAGE_TABLE_LEVEL, gfn,
--			     pfn, true, true);
--		if (!is_error_pfn(pfn))
--			kvm_release_pfn_clean(pfn);
-+		FNAME(prefetch_gpte)(vcpu, sp, spte, gptep[i], true);
- 	}
- }
-
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 6076f42..b1f427c 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -858,6 +858,9 @@ static void vhci_device_reset(struct usbip_device *ud)
+ 	if (vdev->udev)
+ 		usb_put_dev(vdev->udev);
+ 	vdev->udev = NULL;
++	/* Reset kernel thread pointers */
++	ud->tcp_rx = NULL;
++	ud->tcp_tx = NULL;
+ 
+ 	ud->tcp_socket = NULL;
+ 	ud->status = VDEV_ST_NULL;
 -- 
-1.7.7.6
+1.7.9.5
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+This e-mail is for the sole use of the intended recipient(s) and may
+contain confidential and privileged information. If you are not the
+intended recipient, please contact the sender by reply e-mail and destroy
+all copies and the original message. Any unauthorized review, use,
+disclosure, dissemination, forwarding, printing or copying of this email
+is strictly prohibited and appropriate legal action will be taken.
+-------------------------------------------------------------------------------------------------------------------------------
 
