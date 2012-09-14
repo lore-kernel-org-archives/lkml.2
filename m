@@ -1,133 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760100Ab2INVlc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 17:41:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52654 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab2INVfY (ORCPT
+	id S1760105Ab2INVlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:41:44 -0400
+Received: from [205.233.59.134] ([205.233.59.134]:56209 "EHLO
+	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1757031Ab2INVlk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 17:35:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Imre Kaloz <kaloz@openwrt.org>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: [PATCH 08/24] ARM: iop32x: use __iomem pointers for MMIO
-Date: Fri, 14 Sep 2012 23:34:36 +0200
-Message-Id: <1347658492-11608-9-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1347658492-11608-1-git-send-email-arnd@arndb.de>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:55dRg2RUrIbKzJ+fLFqM1RABXRkd+5fiyEzpJnp8yPf
- si/gHYeNjDx5mR1udZAl9fz9Xg2PME3urVA0qz6+oxIcNivM+3
- 8QvuUAbNZabQ3OgGkf+fX+80fxdmJ9BSuKnrTqNl0o7VoP6d1a
- a0ULnp13U3vok66GHe6hvKHEMhvKgTcwlLuYsnA6ZpEFmtvf8P
- Km2en2VU32BdZ97iJmrvSz3YDkay4hTOgcHXq5lwr6fkIMiACA
- 5uEaN+oH0eEXRN1cZ28QekHUNRvnUQ6TgIeGMgJlMWOPwjsNSY
- WoIBRg+0QrEzFHQPM5mu7JoImhtP+Iw7dvN4YhcYkDYLeDRpx1
- 8nsyTn1nz/KbWPEnQ84yz/Sz34gI+06WQxUH6AnUh5q8a6A0Fj
- 4oeAD8iaHa1YA==
+	Fri, 14 Sep 2012 17:41:40 -0400
+Message-ID: <1347658843.7172.90.camel@twins>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Fri, 14 Sep 2012 23:40:43 +0200
+In-Reply-To: <20120914212717.GA29307@liondog.tnic>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM is moving to stricter checks on readl/write functions,
-so we need to use the correct types everywhere.
+On Fri, 2012-09-14 at 23:27 +0200, Borislav Petkov wrote:
+> 
+> I was able to reproduce it on another box here and did a bisection run.
+> It pointed to the commit below.
+> 
+> And yes, reverting that commit fixes the issue here.
 
-Cc: Imre Kaloz <kaloz@openwrt.org>
-Cc: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/mach-iop32x/glantank.c                 |    2 +-
- arch/arm/mach-ixp4xx/common.c                   |    6 +++---
- arch/arm/mach-ixp4xx/include/mach/cpu.h         |    5 +++--
- arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h |    2 +-
- 4 files changed, 8 insertions(+), 7 deletions(-)
+Hmm, cute. What kind of machine did you test it on? Nikolay's machines
+look to be smallish AMD X6 or ancient Intel c2d (the patch will indeed
+have absolutely no effect on a dual core).
 
-diff --git a/arch/arm/mach-iop32x/glantank.c b/arch/arm/mach-iop32x/glantank.c
-index c15a100..02e20c3 100644
---- a/arch/arm/mach-iop32x/glantank.c
-+++ b/arch/arm/mach-iop32x/glantank.c
-@@ -183,7 +183,7 @@ static struct i2c_board_info __initdata glantank_i2c_devices[] = {
- 
- static void glantank_power_off(void)
- {
--	__raw_writeb(0x01, 0xfe8d0004);
-+	__raw_writeb(0x01, IOMEM(0xfe8d0004));
- 
- 	while (1)
- 		;
-diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
-index a9f8094..8c9cd5d 100644
---- a/arch/arm/mach-ixp4xx/common.c
-+++ b/arch/arm/mach-ixp4xx/common.c
-@@ -53,17 +53,17 @@ static struct clock_event_device clockevent_ixp4xx;
-  *************************************************************************/
- static struct map_desc ixp4xx_io_desc[] __initdata = {
- 	{	/* UART, Interrupt ctrl, GPIO, timers, NPEs, MACs, USB .... */
--		.virtual	= IXP4XX_PERIPHERAL_BASE_VIRT,
-+		.virtual	= (unsigned long)IXP4XX_PERIPHERAL_BASE_VIRT,
- 		.pfn		= __phys_to_pfn(IXP4XX_PERIPHERAL_BASE_PHYS),
- 		.length		= IXP4XX_PERIPHERAL_REGION_SIZE,
- 		.type		= MT_DEVICE
- 	}, {	/* Expansion Bus Config Registers */
--		.virtual	= IXP4XX_EXP_CFG_BASE_VIRT,
-+		.virtual	= (unsigned long)IXP4XX_EXP_CFG_BASE_VIRT,
- 		.pfn		= __phys_to_pfn(IXP4XX_EXP_CFG_BASE_PHYS),
- 		.length		= IXP4XX_EXP_CFG_REGION_SIZE,
- 		.type		= MT_DEVICE
- 	}, {	/* PCI Registers */
--		.virtual	= IXP4XX_PCI_CFG_BASE_VIRT,
-+		.virtual	= (unsigned long)IXP4XX_PCI_CFG_BASE_VIRT,
- 		.pfn		= __phys_to_pfn(IXP4XX_PCI_CFG_BASE_PHYS),
- 		.length		= IXP4XX_PCI_CFG_REGION_SIZE,
- 		.type		= MT_DEVICE
-diff --git a/arch/arm/mach-ixp4xx/include/mach/cpu.h b/arch/arm/mach-ixp4xx/include/mach/cpu.h
-index b2ef65d..e3d5a2e 100644
---- a/arch/arm/mach-ixp4xx/include/mach/cpu.h
-+++ b/arch/arm/mach-ixp4xx/include/mach/cpu.h
-@@ -14,6 +14,7 @@
- #ifndef __ASM_ARCH_CPU_H__
- #define __ASM_ARCH_CPU_H__
- 
-+#include <linux/io.h>
- #include <asm/cputype.h>
- 
- /* Processor id value in CP15 Register 0 */
-@@ -37,7 +38,7 @@
- 
- static inline u32 ixp4xx_read_feature_bits(void)
- {
--	u32 val = ~*IXP4XX_EXP_CFG2;
-+	u32 val = ~__raw_readl(IXP4XX_EXP_CFG2);
- 
- 	if (cpu_is_ixp42x_rev_a0())
- 		return IXP42X_FEATURE_MASK & ~(IXP4XX_FEATURE_RCOMP |
-@@ -51,7 +52,7 @@ static inline u32 ixp4xx_read_feature_bits(void)
- 
- static inline void ixp4xx_write_feature_bits(u32 value)
- {
--	*IXP4XX_EXP_CFG2 = ~value;
-+	__raw_writel(~cpu_to_le32(value), IXP4XX_EXP_CFG2);
- }
- 
- #endif  /* _ASM_ARCH_CPU_H */
-diff --git a/arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h b/arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h
-index 97c530f..2272f5a 100644
---- a/arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h
-+++ b/arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h
-@@ -92,7 +92,7 @@
- /*
-  * Expansion Bus Controller registers.
-  */
--#define IXP4XX_EXP_REG(x) ((volatile u32 *)(IXP4XX_EXP_CFG_BASE_VIRT+(x)))
-+#define IXP4XX_EXP_REG(x) ((volatile u32 __iomem *)(IXP4XX_EXP_CFG_BASE_VIRT+(x)))
- 
- #define IXP4XX_EXP_CS0      IXP4XX_EXP_REG(IXP4XX_EXP_CS0_OFFSET)
- #define IXP4XX_EXP_CS1      IXP4XX_EXP_REG(IXP4XX_EXP_CS1_OFFSET)
--- 
-1.7.10
+I'll see about running pgbench on a bigger Intel tomorrow if Mike
+doesn't beat me to it.
 
+The problem the patch is trying to address is not having to scan an
+entire package for idle cores on every wakeup now that packages are
+getting stupid big.
+
+Regressing Postgres otoh isn't nice either..
+
+Anyway, I guess I'm fine with nixing this patch until we figure out
+something smarter..
+
+I'm also curious to know wth postgres does that this patch makes such a
+big difference...
