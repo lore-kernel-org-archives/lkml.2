@@ -1,61 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2INFnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:43:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38417 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2INFnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:43:50 -0400
-Date: Fri, 14 Sep 2012 07:43:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH 3/3 v2] perf tool: give user better message if precise is
- not supported
-Message-ID: <20120914054344.GB9043@gmail.com>
-References: <1347569955-54626-1-git-send-email-dsahern@gmail.com>
- <1347569955-54626-4-git-send-email-dsahern@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347569955-54626-4-git-send-email-dsahern@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753277Ab2INFsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 01:48:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23161 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab2INFsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 01:48:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,421,1344236400"; 
+   d="scan'208";a="203627521"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] few functions clean up
+Date: Fri, 14 Sep 2012 13:47:22 +0800
+Message-Id: <1347601645-20139-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changed according to Peter and Suresh suggestion.
 
-* David Ahern <dsahern@gmail.com> wrote:
-
-> Platforms (e.g., VM's) without support for precise mode get a confusing
-> error message. e.g.,
-> $ perf record -e cycles:p -a -- sleep 1
-> 
->   Error: sys_perf_event_open() syscall returned with 95 (Operation not
->   supported).  /bin/dmesg may provide additional information.
-> 
->   No hardware sampling interrupt available. No APIC? If so then you can
->   boot the kernel with the "lapic" boot parameter to force-enable it.
->   sleep: Terminated
-> 
-> which is not clear that precise mode might be the root problem. With this
-> patch:
-> 
-> $ perf record -e cycles:p -fo /tmp/perf.data -- sleep 1
->   Error:
->   'precise' request may not be supported. Try removing 'p' modifier
->   sleep: Terminated
-> 
-> v2: softened message to 'may not be' supported per Robert's suggestion
-
-Well, either it's supported on this machine or it's not - why 
-does the text have to be so unsure about it?
-
-We use computers to increase determinism, not to insert extra 
-uncertainty! ;-)
-
-Thanks,
-
-	Ingo
+Thanks
+[PATCH v2 1/3] nohz: clean up select_nohz_load_balancer()
+[PATCH v2 2/3] sched:nohz rename clear_nohz_tick_stopped as
+[PATCH v2 3/3] sched/balance: remove on_null_domain() in
