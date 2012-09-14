@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab2INNdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:33:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16284 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab2INNdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:33:04 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZDDkTe9yP_wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=cf0L7CG27rcA:10 a=mDV3o1hIAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=yWGnIIe_ebuLAofsvJMA:9 a=PUjeQqilurYA:10 a=lM8EmwarS4gA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=xrf48phdYvfyvlb8:21 a=zh2BkHmXDenowtv6:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347629582.10751.90.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] Update FSF postal address to be URL's.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jon Stanley <jonstanley@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Fri, 14 Sep 2012 09:33:02 -0400
-In-Reply-To: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
-References: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754475Ab2INNdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:33:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58026 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766Ab2INNdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 09:33:42 -0400
+Message-Id: <b94cdc$6jrqfm@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,423,1344236400"; 
+   d="scan'208";a="222161398"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] i915: Quirk out disconnected backlight
+To: David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <1347628339.21322.16.camel@shinybook.infradead.org>
+References: <1347627426-3813-1-git-send-email-grant.likely@secretlab.ca> <84c8a8$5o3dgr@orsmga001.jf.intel.com> <CACxGe6u0+LC4G-87PsEK3ys7qqeJ2WnqnCdaegMK7=M9xpA8ug@mail.gmail.com> <1347628339.21322.16.camel@shinybook.infradead.org>
+Date: Fri, 14 Sep 2012 14:33:16 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 16:32 -0400, Jon Stanley wrote:
-> The FSF now prefers to use URL's in copyright headers rather than
-> their postal address. This change updates the address to be
-> <http://www.gnu.org/licenses> per http://www.gnu.org/licenses/gpl-howto.html
+On Fri, 14 Sep 2012 14:12:19 +0100, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Fri, 2012-09-14 at 14:09 +0100, Grant Likely wrote:
+> > On Fri, Sep 14, 2012 at 2:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > > On Fri, 14 Sep 2012 13:57:06 +0100, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > >> Some platforms (for instance MacbookPros) have custom backlight drivers
+> > >> and don't use the integrated i915 backlight control. This patch adds a
+> > >> quirk to disable registering the intel backlight when unused on a
+> > >> platform.
+> > >>
+> > >> Tested on MacbookPro8,3. Without this patch both the intel_backlight and
+> > >> gmux_backlight devices get registered and userspace doesn't know which
+> > >> it should use.
+> > >
+> > > Userspace is informed throught the backlight/type property.
+> > 
+> > Perhaps, but userspace (Ubuntu) isn't doing anything with it, and it
+> > still remains that it makes no sense whatsoever to register a
+> > backlight device that doesn't exist. 
 > 
-> Signed-off-by: Jon Stanley <jonstanley@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
-Arnaldo, can you pull these patches into your queue.
-
-Thanks,
-
--- Steve
-
-> ---
->  tools/lib/traceevent/event-parse.c  |    3 +--
->  tools/lib/traceevent/event-parse.h  |    3 +--
->  tools/lib/traceevent/event-utils.h  |    3 +--
->  tools/lib/traceevent/parse-filter.c |    3 +--
->  tools/lib/traceevent/trace-seq.c    |    3 +--
->  5 files changed, 5 insertions(+), 10 deletions(-)
+> Indeed. Userspace (well, gnome-settings-daemon) will use the backlight
+> provided by X, in preference to anything it finds
+> in /sys/class/backlight. So if the Intel one is present (and thus
+> exposed via X) then userspace will never bother with comparing types and
+> choosing the sanest backlight to use.
 > 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index 5f34aa3..7b946f9 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   *
-> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-> index 5772ad8..ea93a1a 100644
-> --- a/tools/lib/traceevent/event-parse.h
-> +++ b/tools/lib/traceevent/event-parse.h
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
-> index 0829638..ebd970c 100644
-> --- a/tools/lib/traceevent/event-utils.h
-> +++ b/tools/lib/traceevent/event-utils.h
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-> index ad17855..5527c32 100644
-> --- a/tools/lib/traceevent/parse-filter.c
-> +++ b/tools/lib/traceevent/parse-filter.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
-> index b1ccc92..a57db80 100644
-> --- a/tools/lib/traceevent/trace-seq.c
-> +++ b/tools/lib/traceevent/trace-seq.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
+> See https://bugzilla.redhat.com/show_bug.cgi?id=752595
 
+And if you look at that bug, it starts off by complaining that a
+workaround is required in order to use the intel_backlight. By the time
+you hit the issue with apple_gmux, the upstream ddx already carried the
+fix for a couple of months and even had it in a release. And more
+recently we took a patch to allow the user to override which backlight is
+preferred to handle the case of a broken platform/firmware interface
+being selected instead of intel_backlight.
 
+Userspace is indeed trying to do the right thing with the information
+provided by the kernel. apple_gmux is not the only device with a phantom
+PWM BLC, which is why the default preference is to use the
+platform/firmware provided backlight interface, if any.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
