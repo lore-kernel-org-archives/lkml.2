@@ -1,45 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2INQft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:35:49 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47330 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2INQfr (ORCPT
+	id S1755579Ab2INQgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:36:05 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:37969 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab2INQgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:35:47 -0400
+	Fri, 14 Sep 2012 12:36:02 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [GIT PULL] rcu: idle changes v2
-Date: Fri, 14 Sep 2012 18:35:37 +0200
-Message-Id: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/2] rcu: Exit RCU extended QS on user preemption
+Date: Fri, 14 Sep 2012 18:35:38 +0200
+Message-Id: <1347640539-8470-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
+References: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
+When exceptions or irq are about to resume userspace, if
+the task needs to be rescheduled, the arch low level code
+calls schedule() directly.
 
-This is the second version of my rcu/idle-for-v3.7 which rebases
-your rcu/idle to address reviews.
+If we call it, it is because we have the TIF_RESCHED flag:
 
-It has the same modifications than rcu/idle-for-v3.7 plus
-an update of:
+- It can be set after random local calls to set_need_resched()
+(RCU, drm, ...)
 
-- "rcu: Exit RCU extended QS on user preemption" : update changelog
-and comments after a discussion with Peterz. And compile conditionally
-schedule_user().
+- A wake up happened and the CPU needs preemption. This can
+  happen in several ways:
 
-- "x86: Use the new schedule_user API on userspace preemption" : build
-time choose between calling schedule and schedule_user.
+    * Remotely: the remote waking CPU has set TIF_RESCHED and send the
+      wakee an IPI to schedule the new task.
+    * Remotely enqueued: the remote waking CPU sends an IPI to the target
+      and the wake up is made by the target.
+    * Locally: waking CPU == wakee CPU and the wakeup is done locally.
+      set_need_resched() is called without IPI.
 
-I'm only reposting these two patches.
+In the case of local and remotely enqueued wake ups, the tick can
+be restarted when we enqueue the new task and RCU can exit the
+extended quiescent state at the same time. Then by the time we reach
+irq exit path and we call schedule, we are not in RCU user mode.
 
-The new branch is:
+But if we call schedule() only because something called set_need_resched(),
+RCU may still be in user mode when we reach schedule.
 
-git://github.com/fweisbec/linux-dynticks.git
-	rcu/idle-v2-for-v3.7
+Also if a wake up is done remotely, the CPU might see the TIF_RESCHED
+flag and call schedule while the IPI has not yet happen to restart the
+tick and exit RCU user mode.
 
-Thanks.
+We need to manually protect against these corner cases.
+
+Create a new API schedule_user() that calls schedule() inside
+rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
+will need to rely on it now to implement user preemption safely.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/sched/core.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0bd599b..7298dbf 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3463,6 +3463,21 @@ asmlinkage void __sched schedule(void)
+ }
+ EXPORT_SYMBOL(schedule);
+ 
++#ifdef CONFIG_RCU_USER_QS
++asmlinkage void __sched schedule_user(void)
++{
++	/*
++	 * If we come here after a random call to set_need_resched(),
++	 * or we have been woken up remotely but the IPI has not yet arrived,
++	 * we haven't yet exited the RCU idle mode. Do it here manually until
++	 * we find a better solution.
++	 */
++	rcu_user_exit();
++	schedule();
++	rcu_user_enter();
++}
++#endif
++
+ /**
+  * schedule_preempt_disabled - called with preemption disabled
+  *
+-- 
+1.7.5.4
+
