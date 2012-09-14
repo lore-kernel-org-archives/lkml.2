@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363Ab2INAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 20:24:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61199 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753340Ab2INAYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 20:24:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,420,1344236400"; 
-   d="scan'208";a="221937136"
-Message-ID: <5052792E.1010507@intel.com>
-Date: Fri, 14 Sep 2012 08:24:14 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Cliff Wickman <cpw@sgi.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        jbeulich@suse.com, tglx@linutronix.de, hpa@zytor.com
-Subject: Re: [alex.shi@intel.com: Re: [PATCH] UV: fix incorrect tlb flush
- all issue]
-References: <20120913155310.GA4081@gmail.com> <20120913212003.GA16789@sgi.com>
-In-Reply-To: <20120913212003.GA16789@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932387Ab2INA0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 20:26:00 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60087 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932365Ab2INAZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 20:25:07 -0400
+Message-ID: <1347582306.9481.0.camel@joe2Laptop>
+Subject: Re: [PATCH 07/24] Staging: ipack/devices/ipoctal: Store isr masks
+ in ipoctal_channel
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net
+Date: Thu, 13 Sep 2012 17:25:06 -0700
+In-Reply-To: <20120913191717.GB13767@mwanda>
+References: <1347454546-23236-1-git-send-email-siglesias@igalia.com>
+	 <1347454546-23236-7-git-send-email-siglesias@igalia.com>
+	 <20120913174312.GB4587@mwanda> <20120913174927.GA13767@mwanda>
+	 <1347560357.5884.7.camel@joe2Laptop>
+	 <20120913184346.GA11613@endeavour.taprogge.org>
+	 <20120913191717.GB13767@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 05:20 AM, Cliff Wickman wrote:
+On Thu, 2012-09-13 at 22:17 +0300, Dan Carpenter wrote:
 
-> On Thu, Sep 13, 2012 at 05:53:10PM +0200, Ingo Molnar wrote:
->>
->> Ack?
->>
->> Thanks,
->>
->> 	Ingo
+> If it weren't in staging-next then, yeah, it probably would have
+> been better to resend those two patches.  You could send them by
+> themselves without resending any of the others.  But once they hit
+> staging-next, it's too late.
 > 
-> Ack.
-> But with the adjustment below.  The 'end' argument was not declared long.
-> 
-> I tested the patch on a UV.
-> It has the effect of either clearing 1 or all TLBs in a cpu.
-> I added some debugging to test for the cases when clearing all TLBs is
-> overkill, and in practice it happens very seldom.
+> No stress.
 
+What Dan said.  I didn't know it was already picked up.
 
-Thanks a lot for you all!
-
-> 
-> Sorry I didn't participate in this patch earlier.  Jack Steiner was
-> copied, I believe.  But steiner@sgi.com is no longer active. Jack has
-> retired -- congratulations to him, but a very big loss to us, both 
-> professionally and personally.
-
-
-Congratulations for Jack. :)
+cheers, Joe
 
