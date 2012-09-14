@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab2INQhe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:37:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59840 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab2INQhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:37:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ligdrscn.fsf@rustcorp.com.au>
-References: <87obl9rsg2.fsf@rustcorp.com.au> <87ligdrscn.fsf@rustcorp.com.au>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Fri, 14 Sep 2012 13:37:10 -0300
-Message-ID: <CAMOw1v6Qy1wHhRcPQkyhDe7LrGaM_qRdhufr8YtHnfp5pTPFAA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] module: wait when loading a module which is currently initializing.
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jon Masters <jonathan@jonmasters.org>,
-        linux-modules <linux-modules@vger.kernel.org>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755909Ab2INQhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:37:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:42784 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755483Ab2INQhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 12:37:50 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] x86: Dump family, model, stepping of the BSP
+Date: Fri, 14 Sep 2012 18:37:46 +0200
+Message-Id: <1347640666-13638-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-On Fri, Sep 14, 2012 at 4:11 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> The original module-init-tools module loader used a fnctl lock on the
-> .ko file to avoid attempts to simultaneously load a module.
-> Unfortunately, you can't get an exclusive fcntl lock on a read-only
-> fd, making this not work for read-only mounted filesystems.
-> module-init-tools has a hacky sleep-and-loop for this now.
->
-> It's not that hard to wait in the kernel, and only return -EEXIST once
-> the first module has finished loading (or continue loading the module
-> if the first one failed to initialize for some reason).  It's also
-> consistent with what we do for dependent modules which are still loading.
->
-> Suggested-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  kernel/module.c |   28 ++++++++++++++++++++++++++--
->  1 file changed, 26 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2845,6 +2845,20 @@ static int post_relocation(struct module
->         return module_finalize(info->hdr, info->sechdrs, mod);
->  }
->
-> +/* Is this module of this name done loading?  No locks held. */
-> +static bool finished_loading(const char *name)
-> +{
-> +       struct module *mod;
-> +       bool ret;
-> +
-> +       mutex_lock(&module_mutex);
-> +       mod = find_module(name);
-> +       ret = !mod || mod->state != MODULE_STATE_COMING;
-> +       mutex_unlock(&module_mutex);
-> +
-> +       return ret;
-> +}
+When acting on a user bug report, we find ourselves constantly asking
+for /proc/cpuinfo in order to know the exact family, model, stepping of
+the CPU in question. Instead of having to ask this, add this to dmesg
+so that it is visible and no ambiguities can ensue from looking at the
+official name string of the CPU coming from CPUID and trying to map it
+to f/m/s.
 
-Much cleaner than we had before :-)
+Output then looks like this:
 
-> +
->  /* Allocate and load the module: note that size of section 0 is always
->     zero, and we rely on this for optional sections. */
->  static struct module *load_module(void __user *umod,
-> @@ -2852,7 +2866,7 @@ static struct module *load_module(void _
->                                   const char __user *uargs)
->  {
->         struct load_info info = { NULL, };
-> -       struct module *mod;
-> +       struct module *mod, *old;
->         long err;
->
->         pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
-> @@ -2918,8 +2932,18 @@ static struct module *load_module(void _
->          * function to insert in a way safe to concurrent readers.
->          * The mutex protects against concurrent writers.
->          */
-> +again:
->         mutex_lock(&module_mutex);
-> -       if (find_module(mod->name)) {
-> +       if ((old = find_module(mod->name)) != NULL) {
-> +               if (old->state == MODULE_STATE_COMING) {
-> +                       /* Wait in case it fails to load. */
-> +                       mutex_unlock(&module_mutex);
-> +                       err = wait_event_interruptible(module_wq,
-> +                                              finished_loading(mod->name));
-> +                       if (err)
-> +                               goto free_arch_cleanup;
-> +                       goto again;
+[    0.146041] smpboot: CPU0: AMD FX(tm)-8100 Eight-Core Processor (fam: 15 model: 01 stepping: 02)
 
-I wonder if we should indeed retry in case the module failed to load
-or if we should just skip straight to returning the error code. We
-don't have the return code for the failed load, but maybe we can
-fabricate one here.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/common.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Thoughts?
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 2ea24da6f7fb..90f7f8f9212f 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1022,14 +1022,16 @@ void __cpuinit print_cpu_info(struct cpuinfo_x86 *c)
+ 		printk(KERN_CONT "%s ", vendor);
+ 
+ 	if (c->x86_model_id[0])
+-		printk(KERN_CONT "%s", c->x86_model_id);
++		printk(KERN_CONT "%s", strim(c->x86_model_id));
+ 	else
+ 		printk(KERN_CONT "%d86", c->x86);
+ 
++	printk(KERN_CONT " (fam: %02x model: %02x", c->x86, c->x86_model);
++
+ 	if (c->x86_mask || c->cpuid_level >= 0)
+-		printk(KERN_CONT " stepping %02x\n", c->x86_mask);
++		printk(KERN_CONT " stepping: %02x)\n", c->x86_mask);
+ 	else
+-		printk(KERN_CONT "\n");
++		printk(KERN_CONT ")\n");
+ 
+ 	print_cpu_msr(c);
+ }
+-- 
+1.7.11.rc1
 
-cheers,
-Lucas De Marchi
