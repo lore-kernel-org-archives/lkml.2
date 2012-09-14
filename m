@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab2INUOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 16:14:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33708 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab2INUO3 (ORCPT
+	id S1753487Ab2INUe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 16:34:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46981 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab2INUeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 16:14:29 -0400
-Date: Fri, 14 Sep 2012 13:14:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: qiuxishi <qiuxishi@gmail.com>, <mgorman@suse.de>, <tony.luck@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, <qiuxishi@huawei.com>,
-        <bessel.wang@huawei.com>, <wujianguo@huawei.com>,
-        <paul.gortmaker@windriver.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <rientjes@google.com>,
-        Minchan Kim <minchan@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH RESEND] memory hotplug: fix a double register section
- info bug
-Message-Id: <20120914131428.1f530681.akpm@linux-foundation.org>
-In-Reply-To: <50530E39.5020100@jp.fujitsu.com>
-References: <5052A7DF.4050301@gmail.com>
-	<50530E39.5020100@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Sep 2012 16:34:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347571858.5586.44.camel@oc2024037011.ibm.com>
+References: <504A37B0.7020605@linux.vnet.ibm.com>
+	<1347046931.7332.51.camel@oc2024037011.ibm.com>
+	<20120908084345.GU30238@linux.vnet.ibm.com>
+	<1347283005.10325.55.camel@oc6622382223.ibm.com>
+	<1347293035.2124.22.camel@twins>
+	<20120910165653.GA28033@linux.vnet.ibm.com>
+	<1347297124.2124.42.camel@twins>
+	<1347307972.7332.78.camel@oc2024037011.ibm.com>
+	<504ED54E.6040608@linux.vnet.ibm.com>
+	<1347388061.19098.20.camel@oc2024037011.ibm.com>
+	<20120913114813.GA11797@linux.vnet.ibm.com>
+	<1347571858.5586.44.camel@oc2024037011.ibm.com>
+Date: Fri, 14 Sep 2012 16:34:24 -0400
+X-Google-Sender-Auth: AFGEnNeqRKhxPViqbNvdNk6OU_A
+Message-ID: <CACJDEmqP7u0R_TmgZ2O=3vDS0DG5fOZLwBJ0pnviWiTehn92OA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: habanero@linux.vnet.ibm.com
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012 20:00:09 +0900
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+> The concern I have is that even though we have gone through changes to
+> help reduce the candidate vcpus we yield to, we still have a very poor
+> idea of which vcpu really needs to run.  The result is high cpu usage in
+> the get_pid_task and still some contention in the double runqueue lock.
+> To make this scalable, we either need to significantly reduce the
+> occurrence of the lock-holder preemption, or do a much better job of
+> knowing which vcpu needs to run (and not unnecessarily yielding to vcpus
+> which do not need to run).
 
-> > @@ -187,9 +184,10 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
-> >   	end_pfn = pfn + pgdat->node_spanned_pages;
-> >
-> >   	/* register_section info */
-> > -	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
-> > -		register_page_bootmem_info_section(pfn);
-> > -
-> > +	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> > +		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
-> 
-> I cannot judge whether your configuration is correct or not.
-> Thus if it is correct, I want a comment of why the node check is
-> needed. In usual configuration, a node does not span the other one.
-> So it is natural that "pfn_to_nid(pfn) is same as "pgdat->node_id".
-> Thus we may remove the node check in the future.
+The patches that Raghavendra  has been posting do accomplish that.
+>
+> On reducing the occurrence:  The worst case for lock-holder preemption
+> is having vcpus of same VM on the same runqueue.  This guarantees the
+> situation of 1 vcpu running while another [of the same VM] is not.  To
+> prove the point, I ran the same test, but with vcpus restricted to a
+> range of host cpus, such that any single VM's vcpus can never be on the
+> same runqueue.  In this case, all 10 VMs' vcpu-0's are on host cpus 0-4,
+> vcpu-1's are on host cpus 5-9, and so on.  Here is the result:
+>
+> kvm_cpu_spin, and all
+> yield_to changes, plus
+> restricted vcpu placement:  8823 +/- 3.20%   much, much better
+>
+> On picking a better vcpu to yield to:  I really hesitate to rely on
+> paravirt hint [telling us which vcpu is holding a lock], but I am not
+> sure how else to reduce the candidate vcpus to yield to.  I suspect we
+> are yielding to way more vcpus than are prempted lock-holders, and that
+> IMO is just work accomplishing nothing.  Trying to think of way to
+> further reduce candidate vcpus....
 
-yup.  How does this look?
-
---- a/mm/memory_hotplug.c~memory-hotplug-fix-a-double-register-section-info-bug-fix
-+++ a/mm/memory_hotplug.c
-@@ -185,6 +185,12 @@ void register_page_bootmem_info_node(str
- 
- 	/* register_section info */
- 	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		/*
-+		 * Some platforms can assign the same pfn to multiple nodes - on
-+		 * node0 as well as nodeN.  To avoid registering a pfn against
-+		 * multiple nodes we check that this pfn does not already
-+		 * reside in some other node.
-+		 */
- 		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
- 			register_page_bootmem_info_section(pfn);
- 	}
-_
-
+... the patches are posted -  you could try them out?
