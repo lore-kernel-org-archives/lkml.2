@@ -1,197 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab2INNQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:16:01 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46117 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab2INNP5 (ORCPT
+	id S1751920Ab2INNRa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:17:30 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:56019 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750957Ab2INNR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:15:57 -0400
-Date: Fri, 14 Sep 2012 09:04:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: arnd@arndb.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
-        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        tim@xen.org, Ian.Campbell@citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 09/24] xen/arm: Introduce xen_ulong_t for unsigned long
-Message-ID: <20120914130450.GJ25249@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
- <1347621207-11294-9-git-send-email-stefano.stabellini@eu.citrix.com>
+	Fri, 14 Sep 2012 09:17:27 -0400
+Date: Fri, 14 Sep 2012 16:12:49 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, balbi@ti.com, arnd@arndb.de,
+        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        richard.zhao@freescale.com, B29397@freescale.com,
+        alexander.shishkin@linux.intel.com, marex@denx.de
+Subject: Re: [RFC PATCH] drivers: phy: add generic PHY framework
+Message-ID: <20120914131247.GC21130@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1347623899-14485-1-git-send-email-kishon@ti.com>
+ <505322E3.4090806@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8X7/QrJGcKSMr1RN"
 Content-Disposition: inline
-In-Reply-To: <1347621207-11294-9-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <505322E3.4090806@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 12:13:11PM +0100, Stefano Stabellini wrote:
-> All the original Xen headers have xen_ulong_t as unsigned long type, however
-> when they have been imported in Linux, xen_ulong_t has been replaced with
-> unsigned long. That might work for x86 and ia64 but it does not for arm.
-> Bring back xen_ulong_t and let each architecture define xen_ulong_t as they
-> see fit.
-> 
-> Also explicitly size pointers (__DEFINE_GUEST_HANDLE) to 64 bit.
-> 
-> 
-> Changes in v3:
-> 
-> - remove the incorrect changes to multicall_entry;
-> - remove the change to apic_physbase.
-> 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-for the generic parts; all other:
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+--8X7/QrJGcKSMr1RN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  arch/arm/include/asm/xen/interface.h  |    8 ++++++--
->  arch/ia64/include/asm/xen/interface.h |    1 +
->  arch/x86/include/asm/xen/interface.h  |    1 +
->  include/xen/interface/memory.h        |   12 ++++++------
->  include/xen/interface/physdev.h       |    2 +-
->  include/xen/interface/version.h       |    2 +-
->  6 files changed, 16 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
-> index 74c72b5..ae05e56 100644
-> --- a/arch/arm/include/asm/xen/interface.h
-> +++ b/arch/arm/include/asm/xen/interface.h
-> @@ -9,8 +9,11 @@
->  
->  #include <linux/types.h>
->  
-> +#define uint64_aligned_t uint64_t __attribute__((aligned(8)))
-> +
->  #define __DEFINE_GUEST_HANDLE(name, type) \
-> -	typedef type * __guest_handle_ ## name
-> +	typedef struct { union { type *p; uint64_aligned_t q; }; }  \
-> +        __guest_handle_ ## name
->  
->  #define DEFINE_GUEST_HANDLE_STRUCT(name) \
->  	__DEFINE_GUEST_HANDLE(name, struct name)
-> @@ -21,13 +24,14 @@
->  	do {						\
->  		if (sizeof(hnd) == 8)			\
->  			*(uint64_t *)&(hnd) = 0;	\
-> -		(hnd) = val;				\
-> +		(hnd).p = val;				\
->  	} while (0)
->  
->  #ifndef __ASSEMBLY__
->  /* Explicitly size integers that represent pfns in the interface with
->   * Xen so that we can have one ABI that works for 32 and 64 bit guests. */
->  typedef uint64_t xen_pfn_t;
-> +typedef uint64_t xen_ulong_t;
->  /* Guest handles for primitive C types. */
->  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
->  __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> diff --git a/arch/ia64/include/asm/xen/interface.h b/arch/ia64/include/asm/xen/interface.h
-> index 686464e..7c83445 100644
-> --- a/arch/ia64/include/asm/xen/interface.h
-> +++ b/arch/ia64/include/asm/xen/interface.h
-> @@ -71,6 +71,7 @@
->   * with Xen so that we could have one ABI that works for 32 and 64 bit
->   * guests. */
->  typedef unsigned long xen_pfn_t;
-> +typedef unsigned long xen_ulong_t;
->  /* Guest handles for primitive C types. */
->  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
->  __DEFINE_GUEST_HANDLE(uint, unsigned int);
-> diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
-> index 2289075..25cc8df 100644
-> --- a/arch/x86/include/asm/xen/interface.h
-> +++ b/arch/x86/include/asm/xen/interface.h
-> @@ -51,6 +51,7 @@
->   * with Xen so that on ARM we can have one ABI that works for 32 and 64
->   * bit guests. */
->  typedef unsigned long xen_pfn_t;
-> +typedef unsigned long xen_ulong_t;
->  /* Guest handles for primitive C types. */
->  __DEFINE_GUEST_HANDLE(uchar, unsigned char);
->  __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index abbbff0..b5c3098 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -34,7 +34,7 @@ struct xen_memory_reservation {
->      GUEST_HANDLE(xen_pfn_t) extent_start;
->  
->      /* Number of extents, and size/alignment of each (2^extent_order pages). */
-> -    unsigned long  nr_extents;
-> +    xen_ulong_t  nr_extents;
->      unsigned int   extent_order;
->  
->      /*
-> @@ -92,7 +92,7 @@ struct xen_memory_exchange {
->       *     command will be non-zero.
->       *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
->       */
-> -    unsigned long nr_exchanged;
-> +    xen_ulong_t nr_exchanged;
->  };
->  
->  DEFINE_GUEST_HANDLE_STRUCT(xen_memory_exchange);
-> @@ -148,8 +148,8 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mfn_list);
->   */
->  #define XENMEM_machphys_mapping     12
->  struct xen_machphys_mapping {
-> -    unsigned long v_start, v_end; /* Start and end virtual addresses.   */
-> -    unsigned long max_mfn;        /* Maximum MFN that can be looked up. */
-> +    xen_ulong_t v_start, v_end; /* Start and end virtual addresses.   */
-> +    xen_ulong_t max_mfn;        /* Maximum MFN that can be looked up. */
->  };
->  DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mapping_t);
->  
-> @@ -169,7 +169,7 @@ struct xen_add_to_physmap {
->      unsigned int space;
->  
->      /* Index into source mapping space. */
-> -    unsigned long idx;
-> +    xen_ulong_t idx;
->  
->      /* GPFN where the source mapping page should appear. */
->      xen_pfn_t gpfn;
-> @@ -186,7 +186,7 @@ struct xen_translate_gpfn_list {
->      domid_t domid;
->  
->      /* Length of list. */
-> -    unsigned long nr_gpfns;
-> +    xen_ulong_t nr_gpfns;
->  
->      /* List of GPFNs to translate. */
->      GUEST_HANDLE(ulong) gpfn_list;
-> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-> index 9ce788d..f616514 100644
-> --- a/include/xen/interface/physdev.h
-> +++ b/include/xen/interface/physdev.h
-> @@ -56,7 +56,7 @@ struct physdev_eoi {
->  #define PHYSDEVOP_pirq_eoi_gmfn_v2       28
->  struct physdev_pirq_eoi_gmfn {
->      /* IN */
-> -    unsigned long gmfn;
-> +    xen_ulong_t gmfn;
->  };
->  
->  /*
-> diff --git a/include/xen/interface/version.h b/include/xen/interface/version.h
-> index e8b6519..30280c9 100644
-> --- a/include/xen/interface/version.h
-> +++ b/include/xen/interface/version.h
-> @@ -45,7 +45,7 @@ struct xen_changeset_info {
->  
->  #define XENVER_platform_parameters 5
->  struct xen_platform_parameters {
-> -    unsigned long virt_start;
-> +    xen_ulong_t virt_start;
->  };
->  
->  #define XENVER_get_features 6
-> -- 
-> 1.7.2.5
+On Fri, Sep 14, 2012 at 02:28:19PM +0200, Marc Kleine-Budde wrote:
+> On 09/14/2012 01:58 PM, Kishon Vijay Abraham I wrote:
+> > The PHY framework provides a set of API's for the PHY drivers to
+> > create/remove a PHY and the PHY users to obtain a reference to the PHY
+> > using or without using phandle. If the PHY users has to obtain a refere=
+nce to
+> > the PHY without using phandle, the platform specfic intialization code =
+(say
+> > from board file) should have already called phy_bind with the binding
+> > information. The binding information consists of phy's device name, phy
+> > user device name and an index. The index is used when the same phy user
+> > binds to mulitple phys.
+> >=20
+> > PHY drivers should create the PHY by passing phy_descriptor that has
+> > information about the PHY and ops like init, exit, suspend, resume,
+> > poweron, shutdown.
+>=20
+> Some comments inside.
+>=20
+> While looking over the code, I was thinking why not abstract the phy
+> with a "bus" in the linux kernel. The ethernet phys are on the mdio_bus,
+> see /sys/bus/mdio_bus. This saves you hand crafting devices, drivers and
+> bindings,
+
+I don't think that's a good idea, actually. You can have USB PHYs which
+are memory mapped, or connected through i2c, or connected through any
+other bus. If the PHYs layer itself is a bus, it means we will need to
+register a device on two different buses, which doesn't sound very
+nice IMHO.
+
+--=20
+balbi
+
+--8X7/QrJGcKSMr1RN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQUy1PAAoJEIaOsuA1yqREWwkQAKVV9u/kQ1iP1qccoAG635Gl
+WOKdIb7EESml8nJl0x/5doiLd1bOYWK1YbCGBGLugRiPSfYql1I/x/TPjcUZBMk9
+vNEcFiwsSJDF6z1s35Y4p3AAdxs//915N+axB62qN5cr4JSvWUozAt4KDiOKAgjp
+AE40XNdilRhZF4mk1mHjiVdOf6wimVIiktSDLbTP0O1lcrizGmGcmH98np+w40R6
+gpvAvqymkrGxvs1Wj/W1QCOQyC3jtBtLAuetjx/zRSaukxdW/bP8t+lag9ZiPddp
+91ozoXwyVhCrw5oMBlzuUV4wRT83cmHFes9t8sm6MboVrCzKG5qf5uST4ij3nUaT
+NOnKWVD30wbTR+1xx5+VYjhOxrIVTqoaqmpi+cZ1EwwhobTkWbsqpcOecbHs0UFF
+PDYh3h2ppgCWvxIo+Jjloh6DBSo7QXiOXSMF5c8oEwB3Ji5GfLf30Nriyf28rI8A
+L++rex/Y9i54tNaL5dScgrri6Y5IWz0K6hRVvhECX+NX8Bh1jeCjdAUlt0QleAsJ
+zV9NIgXu7J6cbQguL1gew894Dwk6VJkBERC2tpPxPjEZqVKVZaovGBp5XRcFujtT
+jQiXxc3ia0s9kCHUuvDN0TOlqt3VU8A5VNsForQhBDtjHPpExlUzAcBIGMXhkK6D
+HX3VyBBhv8a2r/QSp5b0
+=7eB5
+-----END PGP SIGNATURE-----
+
+--8X7/QrJGcKSMr1RN--
