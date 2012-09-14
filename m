@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab2INOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:07:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60619 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab2INOH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:07:56 -0400
+	id S1756566Ab2INOKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:10:52 -0400
+Received: from huecha.unizar.es ([155.210.1.51]:58594 "EHLO huecha.unizar.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756068Ab2INOKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:10:51 -0400
+X-Greylist: delayed 2010 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Sep 2012 10:10:50 EDT
+Message-ID: <5053330E.80003@ono.com>
+Date: Fri, 14 Sep 2012 15:37:18 +0200
+From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120909 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1347624124-27535-1-git-send-email-sachin.kamat@linaro.org>
-References: <1347624124-27535-1-git-send-email-sachin.kamat@linaro.org>
-Date: Fri, 14 Sep 2012 16:07:54 +0200
-Message-ID: <CACRpkdbA8Uiy2ed5DJ99Aoztp=VOSL_2t9VGNi2bC3264LE7Hg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pinctrl: Samsung: Fix return value
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.ab@samsung.com>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Inconsistency in /proc/cpuinfo about topology ?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Mail-Scanned: Criba 2.0 + Clamd & Bogofilter
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 2:02 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+Hi...
 
-> Return the value obtained from of_property_count_strings()
-> instead of -EINVAL.
->
-> Silences the following smatch warning:
-> drivers/pinctrl/pinctrl-samsung.c:529 samsung_pinctrl_parse_dt_pins()
-> info: why not propagate '*npins' from of_property_count_strings()
-> instead of -22?
->
-> Cc: Thomas Abraham <thomas.ab@samsung.com>
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/pinctrl/pinctrl-samsung.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-> index 8a24223..824fda9 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.c
-> +++ b/drivers/pinctrl/pinctrl-samsung.c
-> @@ -526,7 +526,7 @@ static int __init samsung_pinctrl_parse_dt_pins(struct platform_device *pdev,
->         *npins = of_property_count_strings(cfg_np, "samsung,pins");
->         if (*npins < 0) {
->                 dev_err(dev, "invalid pin list in %s node", cfg_np->name);
-> -               return -EINVAL;
-> +               return *npins;
->         }
+Probably there is something I don't understand, but it looks to me like an
+inconsistency in the info given by /proc/cpuinfo about processor/core/thread
+topology.
 
-Thomas, please check this ...
+For new processors, data seems to account for each 'physycal id', all virtual
+processors in the same package repeat the same info:
+- Core i5:
+    physical id	: 0
+    siblings	: 4
+    cpu cores	: 4
+- Core i3:
+    physical id	: 0
+    siblings	: 4
+    cpu cores	: 2
+- Dual Xeon X5365
+    physical id	: 0
+    siblings	: 4
+    cpu cores	: 4
+    physical id	: 1
+    siblings	: 4
+    cpu cores	: 4
+- Core Q9450
+    physical id	: 0
+    siblings	: 4
+    cpu cores	: 4
 
-Yours,
-Linus Walleij
+but for older CPUs or lower end it is not the same:
+- Dual P4-Xeon:
+    physical id	: 0
+    siblings	: 1
+    cpu cores	: 1
+    physical id	: 0
+    siblings	: 1
+    cpu cores	: 0
+    physical id	: 3
+    siblings	: 1
+    cpu cores	: 1
+    physical id	: 3
+    siblings	: 1
+    cpu cores	: 0
+
+- Single P4 HT:
+    physical id	: 0
+    siblings	: 1
+    cpu cores	: 1
+    physical id	: 0
+    siblings	: 1
+    cpu cores	: 0
+
+What am I missing ?
+
+TIA
+
+-- 
+J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
