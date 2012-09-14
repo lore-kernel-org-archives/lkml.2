@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442Ab2INLoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:44:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57257 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab2INLoa (ORCPT
+	id S1759474Ab2INLop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:44:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51382 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab2INLok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:44:30 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Julian Andres Klode <jak@jak-linux.org>
-Cc: Marc Dietrich <marvin24@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ac100@lists.launchpad.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: nvec: Update for recent MFD core changes
-Date: Fri, 14 Sep 2012 13:44:24 +0200
-Message-Id: <1347623064-28348-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.12
-X-Provags-ID: V02:K0:8cSakcVsYzK9PzxhQLWdz+BPi6uT4Szb9tw2alQ0KGq
- vzTnWdRoibsT+XP/sna8EGaAmIHmJ47xC34K9/6+OAcCitNpqQ
- fRX0BRJrcM/D4QUEJy/Puk6uOkuMnHtwvZ/wUnWzs9wMEXcCk+
- TCS/0/1U+XIVef7yRN44TSiSmDkUlDR1KAIOOWanCVz7hhNSQR
- x4w4Q3Ddz74fJivF5zeXN9KOLN/RKH32uaE/KQStYywxFR4t3K
- JNQo5ZbZc1ctVkUJGI7WApQoiSfK4FqxGPhLmmsHG8jHXT5b5R
- 2pCLprARsRV8Au8ukgs53J1sS2ZCaRoKUinAG7+KQ7E4ZPmDji
- Wwx4wSNn/5RPpet2I6m11LtB02HyOXothzBQsIBbo35UGsMrxm
- m8ZAphCCt+lFlzzAuxNjBX2XT0r5VwCgUpE5H1JvMS/Jzu+5ZY
- E0fdn
+	Fri, 14 Sep 2012 07:44:40 -0400
+Date: Fri, 14 Sep 2012 04:44:23 -0700
+From: tip-bot for Steven Rostedt <rostedt@goodmis.org>
+Message-ID: <tip-47d5a5f88b9d25d6464c9b60c28f391e84e3ed65@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <20120905143118.10329.5078.stgit@localhost.localdomain>
+References: <20120905143118.10329.5078.stgit@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ftrace/x86-64: Allow to change RIP in handlers
+Git-Commit-ID: 47d5a5f88b9d25d6464c9b60c28f391e84e3ed65
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 14 Sep 2012 04:44:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mfd_add_devices() was recently changed to receive the IRQ domain through
-an additional parameter but this driver wasn't updated accordingly.
+Commit-ID:  47d5a5f88b9d25d6464c9b60c28f391e84e3ed65
+Gitweb:     http://git.kernel.org/tip/47d5a5f88b9d25d6464c9b60c28f391e84e3ed65
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Wed, 5 Sep 2012 23:31:18 +0900
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 13 Sep 2012 22:52:10 -0400
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+ftrace/x86-64: Allow to change RIP in handlers
+
+Allow ftrace handlers to change RIP register (regs->ip)
+in handlers. This will allow handlers to call another
+function instead of original function.
+
+Link: http://lkml.kernel.org/r/20120905143118.10329.5078.stgit@localhost.localdomain
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/staging/nvec/nvec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/entry_64.S |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-index b0972d0..24d8eeb 100644
---- a/drivers/staging/nvec/nvec.c
-+++ b/drivers/staging/nvec/nvec.c
-@@ -837,7 +837,7 @@ static int __devinit tegra_nvec_probe(struct platform_device *pdev)
- 	}
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index ed767b7..e9cc2b3 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -165,6 +165,10 @@ GLOBAL(ftrace_regs_call)
+ 	movq EFLAGS(%rsp), %rax
+ 	movq %rax, SS(%rsp)
  
- 	ret = mfd_add_devices(nvec->dev, -1, nvec_devices,
--			      ARRAY_SIZE(nvec_devices), base, 0);
-+			      ARRAY_SIZE(nvec_devices), base, 0, NULL);
- 	if (ret)
- 		dev_err(nvec->dev, "error adding subdevices\n");
- 
--- 
-1.7.12
-
++	/* Handlers can change the RIP */
++	movq RIP(%rsp), %rax
++	movq %rax, SS+8(%rsp)
++
+ 	/* restore the rest of pt_regs */
+ 	movq R15(%rsp), %r15
+ 	movq R14(%rsp), %r14
