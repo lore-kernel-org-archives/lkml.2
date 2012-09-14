@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab2INTYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 15:24:02 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54951 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759886Ab2INTYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 15:24:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH RESEND] ACPI: power: Use KERN_DEBUG when no power resources are found
-Date: Fri, 14 Sep 2012 21:30:25 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Borislav Petkov <bp@amd64.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>
-References: <1347584884-1486-1-git-send-email-aaron.lu@intel.com>
-In-Reply-To: <1347584884-1486-1-git-send-email-aaron.lu@intel.com>
+	id S1759991Ab2INT2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 15:28:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62519 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759973Ab2INT2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 15:28:37 -0400
+Message-ID: <50538561.8030505@suse.cz>
+Date: Fri, 14 Sep 2012 21:28:33 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: BUG at mm/huge_memory.c:1428!
+References: <50522275.7090709@suse.cz> <CANN689E0SaT9vaBb+snwYrP728GjZhRj7o7T4GoNfQVY7sBr7Q@mail.gmail.com>
+In-Reply-To: <CANN689E0SaT9vaBb+snwYrP728GjZhRj7o7T4GoNfQVY7sBr7Q@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209142130.25635.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 14, 2012, Aaron Lu wrote:
-> commit a606dac368eed5696fb38e16b1394f1d049c09e9 adds support to link
-> devices which have _PRx, if a device does not have _PRx, a warning
-> message will be printed.
+On 09/14/2012 12:46 AM, Michel Lespinasse wrote:
+> On Thu, Sep 13, 2012 at 11:14 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> Hi,
+>>
+>> I've just get the following BUG with today's -next. It happens every
+>> time I try to update packages.
+>>
+>> kernel BUG at mm/huge_memory.c:1428!
 > 
-> This commit is for ZPODD on Intel ZPODD capable platforms, on other
-> platforms, it has no problem if there is no power resource for this
-> device, so a warning here is not appropriate, change it to debug.
+> That is very likely my bug.
 > 
-> Reported-by: Borislav Petkov <bp@amd64.org>
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Do you have the message that should be printed right above the bug ?
+> (                printk(KERN_ERR "mapcount %d page_mapcount %d\n",
+>                        mapcount, page_mapcount(page));
+> )
 
-Applied to the linux-next branch of the linux-pm.git tree as a -stable fix
-for v3.6.
+Unfortunately no. And I cannot reproduce anymore :(...
 
-Thanks,
-Rafael
-
-
-> ---
->  drivers/acpi/power.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 215ecd0..e5e01d9 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -460,7 +460,7 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
->  	return ret;
->  
->  no_power_resource:
-> -	printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
-> +	printk(KERN_DEBUG PREFIX "Invalid Power Resource to register!");
->  	return -ENODEV;
->  }
->  EXPORT_SYMBOL_GPL(acpi_power_resource_register_device);
-> 
-
+thanks,
+-- 
+js
+suse labs
