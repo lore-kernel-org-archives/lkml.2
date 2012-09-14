@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab2INMJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:09:49 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:41366 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759427Ab2INMFz (ORCPT
+	id S932151Ab2INMKd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:10:33 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54996 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759430Ab2INMFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:05:55 -0400
+	Fri, 14 Sep 2012 08:05:34 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 05/15] dmaengine: omap-dma: Add support to suppress interrupts in cyclic mode
-Date: Fri, 14 Sep 2012 15:05:48 +0300
-Message-Id: <1347624358-25582-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 01/15] dmaengine: omap: Support for element mode in cyclic DMA
+Date: Fri, 14 Sep 2012 15:05:44 +0300
+Message-Id: <1347624358-25582-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,42 +28,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When requested (DMA_PREP_INTERRUPT is cleared in flags) disable all DMA
-interrupts for the channel. In this mode user space does not expect
-periodic reports from kernel about the progress of the audio stream.
-PulseAudio for example support this type of mode.
+When src_maxburst/dst_maxburst is set to 0 by the users of cyclic DMA
+(mostly audio) indicates that we should configure the omap DMA to element
+sync mode instead of packet mode.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 CC: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/dma/omap-dma.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/dma/omap-dma.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index 4d2650f..f59f244 100644
+index ae05618..b77a40d 100644
 --- a/drivers/dma/omap-dma.c
 +++ b/drivers/dma/omap-dma.c
-@@ -429,7 +429,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
- 	if (!c->cyclic) {
- 		c->cyclic = true;
- 		omap_dma_link_lch(c->dma_ch, c->dma_ch);
--		omap_enable_dma_irq(c->dma_ch, OMAP_DMA_FRAME_IRQ);
-+
-+		if (flags & DMA_PREP_INTERRUPT)
-+			omap_enable_dma_irq(c->dma_ch, OMAP_DMA_FRAME_IRQ);
-+
- 		omap_disable_dma_irq(c->dma_ch, OMAP_DMA_BLOCK_IRQ);
- 	}
- 
-@@ -438,7 +441,7 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
- 		omap_set_dma_dest_burst_mode(c->dma_ch, OMAP_DMA_DATA_BURST_16);
- 	}
- 
--	return vchan_tx_prep(&c->vc, &d->vd, DMA_CTRL_ACK | DMA_PREP_INTERRUPT);
-+	return vchan_tx_prep(&c->vc, &d->vd, flags);
- }
- 
- static int omap_dma_slave_config(struct omap_chan *c, struct dma_slave_config *cfg)
+@@ -413,7 +413,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
+ 	d->dev_addr = dev_addr;
+ 	d->fi = burst;
+ 	d->es = es;
+-	d->sync_mode = OMAP_DMA_SYNC_PACKET;
++	if (burst)
++		d->sync_mode = OMAP_DMA_SYNC_PACKET;
++	else
++		d->sync_mode = OMAP_DMA_SYNC_ELEMENT;
+ 	d->sync_type = sync_type;
+ 	d->periph_port = OMAP_DMA_PORT_MPUI;
+ 	d->sg[0].addr = buf_addr;
 -- 
 1.7.12
 
