@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2INItn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 04:49:43 -0400
-Received: from outgoing.email.vodafone.de ([139.7.28.128]:35390 "EHLO
-	outgoing.email.vodafone.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754607Ab2INIte (ORCPT
+	id S1756381Ab2INIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 04:51:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40569 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab2INIvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 04:49:34 -0400
-X-Authentication-Info: Sender authenticated as deathsimple@vodafone.de (using CRAM-MD5)
-Message-ID: <5052EF8F.1020905@vodafone.de>
-Date: Fri, 14 Sep 2012 10:49:19 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 14 Sep 2012 04:51:54 -0400
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>
-CC: Alex Deucher <alexdeucher@gmail.com>,
-        Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Dmitry Cherkasov <dcherkassov@gmail.com>
-Subject: Re: [PATCH] Add 2-level GPUVM pagetables support to radeon driver.
-References: <1347545629-3474-1-git-send-email-Dmitrii.Cherkasov@amd.com> <CAH3drwZzMX_6fUkgWMf+vMz9+kyNQs6t3m-1W9aSjDJA2E_qEA@mail.gmail.com> <CADnq5_OWLhvmGDaqCPDLk1Q_xpDFi9j4csOsdJ8uwMEV53dm1A@mail.gmail.com> <CAH3drwZeW5zEswqcSfFvovBM_SGERCpoW99_G_NabyA1yERrUQ@mail.gmail.com>
-In-Reply-To: <CAH3drwZeW5zEswqcSfFvovBM_SGERCpoW99_G_NabyA1yERrUQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87txv2ndhh.fsf@devron.myhome.or.jp>
+References: <87vcfjfa14.fsf@devron.myhome.or.jp>
+	<20120912171128.GG3009@fieldses.org>
+	<87r4q7f8fw.fsf@devron.myhome.or.jp>
+	<20120912174556.GH3009@fieldses.org>
+	<87ipbjf54f.fsf@devron.myhome.or.jp>
+	<CAKYAXd-5CQrE=232NKk9pRjzP3q8OBryeLt9mH==f=zrKdjzNg@mail.gmail.com>
+	<87txv2cog1.fsf@devron.myhome.or.jp>
+	<20120913112024.GA24684@fieldses.org>
+	<87ehm6p15v.fsf@devron.myhome.or.jp>
+	<CAKYAXd9a0WjZXyX43crqSKFZirE0eShk=OZNmyACn04vTrQ33A@mail.gmail.com>
+	<20120913144602.GD24684@fieldses.org>
+	<87txv2ndhh.fsf@devron.myhome.or.jp>
+Date: Fri, 14 Sep 2012 17:51:52 +0900
+Message-ID: <CAKYAXd8BP8mFoVTQW3bvNTfVoCA1L9zdP4_hG7Z_hkKcJC-1tA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] fat: allocate persistent inode numbers
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.09.2012 20:42, Jerome Glisse wrote:
-> On Thu, Sep 13, 2012 at 2:37 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Thu, Sep 13, 2012 at 2:17 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>> On Thu, Sep 13, 2012 at 10:13 AM, Dmitry Cherkasov
->>> <dcherkassov@gmail.com> wrote:
->>>> PDE/PTE update code uses CP ring for memory writes.
->>>> All page table entries are preallocated for now in alloc_pt().
->>>>
->>>> It is made as whole because it's hard to divide it to several patches
->>>> that compile and doesn't break anything being applied separately.
->>>>
->>>> Tested on cayman card.
->>>>
->>>> Signed-off-by: Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>
->>>> ---
->>>> I couldn't test in on SI card, so would be happy if someone could check it there.
->>> I wonder how this could have work as you don't set
->>> PAGE_TABLE_BLOCK_SIZE field so each page directory entry cover only 1
->>> page.
->> I think PAGE_TABLE_BLOCK_SIZE refers number of 4k pages used for PTE
->> entries per PDE.  E.g., 1 4k page contains 512 64 bit PTEs. so if
->> BLOCK_SIZE is set to 1 page, each PDE points to 1 page (4k) or PTE
->> entries.  If BLOCK_SIZE is 2, each PDE points to 2 pages (8k) or PTEs,
->> etc.
+2012/9/14, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
+>
+>>> > Current -mm means the best-effort work only if inode cache is not
+>>> > evicted.  I.e. if there is no inode cache anymore on server, server
+>>> > would return ESTALE. So I guess the behavior would not be stable
+>>> > relatively.
+>>> Hi OGAWA.
+>>> Sorry for late response.
+>>> Okay, I will resend patchset include your suggeston.(-o nfs=2)
+>>> Do you mind adding busy list patch to avoid unlink issue ?
+>>> And in case of rename, FAT retrun EBUSY while opening file.
+>>> We can limit only rename.
 >>
->> Alex
->>
-> If so then it's ok
-Yeah, minor nitpick: BLOCK_SIZE seems to be number of 4k pages in a page 
-directory entry minus 1.
+>> The server doesn't necessarily know whether a client has the file open,
+>> so does that really help?
+>
+> If you are assuming to do rename() somehow, it would not be true. And if
+> so, you might want to rethink about the patch. (btw, I'm not thinking
+> deeply yet though, I guess we have to limit unlink() too)
+Hi OGAWA.
+Sorry, There are some unclear things in unlink solution.
+When we tested before, That did really help.
+So, we will check unlink solution more and after fully convinced will
+send in separate patch later with updates in changelog of patch when
+enabling write support..
+>
+> Well, anyway, I'd like to see stable/clean read-only support at first.
+> (with new nfs option, and with MS_RDONLY).  After that, we can
+> enable write support.
+Okay, I will send stable ino patch(read-only) soon.
 
-So with a BLOCK_SIZE of 0 you get one 4K page and with a BLOCK_SIZE of 1 
-you get 8K, etc...
-
-Christian.
+Thanks a lot!
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
