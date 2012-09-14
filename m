@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab2INMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:05:57 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:37294 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759507Ab2INMFl (ORCPT
+	id S1759571Ab2INMGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:06:08 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:47137 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759514Ab2INMGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:05:41 -0400
+	Fri, 14 Sep 2012 08:06:04 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 03/15] dmaengine: Add flags parameter to dmaengine_prep_dma_cyclic()
-Date: Fri, 14 Sep 2012 15:05:46 +0300
-Message-Id: <1347624358-25582-4-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 06/15] ASoC: omap-mcbsp: Use sDMA packet mode instead of frame mode
+Date: Fri, 14 Sep 2012 15:05:49 +0300
+Message-Id: <1347624358-25582-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,58 +28,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this parameter added to dmaengine_prep_dma_cyclic() the API will be in
-sync with other dmaengine_prep_*() functions.
-The dmaengine_prep_dma_cyclic() function primarily used by audio for cyclic
-transfer required by ALSA, we use the from audio to ask dma drivers to
-suppress interrupts (if DMA_PREP_INTERRUPT is cleared) when it is supported
-on the platform.
+When McBSP is configured in threshold mode we can use sDMA packet mode in
+all cases.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>
 ---
- include/linux/dmaengine.h     | 3 ++-
- sound/soc/soc-dmaengine-pcm.c | 6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ sound/soc/omap/omap-mcbsp.c | 47 ++++++++++++++++-----------------------------
+ 1 file changed, 17 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 9c02a45..2abcac5 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -653,7 +653,8 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_rio_sg(
+diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
+index 2e91a86..fe3debc 100644
+--- a/sound/soc/omap/omap-mcbsp.c
++++ b/sound/soc/omap/omap-mcbsp.c
+@@ -81,9 +81,6 @@ static void omap_mcbsp_set_threshold(struct snd_pcm_substream *substream)
+ 	 */
+ 	if (dma_data->packet_size)
+ 		words = dma_data->packet_size;
+-	else if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD)
+-		words = snd_pcm_lib_period_bytes(substream) /
+-						(mcbsp->wlen / 8);
+ 	else
+ 		words = 1;
  
- static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
- 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
--		size_t period_len, enum dma_transfer_direction dir)
-+		size_t period_len, enum dma_transfer_direction dir,
-+		unsigned long flags)
- {
- 	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
- 						period_len, dir, NULL);
-diff --git a/sound/soc/soc-dmaengine-pcm.c b/sound/soc/soc-dmaengine-pcm.c
-index 5df529e..bbc1257 100644
---- a/sound/soc/soc-dmaengine-pcm.c
-+++ b/sound/soc/soc-dmaengine-pcm.c
-@@ -140,14 +140,18 @@ static int dmaengine_pcm_prepare_and_submit(struct snd_pcm_substream *substream)
- 	struct dma_chan *chan = prtd->dma_chan;
- 	struct dma_async_tx_descriptor *desc;
- 	enum dma_transfer_direction direction;
-+	unsigned long flags = DMA_CTRL_ACK;
+@@ -251,6 +248,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 		dma_data->set_threshold = omap_mcbsp_set_threshold;
+ 		if (mcbsp->dma_op_mode == MCBSP_DMA_MODE_THRESHOLD) {
+ 			int period_words, max_thrsh;
++			int divider = 0;
  
- 	direction = snd_pcm_substream_to_dma_direction(substream);
- 
-+	if (!substream->runtime->no_period_wakeup)
-+		flags |= DMA_PREP_INTERRUPT;
+ 			period_words = params_period_bytes(params) / (wlen / 8);
+ 			if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+@@ -258,34 +256,23 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 			else
+ 				max_thrsh = mcbsp->max_rx_thres;
+ 			/*
+-			 * If the period contains less or equal number of words,
+-			 * we are using the original threshold mode setup:
+-			 * McBSP threshold = sDMA frame size = period_size
+-			 * Otherwise we switch to sDMA packet mode:
+-			 * McBSP threshold = sDMA packet size
+-			 * sDMA frame size = period size
++			 * Use sDMA packet mode if McBSP is in threshold mode:
++			 * If period words less than the FIFO size the packet
++			 * size is set to the number of period words, otherwise
++			 * Look for the biggest threshold value which divides
++			 * the period size evenly.
+ 			 */
+-			if (period_words > max_thrsh) {
+-				int divider = 0;
+-
+-				/*
+-				 * Look for the biggest threshold value, which
+-				 * divides the period size evenly.
+-				 */
+-				divider = period_words / max_thrsh;
+-				if (period_words % max_thrsh)
+-					divider++;
+-				while (period_words % divider &&
+-					divider < period_words)
+-					divider++;
+-				if (divider == period_words)
+-					return -EINVAL;
+-
+-				pkt_size = period_words / divider;
+-				sync_mode = OMAP_DMA_SYNC_PACKET;
+-			} else {
+-				sync_mode = OMAP_DMA_SYNC_FRAME;
+-			}
++			divider = period_words / max_thrsh;
++			if (period_words % max_thrsh)
++				divider++;
++			while (period_words % divider &&
++				divider < period_words)
++				divider++;
++			if (divider == period_words)
++				return -EINVAL;
 +
- 	prtd->pos = 0;
- 	desc = dmaengine_prep_dma_cyclic(chan,
- 		substream->runtime->dma_addr,
- 		snd_pcm_lib_buffer_bytes(substream),
--		snd_pcm_lib_period_bytes(substream), direction);
-+		snd_pcm_lib_period_bytes(substream), direction, flags);
- 
- 	if (!desc)
- 		return -ENOMEM;
++			pkt_size = period_words / divider;
++			sync_mode = OMAP_DMA_SYNC_PACKET;
+ 		} else if (channels > 1) {
+ 			/* Use packet mode for non mono streams */
+ 			pkt_size = channels;
 -- 
 1.7.12
 
