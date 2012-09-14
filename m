@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab2INObS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:31:18 -0400
-Received: from mivlgu.ru ([195.20.195.134]:44448 "EHLO mail.mivlgu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932090Ab2INObO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:31:14 -0400
-X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Sep 2012 10:31:13 EDT
-Date: Fri, 14 Sep 2012 18:24:37 +0400
-From: Sergey Vlasov <vsu@altlinux.ru>
-To: Marti Raudsepp <marti@juffo.org>
-Cc: Kernel hackers <linux-kernel@vger.kernel.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        Linux network list <netdev@vger.kernel.org>
-Subject: Re: tulip Ethernet driver messes up USB keyboard
-Message-ID: <20120914142437.GD11919@newmaster.mivlgu.local>
-References: <CABRT9RDdbqz6iscOz7BYwEQPOo8xfstfUZyBqVw44gmPsauLTg@mail.gmail.com>
- <CABRT9RCWU1RqpAay9iWPKwduejvkdk_CA2P_gV70iiEE2FS5HQ@mail.gmail.com>
+	id S1757393Ab2INObu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:31:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43046 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757151Ab2INObs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:31:48 -0400
+Message-ID: <50533FD1.6000005@arm.com>
+Date: Fri, 14 Sep 2012 15:31:45 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DrWhICOqskFTAXiy"
-Content-Disposition: inline
-In-Reply-To: <CABRT9RCWU1RqpAay9iWPKwduejvkdk_CA2P_gV70iiEE2FS5HQ@mail.gmail.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 16/24] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-16-git-send-email-stefano.stabellini@eu.citrix.com> <505338E6.4050504@arm.com> <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com> <50533D46.5000704@arm.com> <alpine.DEB.2.02.1209141527030.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1209141527030.29232@kaball.uk.xensource.com>
+X-Enigmail-Version: 1.5a1pre
+X-OriginalArrivalTime: 14 Sep 2012 14:31:46.0196 (UTC) FILETIME=[AB115D40:01CD9285]
+X-MC-Unique: 112091415314607301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14/09/12 15:28, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Marc Zyngier wrote:
+>> On 14/09/12 15:13, Stefano Stabellini wrote:
+>>> On Fri, 14 Sep 2012, Marc Zyngier wrote:
+>>>> On 14/09/12 12:13, Stefano Stabellini wrote:
+>>>>> Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
+>>>>> default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
+>>>>> irq_startup, that is responsible for calling irq_unmask at startup time.
+>>>>> As a result event channels remain masked.
+>>>>>
+>>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>>> ---
+>>>>>  drivers/xen/events.c |    1 +
+>>>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+>>>>> index 5ecb596..8ffb7b7 100644
+>>>>> --- a/drivers/xen/events.c
+>>>>> +++ b/drivers/xen/events.c
+>>>>> @@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>>>>>  		struct irq_info *info = info_for_irq(irq);
+>>>>>  		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+>>>>>  	}
+>>>>> +	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+>>>>
+>>>> This one just sent a shiver down my spine. Are you doing this for a PPI?
+>>>
+>>> Not really: even though there is just one source of event notifications
+>>> (that is a PPI), we have many event channels. When a domain receives a
+>>> notification (via the PPI), it checks on a bitmask to which event channel
+>>> it corresponds. From the Linux point of view every event channel is a
+>>> Linux irq belonging to the xen_dynamic_chip (see
+>>> drivers/xen/events.c:xen_dynamic_chip).
+>>>
+>>> So here I am not doing this for the one PPI, but I am doing this for
+>>> every Linux irq (of chip xen_dynamic_chip) that represents an event
+>>> channel.
+>>
+>> So this is some sort of secondary interrupt controller, cascaded into
+>> your GIC emulation,
+>     
+> I guess it could be seen as a secondary interrupt controller
+> 
+> 
+>> and this patch only affects the xen_dynamic_chip?
+> 
+> Yep
 
---DrWhICOqskFTAXiy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks. I feel relieved... ;-)
 
-On Fri, Sep 14, 2012 at 12:49:45PM +0300, Marti Raudsepp wrote:
-> After installing an old 100Mbit PCI Ethernet card to my machine, it has
-> complained a few times about spurious interrupts ("nobody cared") at a
-> random time of the day. After the oops is reported, my USB keyboard (HP
-> smart card keyboard) stops working properly -- it has lots of delay, it
-> misses some keystrokes and also causes "stuck keys". Strangely enough my =
-USB
-> mouse continues to work without problems. Apparently the USB controller a=
-nd
-> the Ethernet card share an interrupt line. Un-/replugging the keyboard do=
-es
-> not help.
->=20
-> So far I have simply rebooted to fix the issue. I haven't been able to
-> reproduce this on will despite my best attempts.
->=20
-> The Ethernet card is driven by the tulip driver and is listed as "ADMtek
-> NC100 Network Everywhere Fast Ethernet 10/100 (rev 11)" in lspci. My
-> motherboard uses the Intel H77 chipset (ASRock H77 Pro4/MVP)
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-This board uses the ASMedia ASM1083 PCIe-to-PCI bridge (or maybe ASM1085 -
-hard to see from photos available on the net, and the PCI IDs for these
-chips are the same), which is known to have problems with interrupt
-handling:
-
-  https://lkml.org/lkml/2012/1/30/216
-
-I experience the same problem with ASUS P8P67 LE (except in my case the
-interrupt is not shared with anything, and the network card does not stop
-working completely, just gives horrible performance with > 100ms pings).
-
-Some people use "noirqdebug irqpoll" as a workaround:
-
-  http://lkml.indiana.edu/hypermail/linux/kernel/1204.1/03451.html
-
-But this workaround basically turns off the protection against stuck
-interrupts in the kernel, so the system could potentially be busy handling
-a stuck interrupt forever.
-
-You can also try to move the PCI card to another slot, so that it would
-use another interrupt, which might be not shared with USB or another
-important device.
-
---DrWhICOqskFTAXiy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iD8DBQFQUz4kW82GfkQfsqIRAoC7AJ9U9dq+xJINxEBPRnUUlYk9+JCHBACbBlMO
-5tseIVosdhOry05Mhbr/PJg=
-=icQx
------END PGP SIGNATURE-----
-
---DrWhICOqskFTAXiy--
