@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab2INMt5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:49:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57053 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab2INMtq (ORCPT
+	id S1756928Ab2INMuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:50:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63481 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756541Ab2INMt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:49:46 -0400
+	Fri, 14 Sep 2012 08:49:59 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Manjunath Hadli <manjunath.hadli@ti.com>,
         "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH 07/14] davinci: vpfe: v4l2 capture driver with media interface
-Date: Fri, 14 Sep 2012 18:16:37 +0530
-Message-Id: <1347626804-5703-8-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH 08/14] davinci: vpfe: previewer driver based on v4l2 media controller framework
+Date: Fri, 14 Sep 2012 18:16:38 +0530
+Message-Id: <1347626804-5703-9-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
 References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
@@ -26,31 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Add the vpfe capture driver which implements media controller
-interface. The driver suports all the setup functionality for
-all all units nnamely- ccdc, previewer, resizer, h3a, aew.
-The driver supports both dm365 and Dm355. The driver does isr
-registration, v4l2 device registration, media registration and
-platform driver registrations. It calls the appropriate subdevs
-from here to cerate the appropriate subdevices and media entities.
+Add the video previewer driver with the v4l2 media controller framework
+which takes care of converting the video frames from bayer to YUV or RGB.
+The driver supports both continuous mode where it works in tandem with
+the CCDC and single shot mode where it can be used in isolation. The
+driver underneath uses the dm365 IPIPE module for programming the
+hardware. The driver supports previewer as a subdevice and a media entity,
+and the enumerable pads are 2(1 input and 1 output). The driver supports
+streaing and all the pad and link related operations. Specific functions
+like defect pixel correction, LUT are supported through private ioctls.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/media/platform/davinci/vpfe_mc_capture.c |  764 ++++++++++++++++++++++
- drivers/media/platform/davinci/vpfe_mc_capture.h |  104 +++
- include/media/davinci/vpfe.h                     |   84 +++
- 3 files changed, 952 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/platform/davinci/vpfe_mc_capture.c
- create mode 100644 drivers/media/platform/davinci/vpfe_mc_capture.h
- create mode 100644 include/media/davinci/vpfe.h
+ drivers/media/platform/davinci/vpfe_previewer.c | 1041 +++++++++++++++++++++++
+ drivers/media/platform/davinci/vpfe_previewer.h |   71 ++
+ 2 files changed, 1112 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/platform/davinci/vpfe_previewer.c
+ create mode 100644 drivers/media/platform/davinci/vpfe_previewer.h
 
-diff --git a/drivers/media/platform/davinci/vpfe_mc_capture.c b/drivers/media/platform/davinci/vpfe_mc_capture.c
+diff --git a/drivers/media/platform/davinci/vpfe_previewer.c b/drivers/media/platform/davinci/vpfe_previewer.c
 new file mode 100644
-index 0000000..306d45f
+index 0000000..4a0fc8e
 --- /dev/null
-+++ b/drivers/media/platform/davinci/vpfe_mc_capture.c
-@@ -0,0 +1,764 @@
++++ b/drivers/media/platform/davinci/vpfe_previewer.c
+@@ -0,0 +1,1041 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -70,757 +70,1034 @@ index 0000000..306d45f
 + * Contributors:
 + *      Manjunath Hadli <manjunath.hadli@ti.com>
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ *
-+ *
-+ * Driver name : VPFE Capture driver
-+ *    VPFE Capture driver allows applications to capture and stream video
-+ *    frames on DaVinci SoCs (DM6446, DM355 etc) from a YUV source such as
-+ *    TVP5146 or  Raw Bayer RGB image data from an image sensor
-+ *    such as Microns' MT9T001, MT9T031 etc.
-+ *
-+ *    These SoCs have, in common, a Video Processing Subsystem (VPSS) that
-+ *    consists of a Video Processing Front End (VPFE) for capturing
-+ *    video/raw image data and Video Processing Back End (VPBE) for displaying
-+ *    YUV data through an in-built analog encoder or Digital LCD port. This
-+ *    driver is for capture through VPFE. A typical EVM using these SoCs have
-+ *    following high level configuration.
-+ *
-+ *    decoder(TVP5146/		YUV/
-+ *	MT9T001)   -->  Raw Bayer RGB ---> MUX -> VPFE (CCDC/ISIF)
-+ *			data input              |      |
-+ *							V      |
-+ *						      SDRAM    |
-+ *							       V
-+ *							   Image Processor
-+ *							       |
-+ *							       V
-+ *							     SDRAM
-+ *    The data flow happens from a decoder connected to the VPFE over a
-+ *    YUV embedded (BT.656/BT.1120) or separate sync or raw bayer rgb interface
-+ *    and to the input of VPFE through an optional MUX (if more inputs are
-+ *    to be interfaced on the EVM). The input data is first passed through
-+ *    CCDC (CCD Controller, a.k.a Image Sensor Interface, ISIF). The CCDC
-+ *    does very little or no processing on YUV data and does pre-process Raw
-+ *    Bayer RGB data through modules such as Defect Pixel Correction (DFC)
-+ *    Color Space Conversion (CSC), data gain/offset etc. After this, data
-+ *    can be written to SDRAM or can be connected to the image processing
-+ *    block such as IPIPE (on DM355/DM365 only).
-+ *
-+ *    Features supported
-+ *		- MMAP IO
-+ *		- USERPTR IO
-+ *		- Capture using TVP5146 over BT.656
-+ *		- Support for interfacing decoders using sub device model
-+ *		- Work with DM365 or DM355 or DM6446 CCDC to do Raw Bayer
-+ *		  RGB/YUV data capture to SDRAM.
-+ *		- Chaining of Image Processor
-+ *		- SINGLE-SHOT mode
 + */
 +
-+#include <linux/io.h>
 +#include <linux/slab.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/version.h>
-+#include <linux/interrupt.h>
++#include <linux/videodev2.h>
++#include <linux/v4l2-mediabus.h>
 +#include <linux/platform_device.h>
++#include <linux/davinci_vpfe.h>
 +
-+#include <media/v4l2-common.h>
++#include <media/v4l2-device.h>
++#include <media/davinci/vpss.h>
 +#include <media/media-entity.h>
-+#include <media/media-device.h>
 +#include <media/davinci/vpfe_types.h>
 +
 +#include "vpfe_mc_capture.h"
++#include "imp_hw_if.h"
 +
-+static bool debug;
-+static bool interface;
-+static u32 cont_bufoffset;
-+static u32 cont_bufsize;
-+static u32 en_serializer;
++#define MIN_OUT_WIDTH	32
++#define MIN_OUT_HEIGHT	32
 +
-+module_param(interface, bool, S_IRUGO);
-+module_param(debug, bool, 0644);
-+module_param(cont_bufoffset, uint, S_IRUGO);
-+module_param(cont_bufsize, uint, S_IRUGO);
-+module_param(en_serializer, uint, S_IRUGO);
++static int serializer_initialized;
++static struct imp_serializer imp_serializer_info;
 +
-+/**
-+ * VPFE capture can be used for capturing video such as from TVP5146 or TVP7002
-+ * and for capture raw bayer data from camera sensors such as mt9p031. At this
-+ * point there is problem in co-existence of mt9p031 and tvp5146 due to i2c
-+ * address collision. So set the variable below from bootargs to do either video
-+ * capture or camera capture.
-+ * interface = 0 - video capture (from TVP514x or such),
-+ * interface = 1 - Camera capture (from mt9p031 or such)
-+ * Re-visit this when we fix the co-existence issue
++/* previewer input format descriptions */
++static const unsigned int prev_input_fmts[] = {
++	V4L2_MBUS_FMT_UYVY8_2X8,
++	V4L2_MBUS_FMT_SGRBG12_1X12,
++};
++
++/* previewer ouput format descriptions */
++static const unsigned int prev_output_fmts[] = {
++	V4L2_MBUS_FMT_UYVY8_2X8,
++};
++
++/*
++ * imp_set_preview_config() - set previewer config
++ * @sd: Pointer previewer subdevice
++ * @chan_config: previewer channel configuration
 + */
-+MODULE_PARM_DESC(interface, "interface 0-1 (default:0)");
-+MODULE_PARM_DESC(debug, "Debug level 0-1");
-+MODULE_PARM_DESC(cont_bufoffset, "Capture buffer offset (default 0)");
-+MODULE_PARM_DESC(cont_bufsize, "Capture buffer size (default 0)");
-+MODULE_PARM_DESC(en_serializer, "enable IPIPE serializer (default:0)");
-+
-+MODULE_DESCRIPTION("VPFE Video for Linux Capture Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Texas Instruments");
-+
-+/* map mbus_fmt to pixelformat */
-+void mbus_to_pix(const struct v4l2_mbus_framefmt *mbus,
-+			   struct v4l2_pix_format *pix)
++static int
++imp_set_preview_config(struct v4l2_subdev *sd,
++		       struct vpfe_prev_config *chan_config)
 +{
-+	switch (mbus->code) {
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+		pix->pixelformat = V4L2_PIX_FMT_UYVY;
-+		pix->bytesperline = pix->width * 2;
-+		break;
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+		pix->pixelformat = V4L2_PIX_FMT_YUYV;
-+		pix->bytesperline = pix->width * 2;
-+		break;
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		pix->pixelformat = V4L2_PIX_FMT_UYVY;
-+		pix->bytesperline = pix->width * 2;
-+		break;
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		pix->pixelformat = V4L2_PIX_FMT_SBGGR16;
-+		pix->bytesperline = pix->width * 2;
-+		break;
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+		pix->pixelformat = V4L2_PIX_FMT_SGRBG10DPCM8;
-+		pix->bytesperline = pix->width;
-+		break;
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+		pix->pixelformat = V4L2_PIX_FMT_SGRBG10ALAW8;
-+		pix->bytesperline = pix->width;
-+		break;
-+	case V4L2_MBUS_FMT_YDYUYDYV8_1X16:
-+		pix->pixelformat = V4L2_PIX_FMT_NV12;
-+		pix->bytesperline = pix->width;
-+		break;
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		pix->pixelformat = V4L2_PIX_FMT_GREY;
-+		pix->bytesperline = pix->width;
-+		break;
-+	case V4L2_MBUS_FMT_UV8_1X8:
-+		pix->pixelformat = V4L2_PIX_FMT_UV8;
-+		pix->bytesperline = pix->width;
-+		break;
-+	default:
-+		pr_err("Invalid mbus code set\n");
-+	}
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	int ret;
 +
-+	/* pitch should be 32 bytes aligned */
-+	pix->bytesperline = ALIGN(pix->bytesperline, 32);
-+
-+	if (pix->pixelformat == V4L2_PIX_FMT_NV12)
-+		pix->sizeimage = pix->bytesperline * pix->height +
-+				((pix->bytesperline * pix->height) >> 1);
-+	else
-+		pix->sizeimage = pix->bytesperline * pix->height;
-+}
-+
-+/* ISR for VINT0*/
-+static irqreturn_t vpfe_isr(int irq, void *dev_id)
-+{
-+	struct vpfe_device *vpfe_dev = dev_id;
-+
-+	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_isr\n");
-+	ccdc_buffer_isr(&vpfe_dev->vpfe_ccdc);
-+	prv_buffer_isr(&vpfe_dev->vpfe_previewer);
-+	rsz_buffer_isr(&vpfe_dev->vpfe_resizer);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/* vpfe_vdint1_isr() - isr handler for VINT1 interrupt */
-+static irqreturn_t vpfe_vdint1_isr(int irq, void *dev_id)
-+{
-+	struct vpfe_device *vpfe_dev = dev_id;
-+
-+	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_vdint1_isr\n");
-+	ccdc_vidint1_isr(&vpfe_dev->vpfe_ccdc);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/* vpfe_imp_dma_isr() - ISR for ipipe dma completion */
-+static irqreturn_t vpfe_imp_dma_isr(int irq, void *dev_id)
-+{
-+	struct vpfe_device *vpfe_dev = dev_id;
-+
-+	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_imp_dma_isr\n");
-+	prv_dma_isr(&vpfe_dev->vpfe_previewer);
-+	rsz_dma_isr(&vpfe_dev->vpfe_resizer);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/* set user setting of serializer in ipipe */
-+static void vpfe_initialize(struct vpfe_device *vpfe_dev)
-+{
-+	/* inform user choice on serializer to ipipe */
-+	enable_serializer(vpfe_dev->ipipe, en_serializer);
-+}
-+
-+/**
-+ * vpfe_disable_clock() - Disable clocks for vpfe capture driver
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * Disables clocks defined in vpfe configuration. The function
-+ * assumes that at least one clock is to be defined which is
-+ * true as of now.
-+ */
-+static void vpfe_disable_clock(struct vpfe_device *vpfe_dev)
-+{
-+	struct vpfe_config *vpfe_cfg = vpfe_dev->cfg;
-+	int i;
-+
-+	for (i = 0; i < vpfe_cfg->num_clocks; i++) {
-+		clk_disable(vpfe_dev->clks[i]);
-+		clk_put(vpfe_dev->clks[i]);
-+	}
-+
-+	kzfree(vpfe_dev->clks);
-+	v4l2_info(vpfe_dev->pdev->driver, "vpfe capture clocks disabled\n");
-+}
-+
-+/**
-+ * vpfe_enable_clock() - Enable clocks for vpfe capture driver
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * Enables clocks defined in vpfe configuration. The function
-+ * assumes that at least one clock is to be defined which is
-+ * true as of now.
-+ */
-+static int vpfe_enable_clock(struct vpfe_device *vpfe_dev)
-+{
-+	struct vpfe_config *vpfe_cfg = vpfe_dev->cfg;
-+	int ret = -EFAULT;
-+	int i;
-+
-+	if (!vpfe_cfg->num_clocks)
-+		return 0;
-+
-+	vpfe_dev->clks = kzalloc(vpfe_cfg->num_clocks *
-+				   sizeof(struct clock *), GFP_KERNEL);
-+
-+	if (vpfe_dev->clks == NULL) {
-+		v4l2_err(vpfe_dev->pdev->driver, "Memory allocation failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < vpfe_cfg->num_clocks; i++) {
-+		if (vpfe_cfg->clocks[i] == NULL) {
-+			v4l2_err(vpfe_dev->pdev->driver,
-+				"clock %s is not defined in vpfe config\n",
-+				vpfe_cfg->clocks[i]);
-+			goto out;
++	if (channel->config_state == STATE_NOT_CONFIGURED) {
++		channel->config = imp_hw_if->alloc_config_block(dev,
++							vpfe_dev->ipipe);
++		/* allocate buffer for holding user configuration */
++		channel->user_config = imp_hw_if->alloc_user_config_block(dev,
++						vpfe_dev->ipipe, IMP_PREVIEWER);
++		if (!channel->user_config) {
++			dev_err(dev,
++				"Failed to allocate memory for user config\n");
++			return -EFAULT;
 +		}
-+
-+		vpfe_dev->clks[i] = clk_get(vpfe_dev->pdev,
-+					      vpfe_cfg->clocks[i]);
-+		if (vpfe_dev->clks[i] == NULL) {
-+			v4l2_err(vpfe_dev->pdev->driver,
-+				"Failed to get clock %s\n",
-+				vpfe_cfg->clocks[i]);
-+			goto out;
-+		}
-+
-+		if (clk_enable(vpfe_dev->clks[i])) {
-+			v4l2_err(vpfe_dev->pdev->driver,
-+				"vpfe clock %s not enabled\n",
-+				vpfe_cfg->clocks[i]);
-+			goto out;
-+		}
-+
-+		v4l2_info(vpfe_dev->pdev->driver, "vpss clock %s enabled",
-+			  vpfe_cfg->clocks[i]);
 +	}
 +
-+	return 0;
-+out:
-+	for (i = 0; i < vpfe_cfg->num_clocks; i++) {
-+		if (vpfe_dev->clks[i])
-+			clk_put(vpfe_dev->clks[i]);
++	if (!chan_config->ipipeif_config) {
++		dev_dbg(dev, "imp_set_preview_config: default configuration set\n");
++		/* put defaults for user configuration */
++		imp_hw_if->set_user_config_defaults(dev, vpfe_dev->ipipe,
++					IMP_PREVIEWER, channel->user_config);
++	} else {
++		dev_dbg(dev, "imp_set_preview_config: user configuration set\n");
++		if (copy_from_user(channel->user_config,
++			chan_config->ipipeif_config,
++				sizeof(struct prev_ipipeif_config)))
++			return -EFAULT;
 +	}
 +
-+	v4l2_err(vpfe_dev->pdev->driver, "Failed to enable clocks\n");
++	/* Update the user configuration in the hw config block */
++	ret = imp_hw_if->set_preview_config(dev, vpfe_dev->ipipe,
++				channel->user_config, channel->config);
 +
-+	kzfree(vpfe_dev->clks);
++	if (ret < 0)
++		dev_err(dev, "Failed to set previewer config\n");
++
++	channel->config_state = STATE_CONFIGURED;
++
 +	return ret;
 +}
 +
-+/**
-+ * vpfe_detach_irq() - Detach IRQs for vpfe capture driver
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * Detach all IRQs defined in vpfe configuration.
++/*
++ * imp_get_preview_config() - get current previewer config
++ * @previewer: vpfe previewer device pointer
++ * @channel: image processor logical channel
++ * @chan_config: previewer channel configuration
 + */
-+static void vpfe_detach_irq(struct vpfe_device *vpfe_dev)
++static int
++imp_get_preview_config(struct v4l2_subdev *sd,
++		       struct vpfe_prev_config *chan_config)
 +{
-+	free_irq(vpfe_dev->ccdc_irq0, vpfe_dev);
-+	free_irq(vpfe_dev->ccdc_irq1, vpfe_dev);
-+	free_irq(vpfe_dev->imp_dma_irq, vpfe_dev);
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct device *dev = previewer->subdev.v4l2_dev->dev;
++
++	if (channel->config_state != STATE_CONFIGURED) {
++		dev_err(dev, "previewer channel not configured\n");
++		return -EINVAL;
++	}
++
++	if (!chan_config->ipipeif_config) {
++		dev_err(dev, "Invalid channel configuration pointer\n");
++		return -EINVAL;
++	}
++
++	if (copy_to_user((void *)chan_config->ipipeif_config,
++			 (void *)channel->user_config,
++			 sizeof(struct prev_ipipeif_config))) {
++		dev_err(dev, "imp_get_preview_config: Error in copy to user\n");
++		return -EFAULT;
++	}
++
++	return 0;
 +}
 +
-+/**
-+ * vpfe_attach_irq() - Attach IRQs for vpfe capture driver
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * Attach all IRQs defined in vpfe configuration.
++/*
++ * imp_init_serializer - intilaize serializer
 + */
-+static int vpfe_attach_irq(struct vpfe_device *vpfe_dev)
++static int imp_init_serializer(void)
++{
++	if (serializer_initialized)
++		return 0;
++
++	memset((void *)&imp_serializer_info, (char)0,
++		sizeof(struct imp_serializer));
++	init_completion(&imp_serializer_info.sem_isr);
++	imp_serializer_info.sem_isr.done = 0;
++	imp_serializer_info.array_count = 0;
++	mutex_init(&imp_serializer_info.array_sem);
++	serializer_initialized = 1;
++
++	return 0;
++}
++
++/*
++ * set_channel_prv_cont_mode() - Set continous channel mode
++ * @previewer: vpfe previewer device pointer
++ */
++static int set_channel_prv_cont_mode(struct vpfe_previewer_device *previewer)
++{
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++
++	channel->type = IMP_PREVIEWER;
++	channel->config_state = STATE_NOT_CONFIGURED;
++
++	return imp_hw_if->set_oper_mode(vpfe_dev->ipipe, IMP_MODE_CONTINUOUS);
++}
++
++/*
++ * set_channel_prv_ss_mode() - Set single-shot channel mode
++ * @previewer: vpfe previewer device pointer
++ */
++static int set_channel_prv_ss_mode(struct vpfe_previewer_device *previewer)
++{
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++
++	channel->type = IMP_PREVIEWER;
++	channel->config_state = STATE_NOT_CONFIGURED;
++
++	return imp_hw_if->set_oper_mode(vpfe_dev->ipipe, IMP_MODE_SINGLE_SHOT);
++}
++
++/*
++ * reset_channel_prv_mode() - Reset channel mode
++ * @previewer: vpfe previewer device pointer
++ */
++static void reset_channel_prv_mode(struct vpfe_previewer_device *previewer)
++{
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++
++	imp_hw_if->reset_oper_mode(vpfe_dev->ipipe);
++
++	if (channel->config_state == STATE_CONFIGURED) {
++		kfree(channel->user_config);
++		memset(channel, 0, sizeof(struct imp_logical_channel));
++	}
++}
++
++/*
++ * prv_video_in_queue() - PREVIEWER video in queue
++ * @vpfe_dev: vpfe device pointer
++ * @addr: buffer address
++ */
++static void
++prv_video_in_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
++{
++	struct vpfe_previewer_device *previewer = &vpfe_dev->vpfe_previewer;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct imp_logical_channel *chan = &previewer->channel;
++
++	if (previewer->input == PREVIEWER_INPUT_MEMORY)
++		imp_hw_if->update_inbuf_address(chan->config, addr);
++	else
++		imp_hw_if->update_inbuf_address(NULL, addr);
++}
++
++/*
++ * prv_video_out_queue() - PREVIEWER video out queue
++ * @vpfe_dev: vpfe device pointer
++ * @addr: buffer address
++ */
++static void
++prv_video_out_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
++{
++	struct vpfe_previewer_device *previewer = &vpfe_dev->vpfe_previewer;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct imp_logical_channel *chan = &previewer->channel;
++
++	if (previewer->input == PREVIEWER_INPUT_MEMORY)
++		imp_hw_if->update_outbuf1_address(vpfe_dev->ipipe,
++						  chan->config, addr);
++	else
++		imp_hw_if->update_outbuf1_address(vpfe_dev->ipipe, NULL, addr);
++}
++
++static const struct vpfe_video_operations video_in_ops = {
++	.queue = prv_video_in_queue,
++};
++
++static const struct vpfe_video_operations video_out_ops = {
++	.queue = prv_video_out_queue,
++};
++
++/*
++ * prv_ss_buffer_isr() - PREVIEWER module single-shot buffer scheduling isr
++ * @previewer: PREVIEWER device pointer
++ *
++ */
++static void prv_ss_buffer_isr(struct vpfe_previewer_device *previewer)
++{
++	struct vpfe_video_device *video_out = &previewer->video_out;
++	struct vpfe_video_device *video_in = &previewer->video_in;
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct imp_logical_channel *chan = &previewer->channel;
++	struct vpfe_pipeline *pipe = &video_out->pipe;
++	u32 val;
++
++	if (!video_in->started)
++		return;
++
++	if (previewer->output == PREVIEWER_OUTPUT_MEMORY) {
++		val = vpss_dma_complete_interrupt();
++		if (val != 0 && val != 2)
++			return;
++	}
++
++	if (previewer->input == PREVIEWER_INPUT_MEMORY) {
++		spin_lock(&video_in->dma_queue_lock);
++		vpfe_process_buffer_complete(video_in);
++		video_in->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
++		vpfe_schedule_next_buffer(video_in);
++		spin_unlock(&video_in->dma_queue_lock);
++	}
++
++	if (previewer->output == PREVIEWER_OUTPUT_MEMORY) {
++		spin_lock(&video_out->dma_queue_lock);
++		vpfe_process_buffer_complete(video_out);
++		video_out->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
++		vpfe_schedule_next_buffer(video_out);
++		spin_unlock(&video_out->dma_queue_lock);
++
++		/* start HW if buffers are queued */
++		if (is_pipe_ready(pipe))
++			imp_hw_if->enable(vpfe_dev->ipipe, 1, chan->config);
++	}
++}
++
++/*
++ * prv_buffer_isr() - PREVIEWER module buffer scheduling isr
++ * @previewer: PREVIEWER device pointer
++ *
++ */
++void prv_buffer_isr(struct vpfe_previewer_device *previewer)
++{
++	struct vpfe_video_device *video_out = &previewer->video_out;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	enum v4l2_field field;
++	int fid;
++
++	if (!video_out->started)
++		return;
++
++	if (previewer->input != PREVIEWER_INPUT_CCDC)
++		return;
++
++	field = video_out->fmt.fmt.pix.field;
++
++	if (field == V4L2_FIELD_NONE) {
++		/* handle progressive frame capture */
++		if (video_out->cur_frm != video_out->next_frm)
++			vpfe_process_buffer_complete(video_out);
++		return;
++	}
++	/* handle interlaced frame capture */
++	fid = ccdc_get_fid(vpfe_dev);
++
++	/* switch the software maintained field id */
++	video_out->field_id ^= 1;
++	if (fid == video_out->field_id) {
++		/*
++		 * we are in-sync here,continue.
++		 * One frame is just being captured. If the
++		 * next frame is available, release the current
++		 * frame and move on
++		 */
++		if (fid == 0 && video_out->cur_frm != video_out->next_frm)
++			vpfe_process_buffer_complete(video_out);
++	} else if (fid == 0) {
++		/*
++		  * out of sync. Recover from any hardware out-of-sync.
++		  * May loose one frame
++		  */
++		video_out->field_id = fid;
++	}
++}
++
++/*
++ * prv_dma_isr() - PREVIEWER module dma isr
++ * @previewer: PREVIEWER device pointer
++ *
++ */
++void prv_dma_isr(struct vpfe_previewer_device *previewer)
++{
++	struct vpfe_video_device *video_out = &previewer->video_out;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	enum v4l2_field field;
++	int schedule_capture = 0;
++	int fid;
++
++	if (previewer->input == PREVIEWER_INPUT_MEMORY) {
++		prv_ss_buffer_isr(previewer);
++		return;
++	}
++
++	if (!video_out->started)
++		return;
++
++	field = video_out->fmt.fmt.pix.field;
++
++	if (field == V4L2_FIELD_NONE) {
++		if (!list_empty(&video_out->dma_queue) &&
++				video_out->cur_frm == video_out->next_frm)
++			schedule_capture = 1;
++	} else {
++		fid = ccdc_get_fid(vpfe_dev);
++		if (fid == video_out->field_id) {
++			/* we are in-sync here,continue */
++			if (fid == 1 && !list_empty(&video_out->dma_queue) &&
++				  video_out->cur_frm == video_out->next_frm)
++				schedule_capture = 1;
++		}
++	}
++	if (!schedule_capture)
++		return;
++	spin_lock(&video_out->dma_queue_lock);
++
++	vpfe_schedule_next_buffer(video_out);
++	spin_unlock(&video_out->dma_queue_lock);
++
++	return;
++}
++
++static int
++preview_s_config(struct v4l2_subdev *sd, struct vpfe_prev_config *cfg)
++{
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	unsigned int bit = 1 << 0;
++	int ret;
++
++	/* if ipipeif params are set */
++	if (cfg->flag & bit) {
++		ret =  imp_set_preview_config(sd, cfg);
++		if (ret)
++			return ret;
++	}
++	return imp_hw_if->set_preview_module_params(dev, vpfe_dev->ipipe, cfg);
++
++}
++
++static int
++preview_g_config(struct v4l2_subdev *sd, struct vpfe_prev_config *cfg)
++{
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	unsigned int bit = 1 << 0;
++	int ret;
++
++	/* get ipipeif params */
++	if (cfg->flag & bit) {
++		ret =  imp_get_preview_config(sd, cfg);
++		if (ret)
++			return ret;
++	}
++	return imp_hw_if->get_preview_module_params(dev, vpfe_dev->ipipe, cfg);
++}
++
++/*
++ * previewer_ioctl() - PREVIEWER module private ioctl's
++ * @sd: VPFE PREVIEWER V4L2 subdevice
++ * @cmd: ioctl command
++ * @arg: ioctl argument
++ *
++ * Return 0 on success or a negative error code otherwise.
++ */
++static long previewer_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 +{
 +	int ret = 0;
 +
-+	ret = request_irq(vpfe_dev->ccdc_irq0, vpfe_isr, IRQF_DISABLED,
-+			"vpfe_capture0", vpfe_dev);
-+	if (ret < 0) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			"Error: requesting VINT0 interrupt\n");
-+		return ret;
++	switch (cmd) {
++	case VIDIOC_VPFE_PRV_S_CONFIG:
++		ret = preview_s_config(sd, arg);
++		break;
++	case VIDIOC_VPFE_PRV_G_CONFIG:
++		ret = preview_g_config(sd, arg);
++		break;
++	default:
++		ret = -ENOIOCTLCMD;
 +	}
 +
-+	ret = request_irq(vpfe_dev->ccdc_irq1, vpfe_vdint1_isr, IRQF_DISABLED,
-+					"vpfe_capture1", vpfe_dev);
-+	if (ret < 0) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			"Error: requesting VINT1 interrupt\n");
-+		free_irq(vpfe_dev->ccdc_irq0, vpfe_dev);
-+		return ret;
-+	}
++	return ret;
++}
 +
-+	ret = request_irq(vpfe_dev->imp_dma_irq, vpfe_imp_dma_isr,
-+			  IRQF_DISABLED, "Imp_Sdram_Irq", vpfe_dev);
-+	if (ret < 0) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			 "Error: requesting IMP IRQ interrupt\n");
-+		free_irq(vpfe_dev->ccdc_irq1, vpfe_dev);
-+		free_irq(vpfe_dev->ccdc_irq0, vpfe_dev);
-+		return ret;
++/*
++ * previewer_set_stream() - Enable/Disable streaming on the PREVIEWER module
++ * @sd: VPFE PREVIEWER V4L2 subdevice
++ * @enable: Enable/disable stream
++ */
++static int previewer_set_stream(struct v4l2_subdev *sd, int enable)
++{
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct imp_logical_channel *chan = &previewer->channel;
++	struct device *dev = previewer->subdev.v4l2_dev->dev;
++
++	/* in case of single shot, send config to ipipe */
++	void *config = (previewer->input == PREVIEWER_INPUT_MEMORY) ?
++				chan->config : NULL;
++
++	if (previewer->output != PREVIEWER_OUTPUT_MEMORY)
++		return 0;
++
++	switch (enable) {
++	case 1:
++		if (previewer->input == PREVIEWER_INPUT_MEMORY &&
++				imp_hw_if->serialize(vpfe_dev->ipipe)) {
++			if (imp_hw_if->hw_setup(dev, vpfe_dev->ipipe,
++							config) < 0)
++				return -EINVAL;
++		} else if (previewer->input == PREVIEWER_INPUT_CCDC) {
++			imp_hw_if->lock_chain(vpfe_dev->ipipe);
++			if (imp_hw_if->hw_setup(dev, vpfe_dev->ipipe, NULL))
++				return -EINVAL;
++		}
++		imp_hw_if->enable(vpfe_dev->ipipe, 1, config);
++		break;
++	case 0:
++		imp_hw_if->enable(vpfe_dev->ipipe, 0, config);
++		if (previewer->input == PREVIEWER_INPUT_CCDC)
++			imp_hw_if->unlock_chain(vpfe_dev->ipipe);
++		break;
 +	}
 +
 +	return 0;
 +}
 +
-+/**
-+ * register_i2c_devices() - register all i2c v4l2 subdevs
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * register all i2c v4l2 subdevs
++/*
++ * Retrieve active or try format based on the request
 + */
-+static int register_i2c_devices(struct vpfe_device *vpfe_dev)
++static struct v4l2_mbus_framefmt *
++__previewer_get_format(struct vpfe_previewer_device *prev,
++		       struct v4l2_subdev_fh *fh, unsigned int pad,
++		       enum v4l2_subdev_format_whence which)
 +{
-+	struct vpfe_ext_subdev_info *sdinfo;
-+	struct vpfe_config *vpfe_cfg;
-+	struct i2c_adapter *i2c_adap;
-+	unsigned int num_subdevs;
-+	int ret;
-+	int i;
-+	int k;
++	if (which == V4L2_SUBDEV_FORMAT_TRY)
++		return v4l2_subdev_get_try_format(fh, pad);
++	return &prev->formats[pad];
++}
 +
-+	vpfe_cfg = vpfe_dev->cfg;
++/*
++ * preview_try_format() - Handle try format by pad subdev method
++ * @prev: VPFE preview device
++ * @fh : V4L2 subdev file handle
++ * @pad: pad num
++ * @fmt: pointer to v4l2 format structure
++ */
++static void
++preview_try_format(struct vpfe_previewer_device *prev,
++		   struct v4l2_subdev_fh *fh, unsigned int pad,
++		   struct v4l2_mbus_framefmt *fmt,
++		   enum v4l2_subdev_format_whence which)
++{
++	struct imp_hw_interface *imp_hw_if;
++	unsigned int max_out_height;
++	unsigned int max_out_width;
++	unsigned int i;
 +
-+	i2c_adap = i2c_get_adapter(1);
-+	num_subdevs = vpfe_cfg->num_subdevs;
++	imp_hw_if = prev->imp_hw_if;
++	max_out_width = imp_hw_if->get_max_output_width(0);
++	max_out_height = imp_hw_if->get_max_output_height(0);
 +
-+	vpfe_dev->sd = kzalloc(sizeof(struct v4l2_subdev *)*num_subdevs,
-+			       GFP_KERNEL);
++	if (pad == PREVIEWER_PAD_SINK) {
++		for (i = 0; i < ARRAY_SIZE(prev_input_fmts); i++) {
++			if (fmt->code == prev_input_fmts[i])
++				break;
++		}
 +
-+	if (vpfe_dev->sd == NULL) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			"unable to allocate memory for subdevice\n");
-+		return -ENOMEM;
++		/* If not found, use SBGGR10 as default */
++		if (i >= ARRAY_SIZE(prev_input_fmts))
++			fmt->code = V4L2_MBUS_FMT_SGRBG12_1X12;
++	} else if (pad == PREVIEWER_PAD_SOURCE) {
++		for (i = 0; i < ARRAY_SIZE(prev_output_fmts); i++) {
++			if (fmt->code == prev_output_fmts[i])
++				break;
++		}
++
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(prev_output_fmts))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
 +	}
 +
-+	for (i = 0, k = 0; i < num_subdevs; i++) {
-+		sdinfo = &vpfe_cfg->sub_devs[i];
-+		/**
-+		 * register subdevices based on interface setting. Currently
-+		 * tvp5146 and mt9p031 cannot co-exists due to i2c address
-+		 * conflicts. So only one of them is registered. Re-visit this
-+		 * once we have support for i2c switch handling in i2c driver
-+		 * framework
++	fmt->width = clamp_t(u32, fmt->width, MIN_OUT_HEIGHT, max_out_width);
++	fmt->height = clamp_t(u32, fmt->height, MIN_OUT_WIDTH, max_out_height);
++}
++
++/*
++ * previewer_set_format() - Set the video format on a pad
++ * @sd : VPFE PREVIEWER V4L2 subdevice
++ * @fh : V4L2 subdev file handle
++ * @fmt: Format
++ *
++ * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
++ * to the format type.
++ */
++static int
++previewer_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     struct v4l2_subdev_format *fmt)
++{
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct v4l2_mbus_framefmt *format;
++
++	format = __previewer_get_format(previewer, fh, fmt->pad, fmt->which);
++	if (format == NULL)
++		return -EINVAL;
++
++	preview_try_format(previewer, fh, fmt->pad, &fmt->format, fmt->which);
++	*format = fmt->format;
++
++	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
++		return 0;
++
++	if (fmt->pad == PREVIEWER_PAD_SINK &&
++			(previewer->input == PREVIEWER_INPUT_CCDC ||
++				previewer->input == PREVIEWER_INPUT_MEMORY)) {
++		/*
++		 *In continous mode,set IPEPE input format here.
 +		 */
++		imp_hw_if->set_in_mbus_format(vpfe_dev->ipipe, &fmt->format);
++		previewer->formats[fmt->pad] = fmt->format;
 +
-+		if (interface == sdinfo->is_camera) {
-+			/* setup input path */
-+			if (vpfe_cfg->setup_input &&
-+				vpfe_cfg->setup_input(sdinfo->grp_id) < 0) {
-+				ret = -EFAULT;
-+				v4l2_info(&vpfe_dev->v4l2_dev,
-+					  "could not setup input for %s\n",
-+						sdinfo->module_name);
-+				goto probe_sd_out;
-+			}
-+			/* Load up the subdevice */
-+			vpfe_dev->sd[k] =
-+				v4l2_i2c_new_subdev_board(&vpfe_dev->v4l2_dev,
-+						  i2c_adap, &sdinfo->board_info,
-+						  NULL);
-+			if (vpfe_dev->sd[k]) {
-+				v4l2_info(&vpfe_dev->v4l2_dev,
-+						"v4l2 sub device %s registered\n",
-+						sdinfo->module_name);
-+
-+				vpfe_dev->sd[k]->grp_id = sdinfo->grp_id;
-+				k++;
-+
-+				sdinfo->registered = 1;
-+			}
-+		} else {
-+			v4l2_info(&vpfe_dev->v4l2_dev,
-+				  "v4l2 sub device %s is not registered\n",
-+				  sdinfo->module_name);
-+		}
++	} else if (fmt->pad == PREVIEWER_PAD_SOURCE &&
++			previewer->output == PREVIEWER_OUTPUT_RESIZER) {
++		previewer->formats[fmt->pad] = fmt->format;
++	} else if (fmt->pad == PREVIEWER_PAD_SOURCE &&
++			previewer->output == PREVIEWER_OUTPUT_MEMORY) {
++		imp_hw_if->set_out_mbus_format(vpfe_dev->ipipe, &fmt->format);
++		previewer->formats[fmt->pad] = fmt->format;
++	} else {
++		return -EINVAL;
 +	}
-+
-+	vpfe_dev->num_ext_subdevs = k;
 +
 +	return 0;
-+
-+probe_sd_out:
-+	kzfree(vpfe_dev->sd);
-+
-+	return ret;
 +}
 +
-+/**
-+ * vpfe_register_entities() - register all v4l2 subdevs and media entities
-+ * @vpfe_dev - ptr to vpfe capture device
++/*
++ * previewer_get_format() - Retrieve the video format on a pad
++ * @sd : VPFE PREVIEWER V4L2 subdevice
++ * @fh : V4L2 subdev file handle
++ * @fmt: Format
 + *
-+ * register all v4l2 subdevs, media entities, and creates links
-+ * between entities
++ * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
++ * to the format type.
 + */
-+static int vpfe_register_entities(struct vpfe_device *vpfe_dev)
++static int
++previewer_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     struct v4l2_subdev_format *fmt)
 +{
-+	unsigned int flags = 0;
-+	int ret;
-+	int i;
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
 +
-+	/* register i2c devices first */
-+	ret = register_i2c_devices(vpfe_dev);
-+	if (ret)
-+		return ret;
++	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE)
++		fmt->format = previewer->formats[fmt->pad];
++	else
++		fmt->format = *(v4l2_subdev_get_try_format(fh, fmt->pad));
 +
-+	/* register rest of the sub-devs */
-+	ret = vpfe_ccdc_register_entities(&vpfe_dev->vpfe_ccdc,
-+					  &vpfe_dev->v4l2_dev);
-+	if (ret)
-+		return ret;
++	return 0;
++}
 +
-+	ret = vpfe_previewer_register_entities(&vpfe_dev->vpfe_previewer,
-+					       &vpfe_dev->v4l2_dev);
-+	if (ret)
-+		goto out_ccdc_register;
++/*
++ * previewer_enum_frame_size() - enum frame sizes on pads
++ * @sd: VPFE previewer V4L2 subdevice
++ * @fh: V4L2 subdev file handle
++ * @code: pointer to v4l2_subdev_frame_size_enum structure
++ */
++static int
++previewer_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			  struct v4l2_subdev_frame_size_enum *fse)
++{
++	struct vpfe_previewer_device *prev = v4l2_get_subdevdata(sd);
++	struct v4l2_mbus_framefmt format;
 +
-+	ret = vpfe_resizer_register_entities(&vpfe_dev->vpfe_resizer,
-+					     &vpfe_dev->v4l2_dev);
-+	if (ret)
-+		goto out_previewer_register;
-+	/* create links now, starting with external(i2c) entities */
-+	for (i = 0; i < vpfe_dev->num_ext_subdevs; i++) {
-+		/* if entity has no pads (ex: amplifier),
-+		   cant establish link */
-+		if (vpfe_dev->sd[i]->entity.num_pads) {
-+			ret = media_entity_create_link(&vpfe_dev->sd[i]->entity,
-+				0, &vpfe_dev->vpfe_ccdc.subdev.entity,
-+				0, flags);
-+			if (ret < 0)
-+				goto out_resizer_register;
-+		}
++	if (fse->index != 0)
++		return -EINVAL;
++
++	format.code = fse->code;
++	format.width = 1;
++	format.height = 1;
++	preview_try_format(prev, fh, fse->pad, &format,
++			   V4L2_SUBDEV_FORMAT_TRY);
++	fse->min_width = format.width;
++	fse->min_height = format.height;
++
++	if (format.code != fse->code)
++		return -EINVAL;
++
++	format.code = fse->code;
++	format.width = -1;
++	format.height = -1;
++	preview_try_format(prev, fh, fse->pad, &format,
++			   V4L2_SUBDEV_FORMAT_TRY);
++	fse->max_width = format.width;
++	fse->max_height = format.height;
++
++	return 0;
++}
++
++/*
++ * previewer_enum_mbus_code() - enum mbus codes for pads
++ * @sd: VPFE previewer V4L2 subdevice
++ * @fh: V4L2 subdev file handle
++ * @code: pointer to v4l2_subdev_mbus_code_enum structure
++ */
++static int
++previewer_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			 struct v4l2_subdev_mbus_code_enum *code)
++{
++	switch (code->pad) {
++	case PREVIEWER_PAD_SINK:
++		if (code->index >= ARRAY_SIZE(prev_input_fmts))
++			return -EINVAL;
++
++		code->code = prev_input_fmts[code->index];
++		break;
++	case PREVIEWER_PAD_SOURCE:
++		if (code->index >= ARRAY_SIZE(prev_output_fmts))
++			return -EINVAL;
++
++		code->code = prev_output_fmts[code->index];
++		break;
++	default:
++		return -EINVAL;
 +	}
-+	ret = media_entity_create_link(&vpfe_dev->vpfe_ccdc.subdev.entity, 1,
-+				       &vpfe_dev->vpfe_previewer.subdev.entity,
++
++	return 0;
++}
++
++/*
++ * preview_s_ctrl() - Handle set control subdev method
++ * @ctrl: pointer to v4l2 control structure
++ */
++static int preview_s_ctrl(struct v4l2_ctrl *ctrl)
++{
++	struct vpfe_previewer_device *previewer =
++	     container_of(ctrl->handler, struct vpfe_previewer_device, ctrls);
++	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++
++	return imp_hw_if->prv_s_ctrl(vpfe_dev->ipipe,
++				ctrl->id, ctrl->val);
++
++}
++
++/*
++ * previewer_init_formats() - Initialize formats on all pads
++ * @sd: VPFE previewer V4L2 subdevice
++ * @fh: V4L2 subdev file handle
++ *
++ * Initialize all pad formats with default values. If fh is not NULL, try
++ * formats are initialized on the file handle. Otherwise active formats are
++ * initialized on the device.
++ */
++static int
++previewer_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
++{
++	struct vpfe_previewer_device *prv = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = prv->imp_hw_if;
++	struct v4l2_subdev_format format;
++
++	memset(&format, 0, sizeof(format));
++	format.pad = PREVIEWER_PAD_SINK;
++	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
++	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
++	format.format.width = imp_hw_if->get_max_output_width(0);
++	format.format.height = imp_hw_if->get_max_output_height(0);
++	previewer_set_format(sd, fh, &format);
++
++	memset(&format, 0, sizeof(format));
++	format.pad = PREVIEWER_PAD_SOURCE;
++	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
++	format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++	format.format.width = imp_hw_if->get_max_output_width(0);
++	format.format.height = imp_hw_if->get_max_output_height(0);
++	previewer_set_format(sd, fh, &format);
++
++	return 0;
++}
++
++/* subdev core operations */
++static const struct v4l2_subdev_core_ops previewer_v4l2_core_ops = {
++	.ioctl = previewer_ioctl,
++};
++
++static const struct v4l2_ctrl_ops preview_ctrl_ops = {
++	.s_ctrl = preview_s_ctrl,
++};
++
++/* subdev file operations */
++static const struct  v4l2_subdev_internal_ops preview_v4l2_internal_ops = {
++	.open = previewer_init_formats,
++};
++
++/* subdev video operations */
++static const struct v4l2_subdev_video_ops previewer_v4l2_video_ops = {
++	.s_stream = previewer_set_stream,
++};
++
++/* subdev pad operations */
++static const struct v4l2_subdev_pad_ops previewer_v4l2_pad_ops = {
++	.enum_mbus_code = previewer_enum_mbus_code,
++	.enum_frame_size = previewer_enum_frame_size,
++	.get_fmt = previewer_get_format,
++	.set_fmt = previewer_set_format,
++};
++
++/* v4l2 subdev operation */
++static const struct v4l2_subdev_ops previewer_v4l2_ops = {
++	.core = &previewer_v4l2_core_ops,
++	.video = &previewer_v4l2_video_ops,
++	.pad = &previewer_v4l2_pad_ops,
++};
++
++/*
++ * Media entity operations
++ */
++
++/*
++ * previewer_link_setup - Setup PREVIEWER connections
++ * @entity: PREVIEWER media entity
++ * @local: Pad at the local end of the link
++ * @remote: Pad at the remote end of the link
++ * @flags: Link flags
++ *
++ * return -EINVAL or zero on success
++ */
++static int
++previewer_link_setup(struct media_entity *entity, const struct media_pad *local,
++		     const struct media_pad *remote, u32 flags)
++{
++	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
++	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++
++	switch (local->index | media_entity_type(remote->entity)) {
++	case PREVIEWER_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
++		/* Read from ccdc - continous mode */
++		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++			previewer->input = PREVIEWER_INPUT_NONE;
++			reset_channel_prv_mode(previewer);
++			break;
++		}
++		if (previewer->input != PREVIEWER_INPUT_NONE)
++			return -EBUSY;
++
++		if (set_channel_prv_cont_mode(previewer))
++			return -EINVAL;
++		previewer->input = PREVIEWER_INPUT_CCDC;
++		break;
++	case PREVIEWER_PAD_SINK | MEDIA_ENT_T_DEVNODE:
++		/* Read from memory - single shot mode*/
++		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++			previewer->input = PREVIEWER_INPUT_NONE;
++			reset_channel_prv_mode(previewer);
++			break;
++		}
++		if (set_channel_prv_ss_mode(previewer))
++			return -EINVAL;
++
++		previewer->input = PREVIEWER_INPUT_MEMORY;
++		break;
++	case PREVIEWER_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
++		/* out to RESIZER */
++		if (flags & MEDIA_LNK_FL_ENABLED)
++			previewer->output = PREVIEWER_OUTPUT_RESIZER;
++		else
++			previewer->output = PREVIEWER_OUTPUT_NONE;
++
++		break;
++	case PREVIEWER_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
++		/* Write to memory */
++		if (flags & MEDIA_LNK_FL_ENABLED)
++			previewer->output = PREVIEWER_OUTPUT_MEMORY;
++		else
++			previewer->output = PREVIEWER_OUTPUT_NONE;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static const struct media_entity_operations previewer_media_ops = {
++	.link_setup = previewer_link_setup,
++};
++
++/*
++ * vpfe_previewer_unregister_entities - PREVIEWER subdevs/video
++ * driver unregistrations.
++ * @vpfe_prev - pointer to previewer subdevice structure.
++ */
++void vpfe_previewer_unregister_entities(struct vpfe_previewer_device *vpfe_prev)
++{
++	/* unregister video devices */
++	vpfe_video_unregister(&vpfe_prev->video_in);
++	vpfe_video_unregister(&vpfe_prev->video_out);
++
++	/* cleanup entity */
++	media_entity_cleanup(&vpfe_prev->subdev.entity);
++	/* unregister subdev */
++	v4l2_device_unregister_subdev(&vpfe_prev->subdev);
++}
++
++/*
++ * vpfe_previewer_register_entities() - PREVIEWER subdevs/video
++ * driver registrations.
++ * @previewer - pointer to previewer subdevice structure.
++ * @vdev: pointer to v4l2 device structure.
++ */
++int
++vpfe_previewer_register_entities(struct vpfe_previewer_device *previewer,
++				 struct v4l2_device *vdev)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	unsigned int flags;
++	int ret;
++
++	/* Register the subdev */
++	ret = v4l2_device_register_subdev(vdev, &previewer->subdev);
++	if (ret) {
++		pr_err("Failed to register previewer as v4l2 subdevice\n");
++		return ret;
++	}
++
++	ret = vpfe_video_register(&previewer->video_in, vdev);
++	if (ret) {
++		pr_err("Failed to register previewer video-in device\n");
++		goto out_video_in_register;
++	}
++
++	previewer->video_in.vpfe_dev = vpfe_dev;
++
++	ret = vpfe_video_register(&previewer->video_out, vdev);
++	if (ret) {
++		pr_err("Failed to register previewer video-out device\n");
++		goto out_video_out_register;
++	}
++
++	previewer->video_out.vpfe_dev = vpfe_dev;
++
++	flags = 0;
++	ret = media_entity_create_link(&previewer->video_in.video_dev.entity, 0,
++				       &previewer->subdev.entity, 0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	ret = media_entity_create_link(&previewer->subdev.entity, 1,
++				       &previewer->video_out.video_dev.entity,
 +				       0, flags);
 +	if (ret < 0)
-+		goto out_resizer_register;
-+
-+	ret = media_entity_create_link(&vpfe_dev->vpfe_previewer.subdev.entity,
-+				       1, &vpfe_dev->vpfe_resizer.subdev.entity,
-+				       0, flags);
-+	if (ret < 0)
-+		goto out_resizer_register;
-+
-+	ret = v4l2_device_register_subdev_nodes(&vpfe_dev->v4l2_dev);
-+	if (ret < 0)
-+		goto out_resizer_register;
++		goto out_create_link;
 +
 +	return 0;
 +
-+out_resizer_register:
-+	vpfe_resizer_unregister_entities(&vpfe_dev->vpfe_resizer);
-+out_previewer_register:
-+	vpfe_previewer_unregister_entities(&vpfe_dev->vpfe_previewer);
-+out_ccdc_register:
-+	vpfe_ccdc_unregister_entities(&vpfe_dev->vpfe_ccdc);
++out_create_link:
++	vpfe_video_unregister(&previewer->video_out);
++out_video_out_register:
++	vpfe_video_unregister(&previewer->video_in);
++out_video_in_register:
++	media_entity_cleanup(&previewer->subdev.entity);
++	v4l2_device_unregister_subdev(&previewer->subdev);
 +	return ret;
 +}
 +
-+/**
-+ * vpfe_unregister_entities() - unregister all v4l2 subdevs and media entities
-+ * @vpfe_dev - ptr to vpfe capture device
-+ *
-+ * unregister all v4l2 subdevs and media entities
-+ */
-+static void vpfe_unregister_entities(struct vpfe_device *vpfe_dev)
-+{
-+	vpfe_ccdc_unregister_entities(&vpfe_dev->vpfe_ccdc);
-+	vpfe_previewer_unregister_entities(&vpfe_dev->vpfe_previewer);
-+	vpfe_resizer_unregister_entities(&vpfe_dev->vpfe_resizer);
-+}
++#define PRV_CONTRAST_HIGH	0xff
++#define PRV_BRIGHT_HIGH		0xff
++#define PRV_GAIN_HIGH		0x3ff
 +
-+/**
-+ * vpfe_cleanup_modules() - cleanup all non-i2c v4l2 subdevs
-+ * @vpfe_dev - ptr to vpfe capture device
-+ * @pdev - pointer to platform device
-+ *
-+ * cleanup all v4l2 subdevs
++/*
++ * vpfe_previewer_init - PREVIEWER module initilaization.
++ * @vpfe_prev - pointer to previewer subdevice structure.
++ * @pdev: platform device pointer.
 + */
-+static void vpfe_cleanup_modules(struct vpfe_device *vpfe_dev,
-+				 struct platform_device *pdev)
++int
++vpfe_previewer_init(struct vpfe_previewer_device *previewer,
++		    struct platform_device *pdev)
 +{
-+	vpfe_ccdc_cleanup(pdev);
-+	vpfe_previewer_cleanup(pdev, vpfe_dev->ipipe);
-+}
++	struct imp_logical_channel *channel = &previewer->channel;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct media_pad *pads = &previewer->pads[0];
++	struct v4l2_subdev *sd = &previewer->subdev;
++	struct media_entity *me = &sd->entity;
++	int ret = 0;
 +
-+/**
-+ * vpfe_initialize_modules() - initialize all non-i2c v4l2 subdevs
-+ * @vpfe_dev - ptr to vpfe capture device
-+ * @pdev - pointer to platform device
-+ *
-+ * intialize all v4l2 subdevs and media entities
-+ */
-+static int vpfe_initialize_modules(struct vpfe_device *vpfe_dev,
-+				   struct platform_device *pdev)
-+{
-+	int ret;
++	if (ipipe_init(&vpfe_dev->ipipe))
++		return -EINVAL;
 +
-+	ret = vpfe_ccdc_init(&vpfe_dev->vpfe_ccdc, pdev);
++	previewer->imp_hw_if = imp_get_hw_if();
++	if (!previewer->imp_hw_if)
++		return -EINVAL;
++
++	previewer->video_in.ops = &video_in_ops;
++	previewer->video_out.ops = &video_out_ops;
++
++	v4l2_subdev_init(sd, &previewer_v4l2_ops);
++	sd->internal_ops = &preview_v4l2_internal_ops;
++	strlcpy(sd->name, "DAVINCI PREVIEWER", sizeof(sd->name));
++	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(sd, previewer);
++	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++
++	pads[PREVIEWER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[PREVIEWER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++
++	previewer->input = PREVIEWER_INPUT_NONE;
++	previewer->output = PREVIEWER_OUTPUT_NONE;
++
++	channel->type = IMP_PREVIEWER;
++	channel->config_state = STATE_NOT_CONFIGURED;
++
++	me->ops = &previewer_media_ops;
++
++	v4l2_ctrl_handler_init(&previewer->ctrls, 3);
++	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
++			  V4L2_CID_BRIGHTNESS, 0,
++			  PRV_BRIGHT_HIGH, 1, 16);
++	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
++			  V4L2_CID_CONTRAST, 0,
++			  PRV_CONTRAST_HIGH, 1, 16);
++	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
++			  V4L2_CID_GAIN, 0,
++			  PRV_GAIN_HIGH, 1, 512);
++	v4l2_ctrl_new_std_menu(&previewer->ctrls, &preview_ctrl_ops,
++			V4L2_CID_DPCM_PREDICTOR,
++			V4L2_DPCM_PREDICTOR_ADVANCED, 0,
++			V4L2_DPCM_PREDICTOR_SIMPLE);
++
++	v4l2_ctrl_handler_setup(&previewer->ctrls);
++	sd->ctrl_handler = &previewer->ctrls;
++
++	ret = media_entity_init(me, PREVIEWER_PADS_NUM, pads, 0);
 +	if (ret)
 +		return ret;
 +
-+	ret = vpfe_previewer_init(&vpfe_dev->vpfe_previewer, pdev);
-+	if (ret)
-+		goto out_ccdc_init;
-+
-+	ret = vpfe_resizer_init(&vpfe_dev->vpfe_resizer, pdev);
-+	if (ret)
-+		goto out_previewer_init;
++	previewer->video_in.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
++	ret = vpfe_video_init(&previewer->video_in, "PRV");
++	if (ret) {
++		pr_err("Failed to init PRV video-in device\n");
++		goto out_ipipe_init;
++	}
++	previewer->video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	ret = vpfe_video_init(&previewer->video_out, "PRV");
++	if (ret) {
++		pr_err("Failed to init PRV video-out device\n");
++		goto out_ipipe_init;
++	}
++	imp_init_serializer();
 +
 +	return 0;
 +
-+out_previewer_init:
-+	vpfe_previewer_cleanup(pdev, vpfe_dev->ipipe);
-+out_ccdc_init:
-+	vpfe_ccdc_cleanup(pdev);
-+
-+	return ret;
-+}
-+
-+/**
-+ * vpfe_probe() : vpfe probe function
-+ * @pdev: platform device pointer
-+ *
-+ * This function creates device entries by register itself to the V4L2 driver
-+ * and initializes fields of each device objects
-+ */
-+static __devinit int vpfe_probe(struct platform_device *pdev)
-+{
-+	struct vpfe_device *vpfe_dev;
-+	struct resource *res1;
-+	unsigned long phys_end_kernel;
-+	int ret = -ENOMEM;
-+	int err;
-+	size_t size;
-+
-+	vpfe_dev = kzalloc(sizeof(*vpfe_dev), GFP_KERNEL);
-+	if (!vpfe_dev) {
-+		v4l2_err(pdev->dev.driver,
-+			"Failed to allocate memory for vpfe_dev\n");
-+		return ret;
-+	}
-+
-+	if (pdev->dev.platform_data == NULL) {
-+		v4l2_err(pdev->dev.driver, "Unable to get vpfe config\n");
-+		ret = -ENOENT;
-+		goto probe_free_dev_mem;
-+	}
-+
-+	vpfe_dev->cfg = pdev->dev.platform_data;
-+
-+	if (vpfe_dev->cfg->card_name == NULL ||
-+			vpfe_dev->cfg->sub_devs == NULL) {
-+		v4l2_err(pdev->dev.driver, "null ptr in vpfe_cfg\n");
-+		ret = -ENOENT;
-+		goto probe_free_dev_mem;
-+	}
-+
-+	/* Get VINT0 irq resource */
-+	res1 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!res1) {
-+		v4l2_err(pdev->dev.driver,
-+			 "Unable to get interrupt for VINT0\n");
-+		ret = -ENOENT;
-+		goto probe_free_dev_mem;
-+	}
-+	vpfe_dev->ccdc_irq0 = res1->start;
-+
-+	/* Get VINT1 irq resource */
-+	res1 = platform_get_resource(pdev,
-+				IORESOURCE_IRQ, 1);
-+	if (!res1) {
-+		v4l2_err(pdev->dev.driver,
-+			 "Unable to get interrupt for VINT1\n");
-+		ret = -ENOENT;
-+		goto probe_free_dev_mem;
-+	}
-+	vpfe_dev->ccdc_irq1 = res1->start;
-+
-+	/* Get DMA irq resource */
-+	res1 = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
-+	if (!res1) {
-+		v4l2_err(pdev->dev.driver,
-+			 "Unable to get interrupt for DMA\n");
-+		ret = -ENOENT;
-+		goto probe_free_dev_mem;
-+	}
-+	vpfe_dev->imp_dma_irq = res1->start;
-+
-+	vpfe_dev->pdev = &pdev->dev;
-+
-+	/* enable vpss clocks */
-+	ret = vpfe_enable_clock(vpfe_dev);
-+	if (ret)
-+		goto probe_free_dev_mem;
-+
-+	if (vpfe_initialize_modules(vpfe_dev, pdev))
-+		goto probe_disable_clock;
-+
-+	vpfe_initialize(vpfe_dev);
-+
-+	vpfe_dev->media_dev.dev = vpfe_dev->pdev;
-+	strcpy((char *)&vpfe_dev->media_dev.model, "davinci-media");
-+	ret = media_device_register(&vpfe_dev->media_dev);
-+	if (ret) {
-+		v4l2_err(pdev->dev.driver,
-+			"Unable to register media device.\n");
-+		goto probe_out_entities_cleanup;
-+	}
-+
-+	vpfe_dev->v4l2_dev.mdev = &vpfe_dev->media_dev;
-+
-+	ret = v4l2_device_register(&pdev->dev, &vpfe_dev->v4l2_dev);
-+	if (ret) {
-+		v4l2_err(pdev->dev.driver, "Unable to register v4l2 device.\n");
-+		goto probe_out_media_unregister;
-+	}
-+	v4l2_info(&vpfe_dev->v4l2_dev, "v4l2 device registered\n");
-+
-+	/* set the driver data in platform device */
-+	platform_set_drvdata(pdev, vpfe_dev);
-+
-+	/* register subdevs/entities */
-+	if (vpfe_register_entities(vpfe_dev))
-+		goto probe_out_v4l2_unregister;
-+
-+	ret = vpfe_attach_irq(vpfe_dev);
-+	if (ret)
-+		goto probe_out_entities_unregister;
-+
-+	if (cont_bufsize) {
-+		/* attempt to determine the end of Linux kernel memory */
-+		phys_end_kernel = virt_to_phys((void *)PAGE_OFFSET) +
-+			(num_physpages << PAGE_SHIFT);
-+		size = cont_bufsize;
-+		phys_end_kernel += cont_bufoffset;
-+		err = dma_declare_coherent_memory(&pdev->dev, phys_end_kernel,
-+				phys_end_kernel, size,
-+				DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-+		if (!err) {
-+			dev_err(&pdev->dev, "Unable to declare MMAP memory.\n");
-+			ret = -ENOENT;
-+			goto probe_detach_irq;
-+		}
-+		vpfe_dev->video_limit = size;
-+	}
-+
-+	return 0;
-+
-+probe_detach_irq:
-+	vpfe_detach_irq(vpfe_dev);
-+probe_out_entities_unregister:
-+	vpfe_unregister_entities(vpfe_dev);
-+	kzfree(vpfe_dev->sd);
-+probe_out_v4l2_unregister:
-+	v4l2_device_unregister(&vpfe_dev->v4l2_dev);
-+probe_out_media_unregister:
-+	media_device_unregister(&vpfe_dev->media_dev);
-+probe_out_entities_cleanup:
-+	vpfe_cleanup_modules(vpfe_dev, pdev);
-+probe_disable_clock:
-+	vpfe_disable_clock(vpfe_dev);
-+probe_free_dev_mem:
-+	kzfree(vpfe_dev);
-+
++out_ipipe_init:
++	v4l2_ctrl_handler_free(&previewer->ctrls);
++	ipipe_cleanup(vpfe_dev->ipipe);
 +	return ret;
 +}
 +
 +/*
-+ * vpfe_remove : This function un-registers device from V4L2 driver
++ * vpfe_previewer_cleanup() - PREVIEWER module cleanup.
++ * @dev: Device pointer specific to the VPFE.
 + */
-+static int vpfe_remove(struct platform_device *pdev)
++void vpfe_previewer_cleanup(struct platform_device *pdev, void *ipipe)
 +{
-+	struct vpfe_device *vpfe_dev = platform_get_drvdata(pdev);
-+
-+	v4l2_info(pdev->dev.driver, "vpfe_remove\n");
-+
-+	kzfree(vpfe_dev->sd);
-+	vpfe_detach_irq(vpfe_dev);
-+	vpfe_unregister_entities(vpfe_dev);
-+	vpfe_cleanup_modules(vpfe_dev, pdev);
-+	v4l2_device_unregister(&vpfe_dev->v4l2_dev);
-+	media_device_unregister(&vpfe_dev->media_dev);
-+	vpfe_disable_clock(vpfe_dev);
-+	kzfree(vpfe_dev);
-+
-+	return 0;
++	ipipe_cleanup(ipipe);
 +}
-+
-+static struct platform_driver vpfe_driver = {
-+	.driver = {
-+		.name = CAPTURE_DRV_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = vpfe_probe,
-+	.remove = __devexit_p(vpfe_remove),
-+};
-+
-+/**
-+ * vpfe_init : This function registers device driver
-+ */
-+static __init int vpfe_init(void)
-+{
-+	/* Register driver to the kernel */
-+	return platform_driver_register(&vpfe_driver);
-+}
-+
-+/**
-+ * vpfe_cleanup : This function un-registers device driver
-+ */
-+static void vpfe_cleanup(void)
-+{
-+	platform_driver_unregister(&vpfe_driver);
-+}
-+
-+module_init(vpfe_init);
-+module_exit(vpfe_cleanup);
-diff --git a/drivers/media/platform/davinci/vpfe_mc_capture.h b/drivers/media/platform/davinci/vpfe_mc_capture.h
+diff --git a/drivers/media/platform/davinci/vpfe_previewer.h b/drivers/media/platform/davinci/vpfe_previewer.h
 new file mode 100644
-index 0000000..aba0a00
+index 0000000..152ab71
 --- /dev/null
-+++ b/drivers/media/platform/davinci/vpfe_mc_capture.h
-@@ -0,0 +1,104 @@
++++ b/drivers/media/platform/davinci/vpfe_previewer.h
+@@ -0,0 +1,71 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -842,178 +1119,55 @@ index 0000000..aba0a00
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#ifndef _VPFE_MC_CAPTURE_H
-+#define _VPFE_MC_CAPTURE_H
++#ifndef _VPFE_PREV_H
++#define _VPFE_PREV_H
 +
-+/* Header files */
-+#include <linux/i2c.h>
-+#include <linux/v4l2-subdev.h>
-+#include <linux/videodev2.h>
++#include <media/v4l2-ctrls.h>
 +
-+#include <media/v4l2-dev.h>
-+#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-device.h>
-+#include <media/videobuf-dma-contig.h>
++#define PREVIEWER_PAD_SINK	0
++#define PREVIEWER_PAD_SOURCE	1
 +
-+#include "vpfe_video.h"
-+#include "vpfe_af.h"
-+#include "vpfe_aew.h"
-+#include "vpfe_ccdc.h"
-+#include "imp_hw_if.h"
-+#include "vpfe_resizer.h"
-+#include "vpfe_previewer.h"
-+#include "vpfe_imp_common.h"
++#define PREVIEWER_PADS_NUM	2
 +
-+/* Macros */
-+#define VPFE_MAJOR_RELEASE		0
-+#define VPFE_MINOR_RELEASE		0
-+#define VPFE_BUILD			1
-+#define VPFE_CAPTURE_VERSION_CODE       ((VPFE_MAJOR_RELEASE << 16) | \
-+					(VPFE_MINOR_RELEASE << 8)  | \
-+					VPFE_BUILD)
++#define PREVIEWER_OUTPUT_NONE		0
++#define PREVIEWER_OUTPUT_MEMORY		(1 << 0)
++#define PREVIEWER_OUTPUT_RESIZER	(1 << 1)
 +
-+#define to_vpfe_device(ptr_module)				\
-+	container_of(ptr_module, struct vpfe_device, vpfe_##ptr_module)
-+#define to_device(ptr_module)						\
-+	(to_vpfe_device(ptr_module)->dev)
-+
-+struct vpfe_device {
-+	/* external registered sub devices */
-+	struct v4l2_subdev		**sd;
-+	/* number of registered external subdevs */
-+	unsigned int			num_ext_subdevs;
-+	/* vpfe cfg */
-+	struct vpfe_config		*cfg;
-+	/* clock ptrs for vpfe capture */
-+	struct clk			**clks;
-+	/* V4l2 device */
-+	struct v4l2_device		v4l2_dev;
-+	/* parent device */
-+	struct device			*pdev;
-+	/* IRQ number for DMA transfer completion at the image processor */
-+	unsigned int			imp_dma_irq;
-+	/* CCDC IRQs used when CCDC/ISIF output to SDRAM */
-+	unsigned int			ccdc_irq0;
-+	unsigned int			ccdc_irq1;
-+	/* maximum video memory that is available*/
-+	unsigned int			video_limit;
-+	/* media device */
-+	struct media_device		media_dev;
-+	/* ccdc subdevice */
-+	struct vpfe_ccdc_device		vpfe_ccdc;
-+	/* resizer subdevice */
-+	struct vpfe_resizer_device	vpfe_resizer;
-+	/* previewer subdevice */
-+	struct vpfe_previewer_device	vpfe_previewer;
-+	/* aew subdevice */
-+	struct vpfe_aew_device		vpfe_aew;
-+	/* af subdevice */
-+	struct vpfe_af_device		vpfe_af;
-+	void				*ipipe;
++enum previewer_input_entity {
++	PREVIEWER_INPUT_NONE,
++	PREVIEWER_INPUT_MEMORY,
++	PREVIEWER_INPUT_CCDC,
 +};
 +
-+/* File handle structure */
-+struct vpfe_fh {
-+	struct vpfe_video_device *video;
-+	/* Indicates whether this file handle is doing IO */
-+	u8 io_allowed;
-+	/* Used to keep track priority of this instance */
-+	enum v4l2_priority prio;
++
++struct vpfe_previewer_device {
++	struct v4l2_subdev		subdev;
++	struct media_pad		pads[PREVIEWER_PADS_NUM];
++	struct v4l2_mbus_framefmt	formats[PREVIEWER_PADS_NUM];
++	enum previewer_input_entity	input;
++	unsigned int			output;
++	struct v4l2_ctrl_handler        ctrls;
++
++	/* pointer to ipipe function pointers */
++	struct imp_hw_interface		*imp_hw_if;
++	struct imp_logical_channel	channel;
++
++	struct vpfe_video_device	video_in;
++	struct vpfe_video_device	video_out;
 +};
 +
-+void mbus_to_pix(const struct v4l2_mbus_framefmt *mbus,
-+			   struct v4l2_pix_format *pix);
-+
-+#endif	/* _VPFE_MC_CAPTURE_H */
-diff --git a/include/media/davinci/vpfe.h b/include/media/davinci/vpfe.h
-new file mode 100644
-index 0000000..15bca28
---- /dev/null
-+++ b/include/media/davinci/vpfe.h
-@@ -0,0 +1,84 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
-+
-+#ifndef _VPFE_H
-+#define _VPFE_H
-+
-+#ifdef __KERNEL__
-+#include <linux/v4l2-subdev.h>
-+#include <linux/clk.h>
-+#include <linux/i2c.h>
-+
-+#define CAPTURE_DRV_NAME	"vpfe-capture"
-+
-+struct vpfe_route {
-+	__u32 input;
-+	__u32 output;
-+};
-+
-+enum vpfe_subdev_id {
-+	VPFE_SUBDEV_TVP5146 = 1,
-+	VPFE_SUBDEV_MT9T031 = 2,
-+	VPFE_SUBDEV_TVP7002 = 3,
-+	VPFE_SUBDEV_MT9P031 = 4,
-+};
-+
-+struct vpfe_ext_subdev_info {
-+	/* v4l2 subdev */
-+	struct v4l2_subdev *subdev;
-+	/* Sub device module name */
-+	char module_name[32];
-+	/* Sub device group id */
-+	int grp_id;
-+	/* Number of inputs supported */
-+	int num_inputs;
-+	/* inputs available at the sub device */
-+	struct v4l2_input *inputs;
-+	/* Sub dev routing information for each input */
-+	struct vpfe_route *routes;
-+	/* ccdc bus/interface configuration */
-+	struct vpfe_hw_if_param ccdc_if_params;
-+	/* i2c subdevice board info */
-+	struct i2c_board_info board_info;
-+	/* Is this a camera sub device ? */
-+	unsigned is_camera:1;
-+	/* check if sub dev supports routing */
-+	unsigned can_route:1;
-+	/* registered ? */
-+	unsigned registered:1;
-+};
-+
-+struct vpfe_config {
-+	/* Number of sub devices connected to vpfe */
-+	int num_subdevs;
-+	/* information about each subdev */
-+	struct vpfe_ext_subdev_info *sub_devs;
-+	/* evm card info */
-+	char *card_name;
-+	/* setup function for the input path */
-+	int (*setup_input)(enum vpfe_subdev_id id);
-+	/* number of clocks */
-+	int num_clocks;
-+	/* clocks used for vpfe capture */
-+	char *clocks[];
-+};
-+#endif
++int vpfe_previewer_register_entities(struct vpfe_previewer_device *vpfe_prev,
++					struct v4l2_device *v4l2_dev);
++int vpfe_previewer_init(struct vpfe_previewer_device *vpfe_prev,
++					struct platform_device *pdev);
++void vpfe_previewer_unregister_entities
++			(struct vpfe_previewer_device *vpfe_prev);
++void prv_buffer_isr(struct vpfe_previewer_device *previewer);
++void vpfe_previewer_cleanup(struct platform_device *pdev, void *ipipe);
++void prv_dma_isr(struct vpfe_previewer_device *previewer);
++void enable_serializer(void *ipipe, int val);
++void ipipe_cleanup(void *ipipe);
++int ipipe_init(void **ipipe);
 +#endif
 -- 
 1.7.4.1
