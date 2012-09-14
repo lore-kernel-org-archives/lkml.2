@@ -1,383 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab2IMXxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 19:53:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759143Ab2IMXsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 19:48:53 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 04/16] KEYS: Implement asymmetric key type
-To: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au
-Cc: linux-crypto@vger.kernel.org, zohar@us.ibm.com, dmitry.kasatkin@intel.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 00:48:40 +0100
-Message-ID: <20120913234840.3575.95516.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
-References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932274Ab2IMX6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 19:58:19 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44064 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759117Ab2IMX6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 19:58:17 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-8a-50527317490b
+Date: Fri, 14 Sep 2012 09:00:28 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -mm] enable CONFIG_COMPACTION by default
+Message-ID: <20120914000028.GC5085@bbox>
+References: <20120913162104.1458bea2@cuia.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120913162104.1458bea2@cuia.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a key type that can be used to represent an asymmetric key type for use
-in appropriate cryptographic operations, such as encryption, decryption,
-signature generation and signature verification.
+Hi Rik,
 
-The key type is "asymmetric" and can provide access to a variety of
-cryptographic algorithms.
+On Thu, Sep 13, 2012 at 04:21:04PM -0400, Rik van Riel wrote:
+> Now that lumpy reclaim has been removed, compaction is the
+> only way left to free up contiguous memory areas. It is time
+> to just enable CONFIG_COMPACTION by default.
+>     
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Possibly, this would be better as "public_key" - but that has the disadvantage
-that "public key" is an overloaded term.
+I tried this a few month ago and Mel had a concern on size
+bloating (compaction.o + migration.o) where system doesn't
+use higher order allocation.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Now that I think about it, admin should configure carefully
+and manually if he has a size concern of vmlinux without
+depending auto-generating config.
+So I really want this.
 
- crypto/Kconfig                           |    1 
- crypto/Makefile                          |    1 
- crypto/asymmetric_keys/Kconfig           |   13 +++
- crypto/asymmetric_keys/Makefile          |    7 +
- crypto/asymmetric_keys/asymmetric_keys.h |   15 +++
- crypto/asymmetric_keys/asymmetric_type.c |  156 ++++++++++++++++++++++++++++++
- include/keys/asymmetric-subtype.h        |   55 +++++++++++
- include/keys/asymmetric-type.h           |   25 +++++
- 8 files changed, 273 insertions(+)
- create mode 100644 crypto/asymmetric_keys/Kconfig
- create mode 100644 crypto/asymmetric_keys/Makefile
- create mode 100644 crypto/asymmetric_keys/asymmetric_keys.h
- create mode 100644 crypto/asymmetric_keys/asymmetric_type.c
- create mode 100644 include/keys/asymmetric-subtype.h
- create mode 100644 include/keys/asymmetric-type.h
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index a323805..1ca0b24 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1043,5 +1043,6 @@ config CRYPTO_USER_API_SKCIPHER
- 	  key cipher algorithms.
- 
- source "drivers/crypto/Kconfig"
-+source crypto/asymmetric_keys/Kconfig
- 
- endif	# if CRYPTO
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 30f33d6..ced472e 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -96,3 +96,4 @@ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
- #
- obj-$(CONFIG_XOR_BLOCKS) += xor.o
- obj-$(CONFIG_ASYNC_CORE) += async_tx/
-+obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys/
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-new file mode 100644
-index 0000000..cad29b3
---- /dev/null
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -0,0 +1,13 @@
-+menuconfig ASYMMETRIC_KEY_TYPE
-+	tristate "Asymmetric (public-key cryptographic) key type"
-+	depends on KEYS
-+	help
-+	  This option provides support for a key type that holds the data for
-+	  the asymmetric keys used for public key cryptographic operations such
-+	  as encryption, decryption, signature generation and signature
-+	  verification.
-+
-+if ASYMMETRIC_KEY_TYPE
-+
-+
-+endif # ASYMMETRIC_KEY_TYPE
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-new file mode 100644
-index 0000000..b725bcc
---- /dev/null
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for asymmetric cryptographic keys
-+#
-+
-+obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) += asymmetric_keys.o
-+
-+asymmetric_keys-y := asymmetric_type.o
-diff --git a/crypto/asymmetric_keys/asymmetric_keys.h b/crypto/asymmetric_keys/asymmetric_keys.h
-new file mode 100644
-index 0000000..515b634
---- /dev/null
-+++ b/crypto/asymmetric_keys/asymmetric_keys.h
-@@ -0,0 +1,15 @@
-+/* Internal definitions for asymmetric key type
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+static inline const char *asymmetric_key_id(const struct key *key)
-+{
-+	return key->type_data.p[1];
-+}
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-new file mode 100644
-index 0000000..bfb0424
---- /dev/null
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -0,0 +1,156 @@
-+/* Asymmetric public-key cryptography key type
-+ *
-+ * See Documentation/security/asymmetric-keys.txt
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#include <keys/asymmetric-subtype.h>
-+#include <linux/seq_file.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include "asymmetric_keys.h"
-+
-+MODULE_LICENSE("GPL");
-+
-+/*
-+ * Match asymmetric keys on (part of) their name
-+ * We have some shorthand methods for matching keys.  We allow:
-+ *
-+ *	"<desc>"	- request a key by description
-+ *	"id:<id>"	- request a key matching the ID
-+ *	"<subtype>:<id>" - request a key of a subtype
-+ */
-+static int asymmetric_key_match(const struct key *key, const void *description)
-+{
-+	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
-+	const char *spec = description;
-+	const char *id, *kid;
-+	ptrdiff_t speclen;
-+	size_t idlen, kidlen;
-+
-+	if (!subtype || !spec || !*spec)
-+		return 0;
-+
-+	/* See if the full key description matches as is */
-+	if (key->description && strcmp(key->description, description) == 0)
-+		return 1;
-+
-+	/* All tests from here on break the criterion description into a
-+	 * specifier, a colon and then an identifier.
-+	 */
-+	id = strchr(spec, ':');
-+	if (!id)
-+		return 0;
-+
-+	speclen = id - spec;
-+	id++;
-+
-+	/* Anything after here requires a partial match on the ID string */
-+	kid = asymmetric_key_id(key);
-+	if (!kid)
-+		return 0;
-+
-+	idlen = strlen(id);
-+	kidlen = strlen(kid);
-+	if (idlen > kidlen)
-+		return 0;
-+
-+	kid += kidlen - idlen;
-+	if (strcasecmp(id, kid) != 0)
-+		return 0;
-+
-+	if (speclen == 2 &&
-+	    memcmp(spec, "id", 2) == 0)
-+		return 1;
-+
-+	if (speclen == subtype->name_len &&
-+	    memcmp(spec, subtype->name, speclen) == 0)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Describe the asymmetric key
-+ */
-+static void asymmetric_key_describe(const struct key *key, struct seq_file *m)
-+{
-+	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
-+	const char *kid = asymmetric_key_id(key);
-+	size_t n;
-+
-+	seq_puts(m, key->description);
-+
-+	if (subtype) {
-+		seq_puts(m, ": ");
-+		subtype->describe(key, m);
-+
-+		if (kid) {
-+			seq_putc(m, ' ');
-+			n = strlen(kid);
-+			if (n <= 8)
-+				seq_puts(m, kid);
-+			else
-+				seq_puts(m, kid + n - 8);
-+		}
-+
-+		seq_puts(m, " [");
-+		/* put something here to indicate the key's capabilities */
-+		seq_putc(m, ']');
-+	}
-+}
-+
-+/*
-+ * Instantiate a asymmetric_key defined key.  The key was preparsed, so we just
-+ * have to transfer the data here.
-+ */
-+static int asymmetric_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+/*
-+ * dispose of the data dangling from the corpse of a asymmetric key
-+ */
-+static void asymmetric_key_destroy(struct key *key)
-+{
-+	struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
-+	if (subtype) {
-+		subtype->destroy(key->payload.data);
-+		module_put(subtype->owner);
-+		key->type_data.p[0] = NULL;
-+	}
-+	kfree(key->type_data.p[1]);
-+	key->type_data.p[1] = NULL;
-+}
-+
-+struct key_type key_type_asymmetric = {
-+	.name		= "asymmetric",
-+	.instantiate	= asymmetric_key_instantiate,
-+	.match		= asymmetric_key_match,
-+	.destroy	= asymmetric_key_destroy,
-+	.describe	= asymmetric_key_describe,
-+};
-+EXPORT_SYMBOL_GPL(key_type_asymmetric);
-+
-+/*
-+ * Module stuff
-+ */
-+static int __init asymmetric_key_init(void)
-+{
-+	return register_key_type(&key_type_asymmetric);
-+}
-+
-+static void __exit asymmetric_key_cleanup(void)
-+{
-+	unregister_key_type(&key_type_asymmetric);
-+}
-+
-+module_init(asymmetric_key_init);
-+module_exit(asymmetric_key_cleanup);
-diff --git a/include/keys/asymmetric-subtype.h b/include/keys/asymmetric-subtype.h
-new file mode 100644
-index 0000000..4b840e8
---- /dev/null
-+++ b/include/keys/asymmetric-subtype.h
-@@ -0,0 +1,55 @@
-+/* Asymmetric public-key cryptography key subtype
-+ *
-+ * See Documentation/security/asymmetric-keys.txt
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifndef _KEYS_ASYMMETRIC_SUBTYPE_H
-+#define _KEYS_ASYMMETRIC_SUBTYPE_H
-+
-+#include <linux/seq_file.h>
-+#include <keys/asymmetric-type.h>
-+
-+struct public_key_signature;
-+
-+/*
-+ * Keys of this type declare a subtype that indicates the handlers and
-+ * capabilities.
-+ */
-+struct asymmetric_key_subtype {
-+	struct module		*owner;
-+	const char		*name;
-+	unsigned short		name_len;	/* length of name */
-+
-+	/* Describe a key of this subtype for /proc/keys */
-+	void (*describe)(const struct key *key, struct seq_file *m);
-+
-+	/* Destroy a key of this subtype */
-+	void (*destroy)(void *payload);
-+
-+	/* Verify the signature on a key of this subtype (optional) */
-+	int (*verify_signature)(const struct key *key,
-+				const struct public_key_signature *sig);
-+};
-+
-+/**
-+ * asymmetric_key_subtype - Get the subtype from an asymmetric key
-+ * @key: The key of interest.
-+ *
-+ * Retrieves and returns the subtype pointer of the asymmetric key from the
-+ * type-specific data attached to the key.
-+ */
-+static inline
-+struct asymmetric_key_subtype *asymmetric_key_subtype(const struct key *key)
-+{
-+	return key->type_data.p[0];
-+}
-+
-+#endif /* _KEYS_ASYMMETRIC_SUBTYPE_H */
-diff --git a/include/keys/asymmetric-type.h b/include/keys/asymmetric-type.h
-new file mode 100644
-index 0000000..7dd4734
---- /dev/null
-+++ b/include/keys/asymmetric-type.h
-@@ -0,0 +1,25 @@
-+/* Asymmetric Public-key cryptography key type interface
-+ *
-+ * See Documentation/security/asymmetric-keys.txt
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifndef _KEYS_ASYMMETRIC_TYPE_H
-+#define _KEYS_ASYMMETRIC_TYPE_H
-+
-+#include <linux/key-type.h>
-+
-+extern struct key_type key_type_asymmetric;
-+
-+/*
-+ * The payload is at the discretion of the subtype.
-+ */
-+
-+#endif /* _KEYS_ASYMMETRIC_TYPE_H */
-
+-- 
+Kind regards,
+Minchan Kim
