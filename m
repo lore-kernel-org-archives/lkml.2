@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2INMtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:49:16 -0400
+	id S1756514Ab2INMtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:49:43 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:57053 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab2INMtD (ORCPT
+	with ESMTP id S1756330Ab2INMtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:49:03 -0400
+	Fri, 14 Sep 2012 08:49:35 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Manjunath Hadli <manjunath.hadli@ti.com>,
         "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH 04/14] davinci: vpfe: add support for CCDC hardware for dm365
-Date: Fri, 14 Sep 2012 18:16:34 +0530
-Message-Id: <1347626804-5703-5-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH 06/14] davinci: vpfe: add v4l2 video driver support
+Date: Fri, 14 Sep 2012 18:16:36 +0530
+Message-Id: <1347626804-5703-7-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
 References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
@@ -26,31 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-add support for ccdc on dm365 SoC. ccdc is responsible for
-capturing video data- both raw bayer through sync seperate
-signals and through BT656/1120 interfaces. This driver implements
-the hardware functionality. Mainly- setting of hardware, validation
-of parameters, and isr configuration.
+add a generic video driver functionality to be used by all the vpfe
+drivers for davinci SoCs. The functionality includes all the
+standard v4l2 interfaces including streaming. The video node
+interface can be used both as an input and output node for both
+continuous and single shot modes.Also supports dv_presets to include
+HD modes, wth support for both user pointer IO and mmap.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/media/platform/davinci/dm365_ccdc.c      | 1424 ++++++++++++++++++++++
- drivers/media/platform/davinci/dm365_ccdc.h      |  137 +++
- drivers/media/platform/davinci/dm365_ccdc_regs.h |  314 +++++
- include/linux/dm365_ccdc.h                       |  592 +++++++++
- 4 files changed, 2467 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/platform/davinci/dm365_ccdc.c
- create mode 100644 drivers/media/platform/davinci/dm365_ccdc.h
- create mode 100644 drivers/media/platform/davinci/dm365_ccdc_regs.h
- create mode 100644 include/linux/dm365_ccdc.h
+ drivers/media/platform/davinci/vpfe_video.c | 1725 +++++++++++++++++++++++++++
+ drivers/media/platform/davinci/vpfe_video.h |  150 +++
+ 2 files changed, 1875 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/platform/davinci/vpfe_video.c
+ create mode 100644 drivers/media/platform/davinci/vpfe_video.h
 
-diff --git a/drivers/media/platform/davinci/dm365_ccdc.c b/drivers/media/platform/davinci/dm365_ccdc.c
+diff --git a/drivers/media/platform/davinci/vpfe_video.c b/drivers/media/platform/davinci/vpfe_video.c
 new file mode 100644
-index 0000000..eee2d58
+index 0000000..2e696a0
 --- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_ccdc.c
-@@ -0,0 +1,1424 @@
++++ b/drivers/media/platform/davinci/vpfe_video.c
+@@ -0,0 +1,1725 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -72,1415 +69,1716 @@ index 0000000..eee2d58
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#include <linux/io.h>
-+#include <linux/delay.h>
++#include <linux/slab.h>
 +#include <linux/module.h>
-+#include <linux/videodev2.h>
 +#include <linux/platform_device.h>
 +
-+#include <mach/mux.h>
-+
++#include <media/v4l2-common.h>
++#include <media/v4l2-mediabus.h>
++#include <media/media-entity.h>
++#include <media/media-device.h>
 +#include <media/davinci/vpfe_types.h>
-+#include <media/davinci/vpss.h>
 +
-+#include "dm365_ccdc.h"
++#include <mach/cputype.h>
++
++#include "vpfe_mc_capture.h"
 +#include "ccdc_hw_device.h"
-+#include "dm365_ccdc_regs.h"
 +
-+static struct device *dev;
++/* minimum number of buffers needed in cont-mode */
++#define CONT_MIN_NUM_BUFFERS	3
 +
-+/* Defauts for module configuation paramaters */
-+static struct ccdc_config_params_raw ccdc_config_defaults = {
-+	.linearize = {
-+		.corr_shft = CCDC_NO_SHIFT,
-+		.scale_fact = {1, 0},
-+	},
-+	.culling = {
-+		.hcpat_odd = 0xff,
-+		.hcpat_even = 0xff,
-+		.vcpat = 0xff
-+	},
-+};
++static int debug;
 +
-+static struct ccdc_gain_values ccdc_gain_params;
-+static unsigned char ccdc_test_pat_gen;
-+
-+/* ISIF operation configuration */
-+struct ccdc_oper_config {
-+	enum v4l2_mbus_pixelcode if_type;
-+	struct ccdc_ycbcr_config ycbcr;
-+	struct ccdc_params_raw bayer;
-+	enum ccdc_data_pack data_pack;
-+	void *__iomem base_addr;
-+	void *__iomem linear_tbl0_addr;
-+	void *__iomem linear_tbl1_addr;
-+};
-+
-+static struct ccdc_oper_config ccdc_cfg = {
-+	.ycbcr = {
-+		.v4l2_pix_fmt = V4L2_PIX_FMT_UYVY,
-+		.pix_fmt = CCDC_PIXFMT_YCBCR_8BIT,
-+		.frm_fmt = CCDC_FRMFMT_INTERLACED,
-+		.win = CCDC_WIN_NTSC,
-+		.fid_pol = VPFE_PINPOL_POSITIVE,
-+		.vd_pol = VPFE_PINPOL_POSITIVE,
-+		.hd_pol = VPFE_PINPOL_POSITIVE,
-+		.pix_order = CCDC_PIXORDER_CBYCRY,
-+		.buf_type = CCDC_BUFTYPE_FLD_INTERLEAVED,
-+	},
-+	.bayer = {
-+		.v4l2_pix_fmt = V4L2_PIX_FMT_SGRBG10ALAW8,
-+		.pix_fmt = CCDC_PIXFMT_RAW,
-+		.frm_fmt = CCDC_FRMFMT_PROGRESSIVE,
-+		.win = CCDC_WIN_VGA,
-+		.fid_pol = VPFE_PINPOL_POSITIVE,
-+		.vd_pol = VPFE_PINPOL_POSITIVE,
-+		.hd_pol = VPFE_PINPOL_POSITIVE,
-+		.gain = {
-+			.r_ye = {1, 0},
-+			.gr_cy = {1, 0},
-+			.gb_g = {1, 0},
-+			.b_mg = {1, 0},
-+		},
-+		.cfa_pat = CCDC_CFA_PAT_MOSAIC,
-+		.data_msb = CCDC_BIT_MSB_11,
-+	},
-+	.data_pack = CCDC_DATA_PACK8,
-+};
-+
-+/* Raw Bayer formats */
-+static u32 ccdc_raw_bayer_pix_formats[] = { V4L2_PIX_FMT_SGRBG10ALAW8,
-+						V4L2_PIX_FMT_SGRBG10DPCM8,
-+						V4L2_PIX_FMT_SBGGR16 };
-+
-+/* Raw YUV formats */
-+static u32 ccdc_raw_yuv_pix_formats[] = { V4L2_PIX_FMT_UYVY,
-+					      V4L2_PIX_FMT_YUYV };
-+
-+/* register access routines */
-+static inline u32 regr(u32 offset)
++/* get v4l2 subdev pointer to external subdev which is active */
++static struct media_entity *vpfe_get_input_entity
++			(struct vpfe_video_device *video)
 +{
-+	return readl(ccdc_cfg.base_addr + offset);
-+}
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct media_pad *remote;
 +
-+static inline void regw(u32 val, u32 offset)
-+{
-+	writel(val, ccdc_cfg.base_addr + offset);
-+}
-+
-+static inline u32 ccdc_merge(u32 mask, u32 val, u32 offset)
-+{
-+	u32 new_val = (regr(offset) & ~mask) | (val & mask);
-+
-+	regw(new_val, offset);
-+
-+	return new_val;
-+}
-+
-+static inline void regw_lin_tbl(u32 val, u32 offset, int i)
-+{
-+	if (!i)
-+		writel(val, ccdc_cfg.linear_tbl0_addr + offset);
-+	else
-+		writel(val, ccdc_cfg.linear_tbl1_addr + offset);
-+}
-+
-+static void ccdc_disable_all_modules(void)
-+{
-+	/* disable BC */
-+	regw(0, CLAMPCFG);
-+	/* disable vdfc */
-+	regw(0, DFCCTL);
-+	/* disable CSC */
-+	regw(0, CSCCTL);
-+	/* disable linearization */
-+	regw(0, LINCFG0);
-+	/* disable other modules here as they are supported */
-+}
-+
-+static void ccdc_enable(int en)
-+{
-+	if (!en) {
-+		/* Before disable isif, disable all ISIF modules */
-+		ccdc_disable_all_modules();
-+		/**
-+		 * wait for next VD. Assume lowest scan rate is 12 Hz. So
-+		 * 100 msec delay is good enough
-+		 */
++	remote = media_entity_remote_source(&vpfe_dev->vpfe_ccdc.pads[0]);
++	if (remote == NULL) {
++		pr_err("Invalid media connection to ccdc\n");
++		return NULL;
 +	}
-+	msleep(100);
-+	ccdc_merge(CCDC_SYNCEN_VDHDEN_MASK, en, SYNCEN);
++
++	return remote->entity;
 +}
 +
-+static void ccdc_enable_output_to_sdram(int en)
++/* updates external subdev(sensor/decoder) which is active */
++static int vpfe_update_current_ext_subdev(struct vpfe_video_device *video)
 +{
-+	ccdc_merge(CCDC_SYNCEN_WEN_MASK, en << CCDC_SYNCEN_WEN_SHIFT, SYNCEN);
-+}
-+
-+static void ccdc_config_culling(struct ccdc_cul *cul)
-+{
-+	u32 val;
-+
-+	/* Horizontal pattern */
-+	val = cul->hcpat_even << CULL_PAT_EVEN_LINE_SHIFT;
-+	val |= cul->hcpat_odd;
-+	regw(val, CULH);
-+
-+	/* vertical pattern */
-+	regw(cul->vcpat, CULV);
-+
-+	/* LPF */
-+	ccdc_merge((CCDC_LPF_MASK << CCDC_LPF_SHIFT),
-+		   (cul->en_lpf << CCDC_LPF_SHIFT), MODESET);
-+}
-+
-+static void ccdc_config_gain_offset(void)
-+{
-+	struct ccdc_gain_offsets_adj *gain_off_ptr =
-+		&ccdc_cfg.bayer.config_params.gain_offset;
-+	u32 val;
-+
-+	val = ((gain_off_ptr->gain_sdram_en & 1) << GAIN_SDRAM_EN_SHIFT) |
-+	((gain_off_ptr->gain_ipipe_en & 1) << GAIN_IPIPE_EN_SHIFT) |
-+	((gain_off_ptr->gain_h3a_en & 1) << GAIN_H3A_EN_SHIFT) |
-+	((gain_off_ptr->offset_sdram_en & 1) << OFST_SDRAM_EN_SHIFT) |
-+	((gain_off_ptr->offset_ipipe_en & 1) << OFST_IPIPE_EN_SHIFT) |
-+	((gain_off_ptr->offset_h3a_en & 1) << OFST_H3A_EN_SHIFT);
-+
-+	ccdc_merge(GAIN_OFFSET_EN_MASK, val, CGAMMAWD);
-+
-+	regw(ccdc_gain_params.cr_gain, CRGAIN);
-+	regw(ccdc_gain_params.cgr_gain, CGRGAIN);
-+	regw(ccdc_gain_params.cgb_gain, CGBGAIN);
-+	regw(ccdc_gain_params.cb_gain, CBGAIN);
-+	regw((ccdc_gain_params.offset & OFFSET_MASK), COFSTA);
-+
-+}
-+
-+static void ccdc_restore_defaults(void)
-+{
-+	enum vpss_ccdc_source_sel source = VPSS_CCDCIN;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_config *vpfe_cfg;
++	struct v4l2_subdev *subdev;
++	struct media_pad *remote;
 +	int i;
 +
-+	memcpy(&ccdc_cfg.bayer.config_params, &ccdc_config_defaults,
-+			sizeof(struct ccdc_config_params_raw));
-+
-+	dev_dbg(dev, "ccdc_restore_defaults...\n");
-+	/* Enable clock to ISIF, IPIPEIF and BL */
-+	vpss_enable_clock(VPSS_CCDC_CLOCK, 1);
-+	vpss_enable_clock(VPSS_IPIPEIF_CLOCK, 1);
-+	vpss_enable_clock(VPSS_BL_CLOCK, 1);
-+
-+	/* set all registers to default value */
-+	for (i = 0; i <= 0x1f8; i += 4)
-+		regw(0, i);
-+	/* no culling support */
-+	regw(0xffff, CULH);
-+	regw(0xff, CULV);
-+
-+	/* Set default offset and gain */
-+	ccdc_config_gain_offset();
-+	vpss_select_ccdc_source(source);
-+}
-+
-+static int ccdc_open(struct device *device)
-+{
-+	dev = device;
-+	ccdc_restore_defaults();
-+	return 0;
-+}
-+
-+/* This function will configure the window size to be capture in CCDC reg */
-+static void ccdc_setwin(struct v4l2_rect *image_win,
-+			enum ccdc_frmfmt frm_fmt, int ppc, int mode)
-+{
-+	int horz_nr_pixels;
-+	int vert_nr_lines;
-+	int horz_start;
-+	int vert_start;
-+	int mid_img;
-+
-+	dev_dbg(dev, "ccdc_setwin...\n");
-+	/**
-+	 * ppc - per pixel count. indicates how many pixels per cell
-+	 * output to SDRAM. example, for ycbcr, it is one y and one c, so 2.
-+	 * raw capture this is 1
-+	 */
-+	horz_start = image_win->left << (ppc - 1);
-+	horz_nr_pixels = (image_win->width << (ppc - 1)) - 1;
-+
-+	/* Writing the horizontal info into the registers */
-+	regw(horz_start & START_PX_HOR_MASK, SPH);
-+	regw(horz_nr_pixels & NUM_PX_HOR_MASK, LNH);
-+	vert_start = image_win->top;
-+
-+	if (frm_fmt == CCDC_FRMFMT_INTERLACED) {
-+		vert_nr_lines = (image_win->height >> 1) - 1;
-+		vert_start >>= 1;
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+	} else {
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+		vert_nr_lines = image_win->height - 1;
-+		/* configure VDINT0 and VDINT1 */
-+		mid_img = vert_start + (image_win->height / 2);
-+		regw(mid_img, VDINT1);
++	remote = media_entity_remote_source(&vpfe_dev->vpfe_ccdc.pads[0]);
++	if (remote == NULL) {
++		pr_err("Invalid media connection to ccdc\n");
++		return -EINVAL;
 +	}
 +
-+	if (!mode)
-+		regw(0, VDINT0);
-+	else
-+		regw(vert_nr_lines, VDINT0);
-+	regw(vert_start & START_VER_ONE_MASK, SLV0);
-+	regw(vert_start & START_VER_TWO_MASK, SLV1);
-+	regw(vert_nr_lines & NUM_LINES_VER, LNV);
-+}
++	subdev = media_entity_to_v4l2_subdev(remote->entity);
 +
-+static void ccdc_config_bclamp(struct ccdc_black_clamp *bc)
-+{
-+	u32 val;
++	vpfe_cfg = vpfe_dev->pdev->platform_data;
 +
-+	/**
-+	 * DC Offset is always added to image data irrespective of bc enable
-+	 * status
-+	 */
-+	val = bc->dc_offset & CCDC_BC_DCOFFSET_MASK;
-+	regw(val, CLDCOFST);
-+
-+	if (!bc->en)
-+		return;
-+
-+	val = (bc->bc_mode_color & CCDC_BC_MODE_COLOR_MASK) <<
-+		CCDC_BC_MODE_COLOR_SHIFT;
-+
-+	/* Enable BC and horizontal clamp caculation paramaters */
-+	val = val | 1 | ((bc->horz.mode & CCDC_HORZ_BC_MODE_MASK) <<
-+	CCDC_HORZ_BC_MODE_SHIFT);
-+
-+	regw(val, CLAMPCFG);
-+
-+	if (bc->horz.mode != CCDC_HORZ_BC_DISABLE) {
-+		/**
-+		  * Window count for calculation
-+		  * Base window selection
-+		  * pixel limit
-+		  * Horizontal size of window
-+		  * vertical size of the window
-+		  * Horizontal start position of the window
-+		  * Vertical start position of the window
-+		  */
-+		val = (bc->horz.win_count_calc & CCDC_HORZ_BC_WIN_COUNT_MASK) |
-+			((bc->horz.base_win_sel_calc & 1) <<
-+			CCDC_HORZ_BC_WIN_SEL_SHIFT) |
-+			((bc->horz.clamp_pix_limit & 1) <<
-+			CCDC_HORZ_BC_PIX_LIMIT_SHIFT) |
-+			((bc->horz.win_h_sz_calc &
-+			CCDC_HORZ_BC_WIN_H_SIZE_MASK) <<
-+			CCDC_HORZ_BC_WIN_H_SIZE_SHIFT) |
-+			((bc->horz.win_v_sz_calc &
-+			CCDC_HORZ_BC_WIN_V_SIZE_MASK) <<
-+			CCDC_HORZ_BC_WIN_V_SIZE_SHIFT);
-+
-+		regw(val, CLHWIN0);
-+
-+		val = bc->horz.win_start_h_calc & CCDC_HORZ_BC_WIN_START_H_MASK;
-+		regw(val, CLHWIN1);
-+
-+		val = bc->horz.win_start_v_calc & CCDC_HORZ_BC_WIN_START_V_MASK;
-+		regw(val, CLHWIN2);
-+	}
-+
-+	/* vertical clamp caculation paramaters */
-+
-+	/* OB H Valid */
-+	val = bc->vert.ob_h_sz_calc & CCDC_VERT_BC_OB_H_SZ_MASK;
-+
-+	/* Reset clamp value sel for previous line */
-+	val |= (bc->vert.reset_val_sel & CCDC_VERT_BC_RST_VAL_SEL_MASK) <<
-+				CCDC_VERT_BC_RST_VAL_SEL_SHIFT;
-+
-+	/* Line average coefficient */
-+	val |= bc->vert.line_ave_coef << CCDC_VERT_BC_LINE_AVE_COEF_SHIFT;
-+	regw(val, CLVWIN0);
-+
-+	/* Configured reset value */
-+	if (bc->vert.reset_val_sel == CCDC_VERT_BC_USE_CONFIG_CLAMP_VAL) {
-+		val = bc->vert.reset_clamp_val & CCDC_VERT_BC_RST_VAL_MASK;
-+		regw(val, CLVRV);
-+	}
-+
-+	/* Optical Black horizontal start position */
-+	val = bc->vert.ob_start_h & CCDC_VERT_BC_OB_START_HORZ_MASK;
-+	regw(val, CLVWIN1);
-+
-+	/* Optical Black vertical start position */
-+	val = bc->vert.ob_start_v & CCDC_VERT_BC_OB_START_VERT_MASK;
-+	regw(val, CLVWIN2);
-+
-+	val = bc->vert.ob_v_sz_calc & CCDC_VERT_BC_OB_VERT_SZ_MASK;
-+	regw(val, CLVWIN3);
-+
-+	/* Vertical start position for BC subtraction */
-+	val = bc->vert_start_sub & CCDC_BC_VERT_START_SUB_V_MASK;
-+	regw(val, CLSV);
-+}
-+
-+static void ccdc_config_linearization(struct ccdc_linearize *linearize)
-+{
-+	u32 val;
-+	u32 i;
-+
-+	if (!linearize->en) {
-+		regw(0, LINCFG0);
-+		return;
-+	}
-+
-+	/* shift value for correction */
-+	val = (linearize->corr_shft & CCDC_LIN_CORRSFT_MASK) <<
-+					CCDC_LIN_CORRSFT_SHIFT;
-+	/* enable */
-+	val |= 1;
-+	regw(val, LINCFG0);
-+
-+	/* Scale factor */
-+	val = (linearize->scale_fact.integer & 1) <<
-+				    CCDC_LIN_SCALE_FACT_INTEG_SHIFT;
-+	val |= linearize->scale_fact.decimal & CCDC_LIN_SCALE_FACT_DECIMAL_MASK;
-+	regw(val, LINCFG1);
-+
-+	for (i = 0; i < CCDC_LINEAR_TAB_SIZE; i++) {
-+		val = linearize->table[i] & CCDC_LIN_ENTRY_MASK;
-+		if (i%2)
-+			regw_lin_tbl(val, ((i >> 1) << 2), 1);
-+		else
-+			regw_lin_tbl(val, ((i >> 1) << 2), 0);
-+	}
-+}
-+
-+static void ccdc_config_dfc(struct ccdc_dfc *vdfc)
-+{
-+#define DFC_WRITE_WAIT_COUNT	1000
-+	u32 count = DFC_WRITE_WAIT_COUNT;
-+	u32 val;
-+	int i;
-+
-+	if (!vdfc->en)
-+		return;
-+
-+	/* Correction mode */
-+	val = (vdfc->corr_mode & CCDC_VDFC_CORR_MOD_MASK) <<
-+					CCDC_VDFC_CORR_MOD_SHIFT;
-+
-+	/* Correct whole line or partial */
-+	if (vdfc->corr_whole_line)
-+		val |= 1 << CCDC_VDFC_CORR_WHOLE_LN_SHIFT;
-+
-+	/* level shift value */
-+	val |= (vdfc->def_level_shift & CCDC_VDFC_LEVEL_SHFT_MASK) <<
-+		CCDC_VDFC_LEVEL_SHFT_SHIFT;
-+
-+	regw(val, DFCCTL);
-+
-+	/* Defect saturation level */
-+	val = vdfc->def_sat_level & CCDC_VDFC_SAT_LEVEL_MASK;
-+	regw(val, VDFSATLV);
-+
-+	regw(vdfc->table[0].pos_vert & CCDC_VDFC_POS_MASK, DFCMEM0);
-+	regw(vdfc->table[0].pos_horz & CCDC_VDFC_POS_MASK, DFCMEM1);
-+	if (vdfc->corr_mode == CCDC_VDFC_NORMAL ||
-+	    vdfc->corr_mode == CCDC_VDFC_HORZ_INTERPOL_IF_SAT) {
-+		regw(vdfc->table[0].level_at_pos, DFCMEM2);
-+		regw(vdfc->table[0].level_up_pixels, DFCMEM3);
-+		regw(vdfc->table[0].level_low_pixels, DFCMEM4);
-+	}
-+
-+	val = regr(DFCMEMCTL);
-+	/* set DFCMARST and set DFCMWR */
-+	val |= 1 << CCDC_DFCMEMCTL_DFCMARST_SHIFT;
-+	val |= 1;
-+	regw(val, DFCMEMCTL);
-+
-+	while (count && (regr(DFCMEMCTL) & 0x01))
-+		count--;
-+
-+	val = regr(DFCMEMCTL);
-+	if (!count) {
-+		dev_dbg(dev, "defect table write timeout !!\n");
-+		return;
-+	}
-+
-+	for (i = 1; i < vdfc->num_vdefects; i++) {
-+		regw(vdfc->table[i].pos_vert & CCDC_VDFC_POS_MASK, DFCMEM0);
-+		regw(vdfc->table[i].pos_horz & CCDC_VDFC_POS_MASK, DFCMEM1);
-+		if (vdfc->corr_mode == CCDC_VDFC_NORMAL ||
-+		    vdfc->corr_mode == CCDC_VDFC_HORZ_INTERPOL_IF_SAT) {
-+			regw(vdfc->table[i].level_at_pos, DFCMEM2);
-+			regw(vdfc->table[i].level_up_pixels, DFCMEM3);
-+			regw(vdfc->table[i].level_low_pixels, DFCMEM4);
-+		}
-+		val = regr(DFCMEMCTL);
-+		/* clear DFCMARST and set DFCMWR */
-+		val &= ~(1 << CCDC_DFCMEMCTL_DFCMARST_SHIFT);
-+		val |= 1;
-+		regw(val, DFCMEMCTL);
-+
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count && (regr(DFCMEMCTL) & 0x01))
-+			count--;
-+
-+		val = regr(DFCMEMCTL);
-+		if (!count) {
-+			dev_err(dev, "defect table write timeout !!\n");
-+			return;
-+		}
-+	}
-+	if (vdfc->num_vdefects < CCDC_VDFC_TABLE_SIZE) {
-+		/* Extra cycle needed */
-+		regw(0, DFCMEM0);
-+		regw(0x1FFF, DFCMEM1);
-+		val = 1;
-+		regw(val, DFCMEMCTL);
-+	}
-+
-+	/* enable VDFC */
-+	ccdc_merge((1 << CCDC_VDFC_EN_SHIFT), (1 << CCDC_VDFC_EN_SHIFT),
-+		   DFCCTL);
-+
-+	ccdc_merge((1 << CCDC_VDFC_EN_SHIFT), (0 << CCDC_VDFC_EN_SHIFT),
-+		   DFCCTL);
-+
-+	regw(0x6, DFCMEMCTL);
-+	for (i = 0 ; i < vdfc->num_vdefects; i++) {
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count && (regr(DFCMEMCTL) & 0x2))
-+			count--;
-+
-+		val = regr(DFCMEMCTL);
-+		if (!count) {
-+			dev_err(dev, "defect table write timeout !!\n");
-+			return;
-+		}
-+
-+		val = regr(DFCMEM0) | regr(DFCMEM1) | regr(DFCMEM2) |
-+			regr(DFCMEM3) | regr(DFCMEM4);
-+		regw(0x2, DFCMEMCTL);
-+	}
-+}
-+
-+static void ccdc_config_csc(struct ccdc_df_csc *df_csc)
-+{
-+	u32 val1;
-+	u32 val2;
-+	u32 i;
-+
-+	if (!df_csc->csc.en) {
-+		regw(0, CSCCTL);
-+		return;
-+	}
-+
-+	/* initialize all bits to 0 */
-+	val1 = 0;
-+
-+	for (i = 0; i < CCDC_CSC_NUM_COEFF; i++) {
-+		if ((i % 2) == 0) {
-+			/* CSCM - LSB */
-+			val1 = ((df_csc->csc.coeff[i].integer &
-+				CCDC_CSC_COEF_INTEG_MASK) <<
-+				CCDC_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				CCDC_CSC_COEF_DECIMAL_MASK));
-+		} else {
-+
-+			/* CSCM - MSB */
-+			val2 = ((df_csc->csc.coeff[i].integer &
-+				CCDC_CSC_COEF_INTEG_MASK) <<
-+				CCDC_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				CCDC_CSC_COEF_DECIMAL_MASK));
-+			val2 <<= CCDC_CSCM_MSB_SHIFT;
-+			val2 |= val1;
-+			regw(val2, (CSCM0 + ((i-1) << 1)));
++	for (i = 0; i < vpfe_cfg->num_subdevs; i++) {
++		if (!strcmp(vpfe_cfg->sub_devs[i].module_name, subdev->name)) {
++			video->current_ext_subdev = &vpfe_cfg->sub_devs[i];
++			break;
 +		}
 +	}
 +
-+	/* program the active area */
-+	regw(df_csc->start_pix & CCDC_DF_CSC_SPH_MASK, FMTSPH);
-+	/**
-+	 * one extra pixel as required for CSC. Actually number of
-+	 * pixel - 1 should be configured in this register. So we
-+	 * need to subtract 1 before writing to FMTSPH, but we will
-+	 * not do this since csc requires one extra pixel
-+	 */
-+	regw((df_csc->num_pixels) & CCDC_DF_CSC_SPH_MASK, FMTLNH);
-+	regw(df_csc->start_line & CCDC_DF_CSC_SPH_MASK, FMTSLV);
-+	/**
-+	 * one extra line as required for CSC. See reason documented for
-+	 * num_pixels
-+	 */
-+	regw((df_csc->num_lines) & CCDC_DF_CSC_SPH_MASK, FMTLNV);
-+
-+	/* Enable CSC */
-+	regw(1, CSCCTL);
-+}
-+
-+static int ccdc_config_raw(int mode)
-+{
-+	struct ccdc_params_raw *params = &ccdc_cfg.bayer;
-+	struct ccdc_config_params_raw *module_params =
-+		&ccdc_cfg.bayer.config_params;
-+	struct vpss_pg_frame_size frame_size;
-+	struct vpss_sync_pol sync;
-+	u32 val;
-+
-+	dev_dbg(dev, "ccdc_config_raw..\n");
-+
-+	/* In case of user has set BT656IF earlier, it should be reset
-+	   when configuring for raw input.
-+	 */
-+	regw(0, REC656IF);
-+
-+	/* Configure CCDCFG register */
-+
-+	/**
-+	 * Set CCD Not to swap input since input is RAW data
-+	 * Set FID detection function to Latch at V-Sync
-+	 * Set WENLOG - ccdc valid area
-+	 * Set TRGSEL
-+	 * Set EXTRG
-+	 * Packed to 8 or 16 bits
-+	 */
-+
-+	val = CCDC_YCINSWP_RAW | CCDC_CCDCFG_FIDMD_LATCH_VSYNC |
-+		CCDC_CCDCFG_WENLOG_AND | CCDC_CCDCFG_TRGSEL_WEN |
-+		CCDC_CCDCFG_EXTRG_DISABLE | (ccdc_cfg.data_pack &
-+		CCDC_DATA_PACK_MASK);
-+
-+	dev_dbg(dev, "Writing 0x%x to ...CCDCFG\n", val);
-+	regw(val, CCDCFG);
-+
-+	/**
-+	 * Configure the vertical sync polarity(MODESET.VDPOL)
-+	 * Configure the horizontal sync polarity (MODESET.HDPOL)
-+	 * Configure frame id polarity (MODESET.FLDPOL)
-+	 * Configure data polarity
-+	 * Configure External WEN Selection
-+	 * Configure frame format(progressive or interlace)
-+	 * Configure pixel format (Input mode)
-+	 * Configure the data shift
-+	 */
-+
-+	val = CCDC_VDHDOUT_INPUT | ((params->vd_pol & CCDC_VD_POL_MASK) <<
-+	      CCDC_VD_POL_SHIFT) | ((params->hd_pol & CCDC_HD_POL_MASK) <<
-+	      CCDC_HD_POL_SHIFT) | ((params->fid_pol & CCDC_FID_POL_MASK) <<
-+	      CCDC_FID_POL_SHIFT) | ((CCDC_DATAPOL_NORMAL &
-+	      CCDC_DATAPOL_MASK) << CCDC_DATAPOL_SHIFT) | ((CCDC_EXWEN_DISABLE &
-+	      CCDC_EXWEN_MASK) << CCDC_EXWEN_SHIFT) | ((params->frm_fmt &
-+	      CCDC_FRM_FMT_MASK) << CCDC_FRM_FMT_SHIFT) | ((params->pix_fmt &
-+	      CCDC_INPUT_MASK) << CCDC_INPUT_SHIFT);
-+
-+	/* currently only V4L2_MBUS_FMT_SGRBG12_1X12 is
-+	 * supported. shift appropriately depending on
-+	 * different MBUS fmt's added
-+	 */
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val |= ((CCDC_NO_SHIFT &
-+			CCDC_DATASFT_MASK) << CCDC_DATASFT_SHIFT);
-+
-+	regw(val, MODESET);
-+	dev_dbg(dev, "Writing 0x%x to MODESET...\n", val);
-+
-+	/**
-+	 * Configure GAMMAWD register
-+	 * CFA pattern setting
-+	 */
-+	val = (params->cfa_pat & CCDC_GAMMAWD_CFA_MASK) <<
-+		CCDC_GAMMAWD_CFA_SHIFT;
-+
-+	/* Gamma msb */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10ALAW8)
-+		val = val | CCDC_ALAW_ENABLE;
-+
-+	val = val | ((params->data_msb & CCDC_ALAW_GAMA_WD_MASK) <<
-+			CCDC_ALAW_GAMA_WD_SHIFT);
-+
-+	regw(val, CGAMMAWD);
-+
-+	/* Configure DPCM compression settings */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10DPCM8) {
-+		val =  1 << CCDC_DPCM_EN_SHIFT;
-+		val |= (module_params->pred &
-+			CCDC_DPCM_PREDICTOR_MASK) << CCDC_DPCM_PREDICTOR_SHIFT;
-+	}
-+	regw(val, MISC);
-+	/* Configure Gain & Offset */
-+	ccdc_config_gain_offset();
-+	/* Configure Color pattern */
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val = ccdc_sgrbg_pattern;
-+	else
-+		/* default set to rggb */
-+		val = ccdc_srggb_pattern;
-+
-+	regw(val, CCOLP);
-+	dev_dbg(dev, "Writing %x to CCOLP ...\n", val);
-+
-+	/* Configure HSIZE register  */
-+	val = (params->horz_flip_en & CCDC_HSIZE_FLIP_MASK) <<
-+			  CCDC_HSIZE_FLIP_SHIFT;
-+
-+	/* calculate line offset in 32 bytes based on pack value */
-+	if (ccdc_cfg.data_pack == CCDC_PACK_8BIT)
-+		val |= ((params->win.width + 31) >> 5) & CCDC_LINEOFST_MASK;
-+	else if (ccdc_cfg.data_pack == CCDC_PACK_12BIT)
-+		val |= ((((params->win.width + (params->win.width >> 2)) +
-+			31) >> 5) & CCDC_LINEOFST_MASK);
-+	else
-+		val |= (((params->win.width * 2) + 31) >> 5) &
-+			CCDC_LINEOFST_MASK;
-+	regw(val, HSIZE);
-+
-+	/* Configure SDOFST register  */
-+	if (params->frm_fmt == CCDC_FRMFMT_INTERLACED) {
-+		if (params->image_invert_en) {
-+			/* For interlace inverse mode */
-+			regw(0x4B6D, SDOFST);
-+			dev_dbg(dev, "Writing 0x4B6D to SDOFST...\n");
-+		} else {
-+			/* For interlace non inverse mode */
-+			regw(0x0B6D, SDOFST);
-+			dev_dbg(dev, "Writing 0x0B6D to SDOFST...\n");
-+		}
-+	} else if (params->frm_fmt == CCDC_FRMFMT_PROGRESSIVE) {
-+		if (params->image_invert_en) {
-+			/* For progessive inverse mode */
-+			regw(0x4000, SDOFST);
-+			dev_dbg(dev, "Writing 0x4000 to SDOFST...\n");
-+		} else {
-+			/* For progessive non inverse mode */
-+			regw(0x0000, SDOFST);
-+			dev_dbg(dev, "Writing 0x0000 to SDOFST...\n");
-+		}
++	/* if user not linked decoder/sensor to ccdc */
++	if (i == vpfe_cfg->num_subdevs) {
++		pr_err("Invalid media chain connection to ccdc\n");
++		return -EINVAL;
 +	}
 +
-+	/* Configure video window */
-+	ccdc_setwin(&params->win, params->frm_fmt, 1, mode);
-+
-+	/* Configure Black Clamp */
-+	ccdc_config_bclamp(&module_params->bclamp);
-+
-+	/* Configure Vertical Defection Pixel Correction */
-+	ccdc_config_dfc(&module_params->dfc);
-+
-+	if (!module_params->df_csc.df_or_csc)
-+		/* Configure Color Space Conversion */
-+		ccdc_config_csc(&module_params->df_csc);
-+
-+	ccdc_config_linearization(&module_params->linearize);
-+
-+	/* Configure Culling */
-+	ccdc_config_culling(&module_params->culling);
-+
-+	/* Configure Horizontal and vertical offsets(DFC,LSC,Gain) */
-+	val = module_params->horz_offset & CCDC_DATA_H_OFFSET_MASK;
-+	regw(val, DATAHOFST);
-+
-+	val = module_params->vert_offset & CCDC_DATA_V_OFFSET_MASK;
-+	regw(val, DATAVOFST);
-+
-+	/* Setup test pattern if enabled */
-+	if (ccdc_test_pat_gen) {
-+		/* Use the HD/VD pol settings from user */
-+		sync.ccdpg_hdpol = params->hd_pol & CCDC_HD_POL_MASK;
-+		sync.ccdpg_vdpol = params->vd_pol & CCDC_VD_POL_MASK;
-+
-+		vpss_set_sync_pol(sync);
-+
-+		frame_size.hlpfr = ccdc_cfg.bayer.win.width;
-+		frame_size.pplen = ccdc_cfg.bayer.win.height;
-+		vpss_set_pg_frame_size(frame_size);
-+		vpss_select_ccdc_source(VPSS_PGLPBK);
++	/* find the v4l2 subdev pointer */
++	for (i = 0; i < vpfe_dev->num_ext_subdevs; i++) {
++		if (!strcmp(video->current_ext_subdev->module_name,
++			vpfe_dev->sd[i]->name))
++			video->current_ext_subdev->subdev = vpfe_dev->sd[i];
 +	}
 +
 +	return 0;
 +}
 +
-+static int ccdc_validate_df_csc_params(struct ccdc_df_csc *df_csc)
++/* get the subdev which is connected to the output video node */
++static struct v4l2_subdev *
++vpfe_video_remote_subdev(struct vpfe_video_device *video, u32 *pad)
 +{
-+	struct ccdc_color_space_conv *csc;
-+	int err = -EINVAL;
-+	int csc_df_en;
-+	int i;
++	struct media_pad *remote;
 +
-+	if (!df_csc->df_or_csc) {
-+		/* csc configuration */
-+		csc = &df_csc->csc;
-+		if (csc->en) {
-+			csc_df_en = 1;
-+			for (i = 0; i < CCDC_CSC_NUM_COEFF; i++) {
-+				if (csc->coeff[i].integer >
-+					CCDC_CSC_COEF_INTEG_MASK ||
-+				    csc->coeff[i].decimal >
-+					CCDC_CSC_COEF_DECIMAL_MASK) {
-+					dev_dbg(dev,
-+						"invalid CSC coefficients\n");
-+					return err;
-+				}
-+			}
-+		}
-+	}
++	remote = media_entity_remote_source(&video->pad);
 +
-+	if (df_csc->start_pix > CCDC_DF_CSC_SPH_MASK) {
-+		dev_dbg(dev, "invalid df_csc start pix value\n");
-+		return err;
-+	}
-+	if (df_csc->num_pixels > CCDC_DF_NUMPIX) {
-+		dev_dbg(dev, "invalid df_csc num pixels value\n");
-+		return err;
-+	}
-+	if (df_csc->start_line > CCDC_DF_CSC_LNH_MASK) {
-+		dev_dbg(dev, "invalid df_csc start_line value\n");
-+		return err;
-+	}
-+	if (df_csc->num_lines > CCDC_DF_NUMLINES) {
-+		dev_dbg(dev, "invalid df_csc num_lines value\n");
-+		return err;
-+	}
++	if (remote == NULL || remote->entity->type != MEDIA_ENT_T_V4L2_SUBDEV)
++		return NULL;
 +
-+	return 0;
++	if (pad)
++		*pad = remote->index;
++
++	return media_entity_to_v4l2_subdev(remote->entity);
 +}
 +
-+static int ccdc_validate_dfc_params(struct ccdc_dfc *dfc)
-+{
-+	int err = -EINVAL;
-+	int i;
-+
-+	if (!dfc->en)
-+		return 0;
-+
-+	if (dfc->corr_whole_line > 1) {
-+		dev_dbg(dev, "invalid corr_whole_line value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_level_shift > 4) {
-+		dev_dbg(dev, "invalid def_level_shift value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_sat_level > 4095) {
-+		dev_dbg(dev, "invalid def_sat_level value\n");
-+		return err;
-+	}
-+
-+	if (!dfc->num_vdefects || dfc->num_vdefects > 8) {
-+		dev_dbg(dev, "invalid num_vdefects value\n");
-+		return err;
-+	}
-+
-+	for (i = 0; i < CCDC_VDFC_TABLE_SIZE; i++) {
-+		if (dfc->table[i].pos_vert > 0x1fff) {
-+			dev_dbg(dev, "invalid pos_vert value\n");
-+			return err;
-+		}
-+
-+		if (dfc->table[i].pos_horz > 0x1fff) {
-+			dev_dbg(dev, "invalid pos_horz value\n");
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int ccdc_validate_bclamp_params(struct ccdc_black_clamp *bclamp)
-+{
-+	int err = -EINVAL;
-+
-+	if (bclamp->dc_offset > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp dc_offset value\n");
-+		return err;
-+	}
-+
-+	if (!bclamp->en)
-+		return 0;
-+
-+	if (bclamp->horz.clamp_pix_limit > 1) {
-+		dev_dbg(dev,
-+			"invalid bclamp horz clamp_pix_limit value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->horz.win_count_calc < 1 ||
-+			bclamp->horz.win_count_calc > 32) {
-+		dev_dbg(dev, "invalid bclamp horz win_count_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->horz.win_start_h_calc > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->horz.win_start_v_calc > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->vert.reset_clamp_val > 0xfff) {
-+		dev_dbg(dev, "invalid bclamp reset_clamp_val value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->vert.ob_v_sz_calc > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp ob_v_sz_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->vert.ob_start_h > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->vert.ob_start_v > 0x1fff) {
-+		dev_dbg(dev, "invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int ccdc_validate_gain_ofst_params(struct ccdc_gain_offsets_adj
-+					  *gain_offset)
-+{
-+	int err = -EINVAL;
-+
-+	if ((gain_offset->offset_sdram_en || gain_offset->offset_ipipe_en ||
-+		gain_offset->offset_h3a_en) &&
-+		ccdc_gain_params.offset > 0xfff) {
-+		dev_dbg(dev, "Invalid  gain b_mg\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
++/* get the format set at ouput pad of the adjacent subdev */
 +static int
-+validate_ccdc_config_params_raw(struct ccdc_config_params_raw *params)
++__vpfe_video_get_format(struct vpfe_video_device *video,
++			struct v4l2_format *format)
 +{
-+	int err;
++	struct v4l2_subdev_format fmt;
++	struct v4l2_subdev *subdev;
++	struct media_pad *remote;
++	u32 pad;
++	int ret;
 +
-+	err = ccdc_validate_df_csc_params(&params->df_csc);
-+	if (err)
-+		goto exit;
-+	err = ccdc_validate_dfc_params(&params->dfc);
-+	if (err)
-+		goto exit;
-+	err = ccdc_validate_bclamp_params(&params->bclamp);
-+	if (err)
-+		goto exit;
-+	err = ccdc_validate_gain_ofst_params(&params->gain_offset);
-+exit:
-+	return err;
-+}
++	subdev = vpfe_video_remote_subdev(video, &pad);
++	if (subdev == NULL)
++		return -EINVAL;
 +
-+static int ccdc_set_buftype(enum ccdc_buftype buf_type)
-+{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		ccdc_cfg.bayer.buf_type = buf_type;
-+	else
-+		ccdc_cfg.ycbcr.buf_type = buf_type;
++	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++	remote = media_entity_remote_source(&video->pad);
++	fmt.pad = remote->index;
++
++	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt);
++	if (ret == -ENOIOCTLCMD)
++		return -EINVAL;
++
++	format->type = video->type;
++	/* convert mbus_format to v4l2_format */
++	v4l2_fill_pix_format(&format->fmt.pix, &fmt.format);
++	mbus_to_pix(&fmt.format, &format->fmt.pix);
 +
 +	return 0;
 +}
 +
-+static enum ccdc_buftype ccdc_get_buftype(void)
++/* make a note of pipeline details */
++static void vpfe_prepare_pipeline(struct vpfe_video_device *video)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return ccdc_cfg.bayer.buf_type;
++	struct media_entity *entity = &video->video_dev.entity;
++	struct media_device *mdev = entity->parent;
++	struct vpfe_pipeline *pipe = &video->pipe;
++	struct vpfe_video_device *far_end = NULL;
++	struct media_entity_graph graph;
 +
-+	return ccdc_cfg.ycbcr.buf_type;
++	pipe->input_num = 0;
++	pipe->output_num = 0;
++
++	if (video->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++		pipe->inputs[pipe->input_num++] = video;
++	else
++		pipe->outputs[pipe->output_num++] = video;
++
++	mutex_lock(&mdev->graph_mutex);
++	media_entity_graph_walk_start(&graph, entity);
++
++	while ((entity = media_entity_graph_walk_next(&graph))) {
++		if (entity == &video->video_dev.entity)
++			continue;
++
++		if (media_entity_type(entity) != MEDIA_ENT_T_DEVNODE)
++			continue;
++
++		far_end = to_vpfe_video(media_entity_to_video_device(entity));
++
++		if (far_end->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++			pipe->inputs[pipe->input_num++] = far_end;
++		else
++			pipe->outputs[pipe->output_num++] = far_end;
++	}
++
++	mutex_unlock(&mdev->graph_mutex);
 +}
 +
-+static int ccdc_enum_pix(u32 *pix, int i)
++/* update pipe state selected by user */
++static int vpfe_update_pipe_state(struct vpfe_video_device *video)
 +{
-+	int ret = -EINVAL;
++	struct vpfe_pipeline *pipe = &video->pipe;
++	int ret;
 +
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (i < ARRAY_SIZE(ccdc_raw_bayer_pix_formats)) {
-+			*pix = ccdc_raw_bayer_pix_formats[i];
-+			ret = 0;
++	vpfe_prepare_pipeline(video);
++
++	/* Find out if there is any input video
++	  if yes, it is single shot.
++	*/
++	if (pipe->input_num == 0) {
++		pipe->state = VPFE_PIPELINE_STREAM_CONTINUOUS;
++		ret = vpfe_update_current_ext_subdev(video);
++		if (ret) {
++			pr_err("Invalid external subdev\n");
++			return ret;
 +		}
 +	} else {
-+		if (i < ARRAY_SIZE(ccdc_raw_yuv_pix_formats)) {
-+			*pix = ccdc_raw_yuv_pix_formats[i];
-+			ret = 0;
-+		}
++		pipe->state = VPFE_PIPELINE_STREAM_SINGLESHOT;
 +	}
++
++	video->initialized = 1;
++	video->skip_frame_count = 1;
++	video->skip_frame_count_init = 1;
++
++	return 0;
++}
++
++/* checks wether pipeline is ready for enabling */
++int is_pipe_ready(struct vpfe_pipeline *pipe)
++{
++	int i;
++
++	for (i = 0; i < pipe->input_num; i++)
++		if (!pipe->inputs[i]->started ||
++			pipe->inputs[i]->state != VPFE_VIDEO_BUFFER_QUEUED)
++			return 0;
++
++	for (i = 0; i < pipe->output_num; i++)
++		if (!pipe->outputs[i]->started ||
++			pipe->outputs[i]->state != VPFE_VIDEO_BUFFER_QUEUED)
++			return 0;
++
++	return 1;
++}
++
++/**
++ * Validate a pipeline by checking both ends of all links for format
++ * discrepancies.
++ *
++ * Return 0 if all formats match, or -EPIPE if at least one link is found with
++ * different formats on its two ends.
++ */
++static int vpfe_video_validate_pipeline(struct vpfe_pipeline *pipe)
++{
++	struct v4l2_subdev_format fmt_source;
++	struct v4l2_subdev_format fmt_sink;
++	struct v4l2_subdev *subdev;
++	struct media_pad *pad;
++	int ret;
++
++	/* Should not matter if it is output[0] or 1 as
++	   the general ideas is to traverse backwards and
++	   the fact that the out video node always has the
++	   format of the connected pad.
++	*/
++	subdev = vpfe_video_remote_subdev(pipe->outputs[0], NULL);
++	if (subdev == NULL)
++		return -EPIPE;
++
++	while (1) {
++		/* Retrieve the sink format */
++		pad = &subdev->entity.pads[0];
++		if (!(pad->flags & MEDIA_PAD_FL_SINK))
++			break;
++
++		fmt_sink.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++		fmt_sink.pad = pad->index;
++		ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL,
++				       &fmt_sink);
++
++		if (ret < 0 && ret != -ENOIOCTLCMD)
++			return -EPIPE;
++
++		/* Retrieve the source format */
++		pad = media_entity_remote_source(pad);
++		if (pad == NULL ||
++			pad->entity->type != MEDIA_ENT_T_V4L2_SUBDEV)
++			break;
++
++		subdev = media_entity_to_v4l2_subdev(pad->entity);
++
++		fmt_source.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++		fmt_source.pad = pad->index;
++		ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt_source);
++		if (ret < 0 && ret != -ENOIOCTLCMD)
++			return -EPIPE;
++
++		/* Check if the two ends match */
++		if (fmt_source.format.code != fmt_sink.format.code ||
++		    fmt_source.format.width != fmt_sink.format.width ||
++		    fmt_source.format.height != fmt_sink.format.height)
++			return -EPIPE;
++	}
++
++	return 0;
++}
++
++/**
++ * vpfe_pipeline_enable() - Enable streaming on a pipeline
++ * @vpfe_dev: vpfe device
++ * @pipe: vpfe pipeline
++ *
++ * Walk the entities chain starting at the pipeline output video node and start
++ * all modules in the chain in the given mode.
++ *
++ * Return 0 if successfull, or the return value of the failed video::s_stream
++ * operation otherwise.
++ */
++static int vpfe_pipeline_enable(struct vpfe_pipeline *pipe)
++{
++	struct media_entity_graph graph;
++	struct media_entity *entity;
++	struct v4l2_subdev *subdev;
++	struct media_device *mdev;
++	int ret = 0;
++
++	if (pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS)
++		entity = vpfe_get_input_entity(pipe->outputs[0]);
++	else
++		entity = &pipe->inputs[0]->video_dev.entity;
++
++	mdev = entity->parent;
++
++	mutex_lock(&mdev->graph_mutex);
++	media_entity_graph_walk_start(&graph, entity);
++
++	while ((entity = media_entity_graph_walk_next(&graph))) {
++
++		if (media_entity_type(entity) == MEDIA_ENT_T_DEVNODE)
++			continue;
++
++		subdev = media_entity_to_v4l2_subdev(entity);
++
++		ret = v4l2_subdev_call(subdev, video, s_stream, 1);
++		if (ret < 0 && ret != -ENOIOCTLCMD)
++			break;
++	}
++	mutex_unlock(&mdev->graph_mutex);
 +
 +	return ret;
 +}
 +
-+static int ccdc_set_pixel_format(unsigned int pixfmt)
++/**
++ * vpfe_pipeline_disable() - Disable streaming on a pipeline
++ * @vpfe_dev: vpfe device
++ * @pipe: VPFE pipeline
++ *
++ * Walk the entities chain starting at the pipeline output video node and stop
++ * all modules in the chain.
++ *
++ * Return 0 if all modules have been properly stopped, or -ETIMEDOUT if a module
++ * can't be stopped.
++ */
++static int vpfe_pipeline_disable(struct vpfe_pipeline *pipe)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (pixfmt == V4L2_PIX_FMT_SBGGR16)
-+			ccdc_cfg.data_pack = CCDC_PACK_16BIT;
-+		else if ((pixfmt == V4L2_PIX_FMT_SGRBG10DPCM8) ||
-+				(pixfmt == V4L2_PIX_FMT_SGRBG10ALAW8))
-+			ccdc_cfg.data_pack = CCDC_PACK_8BIT;
-+		else
-+			return -EINVAL;
++	struct media_entity_graph graph;
++	struct media_entity *entity;
++	struct v4l2_subdev *subdev;
++	struct media_device *mdev;
++	int ret = 0;
 +
-+		ccdc_cfg.bayer.pix_fmt = CCDC_PIXFMT_RAW;
-+		ccdc_cfg.bayer.v4l2_pix_fmt = pixfmt;
-+	} else {
-+		if (pixfmt == V4L2_PIX_FMT_YUYV)
-+			ccdc_cfg.ycbcr.pix_order = CCDC_PIXORDER_YCBYCR;
-+		else if (pixfmt == V4L2_PIX_FMT_UYVY)
-+			ccdc_cfg.ycbcr.pix_order = CCDC_PIXORDER_CBYCRY;
-+		else
-+		  return -EINVAL;
++	if (pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS)
++		entity = vpfe_get_input_entity(pipe->outputs[0]);
++	else
++		entity = &pipe->inputs[0]->video_dev.entity;
 +
-+		ccdc_cfg.data_pack = CCDC_PACK_8BIT;
-+		ccdc_cfg.ycbcr.v4l2_pix_fmt = pixfmt;
++	mdev = entity->parent;
++
++	mutex_lock(&mdev->graph_mutex);
++	media_entity_graph_walk_start(&graph, entity);
++
++	while ((entity = media_entity_graph_walk_next(&graph))) {
++
++		if (media_entity_type(entity) == MEDIA_ENT_T_DEVNODE)
++			continue;
++
++		subdev = media_entity_to_v4l2_subdev(entity);
++
++		ret = v4l2_subdev_call(subdev, video, s_stream, 0);
++		if (ret < 0 && ret != -ENOIOCTLCMD)
++			break;
 +	}
++
++	mutex_unlock(&mdev->graph_mutex);
++
++	return (ret == 0) ? ret : -ETIMEDOUT ;
++}
++
++/**
++ * vpfe_pipeline_set_stream() - Enable/disable streaming on a pipeline
++ * @vpfe_dev: VPFE device
++ * @pipe: VPFE pipeline
++ * @state: Stream state (stopped or active)
++ *
++ * Set the pipeline to the given stream state.
++ *
++ * Return 0 if successfull, or the return value of the failed video::s_stream
++ * operation otherwise.
++ */
++static int vpfe_pipeline_set_stream(struct vpfe_pipeline *pipe,
++			    enum vpfe_pipeline_stream_state state)
++{
++	if (state == VPFE_PIPELINE_STREAM_STOPPED)
++		return vpfe_pipeline_disable(pipe);
++
++	return vpfe_pipeline_enable(pipe);
++}
++
++static int all_videos_stopped(struct vpfe_video_device *video)
++{
++	struct vpfe_pipeline *pipe = &video->pipe;
++	int i;
++
++	for (i = 0; i < pipe->input_num; i++)
++		if (pipe->inputs[i]->started)
++			return 0;
++
++	for (i = 0; i < pipe->output_num; i++)
++		if (pipe->outputs[i]->started)
++			return 0;
++
++	return 1;
++}
++
++/*
++ * vpfe_open() - open video device
++ * @file: file pointer
++ *
++ * initialize media pipeline state, allocate memory for file hadle
++ *
++ * Return 0 if successfull, or the return -ENODEV otherwise.
++ */
++static int vpfe_open(struct file *file)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_fh *fh;
++
++	/* Allocate memory for the file handle object */
++	fh = kzalloc(sizeof(struct vpfe_fh), GFP_KERNEL);
++
++	if (fh == NULL)
++		return -ENOMEM;
++	/* store pointer to fh in private_data member of file */
++	file->private_data = fh;
++	fh->video = video;
++	mutex_lock(&video->lock);
++	/* If decoder is not initialized. initialize it */
++	if (!video->initialized && vpfe_update_pipe_state(video)) {
++		mutex_unlock(&video->lock);
++		return -ENODEV;
++	}
++	/* Increment device usrs counter */
++	video->usrs++;
++	/* Set io_allowed member to false */
++	fh->io_allowed = 0;
++	/* Initialize priority of this instance to default priority */
++	fh->prio = V4L2_PRIORITY_UNSET;
++	v4l2_prio_open(&video->prio, &fh->prio);
++	mutex_unlock(&video->lock);
 +
 +	return 0;
 +}
 +
-+static u32 ccdc_get_pixel_format(void)
++/* get the next buffer available from dma queue */
++unsigned long vpfe_get_next_buffer(struct vpfe_video_device *video)
 +{
-+	u32 pixfmt;
++	/* mark next buffer as active */
++	video->next_frm = list_entry(video->dma_queue.next,
++					struct videobuf_buffer, queue);
 +
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		pixfmt = ccdc_cfg.bayer.v4l2_pix_fmt;
-+	else
-+		pixfmt = ccdc_cfg.ycbcr.v4l2_pix_fmt;
++	/* in single shot mode both curr_frm
++	   and next_frm point to same buffer */
++	video->cur_frm = video->next_frm;
++	list_del(&video->next_frm->queue);
++	video->next_frm->state = VIDEOBUF_ACTIVE;
 +
-+	return pixfmt;
++	return videobuf_to_dma_contig(video->next_frm);
 +}
 +
-+static int ccdc_set_image_window(struct v4l2_rect *win)
++/* schedule the next buffer which is available on dma queue */
++void vpfe_schedule_next_buffer(struct vpfe_video_device *video)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		ccdc_cfg.bayer.win.top = win->top;
-+		ccdc_cfg.bayer.win.left = win->left;
-+		ccdc_cfg.bayer.win.width = win->width;
-+		ccdc_cfg.bayer.win.height = win->height;
-+	} else {
-+		ccdc_cfg.ycbcr.win.top = win->top;
-+		ccdc_cfg.ycbcr.win.left = win->left;
-+		ccdc_cfg.ycbcr.win.width = win->width;
-+		ccdc_cfg.ycbcr.win.height = win->height;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	unsigned long addr;
++
++	if (list_empty(&video->dma_queue))
++		return;
++
++	video->next_frm = list_entry(video->dma_queue.next,
++					struct videobuf_buffer, queue);
++
++	if (VPFE_PIPELINE_STREAM_SINGLESHOT == video->pipe.state)
++		video->cur_frm = video->next_frm;
++
++	list_del(&video->next_frm->queue);
++	video->next_frm->state = VIDEOBUF_ACTIVE;
++	addr = videobuf_to_dma_contig(video->next_frm);
++
++	video->ops->queue(vpfe_dev, addr);
++
++	video->state = VPFE_VIDEO_BUFFER_QUEUED;
++}
++
++/* schedule the buffer for capturing bottom field */
++void vpfe_schedule_bottom_field(struct vpfe_video_device *video)
++{
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	unsigned long addr;
++
++	addr = videobuf_to_dma_contig(video->cur_frm);
++	addr += video->field_off;
++
++	video->ops->queue(vpfe_dev, addr);
++}
++
++/* make buffer available for dequeue */
++void vpfe_process_buffer_complete(struct vpfe_video_device *video)
++{
++	struct vpfe_pipeline *pipe = &video->pipe;
++	struct timespec timespec;
++	s64 nsec;
++
++	ktime_get_ts(&timespec);
++	nsec = timespec_to_ns(&timespec);
++
++	video->cur_frm->ts = ns_to_timeval(nsec);
++	video->cur_frm->state = VIDEOBUF_DONE;
++	video->cur_frm->size = video->fmt.fmt.pix.sizeimage;
++	wake_up_interruptible(&video->cur_frm->done);
++	if (pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS)
++		video->cur_frm = video->next_frm;
++}
++
++/* vpfe_stop_capture() - stop streaming */
++static void vpfe_stop_capture(struct vpfe_video_device *video)
++{
++	struct vpfe_pipeline *pipe = &video->pipe;
++
++	video->started = 0;
++
++	if (video->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++		return;
++
++	if (all_videos_stopped(video))
++		vpfe_pipeline_set_stream(pipe,
++					 VPFE_PIPELINE_STREAM_STOPPED);
++}
++
++/*
++ * vpfe_release() - release video device
++ * @file: file pointer
++ *
++ * deletes buffer queue, frees the buffers and the vpfe file handle
++ *
++ * Return 0
++ */
++static int vpfe_release(struct file *file)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_fh *fh = file->private_data;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_release\n");
++
++	/* Get the device lock */
++	mutex_lock(&video->lock);
++	/* if this instance is doing IO */
++	if (fh->io_allowed) {
++		if (video->started) {
++			vpfe_stop_capture(video);
++			/* mark pipe state as stopped in vpfe_release(),
++			   as app might call streamon() after streamoff()
++			   in which case driver has to start streaming.
++			*/
++			video->pipe.state = VPFE_PIPELINE_STREAM_STOPPED;
++			videobuf_streamoff(&video->buffer_queue);
++		}
++		video->io_usrs = 0;
 +	}
++
++	/* Decrement device usrs counter */
++	video->usrs--;
++	/* Close the priority */
++	v4l2_prio_close(&video->prio, fh->prio);
++
++	/* If this is the last file handle */
++	if (!video->usrs)
++		video->initialized = 0;
++
++	mutex_unlock(&video->lock);
++	file->private_data = NULL;
++	/* Free memory allocated to file handle object */
++	kzfree(fh);
 +
 +	return 0;
 +}
 +
-+static void ccdc_get_image_window(struct v4l2_rect *win)
++/*
++ * vpfe_mmap() - It is used to map kernel space buffers
++ * into user spaces
++ */
++static int vpfe_mmap(struct file *file, struct vm_area_struct *vma)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		*win = ccdc_cfg.bayer.win;
-+	else
-+		*win = ccdc_cfg.ycbcr.win;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_mmap\n");
++
++	return videobuf_mmap_mapper(&video->buffer_queue, vma);
 +}
 +
-+static unsigned int ccdc_get_line_length(void)
++/*
++ * vpfe_poll() - It is used for select/poll system call
++ */
++static unsigned int vpfe_poll(struct file *file, poll_table *wait)
 +{
-+	unsigned int len;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
 +
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (ccdc_cfg.data_pack == CCDC_PACK_8BIT)
-+			len = ((ccdc_cfg.bayer.win.width));
-+		else if (ccdc_cfg.data_pack == CCDC_PACK_12BIT)
-+			len = (ccdc_cfg.bayer.win.width * 2) +
-+				 (ccdc_cfg.bayer.win.width >> 2);
-+		else
-+			len = ccdc_cfg.bayer.win.width * 2;
-+	} else {
-+		len = ccdc_cfg.ycbcr.win.width * 2;
-+	}
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_poll\n");
 +
-+	return ALIGN(len, 32);
-+}
-+
-+static int ccdc_set_frame_format(enum ccdc_frmfmt frm_fmt)
-+{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		ccdc_cfg.bayer.frm_fmt = frm_fmt;
-+	else
-+		ccdc_cfg.ycbcr.frm_fmt = frm_fmt;
++	if (video->started)
++		return videobuf_poll_stream(file,
++					    &video->buffer_queue, wait);
 +
 +	return 0;
 +}
 +
-+static enum ccdc_frmfmt ccdc_get_frame_format(void)
++/* vpfe capture driver file operations */
++static const struct v4l2_file_operations vpfe_fops = {
++	.owner = THIS_MODULE,
++	.open = vpfe_open,
++	.release = vpfe_release,
++	.unlocked_ioctl = video_ioctl2,
++	.mmap = vpfe_mmap,
++	.poll = vpfe_poll
++};
++
++/*
++ * vpfe_querycap() - query capabilities of video device
++ * @file: file pointer
++ * @priv: void pointer
++ * @cap: pointer to v4l2_capability structure
++ *
++ * fills v4l2 capabilities structure
++ *
++ * Return 0
++ */
++static int vpfe_querycap(struct file *file, void  *priv,
++			       struct v4l2_capability *cap)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return ccdc_cfg.bayer.frm_fmt;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_querycap\n");
++
++	if (video->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
++		cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
 +	else
-+		return ccdc_cfg.ycbcr.frm_fmt;
++		cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
++
++	cap->version = VPFE_CAPTURE_VERSION_CODE;
++	strlcpy(cap->driver, CAPTURE_DRV_NAME, sizeof(cap->driver));
++	strlcpy(cap->bus_info, "VPFE", sizeof(cap->bus_info));
++	strlcpy(cap->card, vpfe_dev->cfg->card_name, sizeof(cap->card));
++
++	return 0;
 +}
 +
-+static int ccdc_getfid(void)
++/*
++ * vpfe_g_fmt() - get the format which is active on video device
++ * @file: file pointer
++ * @priv: void pointer
++ * @fmt: pointer to v4l2_format structure
++ *
++ * fills v4l2 format structure with active format
++ *
++ * Return 0
++ */
++static int vpfe_g_fmt(struct file *file, void *priv,
++				struct v4l2_format *fmt)
 +{
-+	return (regr(MODESET) >> 15) & 0x1;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_g_fmt\n");
++	/* Fill in the information about format */
++	*fmt = video->fmt;
++
++	return 0;
 +}
 +
-+static int ccdc_set_ctrl(u32 ctrl_id, s32 val)
++/*
++ * vpfe_enum_fmt() - enum formats supported on media chain
++ * @file: file pointer
++ * @priv: void pointer
++ * @fmt: pointer to v4l2_fmtdesc structure
++ *
++ * fills v4l2_fmtdesc structure with output format set on adjacent subdev,
++ * only one format is enumearted as subdevs are already configured
++ *
++ * Return 0 if successfull, error code otherwise
++ */
++static int vpfe_enum_fmt(struct file *file, void  *priv,
++				   struct v4l2_fmtdesc *fmt)
 +{
-+	switch (ctrl_id) {
-+	case VPFE_CCDC_CID_CRGAIN:
-+		ccdc_gain_params.cr_gain = val;
-+		break;
-+	case VPFE_CCDC_CID_CGRGAIN:
-+		ccdc_gain_params.cgr_gain = val;
-+		break;
-+	case VPFE_CCDC_CID_CGBGAIN:
-+		ccdc_gain_params.cgb_gain = val;
-+		break;
-+	case VPFE_CCDC_CID_CBGAIN:
-+		ccdc_gain_params.cb_gain = val;
-+		break;
-+	case VPFE_CCDC_CID_GAIN_OFFSET:
-+		ccdc_gain_params.offset = val;
-+		break;
-+	default:
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_subdev_format sd_fmt;
++	struct v4l2_mbus_framefmt mbus;
++	struct v4l2_subdev *subdev;
++	struct v4l2_format format;
++	struct media_pad *remote;
++	int ret;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_enum_fmt\n");
++
++	/* since already subdev pad format is set,
++	only one pixel format is available */
++	if (fmt->index > 0) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid index\n");
 +		return -EINVAL;
 +	}
-+	return 0;
-+}
 +
-+/* misc operations */
-+static void ccdc_setfbaddr(unsigned long addr)
-+{
-+	regw((addr >> 21) & 0x07ff, CADU);
-+	regw((addr >> 5) & 0x0ffff, CADL);
-+}
-+
-+static int ccdc_set_hw_if_params(struct vpfe_hw_if_param *params)
-+{
-+	ccdc_cfg.if_type = params->if_type;
-+
-+	switch (params->if_type) {
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		ccdc_cfg.ycbcr.pix_fmt = CCDC_PIXFMT_YCBCR_8BIT;
-+		break;
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+		ccdc_cfg.ycbcr.pix_fmt = CCDC_PIXFMT_YCBCR_16BIT;
-+		break;
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		ccdc_cfg.bayer.pix_fmt = CCDC_PIXFMT_RAW;
-+		break;
-+	default:
-+		dev_dbg(dev, "Invalid interface type\n");
++	/* get the remote pad */
++	remote = media_entity_remote_source(&video->pad);
++	if (remote == NULL) {
++		v4l2_err(&vpfe_dev->v4l2_dev,
++			 "invalid remote pad for video node\n");
 +		return -EINVAL;
 +	}
 +
-+	return 0;
-+}
-+
-+/* Parameter operations */
-+static int ccdc_get_params(void *params)
-+{
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (ccdc_cfg.if_type != V4L2_MBUS_FMT_SGRBG12_1X12)
++	/* get the remote subdev */
++	subdev = vpfe_video_remote_subdev(video, NULL);
++	if (subdev == NULL) {
++		v4l2_err(&vpfe_dev->v4l2_dev,
++			 "invalid remote subdev for video node\n");
 +		return -EINVAL;
++	}
 +
-+	memcpy(params, &ccdc_cfg.bayer.config_params,
-+			sizeof(ccdc_cfg.bayer.config_params));
++	sd_fmt.pad = remote->index;
++	sd_fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++	/* get output format of remote subdev */
++	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &sd_fmt);
++	if (ret) {
++		v4l2_err(&vpfe_dev->v4l2_dev,
++			 "invalid remote subdev for video node\n");
++		return ret;
++	}
++	/* convert to pix format */
++	mbus.code = sd_fmt.format.code;
++	mbus_to_pix(&mbus, &format.fmt.pix);
++
++	/* copy the result */
++	fmt->pixelformat = format.fmt.pix.pixelformat;
 +
 +	return 0;
 +}
 +
-+/* Parameter operations */
-+static int ccdc_set_params(void *params)
++/*
++ * vpfe_s_fmt() - set the format on video device
++ * @file: file pointer
++ * @priv: void pointer
++ * @fmt: pointer to v4l2_format structure
++ *
++ * validate and set the format on video device
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_s_fmt(struct file *file, void *priv,
++				struct v4l2_format *fmt)
 +{
-+	struct ccdc_config_params_raw ccdc_raw_params;
-+	int ret = -EINVAL;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_format format;
++	int ret;
 +
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (ccdc_cfg.if_type != V4L2_MBUS_FMT_SGRBG12_1X12)
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_fmt\n");
++
++	/* If streaming is started, return error */
++	if (video->started) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Streaming is started\n");
++		return -EBUSY;
++	}
++
++	/* get adjacent subdev's output pad format */
++	ret = __vpfe_video_get_format(video, &format);
++	if (ret)
 +		return ret;
 +
-+	memcpy(&ccdc_raw_params, params, sizeof(ccdc_raw_params));
++	*fmt = format;
 +
-+	if (!validate_ccdc_config_params_raw(&ccdc_raw_params)) {
-+		memcpy(&ccdc_cfg.bayer.config_params, &ccdc_raw_params,
-+			sizeof(ccdc_raw_params));
-+		ret = 0;
++	video->fmt = *fmt;
++
++	return 0;
++}
++
++/*
++ * vpfe_try_fmt() - try the format on video device
++ * @file: file pointer
++ * @priv: void pointer
++ * @fmt: pointer to v4l2_format structure
++ *
++ * validate the format, update with correct format
++ * based on output format set on adjacent subdev
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_try_fmt(struct file *file, void *priv,
++				  struct v4l2_format *fmt)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_format format;
++	int ret;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_try_fmt\n");
++
++	/* get adjacent subdev's output pad format */
++	ret = __vpfe_video_get_format(video, &format);
++	if (ret)
++		return ret;
++
++	*fmt = format;
++
++	return 0;
++}
++
++/*
++ * vpfe_enum_input() - enum inputs supported on media chain
++ * @file: file pointer
++ * @priv: void pointer
++ * @fmt: pointer to v4l2_fmtdesc structure
++ *
++ * fills v4l2_input structure with input available on media chain,
++ * only one input is enumearted as media chain is setup by this time
++ *
++ * Return 0 if successfull, -EINVAL is media chain is invalid
++ */
++static int vpfe_enum_input(struct file *file, void *priv,
++				 struct v4l2_input *inp)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_ext_subdev_info *sdinfo = video->current_ext_subdev;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_enum_input\n");
++
++	/* enumerate from the subdev user has choosen through mc */
++	if (inp->index < sdinfo->num_inputs) {
++		memcpy(inp, &sdinfo->inputs[inp->index],
++		       sizeof(struct v4l2_input));
++		return 0;
 +	}
++
++	return -EINVAL;
++}
++
++/*
++ * vpfe_g_input() - get index of the input which is active
++ * @file: file pointer
++ * @priv: void pointer
++ * @index: pointer to unsigned int
++ *
++ * set index with input index which is active
++ *
++ * Return 0
++ */
++static int vpfe_g_input(struct file *file, void *priv, unsigned int *index)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_g_input\n");
++
++	*index = video->current_input;
++
++	return 0;
++}
++
++/*
++ * vpfe_s_input() - set input which is pointed by input index
++ * @file: file pointer
++ * @priv: void pointer
++ * @index: pointer to unsigned int
++ *
++ * set input on external subdev
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_s_input(struct file *file, void *priv, unsigned int index)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct ccdc_hw_device *ccdc_dev = vpfe_dev->vpfe_ccdc.ccdc_dev;
++	struct imp_hw_interface *imp_hw_if = vpfe_dev->vpfe_previewer.imp_hw_if;
++	struct vpfe_ext_subdev_info *sdinfo;
++	struct vpfe_route *route;
++	struct v4l2_input *inps;
++	u32 output;
++	u32 input;
++	int ret;
++	int i;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_input\n");
++
++	ret = mutex_lock_interruptible(&video->lock);
++	if (ret)
++		return ret;
++
++	/*
++	 * If streaming is started return device busy
++	 * error
++	 */
++	if (video->started) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Streaming is on\n");
++		ret = -EBUSY;
++		goto unlock_out;
++	}
++
++	sdinfo = video->current_ext_subdev;
++
++	if (!sdinfo->registered) {
++		ret = -EINVAL;
++		goto unlock_out;
++	}
++
++	if (vpfe_dev->cfg->setup_input &&
++		vpfe_dev->cfg->setup_input(sdinfo->grp_id) < 0) {
++		ret = -EFAULT;
++		v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev,
++			  "couldn't setup input for %s\n",
++			  sdinfo->module_name);
++		goto unlock_out;
++	}
++
++	route = &sdinfo->routes[index];
++	if (route && sdinfo->can_route) {
++		input = route->input;
++		output = route->output;
++		ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
++						 sdinfo->grp_id, video,
++						 s_routing, input, output, 0);
++
++		if (ret) {
++			v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev,
++				"s_input:error in setting input in decoder\n");
++			ret = -EINVAL;
++			goto unlock_out;
++		}
++	}
++
++	/* set standards set by subdev in video device */
++	for (i = 0; i < sdinfo->num_inputs; i++) {
++		inps = &sdinfo->inputs[i];
++		video->video_dev.tvnorms |= inps->std;
++	}
++
++	/* set the bus/interface parameter for the sub device in ccdc */
++	ret = ccdc_dev->hw_ops.set_hw_if_params(&sdinfo->ccdc_if_params);
++	if (ret)
++		goto unlock_out;
++
++	/* update the if parameters to imp hw interface */
++	if (imp_hw_if && imp_hw_if->set_hw_if_param)
++		ret = imp_hw_if->set_hw_if_param(vpfe_dev->ipipe,
++						 &sdinfo->ccdc_if_params);
++	if (ret)
++		goto unlock_out;
++
++	video->current_input = index;
++
++unlock_out:
++	mutex_unlock(&video->lock);
++	return ret;
++}
++
++/*
++ * vpfe_querystd() - query std which is being input on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @std_id: pointer to v4l2_std_id structure
++ *
++ * call external subdev through v4l2_device_call_until_err to
++ * get the std that is being active.
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_querystd(struct file *file, void *priv, v4l2_std_id *std_id)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_ext_subdev_info *sdinfo;
++	int ret;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_querystd\n");
++
++	ret = mutex_lock_interruptible(&video->lock);
++	sdinfo = video->current_ext_subdev;
++	if (ret)
++		return ret;
++
++	/* Call querystd function of decoder device */
++	ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev, sdinfo->grp_id,
++					 video, querystd, std_id);
++	mutex_unlock(&video->lock);
 +
 +	return ret;
 +}
 +
-+/* This function will configure CCDC for YCbCr parameters. */
-+static int ccdc_config_ycbcr(int mode)
++/*
++ * vpfe_s_std() - set std on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @std_id: pointer to v4l2_std_id structure
++ *
++ * set std pointed by std_id on external subdev by calling it using
++ * v4l2_device_call_until_err
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_s_std(struct file *file, void *priv, v4l2_std_id *std_id)
 +{
-+	struct ccdc_ycbcr_config *params = &ccdc_cfg.ycbcr;
-+	struct vpss_pg_frame_size frame_size;
-+	struct vpss_sync_pol sync;
-+	u32 modeset;
-+	u32 ccdcfg;
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_ext_subdev_info *sdinfo;
++	int ret;
 +
-+	/**
-+	 * first reset the CCDC
-+	 * all registers have default values after reset
-+	 * This is important since we assume default values to be set in
-+	 * a lot of registers that we didn't touch
-+	 */
-+	dev_dbg(dev, "\nStarting ccdc_config_ycbcr...");
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_std\n");
 +
-+	/* start with all bits zero */
-+	modeset = 0;
-+	ccdcfg = 0;
++	/* Call decoder driver function to set the standard */
++	ret = mutex_lock_interruptible(&video->lock);
++	if (ret)
++		return ret;
 +
-+	/* configure pixel format or input mode */
-+	modeset = modeset | ((params->pix_fmt & CCDC_INPUT_MASK) <<
-+		  CCDC_INPUT_SHIFT) | ((params->frm_fmt & CCDC_FRM_FMT_MASK) <<
-+		  CCDC_FRM_FMT_SHIFT) | (((params->fid_pol &
-+		  CCDC_FID_POL_MASK) << CCDC_FID_POL_SHIFT)) |
-+		  (((params->hd_pol & CCDC_HD_POL_MASK) << CCDC_HD_POL_SHIFT)) |
-+		  (((params->vd_pol & CCDC_VD_POL_MASK) << CCDC_VD_POL_SHIFT));
++	sdinfo = video->current_ext_subdev;
++	/* If streaming is started, return device busy error */
++	if (video->started) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "streaming is started\n");
++		ret = -EBUSY;
++		goto unlock_out;
++	}
 +
-+	/* pack the data to 8-bit CCDCCFG */
-+	switch (ccdc_cfg.if_type) {
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+		if (params->pix_fmt != CCDC_PIXFMT_YCBCR_8BIT) {
-+			dev_dbg(dev, "Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		modeset |= ((VPFE_PINPOL_NEGATIVE & CCDC_VD_POL_MASK) <<
-+				CCDC_VD_POL_SHIFT);
-+		regw(3, REC656IF);
-+		ccdcfg = ccdcfg | CCDC_DATA_PACK8 | CCDC_YCINSWP_YCBCR;
-+		break;
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+		if (params->pix_fmt != CCDC_PIXFMT_YCBCR_8BIT) {
-+			dev_dbg(dev, "Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		/* setup BT.656, embedded sync  */
-+		regw(3, REC656IF);
-+		/* enable 10 bit mode in ccdcfg */
-+		ccdcfg = ccdcfg | CCDC_DATA_PACK8 | CCDC_YCINSWP_YCBCR |
-+			CCDC_BW656_ENABLE;
-+		break;
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		if (params->pix_fmt != CCDC_PIXFMT_YCBCR_16BIT) {
-+			dev_dbg(dev, "Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		regw(3, REC656IF);
-+		break;
++	ret = v4l2_device_call_until_err(&vpfe_dev->v4l2_dev, sdinfo->grp_id,
++					 core, s_std, *std_id);
++	if (ret < 0) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Failed to set standard\n");
++		goto unlock_out;
++	}
 +
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		ccdcfg |= CCDC_DATA_PACK8;
-+		ccdcfg |= CCDC_YCINSWP_YCBCR;
-+		if (params->pix_fmt != CCDC_PIXFMT_YCBCR_8BIT) {
-+			dev_dbg(dev, "Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+		if (params->pix_fmt != CCDC_PIXFMT_YCBCR_16BIT) {
-+			dev_dbg(dev, "Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+	default:
-+		/* should never come here */
-+		dev_dbg(dev, "Invalid interface type\n");
++unlock_out:
++	mutex_unlock(&video->lock);
++	return ret;
++}
++
++/*
++ * vpfe_enum_preset() - enumerate dv_preset which are supported by
++ * to external subdev
++ *
++ * @file: file pointer
++ * @priv: void pointer
++ * @preset: pointer to v4l2_dv_enum_preset structure
++ *
++ * enum dv_preset's which are supported by external subdev through
++ * v4l2_subdev_call
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_enum_preset(struct file *file, void *fh,
++			    struct v4l2_dv_enum_preset *preset)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_subdev *subdev = video->current_ext_subdev->subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_enum_preset\n");
++
++	return v4l2_subdev_call(subdev, video, enum_dv_presets, preset);
++}
++
++/*
++ * vpfe_query_preset() - query the dv_preset which is being input
++ * to external subdev
++ *
++ * @file: file pointer
++ * @priv: void pointer
++ * @preset: pointer to v4l2_preset structure
++ *
++ * get dv_preset which is being input on external subdev through
++ * v4l2_subdev_call
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_query_preset(struct file *file, void *fh,
++			     struct v4l2_dv_preset *preset)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_subdev *subdev = video->current_ext_subdev->subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_query_preset\n");
++
++	return v4l2_subdev_call(subdev, video, query_dv_preset, preset);
++}
++
++/*
++ * vpfe_s_preset() - set dv_preset on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @preset: pointer to v4l2_preset structure
++ *
++ * set dv_preset pointed by preset on external subdev through
++ * v4l2_device_call_until_err, this configures amplifier also
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_s_preset(struct file *file, void *fh,
++			 struct v4l2_dv_preset *preset)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_preset\n");
++
++	return v4l2_device_call_until_err(&vpfe_dev->v4l2_dev,
++					  video->current_ext_subdev->grp_id,
++					  video, s_dv_preset, preset);
++}
++
++/*
++ * vpfe_g_preset() - get dv_preset which is set on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @preset: pointer to v4l2_preset structure
++ *
++ * get dv_preset which is set on external subdev through
++ * v4l2_subdev_call
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_g_preset(struct file *file, void *fh,
++			 struct v4l2_dv_preset *preset)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct v4l2_subdev *subdev = video->current_ext_subdev->subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_g_preset\n");
++
++	return v4l2_subdev_call(subdev, video, query_dv_preset, preset);
++}
++
++/*
++ *  Videobuf operations
++ */
++static int vpfe_videobuf_setup(struct videobuf_queue *vq,
++				unsigned int *count,
++				unsigned int *size)
++{
++	struct vpfe_fh *fh = vq->priv_data;
++	struct vpfe_video_device *video = fh->video;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_pipeline *pipe = &video->pipe;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_buffer_setup\n");
++
++	*size = video->fmt.fmt.pix.sizeimage;
++
++	if (vpfe_dev->video_limit) {
++		while (*size * *count > vpfe_dev->video_limit)
++			(*count)--;
++	}
++
++	if (pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS) {
++		if (*count < CONT_MIN_NUM_BUFFERS)
++			*count = CONT_MIN_NUM_BUFFERS;
++	}
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev,
++		"count=%d, size=%d\n", *count, *size);
++
++	return 0;
++}
++
++static int vpfe_videobuf_prepare(struct videobuf_queue *vq,
++				struct videobuf_buffer *vb,
++				enum v4l2_field field)
++{
++	struct vpfe_fh *fh = vq->priv_data;
++	struct vpfe_video_device *video = fh->video;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	unsigned long addr;
++	int ret;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_videobuf_prepare\n");
++
++	if (VIDEOBUF_NEEDS_INIT != vb->state)
++		return 0;
++
++	/* Initialize buffer */
++	vb->width = video->fmt.fmt.pix.width;
++	vb->height = video->fmt.fmt.pix.height;
++	vb->size = video->fmt.fmt.pix.sizeimage;
++	vb->field = field;
++
++	ret = videobuf_iolock(vq, vb, NULL);
++	if (ret < 0)
++		return ret;
++
++	addr = videobuf_to_dma_contig(vb);
++	/* Make sure user addresses are aligned to 32 bytes */
++	if (!ALIGN(addr, 32))
++		return -EINVAL;
++
++	vb->state = VIDEOBUF_PREPARED;
++
++	return 0;
++}
++
++static void vpfe_videobuf_queue(struct videobuf_queue *vq,
++				struct videobuf_buffer *vb)
++{
++	/* Get the file handle object and device object */
++	struct vpfe_fh *fh = vq->priv_data;
++	struct vpfe_video_device *video = fh->video;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_pipeline *pipe = &video->pipe;
++	unsigned long flags;
++	unsigned long empty;
++	unsigned long addr;
++
++	spin_lock_irqsave(&video->dma_queue_lock, flags);
++	empty = list_empty(&video->dma_queue);
++
++	/* add the buffer to the DMA queue */
++	list_add_tail(&vb->queue, &video->dma_queue);
++	spin_unlock_irqrestore(&video->dma_queue_lock, flags);
++
++	/* Change state of the buffer */
++	vb->state = VIDEOBUF_QUEUED;
++
++	/* this case happens in case of single shot */
++	if (empty && video->started && pipe->state ==
++		VPFE_PIPELINE_STREAM_SINGLESHOT &&
++		video->state == VPFE_VIDEO_BUFFER_NOT_QUEUED) {
++		spin_lock(&video->dma_queue_lock);
++		addr = vpfe_get_next_buffer(video);
++		video->ops->queue(vpfe_dev, addr);
++
++		video->state = VPFE_VIDEO_BUFFER_QUEUED;
++		spin_unlock(&video->dma_queue_lock);
++
++		/* enable h/w each time in single shot */
++		if (is_pipe_ready(pipe))
++			vpfe_pipeline_set_stream(pipe,
++					VPFE_PIPELINE_STREAM_SINGLESHOT);
++	}
++}
++
++static void vpfe_videobuf_release(struct videobuf_queue *vq,
++				  struct videobuf_buffer *vb)
++{
++	struct vpfe_fh *fh = vq->priv_data;
++	struct vpfe_video_device *video = fh->video;
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_videobuf_release\n");
++
++	if (video->memory == V4L2_MEMORY_MMAP)
++		videobuf_dma_contig_free(vq, vb);
++	vb->state = VIDEOBUF_NEEDS_INIT;
++}
++
++static struct videobuf_queue_ops vpfe_videobuf_qops = {
++	.buf_setup      = vpfe_videobuf_setup,
++	.buf_prepare    = vpfe_videobuf_prepare,
++	.buf_queue      = vpfe_videobuf_queue,
++	.buf_release    = vpfe_videobuf_release,
++};
++
++/*
++ * vpfe_reqbufs() - supported REQBUF only once opening
++ * the device.
++ */
++static int vpfe_reqbufs(struct file *file, void *priv,
++			struct v4l2_requestbuffers *req_buf)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_fh *fh = file->private_data;
++	int ret;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_reqbufs\n");
++
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != req_buf->type &&
++		V4L2_BUF_TYPE_VIDEO_OUTPUT != req_buf->type) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid buffer type\n");
 +		return -EINVAL;
 +	}
 +
-+	regw(modeset, MODESET);
++	ret = mutex_lock_interruptible(&video->lock);
++	if (ret)
++		return ret;
 +
-+	/* Set up pix order */
-+	ccdcfg |= (params->pix_order & CCDC_PIX_ORDER_MASK) <<
-+		CCDC_PIX_ORDER_SHIFT;
++	if (video->io_usrs != 0) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Only one IO user allowed\n");
++		ret = -EBUSY;
++		goto unlock_out;
++	}
 +
-+	regw(ccdcfg, CCDCFG);
++	video->memory = req_buf->memory;
++	videobuf_queue_dma_contig_init(&video->buffer_queue,
++				&vpfe_videobuf_qops, vpfe_dev->pdev,
++				&video->irqlock, req_buf->type,
++				video->fmt.fmt.pix.field,
++				sizeof(struct videobuf_buffer),
++				fh, NULL);
 +
-+	/* configure video window */
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_YUYV10_1X20 ||
-+			ccdc_cfg.if_type == V4L2_MBUS_FMT_YUYV8_1X16)
-+		ccdc_setwin(&params->win, params->frm_fmt, 1, mode);
-+	else
-+		ccdc_setwin(&params->win, params->frm_fmt, 2, mode);
++	fh->io_allowed = 1;
++	video->io_usrs = 1;
++	INIT_LIST_HEAD(&video->dma_queue);
++	ret = videobuf_reqbufs(&video->buffer_queue, req_buf);
 +
-+	/**
-+	 * configure the horizontal line offset
-+	 * this is done by rounding up width to a multiple of 16 pixels
-+	 * and multiply by two to account for y:cb:cr 4:2:2 data
++unlock_out:
++	mutex_unlock(&video->lock);
++	return ret;
++}
++
++/*
++ * vpfe_querybuf() - query buffers for exchange
++ */
++static int vpfe_querybuf(struct file *file, void *priv,
++			 struct v4l2_buffer *buf)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_querybuf\n");
++
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != buf->type &&
++		V4L2_BUF_TYPE_VIDEO_OUTPUT != buf->type) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid buf type\n");
++		return  -EINVAL;
++	}
++
++	if (video->memory != V4L2_MEMORY_MMAP) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid memory\n");
++		return -EINVAL;
++	}
++
++	/* Call videobuf_querybuf to get information */
++	return videobuf_querybuf(&video->buffer_queue, buf);
++}
++
++/*
++ * vpfe_qbuf() - queue buffers for capture or processing
++ */
++static int vpfe_qbuf(struct file *file, void *priv,
++		     struct v4l2_buffer *p)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_fh *fh = file->private_data;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_qbuf\n");
++
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != p->type &&
++		V4L2_BUF_TYPE_VIDEO_OUTPUT != p->type) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid buf type\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * If this file handle is not allowed to do IO,
++	 * return error
 +	 */
-+	regw(((((params->win.width * 2) + 31) & 0xffffffe0) >> 5), HSIZE);
-+
-+	/* configure the memory line offset */
-+	if (params->frm_fmt == CCDC_FRMFMT_INTERLACED &&
-+	    params->buf_type == CCDC_BUFTYPE_FLD_INTERLEAVED) {
-+		/* two fields are interleaved in memory */
-+		regw(0x00000249, SDOFST);
++	if (!fh->io_allowed) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "fh->io_allowed\n");
++		return -EACCES;
 +	}
 +
-+	/* Setup test pattern if enabled */
-+	if (ccdc_test_pat_gen) {
-+		sync.ccdpg_hdpol = (params->hd_pol & CCDC_HD_POL_MASK);
-+		sync.ccdpg_vdpol = (params->vd_pol & CCDC_VD_POL_MASK);
-+		vpss_set_sync_pol(sync);
-+		vpss_set_pg_frame_size(frame_size);
++	return videobuf_qbuf(&video->buffer_queue, p);
++}
++
++/*
++ * vpfe_dqbuf() - deque buffer which is done with processing
++ */
++static int vpfe_dqbuf(struct file *file, void *priv,
++		      struct v4l2_buffer *buf)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_dqbuf\n");
++
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != buf->type &&
++		V4L2_BUF_TYPE_VIDEO_OUTPUT != buf->type) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid buf type\n");
++		return -EINVAL;
 +	}
 +
-+	return 0;
++	return videobuf_dqbuf(&video->buffer_queue,
++				      buf, file->f_flags & O_NONBLOCK);
 +}
 +
-+static int ccdc_configure(int mode)
++/* vpfe_start_capture() - start streaming on all the subdevs */
++static int vpfe_start_capture(struct vpfe_video_device *video)
 +{
-+	if (ccdc_cfg.if_type == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return ccdc_config_raw(mode);
++	struct vpfe_pipeline *pipe = &video->pipe;
++	int ret = 0;
 +
-+	return ccdc_config_ycbcr(mode);
++	video->started = 1;
++
++	if (is_pipe_ready(pipe))
++		ret = vpfe_pipeline_set_stream(pipe, pipe->state);
++
++	return ret;
 +}
 +
-+static int ccdc_close(struct device *device)
++/*
++ * vpfe_streamon() - get dv_preset which is set on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @buf_type: enum v4l2_buf_type
++ *
++ * queue buffer onto hardware for capture/processing and
++ * start all the subdevs which are in media chain
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_streamon(struct file *file, void *priv,
++			 enum v4l2_buf_type buf_type)
 +{
-+	/* copy defaults to module params */
-+	memcpy(&ccdc_cfg.bayer.config_params, &ccdc_config_defaults,
-+		sizeof(struct ccdc_config_params_raw));
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_pipeline *pipe = &video->pipe;
++	struct vpfe_fh *fh = file->private_data;
++	struct vpfe_ext_subdev_info *sdinfo;
++	unsigned long addr;
++	int ret = -EINVAL;
 +
-+	return 0;
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_streamon\n");
++
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE != buf_type &&
++		V4L2_BUF_TYPE_VIDEO_OUTPUT != buf_type) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "Invalid buf type\n");
++		return ret;
++	}
++
++	/* If file handle is not allowed IO, return error */
++	if (!fh->io_allowed) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "fh->io_allowed\n");
++		return -EACCES;
++	}
++	sdinfo = video->current_ext_subdev;
++	/* If buffer queue is empty, return error */
++	if (list_empty(&video->buffer_queue.stream)) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "buffer queue is empty\n");
++		return -EIO;
++	}
++	/* Validate the pipeline */
++	if (V4L2_BUF_TYPE_VIDEO_CAPTURE == buf_type) {
++		ret = vpfe_video_validate_pipeline(pipe);
++		if (ret < 0)
++			return ret;
++	}
++	/* Call videobuf_streamon to start streaming * in videobuf */
++	ret = videobuf_streamon(&video->buffer_queue);
++	if (ret)
++		return ret;
++
++	ret = mutex_lock_interruptible(&video->lock);
++	if (ret)
++		goto streamoff;
++
++	/* Get the next frame from the buffer queue */
++	video->next_frm = list_entry(video->dma_queue.next,
++					struct videobuf_buffer, queue);
++	video->cur_frm = video->next_frm;
++	/* Remove buffer from the buffer queue */
++	list_del(&video->cur_frm->queue);
++	/* Mark state of the current frame to active */
++	video->cur_frm->state = VIDEOBUF_ACTIVE;
++	/* Initialize field_id and started member */
++	video->field_id = 0;
++	addr = videobuf_to_dma_contig(video->cur_frm);
++	video->ops->queue(vpfe_dev, addr);
++	video->state = VPFE_VIDEO_BUFFER_QUEUED;
++	ret = vpfe_start_capture(video);
++	if (ret)
++		goto unlock_out;
++
++	mutex_unlock(&video->lock);
++	return ret;
++unlock_out:
++	mutex_unlock(&video->lock);
++streamoff:
++	ret = videobuf_streamoff(&video->buffer_queue);
++	return ret;
 +}
 +
-+static struct ccdc_hw_device ccdc_hw_dev = {
-+	.name = "dm365_isif",
-+	.owner = THIS_MODULE,
-+	.hw_ops = {
-+		.open = ccdc_open,
-+		.close = ccdc_close,
-+		.enable = ccdc_enable,
-+		.enable_out_to_sdram = ccdc_enable_output_to_sdram,
-+		.set_hw_if_params = ccdc_set_hw_if_params,
-+		.set_params = ccdc_set_params,
-+		.get_params = ccdc_get_params,
-+		.configure = ccdc_configure,
-+		.set_buftype = ccdc_set_buftype,
-+		.get_buftype = ccdc_get_buftype,
-+		.enum_pix = ccdc_enum_pix,
-+		.set_pixel_format = ccdc_set_pixel_format,
-+		.get_pixel_format = ccdc_get_pixel_format,
-+		.set_frame_format = ccdc_set_frame_format,
-+		.get_frame_format = ccdc_get_frame_format,
-+		.set_image_window = ccdc_set_image_window,
-+		.get_image_window = ccdc_get_image_window,
-+		.get_line_length = ccdc_get_line_length,
-+		.setfbaddr = ccdc_setfbaddr,
-+		.getfid = ccdc_getfid,
-+		.set_ctrl = ccdc_set_ctrl,
-+	},
++/*
++ * vpfe_streamoff() - get dv_preset which is set on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @buf_type: enum v4l2_buf_type
++ *
++ * stop all the subdevs which are in media chain
++ *
++ * Return 0 on success, error code otherwise
++ */
++static int vpfe_streamoff(struct file *file, void *priv,
++			  enum v4l2_buf_type buf_type)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_fh *fh = file->private_data;
++	int ret = 0;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_streamoff\n");
++
++	if (buf_type != V4L2_BUF_TYPE_VIDEO_CAPTURE &&
++		buf_type != V4L2_BUF_TYPE_VIDEO_OUTPUT) {
++		v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "Invalid buf type\n");
++		return -EINVAL;
++	}
++
++	/* If io is allowed for this file handle, return error */
++	if (!fh->io_allowed) {
++		v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "fh->io_allowed\n");
++		return -EACCES;
++	}
++
++	/* If streaming is not started, return error */
++	if (!video->started) {
++		v4l2_err(&vpfe_dev->v4l2_dev, "device is not started\n");
++		return -EINVAL;
++	}
++
++	ret = mutex_lock_interruptible(&video->lock);
++	if (ret)
++		return ret;
++
++	vpfe_stop_capture(video);
++
++	ret = videobuf_streamoff(&video->buffer_queue);
++	mutex_unlock(&video->lock);
++
++	return ret;
++}
++
++/*
++ * vpfe_queryctrl() - query for v4l2 controls which is set on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @ctrl: pointer to v4l2_control structure
++ *
++ * get the v4l2 controls active on external subdev through
++ * v4l2_device_call_until_err
++ *
++ * Return return value returned by v4l2_device_call_until_err
++ */
++static int vpfe_queryctrl(struct file *file, void *priv,
++				struct v4l2_queryctrl *qc)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_ext_subdev_info *sub_dev = video->current_ext_subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_queryctrl\n");
++
++	/* pass it to sub device */
++	return v4l2_device_call_until_err(&vpfe_dev->v4l2_dev, sub_dev->grp_id,
++					  core, queryctrl, qc);
++}
++
++/*
++ * vpfe_g_ctrl() - get the v4l2 controls which is set on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @ctrl: pointer to v4l2_control structure
++ *
++ * get the v4l2 controls set on external subdev through
++ * v4l2_device_call_until_err
++ *
++ * Return return value returned by v4l2_device_call_until_err
++ */
++static int vpfe_g_ctrl(struct file *file, void *priv,
++			struct v4l2_control *ctrl)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_ext_subdev_info *sub_dev = video->current_ext_subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_g_ctrl\n");
++
++	return v4l2_device_call_until_err(&vpfe_dev->v4l2_dev, sub_dev->grp_id,
++					  core, g_ctrl, ctrl);
++}
++
++/*
++ * vpfe_s_ctrl() - set the v4l2 controls on external subdev
++ * @file: file pointer
++ * @priv: void pointer
++ * @ctrl: pointer to v4l2_control structure
++ *
++ * call external subdev through v4l2_device_call_until_err to
++ * set v4l2 controls
++ *
++ * Return return value returned by v4l2_device_call_until_err
++ */
++static int vpfe_s_ctrl(struct file *file, void *priv,
++			     struct v4l2_control *ctrl)
++{
++	struct vpfe_video_device *video = video_drvdata(file);
++	struct vpfe_device *vpfe_dev = video->vpfe_dev;
++	struct vpfe_ext_subdev_info *sub_dev = video->current_ext_subdev;
++
++	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_ctrl\n");
++
++	return v4l2_device_call_until_err(&vpfe_dev->v4l2_dev, sub_dev->grp_id,
++					  core, s_ctrl, ctrl);
++}
++
++/* vpfe capture ioctl operations */
++static const struct v4l2_ioctl_ops vpfe_ioctl_ops = {
++	.vidioc_querycap	 = vpfe_querycap,
++	.vidioc_g_fmt_vid_cap    = vpfe_g_fmt,
++	.vidioc_s_fmt_vid_cap    = vpfe_s_fmt,
++	.vidioc_try_fmt_vid_cap  = vpfe_try_fmt,
++	.vidioc_enum_fmt_vid_cap = vpfe_enum_fmt,
++	.vidioc_g_fmt_vid_out    = vpfe_g_fmt,
++	.vidioc_s_fmt_vid_out    = vpfe_s_fmt,
++	.vidioc_try_fmt_vid_out  = vpfe_try_fmt,
++	.vidioc_enum_fmt_vid_out = vpfe_enum_fmt,
++	.vidioc_enum_input	 = vpfe_enum_input,
++	.vidioc_g_input		 = vpfe_g_input,
++	.vidioc_s_input		 = vpfe_s_input,
++	.vidioc_querystd	 = vpfe_querystd,
++	.vidioc_s_std		 = vpfe_s_std,
++	.vidioc_enum_dv_presets	 = vpfe_enum_preset,
++	.vidioc_query_dv_preset	 = vpfe_query_preset,
++	.vidioc_s_dv_preset	 = vpfe_s_preset,
++	.vidioc_g_dv_preset	 = vpfe_g_preset,
++	.vidioc_reqbufs		 = vpfe_reqbufs,
++	.vidioc_querybuf	 = vpfe_querybuf,
++	.vidioc_qbuf		 = vpfe_qbuf,
++	.vidioc_dqbuf		 = vpfe_dqbuf,
++	.vidioc_streamon	 = vpfe_streamon,
++	.vidioc_streamoff	 = vpfe_streamoff,
++	.vidioc_queryctrl	 = vpfe_queryctrl,
++	.vidioc_g_ctrl		 = vpfe_g_ctrl,
++	.vidioc_s_ctrl		 = vpfe_s_ctrl,
 +};
 +
-+struct ccdc_hw_device *get_ccdc_dev(void)
++/* VPFE video init function */
++int vpfe_video_init(struct vpfe_video_device *video, const char *name)
 +{
-+	return &ccdc_hw_dev;
-+}
++	const char *direction;
++	int ret;
 +
-+int ccdc_init(struct platform_device *pdev)
-+{
-+	static resource_size_t res_len;
-+	struct resource *res;
-+	void *__iomem addr;
-+	int status;
-+	int i;
-+
-+	i = 0;
-+	/* Get the ISIF base address, linearization table0 and table1 addr. */
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (!res) {
-+			status = -ENOENT;
-+			goto fail_nobase_res;
-+		}
-+		res_len = res->end - res->start + 1;
-+		res = request_mem_region(res->start, res_len, res->name);
-+		if (!res) {
-+			status = -EBUSY;
-+			goto fail_nobase_res;
-+		}
-+		addr = ioremap_nocache(res->start, res_len);
-+		if (!addr) {
-+			status = -EBUSY;
-+			goto fail_base_iomap;
-+		}
-+		switch (i) {
-+		case 0:
-+			/* ISIF base address */
-+			ccdc_cfg.base_addr = addr;
-+			break;
-+		case 1:
-+			/* ISIF linear tbl0 address */
-+			ccdc_cfg.linear_tbl0_addr = addr;
-+			break;
-+		default:
-+			/* ISIF linear tbl0 address */
-+			ccdc_cfg.linear_tbl1_addr = addr;
-+			break;
-+		}
-+		i++;
++	switch (video->type) {
++	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
++		direction = "output";
++		video->pad.flags = MEDIA_PAD_FL_SINK;
++		video->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++		break;
++	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
++		direction = "input";
++		video->pad.flags = MEDIA_PAD_FL_SOURCE;
++		video->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	davinci_cfg_reg(DM365_VIN_CAM_WEN);
-+	davinci_cfg_reg(DM365_VIN_CAM_VD);
-+	davinci_cfg_reg(DM365_VIN_CAM_HD);
-+	davinci_cfg_reg(DM365_VIN_YIN4_7_EN);
-+	davinci_cfg_reg(DM365_VIN_YIN0_3_EN);
++	/* Initialize field of video device */
++	video->video_dev.release = video_device_release;
++	video->video_dev.fops = &vpfe_fops;
++	video->video_dev.ioctl_ops = &vpfe_ioctl_ops;
++	video->video_dev.minor = -1;
++	video->video_dev.tvnorms = 0;
++	video->video_dev.current_norm = V4L2_STD_NTSC;
++
++	snprintf(video->video_dev.name, sizeof(video->video_dev.name),
++		 "DAVINCI VIDEO %s %s", name, direction);
++
++	/* Initialize prio member of device object */
++	v4l2_prio_init(&video->prio);
++
++	spin_lock_init(&video->irqlock);
++	spin_lock_init(&video->dma_queue_lock);
++	mutex_init(&video->lock);
++
++	ret = media_entity_init(&video->video_dev.entity,
++				1, &video->pad, 0);
++	if (ret < 0)
++		return ret;
++
++	video_set_drvdata(&video->video_dev, video);
 +
 +	return 0;
-+fail_base_iomap:
-+	release_mem_region(res->start, res_len);
-+	i--;
-+fail_nobase_res:
-+	if (ccdc_cfg.base_addr)
-+		iounmap(ccdc_cfg.base_addr);
-+	if (ccdc_cfg.linear_tbl0_addr)
-+		iounmap(ccdc_cfg.linear_tbl0_addr);
-+
-+	while (i >= 0) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		release_mem_region(res->start, res_len);
-+		i--;
-+	}
-+
-+	return status;
 +}
 +
-+void ccdc_remove(struct platform_device *pdev)
++/* vpfe video device register function */
++int vpfe_video_register(struct vpfe_video_device *video,
++			struct v4l2_device *vdev)
 +{
-+	struct resource *res;
-+	int i;
++	int ret;
 +
-+	iounmap(ccdc_cfg.base_addr);
-+	iounmap(ccdc_cfg.linear_tbl0_addr);
-+	iounmap(ccdc_cfg.linear_tbl1_addr);
++	video->video_dev.v4l2_dev = vdev;
 +
-+	i = 0;
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (res)
-+			release_mem_region(res->start,
-+					   res->end - res->start + 1);
-+		i++;
++	ret = video_register_device(&video->video_dev, VFL_TYPE_GRABBER, -1);
++	if (ret < 0)
++		pr_err("%s: could not register video device (%d)\n",
++		       __func__, ret);
++
++	return ret;
++}
++
++/* vpfe video device unregister function */
++void vpfe_video_unregister(struct vpfe_video_device *video)
++{
++	if (video_is_registered(&video->video_dev)) {
++		media_entity_cleanup(&video->video_dev.entity);
++		video_unregister_device(&video->video_dev);
 +	}
 +}
-diff --git a/drivers/media/platform/davinci/dm365_ccdc.h b/drivers/media/platform/davinci/dm365_ccdc.h
+diff --git a/drivers/media/platform/davinci/vpfe_video.h b/drivers/media/platform/davinci/vpfe_video.h
 new file mode 100644
-index 0000000..ce9358f
+index 0000000..af68caf
 --- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_ccdc.h
-@@ -0,0 +1,137 @@
++++ b/drivers/media/platform/davinci/vpfe_video.h
+@@ -0,0 +1,150 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -1502,1039 +1800,134 @@ index 0000000..ce9358f
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#ifndef _DM365_CCDC_H
-+#define _DM365_CCDC_H
++/* All video device related structures will go here */
++#ifndef _VPFE_VIDEO_H
++#define _VPFE_VIDEO_H
 +
-+#include <linux/dm365_ccdc.h>
++#include <media/media-entity.h>
++#include <media/videobuf-dma-contig.h>
 +
-+#include <media/davinci/vpfe.h>
-+#include <media/davinci/ccdc_types.h>
-+
-+#define CCDC_COLPTN_R_Ye	0x0
-+#define CCDC_COLPTN_Gr_Cy	0x1
-+#define CCDC_COLPTN_Gb_G	0x2
-+#define CCDC_COLPTN_B_Mg	0x3
-+
-+#define CCDC_CCOLP_CP01_0	0
-+#define CCDC_CCOLP_CP03_2	2
-+#define CCDC_CCOLP_CP05_4	4
-+#define CCDC_CCOLP_CP07_6	6
-+#define CCDC_CCOLP_CP11_0	8
-+#define CCDC_CCOLP_CP13_2	10
-+#define CCDC_CCOLP_CP15_4	12
-+#define CCDC_CCOLP_CP17_6	14
-+
-+static const u32 ccdc_sgrbg_pattern =
-+	CCDC_COLPTN_Gr_Cy <<  CCDC_CCOLP_CP01_0 |
-+	CCDC_COLPTN_R_Ye  << CCDC_CCOLP_CP03_2 |
-+	CCDC_COLPTN_B_Mg  << CCDC_CCOLP_CP05_4 |
-+	CCDC_COLPTN_Gb_G  << CCDC_CCOLP_CP07_6 |
-+	CCDC_COLPTN_Gr_Cy << CCDC_CCOLP_CP11_0 |
-+	CCDC_COLPTN_R_Ye  << CCDC_CCOLP_CP13_2 |
-+	CCDC_COLPTN_B_Mg  << CCDC_CCOLP_CP15_4 |
-+	CCDC_COLPTN_Gb_G  << CCDC_CCOLP_CP17_6;
-+
-+static const u32 ccdc_srggb_pattern =
-+	CCDC_COLPTN_R_Ye  << CCDC_CCOLP_CP01_0 |
-+	CCDC_COLPTN_Gr_Cy << CCDC_CCOLP_CP03_2 |
-+	CCDC_COLPTN_Gb_G  << CCDC_CCOLP_CP05_4 |
-+	CCDC_COLPTN_B_Mg  << CCDC_CCOLP_CP07_6 |
-+	CCDC_COLPTN_R_Ye  << CCDC_CCOLP_CP11_0 |
-+	CCDC_COLPTN_Gr_Cy << CCDC_CCOLP_CP13_2 |
-+	CCDC_COLPTN_Gb_G  << CCDC_CCOLP_CP15_4 |
-+	CCDC_COLPTN_B_Mg  << CCDC_CCOLP_CP17_6;
-+
-+struct ccdc_ycbcr_config {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* ccdc pixel format */
-+	enum ccdc_pixfmt pix_fmt;
-+	/* ccdc frame format */
-+	enum ccdc_frmfmt frm_fmt;
-+	/* CCDC crop window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* ccdc pix order. Only used for ycbcr capture */
-+	enum ccdc_pixorder pix_order;
-+	/* ccdc buffer type. Only used for ycbcr capture */
-+	enum ccdc_buftype buf_type;
-+};
-+
-+struct ccdc_params_raw {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* ccdc pixel format */
-+	enum ccdc_pixfmt pix_fmt;
-+	/* ccdc frame format */
-+	enum ccdc_frmfmt frm_fmt;
-+	/* video window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* buffer type. Applicable for interlaced mode */
-+	enum ccdc_buftype buf_type;
-+	/* Gain values */
-+	struct ccdc_gain gain;
-+	/* cfa pattern */
-+	enum ccdc_cfa_pattern cfa_pat;
-+	/* Data MSB position */
-+	enum ccdc_data_msb data_msb;
-+	/* Enable horizontal flip */
-+	unsigned char horz_flip_en;
-+	/* Enable image invert vertically */
-+	unsigned char image_invert_en;
-+
-+	/*all the userland defined stuff*/
-+	struct ccdc_config_params_raw config_params;
-+};
-+
-+enum ccdc_data_pack {
-+	CCDC_PACK_16BIT,
-+	CCDC_PACK_12BIT,
-+	CCDC_PACK_8BIT
-+};
-+
-+struct ccdc_gain_values {
-+	unsigned int cr_gain;
-+	unsigned int cgr_gain;
-+	unsigned int cgb_gain;
-+	unsigned int cb_gain;
-+	unsigned int offset;
-+};
-+
-+struct ccdc_hw_device *get_ccdc_dev(void);
-+
-+#define CCDC_WIN_NTSC		{0, 0, 720, 480}
-+#define CCDC_WIN_VGA		{0, 0, 640, 480}
-+#define ISP5_CCDCMUX		0x20
-+
-+#endif
-diff --git a/drivers/media/platform/davinci/dm365_ccdc_regs.h b/drivers/media/platform/davinci/dm365_ccdc_regs.h
-new file mode 100644
-index 0000000..fcc82ea
---- /dev/null
-+++ b/drivers/media/platform/davinci/dm365_ccdc_regs.h
-@@ -0,0 +1,314 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
-+
-+#ifndef _DM365_CCDC_REGS_H
-+#define _DM365_CCDC_REGS_H
-+
-+/* ISIF registers relative offsets */
-+#define SYNCEN					0x00
-+#define MODESET					0x04
-+#define HDW					0x08
-+#define VDW					0x0c
-+#define PPLN					0x10
-+#define LPFR					0x14
-+#define SPH					0x18
-+#define LNH					0x1c
-+#define SLV0					0x20
-+#define SLV1					0x24
-+#define LNV					0x28
-+#define CULH					0x2c
-+#define CULV					0x30
-+#define HSIZE					0x34
-+#define SDOFST					0x38
-+#define CADU					0x3c
-+#define CADL					0x40
-+#define LINCFG0					0x44
-+#define LINCFG1					0x48
-+#define CCOLP					0x4c
-+#define CRGAIN					0x50
-+#define CGRGAIN					0x54
-+#define CGBGAIN					0x58
-+#define CBGAIN					0x5c
-+#define COFSTA					0x60
-+#define FLSHCFG0				0x64
-+#define FLSHCFG1				0x68
-+#define FLSHCFG2				0x6c
-+#define VDINT0					0x70
-+#define VDINT1					0x74
-+#define VDINT2					0x78
-+#define MISC					0x7c
-+#define CGAMMAWD				0x80
-+#define REC656IF				0x84
-+#define CCDCFG					0x88
-+/*****************************************************
-+* Defect Correction registers
-+*****************************************************/
-+#define DFCCTL					0x8c
-+#define VDFSATLV				0x90
-+#define DFCMEMCTL				0x94
-+#define DFCMEM0					0x98
-+#define DFCMEM1					0x9c
-+#define DFCMEM2					0xa0
-+#define DFCMEM3					0xa4
-+#define DFCMEM4					0xa8
-+/****************************************************
-+* Black Clamp registers
-+****************************************************/
-+#define CLAMPCFG				0xac
-+#define CLDCOFST				0xb0
-+#define CLSV					0xb4
-+#define CLHWIN0					0xb8
-+#define CLHWIN1					0xbc
-+#define CLHWIN2					0xc0
-+#define CLVRV					0xc4
-+#define CLVWIN0					0xc8
-+#define CLVWIN1					0xcc
-+#define CLVWIN2					0xd0
-+#define CLVWIN3					0xd4
-+/****************************************************
-+* Lense Shading Correction
-+****************************************************/
-+#define DATAHOFST				0xd8
-+#define DATAVOFST				0xdc
-+#define LSCHVAL					0xe0
-+#define LSCVVAL					0xe4
-+#define TWODLSCCFG				0xe8
-+#define TWODLSCOFST				0xec
-+#define TWODLSCINI				0xf0
-+#define TWODLSCGRBU				0xf4
-+#define TWODLSCGRBL				0xf8
-+#define TWODLSCGROF				0xfc
-+#define TWODLSCORBU				0x100
-+#define TWODLSCORBL				0x104
-+#define TWODLSCOROF				0x108
-+#define TWODLSCIRQEN				0x10c
-+#define TWODLSCIRQST				0x110
-+/****************************************************
-+* Data formatter
-+****************************************************/
-+#define FMTCFG					0x114
-+#define FMTPLEN					0x118
-+#define FMTSPH					0x11c
-+#define FMTLNH					0x120
-+#define FMTSLV					0x124
-+#define FMTLNV					0x128
-+#define FMTRLEN					0x12c
-+#define FMTHCNT					0x130
-+#define FMTAPTR_BASE				0x134
-+/* Below macro for addresses FMTAPTR0 - FMTAPTR15 */
-+#define FMTAPTR(i)			(FMTAPTR_BASE + (i * 4))
-+#define FMTPGMVF0				0x174
-+#define FMTPGMVF1				0x178
-+#define FMTPGMAPU0				0x17c
-+#define FMTPGMAPU1				0x180
-+#define FMTPGMAPS0				0x184
-+#define FMTPGMAPS1				0x188
-+#define FMTPGMAPS2				0x18c
-+#define FMTPGMAPS3				0x190
-+#define FMTPGMAPS4				0x194
-+#define FMTPGMAPS5				0x198
-+#define FMTPGMAPS6				0x19c
-+#define FMTPGMAPS7				0x1a0
-+/************************************************
-+* Color Space Converter
-+************************************************/
-+#define CSCCTL					0x1a4
-+#define CSCM0					0x1a8
-+#define CSCM1					0x1ac
-+#define CSCM2					0x1b0
-+#define CSCM3					0x1b4
-+#define CSCM4					0x1b8
-+#define CSCM5					0x1bc
-+#define CSCM6					0x1c0
-+#define CSCM7					0x1c4
-+#define OBWIN0					0x1c8
-+#define OBWIN1					0x1cc
-+#define OBWIN2					0x1d0
-+#define OBWIN3					0x1d4
-+#define OBVAL0					0x1d8
-+#define OBVAL1					0x1dc
-+#define OBVAL2					0x1e0
-+#define OBVAL3					0x1e4
-+#define OBVAL4					0x1e8
-+#define OBVAL5					0x1ec
-+#define OBVAL6					0x1f0
-+#define OBVAL7					0x1f4
-+#define CLKCTL					0x1f8
-+
-+#define CCDC_LINEAR_LUT0_ADDR			0x1c7c000
-+#define CCDC_LINEAR_LUT1_ADDR			0x1c7c400
-+
-+/* Masks & Shifts below */
-+#define START_PX_HOR_MASK			0x7fff
-+#define NUM_PX_HOR_MASK				0x7fff
-+#define START_VER_ONE_MASK			0x7fff
-+#define START_VER_TWO_MASK			0x7fff
-+#define NUM_LINES_VER				0x7fff
-+
-+/* gain - offset masks */
-+#define GAIN_INTEGER_MASK			0x7
-+#define GAIN_INTEGER_SHIFT			0x9
-+#define GAIN_DECIMAL_MASK			0x1ff
-+#define OFFSET_MASK				0xfff
-+#define GAIN_SDRAM_EN_SHIFT			12
-+#define GAIN_IPIPE_EN_SHIFT			13
-+#define GAIN_H3A_EN_SHIFT			14
-+#define OFST_SDRAM_EN_SHIFT			8
-+#define OFST_IPIPE_EN_SHIFT			9
-+#define OFST_H3A_EN_SHIFT			10
-+#define GAIN_OFFSET_EN_MASK			0x7700
-+
-+/* Culling */
-+#define CULL_PAT_EVEN_LINE_SHIFT		8
-+
-+/* CCDCFG register */
-+#define CCDC_YCINSWP_RAW			(0x00 << 4)
-+#define CCDC_YCINSWP_YCBCR			(0x01 << 4)
-+#define CCDC_CCDCFG_FIDMD_LATCH_VSYNC		(0x00 << 6)
-+#define CCDC_CCDCFG_WENLOG_AND			(0x00 << 8)
-+#define CCDC_CCDCFG_TRGSEL_WEN			(0x00 << 9)
-+#define CCDC_CCDCFG_EXTRG_DISABLE		(0x00 << 10)
-+#define CCDC_LATCH_ON_VSYNC_DISABLE		(0x01 << 15)
-+#define CCDC_LATCH_ON_VSYNC_ENABLE		(0x00 << 15)
-+#define CCDC_DATA_PACK_MASK			0x03
-+#define CCDC_DATA_PACK16			0x0
-+#define CCDC_DATA_PACK12			0x1
-+#define CCDC_DATA_PACK8				0x2
-+#define CCDC_PIX_ORDER_SHIFT			11
-+#define CCDC_PIX_ORDER_MASK			0x01
-+#define CCDC_BW656_ENABLE			(0x01 << 5)
-+
-+/* MODESET registers */
-+#define CCDC_VDHDOUT_INPUT			(0x00 << 0)
-+#define CCDC_INPUT_MASK				0x03
-+#define CCDC_INPUT_SHIFT			12
-+#define CCDC_RAW_INPUT_MODE			0x00
-+#define CCDC_FID_POL_MASK			0x01
-+#define CCDC_FID_POL_SHIFT			4
-+#define CCDC_HD_POL_MASK			0x01
-+#define CCDC_HD_POL_SHIFT			3
-+#define CCDC_VD_POL_MASK			0x01
-+#define CCDC_VD_POL_SHIFT			2
-+#define CCDC_DATAPOL_NORMAL			0x00
-+#define CCDC_DATAPOL_MASK			0x01
-+#define CCDC_DATAPOL_SHIFT			6
-+#define CCDC_EXWEN_DISABLE			0x00
-+#define CCDC_EXWEN_MASK				0x01
-+#define CCDC_EXWEN_SHIFT			5
-+#define CCDC_FRM_FMT_MASK			0x01
-+#define CCDC_FRM_FMT_SHIFT			7
-+#define CCDC_DATASFT_MASK			0x07
-+#define CCDC_DATASFT_SHIFT			8
-+#define CCDC_LPF_SHIFT				14
-+#define CCDC_LPF_MASK				0x1
-+
-+/* GAMMAWD registers */
-+#define CCDC_ALAW_GAMA_WD_MASK			0xf
-+#define CCDC_ALAW_GAMA_WD_SHIFT			1
-+#define CCDC_ALAW_ENABLE			0x01
-+#define CCDC_GAMMAWD_CFA_MASK			0x01
-+#define CCDC_GAMMAWD_CFA_SHIFT			5
-+
-+/* HSIZE registers */
-+#define CCDC_HSIZE_FLIP_MASK			0x01
-+#define CCDC_HSIZE_FLIP_SHIFT			12
-+#define CCDC_LINEOFST_MASK			0xfff
-+
-+/* MISC registers */
-+#define CCDC_DPCM_EN_SHIFT			12
-+#define CCDC_DPCM_EN_MASK			1
-+#define CCDC_DPCM_PREDICTOR_SHIFT		13
-+#define CCDC_DPCM_PREDICTOR_MASK		1
-+
-+/* Black clamp related */
-+#define CCDC_BC_DCOFFSET_MASK			0x1fff
-+#define CCDC_BC_MODE_COLOR_MASK			1
-+#define CCDC_BC_MODE_COLOR_SHIFT		4
-+#define CCDC_HORZ_BC_MODE_MASK			3
-+#define CCDC_HORZ_BC_MODE_SHIFT			1
-+#define CCDC_HORZ_BC_WIN_COUNT_MASK		0x1f
-+#define CCDC_HORZ_BC_WIN_SEL_SHIFT		5
-+#define CCDC_HORZ_BC_PIX_LIMIT_SHIFT		6
-+#define CCDC_HORZ_BC_WIN_H_SIZE_MASK		3
-+#define CCDC_HORZ_BC_WIN_H_SIZE_SHIFT		8
-+#define CCDC_HORZ_BC_WIN_V_SIZE_MASK		3
-+#define CCDC_HORZ_BC_WIN_V_SIZE_SHIFT		12
-+#define CCDC_HORZ_BC_WIN_START_H_MASK		0x1fff
-+#define CCDC_HORZ_BC_WIN_START_V_MASK		0x1fff
-+#define CCDC_VERT_BC_OB_H_SZ_MASK		7
-+#define CCDC_VERT_BC_RST_VAL_SEL_MASK		3
-+#define CCDC_VERT_BC_RST_VAL_SEL_SHIFT		4
-+#define CCDC_VERT_BC_LINE_AVE_COEF_SHIFT	8
-+#define CCDC_VERT_BC_OB_START_HORZ_MASK		0x1fff
-+#define CCDC_VERT_BC_OB_START_VERT_MASK		0x1fff
-+#define CCDC_VERT_BC_OB_VERT_SZ_MASK		0x1fff
-+#define CCDC_VERT_BC_RST_VAL_MASK		0xfff
-+#define CCDC_BC_VERT_START_SUB_V_MASK		0x1fff
-+
-+/* VDFC registers */
-+#define CCDC_VDFC_EN_SHIFT			4
-+#define CCDC_VDFC_CORR_MOD_MASK			3
-+#define CCDC_VDFC_CORR_MOD_SHIFT		5
-+#define CCDC_VDFC_CORR_WHOLE_LN_SHIFT		7
-+#define CCDC_VDFC_LEVEL_SHFT_MASK		7
-+#define CCDC_VDFC_LEVEL_SHFT_SHIFT		8
-+#define CCDC_VDFC_SAT_LEVEL_MASK		0xfff
-+#define CCDC_VDFC_POS_MASK			0x1fff
-+#define CCDC_DFCMEMCTL_DFCMARST_SHIFT		2
-+
-+/* CSC registers */
-+#define CCDC_CSC_COEF_INTEG_MASK		7
-+#define CCDC_CSC_COEF_DECIMAL_MASK		0x1f
-+#define CCDC_CSC_COEF_INTEG_SHIFT		5
-+#define CCDC_CSCM_MSB_SHIFT			8
-+#define CCDC_DF_CSC_SPH_MASK			0x1fff
-+#define CCDC_DF_CSC_LNH_MASK			0x1fff
-+#define CCDC_DF_CSC_SLV_MASK			0x1fff
-+#define CCDC_DF_CSC_LNV_MASK			0x1fff
-+#define CCDC_DF_NUMLINES			0x7fff
-+#define CCDC_DF_NUMPIX				0x1fff
-+
-+/* Offsets for LSC/DFC/Gain */
-+#define CCDC_DATA_H_OFFSET_MASK			0x1fff
-+#define CCDC_DATA_V_OFFSET_MASK			0x1fff
-+
-+/* Linearization */
-+#define CCDC_LIN_CORRSFT_MASK			7
-+#define CCDC_LIN_CORRSFT_SHIFT			4
-+#define CCDC_LIN_SCALE_FACT_INTEG_SHIFT		10
-+#define CCDC_LIN_SCALE_FACT_DECIMAL_MASK	0x3ff
-+#define CCDC_LIN_ENTRY_MASK			0x3ff
-+
-+#define CCDC_DF_FMTRLEN_MASK			0x1fff
-+#define CCDC_DF_FMTHCNT_MASK			0x1fff
-+
-+/* Pattern registers */
-+#define CCDC_PG_EN				(1 << 3)
-+#define CCDC_SEL_PG_SRC				(3 << 4)
-+#define CCDC_PG_VD_POL_SHIFT			0
-+#define CCDC_PG_HD_POL_SHIFT			1
-+
-+/*masks and shifts*/
-+#define CCDC_SYNCEN_VDHDEN_MASK			(1 << 0)
-+#define CCDC_SYNCEN_WEN_MASK			(1 << 1)
-+#define CCDC_SYNCEN_WEN_SHIFT			1
-+
-+#endif
-diff --git a/include/linux/dm365_ccdc.h b/include/linux/dm365_ccdc.h
-new file mode 100644
-index 0000000..da37b9b
---- /dev/null
-+++ b/include/linux/dm365_ccdc.h
-@@ -0,0 +1,592 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
-+
-+#ifndef _DM365_CCDC_INCLUDE_H
-+#define _DM365_CCDC_INCLUDE_H
-+
-+/**
-+ * ccdc float type S8Q8/U8Q8
-+ */
-+struct ccdc_float_8 {
-+	/* 8 bit integer part */
-+	__u8 integer;
-+	/* 8 bit decimal part */
-+	__u8 decimal;
-+};
-+
-+/**
-+ * brief ccdc float type U16Q16/S16Q16
-+ */
-+struct ccdc_float_16 {
-+	/* 16 bit integer part */
-+	__u16 integer;
-+	/* 16 bit decimal part */
-+	__u16 decimal;
-+};
-+
-+/************************************************************************
-+ *   Vertical Defect Correction parameters
-+ ***********************************************************************/
-+
-+/**
-+ * vertical defect correction methods
-+ */
-+enum ccdc_vdfc_corr_mode {
-+	/* Defect level subtraction. Just fed through if saturating */
-+	CCDC_VDFC_NORMAL,
-+	/**
-+	 * Defect level subtraction. Horizontal interpolation ((i-2)+(i+2))/2
-+	 * if data saturating
-+	 */
-+	CCDC_VDFC_HORZ_INTERPOL_IF_SAT,
-+	/* Horizontal interpolation (((i-2)+(i+2))/2) */
-+	CCDC_VDFC_HORZ_INTERPOL
-+};
-+
-+/**
-+ * Max Size of the Vertical Defect Correction table
-+ */
-+#define CCDC_VDFC_TABLE_SIZE 8
-+
-+/**
-+ * Values used for shifting up the vdfc defect level
-+ */
-+enum ccdc_vdfc_shift {
-+	/* No Shift */
-+	CCDC_VDFC_NO_SHIFT,
-+	/* Shift by 1 bit */
-+	CCDC_VDFC_SHIFT_1,
-+	/* Shift by 2 bit */
-+	CCDC_VDFC_SHIFT_2,
-+	/* Shift by 3 bit */
-+	CCDC_VDFC_SHIFT_3,
-+	/* Shift by 4 bit */
-+	CCDC_VDFC_SHIFT_4
-+};
-+
-+/**
-+ * Defect Correction (DFC) table entry
-+ */
-+struct ccdc_vdfc_entry {
-+	/* vertical position of defect */
-+	unsigned short pos_vert;
-+	/* horizontal position of defect */
-+	unsigned short pos_horz;
-+	/**
-+	 * Defect level of Vertical line defect position. This is subtracted
-+	 * from the data at the defect position
-+	 */
-+	unsigned char level_at_pos;
-+	/**
-+	 * Defect level of the pixels upper than the vertical line defect.
-+	 * This is subtracted from the data
-+	 */
-+	unsigned char level_up_pixels;
-+	/**
-+	 * Defect level of the pixels lower than the vertical line defect.
-+	 * This is subtracted from the data
-+	 */
-+	unsigned char level_low_pixels;
-+};
-+
-+/**
-+ * Structure for Defect Correction (DFC) parameter
-+ */
-+struct ccdc_dfc {
-+	/* enable vertical defect correction */
-+	unsigned char en;
-+	/* Correction methods */
-+	enum ccdc_vdfc_corr_mode corr_mode;
-+	/**
-+	 * 0 - whole line corrected, 1 - not
-+	 * pixels upper than the defect
-+	 */
-+	unsigned char corr_whole_line;
-+	/**
-+	 * defect level shift value. level_at_pos, level_upper_pos,
-+	 * and level_lower_pos can be shifted up by this value
-+	 */
-+	enum ccdc_vdfc_shift def_level_shift;
-+	/* defect saturation level */
-+	unsigned short def_sat_level;
-+	/* number of vertical defects. Max is CCDC_VDFC_TABLE_SIZE */
-+	short num_vdefects;
-+	/* VDFC table ptr */
-+	struct ccdc_vdfc_entry table[CCDC_VDFC_TABLE_SIZE];
-+};
-+
-+/************************************************************************
-+*   Digital/Black clamp or DC Subtract parameters
-+************************************************************************/
-+/**
-+ * Horizontal Black Clamp modes
-+ */
-+enum ccdc_horz_bc_mode {
-+	/**
-+	 * Horizontal clamp disabled. Only vertical clamp
-+	 * value is subtracted
-+	 */
-+	CCDC_HORZ_BC_DISABLE,
-+	/**
-+	 * Horizontal clamp value is calculated and subtracted
-+	 * from image data along with vertical clamp value
-+	 */
-+	CCDC_HORZ_BC_CLAMP_CALC_ENABLED,
-+	/**
-+	 * Horizontal clamp value calculated from previous image
-+	 * is subtracted from image data along with vertical clamp
-+	 * value. How the horizontal clamp value for the first image
-+	 * is calculated in this case ???
-+	 */
-+	CCDC_HORZ_BC_CLAMP_NOT_UPDATED
-+};
-+
-+/**
-+ * Base window selection for Horizontal Black Clamp calculations
-+ */
-+enum ccdc_horz_bc_base_win_sel {
-+	/* Select Most left window for bc calculation */
-+	CCDC_SEL_MOST_LEFT_WIN,
-+
-+	/* Select Most right window for bc calculation */
-+	CCDC_SEL_MOST_RIGHT_WIN,
-+};
-+
-+/* Size of window in horizontal direction for horizontal bc */
-+enum ccdc_horz_bc_sz_h {
-+	CCDC_HORZ_BC_SZ_H_2PIXELS,
-+	CCDC_HORZ_BC_SZ_H_4PIXELS,
-+	CCDC_HORZ_BC_SZ_H_8PIXELS,
-+	CCDC_HORZ_BC_SZ_H_16PIXELS
-+};
-+
-+/* Size of window in vertcal direction for vertical bc */
-+enum ccdc_horz_bc_sz_v {
-+	CCDC_HORZ_BC_SZ_H_32PIXELS,
-+	CCDC_HORZ_BC_SZ_H_64PIXELS,
-+	CCDC_HORZ_BC_SZ_H_128PIXELS,
-+	CCDC_HORZ_BC_SZ_H_256PIXELS
-+};
-+
-+/**
-+ * Structure for Horizontal Black Clamp config params
-+ */
-+struct ccdc_horz_bclamp {
-+	/* horizontal clamp mode */
-+	enum ccdc_horz_bc_mode mode;
-+	/**
-+	 * pixel value limit enable.
-+	 *  0 - limit disabled
-+	 *  1 - pixel value limited to 1023
-+	 */
-+	unsigned char clamp_pix_limit;
-+	/**
-+	 * Select most left or right window for clamp val
-+	 * calculation
-+	 */
-+	enum ccdc_horz_bc_base_win_sel base_win_sel_calc;
-+	/* Window count per color for calculation. range 1-32 */
-+	unsigned char win_count_calc;
-+	/* Window start position - horizontal for calculation. 0 - 8191 */
-+	unsigned short win_start_h_calc;
-+	/* Window start position - vertical for calculation 0 - 8191 */
-+	unsigned short win_start_v_calc;
-+	/* Width of the sample window in pixels for calculation */
-+	enum ccdc_horz_bc_sz_h win_h_sz_calc;
-+	/* Height of the sample window in pixels for calculation */
-+	enum ccdc_horz_bc_sz_v win_v_sz_calc;
-+};
-+
-+/**
-+ * Black Clamp vertical reset values
-+ */
-+enum ccdc_vert_bc_reset_val_sel {
-+	/* Reset value used is the clamp value calculated */
-+	CCDC_VERT_BC_USE_HORZ_CLAMP_VAL,
-+	/* Reset value used is reset_clamp_val configured */
-+	CCDC_VERT_BC_USE_CONFIG_CLAMP_VAL,
-+	/* No update, previous image value is used */
-+	CCDC_VERT_BC_NO_UPDATE
-+};
-+
-+enum ccdc_vert_bc_sz_h {
-+	CCDC_VERT_BC_SZ_H_2PIXELS,
-+	CCDC_VERT_BC_SZ_H_4PIXELS,
-+	CCDC_VERT_BC_SZ_H_8PIXELS,
-+	CCDC_VERT_BC_SZ_H_16PIXELS,
-+	CCDC_VERT_BC_SZ_H_32PIXELS,
-+	CCDC_VERT_BC_SZ_H_64PIXELS
-+};
-+
-+/**
-+ * Structure for Vetical Black Clamp configuration params
-+ */
-+struct ccdc_vert_bclamp {
-+	/* Reset value selection for vertical clamp calculation */
-+	enum ccdc_vert_bc_reset_val_sel reset_val_sel;
-+	/* U12 value if reset_sel = CCDC_BC_VERT_USE_CONFIG_CLAMP_VAL */
-+	unsigned short reset_clamp_val;
-+	/**
-+	 * U8Q8. Line average coefficient used in vertical clamp
-+	 * calculation
-+	 */
-+	unsigned char line_ave_coef;
-+	/* Width in pixels of the optical black region used for calculation. */
-+	enum ccdc_vert_bc_sz_h ob_h_sz_calc;
-+	/* Height of the optical black region for calculation */
-+	unsigned short ob_v_sz_calc;
-+	/* Optical black region start position - horizontal. 0 - 8191 */
-+	unsigned short ob_start_h;
-+	/* Optical black region start position - vertical 0 - 8191 */
-+	unsigned short ob_start_v;
-+};
-+
-+/**
-+ * Structure for Black Clamp configuration params
-+ */
-+struct ccdc_black_clamp {
-+	/**
-+	 * this offset value is added irrespective of the clamp
-+	 * enable status. S13
-+	 */
-+	unsigned short dc_offset;
-+	/**
-+	 * Enable black/digital clamp value to be subtracted
-+	 * from the image data
-+	 */
-+	unsigned char en;
-+	/**
-+	 * black clamp mode. same/separate clamp for 4 colors
-+	 * 0 - disable - same clamp value for all colors
-+	 * 1 - clamp value calculated separately for all colors
-+	 */
-+	unsigned char bc_mode_color;
-+	/* Vrtical start position for bc subtraction */
-+	unsigned short vert_start_sub;
-+	/* Black clamp for horizontal direction */
-+	struct ccdc_horz_bclamp horz;
-+	/* Black clamp for vertical direction */
-+	struct ccdc_vert_bclamp vert;
-+};
-+
-+/*************************************************************************
-+** Color Space Convertion (CSC)
-+*************************************************************************/
-+/**
-+ * Number of Coefficient values used for CSC
-+ */
-+#define CCDC_CSC_NUM_COEFF 16
-+
-+/*************************************************************************
-+**  Color Space Conversion parameters
-+*************************************************************************/
-+/**
-+ * Structure used for CSC config params
-+ */
-+struct ccdc_color_space_conv {
-+	/* Enable color space conversion */
-+	unsigned char en;
-+	/**
-+	 * csc coeffient table. S8Q5, M00 at index 0, M01 at index 1, and
-+	 * so forth
-+	 */
-+	struct ccdc_float_8 coeff[CCDC_CSC_NUM_COEFF];
-+};
-+
-+enum ccdc_datasft {
-+	/* No Shift */
-+	CCDC_NO_SHIFT,
-+	/* 1 bit Shift */
-+	CCDC_1BIT_SHIFT,
-+	/* 2 bit Shift */
-+	CCDC_2BIT_SHIFT,
-+	/* 3 bit Shift */
-+	CCDC_3BIT_SHIFT,
-+	/* 4 bit Shift */
-+	CCDC_4BIT_SHIFT,
-+	/* 5 bit Shift */
-+	CCDC_5BIT_SHIFT,
-+	/* 6 bit Shift */
-+	CCDC_6BIT_SHIFT
-+};
-+
-+enum ccdc_data_msb {
-+	/* MSB b15 */
-+	CCDC_BIT_MSB_15,
-+	/* MSB b14 */
-+	CCDC_BIT_MSB_14,
-+	/* MSB b13 */
-+	CCDC_BIT_MSB_13,
-+	/* MSB b12 */
-+	CCDC_BIT_MSB_12,
-+	/* MSB b11 */
-+	CCDC_BIT_MSB_11,
-+	/* MSB b10 */
-+	CCDC_BIT_MSB_10,
-+	/* MSB b9 */
-+	CCDC_BIT_MSB_9,
-+	/* MSB b8 */
-+	CCDC_BIT_MSB_8,
-+	/* MSB b7 */
-+	CCDC_BIT_MSB_7
-+};
-+
-+/*************************************************************************
-+**  Gain parameters
-+*************************************************************************/
-+/**
-+ * Structure for Gain parameters
-+ */
-+struct ccdc_gain {
-+	/* Gain for Red or ye */
-+	struct ccdc_float_16 r_ye;
-+	/* Gain for Gr or cy */
-+	struct ccdc_float_16 gr_cy;
-+	/* Gain for Gb or g */
-+	struct ccdc_float_16 gb_g;
-+	/* Gain for Blue or mg */
-+	struct ccdc_float_16 b_mg;
-+};
-+
-+/**
-+ * Predicator types for DPCM compression
-+ */
-+enum ccdc_dpcm_predictor {
-+	/* Choose Predictor1 for DPCM compression */
-+	CCDC_DPCM_PRED1,
-+	/* Choose Predictor2 for DPCM compression */
-+	CCDC_DPCM_PRED2
-+};
-+
-+#define CCDC_LINEAR_TAB_SIZE 192
-+/*************************************************************************
-+**  Linearization parameters
-+*************************************************************************/
-+/**
-+ * Structure for Sensor data linearization
-+ */
-+struct ccdc_linearize {
-+	/* Enable or Disable linearization of data */
-+	unsigned char en;
-+	/* Shift value applied */
-+	enum ccdc_datasft corr_shft;
-+	/* scale factor applied U11Q10 */
-+	struct ccdc_float_16 scale_fact;
-+	/* Size of the linear table */
-+	unsigned short table[CCDC_LINEAR_TAB_SIZE];
-+};
-+
-+enum ccdc_cfa_pattern {
-+	CCDC_CFA_PAT_MOSAIC,
-+	CCDC_CFA_PAT_STRIPE
-+};
-+
-+enum ccdc_colpats {
-+	CCDC_RED,
-+	CCDC_GREEN_RED,
-+	CCDC_GREEN_BLUE,
-+	CCDC_BLUE
-+};
-+
-+struct ccdc_col_pat {
-+	enum ccdc_colpats olop;
-+	enum ccdc_colpats olep;
-+	enum ccdc_colpats elop;
-+	enum ccdc_colpats elep;
-+};
-+
-+/*************************************************************************
-+**  CCDC Raw configuration parameters
-+*************************************************************************/
-+enum ccdc_fmt_mode {
-+	CCDC_SPLIT,
-+	CCDC_COMBINE
-+};
-+
-+enum ccdc_lnum {
-+	CCDC_1LINE,
-+	CCDC_2LINES,
-+	CCDC_3LINES,
-+	CCDC_4LINES
-+};
-+
-+enum ccdc_line {
-+	CCDC_1STLINE,
-+	CCDC_2NDLINE,
-+	CCDC_3RDLINE,
-+	CCDC_4THLINE
-+};
-+
-+struct ccdc_fmtplen {
-+	/**
-+	 * number of program entries for SET0, range 1 - 16
-+	 * when fmtmode is CCDC_SPLIT, 1 - 8 when fmtmode is
-+	 * CCDC_COMBINE
-+	 */
-+	unsigned short plen0;
-+	/**
-+	 * number of program entries for SET1, range 1 - 16
-+	 * when fmtmode is CCDC_SPLIT, 1 - 8 when fmtmode is
-+	 * CCDC_COMBINE
-+	 */
-+	unsigned short plen1;
-+	/**
-+	 * number of program entries for SET2, range 1 - 16
-+	 * when fmtmode is CCDC_SPLIT, 1 - 8 when fmtmode is
-+	 * CCDC_COMBINE
-+	 */
-+	unsigned short plen2;
-+	/**
-+	 * number of program entries for SET3, range 1 - 16
-+	 * when fmtmode is CCDC_SPLIT, 1 - 8 when fmtmode is
-+	 * CCDC_COMBINE
-+	 */
-+	unsigned short plen3;
-+};
-+
-+struct ccdc_fmt_cfg {
-+	/* Split or combine or line alternate */
-+	enum ccdc_fmt_mode fmtmode;
-+	/* enable or disable line alternating mode */
-+	unsigned char ln_alter_en;
-+	/* Split/combine line number */
-+	enum ccdc_lnum lnum;
-+	/* Address increment Range 1 - 16 */
-+	unsigned int addrinc;
-+};
-+
-+struct ccdc_fmt_addr_ptr {
-+	/* Initial address */
-+	unsigned int init_addr;
-+	/* output line number */
-+	enum ccdc_line out_line;
-+};
-+
-+struct ccdc_fmtpgm_ap {
-+	/* program address pointer */
-+	unsigned char pgm_aptr;
-+	/* program address increment or decrement */
-+	unsigned char pgmupdt;
-+};
-+
-+struct ccdc_data_formatter {
-+	/* Enable/Disable data formatter */
-+	unsigned char en;
-+	/* data formatter configuration */
-+	struct ccdc_fmt_cfg cfg;
-+	/* Formatter program entries length */
-+	struct ccdc_fmtplen plen;
-+	/* first pixel in a line fed to formatter */
-+	unsigned short fmtrlen;
-+	/* HD interval for output line. Only valid when split line */
-+	unsigned short fmthcnt;
-+	/* formatter address pointers */
-+	struct ccdc_fmt_addr_ptr fmtaddr_ptr[16];
-+	/* program enable/disable */
-+	unsigned char pgm_en[32];
-+	/* program address pointers */
-+	struct ccdc_fmtpgm_ap fmtpgm_ap[32];
-+};
-+
-+struct ccdc_df_csc {
-+	/* Color Space Conversion confguration, 0 - csc, 1 - df */
-+	unsigned int df_or_csc;
-+	/* csc configuration valid if df_or_csc is 0 */
-+	struct ccdc_color_space_conv csc;
-+	/* data formatter configuration valid if df_or_csc is 1 */
-+	struct ccdc_data_formatter df;
-+	/* start pixel in a line at the input */
-+	unsigned int start_pix;
-+	/* number of pixels in input line */
-+	unsigned int num_pixels;
-+	/* start line at the input */
-+	unsigned int start_line;
-+	/* number of lines at the input */
-+	unsigned int num_lines;
-+};
-+
-+struct ccdc_gain_offsets_adj {
-+	/* Enable or Disable Gain adjustment for SDRAM data */
-+	unsigned char gain_sdram_en;
-+	/* Enable or Disable Gain adjustment for IPIPE data */
-+	unsigned char gain_ipipe_en;
-+	/* Enable or Disable Gain adjustment for H3A data */
-+	unsigned char gain_h3a_en;
-+	/* Enable or Disable Gain adjustment for SDRAM data */
-+	unsigned char offset_sdram_en;
-+	/* Enable or Disable Gain adjustment for IPIPE data */
-+	unsigned char offset_ipipe_en;
-+	/* Enable or Disable Gain adjustment for H3A data */
-+	unsigned char offset_h3a_en;
-+};
-+
-+struct ccdc_cul {
-+	/* Horizontal Cull pattern for odd lines */
-+	unsigned char hcpat_odd;
-+	/* Horizontal Cull pattern for even lines */
-+	unsigned char hcpat_even;
-+	/* Vertical Cull pattern */
-+	unsigned char vcpat;
-+	/* Enable or disable lpf. Apply when cull is enabled */
-+	unsigned char en_lpf;
-+};
-+
-+/* all the stuff in this struct will be provided by userland */
-+struct ccdc_config_params_raw {
-+	/* Linearization parameters for image sensor data input */
-+	struct ccdc_linearize linearize;
-+	/* Data formatter or CSC */
-+	struct ccdc_df_csc df_csc;
-+	/* Defect Pixel Correction (DFC) confguration */
-+	struct ccdc_dfc dfc;
-+	/* Black/Digital Clamp configuration */
-+	struct ccdc_black_clamp bclamp;
-+	/* Gain, offset adjustments */
-+	struct ccdc_gain_offsets_adj gain_offset;
-+	/* Culling */
-+	struct ccdc_cul culling;
-+	/* Predictor for DPCM compression */
-+	enum ccdc_dpcm_predictor pred;
-+	/* horizontal offset for Gain/LSC/DFC */
-+	unsigned short horz_offset;
-+	/* vertical offset for Gain/LSC/DFC */
-+	unsigned short vert_offset;
-+};
-+
-+#define VPFE_CCDC_CID_CRGAIN           (V4L2_CID_USER_BASE | 0xa001)
-+#define VPFE_CCDC_CID_CGRGAIN          (V4L2_CID_USER_BASE | 0xa002)
-+#define VPFE_CCDC_CID_CGBGAIN          (V4L2_CID_USER_BASE | 0xa003)
-+#define VPFE_CCDC_CID_CBGAIN           (V4L2_CID_USER_BASE | 0xa004)
-+#define VPFE_CCDC_CID_GAIN_OFFSET      (V4L2_CID_USER_BASE | 0xa005)
++struct vpfe_device;
 +
 +/*
-+ * Private IOCTL
-+ *
-+ * VIDIOC_VPFE_CCDC_S_RAW_PARAMS: Set raw params in CCDC
-+ * VIDIOC_VPFE_CCDC_G_RAW_PARAMS: Get raw params from CCDC
++ * struct vpfe_video_operations - VPFE video operations
++ * @queue:	Resume streaming when a buffer is queued. Called on VIDIOC_QBUF
++ *		if there was no buffer previously queued.
 + */
++struct vpfe_video_operations {
++	void(*queue)(struct vpfe_device *vpfe_dev, unsigned long addr);
++};
 +
-+#define VIDIOC_VPFE_CCDC_S_RAW_PARAMS \
-+	_IOW('V', BASE_VIDIOC_PRIVATE + 6,  struct ccdc_config_params_raw)
-+#define VIDIOC_VPFE_CCDC_G_RAW_PARAMS \
-+	_IOR('V', BASE_VIDIOC_PRIVATE + 7, struct ccdc_config_params_raw)
++enum vpfe_pipeline_stream_state {
++	VPFE_PIPELINE_STREAM_STOPPED,
++	VPFE_PIPELINE_STREAM_CONTINUOUS,
++	VPFE_PIPELINE_STREAM_SINGLESHOT
++};
 +
++enum vpfe_video_state {
++	/* indicates that buffer is not queued */
++	VPFE_VIDEO_BUFFER_NOT_QUEUED = 0,
++	/* indicates that buffer is queued */
++	VPFE_VIDEO_BUFFER_QUEUED = 1,
++};
++
++struct vpfe_pipeline {
++	/* media pipeline */
++	struct media_pipeline		*pipe;
++	/* state of the pipeline, continous,
++	single-shot or stopped */
++	enum vpfe_pipeline_stream_state	state;
++	/* number of active input video entities */
++	unsigned int			input_num;
++	/* number of active output video entities */
++	unsigned int			output_num;
++	/* input video nodes in case of single-shot mode */
++	struct vpfe_video_device	*inputs[10];
++	/* capturing video nodes */
++	struct vpfe_video_device	*outputs[10];
++};
++
++#define to_vpfe_pipeline(__e) \
++	container_of((__e)->pipe, struct vpfe_pipeline, pipe)
++
++#define to_vpfe_video(vdev) \
++	container_of(vdev, struct vpfe_video_device, video_dev)
++
++struct vpfe_video_device {
++	/* vpfe device */
++	struct vpfe_device			*vpfe_dev;
++	/* video dev */
++	struct video_device			video_dev;
++	/* media pad of video entity */
++	struct media_pad			pad;
++	/* video operations supported by video device */
++	const struct vpfe_video_operations	*ops;
++	/* type of the video buffers used by user */
++	enum v4l2_buf_type			type;
++	/* Indicates id of the field which is being captured */
++	u32					field_id;
++	/* pipiline for which video device is part of */
++	struct vpfe_pipeline			pipe;
++	/* Indicates whether streaming started */
++	u8					started;
++	/* Indicates state of the stream */
++	unsigned int				state;
++	/* current input at the sub device */
++	int					current_input;
++	/*
++	 * This field keeps track of type of buffer exchange mechanism
++	 * user has selected
++	 */
++	enum v4l2_memory			memory;
++	/* Used to keep track of state of the priority */
++	struct v4l2_prio_state			prio;
++	/* number of open instances of the channel */
++	u32					usrs;
++	/* flag to indicate whether decoder is initialized */
++	u8					initialized;
++	/* skip frame count */
++	u8					skip_frame_count;
++	/* skip frame count init value */
++	u8					skip_frame_count_init;
++	/* time per frame for skipping */
++	struct v4l2_fract			timeperframe;
++	/* ptr to currently selected sub device */
++	struct vpfe_ext_subdev_info		*current_ext_subdev;
++	/* Pointer pointing to current v4l2_buffer */
++	struct videobuf_buffer			*cur_frm;
++	/* Pointer pointing to next v4l2_buffer */
++	struct videobuf_buffer			*next_frm;
++	/* Used to store pixel format */
++	struct v4l2_format			fmt;
++	/* Buffer queue used in video-buf */
++	struct videobuf_queue			buffer_queue;
++	/* Queue of filled frames */
++	struct list_head			dma_queue;
++	/* Used in video-buf */
++	spinlock_t				irqlock;
++	/* IRQ lock for DMA queue */
++	spinlock_t				dma_queue_lock;
++	/* lock used to access this structure */
++	struct mutex				lock;
++	/* number of users performing IO */
++	u32					io_usrs;
++	/*
++	 * offset where second field starts from the starting of the
++	 * buffer for field seperated YCbCr formats
++	 */
++	u32					field_off;
++};
++
++int is_pipe_ready(struct vpfe_pipeline *pipe);
++void vpfe_video_unregister(struct vpfe_video_device *video);
++int vpfe_video_register(struct vpfe_video_device *video,
++			struct v4l2_device *vdev);
++int vpfe_video_init(struct vpfe_video_device *video, const char *name);
++
++void vpfe_process_buffer_complete(struct vpfe_video_device *video);
++void vpfe_schedule_bottom_field(struct vpfe_video_device *video);
++void vpfe_schedule_next_buffer(struct vpfe_video_device *video);
++unsigned long vpfe_get_next_buffer(struct vpfe_video_device *video);
 +#endif
 -- 
 1.7.4.1
