@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab2INJUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:20:12 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1950 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754820Ab2INJUK (ORCPT
+	id S1758961Ab2INJUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:20:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45386 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758343Ab2INJUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:20:10 -0400
-Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
- unsigned integer
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        Jim Rees <rees@umich.edu>
-Date: Fri, 14 Sep 2012 11:17:54 +0200
-In-Reply-To: <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
-References: <20120821212910.GD18637@fieldses.org>
-	 <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1347614276.26071.15.camel@thorin>
-Mime-Version: 1.0
-X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Fri, 14 Sep 2012 05:20:39 -0400
+Date: Fri, 14 Sep 2012 10:20:33 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Ola LILJA2 <ola.o.lilja@stericsson.com>,
+        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 07/19] ARM: ux500: Add all encompassing sound node to the
+ HREF Device Tree
+Message-ID: <20120914092031.GK3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-8-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbh5BFmHp4uurmWfBExUKD0GDJCOHGp8kJCu2tReTWKWA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbh5BFmHp4uurmWfBExUKD0GDJCOHGp8kJCu2tReTWKWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-10 at 08:19 +0200, Jan Engelhardt wrote:
-> On Tuesday 2012-08-21 23:29, J. Bruce Fields wrote:
-[...]
-> >+/*
-> >+ * length of the decimal representation of an unsigned integer.  Just an
-> >+ * approximation, but it's right for types of size 1 to 36 bytes:
-> >+ */
-> >+#define base10len(i) (sizeof(i) * 24 / 10 + 1)
+On Mon, Sep 10, 2012 at 02:56:20AM -0700, Linus Walleij wrote:
+> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> gcc provides... "interesting" features at times.
+> > This is where we link together all of the SoC sound components for
+> > a given platform. This all encompassing sound node is only found
+> > in the very lowest hierarchical DTS file, since the component mix may
+> > well change from board variant to board variant.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/hrefv60plus.dts |    7 +++++++
+> >  1 file changed, 7 insertions(+)
+> >
+> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
+> > index 4f0aee8..d8ed29e 100644
+> > --- a/arch/arm/boot/dts/hrefv60plus.dts
+> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
+> > @@ -78,6 +78,13 @@
+> >                         status = "okay";
+> >                 };
+> >
+> > +               sound {
+> > +                       compatible = "stericsson,snd-soc-mop500";
+> > +
+> > +                       stericsson,cpu-dai = <&msp1 &msp3>;
+> > +                       stericsson,audio-codec = <&codec>;
 > 
-> /* for unsigned "i"s */
-> #define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[i])
+> Where is this codec coming from?
+> 
+> It's certainly not in the linux-next tree...
 
-Shouldn't that have been
-----  snip ----
-#define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[sizeof(i)])
-----  snip ----
-?
+No, I'm holding it locally.
 
-A pure K&R-C version would use a string:
-----  snip ----
-#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
-----  snip ----
-(if I converted them properly into hexadecimal) and that gives a "char"
-which is happily promoted to whatever one needs in that place.
+My Audio patch-set is still awaiting Ola's Acks (6 patches)
 
-Kind regards,
-	Bernd
+... unless they're further down my mailbox.
+
+/me keeps reading.
+
+> This is another of these patches that I prefer if Ola
+> or Roger or even Mark could comment on, I really don't know
+> too much about ASoC DT bindings...
+
+
+
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
