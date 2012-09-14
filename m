@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2INNBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:01:23 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37232 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab2INNBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:01:20 -0400
-From: "Dowdal, John" <jdowdal@ti.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, "Chemparathy, Cyril" <cyril@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "david.ward@ll.mit.edu" <david.ward@ll.mit.edu>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
-Subject: RE: [PATCH] sch_red: fix weighted average calculation
-Thread-Topic: [PATCH] sch_red: fix weighted average calculation
-Thread-Index: AQHNkbXNoKB7JQ9aeEuY08ljyh27ZZeIns+AgAEvUrA=
-Date: Fri, 14 Sep 2012 13:01:12 +0000
-Message-ID: <2D29FFBF554947468515B8EF6C733BB72E564F65@DLEE09.ent.ti.com>
-References: <1347543820-27548-1-git-send-email-cyril@ti.com>
- <1347544431.13103.1557.camel@edumazet-glaptop>
-In-Reply-To: <1347544431.13103.1557.camel@edumazet-glaptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="utf-8"
+	id S1753876Ab2INNBa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:01:30 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40810 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab2INNBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 09:01:25 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: kernel 3.4.0 (i686): pagevec_lookup_tag+0x21/0x30
+Date: Fri, 14 Sep 2012 09:01:20 -0400
+Message-ID: <013f01cd9279$0950c9c0$1bf25d40$@lucidpixels.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac2SeQYjqNyvYXYwT/u4n77N1Wf2OQ==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8ED1Si5010131
 
-Eric, thank you for reviewing the code.  I now see the problem with the patch since backlog is an integer and qavg is a fixed point number at logW.  
+Hi,
 
-We are considering another patch to update the comments to this code (with the actual C code change reverted) to stop the FPP by showing the derivation of the equation in the comments.  Does this sound good?
+Was curious why this occurs with postfix's cleanup every so often?
 
+[562320.275125] INFO: task cleanup:5921 blocked for more than 120 seconds.
+[562320.275127] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+this message.
+[562320.275129] cleanup         D 0000000d     0  5921   2437 0x00000000
+[562320.275132]  f2986080 00000086 ca379ed4 0000000d 00000001 c16ca000
+c1078521 0000000e
+[562320.275137]  ca379edc ffffffff c106f3c6 00000001 0000000e 00000001
+ce0a965c 00000000
+[562320.275141]  f5a84070 00000003 00000001 f5a8406c 00000292 00000000
+f5a84014 c1043c5e
+[562320.275146] Call Trace:
+[562320.275148]  [<c1078521>] ? pagevec_lookup_tag+0x21/0x30
+[562320.275151]  [<c106f3c6>] ? filemap_fdatawait_range+0x86/0x140
+[562320.275154]  [<c1043c5e>] ? __wake_up+0x3e/0x60
+[562320.275156]  [<c103cead>] ? prepare_to_wait+0x1d/0x70
+[562320.275159]  [<c113b6e5>] ? jbd2_log_wait_commit+0x95/0x100
+[562320.275162]  [<c103d080>] ? abort_exclusive_wait+0x90/0x90
+[562320.275164]  [<c11033cc>] ? ext4_sync_file+0x13c/0x2c0
+[562320.275167]  [<c1097574>] ? chmod_common+0x74/0x90
+[562320.275169]  [<c1099706>] ? vfs_write+0x106/0x140
+[562320.275172]  [<c1103290>] ? ext4_flush_completed_IO+0x90/0x90
+[562320.275175]  [<c10bae6b>] ? vfs_fsync+0x2b/0x40
+[562320.275177]  [<c10bb190>] ? sys_fsync+0x20/0x40
+[562320.275180]  [<c14de410>] ? sysenter_do_call+0x12/0x26
 
------Original Message-----
-From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-Sent: Thursday, September 13, 2012 9:54 AM
-To: Chemparathy, Cyril
-Cc: linux-kernel@vger.kernel.org; netdev@vger.kernel.org; davem@davemloft.net; david.ward@ll.mit.edu; Dowdal, John; paul.gortmaker@windriver.com
-Subject: Re: [PATCH] sch_red: fix weighted average calculation
+Justin.
 
-On Thu, 2012-09-13 at 09:43 -0400, Cyril Chemparathy wrote:
-> This patch fixes an apparent bug in the running weighted average calculation
-> used in the RED algorithm.
-> 
-> Going by the described formula:
-> 	   qavg = qavg*(1-W) + backlog*W
-> 	=> qavg = qavg + (backlog - qavg) * W
-> 
-> ... with W converted to a pre-calculated shift, this then becomes:
-> 	qavg = qavg + (backlog - qavg) >> logW
-> 
-> ... giving the modified expression introduced by this patch.
-> 
-> Signed-off-by: John Dowdal <jdowdal@ti.com>
-> ---
->  include/net/red.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/net/red.h b/include/net/red.h
-> index ef46058..05960a4 100644
-> --- a/include/net/red.h
-> +++ b/include/net/red.h
-> @@ -287,7 +287,7 @@ static inline unsigned long red_calc_qavg_no_idle_time(const struct red_parms *p
->  	 *
->  	 * --ANK (980924)
->  	 */
-> -	return v->qavg + (backlog - (v->qavg >> p->Wlog));
-> +	return v->qavg + (backlog - v->qavg) >> p->Wlog;
->  }
->  
->  static inline unsigned long red_calc_qavg(const struct red_parms *p,
-
-This is going to be a FPP (Frequently Posted Patch)
-
-Current formulae is fine.
-
-Thats because backlog, at start of red_calc_qavg_no_idle_time() is not
-yet scaled by p->Wlog. v->avg is scaled, but not backlog.
-
-Have you tested RED after your patch ?
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
