@@ -1,78 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab2INNSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:18:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54849 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab2INNSN convert rfc822-to-8bit (ORCPT
+	id S1751952Ab2INNTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:19:10 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31807 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2INNTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:18:13 -0400
-Message-ID: <50532E99.8060507@parallels.com>
-Date: Fri, 14 Sep 2012 17:18:17 +0400
-From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 14 Sep 2012 09:19:08 -0400
+Date: Fri, 14 Sep 2012 09:08:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: arnd@arndb.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
+        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        tim@xen.org, Ian.Campbell@citrix.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 07/24] xen/arm: Xen detection and shared_info page
+ mapping
+Message-ID: <20120914130807.GK25249@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+ <1347621207-11294-7-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/6] fuse: allocate req->pages[] dynamically
-References: <20120907172536.1343.80497.stgit@maximpc.sw.ru> <5050B336.1090500@parallels.com> <87har3w5j6.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <87har3w5j6.fsf@tucsk.pomaz.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347621207-11294-7-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On Fri, Sep 14, 2012 at 12:13:09PM +0100, Stefano Stabellini wrote:
+> Check for a node in the device tree compatible with "xen,xen", if it is
+> present set xen_domain_type to XEN_HVM_DOMAIN and continue
+> initialization.
+> 
+> Map the real shared info page using XENMEM_add_to_physmap with
+> XENMAPSPACE_shared_info.
+> 
+> Changes in v4:
+> 
+> - simpler parsing of Xen version in the compatible DT node.
+> 
+> Changes in v3:
+> 
+> - use the "xen,xen" notation rather than "arm,xen";
+> - add an additional check on the presence of the Xen version.
+> 
+> Changes in v2:
+> 
+> - replace pr_info with pr_debug.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/arm/xen/enlighten.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 61 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index c535540..6a0217d 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -5,6 +5,9 @@
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_address.h>
+>  
+>  struct start_info _xen_start_info;
+>  struct start_info *xen_start_info = &_xen_start_info;
+> @@ -33,3 +36,61 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>  	return -ENOSYS;
+>  }
+>  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+> +
+> +/*
+> + * see Documentation/devicetree/bindings/arm/xen.txt for the
+> + * documentation of the Xen Device Tree format.
+> + */
+> +static int __init xen_guest_init(void)
+> +{
+> +	struct xen_add_to_physmap xatp;
+> +	static struct shared_info *shared_info_page = 0;
+> +	struct device_node *node;
+> +	int len;
+> +	const char *s = NULL;
+> +	const char *version = NULL;
+> +	const char *xen_prefix = "xen,xen-";
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "xen,xen");
+> +	if (!node) {
+> +		pr_debug("No Xen support\n");
+> +		return 0;
+> +	}
+> +	s = of_get_property(node, "compatible", &len);
+> +	if (strlen(xen_prefix) + 3  < len &&
+> +			!strncmp(xen_prefix, s, strlen(xen_prefix)))
 
-09/12/2012 08:49 PM, Miklos Szeredi пишет:
-> "Maxim V. Patlasov" <mpatlasov@parallels.com> writes:
->
->> Hi Miklos,
->>
->> So far as no objections appeared, I'll go ahead and replace fuse req->page with
->> req->pagevec. It will point to an array of structs:
->>
->> struct page_vec {
->>      struct page    *pv_page;
->>      unsigned int    pv_len;
->>      unsigned int    pv_offset;
->> };
->>
->> instead of 'struct page *' as it used to be. It seems to be what you suggested
->> in one of your comments. Are you OK about it?
-> Yes, that's exactly what I was thinking.
+If we have version '4.3.1' won't this trip us over?
 
-I've encountered a problem while trying to follow this approach. 
-fuse_get_user_pages() passes 'req->pages' to get_user_pages_fast(). 
-get_user_pages_fast() and friends are not ready to get a pointer to 
-array of page_vec-s from fuse. I can see five ways to solve the problem:
+Or if we only have 'major' and 'minor', then won't '4.11' trip us
+over too?
 
-1. Re-work get_user_pages_fast() and friends adding ability to fill 
-page_vec array. Too much work. Very ugly. I strongly dislike this way.
 
-2. Allocate a temporary array of page pointers in fuse_get_user_pages() 
-to use as argument to get_user_pages_fast(). Ugly and may have 
-performance impact. I dislike this way too.
-
-3. Call get_user_pages_fast() for each page (i.e. pass npages == 1 to 
-it). Easy to implement but may have performance impact. I'd refrain from it.
-
-4. Keep req->pages 'as is', but add req->page_descs pointing to an array 
-of <offset, len> structures. Looks clumsy, straightforward, but quite 
-doable.
-
-5. Use a hack in fuse_get_user_pages(): temporarily cast req->pagevecs 
-to 'struct page **pages', pass it get_user_pages_fast(), then transform 
-the content of req->pagevecs[] to have page pointers stored in proper 
-places (like 'for (i=...) pagevecs[i].pv_page = pages[i];').
-
-What do you think?
-
-Btw, thanks a lot for careful review of patch-set. I agree with your 
-comments. Next version will have those findings fixed.
-
-Thanks,
-Maxim
+> +		version = s + strlen(xen_prefix);
+> +	if (version == NULL) {
+> +		pr_debug("Xen version not found\n");
+> +		return 0;
+> +	}
+> +	xen_domain_type = XEN_HVM_DOMAIN;
+> +
+> +	if (!shared_info_page)
+> +		shared_info_page = (struct shared_info *)
+> +			get_zeroed_page(GFP_KERNEL);
+> +	if (!shared_info_page) {
+> +		pr_err("not enough memory\n");
+> +		return -ENOMEM;
+> +	}
+> +	xatp.domid = DOMID_SELF;
+> +	xatp.idx = 0;
+> +	xatp.space = XENMAPSPACE_shared_info;
+> +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+> +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+> +		BUG();
+> +
+> +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> +
+> +	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
+> +	 * page, we use it in the event channel upcall and in some pvclock
+> +	 * related functions. We don't need the vcpu_info placement
+> +	 * optimizations because we don't use any pv_mmu or pv_irq op on
+> +	 * HVM.
+> +	 * The shared info contains exactly 1 CPU (the boot CPU). The guest
+> +	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
+> +	 * for secondary CPUs as they are brought up. */
+> +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> +	return 0;
+> +}
+> +core_initcall(xen_guest_init);
+> -- 
+> 1.7.2.5
