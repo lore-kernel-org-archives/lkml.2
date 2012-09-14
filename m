@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2INOl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:41:57 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34010 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2INOlz (ORCPT
+	id S932234Ab2INOmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:42:04 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6720 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab2INOl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:41:55 -0400
-Date: Fri, 14 Sep 2012 17:41:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, navin patidar <navinp@cdac.in>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
- usbip_host
-Message-ID: <20120914144111.GG4587@mwanda>
-References: <1347628893-8223-1-git-send-email-navinp@cdac.in>
- <20120914141638.GF4587@mwanda>
- <20120914142833.GE4152@breakpoint.cc>
+	Fri, 14 Sep 2012 10:41:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 14 Sep 2012 07:41:57 -0700
+Message-ID: <50533C09.7060109@nvidia.com>
+Date: Fri, 14 Sep 2012 19:45:37 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120914142833.GE4152@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: tegra: dt: Add pinmux entries for Vbus regulator
+ controls
+References: <1347614754-26357-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1347614754-26357-1-git-send-email-vbyravarasu@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 04:28:33PM +0200, Sebastian Andrzej Siewior wrote:
-> On Fri, Sep 14, 2012 at 05:16:38PM +0300, Dan Carpenter wrote:
-> > I don't think this text is allowed on patches.
-> 
-> Oh Oh Oh Dan, I think you crossed a line here. You were not one of the
-> recipient and you reviewed and forwarded the email but you should have
-> deleted this email instead. Now legal action will be taken…
-> 
-
-Oh crap!
-
-Well, it's a good thing I am a fully AWCP certified survivalist.
-I'm off to live in the mountains until the statute of limitations
-runs out.  If you need me, then print your email out and leave it
-under a rock.
-
-regards,
-dan carpenter
-
+On Friday 14 September 2012 02:55 PM, Venu Byravarasu wrote:
+> Adding pinmux entries for PI4 and PH7 to enable Vbus for USB1
+> and USB3 controllers on Cardhu A02 board.
+>
+> Signed-off-by: Venu Byravarasu<vbyravarasu@nvidia.com>
+> ---
+Looks good.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
