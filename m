@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab2INDuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:50:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47666 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab2INDuE (ORCPT
+	id S1755473Ab2INDvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 23:51:15 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:46476 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759279Ab2INDu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:50:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347582132.3569.13.camel@misato.fc.hp.com>
-References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
-	<1346776024.4732.196.camel@misato.fc.hp.com>
-	<CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
-	<1346794495.4732.221.camel@misato.fc.hp.com>
-	<1347582132.3569.13.camel@misato.fc.hp.com>
-Date: Thu, 13 Sep 2012 20:50:02 -0700
-X-Google-Sender-Auth: a28H1mc_Iv65cdMwx6iE27REJRU
-Message-ID: <CAE9FiQWYSJmCUfjET8UdWHfhbDP45xMdZ+_pd212u_esbsYVhg@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
- hotplug testing.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Sep 2012 23:50:58 -0400
+Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
+From: joeyli <jlee@suse.com>
+To: Peter Jones <pjones@redhat.com>
+Cc: jeremy.kerr@canonical.com, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Domsch <Matt_Domsch@Dell.com>, glin@suse.com
+In-Reply-To: <1347544333.6707.1.camel@eddie.install.bos.redhat.com>
+References: <1346910035.47691.188651047712.1.gpush@pecola>
+	 <CAGLnvc9BXAW8F8WWyDxuF1_J+0np3uqUBmknuJewOJHhe-mxvw@mail.gmail.com>
+	 <1347523843.596.30.camel@linux-s257.site>
+	 <1347544333.6707.1.camel@eddie.install.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Sep 2012 11:45:42 +0800
+Message-ID: <1347594342.705.33.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 5:22 PM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > >> +
->> > >> +     /*
->> > >> +      * Check for internal object and make sure there is a handler
->> > >> +      * registered for this object
->> > >> +      */
->> > >> +     obj_desc = acpi_ns_get_attached_object(node);
->> > >> +     if (obj_desc) {
->> > >> +             if (obj_desc->common_notify.notify_list[0]) {
->> > >
->> > > Is the above check necessary?  acpi_ev_queue_notify_request() sets up to
->> > > call the global handler, acpi_gbl_global_notify[0], even if the object
->> > > does not have a local handler registered.
->> >
->> > Not sure.
->> >
->> > maybe Len or other acpi guyes could answer your questions.
->>
->> I think this check should be removed, but would like someone to
->> verify...
->
->
-> Hi Yinghai,
->
-> Attached is my suggested update to your patch. It allows a SCI to be
-> sent to any object, and therefore can be used for testing the global
-> notify handler. Some drivers such as dock.c only register their handler
-> to the global notify handler. I also made a few minor changes. I have
-> been testing with this update and it is working fine. I like this
-> feature, so I hope we can make progress with this update.
+Hi Peter, 
 
-len, can you check them?
+於 四，2012-09-13 於 09:52 -0400，Peter Jones 提到：
+> On Thu, 2012-09-13 at 16:10 +0800, joeyli wrote:
+> 
+> > Do we have plan to create a new kobject add to /sys/firmware/efi for
+> > provide a fixed mount point to efivars fs?
+> > e.g. /sys/firmware/efi/efivars
+> > 
+> > Or we just direct reuse current /sys/firmeware/efi/vars? But, that means
+> > we need think for the backward compatibility if choice reuse vars
+> > folder.
+> 
+> I'm not sure that's a terribly large concern - if you haven't updated
+> your tools to use the new efivars, don't mount the new efivars.
+> 
 
-Thanks
+Thanks for your comment!
 
-Yinghai
+Joey Lee
+
