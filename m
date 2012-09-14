@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab2INMJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:09:17 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:38695 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759552Ab2INMGG (ORCPT
+	id S1759536Ab2INMF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:05:56 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:56496 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758725Ab2INMFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:06:06 -0400
+	Fri, 14 Sep 2012 08:05:52 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -17,10 +17,18 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
         Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 08/15] ASoC: OMAP: Remove sync_mode from omap_pcm_dma_data struct
-Date: Fri, 14 Sep 2012 15:05:51 +0300
-Message-Id: <1347624358-25582-9-git-send-email-peter.ujfalusi@ti.com>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH v3 04/15] dmaengine: Pass flags via device_prep_dma_cyclic() callback
+Date: Fri, 14 Sep 2012 15:05:47 +0300
+Message-Id: <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
@@ -28,103 +36,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The omap-pcm platform driver no longer needs this parameter to select
-between ELEMENT and PACKET mode. The selection is based on the configured
-packet_size.
+Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+can receive the flags coming from clients.
+This feature can be used during audio operation to disable all audio
+related interrupts when the DMA_PREP_INTERRUPT is cleared from the flags.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Barry Song <baohua.song@csr.com>
+CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Vista Silicon <javier.martin@vista-silicon.com>
+CC: Zhangfei Gao <zhangfei.gao@marvell.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- sound/soc/omap/omap-dmic.c  | 1 -
- sound/soc/omap/omap-hdmi.c  | 1 -
- sound/soc/omap/omap-mcbsp.c | 5 +----
- sound/soc/omap/omap-mcpdm.c | 2 --
- sound/soc/omap/omap-pcm.h   | 1 -
- 5 files changed, 1 insertion(+), 9 deletions(-)
+ drivers/dma/at_hdmac.c        | 3 ++-
+ drivers/dma/ep93xx_dma.c      | 4 +++-
+ drivers/dma/imx-dma.c         | 2 +-
+ drivers/dma/imx-sdma.c        | 2 +-
+ drivers/dma/mmp_tdma.c        | 2 +-
+ drivers/dma/mxs-dma.c         | 2 +-
+ drivers/dma/omap-dma.c        | 3 ++-
+ drivers/dma/pl330.c           | 2 +-
+ drivers/dma/sa11x0-dma.c      | 2 +-
+ drivers/dma/sirf-dma.c        | 2 +-
+ drivers/dma/ste_dma40.c       | 3 ++-
+ drivers/dma/tegra20-apb-dma.c | 2 +-
+ include/linux/dmaengine.h     | 4 ++--
+ 13 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
-index 75f5dca..60b7b8c 100644
---- a/sound/soc/omap/omap-dmic.c
-+++ b/sound/soc/omap/omap-dmic.c
-@@ -64,7 +64,6 @@ struct omap_dmic {
- static struct omap_pcm_dma_data omap_dmic_dai_dma_params = {
- 	.name		= "DMIC capture",
- 	.data_type	= OMAP_DMA_DATA_TYPE_S32,
--	.sync_mode	= OMAP_DMA_SYNC_PACKET,
- };
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 3934fcc..7e5f6b6 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -841,12 +841,13 @@ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
+  * @buf_len: total number of bytes for the entire buffer
+  * @period_len: number of bytes for each period
+  * @direction: transfer direction, to or from device
++ * @flags: tx descriptor status flags
+  * @context: transfer context (ignored)
+  */
+ static struct dma_async_tx_descriptor *
+ atc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 	struct at_dma_slave	*atslave = chan->private;
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index c64917e..493735b 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -1120,6 +1120,7 @@ fail:
+  * @buf_len: length of the buffer (in bytes)
+  * @period_len: lenght of a single period
+  * @dir: direction of the operation
++ * @flags: tx descriptor status flags
+  * @context: operation context (ignored)
+  *
+  * Prepares a descriptor for cyclic DMA operation. This means that once the
+@@ -1133,7 +1134,8 @@ fail:
+ static struct dma_async_tx_descriptor *
+ ep93xx_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
+ 			   size_t buf_len, size_t period_len,
+-			   enum dma_transfer_direction dir, void *context)
++			   enum dma_transfer_direction dir, unsigned long flags,
++			   void *context)
+ {
+ 	struct ep93xx_dma_chan *edmac = to_ep93xx_dma_chan(chan);
+ 	struct ep93xx_dma_desc *desc, *first;
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index 5084975..41b4376 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -801,7 +801,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+ 	struct imxdma_engine *imxdma = imxdmac->imxdma;
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 1dc2a4a..2c5fd3e 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -1012,7 +1012,7 @@ err_out:
+ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct sdma_channel *sdmac = to_sdma_chan(chan);
+ 	struct sdma_engine *sdma = sdmac->sdma;
+diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+index 8a15cf2..6d52bd4 100644
+--- a/drivers/dma/mmp_tdma.c
++++ b/drivers/dma/mmp_tdma.c
+@@ -358,7 +358,7 @@ struct mmp_tdma_desc *mmp_tdma_alloc_descriptor(struct mmp_tdma_chan *tdmac)
+ static struct dma_async_tx_descriptor *mmp_tdma_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
+ 	struct mmp_tdma_desc *desc;
+diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+index 7f41b25..734a4eb 100644
+--- a/drivers/dma/mxs-dma.c
++++ b/drivers/dma/mxs-dma.c
+@@ -531,7 +531,7 @@ err_out:
+ static struct dma_async_tx_descriptor *mxs_dma_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 71d7869..4d2650f 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -366,7 +366,8 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
  
- static inline void omap_dmic_write(struct omap_dmic *dmic, u16 reg, u32 val)
-diff --git a/sound/soc/omap/omap-hdmi.c b/sound/soc/omap/omap-hdmi.c
-index a08245d..b194646 100644
---- a/sound/soc/omap/omap-hdmi.c
-+++ b/sound/soc/omap/omap-hdmi.c
-@@ -290,7 +290,6 @@ static __devinit int omap_hdmi_probe(struct platform_device *pdev)
+ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
+ 	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+-	size_t period_len, enum dma_transfer_direction dir, void *context)
++	size_t period_len, enum dma_transfer_direction dir, unsigned long flags,
++	void *context)
+ {
+ 	struct omap_chan *c = to_omap_dma_chan(chan);
+ 	enum dma_slave_buswidth dev_width;
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index e4feba6..0035645 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2683,7 +2683,7 @@ static inline int get_burst_len(struct dma_pl330_desc *desc, size_t len)
+ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context)
++		unsigned long flags, void *context)
+ {
+ 	struct dma_pl330_desc *desc;
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
+index f5a7360..b893159 100644
+--- a/drivers/dma/sa11x0-dma.c
++++ b/drivers/dma/sa11x0-dma.c
+@@ -614,7 +614,7 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_slave_sg(
  
- 	hdmi_data->dma_params.dma_req =  hdmi_rsrc->start;
- 	hdmi_data->dma_params.name = "HDMI playback";
--	hdmi_data->dma_params.sync_mode = OMAP_DMA_SYNC_PACKET;
+ static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
+ 	struct dma_chan *chan, dma_addr_t addr, size_t size, size_t period,
+-	enum dma_transfer_direction dir, void *context)
++	enum dma_transfer_direction dir, unsigned long flags, void *context)
+ {
+ 	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
+ 	struct sa11x0_dma_desc *txd;
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 434ad31..3eed8b3 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -489,7 +489,7 @@ err_dir:
+ static struct dma_async_tx_descriptor *
+ sirfsoc_dma_prep_cyclic(struct dma_chan *chan, dma_addr_t addr,
+ 	size_t buf_len, size_t period_len,
+-	enum dma_transfer_direction direction, void *context)
++	enum dma_transfer_direction direction, unsigned long flags, void *context)
+ {
+ 	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+ 	struct sirfsoc_dma_desc *sdesc = NULL;
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 000d309..eee8d9b 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2347,7 +2347,8 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
+ static struct dma_async_tx_descriptor *
+ dma40_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
+ 		     size_t buf_len, size_t period_len,
+-		     enum dma_transfer_direction direction, void *context)
++		     enum dma_transfer_direction direction, unsigned long flags,
++		     void *context)
+ {
+ 	unsigned int periods = buf_len / period_len;
+ 	struct dma_async_tx_descriptor *txd;
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 24acd71..b42b6ff 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -990,7 +990,7 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_slave_sg(
+ struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+ 	struct dma_chan *dc, dma_addr_t buf_addr, size_t buf_len,
+ 	size_t period_len, enum dma_transfer_direction direction,
+-	void *context)
++	unsigned long flags, void *context)
+ {
+ 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+ 	struct tegra_dma_desc *dma_desc = NULL;
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 2abcac5..d3201e4 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -591,7 +591,7 @@ struct dma_device {
+ 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+-		void *context);
++		unsigned long flags, void *context);
+ 	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+ 		struct dma_chan *chan, struct dma_interleaved_template *xt,
+ 		unsigned long flags);
+@@ -657,7 +657,7 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
+ 		unsigned long flags)
+ {
+ 	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
+-						period_len, dir, NULL);
++						period_len, dir, flags, NULL);
+ }
  
- 	/*
- 	 * TODO: We assume that there is only one DSS HDMI device. Future
-diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
-index fe3debc..5b3bacc 100644
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -225,7 +225,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
- 	struct omap_mcbsp *mcbsp = snd_soc_dai_get_drvdata(cpu_dai);
- 	struct omap_mcbsp_reg_cfg *regs = &mcbsp->cfg_regs;
- 	struct omap_pcm_dma_data *dma_data;
--	int wlen, channels, wpf, sync_mode = OMAP_DMA_SYNC_ELEMENT;
-+	int wlen, channels, wpf;
- 	int pkt_size = 0;
- 	unsigned int format, div, framesize, master;
- 
-@@ -272,15 +272,12 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
- 				return -EINVAL;
- 
- 			pkt_size = period_words / divider;
--			sync_mode = OMAP_DMA_SYNC_PACKET;
- 		} else if (channels > 1) {
- 			/* Use packet mode for non mono streams */
- 			pkt_size = channels;
--			sync_mode = OMAP_DMA_SYNC_PACKET;
- 		}
- 	}
- 
--	dma_data->sync_mode = sync_mode;
- 	dma_data->packet_size = pkt_size;
- 
- 	snd_soc_dai_set_dma_data(cpu_dai, substream, dma_data);
-diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-index f7babb3..baf92da 100644
---- a/sound/soc/omap/omap-mcpdm.c
-+++ b/sound/soc/omap/omap-mcpdm.c
-@@ -73,14 +73,12 @@ static struct omap_pcm_dma_data omap_mcpdm_dai_dma_params[] = {
- 		.name = "Audio playback",
- 		.dma_req = OMAP44XX_DMA_MCPDM_DL,
- 		.data_type = OMAP_DMA_DATA_TYPE_S32,
--		.sync_mode = OMAP_DMA_SYNC_PACKET,
- 		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_DN_DATA,
- 	},
- 	{
- 		.name = "Audio capture",
- 		.dma_req = OMAP44XX_DMA_MCPDM_UP,
- 		.data_type = OMAP_DMA_DATA_TYPE_S32,
--		.sync_mode = OMAP_DMA_SYNC_PACKET,
- 		.port_addr = OMAP44XX_MCPDM_L3_BASE + MCPDM_REG_UP_DATA,
- 	},
- };
-diff --git a/sound/soc/omap/omap-pcm.h b/sound/soc/omap/omap-pcm.h
-index b92248c..1bf47e4 100644
---- a/sound/soc/omap/omap-pcm.h
-+++ b/sound/soc/omap/omap-pcm.h
-@@ -33,7 +33,6 @@ struct omap_pcm_dma_data {
- 	unsigned long	port_addr;	/* transmit/receive register */
- 	void (*set_threshold)(struct snd_pcm_substream *substream);
- 	int		data_type;	/* data type 8,16,32 */
--	int		sync_mode;	/* DMA sync mode */
- 	int		packet_size;	/* packet size only in PACKET mode */
- };
- 
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
 -- 
 1.7.12
 
