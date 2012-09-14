@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab2INPCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:02:00 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2787 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751612Ab2INPB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:01:58 -0400
-Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
- unsigned integer
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Jim Rees <rees@umich.edu>, "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Sep 2012 17:00:47 +0200
-In-Reply-To: <alpine.LNX.2.01.1209141624530.18169@frira.zrqbmnf.qr>
-References: <20120821212910.GD18637@fieldses.org>
-	 <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
-	 <1347614276.26071.15.camel@thorin>
-	 <alpine.LNX.2.01.1209141456290.18169@frira.zrqbmnf.qr>
-	 <20120914134637.GA8943@umich.edu>
-	 <alpine.LNX.2.01.1209141624530.18169@frira.zrqbmnf.qr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1347634851.3813.9.camel@thorin>
-Mime-Version: 1.0
-X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	id S1758640Ab2INPDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:03:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58902 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531Ab2INPDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 11:03:13 -0400
+Date: Fri, 14 Sep 2012 17:03:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [RFC] cgroup TODOs
+Message-ID: <20120914150306.GQ28039@dhcp22.suse.cz>
+References: <20120913205827.GO7677@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120913205827.GO7677@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fre, 2012-09-14 at 16:25 +0200, Jan Engelhardt wrote:
-> On Friday 2012-09-14 15:46, Jim Rees wrote:
-> >Jan Engelhardt wrote:
-> >  >A pure K&R-C version would use a string:
-> >  >#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
-> >  >(if I converted them properly into hexadecimal)
-> >  The syntax is \x01\x03\x05...
-> >
-> >K&R doesn't have the \x escape, only \0 (octal).
+On Thu 13-09-12 13:58:27, Tejun Heo wrote:
+[...]
+> 2. memcg's __DEPRECATED_clear_css_refs
+> 
+>   This is a remnant of another weird design decision of requiring
+>   synchronous draining of refcnts on cgroup removal and allowing
+>   subsystems to veto cgroup removal - what's the userspace supposed to
+>   do afterwards?  Note that this also hinders co-mounting different
+>   controllers.
+> 
+>   The behavior could be useful for development and debugging but it
+>   unnecessarily interlocks userland visible behavior with in-kernel
+>   implementation details.  To me, it seems outright wrong (either
+>   implement proper severing semantics in the controller or do full
+>   refcnting) and disallows, for example, lazy drain of caching refs.
+>   Also, it complicates the removal path with try / commit / revert
+>   logic which has never been fully correct since the beginning.
+> 
+>   Currently, the only left user is memcg.
+> 
+>   Solution:
+> 
+>   * Update memcg->pre_destroy() such that it never fails.
+> 
+>   * Drop __DEPRECATED_clear_css_refs and all related logic.
+>     Convert pre_destroy() to return void.
+> 
+>   Who:
+> 
+>   KAMEZAWA, Michal, PLEASE.  I will make __DEPRECATED_clear_css_refs
+>   trigger WARN sooner or later.  Let's please get this settled.
 
-We cuold use octal too.
+I think we are almost there. One big step was that we no longer charge
+to the parent and only move statistics but there are still some corner
+cases when we race with LRU handling.
 
-> People recommend K&R only for the introductory reading, not for its 
-> actuality.
+[...]
+>   * memcg can be fully hierarchical but we need to phase out the flat
+>     hierarchy support.  Unfortunately, this involves flipping the
+>     behavior for the existing users.  Upstream will try to nudge users
+>     with warning messages.  Most burden would be on the distros and at
+>     least SUSE seems to be on board with it.  Needs coordination with
+>     other distros.
 
-And I actually used it to show that no gcc-isms are necessary. ANSI-C is
-fine too for that case.
+I am currently planning to add a warning to most of the currenly
+maintained distributions to have as big coverage as possible. No default
+switch for obvious reasons but hopefuly we will get some feedback at
+least.
 
-	Bernd
+Thanks Tejun for doing this. We needed it for a long time.
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+Michal Hocko
+SUSE Labs
