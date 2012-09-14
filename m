@@ -1,25 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab2INDSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:18:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38652 "EHLO mga02.intel.com"
+	id S1758941Ab2INDUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 23:20:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54692 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754777Ab2INDS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:18:29 -0400
+	id S1754777Ab2INDUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 23:20:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,420,1344236400"; 
-   d="scan'208";a="192892913"
-Subject: Re: [PATCH 0/2] DMA: PL330: Clock and runtime cleanup
+   d="scan'208";a="203531328"
+Subject: Re: [PATCH 04/16] ARM: imx: move platform_data definitions
 From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Inderpal Singh <inderpal.singh@linaro.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, patches@linaro.org, boojin.kim@samsung.com,
-        jassisinghbrar@gmail.com
-In-Reply-To: <1347000288-20441-1-git-send-email-inderpal.singh@linaro.org>
-References: <1347000288-20441-1-git-send-email-inderpal.singh@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>, Dan Williams <djbw@fb.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Chris Ball <cjb@laptop.org>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+In-Reply-To: <1347368390-31252-4-git-send-email-arnd@arndb.de>
+References: <1347368350-31212-1-git-send-email-arnd@arndb.de>
+	 <1347368390-31252-1-git-send-email-arnd@arndb.de>
+	 <1347368390-31252-4-git-send-email-arnd@arndb.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 08:45:03 +0530
-Message-ID: <1347592503.1943.17.camel@vkoul-udesk3>
+Date: Fri, 14 Sep 2012 08:47:13 +0530
+Message-ID: <1347592633.1943.19.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,23 +43,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-07 at 12:14 +0530, Inderpal Singh wrote:
-> The controller clock is being managed at AMBA bus level probe/remove and
-> pm_runtime/suspend functions. The existing driver does the clock enable/disable
-> again in the same code paths, which unneccessarily increments the usage count of
-> the clock for the same device. 
+On Tue, 2012-09-11 at 14:59 +0200, Arnd Bergmann wrote:
+> Platform data for device drivers should be defined in
+> include/linux/platform_data/*.h, not in the architecture
+> and platform specific directories.
 > 
-> The following patches remove the redundant clock enable/disable from the driver.
-Looks good, any tested by before I apply this.. Kukjin?
-> 
-> Inderpal Singh (2):
->   DMA: PL330: Remove controller clock enable/disable
->   DMA: PL330: Remove redundant runtime_suspend/resume functions
-> 
->  drivers/dma/pl330.c |   73 ++++-----------------------------------------------
->  1 file changed, 5 insertions(+), 68 deletions(-)
-> 
+> This moves such data out of the imx include directories
 
+For these:
+>  drivers/dma/imx-dma.c                              |    2 +-
+>  drivers/dma/imx-sdma.c                             |    4 +--
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
 
 -- 
 ~Vinod
