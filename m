@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759158Ab2INDmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:42:55 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41814 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2INDmy (ORCPT
+	id S1759234Ab2INDuG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 23:50:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47666 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab2INDuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:42:54 -0400
-Message-ID: <5052A7DF.4050301@gmail.com>
-Date: Fri, 14 Sep 2012 11:43:27 +0800
-From: qiuxishi <qiuxishi@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 13 Sep 2012 23:50:04 -0400
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, mgorman@suse.de, tony.luck@intel.com,
-        Jiang Liu <jiang.liu@huawei.com>
-CC: qiuxishi@huawei.com, bessel.wang@huawei.com, wujianguo@huawei.com,
-        paul.gortmaker@windriver.com, kamezawa.hiroyu@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, rientjes@google.com,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH RESEND] memory hotplug: fix a double register section info
- bug
+In-Reply-To: <1347582132.3569.13.camel@misato.fc.hp.com>
+References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
+	<1346776024.4732.196.camel@misato.fc.hp.com>
+	<CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
+	<1346794495.4732.221.camel@misato.fc.hp.com>
+	<1347582132.3569.13.camel@misato.fc.hp.com>
+Date: Thu, 13 Sep 2012 20:50:02 -0700
+X-Google-Sender-Auth: a28H1mc_Iv65cdMwx6iE27REJRU
+Message-ID: <CAE9FiQWYSJmCUfjET8UdWHfhbDP45xMdZ+_pd212u_esbsYVhg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
+ hotplug testing.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There may be a bug when registering section info. For example, on
-my Itanium platform, the pfn range of node0 includes the other nodes,
-so other nodes' section info will be double registered, and memmap's
-page count will equal to 3.
+On Thu, Sep 13, 2012 at 5:22 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > >> +
+>> > >> +     /*
+>> > >> +      * Check for internal object and make sure there is a handler
+>> > >> +      * registered for this object
+>> > >> +      */
+>> > >> +     obj_desc = acpi_ns_get_attached_object(node);
+>> > >> +     if (obj_desc) {
+>> > >> +             if (obj_desc->common_notify.notify_list[0]) {
+>> > >
+>> > > Is the above check necessary?  acpi_ev_queue_notify_request() sets up to
+>> > > call the global handler, acpi_gbl_global_notify[0], even if the object
+>> > > does not have a local handler registered.
+>> >
+>> > Not sure.
+>> >
+>> > maybe Len or other acpi guyes could answer your questions.
+>>
+>> I think this check should be removed, but would like someone to
+>> verify...
+>
+>
+> Hi Yinghai,
+>
+> Attached is my suggested update to your patch. It allows a SCI to be
+> sent to any object, and therefore can be used for testing the global
+> notify handler. Some drivers such as dock.c only register their handler
+> to the global notify handler. I also made a few minor changes. I have
+> been testing with this update and it is working fine. I like this
+> feature, so I hope we can make progress with this update.
 
-node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
-node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
-node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
-node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
+len, can you check them?
 
-free_all_bootmem_node()
-	register_page_bootmem_info_node()
-		register_page_bootmem_info_section()
+Thanks
 
-When hot remove memory, we can't free the memmap's page because
-page_count() is 2 after put_page_bootmem().
-
-sparse_remove_one_section()
-	free_section_usemap()
-		free_map_bootmem()
-			put_page_bootmem()
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- mm/memory_hotplug.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 2adbcac..cf493c7 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -126,9 +126,6 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 	struct mem_section *ms;
- 	struct page *page, *memmap;
-
--	if (!pfn_valid(start_pfn))
--		return;
--
- 	section_nr = pfn_to_section_nr(start_pfn);
- 	ms = __nr_to_section(section_nr);
-
-@@ -187,9 +184,10 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 	end_pfn = pfn + pgdat->node_spanned_pages;
-
- 	/* register_section info */
--	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
--		register_page_bootmem_info_section(pfn);
--
-+	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
-+			register_page_bootmem_info_section(pfn);
-+	}
- }
- #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
-
--- 
-1.7.1
+Yinghai
