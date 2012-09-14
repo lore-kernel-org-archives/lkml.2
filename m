@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2INMam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:30:42 -0400
-Received: from mout.perfora.net ([74.208.4.194]:53133 "EHLO mout.perfora.net"
+	id S1752964Ab2INMcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:32:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9557 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635Ab2INMai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:30:38 -0400
-Date: Fri, 14 Sep 2012 08:30:14 -0400
-From: Jim Rees <rees@umich.edu>
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-Cc: Jan Engelhardt <jengelh@inai.de>, "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
- unsigned integer
-Message-ID: <20120914123014.GB29160@umich.edu>
-References: <20120821212910.GD18637@fieldses.org>
- <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr>
- <1347614276.26071.15.camel@thorin>
+	id S1751102Ab2INMcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 08:32:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
+   d="scan'208";a="222142049"
+Date: Fri, 14 Sep 2012 20:32:13 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        paulmck@linux.vnet.ibm.com, jack@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: WARNING: at kernel/rcutree.c:1558 rcu_do_batch+0x386/0x3a0(),
+ during CPU hotplug
+Message-ID: <20120914123213.GB21038@localhost>
+References: <5007F8FA.7000203@linux.vnet.ibm.com>
+ <20120719171550.GL2507@linux.vnet.ibm.com>
+ <505081C4.2050600@linux.vnet.ibm.com>
+ <50519AC5.9060102@linux.vnet.ibm.com>
+ <20120914114752.GA20349@localhost>
+ <5053208C.4060205@linux.vnet.ibm.com>
+ <1347625519.7172.31.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347614276.26071.15.camel@thorin>
-X-Provags-ID: V02:K0:krHfhdhe6wLZ2pcr7AUOq+2vRcVFftfo76/IsA+nzMo
- AyZQzDlyHnJ2LdZCjV7J+cAMGtwIDnErCPsdeZgtRLchxL/b4i
- ws2EOd4ETO1t9uxjFAIVyMTX2Ltm0XLxlLzBSWWBzBWA3LSflc
- bS18zQdtUEbEhi8ltgca4goaWma1HoC9ode77kElgyr35sFvHz
- enyQcpTxarSG+xaTOWB7mNyn1qM86JMI2Q6BTHSIU1dUgRnJze
- 9YiPUXHaXDXIZUI3/SrHAkTOo8Pc1fzDmDXGlJlyiPrEc72v1B
- kUgrfVJQ9tQt97TpBZb9CkL6GLEpYhktwm5uUNOcTzxtMY2VQ=
- =
+In-Reply-To: <1347625519.7172.31.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bernd Petrovitsch wrote:
+On Fri, Sep 14, 2012 at 02:25:19PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-09-14 at 17:48 +0530, Srivatsa S. Bhat wrote:
+> > #! /bin/bash
+> 
+> CPUPATH="/sys/devices/system/cpu"
+> 
+> > NUMBER_OF_CPUS=`ls -d /sys/devices/system/cpu/cpu[0-9]* | wc -l`
+> 
+> apply the above
+> 
+> > cd /sys/devices/system/cpu
+> 
+> skip this, so running the script doesn't change PWD
 
-  On Mon, 2012-09-10 at 08:19 +0200, Jan Engelhardt wrote:
-  > On Tuesday 2012-08-21 23:29, J. Bruce Fields wrote:
-  [...]
-  > >+/*
-  > >+ * length of the decimal representation of an unsigned integer.  Just an
-  > >+ * approximation, but it's right for types of size 1 to 36 bytes:
-  > >+ */
-  > >+#define base10len(i) (sizeof(i) * 24 / 10 + 1)
-  > 
-  > gcc provides... "interesting" features at times.
-  > 
-  > /* for unsigned "i"s */
-  > #define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[i])
-  
-  Shouldn't that have been
-  ----  snip ----
-  #define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[sizeof(i)])
-  ----  snip ----
-  ?
-  
-  A pure K&R-C version would use a string:
-  ----  snip ----
-  #define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
-  ----  snip ----
-  (if I converted them properly into hexadecimal) and that gives a "char"
-  which is happily promoted to whatever one needs in that place.
+Yes, that's good practice.
 
-1. That may give you a signed char on some architectures, which is not what
-you want (although it doesn't matter since the values are all < 128)
+> > while [ 1 ]
+> 
+> while :;
 
-2. If you put this in a .h, you'll get multiple copies of the array
+I used to use 'true', but ':' looks cool!
 
-3. No bounds checking (but in ninja K&R style you never check bounds)
+> > do
+> >         for ((i=1; i < NUMBER_OF_CPUS; i++))
+> >         do
+> >                 sleep 1;
+> 
+> Also play with shorter sleeps like: sleep .1, I've found that higher
+> hotplug rate triggers some races faster.
 
-4. Unreadable.
+OK.
 
-Pure K&R:
+> >                 state=`cat cpu$i/online`
+> >                 if [ $state -eq 0 ]
+> >                 then
+> >                         echo 1 > cpu$i/online
+> >                 else
+> >                         echo 0 > cpu$i/online
+> 
+> 	echo $((state^1)) > $CPUPATH/cpu$i/online
 
-base10.h:
-extern unsigned char base10len_vals[];
-#define base10len(i) (base10len_vals[sizeof(i)])
+Good!
 
-base10.c:
-unsigned char base10len_vals[] = {1,3,5,8,10,13,15,17,20};
-
-But I still like my way better.
+Thanks,
+Fengguang
