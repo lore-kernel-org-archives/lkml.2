@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab2INWNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 18:13:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64664 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab2INWNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 18:13:46 -0400
-Message-ID: <5053AC2F.3070203@gmail.com>
-Date: Sat, 15 Sep 2012 00:14:07 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
+	id S1756669Ab2INWOq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 18:14:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39958 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755284Ab2INWOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 18:14:44 -0400
+Date: Sat, 15 Sep 2012 00:14:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120914221440.GB6468@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Nikolay Ulyanitsky <lystor@gmail.com>,
+	Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@kernel.org>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+ <20120914212717.GA29307@liondog.tnic>
+ <1347658843.7172.90.camel@twins>
+ <CA+55aFz6SxLEr0MNubz7rcwcqki7EM33Vp-q3KFEvuLG6a61ZQ@mail.gmail.com>
+ <1347659777.7172.97.camel@twins>
+ <CA+55aFwKEjsPKYNFkkNfrr9V=vyEO6M9o_48be4y9w6=h-06UQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
-        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 6/7] mm: add CONFIG_DEBUG_VM_RB build option
-References: <1346750457-12385-1-git-send-email-walken@google.com> <1346750457-12385-7-git-send-email-walken@google.com>
-In-Reply-To: <1346750457-12385-7-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwKEjsPKYNFkkNfrr9V=vyEO6M9o_48be4y9w6=h-06UQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2012 11:20 AM, Michel Lespinasse wrote:
-> Add a CONFIG_DEBUG_VM_RB build option for the previously existing
-> DEBUG_MM_RB code. Now that Andi Kleen modified it to avoid using
-> recursive algorithms, we can expose it a bit more.
+On Fri, Sep 14, 2012 at 03:01:44PM -0700, Linus Torvalds wrote:
+> On Fri, Sep 14, 2012 at 2:56 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >
+> > Both things change semantics, not looking at the entire package is new
+> > too.
 > 
-> Also extend this code to validate_mm() after stack expansion, and to
-> check that the vma's start and last pgoffs have not changed since the
-> nodes were inserted on the anon vma interval tree (as it is important
-> that the nodes be reindexed after each such update).
+> Well, the "idle_buddy" thing on its own could be considered to be
+> purely a caching thing.
+> 
+> Sure, it doesn't take tsk_cpus_allowed() into account while setting up
+> the cache (since it's not dynamic enough), but *assuming* the common
+> case is that people let threads be on any of the cores of a package,
+> it should be possible to make the cache 100% equivalent with no
+> semantic change. No?
+> 
+> The code doesn't even try to do that kind of "don't change semantics",
+> though, and makes the idle-buddy thing entirely different.
 
-This patch exposes the following warning:
+Could it be that this machine has a non-power of two cores (6) and maybe
+the idle buddy selection doesn't work as expected?
 
-[   24.977502] ------------[ cut here ]------------
-[   24.979089] WARNING: at mm/interval_tree.c:110
-anon_vma_interval_tree_verify+0x81/0xa0()
-[   24.981765] Pid: 5928, comm: trinity-child37 Tainted: G        W
-3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #333
-[   24.985501] Call Trace:
-[   24.986345]  [<ffffffff81224c91>] ? anon_vma_interval_tree_verify+0x81/0xa0
-[   24.988535]  [<ffffffff81106766>] warn_slowpath_common+0x86/0xb0
-[   24.990636]  [<ffffffff81106855>] warn_slowpath_null+0x15/0x20
-[   24.992658]  [<ffffffff81224c91>] anon_vma_interval_tree_verify+0x81/0xa0
-[   24.994980]  [<ffffffff8122e6e8>] validate_mm+0x58/0x1e0
-[   24.996772]  [<ffffffff8122e934>] vma_link+0x94/0xe0
-[   24.997719]  [<ffffffff812315e9>] copy_vma+0x279/0x2e0
-[   24.998522]  [<ffffffff8117a7fd>] ? trace_hardirqs_off+0xd/0x10
-[   25.000772]  [<ffffffff81232e89>] move_vma+0xa9/0x260
-[   25.002499]  [<ffffffff812334b5>] sys_mremap+0x475/0x540
-[   25.004364]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
-[   25.006108] ---[ end trace 7c901670963aa6e2 ]---
+ (Although it shouldn't since the commit message speaks also of non-power of
+  two cores (40) and it works fine there).
 
-The code line is
+Anyway, here's the topology of the box:
 
-        WARN_ON_ONCE(node->cached_vma_last != avc_last_pgoff(node));
+$ for i in $(ls cpu?/topology/*); do echo -n $i": "; cat $i; done
+cpu0/topology/core_id: 0
+cpu0/topology/core_siblings: 3f
+cpu0/topology/core_siblings_list: 0-5
+cpu0/topology/physical_package_id: 0
+cpu0/topology/thread_siblings: 01
+cpu0/topology/thread_siblings_list: 0
+cpu1/topology/core_id: 1
+cpu1/topology/core_siblings: 3f
+cpu1/topology/core_siblings_list: 0-5
+cpu1/topology/physical_package_id: 0
+cpu1/topology/thread_siblings: 02
+cpu1/topology/thread_siblings_list: 1
+cpu2/topology/core_id: 2
+cpu2/topology/core_siblings: 3f
+cpu2/topology/core_siblings_list: 0-5
+cpu2/topology/physical_package_id: 0
+cpu2/topology/thread_siblings: 04
+cpu2/topology/thread_siblings_list: 2
+cpu3/topology/core_id: 3
+cpu3/topology/core_siblings: 3f
+cpu3/topology/core_siblings_list: 0-5
+cpu3/topology/physical_package_id: 0
+cpu3/topology/thread_siblings: 08
+cpu3/topology/thread_siblings_list: 3
+cpu4/topology/core_id: 4
+cpu4/topology/core_siblings: 3f
+cpu4/topology/core_siblings_list: 0-5
+cpu4/topology/physical_package_id: 0
+cpu4/topology/thread_siblings: 10
+cpu4/topology/thread_siblings_list: 4
+cpu5/topology/core_id: 5
+cpu5/topology/core_siblings: 3f
+cpu5/topology/core_siblings_list: 0-5
+cpu5/topology/physical_package_id: 0
+cpu5/topology/thread_siblings: 20
+cpu5/topology/thread_siblings_list: 5
+
+-- 
+Regards/Gruss,
+    Boris.
