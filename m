@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab2INWqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 18:46:39 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32912 "EHLO
+	id S1760307Ab2INWup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 18:50:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33841 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760162Ab2INWqi (ORCPT
+	with ESMTP id S1760281Ab2INWul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 18:46:38 -0400
+	Fri, 14 Sep 2012 18:50:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <5053AC2F.3070203@gmail.com>
-References: <1346750457-12385-1-git-send-email-walken@google.com>
-	<1346750457-12385-7-git-send-email-walken@google.com>
-	<5053AC2F.3070203@gmail.com>
-Date: Fri, 14 Sep 2012 15:46:37 -0700
-Message-ID: <CANN689Ff3W4z=+3J8aGO-2GrPHGJ=ote_f5q9jzRQRAP+b0T4Q@mail.gmail.com>
-Subject: Re: [PATCH 6/7] mm: add CONFIG_DEBUG_VM_RB build option
-From: Michel Lespinasse <walken@google.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
-        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dave Jones <davej@redhat.com>
+In-Reply-To: <20120719211510.GA32763@google.com>
+References: <20120719211510.GA32763@google.com>
+Date: Fri, 14 Sep 2012 15:50:40 -0700
+Message-ID: <CAMbhsRQs+2MCXq0M-eTeezwPR=KMnBKtJny1rjiUJL-wNYctMQ@mail.gmail.com>
+Subject: Re: [PATCHSET] kthread_worker: reimplement flush_kthread_work() to
+ allow freeing during execution
+From: Colin Cross <ccross@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        Andy Walls <awalls@md.metrocast.net>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 3:14 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On 09/04/2012 11:20 AM, Michel Lespinasse wrote:
->> Add a CONFIG_DEBUG_VM_RB build option for the previously existing
->> DEBUG_MM_RB code. Now that Andi Kleen modified it to avoid using
->> recursive algorithms, we can expose it a bit more.
->>
->> Also extend this code to validate_mm() after stack expansion, and to
->> check that the vma's start and last pgoffs have not changed since the
->> nodes were inserted on the anon vma interval tree (as it is important
->> that the nodes be reindexed after each such update).
+On Thu, Jul 19, 2012 at 2:15 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
 >
-> This patch exposes the following warning:
+> kthread_worker was introduced together with concurrency managed
+> workqueue to serve workqueue users which need a special dedicated
+> worker - e.g. RT scheduling.  This is minimal queue / flush / flush
+> all iterface on top of kthread and each provided interface matches the
+> workqueue counterpart so that switching isn't difficult.
 >
-> [   24.977502] ------------[ cut here ]------------
-> [   24.979089] WARNING: at mm/interval_tree.c:110
-> anon_vma_interval_tree_verify+0x81/0xa0()
-> [   24.981765] Pid: 5928, comm: trinity-child37 Tainted: G        W
-> 3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #333
-> [   24.985501] Call Trace:
-> [   24.986345]  [<ffffffff81224c91>] ? anon_vma_interval_tree_verify+0x81/0xa0
-> [   24.988535]  [<ffffffff81106766>] warn_slowpath_common+0x86/0xb0
-> [   24.990636]  [<ffffffff81106855>] warn_slowpath_null+0x15/0x20
-> [   24.992658]  [<ffffffff81224c91>] anon_vma_interval_tree_verify+0x81/0xa0
-> [   24.994980]  [<ffffffff8122e6e8>] validate_mm+0x58/0x1e0
-> [   24.996772]  [<ffffffff8122e934>] vma_link+0x94/0xe0
-> [   24.997719]  [<ffffffff812315e9>] copy_vma+0x279/0x2e0
-> [   24.998522]  [<ffffffff8117a7fd>] ? trace_hardirqs_off+0xd/0x10
-> [   25.000772]  [<ffffffff81232e89>] move_vma+0xa9/0x260
-> [   25.002499]  [<ffffffff812334b5>] sys_mremap+0x475/0x540
-> [   25.004364]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
-> [   25.006108] ---[ end trace 7c901670963aa6e2 ]---
+> However, one noticeable difference was that kthread_worker doesn't
+> allow a work item to be freed while being executed.  The intention was
+> to keep the code simpler but it didn't really and the restriction is
+> subtle and does prevent some valid use cases.
 >
-> The code line is
+> This two-patch series reimplements flush_kthread_work() so that it
+> uses an extra work item for flushing.  While this takes a bit more
+> lines, this is easier to understand and removes the annoying
+> difference.
 >
->         WARN_ON_ONCE(node->cached_vma_last != avc_last_pgoff(node));
+> This patchset contains the following two patches.
+>
+>  0001-kthread_worker-reorganize-to-prepare-for-flush_kthre.patch
+>  0002-kthread_worker-reimplement-flush_kthread_work-to-all.patch
+>
+> The first one is a prep patch which makes no functional changes.  The
+> second reimplements flush_kthread_work().
+>
+> All current kthread_worker users are cc'd.  If no one objects, I'll
+> push it through the workqueue branch.  This patchset is also available
+> in the following git branch.
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-kthread_worker-flush
+>
+> diffstat follows.  Thanks.
+>
+>  include/linux/kthread.h |    8 +---
+>  kernel/kthread.c        |   86 +++++++++++++++++++++++++++---------------------
+>  2 files changed, 52 insertions(+), 42 deletions(-)
+>
+> --
+> tejun
 
-That's very interesting (and potentially relevant to another bug
-that's been reported too).
+This patch set fixes a reproducible crash I'm seeing on a 3.4.10
+kernel.  flush_kthread_worker (which is different from
+flush_kthread_work) is initializing a kthread_work and a completion on
+the stack, then queuing it and calling wait_for_completion.  Once the
+completion is signaled, flush_kthread_worker exits and the stack
+region used by the kthread_work may be immediately reused by another
+object on the stack, but kthread_worker_fn continues accessing its
+work pointer:
+                work->func(work);         <- calls complete,
+effectively frees work
+                smp_wmb();      /* wmb worker-b0 paired with flush-b1 */
+                work->done_seq = work->queue_seq;   <- overwrites a
+new stack object
+                smp_mb();       /* mb worker-b1 paired with flush-b0 */
+                if (atomic_read(&work->flushing))
+                        wake_up_all(&work->done);  <- or crashes here
 
-I'd like to know, what workload did you use that triggered this ?
-(I find it hard to test mremap as I don't know of enough users of it)
-
-Thanks,
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+These patches fix the problem by not accessing work after work->func
+is called, and should be backported to stable.  They apply cleanly to
+3.4.10.  Upstream commits are 9a2e03d8ed518a61154f18d83d6466628e519f94
+and 46f3d976213452350f9d10b0c2780c2681f7075b.
