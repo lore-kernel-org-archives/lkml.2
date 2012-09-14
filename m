@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab2INIEA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 04:04:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46771 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468Ab2INIDx (ORCPT
+	id S1758370Ab2INIJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 04:09:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60035 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758155Ab2INIJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 04:03:53 -0400
-Date: Fri, 14 Sep 2012 09:03:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: arnd@arndb.de, Dmitry Torokhov <dmitry.torokhov@gmail.com>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between
- DT and non-DT boots
-Message-ID: <20120914080347.GB3374@gmail.com>
-References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
+	Fri, 14 Sep 2012 04:09:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: Implement devicetree support for AB8500 Btemp
+Date: Fri, 14 Sep 2012 08:09:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Rajanikanth HV <rajanikanth.hv@stericsson.com>,
+        Rajanikanth HV <rajanikanth.hv@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "STEricsson_nomadik_linux" <STEricsson_nomadik_linux@list.st.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+References: <CAB4BAktQz5MY_AHHWUAhRp7HtEzC3v8uFbP0enx1b7ibJLoZ4Q@mail.gmail.com> <201209131437.38666.arnd@arndb.de> <20120914020427.GA30729@lizard>
+In-Reply-To: <20120914020427.GA30729@lizard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209140809.31045.arnd@arndb.de>
+X-Provags-ID: V02:K0:dlvtMNgKd/XxvXetwqj/+u5ZWlTizWoMIRPpyKD2fxP
+ MfbQhAZcicNPzS2qFO2SQ7n0XW8oVwwht0vHLhswNKAEHs9EIJ
+ uZKAXNYS3dTSsJtUJPsIbPDKIQAuRdhPDdfQ9JLyrEwwg7QXc4
+ oWsVotUG8ld0BQmguya486PwMDdLkhjgnJ7hrGrzjN/eJPKbP9
+ Rne8vhxmwqnbKXO0sbPMdd1KV2LbO+9LvL1sk65xesg0QU/sOx
+ 0a2lEmBBXKJrDse5wgrFPKXqRwsCHOpiIV+qKrHNHtY9W/VZit
+ CiI/JjOsdRUjGb3/QKEM1XQWfjO9a8496QRs9qYt/3USU5gnIb
+ gYQOgeJbXqRjpkoAKFdw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 11:35:43AM +0200, Linus Walleij wrote:
-> On Mon, Aug 6, 2012 at 2:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Friday 14 September 2012, Anton Vorontsov wrote:
+> Power supply subsystem's supplied_to describes not just how driver
+> should notify other devices, supplied_to is more generic stuff, in terms
+> that it describes power supply hierarchy. It's like a directed graph,
+> e.g.:
 > 
-> > If we're booting with Device Tree enabled, we want the IRQ numbers to
-> > be taken and translated from the Device Tree binary. If not, they
-> > should be taken from the resource allocation defined in the AB8500 MFD
-> > core driver.
-> >
-> > Tested-by: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>       <AC power> supplied_to <main battery> and <backup battery>
+>      <USB power> supplied_to <main battery> and <backup battery>
+>   <main battery> supplied_to <system>
+> <backup battery> supplied_to <system>
+>   <cmos battery> supplied_to <southbridge pci device>
+>   <mice battery> supplied_to <mice wireless hid>
 > 
-> Not having this patch in v3.6-rcN gives the following boot noise (and
-> the key does not work):
+> How things interact in linux are just implementations details.
+> So, device tree is surely a perfect place to describe these things.
 > 
-> ------------[ cut here ]------------
-> WARNING: at /home/elinwal/linux-stericsson/kernel/irq/irqdomain.c:137
-> irq_domain_legacy_revmap+0x20/0x48()
-> Modules linked in:
-> [<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c001d37c>]
-> (warn_slowpath_common+0x4c/0x64)
-> [<c001d37c>] (warn_slowpath_common+0x4c/0x64) from [<c001d3b0>]
-> (warn_slowpath_null+0x1c/0x24)
-> [<c001d3b0>] (warn_slowpath_null+0x1c/0x24) from [<c0064200>]
-> (irq_domain_legacy_revmap+0x20/0x48)
-> [<c0064200>] (irq_domain_legacy_revmap+0x20/0x48) from [<c02cea28>]
-> (ab8500_ponkey_probe+0xd0/0x1f8)
-> [<c02cea28>] (ab8500_ponkey_probe+0xd0/0x1f8) from [<c01a1e20>]
-> (platform_drv_probe+0x14/0x18)
-> [<c01a1e20>] (platform_drv_probe+0x14/0x18) from [<c01a0be4>]
-> (driver_probe_device+0x78/0x208)
-> [<c01a0be4>] (driver_probe_device+0x78/0x208) from [<c01a0e00>]
-> (__driver_attach+0x8c/0x90)
-> [<c01a0e00>] (__driver_attach+0x8c/0x90) from [<c019f514>]
-> (bus_for_each_dev+0x50/0x7c)
-> [<c019f514>] (bus_for_each_dev+0x50/0x7c) from [<c01a0424>]
-> (bus_add_driver+0x170/0x23c)
-> [<c01a0424>] (bus_add_driver+0x170/0x23c) from [<c01a12b4>]
-> (driver_register+0x78/0x144)
-> [<c01a12b4>] (driver_register+0x78/0x144) from [<c0008598>]
-> (do_one_initcall+0x34/0x174)
-> [<c0008598>] (do_one_initcall+0x34/0x174) from [<c03df8e8>]
-> (kernel_init+0xfc/0x1bc)
-> [<c03df8e8>] (kernel_init+0xfc/0x1bc) from [<c000f1d4>]
-> (kernel_thread_exit+0x0/0x8)
-> ---[ end trace d77aa0db848f0e28 ]---
-> ab8500-core ab8500-core.0: Failed to request dbf IRQ#0: -22
-> ab8500-poweron-key: probe of ab8500-poweron-key.0 failed with error -22
+> Although, in current bindings I see this:
 > 
-> So how do we proceed to not release v3.6 with this regression?
+> +       ab8500-fg {
+> +               /* Other enery management module */
+> +               supplied_to = "ab8500_chargalg", "ab8500_usb";
+> +               num_supplicants = <2>;
+> +       };
 > 
-> Shall all of the MFD IRQdomain stuff be pulled into the -rc series?
-> 
-> (Linux-next seems to be working, so the real fix is in there)
+> Instead of addressing supplicants by name, it's better to address
+> via phandles. And, of course, num_supplicants is not needed, it can
+> be derived.
 
-I haven't tested this, but I think this patch should be pulled out
-of -next and pushed into the -rcs to fix the issue you see above.
-The real fix along with the revert to this patch also resides in
--next and will be applied during the next merge window.
+Right. that's what I thought. The other comment I made initially is
+that it would be more in the spirit of the existing bindings to have
+the supply property in the opposite directory, if we need it, like
+(picking up your above example):
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+/ {
+	/* power supply property in the root node is used by default */
+	power-supply = <&main-battery>, <&backup-battery>;
+
+	ac-power: power@... {
+		...
+	};
+
+	usb-power: power@... {
+		...
+	};
+
+	main-battery: battery@... {
+		power-supply = <&ac-power>, <&usb-power};
+	;
+
+	...
+};
+
+It's the same information and absolutely equivalent as far as I can tell,
+but it feel more logical in the way we tend to describe things.
+
+	Arnd
