@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab2INFsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:48:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23161 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2INFsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:48:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,421,1344236400"; 
-   d="scan'208";a="203627575"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] sched:nohz rename clear_nohz_tick_stopped as nohz_balance_exit_idle
-Date: Fri, 14 Sep 2012 13:47:24 +0800
-Message-Id: <1347601645-20139-3-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347601645-20139-1-git-send-email-alex.shi@intel.com>
-References: <1347601645-20139-1-git-send-email-alex.shi@intel.com>
+	id S1753401Ab2INFuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 01:50:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48492 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2INFuT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 01:50:19 -0400
+Date: Thu, 13 Sep 2012 22:49:43 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-n5ahw26e94klmde9cz6rxsdf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf test: Remove die() calls
+Git-Commit-ID: 32c7f7383a096a4fc878fdda686c7725945e8a8f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 22:49:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch just rename the function clear_nohz_tick_stopped() to
-nohz_balance_exit_idle(), that align with nohz_balance_enter_idle.
+Commit-ID:  32c7f7383a096a4fc878fdda686c7725945e8a8f
+Gitweb:     http://git.kernel.org/tip/32c7f7383a096a4fc878fdda686c7725945e8a8f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 8 Sep 2012 22:53:06 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sun, 9 Sep 2012 11:39:02 -0300
 
-no function changes.
+perf test: Remove die() calls
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+Just use pr_err() + return -1 and let the other tests run as well and
+then the perf's main() exit doing whatever it needs.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-n5ahw26e94klmde9cz6rxsdf@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/sched/fair.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/builtin-test.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b681941..60d5505 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4634,7 +4634,7 @@ static void nohz_balancer_kick(int cpu)
- 	return;
- }
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index cf33e50..6ae102e 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1023,14 +1023,16 @@ static int __test__rdpmc(void)
  
--static inline void clear_nohz_tick_stopped(int cpu)
-+static inline void nohz_balance_exit_idle(int cpu)
- {
- 	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
- 		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-@@ -4698,7 +4698,7 @@ static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_DYING:
--		clear_nohz_tick_stopped(smp_processor_id());
-+		nohz_balance_exit_idle(smp_processor_id());
- 		return NOTIFY_OK;
- 	default:
- 		return NOTIFY_DONE;
-@@ -4858,7 +4858,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	* busy tick after returning from idle, we will update the busy stats.
- 	*/
- 	set_cpu_sd_state_busy();
--	clear_nohz_tick_stopped(cpu);
-+	nohz_balance_exit_idle(cpu);
+ 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+ 	if (fd < 0) {
+-		die("Error: sys_perf_event_open() syscall returned "
+-		    "with %d (%s)\n", fd, strerror(errno));
++		pr_debug("Error: sys_perf_event_open() syscall returned "
++			 "with %d (%s)\n", fd, strerror(errno));
++		return -1;
+ 	}
  
- 	/*
- 	 * None are in tickless mode and hence no need for NOHZ idle load
--- 
-1.7.12
-
+ 	addr = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
+ 	if (addr == (void *)(-1)) {
+-		die("Error: mmap() syscall returned "
+-		    "with (%s)\n", strerror(errno));
++		pr_debug("Error: mmap() syscall returned with (%s)\n",
++			 strerror(errno));
++		goto out_close;
+ 	}
+ 
+ 	for (n = 0; n < 6; n++) {
+@@ -1051,9 +1053,9 @@ static int __test__rdpmc(void)
+ 	}
+ 
+ 	munmap(addr, page_size);
+-	close(fd);
+-
+ 	pr_debug("   ");
++out_close:
++	close(fd);
+ 
+ 	if (!delta_sum)
+ 		return -1;
