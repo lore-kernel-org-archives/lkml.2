@@ -1,86 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2INOad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:30:33 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:48949 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab2INOaa (ORCPT
+	id S932126Ab2INOak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:30:40 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:53261 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755912Ab2INOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:30:30 -0400
-X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
-   d="scan'208";a="14549106"
-Date: Fri, 14 Sep 2012 15:28:18 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 16/24] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-In-Reply-To: <50533D46.5000704@arm.com>
-Message-ID: <alpine.DEB.2.02.1209141527030.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-16-git-send-email-stefano.stabellini@eu.citrix.com> <505338E6.4050504@arm.com> <alpine.DEB.2.02.1209141508130.29232@kaball.uk.xensource.com>
- <50533D46.5000704@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 14 Sep 2012 10:30:32 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mike Turquette <mturquette@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, peter.ujfalusi@ti.com,
+        linux-omap@vger.kernel.org
+Subject: [PATCH] CLK: clk-twl6040: Initial clock driver for OMAP4+ McPDM fclk clock
+Date: Fri, 14 Sep 2012 17:30:27 +0300
+Message-Id: <1347633027-20731-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Marc Zyngier wrote:
-> On 14/09/12 15:13, Stefano Stabellini wrote:
-> > On Fri, 14 Sep 2012, Marc Zyngier wrote:
-> >> On 14/09/12 12:13, Stefano Stabellini wrote:
-> >>> Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
-> >>> default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
-> >>> irq_startup, that is responsible for calling irq_unmask at startup time.
-> >>> As a result event channels remain masked.
-> >>>
-> >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>> ---
-> >>>  drivers/xen/events.c |    1 +
-> >>>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >>>
-> >>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> >>> index 5ecb596..8ffb7b7 100644
-> >>> --- a/drivers/xen/events.c
-> >>> +++ b/drivers/xen/events.c
-> >>> @@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
-> >>>  		struct irq_info *info = info_for_irq(irq);
-> >>>  		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
-> >>>  	}
-> >>> +	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
-> >>
-> >> This one just sent a shiver down my spine. Are you doing this for a PPI?
-> > 
-> > Not really: even though there is just one source of event notifications
-> > (that is a PPI), we have many event channels. When a domain receives a
-> > notification (via the PPI), it checks on a bitmask to which event channel
-> > it corresponds. From the Linux point of view every event channel is a
-> > Linux irq belonging to the xen_dynamic_chip (see
-> > drivers/xen/events.c:xen_dynamic_chip).
-> > 
-> > So here I am not doing this for the one PPI, but I am doing this for
-> > every Linux irq (of chip xen_dynamic_chip) that represents an event
-> > channel.
-> 
-> So this is some sort of secondary interrupt controller, cascaded into
-> your GIC emulation,
-    
-I guess it could be seen as a secondary interrupt controller
+On OMAP4+ platforms the functional clock for the McPDM IP is suplied by
+the twl6040 codec (bit clock on the PDM bus).
+This common clock driver for twl6040 will register the mcpdm_fclk clock to
+be used by the McPDM driver to make sure that the needed clocks are
+available when needed.
 
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
 
-> and this patch only affects the xen_dynamic_chip?
+Hello Mike,
 
-Yep
+This driver is going to be used by the OMAP McPDM driver when we moved to common
+clock framework.
+To avoid merge conflicts I'm going to send the patch needed for the twl6040 MFD
+core driver to register the platform device for the clk driver.
+
+Some background: OMAP McPDM's functional clock is coming from external source,
+which is the bitclock of the McPDM interface generated by external codec
+(twl6040). This clock is needed to access McPDM registers as well and when I'm
+going to implement the power states of twl6040 we need to make sure that the
+clock is running from twl6040 to McPDM in order to avoid surprises.
+
+Regards,
+Peter
+
+ drivers/clk/Kconfig       |   8 +++
+ drivers/clk/Makefile      |   1 +
+ drivers/clk/clk-twl6040.c | 126 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 135 insertions(+)
+ create mode 100644 drivers/clk/clk-twl6040.c
+
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index bace9e9..3d0b784 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -53,4 +53,12 @@ config COMMON_CLK_MAX77686
+ 	---help---
+ 	  This driver supports Maxim 77686 crystal oscillator clock. 
+ 
++config CLK_TWL6040
++	tristate "External McPDM functional clock from twl6040"
++	depends on TWL6040_CORE
++	---help---
++	  Enable the external functional clock support on OMAP4+ platforms for
++	  McPDM. McPDM module is using the external bit clock on the McPDM bus
++	  as functional clock.
++
+ endmenu
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 6327536..c55d840 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -20,3 +20,4 @@ obj-$(CONFIG_ARCH_U8500)	+= ux500/
+ # Chip specific
+ obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+ obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
++obj-$(CONFIG_CLK_TWL6040)	+= clk-twl6040.o
+diff --git a/drivers/clk/clk-twl6040.c b/drivers/clk/clk-twl6040.c
+new file mode 100644
+index 0000000..f4a3389
+--- /dev/null
++++ b/drivers/clk/clk-twl6040.c
+@@ -0,0 +1,126 @@
++/*
++* TWL6040 clock module driver for OMAP4 McPDM functional clock
++*
++* Copyright (C) 2012 Texas Instruments Inc.
++* Peter Ujfalusi <peter.ujfalusi@ti.com>
++*
++* This program is free software; you can redistribute it and/or
++* modify it under the terms of the GNU General Public License
++* version 2 as published by the Free Software Foundation.
++*
++* This program is distributed in the hope that it will be useful, but
++* WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++* General Public License for more details.
++*
++* You should have received a copy of the GNU General Public License
++* along with this program; if not, write to the Free Software
++* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++* 02110-1301 USA
++*
++*/
++
++#include <linux/clk.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/twl6040.h>
++#include <linux/clk-provider.h>
++
++struct twl6040_clk {
++	struct twl6040 *twl6040;
++	struct device *dev;
++	struct clk_hw mcpdm_fclk;
++	struct clk *clk;
++	int enabled;
++};
++
++static int twl6040_bitclk_is_enabled(struct clk_hw *hw)
++{
++	struct twl6040_clk *twl6040_clk = container_of(hw, struct twl6040_clk,
++						       mcpdm_fclk);
++	return twl6040_clk->enabled;
++}
++
++static int twl6040_bitclk_prepare(struct clk_hw *hw)
++{
++	struct twl6040_clk *twl6040_clk = container_of(hw, struct twl6040_clk,
++						       mcpdm_fclk);
++	int ret;
++
++	ret = twl6040_power(twl6040_clk->twl6040, 1);
++	if (!ret)
++		twl6040_clk->enabled = 1;
++
++	return ret;
++}
++
++static void twl6040_bitclk_unprepare(struct clk_hw *hw)
++{
++	struct twl6040_clk *twl6040_clk = container_of(hw, struct twl6040_clk,
++						       mcpdm_fclk);
++	int ret;
++
++	ret = twl6040_power(twl6040_clk->twl6040, 0);
++	if (!ret)
++		twl6040_clk->enabled = 0;
++}
++
++static const struct clk_ops twl6040_mcpdm_ops = {
++	.is_enabled = twl6040_bitclk_is_enabled,
++	.prepare = twl6040_bitclk_prepare,
++	.unprepare = twl6040_bitclk_unprepare,
++};
++
++static struct clk_init_data wm831x_clkout_init = {
++	.name = "mcpdm_fclk",
++	.ops = &twl6040_mcpdm_ops,
++	.flags = CLK_IS_ROOT,
++};
++
++static int __devinit twl6040_clk_probe(struct platform_device *pdev)
++{
++	struct twl6040 *twl6040 = dev_get_drvdata(pdev->dev.parent);
++	struct twl6040_clk *clkdata;
++
++	clkdata = devm_kzalloc(&pdev->dev, sizeof(*clkdata), GFP_KERNEL);
++	if (!clkdata)
++		return -ENOMEM;
++
++	clkdata->dev = &pdev->dev;
++	clkdata->twl6040 = twl6040;
++
++	clkdata->mcpdm_fclk.init = &wm831x_clkout_init;
++	clkdata->clk = clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
++	if (!clkdata->clk)
++		return -EINVAL;
++
++	dev_set_drvdata(&pdev->dev, clkdata);
++
++	return 0;
++}
++
++static int __devexit twl6040_clk_remove(struct platform_device *pdev)
++{
++	struct twl6040_clk *clkdata = dev_get_drvdata(&pdev->dev);
++
++	clk_unregister(clkdata->clk);
++
++	return 0;
++}
++
++static struct platform_driver twl6040_clk_driver = {
++	.driver = {
++		.name = "twl6040-clk",
++		.owner = THIS_MODULE,
++	},
++	.probe = twl6040_clk_probe,
++	.remove = __devexit_p(twl6040_clk_remove),
++};
++
++module_platform_driver(twl6040_clk_driver);
++
++MODULE_DESCRIPTION("TWL6040 clock driver for McPDM functional clock");
++MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
++MODULE_ALIAS("platform:twl6040-clk");
++MODULE_LICENSE("GPL");
+-- 
+1.7.12
+
