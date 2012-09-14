@@ -1,144 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab2INQgL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:36:11 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47330 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab2INQgH (ORCPT
+	id S1755877Ab2INQgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:36:50 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:32999 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab2INQgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:36:07 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/2] x86: Use the new schedule_user API on userspace preemption
-Date: Fri, 14 Sep 2012 18:35:39 +0200
-Message-Id: <1347640539-8470-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
-References: <1347640539-8470-1-git-send-email-fweisbec@gmail.com>
+	Fri, 14 Sep 2012 12:36:48 -0400
+Date: Fri, 14 Sep 2012 22:02:40 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] uprobes: introduce MMF_RECALC_UPROBES
+Message-ID: <20120914163240.GD28033@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120819164008.GA25454@redhat.com>
+ <20120819164040.GA25483@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120819164040.GA25483@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12091416-9264-0000-0000-00000255565C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we can exit the RCU extended quiescent state before
-we schedule a new task from irq/exception exit.
+* Oleg Nesterov <oleg@redhat.com> [2012-08-19 18:40:40]:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/include/asm/rcu.h |   12 ++++++++++++
- arch/x86/kernel/entry_64.S |    9 +++++----
- 2 files changed, 17 insertions(+), 4 deletions(-)
+> Add the new MMF_RECALC_UPROBES flag, it means that MMF_HAS_UPROBES
+> can be false positive after remove_breakpoint() or uprobe_munmap().
+> It is also set by uprobe_dup_mmap(), this is not optimal but simple.
+> We could add the new hook, uprobe_dup_vma(), to set MMF_HAS_UPROBES
+> only if the new mm actually has uprobes, but I don't think this
+> makes sense.
+> 
+> The next patch will use this flag to clear MMF_HAS_UPROBES.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-diff --git a/arch/x86/include/asm/rcu.h b/arch/x86/include/asm/rcu.h
-index 439815b..d1ac07a 100644
---- a/arch/x86/include/asm/rcu.h
-+++ b/arch/x86/include/asm/rcu.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_RCU_H
- #define _ASM_X86_RCU_H
- 
-+#ifndef __ASSEMBLY__
-+
- #include <linux/rcupdate.h>
- #include <asm/ptrace.h>
- 
-@@ -17,4 +19,14 @@ static inline void exception_exit(struct pt_regs *regs)
- #endif
- }
- 
-+#else /* __ASSEMBLY__ */
-+
-+#ifdef CONFIG_RCU_USER_QS
-+# define SCHEDULE_USER call schedule_user
-+#else
-+# define SCHEDULE_USER call schedule
-+#endif
-+
-+#endif /* !__ASSEMBLY__ */
-+
- #endif
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 69babd8..1a8f3cb 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -56,6 +56,7 @@
- #include <asm/ftrace.h>
- #include <asm/percpu.h>
- #include <asm/asm.h>
-+#include <asm/rcu.h>
- #include <linux/err.h>
- 
- /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
-@@ -565,7 +566,7 @@ sysret_careful:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
- 	pushq_cfi %rdi
--	call schedule
-+	SCHEDULE_USER
- 	popq_cfi %rdi
- 	jmp sysret_check
- 
-@@ -678,7 +679,7 @@ int_careful:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
- 	pushq_cfi %rdi
--	call schedule
-+	SCHEDULE_USER
- 	popq_cfi %rdi
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
-@@ -974,7 +975,7 @@ retint_careful:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_NONE)
- 	pushq_cfi %rdi
--	call  schedule
-+	SCHEDULE_USER
- 	popq_cfi %rdi
- 	GET_THREAD_INFO(%rcx)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
-@@ -1449,7 +1450,7 @@ paranoid_userspace:
- paranoid_schedule:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS(CLBR_ANY)
--	call schedule
-+	SCHEDULE_USER
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
- 	jmp paranoid_userspace
--- 
-1.7.5.4
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  include/linux/sched.h   |    3 ++-
+>  kernel/events/uprobes.c |   39 +++++++++++++++++++++++++++++++++++----
+>  2 files changed, 37 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index c0fcfb7..d6899b0 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -441,7 +441,8 @@ extern int get_dumpable(struct mm_struct *mm);
+>  #define MMF_VM_HUGEPAGE		17	/* set when VM_HUGEPAGE is set on vma */
+>  #define MMF_EXE_FILE_CHANGED	18	/* see prctl_set_mm_exe_file() */
+> 
+> -#define MMF_HAS_UPROBES		19	/* might have uprobes */
+> +#define MMF_HAS_UPROBES		19	/* has uprobes */
+> +#define MMF_RECALC_UPROBES	20	/* MMF_HAS_UPROBES can be wrong */
+> 
+>  #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index abe077e..176de8c 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -686,7 +686,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+>  		set_bit(MMF_HAS_UPROBES, &mm->flags);
+> 
+>  	ret = set_swbp(&uprobe->arch, mm, vaddr);
+> -	if (ret && first_uprobe)
+> +	if (!ret)
+> +		clear_bit(MMF_RECALC_UPROBES, &mm->flags);
+> +	else if (first_uprobe)
+>  		clear_bit(MMF_HAS_UPROBES, &mm->flags);
+> 
+>  	return ret;
+> @@ -695,6 +697,11 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+>  static void
+>  remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
+>  {
+> +	/* can happen if uprobe_register() fails */
+> +	if (!test_bit(MMF_HAS_UPROBES, &mm->flags))
+> +		return;
+> +
+> +	set_bit(MMF_RECALC_UPROBES, &mm->flags);
+>  	set_orig_insn(&uprobe->arch, mm, vaddr);
+>  }
+> 
+> @@ -1027,6 +1034,25 @@ int uprobe_mmap(struct vm_area_struct *vma)
+>  	return 0;
+>  }
+> 
+> +static bool
+> +vma_has_uprobes(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+> +{
+> +	loff_t min, max;
+> +	struct inode *inode;
+> +	struct rb_node *n;
+> +
+> +	inode = vma->vm_file->f_mapping->host;
+> +
+> +	min = vaddr_to_offset(vma, start);
+> +	max = min + (end - start) - 1;
+> +
+> +	spin_lock(&uprobes_treelock);
+> +	n = find_node_in_range(inode, min, max);
+> +	spin_unlock(&uprobes_treelock);
+> +
+> +	return !!n;
+> +}
+> +
+>  /*
+>   * Called in context of a munmap of a vma.
+>   */
+> @@ -1038,10 +1064,12 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+>  	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+>  		return;
+> 
+> -	if (!test_bit(MMF_HAS_UPROBES, &vma->vm_mm->flags))
+> +	if (!test_bit(MMF_HAS_UPROBES, &vma->vm_mm->flags) ||
+> +	     test_bit(MMF_RECALC_UPROBES, &vma->vm_mm->flags))
+>  		return;
+> 
+> -	/* TODO: unmapping uprobe(s) will need more work */
+> +	if (vma_has_uprobes(vma, start, end))
+> +		set_bit(MMF_RECALC_UPROBES, &vma->vm_mm->flags);
+>  }
+> 
+>  /* Slot allocation for XOL */
+> @@ -1147,8 +1175,11 @@ void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
+>  {
+>  	newmm->uprobes_state.xol_area = NULL;
+> 
+> -	if (test_bit(MMF_HAS_UPROBES, &oldmm->flags))
+> +	if (test_bit(MMF_HAS_UPROBES, &oldmm->flags)) {
+>  		set_bit(MMF_HAS_UPROBES, &newmm->flags);
+> +		/* unconditionally, dup_mmap() skips VM_DONTCOPY vmas */
+> +		set_bit(MMF_RECALC_UPROBES, &newmm->flags);
+> +	}
+>  }
+> 
+>  /*
+> -- 
+> 1.5.5.1
+> 
 
