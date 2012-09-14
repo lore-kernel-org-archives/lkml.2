@@ -1,180 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2INBNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 21:13:43 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57193 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab2INBNl (ORCPT
+	id S1752654Ab2INBSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 21:18:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49283 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab2INBSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 21:13:41 -0400
-X-AuditID: 9c930179-b7cf9ae000000e86-40-505284c2e6f6
-Date: Fri, 14 Sep 2012 10:15:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Mel Gorman <mel@csn.ul.ie>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC v2] memory-hotplug: remove MIGRATE_ISOLATE from
- free_area->free_list
-Message-ID: <20120914011550.GE5085@bbox>
-References: <1346900018-14759-1-git-send-email-minchan@kernel.org>
- <201209061834.35473.b.zolnierkie@samsung.com>
- <201209131621.43074.b.zolnierkie@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209131621.43074.b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 13 Sep 2012 21:18:09 -0400
+Date: Fri, 14 Sep 2012 11:17:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120914111757.83aee928b17b60bbbc09f4d7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Sep_2012_11_17_57_+1000_xSdNcQbr+ugS0EU3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bart,
+--Signature=_Fri__14_Sep_2012_11_17_57_+1000_xSdNcQbr+ugS0EU3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 13, 2012 at 04:21:42PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> On Thursday 06 September 2012 18:34:35 Bartlomiej Zolnierkiewicz wrote:
-> > 
-> > Hi,
-> > 
-> > On Thursday 06 September 2012 04:53:38 Minchan Kim wrote:
-> > > Normally, MIGRATE_ISOLATE type is used for memory-hotplug.
-> > > But it's irony type because the pages isolated would exist
-> > > as free page in free_area->free_list[MIGRATE_ISOLATE] so people
-> > > can think of it as allocatable pages but it is *never* allocatable.
-> > > It ends up confusing NR_FREE_PAGES vmstat so it would be
-> > > totally not accurate so some of place which depend on such vmstat
-> > > could reach wrong decision by the context.
-> > > 
-> > > There were already report about it.[1]
-> > > [1] 702d1a6e, memory-hotplug: fix kswapd looping forever problem
-> > > 
-> > > Then, there was other report which is other problem.[2]
-> > > [2] http://www.spinics.net/lists/linux-mm/msg41251.html
-> > > 
-> > > I believe it can make problems in future, too.
-> > > So I hope removing such irony type by another design.
-> > > 
-> > > I hope this patch solves it and let's revert [1] and doesn't need [2].
-> 
-> For our needs (CMA) patch [2] is much simpler / less intrusive way
-> to have correct NR_FREE_PAGES counter than this patch and currently
-> I would prefer to have it merged upstream instead of this one.
+Hi all,
 
-I agree my patch could be somewhat big change so I will take things easy.
-Of course, it shouldn't prevent your patch merge if yours make sense.
-Afterward, if this patch solves all issues and better than other band-aid,
-then, we can revert.
-Shortly, I will review yours.
+Today's linux-next merge of the net-next tree got a conflict in
+net/netfilter/xt_LOG.c between commit 0626af313957 ("netfilter: take care
+of timewait sockets") from the net tree and commit 8c6e2a941ae7 ("userns:
+Convert xt_LOG to print socket kuids and kgids as uids and gids") from
+the net-next tree.
 
-> 
-> > > * Changelog v1
-> > >  * Fix from Michal's many suggestion
-> > > 
-> > > Cc: Michal Nazarewicz <mina86@mina86.com>
-> > > Cc: Mel Gorman <mel@csn.ul.ie>
-> > > Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > > Cc: Wen Congyang <wency@cn.fujitsu.com>
-> > > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > > It's very early version which show the concept so I still marked it with RFC.
-> > > I just tested it with simple test and works.
-> > > This patch is needed indepth review from memory-hotplug guys from fujitsu
-> > > because I saw there are lots of patches recenlty they sent to about
-> > > memory-hotplug change. Please take a look at this patch.
-> > 
-> > [...]
-> > 
-> > > @@ -948,8 +954,13 @@ static int move_freepages(struct zone *zone,
-> > >  		}
-> > >  
-> > >  		order = page_order(page);
-> > > -		list_move(&page->lru,
-> > > -			  &zone->free_area[order].free_list[migratetype]);
-> > > +		if (migratetype != MIGRATE_ISOLATE) {
-> > > +			list_move(&page->lru,
-> > > +				&zone->free_area[order].free_list[migratetype]);
-> > > +		} else {
-> > > +			list_del(&page->lru);
-> > > +			isolate_free_page(page, order);
-> > > +		}
-> > >  		page += 1 << order;
-> > >  		pages_moved += 1 << order;
-> > >  	}
-> > 
-> > Shouldn't NR_FREE_PAGES counter be decreased somewhere above?
-> > 
-> > [ I can see that it is not modified in __free_pages_ok() and
-> >   free_hot_cold_page() because page is still counted as non-free one but
-> >   here situation is different AFAICS. ]
-> > 
-> > I tested the patch locally here with CONFIG_CMA=y and it causes some
-> > major problems for CMA (multiple errors from dma_alloc_from_contiguous()
-> > about memory ranges being busy and allocation failures).
-> > 
-> > [ I'm sorry that I don't know more details yet but the issue should be
-> >   easily reproducible. ]
-> 
-> We spent some more time on the issue and it seems that the approach
-> taken in the patch (removal of MIGRATE_ISOLATE free_list) is currently
-> incompatible with CMA.
-> 
-> In alloc_contig_range() we have:
-> 
-> 	order = 0;
-> 	outer_start = start;
-> 	while (!PageBuddy(pfn_to_page(outer_start))) {
-> 		if (++order >= MAX_ORDER) {
-> 			ret = -EBUSY;
-> 			goto done;
-> 		}
-> 		outer_start &= ~0UL << order;
-> 	}
-> 
-> for handling cases when the CMA area begins inside the higher order
-> page from buddy (that got already isolated).  Unfortunately this code
-> no longer works as isolated pages are no longer hold in buddy allocator
-> (isolate_free_page() clears buddy bit).
-> 
-> The other part of code that is probably affected by your patch is:
-> 
-> 	/* Grab isolated pages from freelists. */
-> 	outer_end = isolate_freepages_range(outer_start, end);
-> 	if (!outer_end) {
-> 		ret = -EBUSY;
-> 		goto done;
-> 	}
-> 
-> also in alloc_contig_range().  isolate_freepages_range() calls
-> isolate_freepages_block() which assume that free pages (in isolated
-> pageblock) are in buddy allocator:
-> 
-> 		if (!PageBuddy(page)) {
-> 			if (strict)
-> 				return 0;
-> 			continue;
-> 		}
-> 
-> (which is no longer true) and also calls split_free_page() that
-> attempts to remove page from the free_list & buddy:
-> 
-> 	/* Remove page from free list */
-> 	list_del(&page->lru);
-> 	zone->free_area[order].nr_free--;
-> 	rmv_page_order(page);
-> 
-> (the isolated page is on the isolated_pages list instead).
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-Thanks for detailed pointing out, Bart!
-I will revisit this issues after I will fisnish other jobs.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Kind regards,
-Minchan Kim
+diff --cc net/netfilter/xt_LOG.c
+index 91e9af4,02a2bf4..0000000
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@@ -145,19 -145,6 +145,21 @@@ static int dump_tcp_header(struct sbuf
+  	return 0;
+  }
+ =20
+ +static void dump_sk_uid_gid(struct sbuff *m, struct sock *sk)
+ +{
+ +	if (!sk || sk->sk_state =3D=3D TCP_TIME_WAIT)
+ +		return;
+ +
+ +	read_lock_bh(&sk->sk_callback_lock);
+ +	if (sk->sk_socket && sk->sk_socket->file) {
+++		const struct cred *cred =3D sk->sk_socket->file->f_cred;
+ +		sb_add(m, "UID=3D%u GID=3D%u ",
+- 			sk->sk_socket->file->f_cred->fsuid,
+- 			sk->sk_socket->file->f_cred->fsgid);
+++			from_kuid_munged(&init_user_ns, cred->fsuid),
+++			from_kgid_munged(&init_user_ns, cred->fsgid));
+++	}
+ +	read_unlock_bh(&sk->sk_callback_lock);
+ +}
+ +
+  /* One level of recursion won't kill us */
+  static void dump_ipv4_packet(struct sbuff *m,
+  			const struct nf_loginfo *info,
+
+--Signature=_Fri__14_Sep_2012_11_17_57_+1000_xSdNcQbr+ugS0EU3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQUoXFAAoJEECxmPOUX5FE/SUQAJn3bmHOSOWg/4w57bS8toxv
+njVa6n9BW+vugSA0f+AloczncYGw7UOBVTNJb/UR/STKO3Q9nSTw0TLAVpsltDOu
+eDEyqJzc8JIIJOz9DNSMg8QOKMGy1Rif0XOiz+pds2EUKa1O+JaXVZby4bTB+mae
+/fDbNLyzDxVZPSYYihbhSmwhtdWSyvA5lDg2MCilA/CznXgyu0UQ01bEVVRXVAly
+Yft3hki6qBKxSoYFYCFNd4NAhyh9NhfA7yYV/qFhEB4kUq/OPW3CqLr2GEgnEfYt
+A8qeaDJZUCi5d8nzH3Mnx0vM8o4+7iqDRxd5iyOSTlgUruP/FactzmAv91DqwueQ
+kQrneQ9/qX5T1g67oCcOAfdmOLg0uzkR/AQYNHux5CIf8gukV7wobrxI8sqh95kW
+gwld3SLnZhYsPgrjfcKL7NGDLG1nfTEKd5iej3hYHfZnqCsD5nsPqkuSZDOi5aYG
+ynHRBQBSdcSSg/yxL3197nwnSl5Kc3/+SQLWYrIavXDMT8bLquDWZEZGoMaqbvwJ
+SqjRaIXPPdqHRNnGnsvRBukaIz+U4aQGMeR10Hm/OAOcXarsKPSTW5t0CusKLtan
+Xq0MM6IeGwcZnC6R8P01/SvJuKFkuQV9n0OOQJtgq0nM4z8HGVJRLCXcwCYrZ4Cc
+SxYquPR3GciyJCV/Wk/3
+=4M74
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__14_Sep_2012_11_17_57_+1000_xSdNcQbr+ugS0EU3--
