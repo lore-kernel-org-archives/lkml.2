@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab2INN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:57:24 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:5614 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab2INN5X (ORCPT
+	id S1756058Ab2INN6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:58:16 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37882 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab2INN6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:57:23 -0400
-X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
-   d="scan'208";a="14548192"
-Date: Fri, 14 Sep 2012 14:56:38 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v4 00/24] Introduce Xen support on ARM (based on
- 3.6-rc5)
-In-Reply-To: <20120914132108.GQ25249@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1209141455350.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <20120914132108.GQ25249@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 14 Sep 2012 09:58:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20120914091037.GI3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+	<1347016499-29354-11-git-send-email-lee.jones@linaro.org>
+	<CACRpkdY_gyWRO20ZOfTmG=tzE_B3ObWZG_4f8gHS6vyiGZSh6Q@mail.gmail.com>
+	<20120914091037.GI3374@gmail.com>
+Date: Fri, 14 Sep 2012 15:58:13 +0200
+Message-ID: <CACRpkdbdPgQHT=F-sGULD=fqSo0-7vyRAUbPTNXM41Fn5nUdzw@mail.gmail.com>
+Subject: Re: [PATCH 10/19] ARM: ux500: Remove redundant #gpio-cell properties
+ from HREF and Snowball DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
-> I already put in these
-> 
-> 1)      xen/events: fix unmask_evtchn for PV on HVM guests
-> 2)      xen: missing includes
-> 3)      xen: update xen_add_to_physmap interface
-> 4)      xen: Introduce xen_pfn_t for pfn and mfn types
-> 5)      xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-> 6)      xen: allow privcmd for HVM guests
-> 
-> in my tree as they also impact/help the PVH domains which works for
-> x86 (Well, not all of them). They are in my stable/for-linus-3.7 git tree
-> (git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git)
-> and also in #linux-next.
-> 
-> 
-> If it would make reviewing easier, I would recommend you rebase
-> your tree on top of the stable/for-linus-3.7 and just post them
-> as it would make the number of patches smaller.
+On Fri, Sep 14, 2012 at 11:10 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, Sep 10, 2012 at 04:12:23AM -0700, Linus Walleij wrote:
+>> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > These properties have no place here as the populated nodes are
+>> > not related to GPIO Controllers.
+>> >
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Squash this into the previous patch adding them...
+>> I think Arnd already noted.
+>
+> Well he noted that I'd duplicated the error from the snowball.dts
+> file, then rectified in this patch, which is fair enough. However,
+> I don't think the snowball.dts fix should be squashed into an HREF
+> enablement patch, and I can't find a suitable patch in the patch-
+> set where it would really fit. Should I leave the Snowball fix
+> separate and just fixup the HREF .dts file to never duplicate the
+> anomaly?
 
-I have done that and it went quite smoothly. The patch series is now 5
-patches smaller.
-Thanks!
+No you're right, this should be separate.
+
+I was confused that it was in the same patch set, I would
+suggest just sending this one on it's own as a snowball fix
+fair and square, and have ARM SoC push it to the -rcs as a
+regression fix, but your choice.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
