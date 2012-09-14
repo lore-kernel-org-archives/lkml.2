@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2INOBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:01:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40500 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab2INOBS (ORCPT
+	id S1756267Ab2INOB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:01:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47610 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab2INOB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:01:18 -0400
-Message-ID: <50533862.9030900@mvista.com>
-Date: Fri, 14 Sep 2012 18:00:02 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Fri, 14 Sep 2012 10:01:57 -0400
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        David Oleszkiewicz <doleszki@adsyscontrols.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] davinci: vpif: capture/display: fix race condition
-References: <1347630836-7545-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1347630836-7545-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <20120914093715.GM3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+	<1347016499-29354-2-git-send-email-lee.jones@linaro.org>
+	<CACRpkdbWVjiqrehj_v7M=cgnytEio5whTXOcax5wo0YSRe=-yA@mail.gmail.com>
+	<20120914093715.GM3374@gmail.com>
+Date: Fri, 14 Sep 2012 16:01:56 +0200
+Message-ID: <CACRpkdauwbEswOAwTo9G21V5Ff8XFzdt7Y+aw9W2JYqfBs=y8Q@mail.gmail.com>
+Subject: Re: [PATCH 01/19] ARM: ux500: Add skeleton Device Tree for the HREF
+ reference board
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Sep 14, 2012 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, Sep 10, 2012 at 01:47:09AM -0700, Linus Walleij wrote:
+>> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > First commit applying the new Device Tree for ST-Ericsson's u8500
+>> > based hardware reference board.
+>> >
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> > +/dts-v1/;
+>> > +/include/ "dbx5x0.dtsi"
+>>
+>> This include is not even in linux-next, is this patch series dependent
+>> on some other series I have not seen, or that I have forgot that
+>> I saw (and even possibly ACKed...)
+>
+> Yes, all of the above.
+>
+> I have them all here locally. Will test push something today hopefully.
 
-On 09/14/2012 05:53 PM, Prabhakar Lad wrote:
+OK then, when I see the complete set I will probably get the context.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-
-> channel_first_int[][] variable is used as a flag for the ISR,
-> This flag was being set after enabling the interrupts, There
-> where suitaions when the isr ocuurend even before the flag was set
-
-   s/suitaions/situations/, s/ocuurend/occured/
-
-> dues to which it was causing the applicaiotn hang.
-
-   Application.
-
-> This patch sets  channel_first_int[][] flag just before enabling the
-> interrupt.
-
-> Reported-by: David Oleszkiewicz <doleszki@adsyscontrols.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-
-WBR, Sergei
-
+Yours,
+Linus Walleij
