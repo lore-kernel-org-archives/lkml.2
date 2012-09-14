@@ -1,853 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab2INM25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:28:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53722 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab2INM2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:28:51 -0400
-Message-ID: <505322E3.4090806@pengutronix.de>
-Date: Fri, 14 Sep 2012 14:28:19 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1754578Ab2INM3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:29:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15961 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab2INM2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 08:28:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
+   d="scan'208";a="222141041"
+Date: Fri, 14 Sep 2012 20:28:47 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, jack@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: WARNING: at kernel/rcutree.c:1558 rcu_do_batch+0x386/0x3a0(),
+ during CPU hotplug
+Message-ID: <20120914122847.GA21038@localhost>
+References: <5007F8FA.7000203@linux.vnet.ibm.com>
+ <20120719171550.GL2507@linux.vnet.ibm.com>
+ <505081C4.2050600@linux.vnet.ibm.com>
+ <50519AC5.9060102@linux.vnet.ibm.com>
+ <20120914114752.GA20349@localhost>
+ <5053208C.4060205@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, arnd@arndb.de, gregkh@linuxfoundation.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, richard.zhao@freescale.com,
-        B29397@freescale.com, alexander.shishkin@linux.intel.com,
-        marex@denx.de
-Subject: Re: [RFC PATCH] drivers: phy: add generic PHY framework
-References: <1347623899-14485-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1347623899-14485-1-git-send-email-kishon@ti.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig7B6C41B3C5F81E8F2CA22334"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5053208C.4060205@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig7B6C41B3C5F81E8F2CA22334
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 14, 2012 at 05:48:20PM +0530, Srivatsa S. Bhat wrote:
+> On 09/14/2012 05:17 PM, Fengguang Wu wrote:
+> > On Thu, Sep 13, 2012 at 02:05:17PM +0530, Srivatsa S. Bhat wrote:
+> >> On 09/12/2012 06:06 PM, Srivatsa S. Bhat wrote:
+> >>> On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
+> >>>> On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
+> >>>>> Hi Paul,
+> >>>>>
+> >>>>> While running a CPU hotplug stress test on v3.5-rc7+
+> >>>>> (mainline commit 8a7298b7805ab) I hit this warning.
+> >>>>> I haven't tried to debug this yet...
+> >>>>>
+> >>>>> Line number 1550 maps to:
+> >>>>>
+> >>>>> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+> >>>>>
+> >>>>> inside rcu_do_batch().
+> >>>>
+> >>>> Hello, Srivatsa,
+> >>>>
+> >>>> I believe that you need commit a16b7a69 (Prevent __call_rcu() from
+> >>>> invoking RCU core on offline CPUs), which is currently in -tip, queued
+> >>>> for 3.6.  Please see below for the patch.
+> >>>>
+> >>>> Does this help?
+> >>>>
+> >>>
+> >>> Hi Paul,
+> >>>
+> >>> I am hitting the cpu_is_offline() warning in rcu_do_batch() (see 2 of the
+> >>> examples below) occasionally while testing CPU hotplug on Thomas' smp/hotplug
+> >>> branch in -tip. It does contain the commit that you had mentioned above.
+> >>>
+> >>
+> >> I also hit some writeback related problems during some of these runs. But I was
+> >> not able to reproduce them after that occurrence. (Adding relevant people to CC.)
+> >>
+> >> I hit the divide error shown below during the CPU hotplug test run, and the general
+> > 
+> > I've hit the divide error before. And I'm not luckier than you in
+> > reproducing the bug. I tempt to add a test as the workaround:
+> > 
+> 
+> Hi Fengguang,
+> First of all, thanks for taking a look!
+> 
+> I just hit it today during my testing again! See below for the stack-traces..
+> 
+> > +       if (WARN_ON(!denominator))
+> > +               return dirty;
+> 
+> Yep, I am going to try this out next and see if the denominator really became 0.
 
-On 09/14/2012 01:58 PM, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of API's for the PHY drivers to
-> create/remove a PHY and the PHY users to obtain a reference to the PHY
-> using or without using phandle. If the PHY users has to obtain a refere=
-nce to
-> the PHY without using phandle, the platform specfic intialization code =
-(say
-> from board file) should have already called phy_bind with the binding
-> information. The binding information consists of phy's device name, phy=
+OK, thanks for the testing!
 
-> user device name and an index. The index is used when the same phy user=
+> I went through the code and I didn't find anything wrong with it. It looks pretty
+> good (the denominator sanity checking part). Hmm...
 
-> binds to mulitple phys.
->=20
-> PHY drivers should create the PHY by passing phy_descriptor that has
-> information about the PHY and ops like init, exit, suspend, resume,
-> poweron, shutdown.
+Yeah, looks so..
 
-Some comments inside.
+> > btw, any chance you may share the CPU hotplug test scripts?
+> > It'd be a valuable addition to my 0day boot test system.
+> > 
+> 
+> Sure, I was using a very simple script that does offline/online in sequence. That's all.
+> Please find it below. Note that adding a breather between the hotplug operations (like
+> adding sleep as shown below) has the potential to expose different bugs than the normal
+> stress test (no sleeps between subsequent operations). So both cases are useful to test.
+> For example, with the sleep, I hit this divide error with higher probability, whereas
+> without the sleep (stress test) I hit the rcu_do_batch warning more often.
+> 
+> (And on a slightly different note, when x86 supports CPU 0 hotplug (today it doesn't),
+> you can use i = 0 instead of i = 1 in the loop. I believe that code is already in -tip).
 
-While looking over the code, I was thinking why not abstract the phy
-with a "bus" in the linux kernel. The ethernet phys are on the mdio_bus,
-see /sys/bus/mdio_bus. This saves you hand crafting devices, drivers and
-bindings,
+Thank you very much for the script and the detailed notes!!
 
-Marc
+Thanks,
+Fengguang
 
->=20
-> Nyet-signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
-> This framework is actually intended to be used by all the PHY drivers i=
-n the
-> kernel. Though it's going to take a while for that, I intend to migrate=
-
-> existing USB/OTG phy drivers to use this framework as we align on the d=
-esign
-> of this framework. Once I migrate these phy drivers, I'll be able to te=
-st this
-> framework (I haven't tested this framework so far). I sent this patch e=
-arly
-> so as to get review comments and align on the design. Thanks :-)
->=20
->  drivers/Kconfig         |    2 +
->  drivers/Makefile        |    2 +
->  drivers/phy/Kconfig     |   13 ++
->  drivers/phy/Makefile    |    5 +
->  drivers/phy/phy-core.c  |  437 +++++++++++++++++++++++++++++++++++++++=
-++++++++
->  include/linux/phy/phy.h |  181 ++++++++++++++++++++
->  6 files changed, 640 insertions(+)
->  create mode 100644 drivers/phy/Kconfig
->  create mode 100644 drivers/phy/Makefile
->  create mode 100644 drivers/phy/phy-core.c
->  create mode 100644 include/linux/phy/phy.h
->=20
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index ece958d..8488818 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -152,4 +152,6 @@ source "drivers/vme/Kconfig"
-> =20
->  source "drivers/pwm/Kconfig"
-> =20
-> +source "drivers/phy/Kconfig"
-> +
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 5b42184..63d6bbe 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -38,6 +38,8 @@ obj-y				+=3D char/
->  # gpu/ comes after char for AGP vs DRM startup
->  obj-y				+=3D gpu/
-> =20
-> +obj-y				+=3D phy/
-> +
->  obj-$(CONFIG_CONNECTOR)		+=3D connector/
-> =20
->  # i810fb and intelfb depend on char/agp/
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> new file mode 100644
-> index 0000000..34f7077
-> --- /dev/null
-> +++ b/drivers/phy/Kconfig
-> @@ -0,0 +1,13 @@
-> +#
-> +# PHY
-> +#
-> +
-> +menuconfig GENERIC_PHY
-> +	tristate "Generic PHY Support"
-> +	help
-> +	  Generic PHY support.
-> +
-> +	  This framework is designed to provide a generic interface for PHY
-> +	  devices present in the kernel. This layer will have the generic
-> +	  API by which phy drivers can create PHY using the phy framework and=
-
-> +	  phy users can obtain reference to the PHY.
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> new file mode 100644
-> index 0000000..9e9560f
-> --- /dev/null
-> +++ b/drivers/phy/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for the phy drivers.
-> +#
-> +
-> +obj-$(CONFIG_GENERIC_PHY)	+=3D phy-core.o
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> new file mode 100644
-> index 0000000..c55446a
-> --- /dev/null
-> +++ b/drivers/phy/phy-core.c
-> @@ -0,0 +1,437 @@
-> +/*
-> + * phy-core.c  --  Generic Phy framework.
-> + *
-> + * Copyright (C) 2012 Texas Instruments
-> + *
-> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * This program is free software; you can redistribute  it and/or modi=
-fy it
-> + * under  the terms of  the GNU General  Public License as published b=
-y the
-> + * Free Software Foundation;  either version 2 of the  License, or (at=
- your
-> + * option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/=
->.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/export.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/device.h>
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/phy/phy.h>
-> +
-> +static struct class *phy_class;
-> +static LIST_HEAD(phy_list);
-> +static DEFINE_MUTEX(phy_list_mutex);
-> +static LIST_HEAD(phy_bind_list);
-> +
-> +static void devm_phy_release(struct device *dev, void *res)
-> +{
-> +	struct phy *phy =3D *(struct phy **)res;
-
-What about adding a struct phy_res, doing so,m you don't need these
-casts, and it's easier to add more pointers if needed.
-
-> +
-> +	phy_put(phy);
-> +}
-> +
-> +static int devm_phy_match(struct device *dev, void *res, void *match_d=
-ata)
-> +{
-> +	return res =3D=3D match_data;
-> +}
-> +
-> +static struct phy *phy_lookup(struct device *dev, u8 index)
-> +{
-> +	struct phy_bind *phy_bind =3D NULL;
-> +
-> +	list_for_each_entry(phy_bind, &phy_bind_list, list) {
-> +		if (!(strcmp(phy_bind->dev_name, dev_name(dev))) &&
-> +				phy_bind->index =3D=3D index)
-> +			return phy_bind->phy;
-> +	}
-> +
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
-> +static struct phy *of_phy_lookup(struct device *dev, struct device_nod=
-e *node)
-> +{
-> +	int index =3D 0;
-> +	struct phy  *phy;
-                  ^^
-
-Please remove that stray space.
-
-> +	struct phy_bind *phy_map =3D NULL;
-> +
-> +	list_for_each_entry(phy_map, &phy_bind_list, list)
-> +		if (!(strcmp(phy_map->dev_name, dev_name(dev))))
-> +			index++;
-> +
-> +	list_for_each_entry(phy, &phy_list, head) {
-> +		if (node !=3D phy->desc->of_node)
-> +			continue;
-> +
-> +		phy_map =3D phy_bind(dev_name(dev), index, dev_name(&phy->dev));
-> +		if (!IS_ERR(phy_map)) {
-> +			phy_map->phy =3D phy;
-> +			phy_map->auto_bind =3D true;
-> +		}
-> +
-> +		return phy;
-> +	}
-> +
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
-> +/**
-> + * devm_phy_get - lookup and obtain a reference to a phy.
-> + * @dev: device that requests this phy
-> + * @index: the index of the phy
-> + *
-> + * Gets the phy using phy_get(), and associates a device with it using=
-
-> + * devres. On driver detach, release function is invoked on the devres=
- data,
-> + * then, devres data is freed.
-> + */
-> +struct phy *devm_phy_get(struct device *dev, u8 index)
-> +{
-> +	struct phy **ptr, *phy;
-> +
-> +	ptr =3D devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr)
-> +		return NULL;
-> +
-> +	phy =3D phy_get(dev, index);
-> +	if (!IS_ERR(phy)) {
-> +		*ptr =3D phy;
-> +		devres_add(dev, ptr);
-> +	} else
-> +		devres_free(ptr);
-
-nitpick: when when if has { }, else should have, too.
-
-> +
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_phy_get);
-> +
-> +/**
-> + * devm_phy_put - release the PHY
-> + * @dev: device that wants to release this phy
-> + * @phy: the phy returned by devm_phy_get()
-> + *
-> + * destroys the devres associated with this phy and invokes phy_put
-> + * to release the phy.
-> + */
-> +void devm_phy_put(struct device *dev, struct phy *phy)
-> +{
-> +	int r;
-> +
-> +	r =3D devres_destroy(dev, devm_phy_release, devm_phy_match, phy);
-> +	dev_WARN_ONCE(dev, r, "couldn't find PHY resource\n");
-> +}
-> +EXPORT_SYMBOL_GPL(devm_phy_put);
-> +
-> +/**
-> + * devm_of_phy_get - lookup and obtain a reference to a phy by phandle=
-
-> + * @dev: device that requests this phy
-> + * @phandle: name of the property holding the phy phandle value
-> + *
-> + * Returns the phy driver associated with the given phandle value,
-> + * after getting a refcount to it or -ENODEV if there is no such phy.
-> + * While at that, it also associates the device with the phy using dev=
-res.
-> + * On driver detach, release function is invoked on the devres data,
-> + * then, devres data is freed.
-> + */
-> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle)
-
-We should discuss first how the DT binding for a phy should look like. I
-don't like that you hardcode the index (in of_parse_phandle()) to "0".
-Then we have the problem with USB2 and USB3 phys for the same usb device.=
-
-
-> +{
-> +	struct phy	*phy =3D NULL, **ptr;
-> +	struct device_node *node;
-> +
-> +	if (!dev->of_node) {
-> +		dev_dbg(dev, "device does not have a device node entry\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	node =3D of_parse_phandle(dev->of_node, phandle, 0);
-> +	if (!node) {
-> +		dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
-> +			dev->of_node->full_name);
-> +		return ERR_PTR(-ENODEV);
-> +	}
-> +
-> +	ptr =3D devres_alloc(devm_phy_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr) {
-> +		dev_dbg(dev, "failed to allocate memory for devres\n");
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	mutex_lock(&phy_list_mutex);
-> +
-> +	phy =3D of_phy_lookup(dev, node);
-> +	if (IS_ERR(phy) || !try_module_get(phy->dev.driver->owner)) {
-> +		devres_free(ptr);
-> +		goto err0;
-> +	}
-
-Please return -EPROBE_DEFER is the phy is not yet registered.
-
-> +
-> +	*ptr =3D phy;
-> +	devres_add(dev, ptr);
-> +
-> +	get_device(&phy->dev);
-> +
-> +err0:
-> +	mutex_unlock(&phy_list_mutex);
-> +
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_of_phy_get);
-> +
-> +/**
-> + * phy_get - lookup and obtain a reference to a phy.
-> + * @dev: device that requests this phy
-> + * @index: the index of the phy
-> + *
-> + * Returns the phy driver, after getting a refcount to it; or
-> + * -ENODEV if there is no such phy.  The caller is responsible for
-> + * calling phy_put() to release that count.
-> + */
-> +struct phy *phy_get(struct device *dev, u8 index)
-> +{
-> +	struct phy	*phy =3D NULL;
-> +
-> +	mutex_lock(&phy_list_mutex);
-> +
-> +	phy =3D phy_lookup(dev, index);
-> +	if (IS_ERR(phy)) {
-> +		pr_err("unable to find phy\n");
-
-dev_err()
-
-> +		goto err0;
-> +	}
-> +
-> +	get_device(&phy->dev);
-> +
-> +err0:
-> +	mutex_unlock(&phy_list_mutex);
-> +
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL_GPL(phy_get);
-> +
-> +/**
-> + * phy_put - release the PHY
-> + * @phy: the phy returned by phy_get()
-> + *
-> + * Releases a refcount the caller received from phy_get().
-> + */
-> +void phy_put(struct phy *phy)
-> +{
-> +	if (phy)
-> +		put_device(&phy->dev);
-> +}
-> +EXPORT_SYMBOL_GPL(phy_put);
-> +
-> +/**
-> + * create_phy - create a new phy
-> + * @dev: device that is creating the new phy
-> + * @desc: descriptor of the phy
-> + *
-> + * Called to create a phy using phy framework.
-> + */
-> +struct phy *create_phy(struct device *dev, struct phy_descriptor *desc=
-)
-
-All other functions are named phy_*, please rename this, too.
-
-> +{
-> +	int ret;
-> +	struct phy *phy;
-> +	struct phy_bind *phy_bind;
-> +	const char *devname =3D NULL;
-> +
-> +	if (!dev || !desc) {
-> +		dev_err(dev, "no descriptor/device provided for PHY\n");
-> +		ret =3D -EINVAL;
-> +		goto err0;
-> +	}
-> +
-> +	if (!desc->ops) {
-> +		dev_err(dev, "no PHY ops provided\n");
-> +		ret =3D -EINVAL;
-> +		goto err0;
-> +	}
-> +
-> +	phy =3D kzalloc(sizeof(*phy), GFP_KERNEL);
-> +	if (!phy) {
-> +		dev_err(dev, "no memory for PHY\n");
-> +		ret =3D -ENOMEM;
-> +		goto err0;
-> +	}
-> +
-> +	devname =3D dev_name(dev);
-> +	device_initialize(&phy->dev);
-> +	phy->desc =3D desc;
-> +	phy->dev.class =3D phy_class;
-> +	phy->dev.parent =3D dev;
-> +	ret =3D dev_set_name(&phy->dev, "%s", devname);
-> +	if (ret)
-> +		goto err1;
-> +
-> +	mutex_lock(&phy_list_mutex);
-> +	list_for_each_entry(phy_bind, &phy_bind_list, list)
-> +		if (!(strcmp(phy_bind->phy_dev_name, devname)))
-> +			phy_bind->phy =3D phy;
-> +
-> +	list_add_tail(&phy->head, &phy_list);
-> +
-> +	ret =3D device_add(&phy->dev);
-> +	if (ret)
-> +		goto err2;
-> +
-> +	mutex_unlock(&phy_list_mutex);
-> +
-> +	return phy;
-> +
-> +err2:
-> +	phy_bind->phy =3D NULL;
-> +	list_del(&phy->head);
-> +	mutex_unlock(&phy_list_mutex);
-> +
-> +err1:
-> +	put_device(&phy->dev);
-> +	kfree(phy);
-> +
-> +err0:
-> +	return ERR_PTR(ret);
-> +}
-> +EXPORT_SYMBOL_GPL(create_phy);
-> +
-> +/**
-> + * destroy_phy - destroy the phy
-> + * @phy: the phy to be destroyed
-> + *
-> + * Called to destroy the phy.
-> + */
-> +void destroy_phy(struct phy *phy)
-> +{
-> +	struct phy_bind *phy_bind;
-> +
-> +	mutex_lock(&phy_list_mutex);
-> +	list_for_each_entry(phy_bind, &phy_bind_list, list) {
-> +		if (phy_bind->phy =3D=3D phy)
-> +			phy_bind->phy =3D NULL;
-> +
-> +		if (phy_bind->auto_bind) {
-> +			list_del(&phy_bind->list);
-> +			kfree(phy_bind);
-> +		}
-> +	}
-> +
-> +	list_del(&phy->head);
-> +	mutex_unlock(&phy_list_mutex);
-> +
-> +	device_unregister(&phy->dev);
-> +}
-> +EXPORT_SYMBOL_GPL(destroy_phy);
-> +
-> +/**
-> + * phy_bind - bind the phy and the controller that uses the phy
-> + * @dev_name: the device name of the device that will bind to the phy
-> + * @index: index to specify the port number
-> + * @phy_dev_name: the device name of the phy
-> + *
-> + * Fills the phy_bind structure with the dev_name and phy_dev_name. Th=
-is will
-> + * be used when the phy driver registers the phy and when the controll=
-er
-> + * requests this phy.
-> + *
-> + * To be used by platform specific initialization code.
-> + */
-> +struct phy_bind *phy_bind(const char *dev_name, u8 index,
-> +				const char *phy_dev_name)
-> +{
-> +	struct phy_bind *phy_bind;
-> +
-> +	phy_bind =3D kzalloc(sizeof(*phy_bind), GFP_KERNEL);
-> +	if (!phy_bind) {
-> +		pr_err("phy_bind(): No memory for phy_bind");
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	phy_bind->dev_name =3D dev_name;
-> +	phy_bind->phy_dev_name =3D phy_dev_name;
-> +	phy_bind->index =3D index;
-> +	phy_bind->auto_bind =3D false;
-> +
-> +	list_add_tail(&phy_bind->list, &phy_bind_list);
-> +
-> +	return phy_bind;
-> +}
-> +EXPORT_SYMBOL_GPL(phy_bind);
-> +
-> +static ssize_t phy_name_show(struct device *dev,
-> +			     struct device_attribute *attr, char *buf)
-> +{
-> +	struct phy *phy;
-> +
-> +	phy =3D container_of(dev, struct phy, dev);
-> +
-> +	return sprintf(buf, "%s\n", phy->desc->label);
-> +}
-> +
-> +static ssize_t phy_bind_show(struct device *dev,
-> +			     struct device_attribute *attr, char *buf)
-> +{
-> +	struct phy_bind *phy_bind;
-> +	struct phy *phy;
-> +	char *p =3D buf;
-> +	int len;
-> +
-> +	phy =3D container_of(dev, struct phy, dev);
-> +
-> +	list_for_each_entry(phy_bind, &phy_bind_list, list)
-> +		if (phy_bind->phy =3D=3D phy)
-> +			p +=3D sprintf(p, "%s %d\n", phy_bind->dev_name,
-> +							phy_bind->index);
-> +	len =3D (p - buf);
-> +
-> +	return len;
-> +}
-> +
-> +static struct device_attribute phy_dev_attrs[] =3D {
-> +	__ATTR(label, 0444, phy_name_show, NULL),
-> +	__ATTR(bind, 0444, phy_bind_show, NULL),
-> +	__ATTR_NULL,
-> +};
-> +
-> +/**
-> + * phy_release - release the phy
-> + * @dev: the dev member within phy
-> + *
-> + * when the last reference to the device is removed; it is called
-> + * from the embedded kobject as release method.
-> + */
-> +static void phy_release(struct device *dev)
-> +{
-> +	struct phy *phy;
-> +
-> +	phy =3D container_of(dev, struct phy, dev);
-> +	dev_dbg(dev, "releasing '%s'\n", dev_name(dev));
-> +	kfree(phy);
-> +}
-> +
-> +static int __init phy_core_init(void)
-> +{
-> +	phy_class =3D class_create(THIS_MODULE, "phy");
-> +	if (IS_ERR(phy_class)) {
-> +		pr_err("failed to create phy class --> %ld\n",
-> +			PTR_ERR(phy_class));
-> +		return PTR_ERR(phy_class);
-> +	}
-> +
-> +	phy_class->dev_release =3D phy_release;
-> +	phy_class->dev_attrs =3D phy_dev_attrs;
-> +
-> +	return 0;
-> +}
-> +subsys_initcall(phy_core_init);
-> +
-> +static void __exit phy_core_exit(void)
-> +{
-> +	class_destroy(phy_class);
-> +}
-> +module_exit(phy_core_exit);
-> +
-> +MODULE_DESCRIPTION("Generic Phy Framework");
-> +MODULE_AUTHOR("Kishon Vijay Abraham I <kishon@ti.com>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> new file mode 100644
-> index 0000000..831c1c0
-> --- /dev/null
-> +++ b/include/linux/phy/phy.h
-> @@ -0,0 +1,181 @@
-> +/*
-> + * phy.h -- generic phy header file
-> + *
-> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.c=
-om
-> + * This program is free software; you can redistribute it and/or modif=
-y
-> + * it under the terms of the GNU General Public License as published b=
-y
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef __DRIVERS_PHY_H
-> +#define __DRIVERS_PHY_H
-> +
-> +struct phy;
-> +
-> +/**
-> + * struct phy_descriptor - structure that describes the PHY
-> + * @label: label given to phy
-> + * @type: specifies the phy type
-> + * @of_node: device node of the phy
-> + * @ops: function pointers for performing phy operations
-> + */
-> +struct phy_descriptor {
-> +	const char		*label;
-> +	int			type;
-> +	struct device_node	*of_node;
-> +	struct phy_ops		*ops;
-> +};
-> +
-> +/**
-> + * struct phy_ops - set of function pointers for performing phy operat=
-ions
-> + * @init: operation to be performed for initializing phy
-> + * @exit: operation to be performed while exiting
-> + * @suspend: suspending the phy
-> + * @resume: resuming the phy
-> + * @poweron: powering on the phy
-> + * @shutdown: shutting down the phy
-> + */
-> +struct phy_ops {
-> +	int	(*init)(struct phy_descriptor *desc);
-> +	int	(*exit)(struct phy_descriptor *desc);
-> +	int	(*suspend)(struct phy_descriptor *desc);
-> +	int	(*resume)(struct phy_descriptor *desc);
-> +	int	(*poweron)(struct phy_descriptor *desc);
-> +	int	(*shutdown)(struct phy_descriptor *desc);
-> +};
-> +
-> +/**
-> + * struct phy - represent the phy device
-> + * @desc: descriptor for the phy
-> + * @head: to support multiple transceivers
-> + */
-> +struct phy {
-> +	struct device		dev;
-> +	struct phy_descriptor	*desc;
-> +	struct list_head	head;
-> +};
-> +
-> +/**
-> + * struct phy_bind - represent the binding for the phy
-> + * @dev_name: the device name of the device that will bind to the phy
-> + * @phy_dev_name: the device name of the phy
-> + * @index: used if a single controller uses multiple phys
-> + * @auto_bind: tells if the binding is done explicitly from board file=
- or not
-> + * @phy: reference to the phy
-> + * @list: to maintain a linked list of the binding information
-> + */
-> +struct phy_bind {
-> +	const char	*dev_name;
-> +	const char	*phy_dev_name;
-> +	u8		index;
-> +	int		auto_bind:1;
-> +	struct phy	*phy;
-> +	struct list_head list;
-> +};
-> +
-> +#if defined(CONFIG_GENERIC_PHY) || defined(CONFIG_GENERIC_PHY_MODULE)
-> +extern struct phy *devm_phy_get(struct device *dev, u8 index);
-> +extern void devm_phy_put(struct device *dev, struct phy *phy);
-> +extern struct phy *devm_of_phy_get(struct device *dev, const char *pha=
-ndle);
-> +extern struct phy *phy_get(struct device *dev, u8 index);
-> +extern void phy_put(struct phy *phy);
-> +extern struct phy *create_phy(struct device *dev, struct phy_descripto=
-r *desc);
-> +extern void destroy_phy(struct phy *phy);
-> +extern struct phy_bind *phy_bind(const char *dev_name, u8 index,
-> +				const char *phy_dev_name);
-> +#else
-> +static inline struct phy *devm_phy_get(struct device *dev, u8 index)
-> +{
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static inline void devm_phy_put(struct device *dev, struct phy *phy)
-> +{
-> +}
-> +
-> +static inline struct phy *devm_of_phy_get(struct device *dev,
-> +		const char *phandle)
-> +{
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static inline struct phy *phy_get(struct device *dev, u8 index)
-> +{
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static inline void phy_put(struct phy *phy)
-> +{
-> +}
-> +
-> +static inline struct phy *create_phy(struct device *dev,
-> +	struct phy_descriptor *desc)
-> +{
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +
-> +static inline void destroy_phy(struct phy *phy)
-> +{
-> +}
-> +
-> +static inline struct phy_bind *phy_bind(const char *dev_name, u8 index=
-,
-> +				const char *phy_dev_name)
-> +{
-> +}
-> +#endif
-> +
-> +static inline int phy_init(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->init)
-> +		return phy->desc->ops->init(phy->desc);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int phy_exit(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->exit)
-> +		return phy->desc->ops->exit(phy->desc);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int phy_suspend(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->suspend)
-> +		return phy->desc->ops->suspend(phy->desc);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int phy_resume(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->resume)
-> +		return phy->desc->ops->resume(phy->desc);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline int phy_poweron(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->poweron)
-> +		return phy->desc->ops->poweron(phy->desc);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static inline void phy_shutdown(struct phy *phy)
-> +{
-> +	if (phy->desc->ops->shutdown)
-> +		phy->desc->ops->shutdown(phy->desc);
-> +}
-> +#endif /* __DRIVERS_PHY_H */
->=20
-
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig7B6C41B3C5F81E8F2CA22334
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlBTIucACgkQjTAFq1RaXHMsdACfW5CHD6e5J34/FdiHDWxkTn3F
-SiQAnRcFwjjnejD+8uA7EAiaB9um7Phm
-=DTqo
------END PGP SIGNATURE-----
-
---------------enig7B6C41B3C5F81E8F2CA22334--
+> 
+> CPU hotplug test script
+> -----------------------
+> #! /bin/bash
+> 
+> NUMBER_OF_CPUS=`ls -d /sys/devices/system/cpu/cpu[0-9]* | wc -l`
+> 
+> cd /sys/devices/system/cpu
+> 
+> while [ 1 ]
+> do
+>         for ((i=1; i < NUMBER_OF_CPUS; i++))
+>         do
+>                 sleep 1;
+>                 state=`cat cpu$i/online`
+>                 if [ $state -eq 0 ]
+>                 then
+>                         echo 1 > cpu$i/online
+>                 else
+>                         echo 0 > cpu$i/online
+>                 fi
+>         done
+> done
+> 
+> 
+> >> protection fault subsequently, while trying to shutdown the machine after the test.
+> > 
+> 
+> Dumps from the divide error and general protection fault in today's testing:
+> 
+> 
+> [ 4831.353623] SMP alternatives: lockdep: fixing up alternatives
+> [ 4831.359465] smpboot: Booting Node 1 Processor 13 APIC 0x13
+> [ 4833.028342] SMP alternatives: lockdep: fixing up alternatives
+> [ 4833.034188] smpboot: Booting Node 1 Processor 14 APIC 0x15
+> [ 4835.693836] SMP alternatives: lockdep: fixing up alternatives
+> [ 4835.699609] smpboot: Booting Node 1 Processor 15 APIC 0x17
+> [ 4843.142309] Broke affinity for irq 77
+> [ 4843.147605] smpboot: CPU 1 is now offline
+> [ 4843.155885] CPU 9 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4844.379459] Broke affinity for irq 80
+> [ 4844.384569] smpboot: CPU 2 is now offline
+> [ 4844.392111] CPU 10 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4845.810713] smpboot: CPU 3 is now offline
+> [ 4845.821409] CPU 11 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4848.710692] Broke affinity for irq 74
+> [ 4848.716063] smpboot: CPU 4 is now offline
+> [ 4848.721781] CPU 5 MCA banks CMCI:6 CMCI:8
+> [ 4848.726440] CPU 12 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4855.990349] smpboot: CPU 5 is now offline
+> [ 4855.997251] CPU 6 MCA banks CMCI:6 CMCI:8
+> [ 4856.002002] CPU 13 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4859.198420] smpboot: CPU 6 is now offline
+> [ 4859.205217] CPU 7 MCA banks CMCI:6 CMCI:8
+> [ 4859.209858] CPU 14 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4861.202261] smpboot: CPU 7 is now offline
+> [ 4861.211009] CPU 12 MCA banks CMCI:6 CMCI:8
+> [ 4861.215403] CPU 15 MCA banks CMCI:2 CMCI:3 CMCI:5
+> [ 4863.210557] smpboot: CPU 8 is now offline
+> [ 4890.536087] divide error: 0000 [#1] SMP 
+> [ 4890.540047] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode cdc_ether usbnet i2c_i801 mii tpm_tis pcspkr ioatdma i7core_edac tpm serio_raw i2c_core bnx2 shpchp lpc_ich mfd_core edac_core pci_hotplug dca tpm_bios sg rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+> [ 4890.540047] CPU 9 
+> [ 4890.540047] Pid: 2243, comm: flush-8:0 Not tainted 3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033     
+> [ 4890.540047] RIP: 0010:[<ffffffff811276f6>]  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
+> [ 4890.540047] RSP: 0018:ffff8808d3e1fcc0  EFLAGS: 00010202
+> [ 4890.540047] RAX: 0000000000000000 RBX: 00000000001a80c4 RCX: 28f5c28f5c28f5c3
+> [ 4890.540047] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+> [ 4890.540047] RBP: ffff8808d3e1fce0 R08: 0000000000000010 R09: 0000000000000000
+> [ 4890.540047] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8808d3d80e20
+> [ 4890.540047] R13: ffff8808d3d80e20 R14: ffff8808d3d811a0 R15: 0000000000000000
+> [ 4890.540047] FS:  0000000000000000(0000) GS:ffff8808ddd40000(0000) knlGS:0000000000000000
+> [ 4890.540047] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 4890.540047] CR2: ffffffffff600400 CR3: 0000000001a0c000 CR4: 00000000000007e0
+> [ 4890.540047] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 4890.540047] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 4890.540047] Process flush-8:0 (pid: 2243, threadinfo ffff8808d3e1e000, task ffff8808d4060000)
+> [ 4890.540047] Stack:
+> [ 4890.540047]  0001000000000000 0000000000000000 ffff8808d3d80e20 fffffffffffffff7
+> [ 4890.540047]  ffff8808d3e1fd10 ffffffff811ae95c 0000000000350189 00000000001a80c4
+> [ 4890.540047]  0000000000000000 0000000000000000 ffff8808d3e1fdc0 ffffffff811b0620
+> [ 4890.540047] Call Trace:
+> [ 4890.540047]  [<ffffffff811ae95c>] over_bground_thresh+0x7c/0x90
+> [ 4890.540047]  [<ffffffff811b0620>] wb_do_writeback+0x170/0x310
+> [ 4890.540047]  [<ffffffff811b08eb>] bdi_writeback_thread+0x12b/0x420
+> [ 4890.540047]  [<ffffffff811b07c0>] ? wb_do_writeback+0x310/0x310
+> [ 4890.540047]  [<ffffffff8106deae>] kthread+0xde/0xf0
+> [ 4890.540047]  [<ffffffff814c6184>] kernel_thread_helper+0x4/0x10
+> [ 4890.540047]  [<ffffffff814bc1f0>] ? retint_restore_args+0x13/0x13
+> [ 4890.540047]  [<ffffffff8106ddd0>] ? __init_kthread_worker+0x70/0x70
+> [ 4890.540047]  [<ffffffff814c6180>] ? gs_change+0x13/0x13
+> [ 4890.540047] Code: 28 5c 8f c2 f5 28 8b 7d e0 48 89 c6 48 0f af f3 48 c1 ee 02 48 89 f0 48 f7 e1 48 89 d6 31 d2 48 c1 ee 02 48 0f af 75 e8 48 89 f0 <48> f7 f7 41 8b 94 24 74 02 00 00 48 0f af d3 48 89 c7 48 c1 ea 
+> [ 4890.540047] RIP  [<ffffffff811276f6>] bdi_dirty_limit+0x66/0xc0
+> [ 4890.540047]  RSP <ffff8808d3e1fcc0>
+> [ 4890.805627] ---[ end trace 3bdb61d99b220aeb ]---
+> [ 4890.818925] Broke affinity for irq 76
+> [ 4890.823921] smpboot: CPU 9 is now offline
+> [ 4900.238238] general protection fault: 0000 [#2] SMP 
+> [ 4900.242203] Modules linked in: ipv6 cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode cdc_ether usbnet i2c_i801 mii tpm_tis pcspkr ioatdma i7core_edac tpm serio_raw i2c_core bnx2 shpchp lpc_ich mfd_core edac_core pci_hotplug dca tpm_bios sg rtc_cmos button uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan processor mptsas mptscsih mptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+> [ 4900.248087] CPU 13 
+> [ 4900.248087] Pid: 0, comm: swapper/13 Tainted: G      D      3.6.0-rc1-tglx-hotplug-0.0.0.28.36b5ec9-default #1 IBM IBM System x -[7870C4Q]-/68Y8033     
+> [ 4900.248087] RIP: 0010:[<ffffffff810843d7>]  [<ffffffff810843d7>] try_to_wake_up+0x57/0x2f0
+> [ 4900.248087] RSP: 0018:ffff88117fd43d30  EFLAGS: 00010002
+> [ 4900.248087] RAX: 6b6b6b6b6b6b6b6b RBX: 000000000000000f RCX: 000000006b6b6b6b
+> [ 4900.248087] RDX: 000000006b6c6b6b RSI: ffffffff817a7fbf RDI: ffff8808d40607f0
+> [ 4900.248087] RBP: ffff88117fd43d70 R08: 0000000000000002 R09: 0000000000000001
+> [ 4900.248087] R10: 0000000000000000 R11: 0000000000000001 R12: ffff8808d4060000
+> [ 4900.248087] R13: 000000006b6b6b6b R14: ffff8808d3d80e20 R15: 0000000000000000
+> [ 4900.248087] FS:  0000000000000000(0000) GS:ffff88117fd40000(0000) knlGS:0000000000000000
+> [ 4900.248087] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 4900.248087] CR2: 00007f472ef5f068 CR3: 0000000001a0c000 CR4: 00000000000007e0
+> [ 4900.248087] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 4900.248087] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 4900.248087] Process swapper/13 (pid: 0, threadinfo ffff8808d762e000, task ffff8808d7630000)
+> [ 4900.248087] Stack:
+> [ 4900.248087]  0000000000000246 ffff8808d40607f0 0000000000000286 ffff8808d762ffd8
+> [ 4900.248087]  ffff8808d3d80e20 ffff8808d3d811a0 ffff8808d3d80e20 ffffffff8113d970
+> [ 4900.248087]  ffff88117fd43d80 ffffffff810846a0 ffff88117fd43db0 ffffffff8113da22
+> [ 4900.248087] Call Trace:
+> [ 4900.248087]  <IRQ> 
+> [ 4900.248087]  [<ffffffff8113d970>] ? bdi_init+0x270/0x270
+> [ 4900.248087]  [<ffffffff810846a0>] wake_up_process+0x10/0x20
+> [ 4900.248087]  [<ffffffff8113da22>] wakeup_timer_fn+0xb2/0x1c0
+> [ 4900.248087]  [<ffffffff810557db>] call_timer_fn+0xcb/0x240
+> [ 4900.248087]  [<ffffffff81055710>] ? detach_if_pending+0x150/0x150
+> [ 4900.248087]  [<ffffffff8113d970>] ? bdi_init+0x270/0x270
+> [ 4900.248087]  [<ffffffff81056f75>] run_timer_softirq+0x1c5/0x2c0
+> [ 4900.248087]  [<ffffffff8104dc79>] __do_softirq+0x159/0x400
+> [ 4900.248087]  [<ffffffff814c627c>] call_softirq+0x1c/0x30
+> [ 4900.248087]  [<ffffffff810044f5>] do_softirq+0x95/0xd0
+> [ 4900.248087]  [<ffffffff8104d745>] irq_exit+0xe5/0x100
+> [ 4900.248087]  [<ffffffff81028df9>] smp_apic_timer_interrupt+0x69/0xa0
+> [ 4900.248087]  [<ffffffff814c5aef>] apic_timer_interrupt+0x6f/0x80
+> [ 4900.248087]  <EOI> 
+> [ 4900.248087]  [<ffffffff812db3d3>] ? intel_idle+0xc3/0x170
+> [ 4900.248087]  [<ffffffff812db3d7>] ? intel_idle+0xc7/0x170
+> [ 4900.248087]  [<ffffffff812db3d3>] ? intel_idle+0xc3/0x170
+> [ 4900.248087]  [<ffffffff813b1937>] cpuidle_enter+0x17/0x20
+> [ 4900.248087]  [<ffffffff813b1952>] cpuidle_enter_state+0x12/0x50
+> [ 4900.248087]  [<ffffffff813b2403>] cpuidle_idle_call+0x133/0x260
+> [ 4900.248087]  [<ffffffff8100b1f5>] cpu_idle+0x95/0xf0
+> [ 4900.248087]  [<ffffffff814b1819>] start_secondary+0x85/0x8c
+> [ 4900.248087] Code: 31 ed 48 89 c7 48 89 45 c8 e8 46 72 43 00 48 89 45 d0 49 8b 04 24 85 c3 0f 84 02 02 00 00 45 8b 6c 24 2c 49 8b 44 24 08 45 85 ed <44> 8b 70 18 74 75 8b 1d dd ea 9d 00 85 db 0f 85 2d 02 00 00 49 
+> [ 4900.248087] RIP  [<ffffffff810843d7>] try_to_wake_up+0x57/0x2f0
+> [ 4900.248087]  RSP <ffff88117fd43d30>
+> [ 4900.248087] ---[ end trace 3bdb61d99b220aec ]---
+> [ 4900.248087] Kernel panic - not syncing: Fatal exception in interrupt
+> 
+> 
