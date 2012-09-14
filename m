@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab2INRBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:01:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48182 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab2INRBw (ORCPT
+	id S1757698Ab2INRFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:05:37 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:37027 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753344Ab2INRFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:01:52 -0400
-Date: Fri, 14 Sep 2012 10:01:47 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, akpm@linux-foundation.org,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH] cgroup: fix invalid rcu dereference
-Message-ID: <20120914170147.GB17747@google.com>
-References: <5052F78A.7010007@suse.cz>
- <1347615612-11450-1-git-send-email-jslaby@suse.cz>
- <20120914132738.GN19694@redhat.com>
+	Fri, 14 Sep 2012 13:05:34 -0400
+Message-ID: <505363BA.1010604@xenotime.net>
+Date: Fri, 14 Sep 2012 10:04:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120914132738.GN19694@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org, Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: Re: linux-next: Tree for Sept 14 (sata_highhbank)
+References: <20120914173813.fa65528e5236bd0a20c29b92@canb.auug.org.au>
+In-Reply-To: <20120914173813.fa65528e5236bd0a20c29b92@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 09:27:38AM -0400, Aristeu Rozanski wrote:
-> On Fri, Sep 14, 2012 at 11:40:12AM +0200, Jiri Slaby wrote:
-> > Commit "device_cgroup: convert device_cgroup internally to policy +
-> > exceptions" removed rcu locks which are needed in task_devcgroup
-> > called in this chain: devcgroup_inode_mknod OR
-> > __devcgroup_inode_permission -> __devcgroup_inode_permission ->
-> > task_devcgroup -> task_subsys_state -> task_subsys_state_check.
-> 
-> ugh, missed that
-> 
-...
-> thanks Jiri
-> Acked-by: Aristeu Rozanski <aris@redhat.com>
+On 09/14/2012 12:38 AM, Stephen Rothwell wrote:
 
-How should this be routed?
+> Hi all,
+> 
+> Changes since 201209013:
+> 
 
-Thanks.
+
+
+on i386:
+
+CONFIG_SATA_HIGHBANK=m
+# CONFIG_SATA_AHCI_PLATFORM is not set
+
+ERROR: "ahci_sdev_attrs" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_shost_attrs" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_ops" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_dev_classify" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_start_engine" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_stop_engine" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_interrupt" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_print_info" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_reset_em" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_ignore_sss" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_set_em_messages" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_save_initial_config" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_init_controller" [drivers/ata/sata_highbank.ko] undefined!
+ERROR: "ahci_reset_controller" [drivers/ata/sata_highbank.ko] undefined!
 
 -- 
-tejun
+~Randy
