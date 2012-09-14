@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab2INST2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:19:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57284 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab2INST0 (ORCPT
+	id S1759103Ab2INSYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:24:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41508 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2INSYR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:19:26 -0400
-Message-ID: <505374E2.5080308@mvista.com>
-Date: Fri, 14 Sep 2012 22:18:10 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120824 Thunderbird/15.0
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: arnd@arndb.de, xen-devel@lists.xensource.com, linaro-dev@lists.linaro.org,
-        Ian.Campbell@citrix.com, konrad.wilk@oracle.com,
-        catalin.marinas@arm.com, tim@xen.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Sep 2012 14:24:17 -0400
+Message-ID: <1347647021.7172.74.camel@twins>
+Subject: Re: [RFC] cgroup TODOs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 14 Sep 2012 20:23:41 +0200
+In-Reply-To: <20120914175944.GF17747@google.com>
+References: <20120913205827.GO7677@google.com>
+	 <5052E7DF.7040000@parallels.com> <5052F4FF.6070508@huawei.com>
+	 <20120914175944.GF17747@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, 2012-09-14 at 10:59 -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Sep 14, 2012 at 05:12:31PM +0800, Li Zefan wrote:
+> > Agreed. The biggest issue in cpuset is if hotplug makes a cpuset's cpulist
+> > empty the tasks in it will be moved to an ancestor cgroup, which requires
+> > holding cgroup lock. We have to either change cpuset's behavior or eliminate
+> > the global lock.
+> 
+> Does that have to happen synchronously?  Can't we have a cgroup
+> operation which asynchronously pushes all tasks in a cgroup to its
+> parent from a work item?
 
-On 09/14/2012 03:13 PM, Stefano Stabellini wrote:
+Its hotplug, all hotplug stuff is synchronous, the last thing hotplug
+needs is the added complexity of async callbacks. Also pushing stuff out
+into worklets just to work around locking issues is vile.
 
-> Changes in v2:
+<handwave as I never can remember all the cgroup stuff/>
 
-> - mark Xen guest support on ARM as EXPERIMENTAL.
+Can't we play games by pinning both cgroups with a reference and playing
+games with threadgroup_change / task_lock for the individual tasks being
+moved about?
 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/arm/Kconfig |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 2f88d8d..e92518d 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
->  	  This was deprecated in 2001 and announced to live on for 5 years.
->  	  Some old boot loaders still use this way.
->  
-> +config XEN_DOM0
-> +	def_bool y
-> +
-> +config XEN
-> +	bool "Xen guest support on ARM (EXPERIMENTAL)"
-> +	depends on EXPERIMENTAL && ARM && OF
-> +	select XEN_DOM0
-
-   What's the point of selecting it if it's always "y"?
-
-WBR, Sergei
 
