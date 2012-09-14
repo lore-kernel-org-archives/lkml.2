@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759800Ab2INSIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:08:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759776Ab2INSIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:08:51 -0400
-Date: Fri, 14 Sep 2012 14:07:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120914180754.GF6221@redhat.com>
-References: <20120913205827.GO7677@google.com>
+	id S1759786Ab2INSJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:09:41 -0400
+Received: from smtp2a.hushmail.com ([65.39.178.237]:38020 "EHLO
+	smtp2.hushmail.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756082Ab2INSJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 14:09:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913205827.GO7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-hush-relay-id: 2eb18146423aa240c0f3ff4d75b2eadf
+X-hush-relay-time: 220
+Date: Fri, 14 Sep 2012 21:03:24 +0300
+To: "Joe Perches" <joe@perches.com>, "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Bart De Schuymer" <bart.de.schuymer@pandora.be>,
+        "Pablo Neira Ayuso" <pablo@netfilter.org>,
+        "Patrick McHardy" <kaber@trash.net>,
+        "Stephen Hemminger" <shemminger@vyatta.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] netfilter/iptables: Fix log-level processing
+From: auto75914331@hushmail.com
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20120914180324.E51B26F448@smtp.hushmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
+thanks, propably works, will not test
 
-[..]
-> 6. Multiple hierarchies
-> 
->   Apart from the apparent wheeeeeeeeness of it (I think I talked about
->   that enough the last time[1]), there's a basic problem when more
->   than one controllers interact - it's impossible to define a resource
->   group when more than two controllers are involved because the
->   intersection of different controllers is only defined in terms of
->   tasks.
-> 
->   IOW, if an entity X is of interest to two controllers, there's no
->   way to map X to the cgroups of the two controllers.  X may belong to
->   A and B when viewed by one task but A' and B when viewed by another.
->   This already is a head scratcher in writeback where blkcg and memcg
->   have to interact.
-> 
->   While I am pushing for unified hierarchy, I think it's necessary to
->   have different levels of granularities depending on controllers
->   given that nesting involves significant overhead and noticeable
->   controller-dependent behavior changes.
-> 
->   Solution:
-> 
->   I think a unified hierarchy with the ability to ignore subtrees
->   depending on controllers should work.  For example, let's assume the
->   following hierarchy.
-> 
->           R
-> 	/   \
->        A     B
->       / \
->      AA AB
-> 
->   All controllers are co-mounted.  There is per-cgroup knob which
->   controls which controllers nest beyond it.  If blkio doesn't want to
->   distinguish AA and AB, the user can specify that blkio doesn't nest
->   beyond A and blkio would see the tree as,
-> 
->           R
-> 	/   \
->        A     B
-> 
->   While other controllers keep seeing the original tree.  The exact
->   form of interface, I don't know yet.  It could be a single file
->   which the user echoes [-]controller name into it or per-controller
->   boolean file.
-> 
->   I think this level of flexibility should be enough for most use
->   cases.  If someone disagrees, please voice your objections now.
 
-Hi Tejun,
 
-I am curious that why are you planning to provide capability of controller
-specific view of hierarchy. To me it sounds pretty close to having
-separate hierarchies per controller. Just that it is a little more
-restricted configuration. 
+On 12.09.2012 at 3:05 PM, Joe Perches <joe@perches.com> wrote:
+>
+>auto75914331@hushmail.com reports that iptables does not correctly
+>output the KERN_<level>.
+>
+>$IPTABLES -A RULE_0_in  -j LOG  --log-level notice --log-prefix 
+>"DENY  in: "
+>
+>result with linux 3.6-rc5
+>Sep 12 06:37:29 xxxxx kernel: <5>DENY  in: IN=eth0 OUT= MAC=.......
+>
+>result with linux 3.5.3 and older:
+>Sep  9 10:43:01 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC......
+>
+>commit 04d2c8c83d0
+>("printk: convert the format for KERN_<LEVEL> to a 2 byte pattern")
+>updated the syslog header style but did not update netfilter uses.
+>
+>Do so.
+>
+>Signed-off-by: Joe Perches <joe@perches.com>
+>cc: auto75914331@hushmail.com
+>---
+>v2: Use KERN_SOH and string concatenation instead of "%c" 
+>KERN_SOH_ASCII
+>as suggested by Eric Dumazet.
+>
+> net/bridge/netfilter/ebt_log.c |    2 +-
+> net/netfilter/xt_LOG.c         |    4 ++--
+> 2 files changed, 3 insertions(+), 3 deletions(-)
+>
+>diff --git a/net/bridge/netfilter/ebt_log.c 
+>b/net/bridge/netfilter/ebt_log.c
+>index f88ee53..92de5e5 100644
+>--- a/net/bridge/netfilter/ebt_log.c
+>+++ b/net/bridge/netfilter/ebt_log.c
+>@@ -80,7 +80,7 @@ ebt_log_packet(u_int8_t pf, unsigned int hooknum,
+> 	unsigned int bitmask;
+> 
+> 	spin_lock_bh(&ebt_log_lock);
+>-	printk("<%c>%s IN=%s OUT=%s MAC source = %pM MAC dest = %pM 
+>proto = 0x%04x",
+>+	printk(KERN_SOH "%c%s IN=%s OUT=%s MAC source = %pM MAC dest = 
+>%pM proto = 0x%04x",
+> 	       '0' + loginfo->u.log.level, prefix,
+> 	       in ? in->name : "", out ? out->name : "",
+> 	       eth_hdr(skb)->h_source, eth_hdr(skb)->h_dest,
+>diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+>index ff5f75f..d1609dd 100644
+>--- a/net/netfilter/xt_LOG.c
+>+++ b/net/netfilter/xt_LOG.c
+>@@ -436,8 +436,8 @@ log_packet_common(struct sbuff *m,
+> 		  const struct nf_loginfo *loginfo,
+> 		  const char *prefix)
+> {
+>-	sb_add(m, "<%d>%sIN=%s OUT=%s ", loginfo->u.log.level,
+>-	       prefix,
+>+	sb_add(m, KERN_SOH "%c%sIN=%s OUT=%s ",
+>+	       '0' + loginfo->u.log.level, prefix,
+> 	       in ? in->name : "",
+> 	       out ? out->name : "");
+> #ifdef CONFIG_BRIDGE_NETFILTER
 
-IOW, who is is the user of this functionality and who is asking for it.
-Can we go all out where all controllers have only one hierarchy view.
-
-Thanks
-Vivek
