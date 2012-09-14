@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab2INOuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:50:22 -0400
-Received: from hotel311.server4you.de ([85.25.146.15]:35524 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757601Ab2INOuU (ORCPT
+	id S1758408Ab2INOyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:54:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38477 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab2INOyD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:50:20 -0400
-Message-ID: <5053442A.7040801@monom.org>
-Date: Fri, 14 Sep 2012 16:50:18 +0200
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Joe Perches <joe@perches.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Rick Jones <rick.jones2@hp.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Tejun Heo <tj@kernel.org>, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] cgroup: net_cls: Include missing header with sock_update_classid()
- definition
-References: <1347633184-26837-1-git-send-email-wagi@monom.org> <1347633184-26837-3-git-send-email-wagi@monom.org> <CA+icZUUrdGgUM32r88EyRHEb3Q6bULqnk74PikQ8A9q25ZA3NA@mail.gmail.com>
-In-Reply-To: <CA+icZUUrdGgUM32r88EyRHEb3Q6bULqnk74PikQ8A9q25ZA3NA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Sep 2012 10:54:03 -0400
+Message-ID: <1347634409.7172.58.camel@twins>
+Subject: Re: [RFC] cgroup TODOs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
+        Glauber Costa <glommer@parallels.com>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Date: Fri, 14 Sep 2012 16:53:29 +0200
+In-Reply-To: <20120914142539.GC6221@redhat.com>
+References: <20120913205827.GO7677@google.com>
+	 <20120914142539.GC6221@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sedat,
+On Fri, 2012-09-14 at 10:25 -0400, Vivek Goyal wrote:
+> So while % model is more intutive to users, it is hard to implement.
 
-On 14.09.2012 16:43, Sedat Dilek wrote:
-> On Fri, Sep 14, 2012 at 4:33 PM, Daniel Wagner <wagi@monom.org> wrote:
->> From: Daniel Wagner <daniel.wagner@bmw-carit.de>
->>
->> commit 1f66c0a8833c3974ab6b35edcf4f8585b2f94592
->> Author: Daniel Wagner <daniel.wagner@bmw-carit.de>
->> Date:   Wed Sep 12 16:12:01 2012 +0200
->>
->>      cgroup: net_cls: Move sock_update_classid() declaration to cls_cgroup.h
->>
->> Claimed that there was only net/socket.c depending on
->> sock_update_class(). That is not true drivers/net/tun.c needs to
->> include the cls_cgroup.h header too.
->>
->> Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->> Cc: Gao feng <gaofeng@cn.fujitsu.com>
->> Cc: Jamal Hadi Salim <jhs@mojatatu.com>
->> Cc: Joe Perches <joe@perches.com>
->> Cc: John Fastabend <john.r.fastabend@intel.com>
->> Cc: Li Zefan <lizefan@huawei.com>
->> Cc: Neil Horman <nhorman@tuxdriver.com>
->> Cc: Rick Jones <rick.jones2@hp.com>
->> Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: netdev@vger.kernel.org
->> Cc: cgroups@vger.kernel.org
->> ---
->>
->> This version is on top of the latest cgroup for-3.7 branch.
->>
->
-> Thanks for the quick fix.
+I don't agree with that. The fixed quota thing is counter-intuitive and
+hard to use. It begets you questions like: why, if everything is idle
+except my task, am I not getting the full throughput.
 
-No problem. I am still ashamed not finding it myself.
+It also makes adding entities harder because you're constrained to 100%.
+This means you have to start each new cgroup with 0% because any !0
+value will eventually get you over 100%, it also means you have to do
+some form of admission control to make sure you never get over that
+100%.
 
-> Please honour Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>.
+Starting with 0% is not convenient for people.. they think this is the
+wrong default, even though as argued above, it is the only possible
+value.
 
-Sure, will do next time.
+>  So
+> an easier way is to stick to the model of relative weights/share and
+> let user specify relative importance of a virtual machine and actual
+> quota or % will vary dynamically depending on other tasks/components
+> in the system.
+> 
+> Thoughts? 
 
-> If this is the fix for the breakage in today's Linux-Next
-> (next-20120914), please add a "-next" to the subject next time.
+cpu does the relative weight, so 'users' will have to deal with it
+anyway regardless of blk, its effectively free of learning curve for all
+subsequent controllers.
 
-Correct, this one is for linux-next but I got the impression that cgroup 
-for-3.7 branch was ignored because of this. Therefore I have send two 
-versions. Hmm, I'll need to check the results of todays next tree.
+Now cpu also has an optional upper limit. But its optional for those
+people who do want it (also its expensive).
 
-thanks,
-daniel
-
+For RT we must use fixed quota since variable service completely defeats
+determinism, RT is 'special' and hard to use anyway, so making it harder
+is fine.
