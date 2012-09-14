@@ -1,332 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759719Ab2INRtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:49:14 -0400
-Received: from relay.ihostexchange.net ([66.46.182.53]:10485 "EHLO
-	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757706Ab2INRtM convert rfc822-to-8bit (ORCPT
+	id S1759714Ab2INRuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:50:35 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59862 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756293Ab2INRuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:49:12 -0400
-From: Ferruh Yigit <fery@cypress.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Kevin McNeely <kev@cypress.com>, Phil Warkentin <pwar@cypress.com>,
-        Ferruh Yigit <fery@cypress.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Shawn Landden <shawnlandden@gmail.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Olivier Sobrie <olivier@sobrie.be>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] Input: cyttsp4 - I2C driver for Cypress TMA4XX touchscreen devices
-Date: Fri, 14 Sep 2012 20:48:36 +0300
-Message-ID: <1347644917-13269-3-git-send-email-fery@cypress.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347644917-13269-1-git-send-email-fery@cypress.com>
-References: <Ferruh Yigit <fery@cypress.com>
- <1347644917-13269-1-git-send-email-fery@cypress.com>
+	Fri, 14 Sep 2012 13:50:32 -0400
+From: Dmitry Cherkasov <dcherkassov@gmail.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <deathsimple@vodafone.de>,
+        Dmitry Cherkassov <Dmitrii.Cherkasov@amd.com>
+Subject: [PATCH 1/2] drm/radeon: refactor set_page chipset interface v2
+Date: Fri, 14 Sep 2012 21:49:41 +0400
+Message-Id: <1347644982-17386-1-git-send-email-Dmitrii.Cherkasov@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cypress TrueTouch(tm) Standard Product controllers, Generation4
-devices, I2C adapter module.
+From: Christian König <deathsimple@vodafone.de>
 
-This driver adds communication support with TTSP controller
-using I2C bus.
+Cleanup the interface in preparation for hierarchical page tables.
+v2: * add incr parameter to set_page for simple scattered PTs uptates
+    * added PDE-specific flags to r600_flags and radeon_drm.h
+    * removed superflous value masking with 0xffffffff
 
-Signed-off-by: Ferruh Yigit <fery@cypress.com>
+Signed-off-by: Christian König <deathsimple@vodafone.de>
+Signed-off-by: Dmitry Cherkassov <Dmitrii.Cherkasov@amd.com>
 ---
- drivers/input/touchscreen/Kconfig       |   12 ++
- drivers/input/touchscreen/Makefile      |    3 +
- drivers/input/touchscreen/cyttsp4_i2c.c |  191 +++++++++++++++++++++++++++++++
- drivers/input/touchscreen/cyttsp4_i2c.h |   34 ++++++
- 4 files changed, 240 insertions(+)
- create mode 100644 drivers/input/touchscreen/cyttsp4_i2c.c
- create mode 100644 drivers/input/touchscreen/cyttsp4_i2c.h
+ drivers/gpu/drm/radeon/ni.c          |   47 ++++++++++++++++++++-----------
+ drivers/gpu/drm/radeon/radeon.h      |   14 +++++-----
+ drivers/gpu/drm/radeon/radeon_asic.h |    6 ++--
+ drivers/gpu/drm/radeon/radeon_gart.c |   51 +++++++++++++---------------------
+ include/drm/radeon_drm.h             |    1 +
+ 5 files changed, 62 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index d6ebd4c..fcc1c82 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -212,6 +212,18 @@ config TOUCHSCREEN_CYPRESS_CYTTSP4_VDEBUG
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index b238216..0355c8d 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1497,6 +1497,7 @@ void cayman_vm_fini(struct radeon_device *rdev)
+ {
+ }
+ 
++#define R600_PDE_VALID     (1 << 0)
+ #define R600_PTE_VALID     (1 << 0)
+ #define R600_PTE_SYSTEM    (1 << 1)
+ #define R600_PTE_SNOOPED   (1 << 2)
+@@ -1507,6 +1508,7 @@ uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags)
+ {
+ 	uint32_t r600_flags = 0;
+ 
++	r600_flags |= (flags & RADEON_VM_PDE_VALID) ? R600_PDE_VALID : 0;
+ 	r600_flags |= (flags & RADEON_VM_PAGE_VALID) ? R600_PTE_VALID : 0;
+ 	r600_flags |= (flags & RADEON_VM_PAGE_READABLE) ? R600_PTE_READABLE : 0;
+ 	r600_flags |= (flags & RADEON_VM_PAGE_WRITEABLE) ? R600_PTE_WRITEABLE : 0;
+@@ -1521,30 +1523,43 @@ uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags)
+  * cayman_vm_set_page - update the page tables using the CP
+  *
+  * @rdev: radeon_device pointer
++ * @pe: addr of the page entry
++ * @addr: dst addr to write into pe
++ * @count: number of page entries to update
++ * @flags: access flags
+  *
+  * Update the page tables using the CP (cayman-si).
+  */
+-void cayman_vm_set_page(struct radeon_device *rdev, struct radeon_vm *vm,
+-			unsigned pfn, struct ttm_mem_reg *mem,
+-			unsigned npages, uint32_t flags)
++void cayman_vm_set_page(struct radeon_device *rdev, uint64_t pe,
++			uint64_t addr, unsigned count,
++			uint32_t flags, uint32_t incr)
+ {
+ 	struct radeon_ring *ring = &rdev->ring[rdev->asic->vm.pt_ring_index];
+-	uint64_t addr, pt = vm->pt_gpu_addr + pfn * 8;
++	uint32_t r600_flags = cayman_vm_page_flags(rdev, flags);
+ 	int i;
+ 
+-	addr = flags = cayman_vm_page_flags(rdev, flags);
+-
+-	radeon_ring_write(ring, PACKET3(PACKET3_ME_WRITE, 1 + npages * 2));
+-	radeon_ring_write(ring, pt & 0xffffffff);
+-	radeon_ring_write(ring, (pt >> 32) & 0xff);
+-	for (i = 0; i < npages; ++i) {
+-		if (mem) {
+-			addr = radeon_vm_get_addr(rdev, mem, i);
+-			addr = addr & 0xFFFFFFFFFFFFF000ULL;
+-			addr |= flags;
++	radeon_ring_write(ring, PACKET3(PACKET3_ME_WRITE, 1 + count * 2));
++	radeon_ring_write(ring, pe & 0xffffffff);
++	radeon_ring_write(ring, (pe >> 32) & 0xff);
++	for (i = 0; i < count; ++i) {
++		uint64_t value = 0;
++		if (flags & RADEON_VM_PAGE_SYSTEM) {
++			value = radeon_vm_map_gart(rdev, addr);
++			value &= 0xFFFFFFFFFFFFF000ULL;
++			addr += RADEON_GPU_PAGE_SIZE;
++
++		} else if (flags & RADEON_VM_PAGE_VALID) {
++			value = addr;
++			addr += RADEON_GPU_PAGE_SIZE;
++
++		} else if (flags & RADEON_VM_PDE_VALID) {
++			value = addr;
++			addr += incr;
+ 		}
+-		radeon_ring_write(ring, addr & 0xffffffff);
+-		radeon_ring_write(ring, (addr >> 32) & 0xffffffff);
++
++		value |= r600_flags;
++		radeon_ring_write(ring, value);
++		radeon_ring_write(ring, (value >> 32));
+ 	}
+ }
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 4d67f0f..f02ea8e 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -1141,9 +1141,9 @@ struct radeon_asic {
+ 		void (*fini)(struct radeon_device *rdev);
+ 
+ 		u32 pt_ring_index;
+-		void (*set_page)(struct radeon_device *rdev, struct radeon_vm *vm,
+-				 unsigned pfn, struct ttm_mem_reg *mem,
+-				 unsigned npages, uint32_t flags);
++		void (*set_page)
++		(struct radeon_device *rdev, uint64_t pe,
++		 uint64_t addr, unsigned count, uint32_t flags, uint32_t incr);
+ 	} vm;
+ 	/* ring specific callbacks */
+ 	struct {
+@@ -1755,7 +1755,9 @@ void radeon_ring_write(struct radeon_ring *ring, uint32_t v);
+ #define radeon_gart_set_page(rdev, i, p) (rdev)->asic->gart.set_page((rdev), (i), (p))
+ #define radeon_asic_vm_init(rdev) (rdev)->asic->vm.init((rdev))
+ #define radeon_asic_vm_fini(rdev) (rdev)->asic->vm.fini((rdev))
+-#define radeon_asic_vm_set_page(rdev, v, pfn, mem, npages, flags) (rdev)->asic->vm.set_page((rdev), (v), (pfn), (mem), (npages), (flags))
++#define radeon_asic_vm_set_page(rdev, pe, addr, count, flags, incr) \
++	((rdev)->asic->vm.set_page((rdev), (pe), (addr), \
++				 (count), (flags), (incr)))
+ #define radeon_ring_start(rdev, r, cp) (rdev)->asic->ring[(r)].ring_start((rdev), (cp))
+ #define radeon_ring_test(rdev, r, cp) (rdev)->asic->ring[(r)].ring_test((rdev), (cp))
+ #define radeon_ib_test(rdev, r, cp) (rdev)->asic->ring[(r)].ib_test((rdev), (cp))
+@@ -1840,9 +1842,7 @@ struct radeon_fence *radeon_vm_grab_id(struct radeon_device *rdev,
+ void radeon_vm_fence(struct radeon_device *rdev,
+ 		     struct radeon_vm *vm,
+ 		     struct radeon_fence *fence);
+-u64 radeon_vm_get_addr(struct radeon_device *rdev,
+-                       struct ttm_mem_reg *mem,
+-                       unsigned pfn);
++uint64_t radeon_vm_map_gart(struct radeon_device *rdev, uint64_t addr);
+ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ 			    struct radeon_vm *vm,
+ 			    struct radeon_bo *bo,
+diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+index 29b3d05..7166d5f 100644
+--- a/drivers/gpu/drm/radeon/radeon_asic.h
++++ b/drivers/gpu/drm/radeon/radeon_asic.h
+@@ -442,9 +442,9 @@ int cayman_vm_init(struct radeon_device *rdev);
+ void cayman_vm_fini(struct radeon_device *rdev);
+ void cayman_vm_flush(struct radeon_device *rdev, struct radeon_ib *ib);
+ uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags);
+-void cayman_vm_set_page(struct radeon_device *rdev, struct radeon_vm *vm,
+-			unsigned pfn, struct ttm_mem_reg *mem,
+-			unsigned npages, uint32_t flags);
++void cayman_vm_set_page(struct radeon_device *rdev, uint64_t pe,
++			uint64_t addr, unsigned count,
++			uint32_t flags, uint32_t incr);
+ int evergreen_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib);
+ 
+ /* DCE6 - SI */
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index 2f28ff3..badc835 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -822,42 +822,26 @@ int radeon_vm_bo_set_addr(struct radeon_device *rdev,
+ }
+ 
+ /**
+- * radeon_vm_get_addr - get the physical address of the page
++ * radeon_vm_map_gart - get the physical address of a gart page
+  *
+  * @rdev: radeon_device pointer
+- * @mem: ttm mem
+- * @pfn: pfn
++ * @addr: the unmapped addr
+  *
+  * Look up the physical address of the page that the pte resolves
+  * to (cayman+).
+  * Returns the physical address of the page.
+  */
+-u64 radeon_vm_get_addr(struct radeon_device *rdev,
+-		       struct ttm_mem_reg *mem,
+-		       unsigned pfn)
++uint64_t radeon_vm_map_gart(struct radeon_device *rdev, uint64_t addr)
+ {
+-	u64 addr = 0;
+-
+-	switch (mem->mem_type) {
+-	case TTM_PL_VRAM:
+-		addr = (mem->start << PAGE_SHIFT);
+-		addr += pfn * RADEON_GPU_PAGE_SIZE;
+-		addr += rdev->vm_manager.vram_base_offset;
+-		break;
+-	case TTM_PL_TT:
+-		/* offset inside page table */
+-		addr = mem->start << PAGE_SHIFT;
+-		addr += pfn * RADEON_GPU_PAGE_SIZE;
+-		addr = addr >> PAGE_SHIFT;
+-		/* page table offset */
+-		addr = rdev->gart.pages_addr[addr];
+-		/* in case cpu page size != gpu page size*/
+-		addr += (pfn * RADEON_GPU_PAGE_SIZE) & (~PAGE_MASK);
+-		break;
+-	default:
+-		break;
+-	}
+-	return addr;
++	uint64_t result;
++
++	/* page table offset */
++	result = rdev->gart.pages_addr[addr >> PAGE_SHIFT];
++
++	/* in case cpu page size != gpu page size*/
++	result |= addr & (~PAGE_MASK);
++
++	return result;
+ }
+ 
+ /**
+@@ -883,7 +867,7 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ 	struct radeon_semaphore *sem = NULL;
+ 	struct radeon_bo_va *bo_va;
+ 	unsigned ngpu_pages, ndw;
+-	uint64_t pfn;
++	uint64_t pfn, addr;
+ 	int r;
+ 
+ 	/* nothing to do if vm isn't bound */
+@@ -908,21 +892,25 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ 	ngpu_pages = radeon_bo_ngpu_pages(bo);
+ 	bo_va->flags &= ~RADEON_VM_PAGE_VALID;
+ 	bo_va->flags &= ~RADEON_VM_PAGE_SYSTEM;
++	pfn = bo_va->soffset / RADEON_GPU_PAGE_SIZE;
+ 	if (mem) {
++		addr = mem->start << PAGE_SHIFT;
+ 		if (mem->mem_type != TTM_PL_SYSTEM) {
+ 			bo_va->flags |= RADEON_VM_PAGE_VALID;
+ 			bo_va->valid = true;
+ 		}
+ 		if (mem->mem_type == TTM_PL_TT) {
+ 			bo_va->flags |= RADEON_VM_PAGE_SYSTEM;
++		} else {
++			addr += rdev->vm_manager.vram_base_offset;
+ 		}
+ 		if (!bo_va->valid) {
+ 			mem = NULL;
+ 		}
+ 	} else {
++		addr = 0;
+ 		bo_va->valid = false;
+ 	}
+-	pfn = bo_va->soffset / RADEON_GPU_PAGE_SIZE;
+ 
+ 	if (vm->fence && radeon_fence_signaled(vm->fence)) {
+ 		radeon_fence_unref(&vm->fence);
+@@ -950,7 +938,8 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ 		radeon_fence_note_sync(vm->fence, ridx);
+ 	}
+ 
+-	radeon_asic_vm_set_page(rdev, vm, pfn, mem, ngpu_pages, bo_va->flags);
++	radeon_asic_vm_set_page(rdev, vm->pt_gpu_addr + pfn * 8, addr,
++				ngpu_pages, bo_va->flags, 0);
+ 
+ 	radeon_fence_unref(&vm->fence);
+ 	r = radeon_fence_emit(rdev, &vm->fence, ridx);
+diff --git a/include/drm/radeon_drm.h b/include/drm/radeon_drm.h
+index dc3a8cd..f36ebe5 100644
+--- a/include/drm/radeon_drm.h
++++ b/include/drm/radeon_drm.h
+@@ -896,6 +896,7 @@ struct drm_radeon_gem_pwrite {
+ #define RADEON_VM_PAGE_WRITEABLE	(1 << 2)
+ #define RADEON_VM_PAGE_SYSTEM		(1 << 3)
+ #define RADEON_VM_PAGE_SNOOPED		(1 << 4)
++#define RADEON_VM_PDE_VALID		(1 << 5)
+ 
+ struct drm_radeon_gem_va {
+ 	uint32_t		handle;
+-- 
+1.7.10.4
 
-          Say Y here to enable verbose debug output.
-
-+config TOUCHSCREEN_CYPRESS_CYTTSP4_I2C
-+       tristate "Cypress TrueTouch Gen4 I2C"
-+       depends on TOUCHSCREEN_CYPRESS_CYTTSP4
-+       depends on I2C
-+       default n
-+       help
-+         Cypress TrueTouch(tm) Standard Product Generation4
-+         I2C bus interface.
-+
-+         Say Y here to enable I2C bus interface to TTSP
-+         touchscreen controller.
-+
- config TOUCHSCREEN_DA9034
-        tristate "Touchscreen support for Dialog Semiconductor DA9034"
-        depends on PMIC_DA903X
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 1cdab28..8f5e8ff 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -74,10 +74,13 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)   += zylonite-wm97xx.o
- obj-$(CONFIG_TOUCHSCREEN_W90X900)      += w90p910_ts.o
- obj-$(CONFIG_TOUCHSCREEN_TPS6507X)     += tps6507x-ts.o
- obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4)      += cyttsp4_core.o
-+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_I2C)  += cyttsp4_i2c.o
- ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_DEBUG),y)
- CFLAGS_cyttsp4_core.o += -DDEBUG
-+CFLAGS_cyttsp4_i2c.o += -DDEBUG
- endif
-
- ifeq ($(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP4_VDEBUG),y)
- CFLAGS_cyttsp4_core.o += -DVERBOSE_DEBUG
-+CFLAGS_cyttsp4_i2c.o += -DVERBOSE_DEBUG
- endif
-diff --git a/drivers/input/touchscreen/cyttsp4_i2c.c b/drivers/input/touchscreen/cyttsp4_i2c.c
-new file mode 100644
-index 0000000..0faf0f7
---- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp4_i2c.c
-@@ -0,0 +1,191 @@
-+/*
-+ * cyttsp4_i2c.c
-+ * Cypress TrueTouch(TM) Standard Product V4 I2C Driver module.
-+ * Supported parts include:
-+ * TMA4XX
-+ * TMA1036
-+ *
-+ * Copyright (C) 2012 Cypress Semiconductor
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2, and only version 2, as published by the
-+ * Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * Contact Cypress Semiconductor at www.cypress.com <ttdrivers@cypress.com>
-+ *
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/module.h>
-+#include <linux/input/cyttsp4.h>
-+#include "cyttsp4_core.h"
-+#include "cyttsp4_i2c.h"
-+
-+#define CY_I2C_DATA_SIZE       256
-+
-+static int cyttsp4_i2c_read_block_data(struct i2c_client *client, u8 addr,
-+       size_t length, void *values)
-+{
-+       int rc;
-+
-+       /* write addr */
-+       rc = i2c_master_send(client, &addr, sizeof(addr));
-+       if (rc < 0)
-+               return rc;
-+       else if (rc != sizeof(addr))
-+               return -EIO;
-+
-+       /* read data */
-+       rc = i2c_master_recv(client, values, length);
-+
-+       return (rc < 0) ? rc : rc != length ? -EIO : 0;
-+}
-+
-+static int cyttsp4_i2c_write_block_data(struct i2c_client *client, u8 addr,
-+       size_t length, const void *values)
-+{
-+       int rc;
-+       u8 *wr_buf = cyttsp4_get_xfer_buf(&client->dev);
-+
-+       if (length + 1 > CY_I2C_DATA_SIZE)
-+               return -EINVAL;
-+
-+       wr_buf[0] = addr;
-+       memcpy(&wr_buf[1], values, length);
-+       length += 1;
-+
-+       /* write data */
-+       rc = i2c_master_send(client, wr_buf, length);
-+
-+       return (rc < 0) ? rc : rc != length ? -EIO : 0;
-+}
-+
-+static int cyttsp4_i2c_write(struct device *dev, u8 addr,
-+       const void *buf, int size)
-+{
-+       struct i2c_client *client = to_i2c_client(dev);
-+       int rc;
-+
-+       rc = cyttsp4_i2c_write_block_data(client, addr, size, buf);
-+
-+       return rc;
-+}
-+
-+static int cyttsp4_i2c_read(struct device *dev, u8 addr,
-+               void *buf, int size)
-+{
-+       struct i2c_client *client = to_i2c_client(dev);
-+       int rc;
-+
-+       rc = cyttsp4_i2c_read_block_data(client, addr, size, buf);
-+
-+       return rc;
-+}
-+
-+static struct cyttsp4_bus_ops ops = {
-+       .bustype = BUS_I2C,
-+       .write = cyttsp4_i2c_write,
-+       .read = cyttsp4_i2c_read,
-+};
-+
-+static int __devinit cyttsp4_i2c_probe(struct i2c_client *client,
-+       const struct i2c_device_id *i2c_id)
-+{
-+       struct device *dev = &client->dev;
-+       u8 *xfer_buf;
-+       int rc;
-+
-+       dev_info(dev, "%s: Starting %s probe...\n", __func__, CYTTSP4_I2C_NAME);
-+
-+       dev_dbg(dev, "%s: debug on\n", __func__);
-+       dev_vdbg(dev, "%s: verbose debug on\n", __func__);
-+
-+       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+               dev_err(dev, "%s: fail check I2C functionality\n", __func__);
-+               return -EIO;
-+       }
-+
-+       xfer_buf = kmalloc(CY_I2C_DATA_SIZE, GFP_KERNEL);
-+       if (!xfer_buf) {
-+               dev_err(dev, "%s: Error, kmalloc\n", __func__);
-+               return -ENOMEM;
-+       }
-+
-+       client->dev.bus = &i2c_bus_type;
-+
-+       rc = cyttsp4_probe(dev, &ops, xfer_buf);
-+       if (rc) {
-+               dev_err(dev, "%s: Error on probe %s\n", __func__,
-+                       CYTTSP4_I2C_NAME);
-+               goto probe_err;
-+       }
-+
-+       dev_info(dev, "%s: Successful probe %s\n", __func__, CYTTSP4_I2C_NAME);
-+
-+       return 0;
-+
-+probe_err:
-+       kfree(xfer_buf);
-+       return rc;
-+}
-+
-+static int __devexit cyttsp4_i2c_remove(struct i2c_client *client)
-+{
-+       struct device *dev = &client->dev;
-+       u8 *xfer_buf = cyttsp4_get_xfer_buf(dev);
-+
-+       dev_info(dev, "%s\n", __func__);
-+       cyttsp4_remove(dev);
-+       kfree(xfer_buf);
-+       return 0;
-+}
-+
-+static const struct i2c_device_id cyttsp4_i2c_id[] = {
-+       { CYTTSP4_I2C_NAME, 0 },  { }
-+};
-+
-+static struct i2c_driver cyttsp4_i2c_driver = {
-+       .driver = {
-+               .name = CYTTSP4_I2C_NAME,
-+               .owner = THIS_MODULE,
-+               .pm = &cyttsp4_pm_ops,
-+       },
-+       .probe = cyttsp4_i2c_probe,
-+       .remove = __devexit_p(cyttsp4_i2c_remove),
-+       .id_table = cyttsp4_i2c_id,
-+};
-+
-+static int __init cyttsp4_i2c_init(void)
-+{
-+       int rc = i2c_add_driver(&cyttsp4_i2c_driver);
-+
-+       pr_info("%s: Cypress TTSP I2C Touchscreen Driver (Built %s) rc=%d\n",
-+                __func__, CY_DRIVER_DATE, rc);
-+       return rc;
-+}
-+module_init(cyttsp4_i2c_init);
-+
-+static void __exit cyttsp4_i2c_exit(void)
-+{
-+       i2c_del_driver(&cyttsp4_i2c_driver);
-+       pr_info("%s: module exit\n", __func__);
-+}
-+module_exit(cyttsp4_i2c_exit);
-+
-+MODULE_ALIAS(CYTTSP4_I2C_NAME);
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
-+MODULE_AUTHOR("Cypress");
-+MODULE_DEVICE_TABLE(i2c, cyttsp4_i2c_id);
-diff --git a/drivers/input/touchscreen/cyttsp4_i2c.h b/drivers/input/touchscreen/cyttsp4_i2c.h
-new file mode 100644
-index 0000000..5137102
---- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp4_i2c.h
-@@ -0,0 +1,34 @@
-+/*
-+ * cyttsp4_i2c.h
-+ * Cypress TrueTouch(TM) Standard Product V4 I2C driver module.
-+ * For use with Cypress Txx4xx parts.
-+ * Supported parts include:
-+ * TMA4XX
-+ * TMA1036
-+ *
-+ * Copyright (C) 2012 Cypress Semiconductor
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2, and only version 2, as published by the
-+ * Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * Contact Cypress Semiconductor at www.cypress.com <ttdrivers@cypress.com>
-+ *
-+ */
-+
-+#ifndef _LINUX_CYTTSP4_I2C_H
-+#define _LINUX_CYTTSP4_I2C_H
-+
-+#define CYTTSP4_I2C_NAME "cyttsp4_i2c_adapter"
-+
-+#endif /* _LINUX_CYTTSP4_I2C_H */
---
-1.7.9.5
-
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
