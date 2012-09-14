@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab2INHLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:11:47 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:37222 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754652Ab2INHLp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:11:45 -0400
-Message-ID: <5052D8D9.8060802@ti.com>
-Date: Fri, 14 Sep 2012 10:12:25 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	id S1756263Ab2INHMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:12:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:51443 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755983Ab2INHM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 03:12:27 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jon Masters <jonathan@jonmasters.org>
+Subject: [PATCH 2/2] module: wait when loading a module which is currently initializing.
+In-Reply-To: <87obl9rsg2.fsf@rustcorp.com.au>
+References: <87obl9rsg2.fsf@rustcorp.com.au>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 14 Sep 2012 16:41:52 +0930
+Message-ID: <87ligdrscn.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to dmaengine_prep_dma_cyclic()
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com> <5051FB4D.3000009@metafoo.de>
-In-Reply-To: <5051FB4D.3000009@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The original module-init-tools module loader used a fnctl lock on the
+.ko file to avoid attempts to simultaneously load a module.
+Unfortunately, you can't get an exclusive fcntl lock on a read-only
+fd, making this not work for read-only mounted filesystems.
+module-init-tools has a hacky sleep-and-loop for this now.
 
-On 09/13/2012 06:27 PM, Lars-Peter Clausen wrote:
-> On 09/13/2012 03:37 PM, Peter Ujfalusi wrote:
->> The dmaengine_prep_dma_cyclic() function primarily used by audio for cyclic
->> transfer required by ALSA.
->> With this new parameter it is going to be possible to enable the
->> SNDRV_PCM_INFO_NO_PERIOD_WAKEUP mode on platforms where it is possible.
->> This patch only changes the public API first. Followup patch will change
->> the device_prep_dma_cyclic() callback parameters to pass this information
->> towards the dma drivers.
->>
-> 
-> Hi,
-> 
-> Hm... Do you think it would work as well if we implement this by setting the
-> callback for the descriptor to NULL? If the callback is NULL there is
-> nothing to at the end of a transfer/period and the dma engine driver may
-> choose to disable interrupts. This would also benefit non cyclic transfers
-> where the callback is NULL and we do not need add the new parameter to
-> dmaengine_prep_dma_cyclic.
+It's not that hard to wait in the kernel, and only return -EEXIST once
+the first module has finished loading (or continue loading the module
+if the first one failed to initialize for some reason).  It's also
+consistent with what we do for dependent modules which are still loading.
 
-We could do that but dma drivers enable the interrupts within
-dmaengine_prep_dma_cyclic() call, and we fill up the callback for
-dmaengine_submit() dmaengine API call.
-We need to tell the dma drivers in dmaengine_prep_dma_cyclic() to suppress the
-interrupts.
+Suggested-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ kernel/module.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
-Note: First I was trying this to be done in hw_params() time via the
-dmaengine_slave_config() call, but substream->runtime->no_period_wakeup is not
-configured in there. It is set for _prepare() and _trigger().
-
-As Vinod and Russell suggested I will modify the dmaengine_prep_dma_cyclic()
-API to pass flags as well instead of the no_wakeup parameter.
-
-> 
-> - Lars
-> 
->> ---
->>  include/linux/dmaengine.h     | 3 ++-
->>  sound/soc/soc-dmaengine-pcm.c | 3 ++-
->>  2 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->> index 9c02a45..990444b 100644
->> --- a/include/linux/dmaengine.h
->> +++ b/include/linux/dmaengine.h
->> @@ -653,7 +653,8 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_rio_sg(
->>  
->>  static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
->>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->> -		size_t period_len, enum dma_transfer_direction dir)
->> +		size_t period_len, enum dma_transfer_direction dir,
->> +		bool no_wakeup)
->>  {
->>  	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
->>  						period_len, dir, NULL);
->> diff --git a/sound/soc/soc-dmaengine-pcm.c b/sound/soc/soc-dmaengine-pcm.c
->> index 5df529e..6b70adb 100644
->> --- a/sound/soc/soc-dmaengine-pcm.c
->> +++ b/sound/soc/soc-dmaengine-pcm.c
->> @@ -147,7 +147,8 @@ static int dmaengine_pcm_prepare_and_submit(struct snd_pcm_substream *substream)
->>  	desc = dmaengine_prep_dma_cyclic(chan,
->>  		substream->runtime->dma_addr,
->>  		snd_pcm_lib_buffer_bytes(substream),
->> -		snd_pcm_lib_period_bytes(substream), direction);
->> +		snd_pcm_lib_period_bytes(substream), direction,
->> +		substream->runtime->no_period_wakeup);
->>  
->>  	if (!desc)
->>  		return -ENOMEM;
-> 
-
-
--- 
-Péter
+diff --git a/kernel/module.c b/kernel/module.c
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2845,6 +2845,20 @@ static int post_relocation(struct module
+ 	return module_finalize(info->hdr, info->sechdrs, mod);
+ }
+ 
++/* Is this module of this name done loading?  No locks held. */
++static bool finished_loading(const char *name)
++{
++	struct module *mod;
++	bool ret;
++
++	mutex_lock(&module_mutex);
++	mod = find_module(name);
++	ret = !mod || mod->state != MODULE_STATE_COMING;
++	mutex_unlock(&module_mutex);
++
++	return ret;
++}
++
+ /* Allocate and load the module: note that size of section 0 is always
+    zero, and we rely on this for optional sections. */
+ static struct module *load_module(void __user *umod,
+@@ -2852,7 +2866,7 @@ static struct module *load_module(void _
+ 				  const char __user *uargs)
+ {
+ 	struct load_info info = { NULL, };
+-	struct module *mod;
++	struct module *mod, *old;
+ 	long err;
+ 
+ 	pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
+@@ -2918,8 +2932,18 @@ static struct module *load_module(void _
+ 	 * function to insert in a way safe to concurrent readers.
+ 	 * The mutex protects against concurrent writers.
+ 	 */
++again:
+ 	mutex_lock(&module_mutex);
+-	if (find_module(mod->name)) {
++	if ((old = find_module(mod->name)) != NULL) {
++		if (old->state == MODULE_STATE_COMING) {
++			/* Wait in case it fails to load. */
++			mutex_unlock(&module_mutex);
++			err = wait_event_interruptible(module_wq,
++					       finished_loading(mod->name));
++			if (err)
++				goto free_arch_cleanup;
++			goto again;
++		}
+ 		err = -EEXIST;
+ 		goto unlock;
+ 	}
