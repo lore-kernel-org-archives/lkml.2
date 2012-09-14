@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab2INJM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:12:59 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39887 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab2INJM4 (ORCPT
+	id S1758292Ab2INJSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:18:09 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35532 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088Ab2INJSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:12:56 -0400
-Message-ID: <5052F4FF.6070508@huawei.com>
-Date: Fri, 14 Sep 2012 17:12:31 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 14 Sep 2012 05:18:07 -0400
+Date: Fri, 14 Sep 2012 10:18:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Roland Stigge <stigge@antcom.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, arnd@arndb.de
+Subject: Re: [PATCH 09/19] ARM: ux500: Enable SSP (SPI) for HREF when booting
+ Device Tree
+Message-ID: <20120914091800.GJ3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaC_enpxUFNM_wteAQWKER_naUNUH-s1pJtiGzVFSV+og@mail.gmail.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC] cgroup TODOs
-References: <20120913205827.GO7677@google.com> <5052E7DF.7040000@parallels.com>
-In-Reply-To: <5052E7DF.7040000@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaC_enpxUFNM_wteAQWKER_naUNUH-s1pJtiGzVFSV+og@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> 2. memcg's __DEPRECATED_clear_css_refs
->>
->>   This is a remnant of another weird design decision of requiring
->>   synchronous draining of refcnts on cgroup removal and allowing
->>   subsystems to veto cgroup removal - what's the userspace supposed to
->>   do afterwards?  Note that this also hinders co-mounting different
->>   controllers.
->>
->>   The behavior could be useful for development and debugging but it
->>   unnecessarily interlocks userland visible behavior with in-kernel
->>   implementation details.  To me, it seems outright wrong (either
->>   implement proper severing semantics in the controller or do full
->>   refcnting) and disallows, for example, lazy drain of caching refs.
->>   Also, it complicates the removal path with try / commit / revert
->>   logic which has never been fully correct since the beginning.
->>
->>   Currently, the only left user is memcg.
->>
->>   Solution:
->>
->>   * Update memcg->pre_destroy() such that it never fails.
->>
->>   * Drop __DEPRECATED_clear_css_refs and all related logic.
->>     Convert pre_destroy() to return void.
->>
->>   Who:
->>
->>   KAMEZAWA, Michal, PLEASE.  I will make __DEPRECATED_clear_css_refs
->>   trigger WARN sooner or later.  Let's please get this settled.
->>
->> 3. cgroup_mutex usage outside cgroup core
->>
->>   This is another thing which is simply broken.  Given the way cgroup
->>   is structured and used, nesting cgroup_mutex inside any other
->>   commonly used lock simply doesn't work - it's held while invoking
->>   controller callbacks which then interact and synchronize with
->>   various core subsystems.
->>
->>   There are currently three external cgroup_mutex users - cpuset,
->>   memcontrol and cgroup_freezer.
->>
->>   Solution:
->>
->>   Well, we should just stop doing it - use a separate nested lock
->>   (which seems possible for cgroup_freezer) or track and mange task
->>   in/egress some other way.
->>
->>   Who:
->>
->>   I'll do the cgroup_freezer.  I'm hoping PeterZ or someone who's
->>   familiar with the code base takes care of cpuset.  Michal, can you
->>   please take care of memcg?
->>
+On Mon, Sep 10, 2012 at 04:11:10AM -0700, Linus Walleij wrote:
+> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> I think this is a pressing problem, yes, but not the only problem with
-> cgroup lock. Even if we restrict its usage to cgroup core, we still can
-> call cgroup functions, which will lock. And then we gain nothing.
+> > Here we add a new SSP node to the HREF's Device Tree file which
+> > activates the generic one found in the .dtsi file. This will
+> > allow probing of the SSP driver when Device Tree is enabled.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
+> We have to look closer at this.
+> 
+> There are merged PL022 DT bindings (by Roland Stigge)
+> nowadays, see commit 6d3952a7dfa80919842bbe01ac7f693d40a1eb84
+> in linux-next:
+> 
+>  Optional properties:
+> +- num-cs : total number of chipselects
+>  - cs-gpios : should specify GPIOs used for chipselects.
+>    The gpios will be referred to as reg = <index> in the SPI child nodes.
+>    If unspecified, a single SPI device without a chip select can be used.
+> 
+> +SPI slave nodes must be children of the SPI master node and can
+> +contain the following properties.
+> +
+> +- pl022,interface : interface type:
+> +       0: SPI
+> +       1: Texas Instruments Synchronous Serial Frame Format
+> +       2: Microwire (Half Duplex)
+> +- pl022,com-mode : polling, interrupt or dma
+> +- pl022,rx-level-trig : Rx FIFO watermark level
+> +- pl022,tx-level-trig : Tx FIFO watermark level
+> +- pl022,ctrl-len : Microwire interface: Control length
+> +- pl022,wait-state : Microwire interface: Wait state
+> +- pl022,duplex : Microwire interface: Full/Half duplex
+> 
+> Currently this is defined as auxdata in board-mop500.c
+> but notanly cs-gpios (num chipselects) should come from
+> device tree instead.
+> 
+> It appears Roland has written his bindings such that DT
+> data augments platform data (yes, I am also getting crazy
+> about this prioritization, mea culpa for ACKing this without
+> proper discussion) so it appears that you could actually
+> use AUXDATA and some stuff in the DT at the same
+> time.
+> 
+> Or you could keep it like this and only have AUXDATA
+> as it stands, I just want a discussion about what is the right
+> thing to do before we commit to anything.
 
-Agreed. The biggest issue in cpuset is if hotplug makes a cpuset's cpulist
-empty the tasks in it will be moved to an ancestor cgroup, which requires
-holding cgroup lock. We have to either change cpuset's behavior or eliminate
-the global lock.
+Sounds fine.
 
-> And the problem is that people need to lock. cgroup_lock is needed
-> because the data you are accessing is protected by it. The way I see it,
-> it is incredible how we were able to revive the BKL in the form of
-> cgroup_lock after we finally manage to successfully get rid of it!
-> 
-> We should just start to do a more fine grained locking of data, instead
-> of "stop the world, cgroup just started!". If we do that, the problem
-> you are trying to address here will even cease to exist.
-> 
+I'll pull this for now.
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
