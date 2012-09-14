@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab2INROI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:14:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35228 "EHLO mx1.redhat.com"
+	id S1758275Ab2INROb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:14:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42807 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758151Ab2INROA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:14:00 -0400
-Date: Fri, 14 Sep 2012 19:15:57 +0200
+	id S1758438Ab2INROI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 13:14:08 -0400
+Date: Fri, 14 Sep 2012 19:16:03 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,8 +14,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] uprobes: Fix UPROBE_SKIP_SSTEP checks in handle_swbp()
-Message-ID: <20120914171557.GA29642@redhat.com>
+Subject: [PATCH 5/5] uprobes: Move clear_thread_flag(TIF_UPROBE) to
+	uprobe_notify_resume()
+Message-ID: <20120914171603.GA29652@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,84 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If handle_swbp()->add_utask() fails but UPROBE_SKIP_SSTEP is set,
-cleanup_ret: path do not restart the insn, this is wrong. Remove
-this check and add the additional label for can_skip_sstep() = T
-case.
-
-Note also that UPROBE_SKIP_SSTEP can be false positive, we simply
-can not trust it unless arch_uprobe_skip_sstep() was already called.
-
-Also, move another UPROBE_SKIP_SSTEP check before can_skip_sstep()
-into this helper, this looks more clean and understandable.
-
-Note: probably we should rename "skip" to "emulate" and I think
-that "clear UPROBE_SKIP_SSTEP" should be moved to arch_can_skip.
+Move clear_thread_flag(TIF_UPROBE) from do_notify_resume() to
+uprobe_notify_resume() for !CONFIG_UPROBES case.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   31 +++++++++++++++----------------
- 1 files changed, 15 insertions(+), 16 deletions(-)
+ arch/x86/kernel/signal.c |    4 +---
+ kernel/events/uprobes.c  |    2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index b280908..0041e5a 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -785,10 +785,8 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+ 		mce_notify_process();
+ #endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
+ 
+-	if (thread_info_flags & _TIF_UPROBE) {
+-		clear_thread_flag(TIF_UPROBE);
++	if (thread_info_flags & _TIF_UPROBE)
+ 		uprobe_notify_resume(regs);
+-	}
+ 
+ 	/* deal with pending signal delivery */
+ 	if (thread_info_flags & _TIF_SIGPENDING)
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 9893cba..403d2e0 100644
+index 4ea0f0b..14c2e99 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1389,10 +1389,11 @@ bool uprobe_deny_signal(void)
-  */
- static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+@@ -1558,6 +1558,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
  {
--	if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
--		return true;
--
--	uprobe->flags &= ~UPROBE_SKIP_SSTEP;
-+	if (uprobe->flags & UPROBE_SKIP_SSTEP) {
-+		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
-+			return true;
-+		uprobe->flags &= ~UPROBE_SKIP_SSTEP;
-+	}
- 	return false;
- }
+ 	struct uprobe_task *utask;
  
-@@ -1494,12 +1495,12 @@ static void handle_swbp(struct pt_regs *regs)
- 		utask = add_utask();
- 		/* Cannot allocate; re-execute the instruction. */
- 		if (!utask)
--			goto cleanup_ret;
-+			goto restart;
- 	}
- 
- 	handler_chain(uprobe, regs);
--	if (uprobe->flags & UPROBE_SKIP_SSTEP && can_skip_sstep(uprobe, regs))
--		goto cleanup_ret;
-+	if (can_skip_sstep(uprobe, regs))
-+		goto out;
- 
- 	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
- 		arch_uprobe_enable_step(&uprobe->arch);
-@@ -1508,15 +1509,13 @@ static void handle_swbp(struct pt_regs *regs)
- 		return;
- 	}
- 
--cleanup_ret:
--	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
--
--		/*
--		 * cannot singlestep; cannot skip instruction;
--		 * re-execute the instruction.
--		 */
--		instruction_pointer_set(regs, bp_vaddr);
--
-+restart:
-+	/*
-+	 * cannot singlestep; cannot skip instruction;
-+	 * re-execute the instruction.
-+	 */
-+	instruction_pointer_set(regs, bp_vaddr);
-+out:
- 	put_uprobe(uprobe);
- }
- 
++	clear_thread_flag(TIF_UPROBE);
++
+ 	utask = current->utask;
+ 	if (utask && utask->active_uprobe)
+ 		handle_singlestep(utask, regs);
 -- 
 1.5.5.1
 
