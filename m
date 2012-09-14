@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab2INRBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:01:44 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32913 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab2INRBm convert rfc822-to-8bit (ORCPT
+	id S1757748Ab2INRBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:01:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48182 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757679Ab2INRBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:01:42 -0400
-References: <20120914140811.10835.81465.stgit@localhost.localdomain>
-In-Reply-To: <20120914140811.10835.81465.stgit@localhost.localdomain>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-X-Mailer: iPhone Mail (9B206)
-From: Chuck Lever <chuck.lever@oracle.com>
-Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
-Date: Fri, 14 Sep 2012 13:01:21 -0400
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 14 Sep 2012 13:01:52 -0400
+Date: Fri, 14 Sep 2012 10:01:47 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, akpm@linux-foundation.org,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH] cgroup: fix invalid rcu dereference
+Message-ID: <20120914170147.GB17747@google.com>
+References: <5052F78A.7010007@suse.cz>
+ <1347615612-11450-1-git-send-email-jslaby@suse.cz>
+ <20120914132738.GN19694@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120914132738.GN19694@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What happens if statd is restarted?
+On Fri, Sep 14, 2012 at 09:27:38AM -0400, Aristeu Rozanski wrote:
+> On Fri, Sep 14, 2012 at 11:40:12AM +0200, Jiri Slaby wrote:
+> > Commit "device_cgroup: convert device_cgroup internally to policy +
+> > exceptions" removed rcu locks which are needed in task_devcgroup
+> > called in this chain: devcgroup_inode_mknod OR
+> > __devcgroup_inode_permission -> __devcgroup_inode_permission ->
+> > task_devcgroup -> task_subsys_state -> task_subsys_state_check.
+> 
+> ugh, missed that
+> 
+...
+> thanks Jiri
+> Acked-by: Aristeu Rozanski <aris@redhat.com>
 
-Sent from my iPhone
+How should this be routed?
 
-On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+Thanks.
 
-> This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
-> 
-> The problem is that with NFSv4 mount in container (with separated mount
-> namesapce) and active lock on it, dying child reaped of this container will
-> try to umount NFS and doing this will try to create RPC client to send
-> unmonitor request to statd.
-> But creation of RCP client requires valid current->nsproxy (for operation with
-> utsname()) and during umount on child reaper exit it's equal to zero.
-> 
-> Proposed solution is to introduce refrence-counter per-net NSM client, which
-> is created on fist monitor call and destroyed after the lst monitor call.
-> 
-> The following series implements...
-> 
-> ---
-> 
-> Stanislav Kinsbursky (3):
->      lockd: use rpc client's cl_nodename for id encoding
->      lockd: per-net NSM client creation and destruction helpers introduced
->      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
-> 
-> 
-> fs/lockd/mon.c   |   91 +++++++++++++++++++++++++++++++++++++++++++-----------
-> fs/lockd/netns.h |    4 ++
-> fs/lockd/svc.c   |    1 +
-> 3 files changed, 77 insertions(+), 19 deletions(-)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+tejun
