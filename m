@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab2INJUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:20:40 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45386 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758343Ab2INJUj (ORCPT
+	id S1759316Ab2INJUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:20:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44404 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758328Ab2INJUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:20:39 -0400
-Date: Fri, 14 Sep 2012 10:20:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Ola LILJA2 <ola.o.lilja@stericsson.com>,
-        Roger NILSSON1 <roger.xr.nilsson@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 07/19] ARM: ux500: Add all encompassing sound node to the
- HREF Device Tree
-Message-ID: <20120914092031.GK3374@gmail.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-8-git-send-email-lee.jones@linaro.org>
- <CACRpkdbh5BFmHp4uurmWfBExUKD0GDJCOHGp8kJCu2tReTWKWA@mail.gmail.com>
+	Fri, 14 Sep 2012 05:20:51 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to drivers/bus/
+Date: Fri, 14 Sep 2012 14:50:34 +0530
+Message-ID: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbh5BFmHp4uurmWfBExUKD0GDJCOHGp8kJCu2tReTWKWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 02:56:20AM -0700, Linus Walleij wrote:
-> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > This is where we link together all of the SoC sound components for
-> > a given platform. This all encompassing sound node is only found
-> > in the very lowest hierarchical DTS file, since the component mix may
-> > well change from board variant to board variant.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/boot/dts/hrefv60plus.dts |    7 +++++++
-> >  1 file changed, 7 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-> > index 4f0aee8..d8ed29e 100644
-> > --- a/arch/arm/boot/dts/hrefv60plus.dts
-> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
-> > @@ -78,6 +78,13 @@
-> >                         status = "okay";
-> >                 };
-> >
-> > +               sound {
-> > +                       compatible = "stericsson,snd-soc-mop500";
-> > +
-> > +                       stericsson,cpu-dai = <&msp1 &msp3>;
-> > +                       stericsson,audio-codec = <&codec>;
-> 
-> Where is this codec coming from?
-> 
-> It's certainly not in the linux-next tree...
+OMAP interconnect drivers are used for the interconnect error handling.
+Since they are bus driver, lets move it to newly created drivers/bus.
 
-No, I'm holding it locally.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>
+Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+Patch just moves OMAP interconnect drivers as is to the newly created
+driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
+tree and test on all OMAP boards.
 
-My Audio patch-set is still awaiting Ola's Acks (6 patches)
+ arch/arm/mach-omap2/Kconfig                        |    2 ++
+ arch/arm/mach-omap2/Makefile                       |    5 -----
+ drivers/bus/Kconfig                                |    6 ++++++
+ drivers/bus/Makefile                               |    3 +++
+ {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.c |    0
+ {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.h |    0
+ {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.c |    0
+ {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.h |    0
+ 8 files changed, 11 insertions(+), 5 deletions(-)
+ rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.c (100%)
+ rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.h (100%)
+ rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.c (100%)
+ rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.h (100%)
 
-... unless they're further down my mailbox.
-
-/me keeps reading.
-
-> This is another of these patches that I prefer if Ola
-> or Roger or even Mark could comment on, I really don't know
-> too much about ASoC DT bindings...
-
-
-
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index dd2db02..7d3c8ab 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -44,6 +44,7 @@ config ARCH_OMAP3
+ 	select ARM_CPU_SUSPEND if PM
+ 	select MULTI_IRQ_HANDLER
+ 	select SOC_HAS_OMAP2_SDRC
++	select OMAP_INTERCONNECT
+ 
+ config ARCH_OMAP4
+ 	bool "TI OMAP4"
+@@ -63,6 +64,7 @@ config ARCH_OMAP4
+ 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
+ 	select ARM_CPU_SUSPEND if PM
+ 	select ARCH_NEEDS_CPU_IDLE_COUPLED
++	select OMAP_INTERCONNECT
+ 
+ config SOC_OMAP5
+ 	bool "TI OMAP5"
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index f6a24b3..7fed980 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -199,11 +199,6 @@ obj-$(CONFIG_ARCH_OMAP4)		+= omap_hwmod_44xx_data.o
+ # EMU peripherals
+ obj-$(CONFIG_OMAP3_EMU)			+= emu.o
+ 
+-# L3 interconnect
+-obj-$(CONFIG_ARCH_OMAP3)		+= omap_l3_smx.o
+-obj-$(CONFIG_ARCH_OMAP4)		+= omap_l3_noc.o
+-obj-$(CONFIG_SOC_OMAP5)			+= omap_l3_noc.o
+-
+ obj-$(CONFIG_OMAP_MBOX_FWK)		+= mailbox_mach.o
+ mailbox_mach-objs			:= mailbox.o
+ 
+diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
+index 6270415..bbec35d 100644
+--- a/drivers/bus/Kconfig
++++ b/drivers/bus/Kconfig
+@@ -12,4 +12,10 @@ config OMAP_OCP2SCP
+ 	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
+ 	  OCP2SCP.
+ 
++config OMAP_INTERCONNECT
++	tristate "OMAP INTERCONNECT DRIVER"
++	depends on ARCH_OMAP2PLUS
++
++	help
++	  Driver to enable OMAP interconnect error handling driver.
+ endmenu
+diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
+index 0ec50bc..45d997c 100644
+--- a/drivers/bus/Makefile
++++ b/drivers/bus/Makefile
+@@ -3,3 +3,6 @@
+ #
+ 
+ obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
++
++# Interconnect bus driver for OMAP SoCs.
++obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
+diff --git a/arch/arm/mach-omap2/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+similarity index 100%
+rename from arch/arm/mach-omap2/omap_l3_noc.c
+rename to drivers/bus/omap_l3_noc.c
+diff --git a/arch/arm/mach-omap2/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+similarity index 100%
+rename from arch/arm/mach-omap2/omap_l3_noc.h
+rename to drivers/bus/omap_l3_noc.h
+diff --git a/arch/arm/mach-omap2/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
+similarity index 100%
+rename from arch/arm/mach-omap2/omap_l3_smx.c
+rename to drivers/bus/omap_l3_smx.c
+diff --git a/arch/arm/mach-omap2/omap_l3_smx.h b/drivers/bus/omap_l3_smx.h
+similarity index 100%
+rename from arch/arm/mach-omap2/omap_l3_smx.h
+rename to drivers/bus/omap_l3_smx.h
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
