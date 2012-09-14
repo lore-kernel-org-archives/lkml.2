@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2INHSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:18:09 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:50473 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756254Ab2INHSG (ORCPT
+	id S1756379Ab2INHSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:18:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61874 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab2INHSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:18:06 -0400
-Message-ID: <5052DA55.5080102@ti.com>
-Date: Fri, 14 Sep 2012 10:18:45 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	Fri, 14 Sep 2012 03:18:52 -0400
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>, Ricardo Neri <ricardo.neri@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Dan Williams <djbw@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: Re: [alsa-devel] [PATCH v2 03/15] dmaengine: Add no_wakeup parameter
- to dmaengine_prep_dma_cyclic()
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com> <5051FB4D.3000009@metafoo.de> <1347593217.1943.26.camel@vkoul-udesk3>
-In-Reply-To: <1347593217.1943.26.camel@vkoul-udesk3>
+In-Reply-To: <1347599944.9481.3.camel@joe2Laptop>
+References: <1347565754-9534-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	<1347599944.9481.3.camel@joe2Laptop>
+Date: Fri, 14 Sep 2012 00:18:51 -0700
+Message-ID: <CAMbhsRSaHOgyTn56vQndn0TKh3AT9dk3pRVuJx3qJXWowsLVaA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: use kasprintf() in pinmux_request_gpio()
+From: Colin Cross <ccross@google.com>
+To: Joe Perches <joe@perches.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 06:26 AM, Vinod Koul wrote:
-> On Thu, 2012-09-13 at 17:27 +0200, Lars-Peter Clausen wrote:
->> Hi,
+On Thu, Sep 13, 2012 at 10:19 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2012-09-13 at 21:49 +0200, Thomas Petazzoni wrote:
+>> Instead of using a temporary buffer, snprintf() and kstrdup(), just
+>> use kasprintf() that does the same thing in just oneline.
 >>
->> Hm... Do you think it would work as well if we implement this by
->> setting the
->> callback for the descriptor to NULL? If the callback is NULL there is
->> nothing to at the end of a transfer/period and the dma engine driver
->> may
->> choose to disable interrupts. This would also benefit non cyclic
->> transfers
->> where the callback is NULL and we do not need add the new parameter to
->> dmaengine_prep_dma_cyclic.
-> That will work too.... BUT the idea of no_wake mode in ALSA is that we
-> should not have any interrupts, so anything which is going to cause
-> interrupts to AP in undesired. The interrupts still happen and it just
-> that dmaengine driver is not notifying client.
+>> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+>> ---
+>>  drivers/pinctrl/pinmux.c |    5 +----
+>>  1 file changed, 1 insertion(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+>> index 3d5ac73..9301a7a 100644
+>> --- a/drivers/pinctrl/pinmux.c
+>> +++ b/drivers/pinctrl/pinmux.c
+>> @@ -232,14 +232,11 @@ int pinmux_request_gpio(struct pinctrl_dev *pctldev,
+>>                       struct pinctrl_gpio_range *range,
+>>                       unsigned pin, unsigned gpio)
+>>  {
+>> -     char gpiostr[16];
+>>       const char *owner;
+>>       int ret;
+>>
+>>       /* Conjure some name stating what chip and pin this is taken by */
+>> -     snprintf(gpiostr, 15, "%s:%d", range->name, gpio);
+>> -
+>> -     owner = kstrdup(gpiostr, GFP_KERNEL);
+>> +     owner = kasprintf(GFP_KERNEL, "%s:%d", range->name, gpio);
+>>       if (!owner)
+>>               return -EINVAL;
+>>
+>
+> No not really.  It's a bit different because the first
+> snprintf is length limited but the kasprintf is not.
 
-Yes, this is correct. We could go and hack around later if the callback is not
-present and modify the irq requests for the platform but it is really not
-elegant way of dealing with the issue IMHO.
-
-
--- 
-Péter
+The one it's replacing is worse, it never sets gpiostr[15] to 0 and
+kstrdup will read past the end of the buffer if the string is
+truncated.
