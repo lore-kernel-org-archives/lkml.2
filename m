@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2INNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:19:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52331 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab2INNTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:19:55 -0400
-Date: Fri, 14 Sep 2012 15:19:52 +0200
-From: Jan Kara <jack@suse.cz>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, viro@zeniv.linux.org.uk,
-        jack@suse.cz, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120914131952.GA4952@quack.suse.cz>
-References: <87wr002z39.fsf@devron.myhome.or.jp>
- <20120913063906.GA24974@localhost>
- <871ui6e4tl.fsf@devron.myhome.or.jp>
- <20120914111429.GA19509@localhost>
- <87r4q4n6r1.fsf@devron.myhome.or.jp>
+	id S1753532Ab2INNUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:20:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32340 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab2INNUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 09:20:09 -0400
+Date: Fri, 14 Sep 2012 09:09:13 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: arnd@arndb.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
+        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        tim@xen.org, Ian.Campbell@citrix.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 24/24] MAINTAINERS: add myself as Xen ARM maintainer
+Message-ID: <20120914130913.GL25249@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+ <1347621207-11294-24-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87r4q4n6r1.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1347621207-11294-24-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-09-12 21:12:02, OGAWA Hirofumi wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
-> >> >> @@ -120,6 +120,9 @@ __bdi_start_writeback(struct backing_dev
-> >> >>  {
-> >> >>  	struct wb_writeback_work *work;
-> >> >>  
-> >> >> +	if (!bdi_cap_writeback_dirty(bdi))
-> >> >> +		return;
-> >> >
-> >> > Will someone in the current kernel actually call
-> >> > __bdi_start_writeback() on a BDI_CAP_NO_WRITEBACK bdi?
-> >> >
-> >> > If the answer is no, VM_BUG_ON(!bdi_cap_writeback_dirty(bdi)) looks better.
-> >> 
-> >> I guess nobody call it in current kernel though. Hmm.., but we also have
-> >> check in __mark_inode_dirty(), nobody should be using it, right?
-> >> 
-> >> If we defined it as the bug, I can't see what BDI_CAP_NO_WRITEBACK wants
-> >> to do actually.  We are not going to allow to disable the writeback task?
-> >
-> >> I was going to use this to disable writeback task on my developing FS...
-> >
-> > That sounds like an interesting use case. Can you elaborate a bit more?
-> >
-> > Note that even if you disable __bdi_start_writeback() here, the kernel
-> > may also start writeback in the page reclaim path, the fsync() path,
-> > and perhaps more.
-> 
-> page reclaim and fsync path have FS handler. So, FS can control those.
-> 
-> The modern FS have to control to flush carefully. Many FSes are already
-> ignoring if wbc->sync_mode != WB_SYNC_ALL (e.g. ext3_write_inode,
-> nilfs_writepages), and have own FS task to flush.
-  Out of curiosity, what exactly do you need to control in your filesystem
-that makes flusher thread unusable for you? You still have a lot of
-flexibility with ->write_inode() and ->writepages() callbacks...
+On Fri, Sep 14, 2012 at 12:13:26PM +0100, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+> ---
+>  MAINTAINERS |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index fdc0119..3d38291 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7752,6 +7752,13 @@ F:	drivers/xen/
+>  F:	arch/x86/include/asm/xen/
+>  F:	include/xen/
+>  
+> +XEN HYPERVISOR ARM
+> +M:	Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+> +S:	Supported
+> +F:	arch/arm/xen/
+> +F:	arch/arm/include/asm/xen/
+> +
+>  XEN NETWORK BACKEND DRIVER
+>  M:	Ian Campbell <ian.campbell@citrix.com>
+>  L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+> -- 
+> 1.7.2.5
