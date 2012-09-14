@@ -1,284 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab2INJLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:11:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3837 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab2INJLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:11:45 -0400
-Date: Fri, 14 Sep 2012 10:10:32 +0100
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Michal Hocko <mhocko@suse.cz>, Paul Mackerras <paulus@samba.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120914091032.GA6819@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <20120913205827.GO7677@google.com>
+	id S1758188Ab2INJM7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:12:59 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39887 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab2INJM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:12:56 -0400
+Message-ID: <5052F4FF.6070508@huawei.com>
+Date: Fri, 14 Sep 2012 17:12:31 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120913205827.GO7677@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [RFC] cgroup TODOs
+References: <20120913205827.GO7677@google.com> <5052E7DF.7040000@parallels.com>
+In-Reply-To: <5052E7DF.7040000@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
-> 5. I CAN HAZ HIERARCHIES?
+>>
+>> 2. memcg's __DEPRECATED_clear_css_refs
+>>
+>>   This is a remnant of another weird design decision of requiring
+>>   synchronous draining of refcnts on cgroup removal and allowing
+>>   subsystems to veto cgroup removal - what's the userspace supposed to
+>>   do afterwards?  Note that this also hinders co-mounting different
+>>   controllers.
+>>
+>>   The behavior could be useful for development and debugging but it
+>>   unnecessarily interlocks userland visible behavior with in-kernel
+>>   implementation details.  To me, it seems outright wrong (either
+>>   implement proper severing semantics in the controller or do full
+>>   refcnting) and disallows, for example, lazy drain of caching refs.
+>>   Also, it complicates the removal path with try / commit / revert
+>>   logic which has never been fully correct since the beginning.
+>>
+>>   Currently, the only left user is memcg.
+>>
+>>   Solution:
+>>
+>>   * Update memcg->pre_destroy() such that it never fails.
+>>
+>>   * Drop __DEPRECATED_clear_css_refs and all related logic.
+>>     Convert pre_destroy() to return void.
+>>
+>>   Who:
+>>
+>>   KAMEZAWA, Michal, PLEASE.  I will make __DEPRECATED_clear_css_refs
+>>   trigger WARN sooner or later.  Let's please get this settled.
+>>
+>> 3. cgroup_mutex usage outside cgroup core
+>>
+>>   This is another thing which is simply broken.  Given the way cgroup
+>>   is structured and used, nesting cgroup_mutex inside any other
+>>   commonly used lock simply doesn't work - it's held while invoking
+>>   controller callbacks which then interact and synchronize with
+>>   various core subsystems.
+>>
+>>   There are currently three external cgroup_mutex users - cpuset,
+>>   memcontrol and cgroup_freezer.
+>>
+>>   Solution:
+>>
+>>   Well, we should just stop doing it - use a separate nested lock
+>>   (which seems possible for cgroup_freezer) or track and mange task
+>>   in/egress some other way.
+>>
+>>   Who:
+>>
+>>   I'll do the cgroup_freezer.  I'm hoping PeterZ or someone who's
+>>   familiar with the code base takes care of cpuset.  Michal, can you
+>>   please take care of memcg?
+>>
 > 
->   The cpu ones handle nesting correctly - parent's accounting includes
->   children's, parent's configuration affects children's unless
->   explicitly overridden, and children's limits nest inside parent's.
+> I think this is a pressing problem, yes, but not the only problem with
+> cgroup lock. Even if we restrict its usage to cgroup core, we still can
+> call cgroup functions, which will lock. And then we gain nothing.
 > 
->   memcg asked itself the existential question of to be hierarchical or
->   not and then got confused and decided to become both.
-> 
->   When faced with the same question, blkio and cgroup_freezer just
->   gave up and decided to allow nesting and then ignore it - brilliant.
-> 
->   And there are others which kinda sorta try to handle hierarchy but
->   only goes way-half.
-> 
->   This one is screwed up embarrassingly badly.  We failed to establish
->   one of the most basic semantics and can't even define what a cgroup
->   hierarchy is - it depends on each controller and they're mostly
->   wacky!
-> 
->   Fortunately, I don't think it will be prohibitively difficult to dig
->   ourselves out of this hole.
-> 
->   Solution:
-> 
->   * cpu ones seem fine.
-> 
->   * For broken controllers, cgroup core will be generating warning
->     messages if the user tries to nest cgroups so that the user at
->     least can know that the behavior may change underneath them later
->     on.  For more details,
-> 
->     http://thread.gmane.org/gmane.linux.kernel/1356264/focus=3902
-> 
->   * memcg can be fully hierarchical but we need to phase out the flat
->     hierarchy support.  Unfortunately, this involves flipping the
->     behavior for the existing users.  Upstream will try to nudge users
->     with warning messages.  Most burden would be on the distros and at
->     least SUSE seems to be on board with it.  Needs coordination with
->     other distros.
-> 
->   * blkio is the most problematic.  It has two sub-controllers - cfq
->     and blk-throttle.  Both are utterly broken in terms of hierarchy
->     support and the former is known to have pretty hairy code base.  I
->     don't see any other way than just biting the bullet and fixing it.
-> 
->   * cgroup_freezer and others shouldn't be too difficult to fix.
-> 
->   Who:
-> 
->   memcg can be handled by memcg people and I can handle cgroup_freezer
->   and others with help from the authors.  The problematic one is
->   blkio.  If anyone is interested in working on blkio, please be my
->   guest.  Vivek?  Glauber?
-> 
-> 6. Multiple hierarchies
-> 
->   Apart from the apparent wheeeeeeeeness of it (I think I talked about
->   that enough the last time[1]), there's a basic problem when more
->   than one controllers interact - it's impossible to define a resource
->   group when more than two controllers are involved because the
->   intersection of different controllers is only defined in terms of
->   tasks.
-> 
->   IOW, if an entity X is of interest to two controllers, there's no
->   way to map X to the cgroups of the two controllers.  X may belong to
->   A and B when viewed by one task but A' and B when viewed by another.
->   This already is a head scratcher in writeback where blkcg and memcg
->   have to interact.
-> 
->   While I am pushing for unified hierarchy, I think it's necessary to
->   have different levels of granularities depending on controllers
->   given that nesting involves significant overhead and noticeable
->   controller-dependent behavior changes.
-> 
->   Solution:
-> 
->   I think a unified hierarchy with the ability to ignore subtrees
->   depending on controllers should work.  For example, let's assume the
->   following hierarchy.
-> 
->           R
-> 	/   \
->        A     B
->       / \
->      AA AB
-> 
->   All controllers are co-mounted.  There is per-cgroup knob which
->   controls which controllers nest beyond it.  If blkio doesn't want to
->   distinguish AA and AB, the user can specify that blkio doesn't nest
->   beyond A and blkio would see the tree as,
-> 
->           R
-> 	/   \
->        A     B
-> 
->   While other controllers keep seeing the original tree.  The exact
->   form of interface, I don't know yet.  It could be a single file
->   which the user echoes [-]controller name into it or per-controller
->   boolean file.
-> 
->   I think this level of flexibility should be enough for most use
->   cases.  If someone disagrees, please voice your objections now.
-> 
->   I *think* this can be achieved by changing where css_set is bound.
->   Currently, a css_set is (conceptually) owned by a task.  After the
->   change, a cgroup in the unified hierarchy has its own css_set which
->   tasks point to and can also be used to tag resources as necessary.
->   This way, it should be achieveable without introducing a lot of new
->   code or affecting individual controllers too much.
-> 
->   The headache will be the transition period where we'll probably have
->   to support both modes of operation.  Oh well....
-> 
->   Who:
-> 
->   Li, Glauber and me, I guess?
 
-FWIW, from the POV of libvirt and its KVM/LXC drivers, I think that
-co-mounting all controllers is just fine. In our usage model we
-always want to have exactly the same hierarchy for all of them. It
-rather complicates life to have to deal with multiple hierarchies,
-so I'd be happy if they went away.
+Agreed. The biggest issue in cpuset is if hotplug makes a cpuset's cpulist
+empty the tasks in it will be moved to an ancestor cgroup, which requires
+holding cgroup lock. We have to either change cpuset's behavior or eliminate
+the global lock.
 
-libvirtd will always create its own cgroups starting at the location
-where libvirtd itself has been placed. This is to co-operate with
-systemd / initscripts which may place each system service in a
-dedicated group. Thus historically we usually end up in a layout:
+> And the problem is that people need to lock. cgroup_lock is needed
+> because the data you are accessing is protected by it. The way I see it,
+> it is incredible how we were able to revive the BKL in the form of
+> cgroup_lock after we finally manage to successfully get rid of it!
+> 
+> We should just start to do a more fine grained locking of data, instead
+> of "stop the world, cgroup just started!". If we do that, the problem
+> you are trying to address here will even cease to exist.
+> 
 
- $CG_MOUNT_ROOT
-  |
-  +- apache.service
-  +- mysql.service
-  +- sendmail.service
-  +- ....service
-  +- libvirtd.service (if systemd has put us in an isolated group)
-      |
-      +- libvirt
-          |
-          +- lxc
-          |   |
-          |   +- container1
-          |   +- container2
-          |   +- container3
-          |   ...
-          +- qemu
-              |
-              +- machine1
-              +- machine2
-              +- machine3
-              ...
-
-Now we know that many controllers don't respect this hiearchy and
-will flatten it so all those leaf nodes (container1, container2,
-machine1, machine2...etc) are immediately at the root level. While
-this is clearly sub-optimal, for our current needs that does not
-actually harm us really. While we did intend that a sysadmin could
-place controls on the 'libvirt', 'lxc' or 'qemu' cgroups, I'm not
-aware of anyone who actually does this currently. Everyone, so far,
-only cares about placing controls in individual virtual machines
-and containers.
-
-Thus given what we now know about the performance problems wrt
-hierarchies we're planning to flatten that significantly to look
-closer to this:
-
- $CG_MOUNT_ROOT
-  |
-  +- apache.service
-  +- mysql.service
-  +- sendmail.service
-  +- ....service
-  +- libvirtd.service (if systemd has put us in an isolated group)
-      |
-      +- libvirt-lxc-container1
-      +- libvirt-lxc-container2
-      +- libvirt-lxc-container3
-      +- libvirt-lxc-...
-      +- libvirt-qemu-machine1
-      +- libvirt-qemu-machine2
-      +- libvirt-qemu-machine3
-      +- libvirt-qemu-...
-
-(though we'll have config option to retain the old style hiearchy
-too for backwards compatibility)
-
-Also bear in mind that with containers, the processes inside
-the containers may want to use cgroups too. eg if runnning
-systemd inside a container too
-
- $CG_MOUNT_ROOT
-  |
-  +- apache.service
-  +- mysql.service
-  +- sendmail.service
-  +- ....service
-  +- libvirtd.service (if systemd has put us in an isolated group)
-      |
-      +- libvirt-lxc-container1
-      |   |
-      |   +- apache.service
-      |   +- mysql.service
-      |   +- sendmail.service
-      |   ...
-      +- libvirt-lxc-container2
-      +- libvirt-lxc-container3
-      +- libvirt-lxc-...
-      +- libvirt-qemu-machine1
-      +- libvirt-qemu-machine2
-      +- libvirt-qemu-machine3
-      +- libvirt-qemu-...
-
-Or if each user login session has been given a cgroup and we are
-running libvirtd as a non-root user, we can end up with something
-like this:
-
- $CG_MOUNT_ROOT
-  |
-  +- fred.user
-  +- joe.user
-  +- bob.user
-      |
-      +- libvirtd.service (if systemd has put us in an isolated group)
-          |
-          +- libvirt-qemu-machine1
-          +- libvirt-qemu-machine2
-          +- libvirt-qemu-machine3
-          +- libvirt-qemu-...
-
-In essence what I'm saying is that I'm fine with co-mounting. What
-we care about is being able to create the kind of hiearchies outlined
-above, and have all controllers actually work sensibly with them.
-
-The systemd & libvirt folks came up with the following recommendations
-to try to get good co-operation between different user space apps who
-want to use cgroups. Basically the idea is that if each app follows the
-guidelines, then no individual app should need to have a global world
-of all cgroups.
-
-  http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
-
-I think everything you describe is compatible with what we've documented
-there.
-
-Regards,
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
