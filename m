@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649Ab2INPen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:34:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51710 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab2INPem (ORCPT
+	id S1758776Ab2INPe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:34:57 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18075 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758665Ab2INPez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:34:42 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH] i915: Don't register backlight when max PWM value is unknown
-Date: Fri, 14 Sep 2012 16:34:28 +0100
-Message-Id: <1347636868-3100-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 14 Sep 2012 11:34:55 -0400
+X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
+   d="scan'208";a="14550853"
+Message-ID: <1347636860.24226.236.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v4 14/24] xen/arm: initialize grant_table on ARM
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 14 Sep 2012 16:34:20 +0100
+In-Reply-To: <alpine.DEB.2.02.1209141624570.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+	 <1347621207-11294-14-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120914131033.GM25249@phenom.dumpdata.com>
+	 <alpine.DEB.2.02.1209141550080.29232@kaball.uk.xensource.com>
+	 <1347635324.24226.229.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1209141624570.29232@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a backlight isn't connected to the i915 it doesn't make any sense
-to register the backlight device, but the driver currently tries to limp
-along using a max brightness value of 1. Instead, this patch makes it so
-that if the maximum PWM value cannot be determined, then the backlight
-will not be registered.
+On Fri, 2012-09-14 at 16:29 +0100, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Ian Campbell wrote:
+> > On Fri, 2012-09-14 at 15:56 +0100, Stefano Stabellini wrote:
+> > > On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
+> > > > On Fri, Sep 14, 2012 at 12:13:16PM +0100, Stefano Stabellini wrote:
+> > > > > Initialize the grant table mapping at the address specified at index 0
+> > > > > in the DT under the /xen node.
+> > > > > After the grant table is initialized, call xenbus_probe (if not dom0).
+> > > > 
+> > > > So we don't really care about the grant's size then? The DT xen.txt
+> > > > talks about it..
+> > > 
+> > > I am assuming that the size of the memory region specified in the device
+> > > tree is sufficiently large to map the entire grant table, given that both
+> > > the device tree hypervisor entry and the grant table size comes from Xen.
+> > 
+> > Actually, the grant table can grow dynamically under the control of the
+> > guest, I think you just pass GNTTABOP_setup_table with some more frames.
+> > See drivers/xen/grant_table.c:gnttab_expand().
+> 
+> gnttab_expand can return error if the new size exceeds
+> gnttab_max_grant_frames(), that is implemented using
+> GNTTABOP_query_size.
 
-Tested on MacbookPro8,3.
+I hadn't spotted / wasn't aware that this gives you the max too.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
- drivers/gpu/drm/i915/intel_panel.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+> > > The grant table size is currently queried to Xen directly via an
+> > > hypercall (GNTTABOP_query_size). Basically the size in the device tree
+> > > is redundant information.
+> > 
+> > This size is the size of the physical address space where the guest
+> > could chose map grant table frames. It could be either larger or smaller
+> > than the actual grant table. (smaller because the guest could use
+> > physical addresses not within this region, if it wanted to for some
+> > reason).
+> 
+> Right.
+> 
+> What I am saying is that I assume that the memory region specified in
+> the device tree is greater or equal than gnttab_max_grant_frames().
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 3df4f5f..f410c6e 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -168,13 +168,8 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
- 	u32 max;
- 
- 	max = i915_read_blc_pwm_ctl(dev_priv);
--	if (max == 0) {
--		/* XXX add code here to query mode clock or hardware clock
--		 * and program max PWM appropriately.
--		 */
--		pr_warn_once("fixme: max PWM is zero\n");
--		return 1;
--	}
-+	if (max == 0)
-+		return 0; /* Cannot read max PWM. Assume no backlight */
- 
- 	if (HAS_PCH_SPLIT(dev)) {
- 		max >>= 16;
-@@ -413,6 +408,12 @@ int intel_panel_setup_backlight(struct drm_device *dev)
- 	struct backlight_properties props;
- 	struct drm_connector *connector;
- 
-+	/* Is there a backlight present? max will be zero if not */
-+	if (intel_panel_get_max_backlight(dev) == 0) {
-+		DRM_INFO("i915 doesn't seem to be connected to backlight\n");
-+		return 0;
-+	}
-+
- 	intel_panel_init_backlight(dev);
- 
- 	if (dev_priv->int_lvds_connector)
--- 
-1.7.9.5
+Makes sense.
+
+(note that gnttab_max_grant_frames can be set on the hypervisor command
+line though)
+
+> Maybe I should add this to the device tree doc.
+
+No harm in being explicit. 
 
