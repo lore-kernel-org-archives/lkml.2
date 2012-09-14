@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2INGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:19:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49023 "EHLO
+	id S1755466Ab2INGUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:20:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49048 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab2INGTD (ORCPT
+	with ESMTP id S1754111Ab2INGUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:19:03 -0400
-Date: Thu, 13 Sep 2012 23:18:46 -0700
-From: tip-bot for Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Message-ID: <tip-d094595078d00b63839d0c5ccb8b184ef242cb45@git.kernel.org>
+	Fri, 14 Sep 2012 02:20:10 -0400
+Date: Thu, 13 Sep 2012 23:19:42 -0700
+From: tip-bot for Ian Campbell <ian.campbell@citrix.com>
+Message-ID: <tip-6eebdda35e6b18d0dddb2a44e34211bd94f0cad6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        maarten.lankhorst@canonical.com
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl, brgerst@gmail.com,
+        penberg@kernel.org, ian.campbell@citrix.com, ak@linux.intel.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        maarten.lankhorst@canonical.com
-In-Reply-To: <5051A9E7.5040501@canonical.com>
-References: <5051A9E7.5040501@canonical.com>
+        gorcunov@openvz.org, brgerst@gmail.com, a.p.zijlstra@chello.nl,
+        ian.campbell@citrix.com, penberg@kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de
+In-Reply-To: <20120824195847.GA31628@moon>
+References: <20120824195847.GA31628@moon>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Check if nested lock is actually held
-Git-Commit-ID: d094595078d00b63839d0c5ccb8b184ef242cb45
+Subject: [tip:x86/asm] x86:
+  Drop unnecessary kernel_eflags variable on 64-bit
+Git-Commit-ID: 6eebdda35e6b18d0dddb2a44e34211bd94f0cad6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,88 +32,95 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:18:52 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:19:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d094595078d00b63839d0c5ccb8b184ef242cb45
-Gitweb:     http://git.kernel.org/tip/d094595078d00b63839d0c5ccb8b184ef242cb45
-Author:     Maarten Lankhorst <maarten.lankhorst@canonical.com>
-AuthorDate: Thu, 13 Sep 2012 11:39:51 +0200
+Commit-ID:  6eebdda35e6b18d0dddb2a44e34211bd94f0cad6
+Gitweb:     http://git.kernel.org/tip/6eebdda35e6b18d0dddb2a44e34211bd94f0cad6
+Author:     Ian Campbell <ian.campbell@citrix.com>
+AuthorDate: Fri, 24 Aug 2012 23:58:47 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 13 Sep 2012 17:00:44 +0200
+CommitDate: Thu, 13 Sep 2012 17:32:47 +0200
 
-lockdep: Check if nested lock is actually held
+x86: Drop unnecessary kernel_eflags variable on 64-bit
 
-It is considered good form to lock the lock you claim to be nested in.
+On 64 bit x86 we save the current eflags in cpu_init for use in
+ret_from_fork. Strictly speaking reserved bits in EFLAGS should
+be read as written but in practise it is unlikely that EFLAGS
+could ever be extended in this way and the kernel alread clears
+any undefined flags early on.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+The equivalent 32 bit code simply hard codes 0x0202 as the new
+EFLAGS.
 
-[ removed nest_lock arg to print_lock_nested_lock_not_held in favour
-  of hlock->nest_lock, also renamed the lock arg to hlock since its
-  a held_lock type ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/5051A9E7.5040501@canonical.com
+This change makes 64 bit use the same mechanism to setup the
+initial EFLAGS on fork. Note that 64 bit resets EFLAGS before
+calling schedule_tail() as opposed to 32 bit which calls
+schedule_tail() first. Therefore the correct value for EFLAGS
+has opposite IF bit.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Brian Gerst <brgerst@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/20120824195847.GA31628@moon
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/lockdep.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/processor.h |    1 -
+ arch/x86/kernel/cpu/common.c     |    4 ----
+ arch/x86/kernel/entry_64.S       |    2 +-
+ 3 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index ea9ee45..7981e5b 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2998,6 +2998,42 @@ EXPORT_SYMBOL_GPL(lockdep_init_map);
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index d048cad..9738b39 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -423,7 +423,6 @@ DECLARE_INIT_PER_CPU(irq_stack_union);
  
- struct lock_class_key __lockdep_no_validate__;
+ DECLARE_PER_CPU(char *, irq_stack_ptr);
+ DECLARE_PER_CPU(unsigned int, irq_count);
+-extern unsigned long kernel_eflags;
+ extern asmlinkage void ignore_sysret(void);
+ #else	/* X86_64 */
+ #ifdef CONFIG_CC_STACKPROTECTOR
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a5fbc3c..9961e2e 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1116,8 +1116,6 @@ void syscall_init(void)
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|X86_EFLAGS_IOPL);
+ }
  
-+static int
-+print_lock_nested_lock_not_held(struct task_struct *curr,
-+				struct held_lock *hlock,
-+				unsigned long ip)
-+{
-+	if (!debug_locks_off())
-+		return 0;
-+	if (debug_locks_silent)
-+		return 0;
-+
-+	printk("\n");
-+	printk("==================================\n");
-+	printk("[ BUG: Nested lock was not taken ]\n");
-+	print_kernel_ident();
-+	printk("----------------------------------\n");
-+
-+	printk("%s/%d is trying to lock:\n", curr->comm, task_pid_nr(curr));
-+	print_lock(hlock);
-+
-+	printk("\nbut this task is not holding:\n");
-+	printk("%s\n", hlock->nest_lock->name);
-+
-+	printk("\nstack backtrace:\n");
-+	dump_stack();
-+
-+	printk("\nother info that might help us debug this:\n");
-+	lockdep_print_held_locks(curr);
-+
-+	printk("\nstack backtrace:\n");
-+	dump_stack();
-+
-+	return 0;
-+}
-+
-+static int __lock_is_held(struct lockdep_map *lock);
-+
+-unsigned long kernel_eflags;
+-
  /*
-  * This gets called for every mutex_lock*()/spin_lock*() operation.
-  * We maintain the dependency maps and validate the locking attempt:
-@@ -3139,6 +3175,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	}
- 	chain_key = iterate_chain_key(chain_key, id);
+  * Copies of the original ist values from the tss are only accessed during
+  * debugging, no special alignment required.
+@@ -1299,8 +1297,6 @@ void __cpuinit cpu_init(void)
+ 	fpu_init();
+ 	xsave_init();
  
-+	if (nest_lock && !__lock_is_held(nest_lock))
-+		return print_lock_nested_lock_not_held(curr, hlock, ip);
-+
- 	if (!validate_chain(curr, lock, hlock, chain_head, chain_key))
- 		return 0;
+-	raw_local_save_flags(kernel_eflags);
+-
+ 	if (is_uv_system())
+ 		uv_cpu_init();
+ }
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 69babd8..b1dac12 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -440,7 +440,7 @@ ENTRY(ret_from_fork)
  
+ 	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+ 
+-	pushq_cfi kernel_eflags(%rip)
++	pushq_cfi $0x0002
+ 	popfq_cfi				# reset kernel eflags
+ 
+ 	call schedule_tail			# rdi: 'prev' task parameter
