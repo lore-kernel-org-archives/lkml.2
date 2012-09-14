@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760083Ab2INVpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 17:45:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40991 "EHLO mail.skyhub.de"
+	id S1752646Ab2INVvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:51:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38268 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760063Ab2INVpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 17:45:36 -0400
-Date: Fri, 14 Sep 2012 23:45:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-Message-ID: <20120914214532.GA6468@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Nikolay Ulyanitsky <lystor@gmail.com>,
-	Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@kernel.org>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
- <20120914212717.GA29307@liondog.tnic>
- <1347658843.7172.90.camel@twins>
+	id S1751671Ab2INVvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 17:51:15 -0400
+Date: Fri, 14 Sep 2012 22:50:59 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        Jeff Garzik <jeff@garzik.org>, Boaz Harrosh <bharrosh@panasas.com>,
+        Alasdair Kergon <agk@redhat.com>
+Subject: Re: [dm-devel] [PATCH v10 8/8] block: Add bio_clone_bioset(),
+	bio_clone_kmalloc()
+Message-ID: <20120914215059.GQ15728@agk-dp.fab.redhat.com>
+Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
+	linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
+	Jeff Garzik <jeff@garzik.org>, Boaz Harrosh <bharrosh@panasas.com>,
+	Alasdair Kergon <agk@redhat.com>
+References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-9-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347658843.7172.90.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1346970902-10931-9-git-send-email-koverstreet@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 11:40:43PM +0200, Peter Zijlstra wrote:
-> Hmm, cute. What kind of machine did you test it on? Nikolay's machines
-> look to be smallish AMD X6 or ancient Intel c2d (the patch will indeed
-> have absolutely no effect on a dual core).
+On Thu, Sep 06, 2012 at 03:35:02PM -0700, Kent Overstreet wrote:
+> Previously, there was bio_clone() but it only allocated from the fs bio
+> set; as a result various users were open coding it and using
+> __bio_clone().
 
-Yep, I took an X6 too. So it's a single-socket, 6-core AMD, F10h.
+Explain in the header the reasoning behind the change to dm-crypt so that 
+it no longer resets bi_idx to 0 too?
 
-> I'll see about running pgbench on a bigger Intel tomorrow if Mike
-> doesn't beat me to it.
+> -	clone->bi_idx = 0;
 
-Can try that too on one of the bigger machines I have, if needed.
+Alasdair
 
-> The problem the patch is trying to address is not having to scan an
-> entire package for idle cores on every wakeup now that packages are
-> getting stupid big.
-> 
-> Regressing Postgres otoh isn't nice either..
-> 
-> Anyway, I guess I'm fine with nixing this patch until we figure out
-> something smarter..
-> 
-> I'm also curious to know wth postgres does that this patch makes such a
-> big difference...
-
-I'm using 9.1 in Debian testing while Nikolay is using 9.2.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
