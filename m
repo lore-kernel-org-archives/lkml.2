@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2INJXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:23:43 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34136 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759327Ab2INJXk (ORCPT
+	id S1759343Ab2INJ0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:26:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2719 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758675Ab2INJ0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:23:40 -0400
-Date: Fri, 14 Sep 2012 10:23:35 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 06/19] ARM: ux500: Add nodes for the MSP into the HREF
- Device Tree
-Message-ID: <20120914092332.GL3374@gmail.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-7-git-send-email-lee.jones@linaro.org>
- <CACRpkdbs9_hLB9c7WbWeR_6+Le4Svzc9Y5wTNVebOiRDB-o33g@mail.gmail.com>
+	Fri, 14 Sep 2012 05:26:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 14 Sep 2012 02:18:02 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] arm: tegra: dt: Add pinmux entries for Vbus regulator controls
+Date: Fri, 14 Sep 2012 14:55:54 +0530
+Message-ID: <1347614754-26357-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbs9_hLB9c7WbWeR_6+Le4Svzc9Y5wTNVebOiRDB-o33g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 02:53:45AM -0700, Linus Walleij wrote:
-> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > This patch enables the two important MSP devices for ST-Ericsson's
-> > hardware reference development board.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/boot/dts/hrefv60plus.dts |    8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-> > index 62b2ac1..4f0aee8 100644
-> > --- a/arch/arm/boot/dts/hrefv60plus.dts
-> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
-> > @@ -77,5 +77,13 @@
-> >
-> >                         status = "okay";
-> >                 };
-> > +
-> > +               msp1: msp@80124000 {
-> > +                       status = "okay";
-> > +               };
-> > +
-> > +               msp3: msp@80125000 {
-> > +                       status = "okay";
-> > +               };
-> >         };
-> >  };
-> 
-> Does this really "enable" the MSPs as the title claims?
+Adding pinmux entries for PI4 and PH7 to enable Vbus for USB1
+and USB3 controllers on Cardhu A02 board.
 
-Yes they do.
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
 
-> Aren's there any kind of bindings needed, not even a
-> register base?
+ arch/arm/boot/dts/tegra30-cardhu-a02.dts |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-All that information is in the "disabled" node contained in .dtsi file.
-
-+               msp0: msp@80123000 {
-+                       compatible = "stericsson,ux500-msp-i2s";
-+                       reg = <0x80123000 0x1000>;
-+                       interrupts = <0 31 0x4>;
-+                       v-ape-supply = <&db8500_vape_reg>;
-+                       status = "disabled";
-
-Then this patch "enable"s it (as the title suggests). :)
-
+diff --git a/arch/arm/boot/dts/tegra30-cardhu-a02.dts b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
+index dd4222f..b76ad31 100644
+--- a/arch/arm/boot/dts/tegra30-cardhu-a02.dts
++++ b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
+@@ -8,6 +8,26 @@
+ 	model = "NVIDIA Tegra30 Cardhu A02 evaluation board";
+ 	compatible = "nvidia,cardhu-a02", "nvidia,cardhu", "nvidia,tegra30";
+ 
++	pinmux {
++		gmi_rst_n_pi4 {
++			nvidia,pins = "gmi_rst_n_pi4";
++			nvidia,function = "gmi";
++			nvidia,tristate = <0>;
++			nvidia,enable-input = <1>;
++			nvidia,open-drain = <1>;
++			nvidia,pull = <0>;
++		};
++
++		gmi_ad15_ph7 {
++			nvidia,pins = "gmi_ad15_ph7";
++			nvidia,function = "gmi";
++			nvidia,tristate = <0>;
++			nvidia,enable-input = <1>;
++			nvidia,open-drain = <1>;
++			nvidia,pull = <0>;
++		};
++	};
++
+ 	regulators {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.1.1
+
