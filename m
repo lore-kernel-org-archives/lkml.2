@@ -1,60 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab2INOdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:33:16 -0400
-Received: from hotel311.server4you.de ([85.25.146.15]:35475 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757564Ab2INOdH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:33:07 -0400
-From: Daniel Wagner <wagi@monom.org>
-To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        Joe Perches <joe@perches.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Rick Jones <rick.jones2@hp.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Tejun Heo <tj@kernel.org>, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: [PATCH] Fix for "cgroup: Assign subsystem IDs during compile time"
-Date: Fri, 14 Sep 2012 16:33:02 +0200
-Message-Id: <1347633184-26837-1-git-send-email-wagi@monom.org>
-X-Mailer: git-send-email 1.7.12.315.g682ce8b
+	id S1758267Ab2INOdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:33:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16364 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757573Ab2INOdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:33:14 -0400
+Subject: [PATCH 3/3] lockd: create and use per-net NSM RPC clients on
+	MON/UNMON requests
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Date: Fri, 14 Sep 2012 18:26:05 +0400
+Message-ID: <20120914142605.10835.70288.stgit@localhost.localdomain>
+In-Reply-To: <20120914140811.10835.81465.stgit@localhost.localdomain>
+References: <20120914140811.10835.81465.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+NSM RPC client can be required on NFSv3 umount, when child reaper is dying
+(and destroying it's mount namespace). It means, that current nsproxy is set
+to NULL already, but creation of RPC client requires UTS namespace for gaining
+hostname string.
 
-Hi, 
+This patch creates reference-counted per-net NSM client on first monitor
+request and destroys it after last unmonitor request.
 
-Sorry for breaking Tejun's cgroup for-3.7 branch. Here are two patches
-which fix this problem. Either of them will do. 
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: <stable@vger.kernel.org>
+---
+ fs/lockd/mon.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
 
-cheers,
-daniel
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Rick Jones <rick.jones2@hp.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: netdev@vger.kernel.org
-Cc: cgroups@vger.kernel.org
-
--- 
-1.7.12.315.g682ce8b
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index 77e07fe..c233ed5 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -85,7 +85,7 @@ static struct rpc_clnt *nsm_create(struct net *net)
+ 	return rpc_create(&args);
+ }
+ 
+-__maybe_unused static struct rpc_clnt *nsm_client_get(struct net *net)
++static struct rpc_clnt *nsm_client_get(struct net *net)
+ {
+ 	static DEFINE_MUTEX(nsm_create_mutex);
+ 	struct rpc_clnt	*clnt;
+@@ -112,7 +112,7 @@ out:
+ 	return clnt;
+ }
+ 
+-__maybe_unused static void nsm_client_put(struct net *net)
++static void nsm_client_put(struct net *net)
+ {
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 	struct rpc_clnt	*clnt = ln->nsm_clnt;
+@@ -131,9 +131,8 @@ __maybe_unused static void nsm_client_put(struct net *net)
+ }
+ 
+ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+-			 struct net *net)
++			 struct rpc_clnt *clnt)
+ {
+-	struct rpc_clnt	*clnt;
+ 	int		status;
+ 	struct nsm_args args = {
+ 		.priv		= &nsm->sm_priv,
+@@ -147,13 +146,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 		.rpc_resp	= res,
+ 	};
+ 
+-	clnt = nsm_create(net);
+-	if (IS_ERR(clnt)) {
+-		status = PTR_ERR(clnt);
+-		dprintk("lockd: failed to create NSM upcall transport, "
+-				"status=%d\n", status);
+-		goto out;
+-	}
++	BUG_ON(clnt == NULL);
+ 
+ 	memset(res, 0, sizeof(*res));
+ 
+@@ -164,8 +157,6 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 				status);
+ 	else
+ 		status = 0;
+-	rpc_shutdown_client(clnt);
+- out:
+ 	return status;
+ }
+ 
+@@ -185,6 +176,7 @@ int nsm_monitor(const struct nlm_host *host)
+ 	struct nsm_handle *nsm = host->h_nsmhandle;
+ 	struct nsm_res	res;
+ 	int		status;
++	struct rpc_clnt *clnt;
+ 
+ 	dprintk("lockd: nsm_monitor(%s)\n", nsm->sm_name);
+ 
+@@ -197,7 +189,15 @@ int nsm_monitor(const struct nlm_host *host)
+ 	 */
+ 	nsm->sm_mon_name = nsm_use_hostnames ? nsm->sm_name : nsm->sm_addrbuf;
+ 
+-	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, host->net);
++	clnt = nsm_client_get(host->net);
++	if (IS_ERR(clnt)) {
++		status = PTR_ERR(clnt);
++		dprintk("lockd: failed to create NSM upcall transport, "
++				"status=%d, net=%p\n", status, host->net);
++		return status;
++	}
++
++	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, clnt);
+ 	if (unlikely(res.status != 0))
+ 		status = -EIO;
+ 	if (unlikely(status < 0)) {
+@@ -229,9 +229,11 @@ void nsm_unmonitor(const struct nlm_host *host)
+ 
+ 	if (atomic_read(&nsm->sm_count) == 1
+ 	 && nsm->sm_monitored && !nsm->sm_sticky) {
++		struct lockd_net *ln = net_generic(host->net, lockd_net_id);
++
+ 		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
+ 
+-		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
++		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, ln->nsm_clnt);
+ 		if (res.status != 0)
+ 			status = -EIO;
+ 		if (status < 0)
+@@ -239,6 +241,8 @@ void nsm_unmonitor(const struct nlm_host *host)
+ 					nsm->sm_name);
+ 		else
+ 			nsm->sm_monitored = 0;
++
++		nsm_client_put(host->net);
+ 	}
+ }
+ 
 
