@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2INBSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 21:18:22 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58615 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab2INBSM (ORCPT
+	id S1753218Ab2INBYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 21:24:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39768 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412Ab2INBYi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 21:18:12 -0400
-Date: Fri, 14 Sep 2012 11:18:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20120914111810.f88f60875881742ce92cbf43@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Sep_2012_11_18_10_+1000_z=XJr1t.G6QUt5yC"
+	Thu, 13 Sep 2012 21:24:38 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] iio: inkern: allocate zeroed memory
+Thread-Topic: [PATCH RESEND] iio: inkern: allocate zeroed memory
+Thread-Index: Ac2SF6jOvP1py7UKRG+HhpSbtK+KQQ==
+Date: Fri, 14 Sep 2012 01:24:19 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF4C3E@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Sep_2012_11_18_10_+1000_z=XJr1t.G6QUt5yC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ Use kzalloc() rather than kmalloc() for initializing the iio_channel structure.
+ This patch enables the iio_dev and iio_chan_spec are set to NULL.
+ This may prevent the page fault problem because the pointer of iio_chan_spec
+ is initialized as NULL.
 
-Hi all,
+ The iio_chan_spec is updated only in case that the IIO map has
+ specific channel label.
+ When the map has no ADC channel label, then the value of iio_chan_spec
+ remains as invalid pointer.
+ To prevent this problem, the pointer should be initialized as NULL.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/netfilter/nfnetlink_log.c between commit 0626af313957 ("netfilter:
-take care of timewait sockets") from the  tree and commit 9eea9515cb5f
-("userns: nfnetlink_log: Report socket uids in the log sockets user
-namespace") from the net-next tree.
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/iio/inkern.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Just context changes. I fixed it up (see below) and can carry the fix as
-necessary (no action is required).
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index b5afc2f..1faa240 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -130,7 +130,7 @@ struct iio_channel *iio_channel_get(const char *name, const char *channel_name)
+ 	if (c == NULL)
+ 		return ERR_PTR(-ENODEV);
+ 
+-	channel = kmalloc(sizeof(*channel), GFP_KERNEL);
++	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+ 	if (channel == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-- 
+1.7.9.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc net/netfilter/nfnetlink_log.c
-index 5cfb5be,8cb67c4..0000000
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@@ -500,14 -501,16 +502,17 @@@ __build_packet_message(struct nfulnl_in
-  	}
- =20
-  	/* UID */
- -	if (skb->sk) {
- -		read_lock_bh(&skb->sk->sk_callback_lock);
- -		if (skb->sk->sk_socket && skb->sk->sk_socket->file) {
- -			struct file *file =3D skb->sk->sk_socket->file;
- +	sk =3D skb->sk;
- +	if (sk && sk->sk_state !=3D TCP_TIME_WAIT) {
- +		read_lock_bh(&sk->sk_callback_lock);
- +		if (sk->sk_socket && sk->sk_socket->file) {
- +			struct file *file =3D sk->sk_socket->file;
-- 			__be32 uid =3D htonl(file->f_cred->fsuid);
-- 			__be32 gid =3D htonl(file->f_cred->fsgid);
-+ 			__be32 uid =3D htonl(from_kuid_munged(inst->peer_user_ns,
-+ 							    file->f_cred->fsuid));
-+ 			__be32 gid =3D htonl(from_kgid_munged(inst->peer_user_ns,
-+ 							    file->f_cred->fsgid));
-+ 			/* need to unlock here since NLA_PUT may goto */
- -			read_unlock_bh(&skb->sk->sk_callback_lock);
- +			read_unlock_bh(&sk->sk_callback_lock);
-  			if (nla_put_be32(inst->skb, NFULA_UID, uid) ||
-  			    nla_put_be32(inst->skb, NFULA_GID, gid))
-  				goto nla_put_failure;
+Best Regards,
+Milo
 
---Signature=_Fri__14_Sep_2012_11_18_10_+1000_z=XJr1t.G6QUt5yC
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQUoXSAAoJEECxmPOUX5FEbnoP/2NLujmAdcoQbe47Ow85kDi3
-Q5Dw1uMOrkxgv7Cy006tre6mgafEsm/X/2vIb1eV2l26Yy8aB6LxXW4mPb5eMpUN
-TolHfl/PBNATMpm11xY1Z7dYUPb91Y9rNSHMpeLPO5qWgANp8GIFG+K6SUj4Ivdq
-sF4DjG29jvCuELe0jhv9xeqdAqbaP4bNvD0ffNattJVcn3KPA2R8mxO6S0jZBpZz
-rgMzOd5R+u6TZmpF2/zqkE5+ftqOXQ7tfJpaKCxZ1KBLf8NxraYGD7AjW0mzyMFo
-qYr6h5TelGNVkm7e59xVQ/mMNFDTAcqWZEqenRCzK6F3d7buuIlvmxHhrSa67X5l
-EduKWICVgSX0xbpYl6EV8O0oZDCEL4iWzp7Z9uhWses68AZ2Qr2aK/8Mu206U+6A
-d3Yjzs3PebtenJ8AUlcTh33mFJcXxZ/J+fGMzd1e8rAbSNFTYEHPuvGx5Ip8sJsq
-RMXKLpCpf9oICccarb9/5hnoSo+S72MgM7QC9qrRbENyxHD3mkf3wK/Ao3I6qqdO
-U7Zn93XNkh69MV3jkI022oliN5EP7RHXzfzMZsSGzcumXf47qbeBCLkap6VRfKWB
-xxlgjWN2c9Sx5DYBpnY710/UGYlaZtfVXrAsTmYoQix0iStiaGF7Gu2XDHgN02zG
-k1O9K3YGGtxawZg49k2p
-=C0hZ
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Sep_2012_11_18_10_+1000_z=XJr1t.G6QUt5yC--
