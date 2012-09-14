@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab2INLlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:41:18 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:19282 "EHLO
+	id S1759336Ab2INLld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:41:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:22994 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758555Ab2INLlM (ORCPT
+	with ESMTP id S1758902Ab2INLla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:41:12 -0400
+	Fri, 14 Sep 2012 07:41:30 -0400
 X-IronPort-AV: E=Sophos;i="4.80,422,1344211200"; 
-   d="scan'208";a="208102949"
+   d="scan'208";a="208102967"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <arnd@arndb.de>
 CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
@@ -17,9 +17,9 @@ CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
         <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
         <linux-kernel@vger.kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 16/24] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-Date: Fri, 14 Sep 2012 12:13:18 +0100
-Message-ID: <1347621207-11294-16-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 13/24] xen/arm: get privilege status
+Date: Fri, 14 Sep 2012 12:13:15 +0100
+Message-ID: <1347621207-11294-13-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
@@ -29,29 +29,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
-default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
-irq_startup, that is responsible for calling irq_unmask at startup time.
-As a result event channels remain masked.
+Use Xen features to figure out if we are privileged.
+
+XENFEAT_dom0 was introduced by 23735 in xen-unstable.hg.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/events.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/xen/enlighten.c         |    7 +++++++
+ include/xen/interface/features.h |    3 +++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 5ecb596..8ffb7b7 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -836,6 +836,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		struct irq_info *info = info_for_irq(irq);
- 		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 6a0217d..c2a47a7 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -1,6 +1,7 @@
+ #include <xen/xen.h>
+ #include <xen/interface/xen.h>
+ #include <xen/interface/memory.h>
++#include <xen/features.h>
+ #include <xen/platform_pci.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
+@@ -66,6 +67,12 @@ static int __init xen_guest_init(void)
  	}
-+	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+ 	xen_domain_type = XEN_HVM_DOMAIN;
  
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
++	xen_setup_features();
++	if (xen_feature(XENFEAT_dom0))
++		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
++	else
++		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
++
+ 	if (!shared_info_page)
+ 		shared_info_page = (struct shared_info *)
+ 			get_zeroed_page(GFP_KERNEL);
+diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
+index b6ca39a..131a6cc 100644
+--- a/include/xen/interface/features.h
++++ b/include/xen/interface/features.h
+@@ -50,6 +50,9 @@
+ /* x86: pirq can be used by HVM guests */
+ #define XENFEAT_hvm_pirqs           10
+ 
++/* operation as Dom0 is supported */
++#define XENFEAT_dom0                      11
++
+ #define XENFEAT_NR_SUBMAPS 1
+ 
+ #endif /* __XEN_PUBLIC_FEATURES_H__ */
 -- 
 1.7.2.5
 
