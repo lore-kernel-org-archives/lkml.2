@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab2INJ5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:57:24 -0400
-Received: from mga05.intel.com ([192.55.52.89]:24039 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755163Ab2INJ5T (ORCPT
+	id S1756470Ab2INJ5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:57:35 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52312 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305Ab2INJ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:57:19 -0400
+	Fri, 14 Sep 2012 05:57:31 -0400
+Message-ID: <5052FF82.1060106@linux.vnet.ibm.com>
+Date: Fri, 14 Sep 2012 17:57:22 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1209131453160.9845@tundra.namei.org>
-References: <alpine.LRH.2.02.1209121333031.4482@tundra.namei.org>
-	<CA+55aFzUCu36-3EjzA2RTMTPHOWnekXyHkxWiza=BEvdvhd=hA@mail.gmail.com>
-	<CALLzPKZ=rBqRUqb_G6U=5XWoC-ps0qGGphgsPz3iHmAGxSGQnw@mail.gmail.com>
-	<CA+55aFwrTXUigYtiSB7aS1BV6i7yrLZTgoWuEKgJ=XuCeEb4pw@mail.gmail.com>
-	<alpine.LRH.2.02.1209131453160.9845@tundra.namei.org>
-Date: Fri, 14 Sep 2012 12:57:17 +0300
-Message-ID: <CALLzPKbOfYhfGWj4KOs7NZwb--e9OreOn_A3=oi2pCaL293LaQ@mail.gmail.com>
-Subject: Re: [GIT] Digital signature library bugfix
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: James Morris <jmorris@namei.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 1/5] KVM: MMU: release noslot pfn on the fail path properly
+References: <5052FF61.3070600@linux.vnet.ibm.com>
+In-Reply-To: <5052FF61.3070600@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091409-2000-0000-0000-0000091D06EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 7:53 AM, James Morris <jmorris@namei.org> wrote:
-> On Thu, 13 Sep 2012, Linus Torvalds wrote:
->
->> On Wed, Sep 12, 2012 at 6:22 PM, Kasatkin, Dmitry
->> <dmitry.kasatkin@intel.com> wrote:
->> >
->> > But I will re-send updated patch in a moment.
->>
->> Ok, I took that updated patch instead of the pull request, since I
->> liked that much more, and hadn't actually pushed out the pull yet.
->
-> Thanks.
->
->
->
-> --
-> James Morris
-> <jmorris@namei.org>
+We can not directly call kvm_release_pfn_clean to release the pfn
+since we can meet noslot pfn which is used to cache mmio info into
+spte
 
-Thanks.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c         |    6 ++++--
+ arch/x86/kvm/paging_tmpl.h |    6 ++++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index aa0b469..f74c63a 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2877,7 +2877,8 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
+ 	return 0;
+ }
+
+@@ -3345,7 +3346,8 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
+ 	return 0;
+ }
+
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index bf8c42b..c004ab6 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -544,7 +544,8 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ out_gpte_changed:
+ 	if (sp)
+ 		kvm_mmu_put_page(sp, it.sptep);
+-	kvm_release_pfn_clean(pfn);
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
+ 	return NULL;
+ }
+
+@@ -645,7 +646,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	kvm_release_pfn_clean(pfn);
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
+ 	return 0;
+ }
+
+-- 
+1.7.7.6
+
