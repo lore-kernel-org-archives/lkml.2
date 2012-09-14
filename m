@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab2INShL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:37:11 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:34894 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759685Ab2INShI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:37:08 -0400
-Date: Fri, 14 Sep 2012 14:36:41 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120914183641.GA2191@cathedrallabs.org>
-References: <20120913205827.GO7677@google.com>
+	id S1759889Ab2INSjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:39:17 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:43469 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759846Ab2INSjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 14:39:15 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av9WABJ5U1BV5h1yPGdsb2JhbABFhR4jhQCxQBkBAQEBNzSCIAEBBAE6HCMFCwgDDjgUJQoaCogQCrtpFJEJYAOVYIVwjRo
+X-IronPort-AV: E=Sophos;i="4.80,424,1344204000"; 
+   d="scan'208";a="409554954"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 14 Sep 2012 20:46:36 +0200
+To: Ferruh Yigit <fery@cypress.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kevin McNeely <kev@cypress.com>, Phil Warkentin <pwar@cypress.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Shawn Landden <shawnlandden@gmail.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Olivier Sobrie <olivier@sobrie.be>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] Input: cyttsp4 - driver for Cypress TMA4XX
+ touchscreen devices
+Message-ID: <20120914184636.GA2976@polaris.bitmath.org>
+References: <fery@cypress.com>
+ <1347644917-13269-1-git-send-email-fery@cypress.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120913205827.GO7677@google.com>
+In-Reply-To: <1347644917-13269-1-git-send-email-fery@cypress.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
-On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
->   memcg can be handled by memcg people and I can handle cgroup_freezer
->   and others with help from the authors.  The problematic one is
->   blkio.  If anyone is interested in working on blkio, please be my
->   guest.  Vivek?  Glauber?
+Hi Ferruh,
 
-if Serge is not planning to do it already, I can take a look in device_cgroup.
+> This driver is for Cypress TrueTouch(tm) Standard Product controllers,
+> Generation4 devices.
+> 
+> This is second version of driver, code re-structured to match with
+> existing Generation3 driver code.
 
-also, heard about the desire of having a device namespace instead with
-support for translation ("sda" -> "sdf"). If anyone see immediate use for
-this please let me know.
+To integrate with the existing gen3 driver is clearly not the same as
+creating a parallel set of files, which obviously share a lot of code
+with the gen3 code.
 
--- 
-Aristeu
+For instance, the i2c transfer layer seems more or less identical to
+the existing one; just look at cyttsp_i2c_write_block_data() versus
+cyttsp4_i2c_write_block_data(). If different generations of device
+data cannot even be transported through the same _generic_ interface,
+something is clearly not right.
 
+You can't seriously expect anyone to want to maintain one set of files
+for every new version. Please make sure to build on what is already
+there.
+
+Thanks.
+Henrik
