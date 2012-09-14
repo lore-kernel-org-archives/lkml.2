@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759953Ab2INTFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 15:05:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759934Ab2INTFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 15:05:48 -0400
-Date: Fri, 14 Sep 2012 20:05:38 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, Alasdair Kergon <agk@redhat.com>
-Subject: Re: [dm-devel] [PATCH v10 3/8] dm: Use bioset's front_pad for
-	dm_rq_clone_bio_info
-Message-ID: <20120914190538.GN15728@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
-	linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dm-devel@redhat.com, axboe@kernel.dk,
-	Alasdair Kergon <agk@redhat.com>
-References: <1347050642-7080-1-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
+	id S1759957Ab2INTJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 15:09:05 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30558 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758684Ab2INTJC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 15:09:02 -0400
+Subject: Re: [PATCH 1/3] lockd: use rpc client's cl_nodename for id encoding
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347050642-7080-1-git-send-email-koverstreet@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20120914142555.10835.53544.stgit@localhost.localdomain>
+Date: Fri, 14 Sep 2012 15:08:42 -0400
+Cc: Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        linux-nfs@vger.kernel.org, devel@openvz.org,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1800C13C-A771-4CA6-B241-4B4DEA207684@oracle.com>
+References: <20120914140811.10835.81465.stgit@localhost.localdomain> <20120914142555.10835.53544.stgit@localhost.localdomain>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+X-Mailer: Apple Mail (2.1278)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 07, 2012 at 01:44:01PM -0700, Kent Overstreet wrote:
-> Previously, dm_rq_clone_bio_info needed to be freed by the bio's
-> destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
-> This gets rid of a memory allocation and means we can kill
-> dm_rq_bio_destructor.
+Hi-
+
+On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky wrote:
+
+> Taking hostname from uts namespace if not safe, because this cuold be
+> performind during umount operation on child reaper death. And in this case
+> current->nsproxy is NULL already.
 > 
-> The _rq_bio_info_cache kmem cache is unused now and needs to be deleted,
-> but due to the way io_pool is used and overloaded this looks not quite
-> trivial so I'm leaving it for a later patch.
- 
-Acked-by: Alasdair Kergon <agk@redhat.com>
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Cc: <stable@vger.kernel.org>
+> ---
+> fs/lockd/mon.c |   14 ++++++++------
+> 1 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+> index 7ef14b3..c6186fb 100644
+> --- a/fs/lockd/mon.c
+> +++ b/fs/lockd/mon.c
+> @@ -426,11 +426,12 @@ static void encode_mon_name(struct xdr_stream *xdr, const struct nsm_args *argp)
+>  * (via the NLMPROC_SM_NOTIFY call) that the state of host "mon_name"
+>  * has changed.
+>  */
+> -static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+> +static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp,
+> +			 char *nodename)
+> {
+> 	__be32 *p;
+> 
+> -	encode_nsm_string(xdr, utsname()->nodename);
+> +	encode_nsm_string(xdr, nodename);
+> 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+> 	*p++ = cpu_to_be32(argp->prog);
+> 	*p++ = cpu_to_be32(argp->vers);
+> @@ -441,10 +442,11 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+>  * The "mon_id" argument specifies the non-private arguments
+>  * of an NSMPROC_MON or NSMPROC_UNMON call.
+>  */
+> -static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+> +static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp,
+> +			  char *nodename)
+> {
+> 	encode_mon_name(xdr, argp);
+> -	encode_my_id(xdr, argp);
+> +	encode_my_id(xdr, argp, nodename);
+> }
+> 
+> /*
+> @@ -463,14 +465,14 @@ static void encode_priv(struct xdr_stream *xdr, const struct nsm_args *argp)
+> static void nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
+> 			    const struct nsm_args *argp)
+> {
+> -	encode_mon_id(xdr, argp);
+> +	encode_mon_id(xdr, argp, req->rq_task->tk_client->cl_nodename);
 
-> +/*
-> + * Unused now, and needs to be deleted. But since io_pool is overloaded and it's
-> + * still used for _io_cache, I'm leaving this for a later cleanup
-> + */
+IMO you should get the cl_nodename in nsm_mon_unmon() from clnt->cl_nodename, and pass it in as part of *argp .  The choice of which nodename to use is clearly a decision for an "upper layer" not a choice for the XDR functions.
 
-Please avoid "I" in a source file unless you are the author of the file or
-put your name after your comments.
+Long ago I had patches which fixed this layering violation for a very similar purpose as yours, but they were never applied.
 
-An unattributed "FIXME" style of comment here would be fine.
+> 	encode_priv(xdr, argp);
+> }
+> 
+> static void nsm_xdr_enc_unmon(struct rpc_rqst *req, struct xdr_stream *xdr,
+> 			      const struct nsm_args *argp)
+> {
+> -	encode_mon_id(xdr, argp);
+> +	encode_mon_id(xdr, argp, req->rq_task->tk_client->cl_nodename);
 
-Alasdair
+Ditto.
+
+> }
+> 
+> static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
