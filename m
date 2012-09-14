@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab2INTKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 15:10:19 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31093 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2INTKR convert rfc822-to-8bit (ORCPT
+	id S932337Ab2INTPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 15:15:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab2INTPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 15:10:17 -0400
-Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
-Mime-Version: 1.0 (Apple Message framework v1278)
+	Fri, 14 Sep 2012 15:15:14 -0400
+Date: Fri, 14 Sep 2012 12:15:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH REPOST RFC cgroup/for-3.7] cgroup: mark subsystems with
+ broken hierarchy support and whine if cgroups are nested for them
+Message-ID: <20120914191509.GN17747@google.com>
+References: <20120910223125.GC7677@google.com>
+ <20120910223355.GD7677@google.com>
+ <20120911100433.GC8058@dhcp22.suse.cz>
+ <5050568B.9090601@parallels.com>
+ <20120912154907.GW21579@dhcp22.suse.cz>
+ <20120912171120.GP7677@google.com>
+ <20120913121438.GC8055@dhcp22.suse.cz>
+ <20120913171832.GY7677@google.com>
+ <20120913173958.GA21381@dhcp22.suse.cz>
+ <5052E87A.1050405@parallels.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com>
-Date: Fri, 14 Sep 2012 15:10:02 -0400
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DA466953-BF79-44F7-8870-AC2FD5E3FEC2@oracle.com>
-References: <20120914140811.10835.81465.stgit@localhost.localdomain> <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1278)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Disposition: inline
+In-Reply-To: <5052E87A.1050405@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 14, 2012, at 1:38 PM, Myklebust, Trond wrote:
-
-> On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
->> What happens if statd is restarted?
+On Fri, Sep 14, 2012 at 12:19:06PM +0400, Glauber Costa wrote:
+> I want oppose it as well, but I believe part of this exercise is to make
+> the need to have hierarchy widespread. Warning on the case
+> 1st-level-only case helps with that, even if we make more noise than we
+> should.
 > 
-> Nothing unusual. Why?
+> The reason I supported Tejun's proposal originally, is that I think that
+> if we make the wrong amount of noise, being wrong by a surplus is better
+> than being wrong by a deficit, in this case.
 
-The NSM upcall transport is a potential application for TCP + softconn, now that a persistent rpc_clnt is used.  It just depends on what failure mode we'd like to optimize for.
+I think both are valid points and don't think it makes a lot of
+difference either way.  Michal being the maintainer of the code, I'm
+taking his approach for this one.
 
-> 
->> Sent from my iPhone
->> 
->> On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->> 
->>> This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
->>> 
->>> The problem is that with NFSv4 mount in container (with separated mount
->>> namesapce) and active lock on it, dying child reaped of this container will
->>> try to umount NFS and doing this will try to create RPC client to send
->>> unmonitor request to statd.
->>> But creation of RCP client requires valid current->nsproxy (for operation with
->>> utsname()) and during umount on child reaper exit it's equal to zero.
->>> 
->>> Proposed solution is to introduce refrence-counter per-net NSM client, which
->>> is created on fist monitor call and destroyed after the lst monitor call.
->>> 
->>> The following series implements...
->>> 
->>> ---
->>> 
->>> Stanislav Kinsbursky (3):
->>>     lockd: use rpc client's cl_nodename for id encoding
->>>     lockd: per-net NSM client creation and destruction helpers introduced
->>>     lockd: create and use per-net NSM RPC clients on MON/UNMON requests
->>> 
->>> 
->>> fs/lockd/mon.c   |   91 +++++++++++++++++++++++++++++++++++++++++++-----------
->>> fs/lockd/netns.h |    4 ++
->>> fs/lockd/svc.c   |    1 +
->>> 3 files changed, 77 insertions(+), 19 deletions(-)
->>> 
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> -- 
-> Trond Myklebust
-> Linux NFS client maintainer
-> 
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
+Thanks.
 
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+tejun
