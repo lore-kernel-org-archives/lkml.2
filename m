@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759872Ab2INSeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:34:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51233 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759856Ab2INSeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:34:15 -0400
-Date: Fri, 14 Sep 2012 11:34:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: linux-next: build failure after merge of the cgroup tree
-Message-ID: <20120914183410.GH17747@google.com>
-References: <20120914131700.dd3d01a7d17b78082a9bcd55@canb.auug.org.au>
- <5052D51D.3060106@bmw-carit.de>
- <20120914170019.GA17747@google.com>
- <CA+icZUWrK10WmS1252kCPMKxfjihz3z5xqvXPGB1Oi13MuOJfw@mail.gmail.com>
+	id S1759865Ab2INSg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:36:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759631Ab2INSgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 14:36:24 -0400
+Date: Fri, 14 Sep 2012 19:36:10 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Alasdair Kergon <agk@redhat.com>, Hannes Reinecke <hare@suse.de>
+Subject: Re: [dm-devel] [PATCH v10 1/8] block: Generalized bio pool freeing
+Message-ID: <20120914183610.GL15728@agk-dp.fab.redhat.com>
+Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
+	linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
+	Lars Ellenberg <lars.ellenberg@linbit.com>,
+	Alasdair Kergon <agk@redhat.com>, Hannes Reinecke <hare@suse.de>
+References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-2-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+icZUWrK10WmS1252kCPMKxfjihz3z5xqvXPGB1Oi13MuOJfw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1346970902-10931-2-git-send-email-koverstreet@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 08:32:28PM +0200, Sedat Dilek wrote:
-> Did you pushed this to [1] already?
+On Thu, Sep 06, 2012 at 03:34:55PM -0700, Kent Overstreet wrote:
+> With the old code, when you allocate a bio from a bio pool you have to
+> implement your own destructor that knows how to find the bio pool the
+> bio was originally allocated from.
+> This adds a new field to struct bio (bi_pool) and changes
+> bio_alloc_bioset() to use it. This makes various bio destructors
+> unnecessary, so they're then deleted.
+ 
+If you reinstate commit 4d7b38b7d944a79da3793b6c92d38682f3905ac9
+"dm: clear bi_end_io on remapping failure",
 
-Was still building.  Pushed out now.
+Acked-by: Alasdair Kergon <agk@redhat.com>
 
-Thanks.
+for the device-mapper parts.
 
--- 
-tejun
+Alasdair
+
