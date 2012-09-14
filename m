@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab2INJmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:42:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60994 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2INJmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:42:10 -0400
-Date: Fri, 14 Sep 2012 10:41:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+	id S1754143Ab2INJm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:42:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8341 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab2INJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:42:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
+   d="scan'208";a="193000175"
+Subject: Re: [RFC] dmaengine: add dmanegine slave map api's
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <djbw@fb.com>, Russell King <linux@arm.linux.org.uk>,
         Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
         Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
         Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
@@ -19,19 +21,65 @@ Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
         Kukjin Kim <kgene.kim@samsung.com>,
         viresh kumar <viresh.kumar@linaro.org>,
         Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
-Message-ID: <20120914094155.GC12245@n2100.arm.linux.org.uk>
-References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Sep 2012 15:09:25 +0530
+Message-ID: <1347615565.1943.48.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 03:03:09PM +0530, Vinod Koul wrote:
+On Fri, 2012-09-14 at 15:03 +0530, Vinod Koul wrote:
+
+Sorry, this is a RFC, and not a PATCH yet.
+
+> when allocating a channel the dmaengine finds first channel that matches the
+> mask and calls filter function
+> In slave dmaengine model, there already exists a mapping, either hardwired in
+> SoC or thru a configurable mux. So we typically need channel from controller X
+> and in same cases a partcular channel Y.
+> 
+> Add new APIs which allow adding channel map for client-dma relationship.
+> This mapping needs to be registered with dmaengine by platform specfic code
+> which is aware of this mapping. This mapping needs to be added _before_ any
+> client tries to access a channel.
+> 
+> Then in order for slave devices to get a channel based on above mapping, add new
+> slave specfic dmanengine channel request/free APIs
+> 
+> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> ---
+> this is the first attempt to do the slave dma mapping, we have been discussing
+> this and we all agree to need for this. This is the same patch which was shown
+> at KS and attempts to build the mapping information within dmaengine which is
+> platform and arch agnostic.
+> 
+> The arch code like DT/board-files/SFI etc can use these APIs to build dmaengine
+> mapping and then dmaengine filters channels based on this mapping.
+> 
+> Now Credits:
+> the orginal idea was from Linus Walleij and has been discussed in similar
+> format.
+> ---
+>  drivers/dma/dmaengine.c   |  152 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/dmaengine.h |   50 +++++++++++++++
+>  2 files changed, 202 insertions(+)
+> 
+> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+> index 3491654..293dfd0 100644
+> --- a/drivers/dma/dmaengine.c
+> +++ b/drivers/dma/dmaengine.c
+> @@ -1066,6 +1066,158 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx)
+>  }
+>  EXPORT_SYMBOL_GPL(dma_run_dependencies);
+>  
+> +/* slave channel mapping code*/
+> +static LIST_HEAD(dma_slave_map);
+> +
 > +/*called under lock held */
 > +static struct dma_chan *dmaengine_get_slave_channel(char *requestor, dma_cap_mask_t *mask)
 > +{
@@ -43,17 +91,9 @@ On Fri, Sep 14, 2012 at 03:03:09PM +0530, Vinod Koul wrote:
 > +	list_for_each_entry_safe(device, _d, &dma_device_list, global_node) {
 > +		if (strcmp(requestor, dev_name(device->dev)))
 > +			continue;
-
-So, this finds a DMA device where the struct device's name corresponds
-with the name passed in as 'requestor' (note that requestor should be
-const.)
-
 > +
 > +		chan = private_candidate(mask, device, NULL, NULL);
 > +		if (chan) {
-
-And this finds _any_ channel on the device.
-
 > +			/* Found a suitable channel, try to grab, prep, and
 > +			 * return it.  We first set DMA_PRIVATE to disable
 > +			 * balance_ref_count as this channel will not be
@@ -78,9 +118,22 @@ And this finds _any_ channel on the device.
 > +		}
 > +	}
 > +	return chan;
-
-and returns it...
-
+> +}
+> +
+> +/**
+> + * dmaengine_request_slave_channel - request a slave channel for which damengine
+> + * knows the channel mapping
+> + *
+> + * This is generic API which should work on all arch and doesnt assume any arch
+> + * implementation of how map is constructed. Arch code should call map apis to
+> + * build the channel map first
+> + *
+> + * @requestor: client name
+> + * @config: dma_slave_config, this is set post channle allocation
+> + * @mask: capabilities that the channel must satisfy
+> + * @fn: optional filter function should be unused typically
+> + * @fn_param: filter fn params
+> + */
 > +struct dma_chan *dmaengine_request_slave_channel(
 > +		char *requestor, struct dma_slave_config *config,
 > +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
@@ -107,21 +160,11 @@ and returns it...
 > +		slave = dmaengine_get_slave_channel(requestor, mask);
 > +		if (!slave)
 > +			continue;
-
-Ok, so here we've got a channel - any old channel what so ever on the
-device described by 'requestor'.  And we're holding a reference to it.
-
 > +
 > +		/* check if client is requesting some specfic slave channel */
 > +		if ((entry->map->ch != -1) && (entry->map->ch != slave->chan_id))
 > +			continue;
-
-If the channel number isn't what we wanted, where do we drop this
-reference?  Also note that this 'continue' causes us to move to the
-next entry in the map list - whereas what may have happened is that
-the channel on the DMA engine is free, but it simply wasn't the first
-free channel.  I don't see how this can work sanely.
-
+> +
 > +		/* now call filter fn but it should not be used anyway */
 > +		if (fn && !fn(slave, fn_param))
 > +			continue;
@@ -132,13 +175,140 @@ free channel.  I don't see how this can work sanely.
 > +		/* pick slave id from map if not set */
 > +		if (!config->slave_id)
 > +			config->slave_id = entry->map->slave_id;
+> +
+> +		/*now lets set slave params */
+> +		dmaengine_slave_config(slave, config);
+> +
+> +		return slave;
+> +	}
+> +	mutex_unlock(&dma_list_mutex);
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(dmaengine_request_slave_channel);
+> +
+> +int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
+> +		unsigned int num_entries)
+> +{
+> +	int i = 0;
+> +	struct dmaengine_slave_map_entries *entry;
+> +
+> +	entry = kzalloc(sizeof(struct dmaengine_slave_map) * num_entries, GFP_KERNEL);
+> +	if (entry == NULL)
+> +		return -ENOMEM;
+> +	entry->num_entries = num_entries;
+> +	mutex_lock(&dma_list_mutex);
+> +	for (i = 0; i < num_entries; i++) {
+> +		entry->map = map;
+> +		entry->used = false;
+> +		entry->map->entry = entry;
+> +		list_add_tail(&entry->node, &dma_slave_map);
+> +		entry++;
+> +		map++;
+> +	}
+> +	mutex_unlock(&dma_list_mutex);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(dmaengine_add_channel_map);
+> +
+> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map)
+> +{
+> +	struct dmaengine_slave_map_entries *entry;
+> +	unsigned int i, num_entries;
+> +
+> +	BUG_ON(map);
+> +	mutex_lock(&dma_list_mutex);
+> +	entry = map->entry;
+> +	num_entries = entry->num_entries;
+> +	for (i = 0; i < num_entries; i++) {
+> +		list_del(&entry->node);
+> +		entry++;
+> +	}
+> +	kfree(entry);
+> +	mutex_unlock(&dma_list_mutex);
+> +	return;
+> +}
+> +EXPORT_SYMBOL_GPL(dmaengine_free_channel_map);
+> +
+>  static int __init dma_bus_init(void)
+>  {
+>  	return class_register(&dma_devclass);
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 9c02a45..54dd1d5 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -371,6 +371,35 @@ struct dma_slave_config {
+>  	unsigned int slave_id;
+>  };
+>  
+> +struct dmaengine_slave_map_entries;
+> +/* dmaengine slave channel map
+> + *
+> + * @dma: dma controller, mandatory
+> + * @client: clinet associated with the controller, mandatory
+> + * @ch: channel index, desired but optional
+> + * @slave_id: slave id for programming mux
+> + *
+> + * the platform needs to tell the channel mapping information to the dmaengine
+> + * code thru this structure.
+> + * This is used by dmanengine to find the channel to be allocated during
+> + * dma_rquest_channel process for slave channels
+> + */
+> +struct dmaengine_slave_map {
+> +	char *dma;
+> +	char *client;
+> +	int ch;
+> +	int slave_id;
+> +	struct dmaengine_slave_map_entries *entry;
+> +};
+> +
+> +struct dmaengine_slave_map_entries {
+> +	struct dmaengine_slave_map *map;
+> +	bool used;
+> +	struct list_head node;
+> +	unsigned int num_entries;
+> +};
+> +
+> +
+>  static inline const char *dma_chan_name(struct dma_chan *chan)
+>  {
+>  	return dev_name(&chan->dev->device);
+> @@ -974,6 +1003,12 @@ enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
+>  void dma_issue_pending_all(void);
+>  struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
+>  void dma_release_channel(struct dma_chan *chan);
+> +struct dma_chan *dmaengine_request_slave_channel(
+> +		char *requestor, struct dma_slave_config *config,
+> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
+> +int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
+> +		unsigned int num_entries);
+> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map);
+>  #else
+>  static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+>  {
+> @@ -990,6 +1025,21 @@ static inline struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask,
+>  static inline void dma_release_channel(struct dma_chan *chan)
+>  {
+>  }
+> +struct dma_chan *dmaengine_request_slave_channel(
+> +		char *requestor, struct dma_slave_config *config,
+> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
+> +{
+> +	return NULL;
+> +}
+> +static inline int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
+> +		unsigned int num_entries)
+> +{
+> +	return -EIO;
+> +}
+> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map)
+> +{
+> +	return;
+> +}
+>  #endif
+>  
+>  /* --- DMA device --- */
 
-So, with this level, we're talking about tying DMA channels to slave IDs.
-What about the case where you may have a DMA engine with just two channels
-but 16 request signals?  (as is the case with PL081).
 
-We're still into having 'virtual' DMA channels in DMA engines, this just
-adds an additional layer of complexity on top.
+-- 
+~Vinod
 
-Maybe a better idea would be to pass the map entry down to the DMA engine
-driver itself, and let it return the appropriate struct dma_chan?
