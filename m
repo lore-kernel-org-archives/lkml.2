@@ -1,115 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2INJ6g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:58:36 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42876 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab2INJ6e (ORCPT
+	id S1756400Ab2INJ7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:59:16 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48190 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2INJ7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:58:34 -0400
-Message-ID: <5052FFC2.6060405@linux.vnet.ibm.com>
-Date: Fri, 14 Sep 2012 17:58:26 +0800
+	Fri, 14 Sep 2012 05:59:14 -0400
+Message-ID: <5052FFEA.1040607@linux.vnet.ibm.com>
+Date: Fri, 14 Sep 2012 17:59:06 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 3/5] KVM: MMU: cleanup FNAME(page_fault)
+Subject: [PATCH v2 4/5] KVM: MMU: introduce page_fault_start and page_fault_end
 References: <5052FF61.3070600@linux.vnet.ibm.com>
 In-Reply-To: <5052FF61.3070600@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091409-8256-0000-0000-0000042C0629
+x-cbid: 12091409-5564-0000-0000-000004765604
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let it return emulate state instead of spte like __direct_map
+Wrap the common operations into these two functions
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   28 ++++++++++------------------
- 1 files changed, 10 insertions(+), 18 deletions(-)
+ arch/x86/kvm/mmu.c         |   53 +++++++++++++++++++++++++++----------------
+ arch/x86/kvm/paging_tmpl.h |   16 +++++--------
+ 2 files changed, 39 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 92f466c..0adf376 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -463,20 +463,18 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- /*
-  * Fetch a shadow pte for a specific level in the paging hierarchy.
-  */
--static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-+static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			 struct guest_walker *gw,
- 			 int user_fault, int write_fault, int hlevel,
--			 int *emulate, pfn_t pfn, bool map_writable,
--			 bool prefault)
-+			 pfn_t pfn, bool map_writable, bool prefault)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 29ce28b..7e7b8cd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2825,6 +2825,29 @@ exit:
+ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
+ 			 gva_t gva, pfn_t *pfn, bool write, bool *writable);
+
++static bool
++page_fault_start(struct kvm_vcpu *vcpu, gfn_t *gfnp, pfn_t *pfnp, int *levelp,
++		 bool force_pt_level, unsigned long mmu_seq)
++{
++	spin_lock(&vcpu->kvm->mmu_lock);
++	if (mmu_notifier_retry(vcpu, mmu_seq))
++		return false;
++
++	kvm_mmu_free_some_pages(vcpu);
++	if (likely(!force_pt_level))
++		transparent_hugepage_adjust(vcpu, gfnp, pfnp, levelp);
++
++	return true;
++}
++
++static void page_fault_end(struct kvm_vcpu *vcpu, pfn_t pfn)
++{
++	spin_unlock(&vcpu->kvm->mmu_lock);
++
++	if (!is_error_pfn(pfn))
++		kvm_release_pfn_clean(pfn);
++}
++
+ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
+ 			 gfn_t gfn, bool prefault)
  {
--	unsigned access = gw->pt_access;
- 	struct kvm_mmu_page *sp = NULL;
--	int top_level;
--	unsigned direct_access;
- 	struct kvm_shadow_walk_iterator it;
-+	unsigned direct_access, access = gw->pt_access;
-+	int top_level, emulate = 0;
+@@ -2862,22 +2885,17 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
+ 	if (handle_abnormal_pfn(vcpu, v, gfn, pfn, ACC_ALL, &r))
+ 		return r;
 
- 	if (!is_present_gpte(gw->ptes[gw->level - 1]))
--		return NULL;
-+		return 0;
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	if (mmu_notifier_retry(vcpu, mmu_seq)) {
++	if (!page_fault_start(vcpu, &gfn, &pfn, &level, force_pt_level,
++	      mmu_seq)) {
+ 		r = 0;
+-		goto out_unlock;
++		goto exit;
+ 	}
 
- 	direct_access = gw->pte_access;
+-	kvm_mmu_free_some_pages(vcpu);
+-	if (likely(!force_pt_level))
+-		transparent_hugepage_adjust(vcpu, &gfn, &pfn, &level);
+ 	r = __direct_map(vcpu, v, write, map_writable, level, gfn, pfn,
+ 			 prefault);
 
-@@ -540,17 +538,17 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-
- 	clear_sp_write_flooding_count(it.sptep);
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
--		     user_fault, write_fault, emulate, it.level,
-+		     user_fault, write_fault, &emulate, it.level,
- 		     gw->gfn, pfn, prefault, map_writable);
- 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
-
--	return it.sptep;
-+	return emulate;
-
- out_gpte_changed:
- 	if (sp)
- 		kvm_mmu_put_page(sp, it.sptep);
-
--	return NULL;
-+	return 0;
+-out_unlock:
+-	spin_unlock(&vcpu->kvm->mmu_lock);
+-	if (!is_error_pfn(pfn))
+-		kvm_release_pfn_clean(pfn);
++exit:
++	page_fault_end(vcpu, pfn);
+ 	return r;
  }
 
- /*
-@@ -573,8 +571,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	int write_fault = error_code & PFERR_WRITE_MASK;
- 	int user_fault = error_code & PFERR_USER_MASK;
- 	struct guest_walker walker;
--	u64 *sptep;
--	int emulate = 0;
- 	int r;
- 	pfn_t pfn;
- 	int level = PT_PAGE_TABLE_LEVEL;
-@@ -638,15 +634,11 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	kvm_mmu_free_some_pages(vcpu);
- 	if (!force_pt_level)
- 		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
--	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
--			     level, &emulate, pfn, map_writable, prefault);
--	(void)sptep;
--	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
--		 sptep, *sptep, emulate);
-+	r = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
-+			 level, pfn, map_writable, prefault);
+@@ -3331,22 +3349,17 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	if (handle_abnormal_pfn(vcpu, 0, gfn, pfn, ACC_ALL, &r))
+ 		return r;
+
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	if (mmu_notifier_retry(vcpu, mmu_seq)) {
++	if (!page_fault_start(vcpu, &gfn, &pfn, &level, force_pt_level,
++	      mmu_seq)) {
+ 		r = 0;
+-		goto out_unlock;
++		goto exit;
+ 	}
+
+-	kvm_mmu_free_some_pages(vcpu);
+-	if (likely(!force_pt_level))
+-		transparent_hugepage_adjust(vcpu, &gfn, &pfn, &level);
+ 	r = __direct_map(vcpu, gpa, write, map_writable,
+ 			 level, gfn, pfn, prefault);
+
+-out_unlock:
+-	spin_unlock(&vcpu->kvm->mmu_lock);
+-	if (!is_error_pfn(pfn))
+-		kvm_release_pfn_clean(pfn);
++exit:
++	page_fault_end(vcpu, pfn);
+ 	return r;
+ }
+
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 0adf376..1a738c5 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -624,26 +624,22 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 				walker.gfn, pfn, walker.pte_access, &r))
+ 		return r;
+
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	if (mmu_notifier_retry(vcpu, mmu_seq)) {
++	if (!page_fault_start(vcpu, &walker.gfn, &pfn, &level,
++	      force_pt_level, mmu_seq)) {
+ 		r = 0;
+-		goto out_unlock;
++		goto exit;
+ 	}
+
+ 	kvm_mmu_audit(vcpu, AUDIT_PRE_PAGE_FAULT);
+-	kvm_mmu_free_some_pages(vcpu);
+-	if (!force_pt_level)
+-		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
++
+ 	r = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+ 			 level, pfn, map_writable, prefault);
 
  	++vcpu->stat.pf_fixed;
  	kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
--	r = emulate;
 
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
+-out_unlock:
+-	spin_unlock(&vcpu->kvm->mmu_lock);
+-	if (!is_error_pfn(pfn))
+-		kvm_release_pfn_clean(pfn);
++exit:
++	page_fault_end(vcpu, pfn);
+ 	return r;
+ }
+
 -- 
 1.7.7.6
 
