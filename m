@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759853Ab2INSeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:34:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45267 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759541Ab2INSeK (ORCPT
+	id S1759872Ab2INSeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:34:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51233 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759856Ab2INSeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:34:10 -0400
+	Fri, 14 Sep 2012 14:34:15 -0400
+Date: Fri, 14 Sep 2012 11:34:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: linux-next: build failure after merge of the cgroup tree
+Message-ID: <20120914183410.GH17747@google.com>
+References: <20120914131700.dd3d01a7d17b78082a9bcd55@canb.auug.org.au>
+ <5052D51D.3060106@bmw-carit.de>
+ <20120914170019.GA17747@google.com>
+ <CA+icZUWrK10WmS1252kCPMKxfjihz3z5xqvXPGB1Oi13MuOJfw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120913115438.0557462f@lwn.net>
-References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
-	<1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
-	<201209131608.05869.hverkuil@xs4all.nl>
-	<17733334.UmoCxqVfBu@harkonnen>
-	<20120913115438.0557462f@lwn.net>
-Date: Fri, 14 Sep 2012 15:34:09 -0300
-Message-ID: <CALF0-+XAMHXTgi88dYqoSkAnBp6WTYdY80pgOTK74RNmqeWkxA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Federico Vaga <federico.vaga@gmail.com>, Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUWrK10WmS1252kCPMKxfjihz3z5xqvXPGB1Oi13MuOJfw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
+On Fri, Sep 14, 2012 at 08:32:28PM +0200, Sedat Dilek wrote:
+> Did you pushed this to [1] already?
 
-On Thu, Sep 13, 2012 at 2:54 PM, Jonathan Corbet <corbet@lwn.net> wrote:
+Was still building.  Pushed out now.
 
->
-> Well, there is some documentation here:
->
->         https://lwn.net/Articles/447435/
->
+Thanks.
 
-I thank you for this. It really helped me getting started on videobuf2.
-
-> This reminds me that I've always meant to turn it into something to put
-> into Documentation/.  I'll try to get to that soon.
->
-
-Yes, that's something many of us will appreciate A LOT.
-
-Perhaps we could start with some skeleton documentation and then build
-from there.
-I maybe naive, but I think that way other developers might add little
-contributions.
-
-Regards,
-Ezequiel.
-
-PS: I wish I had some time to do it myself.
+-- 
+tejun
