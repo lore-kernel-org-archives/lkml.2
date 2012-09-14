@@ -1,79 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2INUjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 16:39:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62164 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab2INUjb (ORCPT
+	id S1754021Ab2INUpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 16:45:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56839 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab2INUpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 16:39:31 -0400
-Date: Fri, 14 Sep 2012 13:39:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120914203925.GR17747@google.com>
-References: <20120913205827.GO7677@google.com>
- <20120914180754.GF6221@redhat.com>
- <20120914185324.GI17747@google.com>
- <20120914192840.GG6221@redhat.com>
- <20120914194439.GP17747@google.com>
- <20120914194950.GQ17747@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120914194950.GQ17747@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Sep 2012 16:45:06 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 1/2] PCI: Annotate pci_fixup_irqs with __devinit
+Date: Fri, 14 Sep 2012 22:44:15 +0200
+Message-Id: <1347655456-2542-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:Nom7qgQWtfUTmgDSmVNYlmmvP9AxgzwH/qrwOy7eCMz
+ patGWO1MF3YdfI0U6+I20HshBj73o08NLfjOhLOZF6OYJkflk2
+ 42y+hd/25nIP+6K3/YROuzb5xFlOeXsUEVmlHdPpGyG7M7EIJu
+ R5qG+Ri5cXdRiYMcLXqHRljqpottpzl4LL1dJWtYeGB6FJ0wsF
+ UItkdTl0SPIMC6Pwq1C0a7OJKkXufei6XKpZc6hDfNsmBERfRy
+ FaqxiCgx8ud7GlKEiPVMLCt0Gp3Ap9+M73Oa9Nmhv/X4W5PHJk
+ /JcZTM7ywLVAwgRvy5cCM2h9n6HaOnWmR4rNTBEZYVJpurQy7j
+ hL7szTDcDTp5JgX2CDK50J7R+kgG78RZEWWLS7n0mMJYl6EoAh
+ 1nkMHQRPdyfq79Q0NQ7GHuWCj/Ioel0Imsa9ZF/8cLlDtsTr+O
+ CqWKh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+In order to keep pci_fixup_irqs() around after init (e.g. for hotplug),
+mark it __devinit instead of __init. This requires the same change for
+the implementation of the pcibios_update_irq() function on all
+architectures.
 
-On Fri, Sep 14, 2012 at 12:49:50PM -0700, Tejun Heo wrote:
-> That said, if someone can think of a better solution, I'm all ears.
-> One thing that *has* to be maintained is that it should be able to tag
-> a resource in such way that its associated controllers are
-> identifiable regardless of which task is looking at it.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+Note: Ideally these annotations should go away completely in order to
+be independent of the HOTPLUG symbol. However, there is work underway
+to get rid of HOTPLUG altogether, so I've kept the __devinit for now.
 
-So, I thought about it more.  How about we do "consider / ignore this
-node" instead of "(don't) nest beyond this level".  For example, let's
-assume a tree like the following.
+ arch/alpha/kernel/pci.c   | 2 +-
+ arch/mips/pci/pci.c       | 2 +-
+ arch/sh/drivers/pci/pci.c | 2 +-
+ arch/x86/pci/visws.c      | 2 +-
+ arch/xtensa/kernel/pci.c  | 2 +-
+ drivers/pci/setup-irq.c   | 4 ++--
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-        R
-     /  |  \
-    A   B   C
-   / \
-  AA AB
-
-If we want to differentiate between AA and AB, we'll have to consider
-the whole tree with the previous sheme - A needs to nest, so R needs
-to nest and we end up with the whole tree.  Instead, if we have honor
-/ ignore this node.  We can set the honor bit on A, AA and AB and see
-the tree as
-
-        R
-     /
-    A
-   / \
-  AA AB
-
-We still see the intermediate A node but can ignore the other
-branches.  Implementation and concept-wise, it's fairly simple too.
-For any given node and controller, you travel upwards until you meet a
-node which has the controller enabled and that's the cgroup the
-controller considers.
-
-Thanks.
-
+diff --git a/arch/alpha/kernel/pci.c b/arch/alpha/kernel/pci.c
+index 9816d5a..6192b35 100644
+--- a/arch/alpha/kernel/pci.c
++++ b/arch/alpha/kernel/pci.c
+@@ -256,7 +256,7 @@ pcibios_fixup_bus(struct pci_bus *bus)
+ 	}
+ }
+ 
+-void __init
++void __devinit
+ pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 6903568..af3dc05 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -313,7 +313,7 @@ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
+ 	}
+ }
+ 
+-void __init
++void __devinit
+ pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+diff --git a/arch/sh/drivers/pci/pci.c b/arch/sh/drivers/pci/pci.c
+index 40db2d0..d16fabe 100644
+--- a/arch/sh/drivers/pci/pci.c
++++ b/arch/sh/drivers/pci/pci.c
+@@ -192,7 +192,7 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 	return pci_enable_resources(dev, mask);
+ }
+ 
+-void __init pcibios_update_irq(struct pci_dev *dev, int irq)
++void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+ }
+diff --git a/arch/x86/pci/visws.c b/arch/x86/pci/visws.c
+index 6f2f8ee..15bdfbf 100644
+--- a/arch/x86/pci/visws.c
++++ b/arch/x86/pci/visws.c
+@@ -62,7 +62,7 @@ out:
+ 	return irq;
+ }
+ 
+-void __init pcibios_update_irq(struct pci_dev *dev, int irq)
++void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+ }
+diff --git a/arch/xtensa/kernel/pci.c b/arch/xtensa/kernel/pci.c
+index 69759e9..efc3369 100644
+--- a/arch/xtensa/kernel/pci.c
++++ b/arch/xtensa/kernel/pci.c
+@@ -212,7 +212,7 @@ void pcibios_set_master(struct pci_dev *dev)
+ 
+ /* the next one is stolen from the alpha port... */
+ 
+-void __init
++void __devinit
+ pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
+index eb219a1..f0bcd56 100644
+--- a/drivers/pci/setup-irq.c
++++ b/drivers/pci/setup-irq.c
+@@ -18,7 +18,7 @@
+ #include <linux/cache.h>
+ 
+ 
+-static void __init
++static void __devinit
+ pdev_fixup_irq(struct pci_dev *dev,
+ 	       u8 (*swizzle)(struct pci_dev *, u8 *),
+ 	       int (*map_irq)(const struct pci_dev *, u8, u8))
+@@ -54,7 +54,7 @@ pdev_fixup_irq(struct pci_dev *dev,
+ 	pcibios_update_irq(dev, irq);
+ }
+ 
+-void __init
++void __devinit
+ pci_fixup_irqs(u8 (*swizzle)(struct pci_dev *, u8 *),
+ 	       int (*map_irq)(const struct pci_dev *, u8, u8))
+ {
 -- 
-tejun
+1.7.12
+
