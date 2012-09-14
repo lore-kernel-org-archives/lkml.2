@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab2INDX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 23:23:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53589 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab2INDXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 23:23:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPgLHd-ac3JYu4SEQd0pPO-YBW4kM+DqcjHs3QzPdLWqc+CXfw@mail.gmail.com>
-References: <CAPgLHd-ac3JYu4SEQd0pPO-YBW4kM+DqcjHs3QzPdLWqc+CXfw@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 14 Sep 2012 11:23:03 +0800
-Message-ID: <CAMPhdO8G_GzOBKB=pdWgKv5GxnYoSNC2mRVwpHYqz4d648pwkA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: mmp: using for_each_set_bit to simplify the code
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: haojian.zhuang@gmail.com, linux@arm.linux.org.uk,
-        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1759184Ab2IND1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 23:27:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34636 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755393Ab2IND13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Sep 2012 23:27:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,420,1344236400"; 
+   d="scan'208";a="221883159"
+Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via
+ device_prep_dma_cyclic() callback
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+In-Reply-To: <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com>
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
+	 <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Sep 2012 08:54:00 +0530
+Message-ID: <1347593040.1943.24.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:30 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Using for_each_set_bit() to simplify the code.
->
-> spatch with a semantic match is used to found this.
-> (http://coccinelle.lip6.fr/)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Thu, 2012-09-13 at 16:37 +0300, Peter Ujfalusi wrote:
+> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+> can receive the no_wakeup request coming from client drivers.
+> This feature can be used during audio operation to disable all audio
+> related interrupts.
+We already have a flag to indicate this, see 
+* @DMA_PREP_INTERRUPT - trigger an interrupt (callback) upon completion  of
+*  this transaction
 
-Great API, this is good. Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Unfortunately, the addition of cyclic API missed having this flag. So
+right way would be to add flag argument in the API.
 
-> ---
->  arch/arm/mach-mmp/irq.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-mmp/irq.c b/arch/arm/mach-mmp/irq.c
-> index e60c7d9..3c71246 100644
-> --- a/arch/arm/mach-mmp/irq.c
-> +++ b/arch/arm/mach-mmp/irq.c
-> @@ -153,10 +153,8 @@ static void icu_mux_irq_demux(unsigned int irq, struct irq_desc *desc)
->                 status = readl_relaxed(data->reg_status) & ~mask;
->                 if (status == 0)
->                         break;
-> -               n = find_first_bit(&status, BITS_PER_LONG);
-> -               while (n < BITS_PER_LONG) {
-> +               for_each_set_bit(n, &status, BITS_PER_LONG) {
->                         generic_handle_irq(icu_data[i].virq_base + n);
-> -                       n = find_next_bit(&status, BITS_PER_LONG, n + 1);
->                 }
->         }
->  }
->
+-- 
+~Vinod
+
