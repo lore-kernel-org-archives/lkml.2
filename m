@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab2INJ1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:27:52 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:56996 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759332Ab2INJ1s (ORCPT
+	id S1759384Ab2INJfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:35:14 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58127 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759294Ab2INJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:27:48 -0400
-Message-ID: <5052F8BC.4020102@ti.com>
-Date: Fri, 14 Sep 2012 12:28:28 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to dmaengine_prep_dma_cyclic()
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>  <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com>  <5051FB4D.3000009@metafoo.de> <1347593217.1943.26.camel@vkoul-udesk3>  <5052E72A.8040207@metafoo.de> <1347612630.1943.29.camel@vkoul-udesk3>
-In-Reply-To: <1347612630.1943.29.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Fri, 14 Sep 2012 05:35:08 -0400
+Date: Fri, 14 Sep 2012 10:39:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: herbert@gondor.hengli.com.au, rusty@rustcorp.com.au,
+        linux-crypto@vger.kernel.org, zohar@us.ibm.com,
+        dmitry.kasatkin@intel.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
+Message-ID: <20120914103930.1e16ad8b@pyramind.ukuu.org.uk>
+In-Reply-To: <20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
+References: <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
+	<20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 14 Sep 2012 00:50:05 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-On 09/14/2012 11:50 AM, Vinod Koul wrote:
->> Well, the idea was that the driver would disable interrupts if there is no
->> callback to call, since there would be nothing to do in the interrupt
->> handler anyway. But I guess the flags approach should work fine as well.
-> Yes we _could_ do that, but this relies on dmaengine driver to have this
-> implicit understanding. Anyone using dmaengine library in ASoC may or
-> may not be aware of this, so i would consider it hackish.
-> 
-> Using this flag explicitly makes everyone aware what the intended
-> behaviour is.
+> Add an ASN.1 BER/DER/CER decoder.  This uses the bytecode from the ASN.1
+> compiler in the previous patch to inform it as to what to expect to find in the
+> encoded byte stream.  The output from the compiler also tells it what functions
+> to call on what tags, thus allowing the caller to retrieve information.
 
-I'm not sure about which flags should ASoC set for the two case we are going
-to have. I think it should be something like this:
+Why do this in the kernel.That appears to be completely insane. Can you
+prove it runs in a short bounded time for all inputs, has it been fuzz
+tested extensively ?
 
-unsigned long flags = DMA_CTRL_ACK;
+This kind of crap belongs in user space. Parse it in userspace, pass same
+structures and objects to the kernel.
 
-if (!substream->runtime->no_period_wakeup)
-	flags |= DMA_PREP_INTERRUPT;
-
-I'm not 100% sure of the role of DMA_CTRL_ACK in this case. Or should we only
-handle the DMA_PREP_INTERRUPT flag, like this:
-
-unsigned long flags = 0;
-
-if (!substream->runtime->no_period_wakeup)
-	flags |= DMA_PREP_INTERRUPT;
-
-
-What do you think?
-
--- 
-Péter
+Alan
