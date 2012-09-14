@@ -1,90 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2INJSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:18:09 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35532 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab2INJSH (ORCPT
+	id S1758427Ab2INJSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:18:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59061 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758311Ab2INJSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:18:07 -0400
-Date: Fri, 14 Sep 2012 10:18:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Roland Stigge <stigge@antcom.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 09/19] ARM: ux500: Enable SSP (SPI) for HREF when booting
- Device Tree
-Message-ID: <20120914091800.GJ3374@gmail.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdaC_enpxUFNM_wteAQWKER_naUNUH-s1pJtiGzVFSV+og@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaC_enpxUFNM_wteAQWKER_naUNUH-s1pJtiGzVFSV+og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Sep 2012 05:18:16 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: <linux-doc@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Rob Landley <rob@landley.net>
+Subject: [PATCH] v4l: change path of video drivers
+Date: Fri, 14 Sep 2012 14:47:52 +0530
+Message-Id: <1347614272-24878-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:11:10AM -0700, Linus Walleij wrote:
-> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Here we add a new SSP node to the HREF's Device Tree file which
-> > activates the generic one found in the .dtsi file. This will
-> > allow probing of the SSP driver when Device Tree is enabled.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> We have to look closer at this.
-> 
-> There are merged PL022 DT bindings (by Roland Stigge)
-> nowadays, see commit 6d3952a7dfa80919842bbe01ac7f693d40a1eb84
-> in linux-next:
-> 
->  Optional properties:
-> +- num-cs : total number of chipselects
->  - cs-gpios : should specify GPIOs used for chipselects.
->    The gpios will be referred to as reg = <index> in the SPI child nodes.
->    If unspecified, a single SPI device without a chip select can be used.
-> 
-> +SPI slave nodes must be children of the SPI master node and can
-> +contain the following properties.
-> +
-> +- pl022,interface : interface type:
-> +       0: SPI
-> +       1: Texas Instruments Synchronous Serial Frame Format
-> +       2: Microwire (Half Duplex)
-> +- pl022,com-mode : polling, interrupt or dma
-> +- pl022,rx-level-trig : Rx FIFO watermark level
-> +- pl022,tx-level-trig : Tx FIFO watermark level
-> +- pl022,ctrl-len : Microwire interface: Control length
-> +- pl022,wait-state : Microwire interface: Wait state
-> +- pl022,duplex : Microwire interface: Full/Half duplex
-> 
-> Currently this is defined as auxdata in board-mop500.c
-> but notanly cs-gpios (num chipselects) should come from
-> device tree instead.
-> 
-> It appears Roland has written his bindings such that DT
-> data augments platform data (yes, I am also getting crazy
-> about this prioritization, mea culpa for ACKing this without
-> proper discussion) so it appears that you could actually
-> use AUXDATA and some stuff in the DT at the same
-> time.
-> 
-> Or you could keep it like this and only have AUXDATA
-> as it stands, I just want a discussion about what is the right
-> thing to do before we commit to anything.
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-Sounds fine.
+due to structure change for video drivers, change the
+description with correct path.
 
-I'll pull this for now.
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Rob Landley <rob@landley.net>
+---
+ Documentation/video4linux/CQcam.txt           |    2 +-
+ Documentation/video4linux/README.davinci-vpbe |   20 ++++++++++----------
+ Documentation/video4linux/fimc.txt            |   16 ++++++++--------
+ Documentation/video4linux/omap3isp.txt        |    2 +-
+ Documentation/video4linux/v4l2-framework.txt  |    2 +-
+ Documentation/video4linux/videobuf            |    2 +-
+ 6 files changed, 22 insertions(+), 22 deletions(-)
 
+diff --git a/Documentation/video4linux/CQcam.txt b/Documentation/video4linux/CQcam.txt
+index 6e680fe..0b69e4e 100644
+--- a/Documentation/video4linux/CQcam.txt
++++ b/Documentation/video4linux/CQcam.txt
+@@ -18,7 +18,7 @@ Table of Contents
+ 
+ 1.0 Introduction
+ 
+-  The file ../../drivers/media/video/c-qcam.c is a device driver for
++  The file ../../drivers/media/parport/c-qcam.c is a device driver for
+ the Logitech (nee Connectix) parallel port interface color CCD camera.
+ This is a fairly inexpensive device for capturing images.  Logitech
+ does not currently provide information for developers, but many people
+diff --git a/Documentation/video4linux/README.davinci-vpbe b/Documentation/video4linux/README.davinci-vpbe
+index 7a460b0..dc9a297 100644
+--- a/Documentation/video4linux/README.davinci-vpbe
++++ b/Documentation/video4linux/README.davinci-vpbe
+@@ -5,22 +5,22 @@
+  File partitioning
+  -----------------
+  V4L2 display device driver
+-         drivers/media/video/davinci/vpbe_display.c
+-         drivers/media/video/davinci/vpbe_display.h
++         drivers/media/platform/davinci/vpbe_display.c
++         drivers/media/platform/davinci/vpbe_display.h
+ 
+  VPBE display controller
+-         drivers/media/video/davinci/vpbe.c
+-         drivers/media/video/davinci/vpbe.h
++         drivers/media/platform/davinci/vpbe.c
++         drivers/media/platform/davinci/vpbe.h
+ 
+  VPBE venc sub device driver
+-         drivers/media/video/davinci/vpbe_venc.c
+-         drivers/media/video/davinci/vpbe_venc.h
+-         drivers/media/video/davinci/vpbe_venc_regs.h
++         drivers/media/platform/davinci/vpbe_venc.c
++         drivers/media/platform/davinci/vpbe_venc.h
++         drivers/media/platform/davinci/vpbe_venc_regs.h
+ 
+  VPBE osd driver
+-         drivers/media/video/davinci/vpbe_osd.c
+-         drivers/media/video/davinci/vpbe_osd.h
+-         drivers/media/video/davinci/vpbe_osd_regs.h
++         drivers/media/platform/davinci/vpbe_osd.c
++         drivers/media/platform/davinci/vpbe_osd.h
++         drivers/media/platform/davinci/vpbe_osd_regs.h
+ 
+  Functional partitioning
+  -----------------------
+diff --git a/Documentation/video4linux/fimc.txt b/Documentation/video4linux/fimc.txt
+index eb04970..fd02d9a 100644
+--- a/Documentation/video4linux/fimc.txt
++++ b/Documentation/video4linux/fimc.txt
+@@ -10,7 +10,7 @@ data from LCD controller (FIMD) through the SoC internal writeback data
+ path.  There are multiple FIMC instances in the SoCs (up to 4), having
+ slightly different capabilities, like pixel alignment constraints, rotator
+ availability, LCD writeback support, etc. The driver is located at
+-drivers/media/video/s5p-fimc directory.
++drivers/media/platform/s5p-fimc directory.
+ 
+ 1. Supported SoCs
+ =================
+@@ -36,21 +36,21 @@ Not currently supported:
+ =====================
+ 
+ - media device driver
+-  drivers/media/video/s5p-fimc/fimc-mdevice.[ch]
++  drivers/media/platform/s5p-fimc/fimc-mdevice.[ch]
+ 
+  - camera capture video device driver
+-  drivers/media/video/s5p-fimc/fimc-capture.c
++  drivers/media/platform/s5p-fimc/fimc-capture.c
+ 
+  - MIPI-CSI2 receiver subdev
+-  drivers/media/video/s5p-fimc/mipi-csis.[ch]
++  drivers/media/platform/s5p-fimc/mipi-csis.[ch]
+ 
+  - video post-processor (mem-to-mem)
+-  drivers/media/video/s5p-fimc/fimc-core.c
++  drivers/media/platform/s5p-fimc/fimc-core.c
+ 
+  - common files
+-  drivers/media/video/s5p-fimc/fimc-core.h
+-  drivers/media/video/s5p-fimc/fimc-reg.h
+-  drivers/media/video/s5p-fimc/regs-fimc.h
++  drivers/media/platform/s5p-fimc/fimc-core.h
++  drivers/media/platform/s5p-fimc/fimc-reg.h
++  drivers/media/platform/s5p-fimc/regs-fimc.h
+ 
+ 4. User space interfaces
+ ========================
+diff --git a/Documentation/video4linux/omap3isp.txt b/Documentation/video4linux/omap3isp.txt
+index 5dd1439..b9a9f83 100644
+--- a/Documentation/video4linux/omap3isp.txt
++++ b/Documentation/video4linux/omap3isp.txt
+@@ -12,7 +12,7 @@ Introduction
+ ============
+ 
+ This file documents the Texas Instruments OMAP 3 Image Signal Processor (ISP)
+-driver located under drivers/media/video/omap3isp. The original driver was
++driver located under drivers/media/platform/omap3isp. The original driver was
+ written by Texas Instruments but since that it has been rewritten (twice) at
+ Nokia.
+ 
+diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
+index 89318be..e7006ca 100644
+--- a/Documentation/video4linux/v4l2-framework.txt
++++ b/Documentation/video4linux/v4l2-framework.txt
+@@ -1054,4 +1054,4 @@ The first event type in the class is reserved for future use, so the first
+ available event type is 'class base + 1'.
+ 
+ An example on how the V4L2 events may be used can be found in the OMAP
+-3 ISP driver (drivers/media/video/omap3isp).
++3 ISP driver (drivers/media/platform/omap3isp).
+diff --git a/Documentation/video4linux/videobuf b/Documentation/video4linux/videobuf
+index 1d00d7f..3ffe9e9 100644
+--- a/Documentation/video4linux/videobuf
++++ b/Documentation/video4linux/videobuf
+@@ -349,7 +349,7 @@ again.
+ Developers who are interested in more information can go into the relevant
+ header files; there are a few low-level functions declared there which have
+ not been talked about here.  Also worthwhile is the vivi driver
+-(drivers/media/video/vivi.c), which is maintained as an example of how V4L2
++(drivers/media/platform/vivi.c), which is maintained as an example of how V4L2
+ drivers should be written.  Vivi only uses the vmalloc() API, but it's good
+ enough to get started with.  Note also that all of these calls are exported
+ GPL-only, so they will not be available to non-GPL kernel modules.
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.4.1
+
