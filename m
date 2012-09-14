@@ -1,145 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab2INV1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 17:27:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55852 "EHLO mail.skyhub.de"
+	id S1756622Ab2INV3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:29:51 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:51990 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab2INV1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 17:27:22 -0400
-Date: Fri, 14 Sep 2012 23:27:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Nikolay Ulyanitsky <lystor@gmail.com>, Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-Message-ID: <20120914212717.GA29307@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Nikolay Ulyanitsky <lystor@gmail.com>,
-	Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@kernel.org>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756132Ab2INV3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 17:29:49 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH v2] pcmcia: synclink_cs: fix potential tty NULL dereference
+Date: Sat, 15 Sep 2012 01:29:37 +0400
+Message-Id: <1347658177-11340-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120914114917.3ae5680d@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding everybody to CC and leaving the below for reference.)
+tty_port_tty_get() can return NULL after port hangup that may happen anytime.
+The patch adds checks that tty_port_tty_get() returns nonNULL around places
+where tty is actually used.
 
-Guys,
+I have no actual hardware to test the patch, so I have updated rx side 
+processing from common sense only.
 
-as Nikolay says below, we have a regression in 3.6 with pgbench's
-benchmark in postgresql.
+v2: rx handling updated according Alan Cox feedback.
 
-I was able to reproduce it on another box here and did a bisection run.
-It pointed to the commit below.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-And yes, reverting that commit fixes the issue here.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/char/pcmcia/synclink_cs.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-@Nikolay: can you try reverting it from 3.6-rc5 and check whether the
-regression dissapears at your end?
-
-Thanks.
-
-commit 970e178985cadbca660feb02f4d2ee3a09f7fdda
-Author: Mike Galbraith <efault@gmx.de>
-Date:   Tue Jun 12 05:18:32 2012 +0200
-
-    sched: Improve scalability via 'CPU buddies', which withstand random perturbations
-    
-    Traversing an entire package is not only expensive, it also leads to tasks
-    bouncing all over a partially idle and possible quite large package.  Fix
-    that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-    to motivate that one other CPU, if it's busy, tough, it may then try its
-    SMT sibling, but that's all this optimization is allowed to cost.
-    
-    Sibling cache buddies are cross-wired to prevent bouncing.
-    
-    4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
-    
-     clients     1       2       4        8       16       32       64      128
-     ..........................................................................
-     pre        30      41     118      645     3769     6214    12233    14312
-     post      299     603    1211     2418     4697     6847    11606    14557
-    
-    A nice increase in performance.
-    
-    Signed-off-by: Mike Galbraith <efault@gmx.de>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Link: http://lkml.kernel.org/r/1339471112.7352.32.camel@marge.simpson.net
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-
-On Fri, Sep 14, 2012 at 10:47:44AM +0300, Nikolay Ulyanitsky wrote:
-> Hi
-> I compiled the 3.6-rc5 kernel with the same config from 3.5.3 and got
-> the 15-20% performance drop of PostgreSQL 9.2 on AMD chipsets (880G,
-> 990X).
-> 
-> CentOS 6.3 x86_64
-> PostgreSQL 9.2
-> cpufreq scaling_governor - performance
-> 
-> # /etc/init.d/postgresql initdb
-> # echo "fsync = off" >> /var/lib/pgsql/data/postgresql.conf
-> # /etc/init.d/postgresql start
-> # su - postgres
-> $ psql
-> # create database pgbench;
-> # \q
-> 
-> # pgbench -i pgbench && pgbench -c 10 -t 10000 pgbench
-> tps = 4670.635648 (including connections establishing)
-> tps = 4673.630345 (excluding connections establishing)[/code]
-> 
-> On kernel 3.5.3:
-> tps = ~5800
-> 
-> 1) Host 1 - 15-20% performance drop
-> AMD Phenom(tm) II X6 1090T Processor
-> MB: AMD 880G
-> RAM: 16 Gb DDR3
-> SSD: PLEXTOR PX-256M3 256Gb
-> 
-> 2) Host 2 - 15-20% performance drop
-> AMD Phenom(tm) II X6 1055T Processor
-> MB: AMD 990X
-> RAM: 32 Gb DDR3
-> SSD: Corsair Performance Pro 128Gb
-> 
-> 3) Host 3 - no problems - same performance
-> Intel E6300
-> MB: Intel® P43 / ICH10
-> RAM: 4 Gb DDR3
-> HDD: SATA 7200 rpm
-> 
-> Kernel config - http://pastebin.com/cFpg5JSJ
-> 
-> Any ideas?
-> 
-> Thx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index 0a484b4..a6b8dde 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -891,6 +891,14 @@ static void rx_ready_async(MGSLPC_INFO *info, int tcd, struct tty_struct *tty)
+ 	int work = 0;
+  	struct mgsl_icount *icount = &info->icount;
+ 
++	if (!tty) {
++		/* tty is not available anymore */
++		issue_command(info, CHA, CMD_RXRESET);
++		if (debug_level >= DEBUG_LEVEL_ISR)
++			printk("%s(%d):rx_ready_async(tty=NULL)\n",__FILE__,__LINE__);
++		return;
++	}
++
+ 	if (tcd) {
+ 		/* early termination, get FIFO count from RBCL register */
+ 		fifo_count = (unsigned char)(read_reg(info, CHA+RBCL) & 0x1f);
+@@ -980,7 +988,7 @@ static void tx_done(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	else
+ #endif
+ 	{
+-		if (tty->stopped || tty->hw_stopped) {
++		if (tty && (tty->stopped || tty->hw_stopped)) {
+ 			tx_stop(info);
+ 			return;
+ 		}
+@@ -1000,7 +1008,7 @@ static void tx_ready(MGSLPC_INFO *info, struct tty_struct *tty)
+ 		if (!info->tx_active)
+ 			return;
+ 	} else {
+-		if (tty->stopped || tty->hw_stopped) {
++		if (tty && (tty->stopped || tty->hw_stopped)) {
+ 			tx_stop(info);
+ 			return;
+ 		}
+@@ -1050,13 +1058,12 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	wake_up_interruptible(&info->status_event_wait_q);
+ 	wake_up_interruptible(&info->event_wait_q);
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty && (info->port.flags & ASYNC_CTS_FLOW)) {
+ 		if (tty->hw_stopped) {
+ 			if (info->serial_signals & SerialSignal_CTS) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+ 					printk("CTS tx start...");
+-				if (tty)
+-					tty->hw_stopped = 0;
++				tty->hw_stopped = 0;
+ 				tx_start(info, tty);
+ 				info->pending_bh |= BH_TRANSMIT;
+ 				return;
+@@ -1065,8 +1072,7 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 			if (!(info->serial_signals & SerialSignal_CTS)) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+ 					printk("CTS tx stop...");
+-				if (tty)
+-					tty->hw_stopped = 1;
++				tty->hw_stopped = 1;
+ 				tx_stop(info);
+ 			}
+ 		}
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
+
