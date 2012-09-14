@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759554Ab2INMZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:25:58 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:33859 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755794Ab2INMZ5 (ORCPT
+	id S1751888Ab2INM1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:27:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43939 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab2INM1O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:25:57 -0400
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX18J+WFU2aMJQYX32ATrb4mhv9+cELxIdJbHpxw1v1
-	p4cYpPQZO9exzY
-From: Marc Dietrich <marvin24@gmx.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Julian Andres Klode <jak@jak-linux.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ac100@lists.launchpad.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: nvec: Update for recent MFD core changes
-Date: Fri, 14 Sep 2012 14:25:53 +0200
-Message-ID: <3024745.a3O1qxCH7D@fb07-iapwap2>
-User-Agent: KMail/4.9.1 (Linux/3.6.0-rc4-3-desktop; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1347623064-28348-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1347623064-28348-1-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Y-GMX-Trusted: 0
+	Fri, 14 Sep 2012 08:27:14 -0400
+Message-ID: <1347625628.2497.65.camel@hornet>
+Subject: Re: [PATCH v4 21/24] arm/v2m: initialize arch_timers even if
+ v2m_timer is not present
+From: Pawel Moll <pawel.moll@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tim@xen.org" <tim@xen.org>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Date: Fri, 14 Sep 2012 13:27:08 +0100
+In-Reply-To: <1347621207-11294-21-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+	 <1347621207-11294-21-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Mime-Version: 1.0
+X-OriginalArrivalTime: 14 Sep 2012 12:27:08.0448 (UTC) FILETIME=[41FB9200:01CD9274]
+X-MC-Unique: 112091413271102001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
-
-Am Freitag, 14. September 2012, 13:44:24 schrieb Thierry Reding:
-> mfd_add_devices() was recently changed to receive the IRQ domain through
-> an additional parameter but this driver wasn't updated accordingly.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+On Fri, 2012-09-14 at 12:13 +0100, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Marc Zyngier <marc.zyngier@arm.com>
 > ---
-
-this was already kindly fixed by Stephen Warren a few days ago and will be 
-included in linux-next.
-
-Marc
-
->  drivers/staging/nvec/nvec.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+>  1 files changed, 6 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-> index b0972d0..24d8eeb 100644
-> --- a/drivers/staging/nvec/nvec.c
-> +++ b/drivers/staging/nvec/nvec.c
-> @@ -837,7 +837,7 @@ static int __devinit tegra_nvec_probe(struct
-> platform_device *pdev) }
-> 
->  	ret = mfd_add_devices(nvec->dev, -1, nvec_devices,
-> -			      ARRAY_SIZE(nvec_devices), base, 0);
-> +			      ARRAY_SIZE(nvec_devices), base, 0, NULL);
->  	if (ret)
->  		dev_err(nvec->dev, "error adding subdevices\n");
+> diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+> index 37608f2..4e567f7 100644
+> --- a/arch/arm/mach-vexpress/v2m.c
+> +++ b/arch/arm/mach-vexpress/v2m.c
+> @@ -621,16 +621,17 @@ static void __init v2m_dt_timer_init(void)
+>  
+>  	v2m_clk_init();
+>  
+> -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> -	if (WARN_ON(err))
+> -		return;
+> -	node = of_find_node_by_path(path);
+> -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+>  	if (arch_timer_of_register() != 0)
+>  		twd_local_timer_of_register();
+>  
+>  	if (arch_timer_sched_clock_init() != 0)
+>  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
+> +
+> +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> +	if (WARN_ON(err))
+> +		return;
+> +	node = of_find_node_by_path(path);
+> +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+>  }
+>  
+>  static struct sys_timer v2m_dt_timer = {
+
+Fair point. The alias is going to disappear anyway (I'm working on a VE
+platform rework right now), but in case I won't get it on time for 3.7,
+I'll make sure this one is merged instead.
+
+Cheers!
+
+Paweł
+
+
+
