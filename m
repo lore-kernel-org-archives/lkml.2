@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab2INFGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:06:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60086 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751255Ab2INFGM (ORCPT
+	id S1752082Ab2INFJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 01:09:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1282 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2INFJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:06:12 -0400
-X-Sasl-enc: exNPo7I3QZbPehNOjNzDcixyBZq6kKrHmGO7taDn9RQd 1347599172
-Date: Thu, 13 Sep 2012 22:03:28 -0700
-From: Greg KH <greg@kroah.com>
-To: Rene Buergel <rene.buergel@sohard.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4]: ezusb: move ezusb.c from drivers/usb/serial to
- drivers/usb/misc
-Message-ID: <20120914050328.GB21944@kroah.com>
-References: <7120fd46-da21-4203-8293-7dcdb70f02dc@shmail0>
- <f7e8f1a4-fb32-4933-ba9d-81a2f1fb7ba8@shmail0>
+	Fri, 14 Sep 2012 01:09:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 13 Sep 2012 22:01:26 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: "Patil, Rachna" <rachna@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
+Date: Fri, 14 Sep 2012 10:39:20 +0530
+Subject: RE: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume functionality
+Thread-Topic: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume functionality
+Thread-Index: AQHNkZ7iasdC3+d680igP9DfLnFhyJeH4F2AgAFnOcCAAAMVEA==
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDEFB8F54@BGMAIL02.nvidia.com>
+References: <1347532819-505-1-git-send-email-rachna@ti.com>
+ <1347532819-505-6-git-send-email-rachna@ti.com>
+ <5051D92F.1090309@metafoo.de>
+ <4CE347531D4CA947960AF71FF095B9323E953CC3@DBDE01.ent.ti.com>
+In-Reply-To: <4CE347531D4CA947960AF71FF095B9323E953CC3@DBDE01.ent.ti.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f7e8f1a4-fb32-4933-ba9d-81a2f1fb7ba8@shmail0>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 10:19:11PM +0200, Rene Buergel wrote:
-> This patch moves drivers/usb/serial/ezusb.c to drivers/usb/misc/and
-> adapts Makefiles and Kconfigs
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Patil, Rachna
+> Sent: Friday, September 14, 2012 10:29 AM
+> To: Lars-Peter Clausen
+> Cc: linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; linux-
+> iio@vger.kernel.org; Samuel Ortiz; Dmitry Torokhov; Dmitry Torokhov;
+> Jonathan Cameron
+> Subject: RE: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume
+> functionality
 > 
-> Signed-off-by: René Bürgel <rene.buergel@sohard.de>
+> On Thu, Sep 13, 2012 at 18:31:35, Lars-Peter Clausen wrote:
+> > On 09/13/2012 12:40 PM, Patil, Rachna wrote:
+> > > This patch adds support for suspend/resume of TSC/ADC MFDevice.
+> > >
+> > > Signed-off-by: Patil, Rachna <rachna@ti.com>
+> > > ---
+> > > Changes in v2:
+> > > 	Added this patch newly in this patch series.
+> > >
+> > > Changes in v3:
+> > > 	No changes.
+> > >
+> > >  drivers/iio/adc/ti_adc.c           |   32
+> ++++++++++++++++++++++++++++++++
+> > >  drivers/input/touchscreen/ti_tsc.c |   33
+> +++++++++++++++++++++++++++++++++
+> > >  drivers/mfd/ti_tscadc.c            |   33
+> ++++++++++++++++++++++++++++++++-
+> > >  include/linux/mfd/ti_tscadc.h      |    3 +++
+> > >  4 files changed, 100 insertions(+), 1 deletions(-)
+> > >
+> > > diff --git a/drivers/iio/adc/ti_adc.c b/drivers/iio/adc/ti_adc.c index
+> > > 56f8af2..69f19f0 100644
+> > > --- a/drivers/iio/adc/ti_adc.c
+> > > +++ b/drivers/iio/adc/ti_adc.c
+> > > @@ -207,6 +207,36 @@ static int __devexit tiadc_remove(struct
+> platform_device *pdev)
+> > >  	return 0;
+> > >  }
+> > >
+> > [...]
+> > >  static struct platform_driver tiadc_driver = {
+> > >  	.driver = {
+> > >  		.name   = "tiadc",
+> > > @@ -214,6 +244,8 @@ static struct platform_driver tiadc_driver = {
+> > >  	},
+> > >  	.probe	= tiadc_probe,
+> > >  	.remove	= __devexit_p(tiadc_remove),
+> > > +	.suspend = adc_suspend,
+> > > +	.resume = adc_resume,
+> > >  };
+> > >
+> >
+> >
+> > Using the suspend/resume callbacks is deprecated, please use
+> dev_pm_ops.
+> > Same comment applies to the other two drivers.
+> 
+> Ok. I will make changes in all the 3 driver to use dev_pm_ops instead of
+> suspend/resume callbacks.
+
+Probably you might need to protect suspend/resumes with CONFIG_PM. 
+
+> 
+> Regards,
+> Rachna
+> 
+> >
+> >
+> >
+> 
 > --
-> diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
-> index 1bfcd02..1c63b54 100644
-> --- a/drivers/usb/misc/Kconfig
-> +++ b/drivers/usb/misc/Kconfig
-> @@ -244,3 +244,7 @@ config USB_YUREX
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called yurex.
->  
-> +config USB_EZUSB
-> +	bool "Functions for loading firmware on EZUSB chips"
-> +	help
-> +	    Say Y here if you need EZUSB device support.
-> diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
-> index 796ce7e..f1f7815 100644
-> --- a/drivers/usb/misc/Makefile
-> +++ b/drivers/usb/misc/Makefile
-> @@ -11,6 +11,7 @@ obj-$(CONFIG_USB_CYPRESS_CY7C63)	+= cypress_cy7c63.o
->  obj-$(CONFIG_USB_CYTHERM)		+= cytherm.o
->  obj-$(CONFIG_USB_EMI26)			+= emi26.o
->  obj-$(CONFIG_USB_EMI62)			+= emi62.o
-> +obj-$(CONFIG_USB_EZUSB)			+= ezusb.o
->  obj-$(CONFIG_USB_FTDI_ELAN)		+= ftdi-elan.o
->  obj-$(CONFIG_USB_IDMOUSE)		+= idmouse.o
->  obj-$(CONFIG_USB_IOWARRIOR)		+= iowarrior.o
-> diff --git a/drivers/usb/misc/ezusb.c b/drivers/usb/misc/ezusb.c
-> new file mode 100644
-> index 0000000..867a3e1
-> --- /dev/null
-> +++ b/drivers/usb/misc/ezusb.c
-
-Git should show this as a move, not as a "add a file and remove a file"
-type patch.  Are you generating it properly?
-
-Also, why move it?  Are there other modules that need to use it?
-
-thanks,
-
-greg k-h
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
