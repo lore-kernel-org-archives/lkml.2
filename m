@@ -1,170 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab2INQWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:22:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60552 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab2INQWH (ORCPT
+	id S1752904Ab2INQW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:22:59 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49238 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2INQW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:22:07 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST] iommu/tegra: smmu: Use debugfs_create_dir for directory
-Date: Fri, 14 Sep 2012 10:22:00 -0600
-Message-Id: <1347639720-2991-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Fri, 14 Sep 2012 12:22:57 -0400
+Date: Fri, 14 Sep 2012 21:48:48 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] uprobes: uprobes_treelock should not disable irqs
+Message-ID: <20120914161848.GC28033@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120819164008.GA25454@redhat.com>
+ <20120819164037.GA25480@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120819164037.GA25480@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12091416-5140-0000-0000-000002139D80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Doyu <hdoyu@nvidia.com>
+* Oleg Nesterov <oleg@redhat.com> [2012-08-19 18:40:37]:
 
-The commit c3b1a35 "debugfs: make sure that debugfs_create_file() gets
-used only for regulars" doesn't allow to use debugfs_create_file() for
-dir. Keep debugfs data in smmu_device instead of directory's i_private.
+> Nobody plays with uprobes_tree/uprobes_treelock in interrupt context,
+> no need to disable irqs.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/iommu/tegra-smmu.c |   52 +++++++++++++++++++++++++++++--------------
- 1 files changed, 35 insertions(+), 17 deletions(-)
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index 5e51fb7..c749f96 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -246,6 +246,12 @@ struct smmu_as {
- 	spinlock_t		client_lock; /* for client list */
- };
- 
-+struct smmu_debugfs_info {
-+	struct smmu_device *smmu;
-+	int mc;
-+	int cache;
-+};
-+
- /*
-  * Per SMMU device - IOMMU device
-  */
-@@ -267,6 +273,7 @@ struct smmu_device {
- 	unsigned long asid_security;
- 
- 	struct dentry *debugfs_root;
-+	struct smmu_debugfs_info *debugfs_info;
- 
- 	struct device_node *ahb;
- 
-@@ -920,9 +927,10 @@ static ssize_t smmu_debugfs_stats_write(struct file *file,
- 					const char __user *buffer,
- 					size_t count, loff_t *pos)
- {
-+	struct smmu_debugfs_info *info;
- 	struct smmu_device *smmu;
- 	struct dentry *dent;
--	int i, cache, mc;
-+	int i;
- 	enum {
- 		_OFF = 0,
- 		_ON,
-@@ -950,11 +958,10 @@ static ssize_t smmu_debugfs_stats_write(struct file *file,
- 		return -EINVAL;
- 
- 	dent = file->f_dentry;
--	cache = (int)dent->d_inode->i_private;
--	mc = (int)dent->d_parent->d_inode->i_private;
--	smmu = dent->d_parent->d_parent->d_inode->i_private;
-+	info = dent->d_inode->i_private;
-+	smmu = info->smmu;
- 
--	offs = SMMU_CACHE_CONFIG(cache);
-+	offs = SMMU_CACHE_CONFIG(info->cache);
- 	val = smmu_read(smmu, offs);
- 	switch (i) {
- 	case _OFF:
-@@ -986,21 +993,21 @@ static ssize_t smmu_debugfs_stats_write(struct file *file,
- 
- static int smmu_debugfs_stats_show(struct seq_file *s, void *v)
- {
-+	struct smmu_debugfs_info *info;
- 	struct smmu_device *smmu;
- 	struct dentry *dent;
--	int i, cache, mc;
-+	int i;
- 	const char * const stats[] = { "hit", "miss", };
- 
- 	dent = d_find_alias(s->private);
--	cache = (int)dent->d_inode->i_private;
--	mc = (int)dent->d_parent->d_inode->i_private;
--	smmu = dent->d_parent->d_parent->d_inode->i_private;
-+	info = dent->d_inode->i_private;
-+	smmu = info->smmu;
- 
- 	for (i = 0; i < ARRAY_SIZE(stats); i++) {
- 		u32 val;
- 		size_t offs;
- 
--		offs = SMMU_STATS_CACHE_COUNT(mc, cache, i);
-+		offs = SMMU_STATS_CACHE_COUNT(info->mc, info->cache, i);
- 		val = smmu_read(smmu, offs);
- 		seq_printf(s, "%s:%08x ", stats[i], val);
- 
-@@ -1028,16 +1035,22 @@ static const struct file_operations smmu_debugfs_stats_fops = {
- static void smmu_debugfs_delete(struct smmu_device *smmu)
- {
- 	debugfs_remove_recursive(smmu->debugfs_root);
-+	kfree(smmu->debugfs_info);
- }
- 
- static void smmu_debugfs_create(struct smmu_device *smmu)
- {
- 	int i;
-+	size_t bytes;
- 	struct dentry *root;
- 
--	root = debugfs_create_file(dev_name(smmu->dev),
--				   S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
--				   NULL, smmu, NULL);
-+	bytes = ARRAY_SIZE(smmu_debugfs_mc) * ARRAY_SIZE(smmu_debugfs_cache) *
-+		sizeof(*smmu->debugfs_info);
-+	smmu->debugfs_info = kmalloc(bytes, GFP_KERNEL);
-+	if (!smmu->debugfs_info)
-+		return;
-+
-+	root = debugfs_create_dir(dev_name(smmu->dev), NULL);
- 	if (!root)
- 		goto err_out;
- 	smmu->debugfs_root = root;
-@@ -1046,18 +1059,23 @@ static void smmu_debugfs_create(struct smmu_device *smmu)
- 		int j;
- 		struct dentry *mc;
- 
--		mc = debugfs_create_file(smmu_debugfs_mc[i],
--					 S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
--					 root, (void *)i, NULL);
-+		mc = debugfs_create_dir(smmu_debugfs_mc[i], root);
- 		if (!mc)
- 			goto err_out;
- 
- 		for (j = 0; j < ARRAY_SIZE(smmu_debugfs_cache); j++) {
- 			struct dentry *cache;
-+			struct smmu_debugfs_info *info;
-+
-+			info = smmu->debugfs_info;
-+			info += i * ARRAY_SIZE(smmu_debugfs_mc) + j;
-+			info->smmu = smmu;
-+			info->mc = i;
-+			info->cache = j;
- 
- 			cache = debugfs_create_file(smmu_debugfs_cache[j],
- 						    S_IWUGO | S_IRUGO, mc,
--						    (void *)j,
-+						    (void *)info,
- 						    &smmu_debugfs_stats_fops);
- 			if (!cache)
- 				goto err_out;
--- 
-1.7.0.4
+> ---
+>  kernel/events/uprobes.c |   21 ++++++++-------------
+>  1 files changed, 8 insertions(+), 13 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 25c0d74..abe077e 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -413,11 +413,10 @@ static struct uprobe *__find_uprobe(struct inode *inode, loff_t offset)
+>  static struct uprobe *find_uprobe(struct inode *inode, loff_t offset)
+>  {
+>  	struct uprobe *uprobe;
+> -	unsigned long flags;
+> 
+> -	spin_lock_irqsave(&uprobes_treelock, flags);
+> +	spin_lock(&uprobes_treelock);
+>  	uprobe = __find_uprobe(inode, offset);
+> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
+> +	spin_unlock(&uprobes_treelock);
+> 
+>  	return uprobe;
+>  }
+> @@ -464,12 +463,11 @@ static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
+>   */
+>  static struct uprobe *insert_uprobe(struct uprobe *uprobe)
+>  {
+> -	unsigned long flags;
+>  	struct uprobe *u;
+> 
+> -	spin_lock_irqsave(&uprobes_treelock, flags);
+> +	spin_lock(&uprobes_treelock);
+>  	u = __insert_uprobe(uprobe);
+> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
+> +	spin_unlock(&uprobes_treelock);
+> 
+>  	/* For now assume that the instruction need not be single-stepped */
+>  	uprobe->flags |= UPROBE_SKIP_SSTEP;
+> @@ -707,11 +705,9 @@ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vad
+>   */
+>  static void delete_uprobe(struct uprobe *uprobe)
+>  {
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&uprobes_treelock, flags);
+> +	spin_lock(&uprobes_treelock);
+>  	rb_erase(&uprobe->rb_node, &uprobes_tree);
+> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
+> +	spin_unlock(&uprobes_treelock);
+>  	iput(uprobe->inode);
+>  	put_uprobe(uprobe);
+>  	atomic_dec(&uprobe_events);
+> @@ -969,7 +965,6 @@ static void build_probe_list(struct inode *inode,
+>  				struct list_head *head)
+>  {
+>  	loff_t min, max;
+> -	unsigned long flags;
+>  	struct rb_node *n, *t;
+>  	struct uprobe *u;
+> 
+> @@ -977,7 +972,7 @@ static void build_probe_list(struct inode *inode,
+>  	min = vaddr_to_offset(vma, start);
+>  	max = min + (end - start) - 1;
+> 
+> -	spin_lock_irqsave(&uprobes_treelock, flags);
+> +	spin_lock(&uprobes_treelock);
+>  	n = find_node_in_range(inode, min, max);
+>  	if (n) {
+>  		for (t = n; t; t = rb_prev(t)) {
+> @@ -995,7 +990,7 @@ static void build_probe_list(struct inode *inode,
+>  			atomic_inc(&u->ref);
+>  		}
+>  	}
+> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
+> +	spin_unlock(&uprobes_treelock);
+>  }
+> 
+>  /*
+> -- 
+> 1.5.5.1
+> 
 
