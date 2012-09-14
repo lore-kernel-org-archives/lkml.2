@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab2INFRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:17:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50981 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab2INFRF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:17:05 -0400
-From: "Patil, Rachna" <rachna@ti.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: RE: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume functionality
-Thread-Topic: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume functionality
-Thread-Index: AQHNkZ7iasdC3+d680igP9DfLnFhyJeH4F2AgAFnOcCAAAMVEIAAAcnA
-Date: Fri, 14 Sep 2012 05:16:37 +0000
-Message-ID: <4CE347531D4CA947960AF71FF095B9323E953D0C@DBDE01.ent.ti.com>
-References: <1347532819-505-1-git-send-email-rachna@ti.com>
- <1347532819-505-6-git-send-email-rachna@ti.com>
- <5051D92F.1090309@metafoo.de>
- <4CE347531D4CA947960AF71FF095B9323E953CC3@DBDE01.ent.ti.com>
- <D958900912E20642BCBC71664EFECE3E6DDEFB8F54@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDEFB8F54@BGMAIL02.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752013Ab2INFTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 01:19:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38523 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751317Ab2INFTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 01:19:05 -0400
+Message-ID: <1347599944.9481.3.camel@joe2Laptop>
+Subject: Re: [PATCH] pinctrl: use kasprintf() in pinmux_request_gpio()
+From: Joe Perches <joe@perches.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 13 Sep 2012 22:19:04 -0700
+In-Reply-To: <1347565754-9534-1-git-send-email-thomas.petazzoni@free-electrons.com>
+References: <1347565754-9534-1-git-send-email-thomas.petazzoni@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:39:20, Venu Byravarasu wrote:
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel- 
-> > owner@vger.kernel.org] On Behalf Of Patil, Rachna
-> > Sent: Friday, September 14, 2012 10:29 AM
-> > To: Lars-Peter Clausen
-> > Cc: linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; linux- 
-> > iio@vger.kernel.org; Samuel Ortiz; Dmitry Torokhov; Dmitry Torokhov; 
-> > Jonathan Cameron
-> > Subject: RE: [PATCH v3 5/5] MFD: ti_tscadc: add suspend/resume 
-> > functionality
-> > 
-> > On Thu, Sep 13, 2012 at 18:31:35, Lars-Peter Clausen wrote:
-> > > On 09/13/2012 12:40 PM, Patil, Rachna wrote:
-> > > > This patch adds support for suspend/resume of TSC/ADC MFDevice.
-> > > >
-> > > > Signed-off-by: Patil, Rachna <rachna@ti.com>
-> > > > ---
-> > > > Changes in v2:
-> > > > 	Added this patch newly in this patch series.
-> > > >
-> > > > Changes in v3:
-> > > > 	No changes.
-> > > >
-> > > >  drivers/iio/adc/ti_adc.c           |   32
-> > ++++++++++++++++++++++++++++++++
-> > > >  drivers/input/touchscreen/ti_tsc.c |   33
-> > +++++++++++++++++++++++++++++++++
-> > > >  drivers/mfd/ti_tscadc.c            |   33
-> > ++++++++++++++++++++++++++++++++-
-> > > >  include/linux/mfd/ti_tscadc.h      |    3 +++
-> > > >  4 files changed, 100 insertions(+), 1 deletions(-)
-> > > >
-> > > > diff --git a/drivers/iio/adc/ti_adc.c b/drivers/iio/adc/ti_adc.c 
-> > > > index 56f8af2..69f19f0 100644
-> > > > --- a/drivers/iio/adc/ti_adc.c
-> > > > +++ b/drivers/iio/adc/ti_adc.c
-> > > > @@ -207,6 +207,36 @@ static int __devexit tiadc_remove(struct
-> > platform_device *pdev)
-> > > >  	return 0;
-> > > >  }
-> > > >
-> > > [...]
-> > > >  static struct platform_driver tiadc_driver = {
-> > > >  	.driver = {
-> > > >  		.name   = "tiadc",
-> > > > @@ -214,6 +244,8 @@ static struct platform_driver tiadc_driver = {
-> > > >  	},
-> > > >  	.probe	= tiadc_probe,
-> > > >  	.remove	= __devexit_p(tiadc_remove),
-> > > > +	.suspend = adc_suspend,
-> > > > +	.resume = adc_resume,
-> > > >  };
-> > > >
-> > >
-> > >
-> > > Using the suspend/resume callbacks is deprecated, please use
-> > dev_pm_ops.
-> > > Same comment applies to the other two drivers.
-> > 
-> > Ok. I will make changes in all the 3 driver to use dev_pm_ops instead 
-> > of suspend/resume callbacks.
+On Thu, 2012-09-13 at 21:49 +0200, Thomas Petazzoni wrote:
+> Instead of using a temporary buffer, snprintf() and kstrdup(), just
+> use kasprintf() that does the same thing in just oneline.
 > 
-> Probably you might need to protect suspend/resumes with CONFIG_PM. 
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> ---
+>  drivers/pinctrl/pinmux.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 3d5ac73..9301a7a 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -232,14 +232,11 @@ int pinmux_request_gpio(struct pinctrl_dev *pctldev,
+>  			struct pinctrl_gpio_range *range,
+>  			unsigned pin, unsigned gpio)
+>  {
+> -	char gpiostr[16];
+>  	const char *owner;
+>  	int ret;
+>  
+>  	/* Conjure some name stating what chip and pin this is taken by */
+> -	snprintf(gpiostr, 15, "%s:%d", range->name, gpio);
+> -
+> -	owner = kstrdup(gpiostr, GFP_KERNEL);
+> +	owner = kasprintf(GFP_KERNEL, "%s:%d", range->name, gpio);
+>  	if (!owner)
+>  		return -EINVAL;
+>  
 
-Yes, I will add that as well.
+No not really.  It's a bit different because the first
+snprintf is length limited but the kasprintf is not.
 
-Regards,
-Rachna
 
