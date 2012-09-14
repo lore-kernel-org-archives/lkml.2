@@ -1,90 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759613Ab2INRih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:38:37 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:42379 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758935Ab2INRif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:38:35 -0400
-X-IronPort-AV: E=Sophos;i="4.80,423,1344236400"; 
-   d="scan'208";a="689775256"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
+	id S1759642Ab2INRjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:39:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47012 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758935Ab2INRj3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 13:39:29 -0400
+Date: Fri, 14 Sep 2012 18:38:45 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
-Thread-Topic: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
-Thread-Index: AQHNkoXiw9uFuLP9oU2/5Ud3jGv0jJeKhW2AgAAKVgA=
-Date: Fri, 14 Sep 2012 17:38:18 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20120914140811.10835.81465.stgit@localhost.localdomain>
-	 <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
-In-Reply-To: <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8123AE52F6FD5B4DAF238BC39230C081@tahoe.netapp.com>
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 08/31] arm64: CPU support
+Message-ID: <20120914173845.GD2927@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
+ <20120815001043.GD19607@quad.lixom.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815001043.GD19607@quad.lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8EHchpE011305
 
-On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
-> What happens if statd is restarted?
-
-Nothing unusual. Why?
-
-> Sent from my iPhone
+On Wed, Aug 15, 2012 at 01:10:43AM +0100, Olof Johansson wrote:
+> On Tue, Aug 14, 2012 at 06:52:09PM +0100, Catalin Marinas wrote:
+> > +#ifndef __ASM_CPUTYPE_H
+> > +#define __ASM_CPUTYPE_H
+> > +
+> > +#define ID_MIDR_EL1		"midr_el1"
+> > +#define ID_CTR_EL0		"ctr_el0"
+> > +
+> > +#define ID_AA64PFR0_EL1		"id_aa64pfr0_el1"
+> > +#define ID_AA64DFR0_EL1		"id_aa64dfr0_el1"
+> > +#define ID_AA64AFR0_EL1		"id_aa64afr0_el1"
+> > +#define ID_AA64ISAR0_EL1	"id_aa64isar0_el1"
+> > +#define ID_AA64MMFR0_EL1	"id_aa64mmfr0_el1"
+> > +
+> > +#define read_cpuid(reg) ({						\
+> > +	u64 __val;							\
+> > +	asm("mrs	%0, " reg : "=r" (__val));			\
+> > +	__val;								\
+> > +})
+> > +
+> > +/*
+> > + * The CPU ID never changes at run time, so we might as well tell the
+> > + * compiler that it's constant.  Use this function to read the CPU ID
+> > + * rather than directly reading processor_id or read_cpuid() directly.
+> > + */
+> > +static inline u32 __attribute_const__ read_cpuid_id(void)
+> > +{
+> > +	return read_cpuid(ID_MIDR_EL1);
+> > +}
+> > +
+> > +static inline u32 __attribute_const__ read_cpuid_cachetype(void)
+> > +{
+> > +	return read_cpuid(ID_CTR_EL0);
+> > +}
 > 
-> On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> Is this perhaps a carry-over from arch/arm? Abstracting out read_cpuid()
+> doesn't seem to buy anything here, just opencode the one-line assembly
+> in each.
+
+read_cpuid() is called from several other files under arch/arm64 and
+also used in expressions, so it's a good abstraction.
+
+> > --- /dev/null
+> > +++ b/arch/arm64/mm/proc.S
+> > @@ -0,0 +1,193 @@
+> > +	.section ".proc.info.init", #alloc, #execinstr
+> > +
+> > +	.type	__v8_proc_info, #object
+> > +__v8_proc_info:
+> > +	.long	0x000f0000			// Required ID value
+> > +	.long	0x000f0000			// Mask for ID
+> > +	b	__cpu_setup
+> > +	nop
+> > +	.quad	cpu_name
+> > +	.long	0
+> > +	.size	__v8_proc_info, . - __v8_proc_info
 > 
-> > This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
-> > 
-> > The problem is that with NFSv4 mount in container (with separated mount
-> > namesapce) and active lock on it, dying child reaped of this container will
-> > try to umount NFS and doing this will try to create RPC client to send
-> > unmonitor request to statd.
-> > But creation of RCP client requires valid current->nsproxy (for operation with
-> > utsname()) and during umount on child reaper exit it's equal to zero.
-> > 
-> > Proposed solution is to introduce refrence-counter per-net NSM client, which
-> > is created on fist monitor call and destroyed after the lst monitor call.
-> > 
-> > The following series implements...
-> > 
-> > ---
-> > 
-> > Stanislav Kinsbursky (3):
-> >      lockd: use rpc client's cl_nodename for id encoding
-> >      lockd: per-net NSM client creation and destruction helpers introduced
-> >      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
-> > 
-> > 
-> > fs/lockd/mon.c   |   91 +++++++++++++++++++++++++++++++++++++++++++-----------
-> > fs/lockd/netns.h |    4 ++
-> > fs/lockd/svc.c   |    1 +
-> > 3 files changed, 77 insertions(+), 19 deletions(-)
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I know this is a carry-over from arch/arm, but how about moving this
+> to more of a C construct similar to arch/powerpc/kernel/cputable.c
+> instead? It's considerably easier to read that way, and it's convenient
+> to have the definitions all in one place, making it easier to share some
+> of the functions, etc.
+
+Done in version 3. It's easier to read :).
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Catalin
