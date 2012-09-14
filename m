@@ -1,163 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab2INA2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Sep 2012 20:28:40 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:24592 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab2INA2i (ORCPT
+	id S1759093Ab2INAdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Sep 2012 20:33:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54353 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755965Ab2INAdl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Sep 2012 20:28:38 -0400
-Message-ID: <1347582132.3569.13.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Enable SCI_EMULATE to manually simulate physical
- hotplug testing.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ashok Raj <ashok.raj@intel.com>
-Date: Thu, 13 Sep 2012 18:22:12 -0600
-In-Reply-To: <1346794495.4732.221.camel@misato.fc.hp.com>
-References: <1346707623-31476-1-git-send-email-yinghai@kernel.org>
-	 <1346776024.4732.196.camel@misato.fc.hp.com>
-	 <CAE9FiQXN1kDwSPTH5UWvDPbrtqGgcEKR4dWwYrP57H4aSA-UMA@mail.gmail.com>
-	 <1346794495.4732.221.camel@misato.fc.hp.com>
-Content-Type: multipart/mixed; boundary="=-9GC13nXKRrnpgBHzmF7/"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Thu, 13 Sep 2012 20:33:41 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v5] iio: adc: add new lp8788 adc driver
+Thread-Topic: [PATCH v5] iio: adc: add new lp8788 adc driver
+Thread-Index: Ac2PKo1M4qOcrsVCSgiDBWHIlCmBdv//jESA//nIgSA=
+Date: Fri, 14 Sep 2012 00:33:27 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF4BFC@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF45CC@DQHE02.ent.ti.com>
+ <504DADE1.6010303@metafoo.de>
+In-Reply-To: <504DADE1.6010303@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.123]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-9GC13nXKRrnpgBHzmF7/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-> > >> +
-> > >> +     /*
-> > >> +      * Check for internal object and make sure there is a handler
-> > >> +      * registered for this object
-> > >> +      */
-> > >> +     obj_desc = acpi_ns_get_attached_object(node);
-> > >> +     if (obj_desc) {
-> > >> +             if (obj_desc->common_notify.notify_list[0]) {
-> > >
-> > > Is the above check necessary?  acpi_ev_queue_notify_request() sets up to
-> > > call the global handler, acpi_gbl_global_notify[0], even if the object
-> > > does not have a local handler registered.
-> > 
-> > Not sure.
-> > 
-> > maybe Len or other acpi guyes could answer your questions.
+> Hi,
 > 
-> I think this check should be removed, but would like someone to
-> verify...
+> One issue and a couple of nitpicks inline.
 
+I really appreciate it.
+Please see my questions below.
 
-Hi Yinghai,
+> > +	switch (mask) {
+> > +	case IIO_CHAN_INFO_RAW:
+> > +		ret = lp8788_get_adc_result(adc, id, val) ? -EIO :
+> IIO_VAL_INT;
+> > +		break;
+> > +	case IIO_CHAN_INFO_SCALE:
+> > +		*val = (lp8788_scale[id] / 1000) * 1000;
+> > +		*val2 = (lp8788_scale[id] % 1000) * 1000000;
+> 
+> This looks suspicious. E.g. if the entry in your table has the value
+> "1234"
+> you'd end up with a scale factor of 1000.234000000. Which looks wrong
+> for
+> two reasons, given that you return INT_PLUS_MICRO val2 should never
+> exceed 6
+> decimal digits and secondly val is multiplied by a factor of thousand.
+> 
+> Can you tell us in what unit the values in lp8788_scale are, that would
+> make
+> review easier.
 
-Attached is my suggested update to your patch. It allows a SCI to be
-sent to any object, and therefore can be used for testing the global
-notify handler. Some drivers such as dock.c only register their handler
-to the global notify handler. I also made a few minor changes. I have
-been testing with this update and it is working fine. I like this
-feature, so I hope we can make progress with this update.
+The LP8788 has 13 ADC input selection.
 
-Thanks,
--Toshi
+ADC selection:
+Battery voltage, general ADC1 and so on.
 
---=-9GC13nXKRrnpgBHzmF7/
-Content-Disposition: attachment;
-	filename="0001-ACPI-Update-CONFIG_ACPI_SCI_EMULATE-patch.patch"
-Content-Type: text/x-patch; name="0001-ACPI-Update-CONFIG_ACPI_SCI_EMULATE-patch.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+ADC result:
+Result = MAX_VALUE * (raw + 0.5) / 4095  except ADC is the charger voltage
+If the ADC input is the charger voltage,
+Result = MAX_VALUE * (raw + 0.5) / (4095 * 0.48)
 
->From 2bd8a7998696c413dcc0bea089d7d9f8e548afcd Mon Sep 17 00:00:00 2001
-From: Toshi Kani <toshi.kani@hp.com>
-Date: Thu, 13 Sep 2012 17:45:38 -0600
-Subject: [PATCH] ACPI: Update CONFIG_ACPI_SCI_EMULATE patch
+The raw value is from the registers.
+It has the range between 0 to 4095. (12bits)
 
----
- drivers/acpi/sci_emu.c |   47 +++++++++++++++--------------------------------
- 1 files changed, 15 insertions(+), 32 deletions(-)
+MAX_VALUE is constant for each selection.
+For the battery voltage, there are three ADC inputs. 5.0/5.5/6.0V
+Battery voltage for Max 5.0V = 5.0
+Battery voltage for Max 5.5V = 5.5
+Battery voltage for Max 6.0V = 6.0
+Charger = 6.0
+ADC1 = 2.5 
 
-diff --git a/drivers/acpi/sci_emu.c b/drivers/acpi/sci_emu.c
-index 2f13ca1..efa0f6a 100644
---- a/drivers/acpi/sci_emu.c
-+++ b/drivers/acpi/sci_emu.c
-@@ -23,16 +23,12 @@ static struct dentry *sci_notify_dentry;
- static void sci_notify_client(char *acpi_name, u32 event)
- {
- 	struct acpi_namespace_node *node;
--	acpi_status status, status1;
--	acpi_handle hlsb, hsb;
--	union acpi_operand_object *obj_desc;
--
--	status = acpi_get_handle(NULL, "\\_SB", &hsb);
--	status1 = acpi_get_handle(hsb, acpi_name, &hlsb);
--	if (ACPI_FAILURE(status) || ACPI_FAILURE(status1)) {
--		pr_err(PREFIX
--	"acpi getting handle to <\\_SB.%s> failed inside notify_client\n",
--			acpi_name);
-+	acpi_status status;
-+	acpi_handle handle;
-+
-+	status = acpi_get_handle(NULL, acpi_name, &handle);
-+	if (ACPI_FAILURE(status)) {
-+		pr_err(PREFIX "Invalid ACPI device name <%s>\n", acpi_name);
- 		return;
- 	}
- 
-@@ -42,7 +38,7 @@ static void sci_notify_client(char *acpi_name, u32 event)
- 		return;
- 	}
- 
--	node = acpi_ns_validate_handle(hlsb);
-+	node = acpi_ns_validate_handle(handle);
- 	if (!node) {
- 		acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
- 		pr_err(PREFIX "Mapping handle to node failed\n");
-@@ -50,29 +46,16 @@ static void sci_notify_client(char *acpi_name, u32 event)
- 	}
- 
- 	/*
--	 * Check for internal object and make sure there is a handler
--	 * registered for this object
-+	 * Release the lock and queue the item for later
-+	 * exectuion
- 	 */
--	obj_desc = acpi_ns_get_attached_object(node);
--	if (obj_desc) {
--		if (obj_desc->common_notify.notify_list[0]) {
--			/*
--			 * Release the lock and queue the item for later
--			 * exectuion
--			 */
--			acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
--			status = acpi_ev_queue_notify_request(node, event);
--			if (ACPI_FAILURE(status))
--				pr_err(PREFIX "acpi_ev_queue_notify_request failed\n");
--			else
--				pr_info(PREFIX "Notify event is queued\n");
--			return;
--		}
--	} else {
--		pr_info(PREFIX "Notify handler not registered for this device\n");
--	}
--
- 	acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
-+	status = acpi_ev_queue_notify_request(node, event);
-+	if (ACPI_FAILURE(status))
-+		pr_err(PREFIX "acpi_ev_queue_notify_request failed\n");
-+	else
-+		pr_info(PREFIX "Notify event is queued\n");
-+
- 	return;
- }
- 
--- 
-1.7.7.6
+I'm afraid I still misunderstand how IIO ADC works.
+Could you me some guide how to setup the scale in the driver?
 
+Thank you.
 
---=-9GC13nXKRrnpgBHzmF7/--
-
+Best Regards,
+Milo
