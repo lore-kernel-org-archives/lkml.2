@@ -1,120 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2INQW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:22:59 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49238 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2INQW5 (ORCPT
+	id S1752139Ab2INQYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:24:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56060 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2INQYe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:22:57 -0400
-Date: Fri, 14 Sep 2012 21:48:48 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] uprobes: uprobes_treelock should not disable irqs
-Message-ID: <20120914161848.GC28033@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120819164008.GA25454@redhat.com>
- <20120819164037.GA25480@redhat.com>
+	Fri, 14 Sep 2012 12:24:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,423,1344236400"; 
+   d="scan'208";a="222224328"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "qiuxishi@huawei.com" <qiuxishi@huawei.com>,
+        "bessel.wang@huawei.com" <bessel.wang@huawei.com>,
+        "wujianguo@huawei.com" <wujianguo@huawei.com>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: RE: [PATCH RESEND] memory hotplug: fix a double register section
+ info bug
+Thread-Topic: [PATCH RESEND] memory hotplug: fix a double register section
+ info bug
+Thread-Index: AQHNkisIAn0xa3laO0OcIuirYJu0E5eKDlEA///2rhA=
+Date: Fri, 14 Sep 2012 16:24:32 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D40E81@ORSMSX108.amr.corp.intel.com>
+References: <5052A7DF.4050301@gmail.com> <20120914095230.GE11266@suse.de>
+In-Reply-To: <20120914095230.GE11266@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120819164037.GA25480@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12091416-5140-0000-0000-000002139D80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-08-19 18:40:37]:
+> This is an unusual configuration but it's not unheard of. PPC64 in rare
+> (and usually broken) configurations can have one node span another. Tony
+> should know if such a configuration is normally allowed on Itanium or if
+> this should be considered a platform bug. Tony?
 
-> Nobody plays with uprobes_tree/uprobes_treelock in interrupt context,
-> no need to disable irqs.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+We definitely have platforms where the physical memory on node 0
+that we skipped to leave physical address space for PCI mem mapped
+devices gets tagged back at the very top of memory, after other nodes.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+E.g. A 2-node system with 8G on each might look like this:
 
-> ---
->  kernel/events/uprobes.c |   21 ++++++++-------------
->  1 files changed, 8 insertions(+), 13 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 25c0d74..abe077e 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -413,11 +413,10 @@ static struct uprobe *__find_uprobe(struct inode *inode, loff_t offset)
->  static struct uprobe *find_uprobe(struct inode *inode, loff_t offset)
->  {
->  	struct uprobe *uprobe;
-> -	unsigned long flags;
-> 
-> -	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	spin_lock(&uprobes_treelock);
->  	uprobe = __find_uprobe(inode, offset);
-> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> +	spin_unlock(&uprobes_treelock);
-> 
->  	return uprobe;
->  }
-> @@ -464,12 +463,11 @@ static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
->   */
->  static struct uprobe *insert_uprobe(struct uprobe *uprobe)
->  {
-> -	unsigned long flags;
->  	struct uprobe *u;
-> 
-> -	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	spin_lock(&uprobes_treelock);
->  	u = __insert_uprobe(uprobe);
-> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> +	spin_unlock(&uprobes_treelock);
-> 
->  	/* For now assume that the instruction need not be single-stepped */
->  	uprobe->flags |= UPROBE_SKIP_SSTEP;
-> @@ -707,11 +705,9 @@ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vad
->   */
->  static void delete_uprobe(struct uprobe *uprobe)
->  {
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	spin_lock(&uprobes_treelock);
->  	rb_erase(&uprobe->rb_node, &uprobes_tree);
-> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> +	spin_unlock(&uprobes_treelock);
->  	iput(uprobe->inode);
->  	put_uprobe(uprobe);
->  	atomic_dec(&uprobe_events);
-> @@ -969,7 +965,6 @@ static void build_probe_list(struct inode *inode,
->  				struct list_head *head)
->  {
->  	loff_t min, max;
-> -	unsigned long flags;
->  	struct rb_node *n, *t;
->  	struct uprobe *u;
-> 
-> @@ -977,7 +972,7 @@ static void build_probe_list(struct inode *inode,
->  	min = vaddr_to_offset(vma, start);
->  	max = min + (end - start) - 1;
-> 
-> -	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	spin_lock(&uprobes_treelock);
->  	n = find_node_in_range(inode, min, max);
->  	if (n) {
->  		for (t = n; t; t = rb_prev(t)) {
-> @@ -995,7 +990,7 @@ static void build_probe_list(struct inode *inode,
->  			atomic_inc(&u->ref);
->  		}
->  	}
-> -	spin_unlock_irqrestore(&uprobes_treelock, flags);
-> +	spin_unlock(&uprobes_treelock);
->  }
-> 
->  /*
-> -- 
-> 1.5.5.1
-> 
+0-2G RAM on node 0
+2G-4G  PCI map space
+4G-8G RAM on node 0
+8G-16GRAM on node 1
+16G-18G RAM on node 0
 
+Is this the situation that we are talking about? Or something different?
+
+-Tony
