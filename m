@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab2INH4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 03:56:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46880 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755187Ab2INH4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 03:56:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
-   d="scan'208";a="222070652"
-Date: Fri, 14 Sep 2012 09:56:05 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marc Dietrich <marvin24@gmx.de>
-Subject: Re: [PATCH] staging: nvec: adjust for mfd_add_devices() API change
-Message-ID: <20120914075605.GD3647@sortiz-mobl>
-References: <1347467160-22724-1-git-send-email-swarren@wwwdotorg.org>
+	id S1757071Ab2INH5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 03:57:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53015 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab2INH5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 03:57:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH 1/2] ARM: SoC: convert MSM SMP to SoC descriptor
+Date: Fri, 14 Sep 2012 07:57:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+References: <1347461906-13527-7-git-send-email-arnd@arndb.de> <201209130847.20087.arnd@arndb.de> <20120913161548.GA11395@codeaurora.org>
+In-Reply-To: <20120913161548.GA11395@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347467160-22724-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209140757.34393.arnd@arndb.de>
+X-Provags-ID: V02:K0:aw5FaUiSeFr5aK0zyWBSo3JPW5dNzbrCwgYWsmAYD5z
+ sAC5oPgcgPsyMzCWrUuoxc0BcGXoA0AbxdtAhEDS5ho1Sp4mtN
+ +gkfNdaGJ1NIqcnrxmgcts2CYNfz9xKBodko8SWl0esDl+nx/f
+ MIM0HtcyUnwMI8YmRD0FfxE32rboBjGG6VWyD7FId4nGH56kia
+ l1Jaf0jMaq37Fs0H3mBahKjvktHCiYEDGNkfq3P8yKQES2rQg/
+ 06FIqyMSi5nV+TRvRr79i/YbLwmG6tDgJIoHe2KVsHywyAYgbS
+ rfsAhtaKZebZt5szHLVvgHR4uokoB91Eh2unggxRQ5ZVLtzyyD
+ /kkSBfmiJ6TIE04jVK9k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Thursday 13 September 2012, David Brown wrote:
+> Olof wanted me to try and split the msm-for-3.7 into a few branches,
+> so I'm going to work on that this morning.  I'm not quite sure how
+> well it will work, since, for example, most of the cleanups are
+> preparing the tree for the devicetree changes.
 
-On Wed, Sep 12, 2012 at 10:26:00AM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Commit 6607bad "mfd: core: Push irqdomain mapping out into devices"
-> added a new parameter to mfd_add_devices(), but missed updating the
-> nvec driver in staging.
-> 
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Marc Dietrich <marvin24@gmx.de>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> --
-> Samuel, I wonder if this patch should be squashed into the commit mentioned
-> above in the MFD tree?
-It does make sense. Squashed and pushed now, thanks for catching this one.
+That is the common scenario. What you should do there is to have
+one cleanup branch that collects all the cleanups from the other
+branches, and then base each of the other branches on top of that.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+	Arnd
