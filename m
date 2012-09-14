@@ -1,123 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab2INOoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:44:30 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:54248 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757327Ab2INOo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:44:28 -0400
-Message-ID: <505342C9.30609@bfs.de>
-Date: Fri, 14 Sep 2012 16:44:25 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1758359Ab2INOov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:44:51 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:36394 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757693Ab2INOot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:44:49 -0400
+X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
+   d="scan'208";a="14549442"
+Date: Fri, 14 Sep 2012 15:44:05 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 07/24] xen/arm: Xen detection and shared_info page
+ mapping
+In-Reply-To: <20120914130807.GK25249@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1209141530340.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-7-git-send-email-stefano.stabellini@eu.citrix.com> <20120914130807.GK25249@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/9] drivers/staging/gdm72xx/gdm_sdio.c: Remove useless
- kfree
-References: <1347610518-3099-1-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1347610518-3099-1-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 14, 2012 at 12:13:09PM +0100, Stefano Stabellini wrote:
+> > Check for a node in the device tree compatible with "xen,xen", if it is
+> > present set xen_domain_type to XEN_HVM_DOMAIN and continue
+> > initialization.
+> > 
+> > Map the real shared info page using XENMEM_add_to_physmap with
+> > XENMAPSPACE_shared_info.
+> > 
+> > Changes in v4:
+> > 
+> > - simpler parsing of Xen version in the compatible DT node.
+> > 
+> > Changes in v3:
+> > 
+> > - use the "xen,xen" notation rather than "arm,xen";
+> > - add an additional check on the presence of the Xen version.
+> > 
+> > Changes in v2:
+> > 
+> > - replace pr_info with pr_debug.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/xen/enlighten.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 61 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index c535540..6a0217d 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -5,6 +5,9 @@
+> >  #include <asm/xen/hypervisor.h>
+> >  #include <asm/xen/hypercall.h>
+> >  #include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_irq.h>
+> > +#include <linux/of_address.h>
+> >  
+> >  struct start_info _xen_start_info;
+> >  struct start_info *xen_start_info = &_xen_start_info;
+> > @@ -33,3 +36,61 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+> >  	return -ENOSYS;
+> >  }
+> >  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+> > +
+> > +/*
+> > + * see Documentation/devicetree/bindings/arm/xen.txt for the
+> > + * documentation of the Xen Device Tree format.
+> > + */
+> > +static int __init xen_guest_init(void)
+> > +{
+> > +	struct xen_add_to_physmap xatp;
+> > +	static struct shared_info *shared_info_page = 0;
+> > +	struct device_node *node;
+> > +	int len;
+> > +	const char *s = NULL;
+> > +	const char *version = NULL;
+> > +	const char *xen_prefix = "xen,xen-";
+> > +
+> > +	node = of_find_compatible_node(NULL, NULL, "xen,xen");
+> > +	if (!node) {
+> > +		pr_debug("No Xen support\n");
+> > +		return 0;
+> > +	}
+> > +	s = of_get_property(node, "compatible", &len);
+> > +	if (strlen(xen_prefix) + 3  < len &&
+> > +			!strncmp(xen_prefix, s, strlen(xen_prefix)))
+> 
+> If we have version '4.3.1' won't this trip us over?
+
+This isn't an issue:
+
+if (8 + 3 < 14 &&
+    !strncmp("xen,xen-", "xen,xen-4.3.1", 8)
+
+would return true
+
+and version is set to "4.3.1".
 
 
-Am 14.09.2012 10:15, schrieb Peter Senna Tschudin:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> Remove useless kfree() and clean up code related to the removal.
-> 
-> The semantic patch that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> position p1,p2;
-> expression x;
-> @@
-> 
-> if (x@p1 == NULL) { ... kfree@p2(x); ... return ...; }
-> 
-> @unchanged exists@
-> position r.p1,r.p2;
-> expression e <= r.x,x,e1;
-> iterator I;
-> statement S;
-> @@
-> 
-> if (x@p1 == NULL) { ... when != I(x,...) S
->                         when != e = e1
->                         when != e += e1
->                         when != e -= e1
->                         when != ++e
->                         when != --e
->                         when != e++
->                         when != e--
->                         when != &e
->    kfree@p2(x); ... return ...; }
-> 
-> @ok depends on unchanged exists@
-> position any r.p1;
-> position r.p2;
-> expression x;
-> @@
-> 
-> ... when != true x@p1 == NULL
-> kfree@p2(x);
-> 
-> @depends on !ok && unchanged@
-> position r.p2;
-> expression x;
-> @@
-> 
-> *kfree@p2(x);
-> // </smpl>
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
->  drivers/staging/gdm72xx/gdm_sdio.c |   11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-> index f824290..f13dcbf 100644
-> --- a/drivers/staging/gdm72xx/gdm_sdio.c
-> +++ b/drivers/staging/gdm72xx/gdm_sdio.c
-> @@ -93,18 +93,13 @@ static struct sdio_rx *alloc_rx_struct(struct rx_cxt *rx)
->  {
->  	struct sdio_rx *r = NULL;
->  
-This is nice but just one thing:
-you can also remove this = NULL  here.
+> Or if we only have 'major' and 'minor', then won't '4.11' trip us
+> over too?
 
-re,
- wh
+For the same reason this shouldn't be an issue either:
+
+if (8 + 3 < 13 &&
+    !strncmp("xen,xen-", "xen,xen-4.11", 8)
+
+would return true
+
+and version would be set to "4.11".
+
+BTW I have just tried both out of paranoia and it works as expected.
 
 
-> -	r = kmalloc(sizeof(*r), GFP_ATOMIC);
-> -	if (r == NULL)
-> -		goto out;
-> -
-> -	memset(r, 0, sizeof(*r));
-> +	r = kzalloc(sizeof(*r), GFP_ATOMIC);
-> +	if (!r)
-> +		return NULL;
->  
->  	r->rx_cxt = rx;
->  
->  	return r;
-> -out:
-> -	kfree(r);
-> -	return NULL;
->  }
->  
->  static void free_rx_struct(struct sdio_rx *r)
-> 
-> 
+> > +		version = s + strlen(xen_prefix);
+> > +	if (version == NULL) {
+> > +		pr_debug("Xen version not found\n");
+> > +		return 0;
+> > +	}
+> > +	xen_domain_type = XEN_HVM_DOMAIN;
+> > +
+> > +	if (!shared_info_page)
+> > +		shared_info_page = (struct shared_info *)
+> > +			get_zeroed_page(GFP_KERNEL);
+> > +	if (!shared_info_page) {
+> > +		pr_err("not enough memory\n");
+> > +		return -ENOMEM;
+> > +	}
+> > +	xatp.domid = DOMID_SELF;
+> > +	xatp.idx = 0;
+> > +	xatp.space = XENMAPSPACE_shared_info;
+> > +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+> > +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+> > +		BUG();
+> > +
+> > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> > +
+> > +	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
+> > +	 * page, we use it in the event channel upcall and in some pvclock
+> > +	 * related functions. We don't need the vcpu_info placement
+> > +	 * optimizations because we don't use any pv_mmu or pv_irq op on
+> > +	 * HVM.
+> > +	 * The shared info contains exactly 1 CPU (the boot CPU). The guest
+> > +	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
+> > +	 * for secondary CPUs as they are brought up. */
+> > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> > +	return 0;
+> > +}
+> > +core_initcall(xen_guest_init);
+> > -- 
+> > 1.7.2.5
 > 
