@@ -1,171 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab2INOov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:44:51 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:36394 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757693Ab2INOot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:44:49 -0400
-X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
-   d="scan'208";a="14549442"
-Date: Fri, 14 Sep 2012 15:44:05 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 07/24] xen/arm: Xen detection and shared_info page
- mapping
-In-Reply-To: <20120914130807.GK25249@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1209141530340.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-7-git-send-email-stefano.stabellini@eu.citrix.com> <20120914130807.GK25249@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758134Ab2INOpt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:45:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57733 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab2INOpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:45:46 -0400
+Date: Fri, 14 Sep 2012 16:45:43 +0200
+From: Jan Kara <jack@suse.cz>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
+        viro@zeniv.linux.org.uk, hch@lst.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
+Message-ID: <20120914144543.GB4952@quack.suse.cz>
+References: <87wr002z39.fsf@devron.myhome.or.jp>
+ <20120913063906.GA24974@localhost>
+ <871ui6e4tl.fsf@devron.myhome.or.jp>
+ <20120914111429.GA19509@localhost>
+ <87r4q4n6r1.fsf@devron.myhome.or.jp>
+ <20120914131952.GA4952@quack.suse.cz>
+ <87ipbgn2gz.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ipbgn2gz.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 14, 2012 at 12:13:09PM +0100, Stefano Stabellini wrote:
-> > Check for a node in the device tree compatible with "xen,xen", if it is
-> > present set xen_domain_type to XEN_HVM_DOMAIN and continue
-> > initialization.
-> > 
-> > Map the real shared info page using XENMEM_add_to_physmap with
-> > XENMAPSPACE_shared_info.
-> > 
-> > Changes in v4:
-> > 
-> > - simpler parsing of Xen version in the compatible DT node.
-> > 
-> > Changes in v3:
-> > 
-> > - use the "xen,xen" notation rather than "arm,xen";
-> > - add an additional check on the presence of the Xen version.
-> > 
-> > Changes in v2:
-> > 
-> > - replace pr_info with pr_debug.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/xen/enlighten.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 61 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > index c535540..6a0217d 100644
-> > --- a/arch/arm/xen/enlighten.c
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -5,6 +5,9 @@
-> >  #include <asm/xen/hypervisor.h>
-> >  #include <asm/xen/hypercall.h>
-> >  #include <linux/module.h>
-> > +#include <linux/of.h>
-> > +#include <linux/of_irq.h>
-> > +#include <linux/of_address.h>
-> >  
-> >  struct start_info _xen_start_info;
-> >  struct start_info *xen_start_info = &_xen_start_info;
-> > @@ -33,3 +36,61 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
-> >  	return -ENOSYS;
-> >  }
-> >  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> > +
-> > +/*
-> > + * see Documentation/devicetree/bindings/arm/xen.txt for the
-> > + * documentation of the Xen Device Tree format.
-> > + */
-> > +static int __init xen_guest_init(void)
-> > +{
-> > +	struct xen_add_to_physmap xatp;
-> > +	static struct shared_info *shared_info_page = 0;
-> > +	struct device_node *node;
-> > +	int len;
-> > +	const char *s = NULL;
-> > +	const char *version = NULL;
-> > +	const char *xen_prefix = "xen,xen-";
-> > +
-> > +	node = of_find_compatible_node(NULL, NULL, "xen,xen");
-> > +	if (!node) {
-> > +		pr_debug("No Xen support\n");
-> > +		return 0;
-> > +	}
-> > +	s = of_get_property(node, "compatible", &len);
-> > +	if (strlen(xen_prefix) + 3  < len &&
-> > +			!strncmp(xen_prefix, s, strlen(xen_prefix)))
+On Fri 14-09-12 22:44:28, OGAWA Hirofumi wrote:
+> Jan Kara <jack@suse.cz> writes:
 > 
-> If we have version '4.3.1' won't this trip us over?
-
-This isn't an issue:
-
-if (8 + 3 < 14 &&
-    !strncmp("xen,xen-", "xen,xen-4.3.1", 8)
-
-would return true
-
-and version is set to "4.3.1".
-
-
-> Or if we only have 'major' and 'minor', then won't '4.11' trip us
-> over too?
-
-For the same reason this shouldn't be an issue either:
-
-if (8 + 3 < 13 &&
-    !strncmp("xen,xen-", "xen,xen-4.11", 8)
-
-would return true
-
-and version would be set to "4.11".
-
-BTW I have just tried both out of paranoia and it works as expected.
-
-
-> > +		version = s + strlen(xen_prefix);
-> > +	if (version == NULL) {
-> > +		pr_debug("Xen version not found\n");
-> > +		return 0;
-> > +	}
-> > +	xen_domain_type = XEN_HVM_DOMAIN;
-> > +
-> > +	if (!shared_info_page)
-> > +		shared_info_page = (struct shared_info *)
-> > +			get_zeroed_page(GFP_KERNEL);
-> > +	if (!shared_info_page) {
-> > +		pr_err("not enough memory\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +	xatp.domid = DOMID_SELF;
-> > +	xatp.idx = 0;
-> > +	xatp.space = XENMAPSPACE_shared_info;
-> > +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-> > +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
-> > +		BUG();
-> > +
-> > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-> > +
-> > +	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
-> > +	 * page, we use it in the event channel upcall and in some pvclock
-> > +	 * related functions. We don't need the vcpu_info placement
-> > +	 * optimizations because we don't use any pv_mmu or pv_irq op on
-> > +	 * HVM.
-> > +	 * The shared info contains exactly 1 CPU (the boot CPU). The guest
-> > +	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
-> > +	 * for secondary CPUs as they are brought up. */
-> > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-> > +	return 0;
-> > +}
-> > +core_initcall(xen_guest_init);
-> > -- 
-> > 1.7.2.5
+> >> page reclaim and fsync path have FS handler. So, FS can control those.
+> >> 
+> >> The modern FS have to control to flush carefully. Many FSes are already
+> >> ignoring if wbc->sync_mode != WB_SYNC_ALL (e.g. ext3_write_inode,
+> >> nilfs_writepages), and have own FS task to flush.
+> >   Out of curiosity, what exactly do you need to control in your filesystem
+> > that makes flusher thread unusable for you? You still have a lot of
+> > flexibility with ->write_inode() and ->writepages() callbacks...
 > 
+> If flusher is working, it clears dirty flags of inode. But if those
+> handers can't flush at the time, we have to do redirty or something to
+> prevent the reclaim.
+  Well, if this is your only problem then I'd see better options than just
+disabling flusher thread. If the inability to write inode is rare, then
+redirtying seems like a reasonable option (despite I agree it's a bit
+ugly). If the inability to write is common, then you'll probably have to do
+the dirty inode tracking yourself in some list and expose inodes to VM when
+they are ready to be written. Or you handle writing of inodes yourself but
+leave writing of pages on flusher thread...
+
+Because when you disable flusher thread completely you have to put all the
+smarts to avoid livelocks, keep fairness among processes, write old data,
+keep number of dirty pages under control into your filesystem which leads
+to a lot of duplication.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
