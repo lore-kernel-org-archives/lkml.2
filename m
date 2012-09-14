@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596Ab2INVfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 17:35:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64866 "EHLO
+	id S1760017Ab2INVil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 17:38:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63000 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab2INVfd (ORCPT
+	with ESMTP id S1757498Ab2INVfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 17:35:33 -0400
+	Fri, 14 Sep 2012 17:35:39 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
         Nicolas Pitre <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 17/24] ARM: OMAP: use __iomem pointers for MMIO
-Date: Fri, 14 Sep 2012 23:34:45 +0200
-Message-Id: <1347658492-11608-18-git-send-email-arnd@arndb.de>
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: [PATCH 12/24] ARM: msm: use __iomem pointers for MMIO
+Date: Fri, 14 Sep 2012 23:34:40 +0200
+Message-Id: <1347658492-11608-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1347658492-11608-1-git-send-email-arnd@arndb.de>
 References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:QAYxnKFAJA1HkyW+yM3x3japnLJnjTfs0vOv+wN8IC8
- WNFGk2BEgK5ZPz6Oj0TtqYxajagiFTVlX2ZKDq/cG3aYiXxDuw
- JI1buhRCEUY4fuOxmDT25T5uJvEav7GHUrNhHZFzUYj/pcFtAg
- yM1tLCQ2Iy5Ayuxlc1uc+Yu416cvRZXPDp23TDt8If73EaV2lN
- wtHSGR0odSp1XT81Fce6ipUdSooATNKR0MkQWslT8AbJyO7OkR
- BiM0II4SvuztKABSsoWFy+q4hc3kKJsBT0Futew4G6PbCTqcec
- i4+hThvLkW9DyD98bXR83JcGlAjT4nACj8aSGSHGt+UK11uF0G
- CjCJxSloW9LhCAKrCgjxtTutS0pYhfwDbg3FEwqywJmBh4h1VX
- PXXwalismgdpg==
+X-Provags-ID: V02:K0:kEi6i0WtXaISfPKdcEmLxULugblOkbXQCw62yqILVuH
+ +GuwUxyMTso5aoo7A13OrUNYMRxc8IsaIqnn+Zzc56slxDReW9
+ oP6UK1lV44saHmX1bqijs59LAHndZ+21VFFWy+2ozuVPFeKXrp
+ CJ9Va/nF7+BhrUGip/9aauMOoNd8oCu8DtrC4H97ivRvfZvd89
+ oiI0VzYXzcUOhPcN8KSsOcYzVMXiWdNZB4iz1QlExfPKVA6DZk
+ x4MIrRqXNbnUAxGAFdS3phqsuCHrm0WxAzOfvwP/pceCMs1h9P
+ iEDZO5mi2etspcZOwrf+KHO6nXYOkqynnZhnFor1e1Sya3GtbN
+ ir1AXLAHn+NuwNjWSSzQGWJ4edsrk/L3mVeh2NyvqWABBzYqFC
+ gsdI52ZXun0cA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,76 +37,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ARM is moving to stricter checks on readl/write functions,
 so we need to use the correct types everywhere.
 
-Cc: Tony Lindgren <tony@atomide.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/plat-omap/include/plat/hardware.h |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ arch/arm/mach-msm/smd.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/plat/hardware.h b/arch/arm/plat-omap/include/plat/hardware.h
-index ddbde38..2518f6c 100644
---- a/arch/arm/plat-omap/include/plat/hardware.h
-+++ b/arch/arm/plat-omap/include/plat/hardware.h
-@@ -56,9 +56,9 @@
-  * Timers
-  * ----------------------------------------------------------------------------
-  */
--#define OMAP_MPU_TIMER1_BASE	(0xfffec500)
--#define OMAP_MPU_TIMER2_BASE	(0xfffec600)
--#define OMAP_MPU_TIMER3_BASE	(0xfffec700)
-+#define OMAP_MPU_TIMER1_BASE	IOMEM(0xfffec500)
-+#define OMAP_MPU_TIMER2_BASE	IOMEM(0xfffec600)
-+#define OMAP_MPU_TIMER3_BASE	IOMEM(0xfffec700)
- #define MPU_TIMER_FREE		(1 << 6)
- #define MPU_TIMER_CLOCK_ENABLE	(1 << 5)
- #define MPU_TIMER_AR		(1 << 1)
-@@ -69,7 +69,7 @@
-  * Clocks
-  * ----------------------------------------------------------------------------
-  */
--#define CLKGEN_REG_BASE		(0xfffece00)
-+#define CLKGEN_REG_BASE		IOMEM(0xfffece00)
- #define ARM_CKCTL		(CLKGEN_REG_BASE + 0x0)
- #define ARM_IDLECT1		(CLKGEN_REG_BASE + 0x4)
- #define ARM_IDLECT2		(CLKGEN_REG_BASE + 0x8)
-@@ -86,7 +86,7 @@
- #define SETARM_IDLE_SHIFT
+diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
+index 657be73..f4e475c 100644
+--- a/arch/arm/mach-msm/smd.c
++++ b/arch/arm/mach-msm/smd.c
+@@ -52,13 +52,14 @@ static int msm_smd_debug_mask;
  
- /* DPLL control registers */
--#define DPLL_CTL		(0xfffecf00)
-+#define DPLL_CTL		IOMEM(0xfffecf00)
+ struct shared_info {
+ 	int ready;
+-	unsigned state;
++	void __iomem *state;
+ };
  
- /* DSP clock control. Must use __raw_readw() and __raw_writew() with these */
- #define DSP_CONFIG_REG_BASE     IOMEM(0xe1008000)
-@@ -100,7 +100,7 @@
-  * UPLD
-  * ---------------------------------------------------------------------------
-  */
--#define ULPD_REG_BASE		(0xfffe0800)
-+#define ULPD_REG_BASE		IOMEM(0xfffe0800)
- #define ULPD_IT_STATUS		(ULPD_REG_BASE + 0x14)
- #define ULPD_SETUP_ANALOG_CELL_3	(ULPD_REG_BASE + 0x24)
- #define ULPD_CLOCK_CTRL		(ULPD_REG_BASE + 0x30)
-@@ -131,7 +131,7 @@
-  */
+ static unsigned dummy_state[SMSM_STATE_COUNT];
  
- /* Watchdog timer within the OMAP3.2 gigacell */
--#define OMAP_MPU_WATCHDOG_BASE	(0xfffec800)
-+#define OMAP_MPU_WATCHDOG_BASE	IOMEM(0xfffec800)
- #define OMAP_WDT_TIMER		(OMAP_MPU_WATCHDOG_BASE + 0x0)
- #define OMAP_WDT_LOAD_TIM	(OMAP_MPU_WATCHDOG_BASE + 0x4)
- #define OMAP_WDT_READ_TIM	(OMAP_MPU_WATCHDOG_BASE + 0x4)
-@@ -149,8 +149,8 @@
-  * or something similar.. -- PFM.
-  */
+ static struct shared_info smd_info = {
+-	.state = (unsigned) &dummy_state,
++	/* FIXME: not a real __iomem pointer */
++	.state = &dummy_state,
+ };
  
--#define OMAP_IH1_BASE		0xfffecb00
--#define OMAP_IH2_BASE		0xfffe0000
-+#define OMAP_IH1_BASE		IOMEM(0xfffecb00)
-+#define OMAP_IH2_BASE		IOMEM(0xfffe0000)
+ module_param_named(debug_mask, msm_smd_debug_mask,
+@@ -796,22 +797,22 @@ void *smem_alloc(unsigned id, unsigned size)
+ 	return smem_find(id, size);
+ }
  
- #define OMAP_IH1_ITR		(OMAP_IH1_BASE + 0x00)
- #define OMAP_IH1_MIR		(OMAP_IH1_BASE + 0x04)
+-void *smem_item(unsigned id, unsigned *size)
++void __iomem *smem_item(unsigned id, unsigned *size)
+ {
+ 	struct smem_shared *shared = (void *) MSM_SHARED_RAM_BASE;
+ 	struct smem_heap_entry *toc = shared->heap_toc;
+ 
+ 	if (id >= SMEM_NUM_ITEMS)
+-		return 0;
++		return NULL;
+ 
+ 	if (toc[id].allocated) {
+ 		*size = toc[id].size;
+-		return (void *) (MSM_SHARED_RAM_BASE + toc[id].offset);
++		return (MSM_SHARED_RAM_BASE + toc[id].offset);
+ 	} else {
+ 		*size = 0;
+ 	}
+ 
+-	return 0;
++	return NULL;
+ }
+ 
+ void *smem_find(unsigned id, unsigned size_in)
+@@ -857,7 +858,7 @@ static irqreturn_t smsm_irq_handler(int irq, void *data)
+ int smsm_change_state(enum smsm_state_item item,
+ 		      uint32_t clear_mask, uint32_t set_mask)
+ {
+-	unsigned long addr = smd_info.state + item * 4;
++	void __iomem *addr = smd_info.state + item * 4;
+ 	unsigned long flags;
+ 	unsigned state;
+ 
+@@ -943,10 +944,10 @@ int smd_core_init(void)
+ 	/* wait for essential items to be initialized */
+ 	for (;;) {
+ 		unsigned size;
+-		void *state;
++		void __iomem *state;
+ 		state = smem_item(SMEM_SMSM_SHARED_STATE, &size);
+ 		if (size == SMSM_V1_SIZE || size == SMSM_V2_SIZE) {
+-			smd_info.state = (unsigned)state;
++			smd_info.state = state;
+ 			break;
+ 		}
+ 	}
 -- 
 1.7.10
 
