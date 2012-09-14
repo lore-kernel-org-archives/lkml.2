@@ -1,102 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2INF7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 01:59:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48670 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2INF7p (ORCPT
+	id S1754546Ab2INGAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:00:08 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:46183 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab2INGAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 01:59:45 -0400
-Date: Thu, 13 Sep 2012 22:59:15 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-b232e0732b1d763834c3d5b098d25d59337ba075@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1347295819-23177-3-git-send-email-jolsa@redhat.com>
-References: <1347295819-23177-3-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add memdup function
-Git-Commit-ID: b232e0732b1d763834c3d5b098d25d59337ba075
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 14 Sep 2012 02:00:04 -0400
+Message-ID: <5052C7DD.4000205@linux.vnet.ibm.com>
+Date: Fri, 14 Sep 2012 13:59:57 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: trace the events of mmu_notifier
+References: <50499123.70609@linux.vnet.ibm.com> <504DAE34.1060402@redhat.com> <504DB22F.4020609@linux.vnet.ibm.com>
+In-Reply-To: <504DB22F.4020609@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 22:59:21 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091405-9264-0000-0000-000002548B13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b232e0732b1d763834c3d5b098d25d59337ba075
-Gitweb:     http://git.kernel.org/tip/b232e0732b1d763834c3d5b098d25d59337ba075
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 10 Sep 2012 18:50:17 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 11 Sep 2012 12:04:41 -0300
+On 09/10/2012 05:26 PM, Xiao Guangrong wrote:
+> On 09/10/2012 05:09 PM, Avi Kivity wrote:
+>> On 09/07/2012 09:16 AM, Xiao Guangrong wrote:
+>>> mmu_notifier is the interface to broadcast the mm events to KVM, the
+>>> tracepoints introduced in this patch can trace all these events, it is
+>>> very helpful for us to notice and fix the bug caused by mm
+>>
+>> There is nothing kvm specific here.  Perhaps this can be made generic
+>> (with a mm parameter so we can filter by process).
+> 
+> Hmm, i would like to put these tracepoints in the mmu-lock then we can clearly
+> know the sequence between mm and kvm mmu. It is useful for us to detect the
+> issue/race between them.
+> 
 
-perf tools: Add memdup function
+Ping...?
 
-Adding memdup function to duplicate region of memory.
-
-  void *memdup(const void *src, size_t len)
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1347295819-23177-3-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/include/linux/string.h |    2 ++
- tools/perf/util/string.c               |   18 +++++++++++++++++-
- 2 files changed, 19 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
-index 3b2f590..6f19c54 100644
---- a/tools/perf/util/include/linux/string.h
-+++ b/tools/perf/util/include/linux/string.h
-@@ -1 +1,3 @@
- #include <string.h>
-+
-+void *memdup(const void *src, size_t len);
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 199bc4d..3217059 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -1,5 +1,5 @@
- #include "util.h"
--#include "string.h"
-+#include "linux/string.h"
- 
- #define K 1024LL
- /*
-@@ -335,3 +335,19 @@ char *rtrim(char *s)
- 
- 	return s;
- }
-+
-+/**
-+ * memdup - duplicate region of memory
-+ * @src: memory region to duplicate
-+ * @len: memory region length
-+ */
-+void *memdup(const void *src, size_t len)
-+{
-+	void *p;
-+
-+	p = malloc(len);
-+	if (p)
-+		memcpy(p, src, len);
-+
-+	return p;
-+}
