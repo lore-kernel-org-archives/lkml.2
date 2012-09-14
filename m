@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab2INLwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:52:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63190 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab2INLwC (ORCPT
+	id S1758655Ab2INL4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:56:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38198 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757575Ab2INL4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:52:02 -0400
-Message-ID: <50531A5D.3010206@gmail.com>
-Date: Fri, 14 Sep 2012 05:51:57 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 14 Sep 2012 07:56:02 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Dong Hao <haodong@linux.vnet.ibm.com>, acme@infradead.org, avi@redhat.com,
-        mtosatti@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 3/3] KVM: perf: kvm events analysis tool
-References: <1346061106-5364-1-git-send-email-haodong@linux.vnet.ibm.com> <1346061106-5364-4-git-send-email-haodong@linux.vnet.ibm.com> <503FB105.9000205@gmail.com> <5051678C.1070209@gmail.com> <50529CCB.1040708@linux.vnet.ibm.com>
-In-Reply-To: <50529CCB.1040708@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120914173813.fa65528e5236bd0a20c29b92@canb.auug.org.au>
+References: <20120914173813.fa65528e5236bd0a20c29b92@canb.auug.org.au>
+Date: Fri, 14 Sep 2012 13:56:01 +0200
+Message-ID: <CA+icZUUWwaysVRHFWKfw6Renj2rAW8VZHrQhHy78-cpBQ+07fQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Sept 14
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/13/12 8:56 PM, Xiao Guangrong wrote:
-> We'd better keep the record/report function, sometimes, we can only get perf.data
-> from the customers whose machine can not be reached for us.
+On Fri, Sep 14, 2012 at 9:38 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
 >
-> Especially, other tracepoints are also interesting for us when the customers encounter
-> the performance issue, we always ask costumes to use "perf kvm stat -e xxx" to append
-> other events, like lock:*. Then, we can get not only the information of kvm events
-> by using 'perf kvm stat' but also other informations like 'perf lock' or 'perf script'
-> to get the whole sequences.
-
-Ok.
-
-> And, i think "live mode" is also useful for 'perf lock/sched', could you implement it
-> in perf core?
-
-The code will be re-usable, so lock and sched should be able to add a 
-live mode too.
-
+> Changes since 201209013:
 >
-> By the way, the new version of our patchset is ready, do you want to add your implement
-> after it is accepted by Arnaldo? Or are you going to post it with our patchset together?
+> The pci tree lost its conflicts.
+>
+> The i2c tree lost its conflict.
+>
+> The net-next tree gained conflicts against the net tree.
+>
+> The cgroup tree gained a build failure so I used the version from
+> next-20120913.
+>
+> The workqueues tree gained a conflict against the net tree.
+>
+> The dma-mapping tree gained conflicts against the libata tree.
+>
+> The clk tree lost its conflicts.
+>
+> The akpm tree lost 2 build failures, I have still reverted 1 commit.
+>
+> ----------------------------------------------------------------------------
+>
 
-Then go ahead and submit it for inclusion; I'll add my stuff on top.
+This is a good release (for me), thanks :-).
+Wonderful, wonderful, wonderful life... [1].
+( If linux-next folks would get all (severe) issues tracked down
+within a week till Fridays (which is a challenge)... )
 
-David
+- Sedat -
+
+[1] http://www.youtube.com/watch?v=pj_qIwQ3V5c
