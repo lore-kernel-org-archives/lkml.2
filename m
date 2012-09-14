@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab2INOdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:33:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47855 "EHLO relay.sw.ru"
+	id S1757552Ab2INOdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:33:06 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16651 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756632Ab2INOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:32:56 -0400
-Subject: [PATCH 1/3] lockd: use rpc client's cl_nodename for id encoding
+	id S1757454Ab2INOdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:33:00 -0400
+Subject: [PATCH 2/3] lockd: per-net NSM client creation and destruction
+	helpers introduced
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Fri, 14 Sep 2012 18:25:55 +0400
-Message-ID: <20120914142555.10835.53544.stgit@localhost.localdomain>
+Date: Fri, 14 Sep 2012 18:26:00 +0400
+Message-ID: <20120914142600.10835.70696.stgit@localhost.localdomain>
 In-Reply-To: <20120914140811.10835.81465.stgit@localhost.localdomain>
 References: <20120914140811.10835.81465.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,64 +24,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taking hostname from uts namespace if not safe, because this cuold be
-performind during umount operation on child reaper death. And in this case
-current->nsproxy is NULL already.
+NSM RPC client can be required on NFSv3 umount, when child reaper is dying (and
+destroying it's mount namespace). It means, that current nsproxy is set to
+NULL already, but creation of RPC client requires UTS namespace for gaining
+hostname string.
+This patch introduces reference counted NFS RPC clients creation and
+destruction helpers (similar to RPCBIND RPC clients).
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: <stable@vger.kernel.org>
 ---
- fs/lockd/mon.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ fs/lockd/mon.c   |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/lockd/netns.h |    4 ++++
+ fs/lockd/svc.c   |    1 +
+ 3 files changed, 52 insertions(+), 0 deletions(-)
 
 diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index 7ef14b3..c6186fb 100644
+index c6186fb..77e07fe 100644
 --- a/fs/lockd/mon.c
 +++ b/fs/lockd/mon.c
-@@ -426,11 +426,12 @@ static void encode_mon_name(struct xdr_stream *xdr, const struct nsm_args *argp)
-  * (via the NLMPROC_SM_NOTIFY call) that the state of host "mon_name"
-  * has changed.
-  */
--static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
-+static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp,
-+			 char *nodename)
- {
- 	__be32 *p;
+@@ -19,6 +19,8 @@
  
--	encode_nsm_string(xdr, utsname()->nodename);
-+	encode_nsm_string(xdr, nodename);
- 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
- 	*p++ = cpu_to_be32(argp->prog);
- 	*p++ = cpu_to_be32(argp->vers);
-@@ -441,10 +442,11 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
-  * The "mon_id" argument specifies the non-private arguments
-  * of an NSMPROC_MON or NSMPROC_UNMON call.
-  */
--static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp)
-+static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp,
-+			  char *nodename)
- {
- 	encode_mon_name(xdr, argp);
--	encode_my_id(xdr, argp);
-+	encode_my_id(xdr, argp, nodename);
+ #include <asm/unaligned.h>
+ 
++#include "netns.h"
++
+ #define NLMDBG_FACILITY		NLMDBG_MONITOR
+ #define NSM_PROGRAM		100024
+ #define NSM_VERSION		1
+@@ -83,6 +85,51 @@ static struct rpc_clnt *nsm_create(struct net *net)
+ 	return rpc_create(&args);
  }
  
- /*
-@@ -463,14 +465,14 @@ static void encode_priv(struct xdr_stream *xdr, const struct nsm_args *argp)
- static void nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
- 			    const struct nsm_args *argp)
++__maybe_unused static struct rpc_clnt *nsm_client_get(struct net *net)
++{
++	static DEFINE_MUTEX(nsm_create_mutex);
++	struct rpc_clnt	*clnt;
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++
++	spin_lock(&ln->nsm_clnt_lock);
++	if (ln->nsm_users) {
++		ln->nsm_users++;
++		clnt = ln->nsm_clnt;
++		spin_unlock(&ln->nsm_clnt_lock);
++		goto out;
++	}
++	spin_unlock(&ln->nsm_clnt_lock);
++
++	mutex_lock(&nsm_create_mutex);
++	clnt = nsm_create(net);
++	if (!IS_ERR(clnt)) {
++		ln->nsm_clnt = clnt;
++		smp_wmb();
++		ln->nsm_users = 1;
++	}
++	mutex_unlock(&nsm_create_mutex);
++out:
++	return clnt;
++}
++
++__maybe_unused static void nsm_client_put(struct net *net)
++{
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
++	struct rpc_clnt	*clnt = ln->nsm_clnt;
++	int shutdown = 0;
++
++	spin_lock(&ln->nsm_clnt_lock);
++	if (ln->nsm_users) {
++		if (--ln->nsm_users)
++			ln->nsm_clnt = NULL;
++		shutdown = !ln->nsm_users;
++	}
++	spin_unlock(&ln->nsm_clnt_lock);
++
++	if (shutdown)
++		rpc_shutdown_client(clnt);
++}
++
+ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 			 struct net *net)
  {
--	encode_mon_id(xdr, argp);
-+	encode_mon_id(xdr, argp, req->rq_task->tk_client->cl_nodename);
- 	encode_priv(xdr, argp);
+diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
+index 4eee248..5010b55 100644
+--- a/fs/lockd/netns.h
++++ b/fs/lockd/netns.h
+@@ -12,6 +12,10 @@ struct lockd_net {
+ 	struct delayed_work grace_period_end;
+ 	struct lock_manager lockd_manager;
+ 	struct list_head grace_list;
++
++	spinlock_t nsm_clnt_lock;
++	unsigned int nsm_users;
++	struct rpc_clnt *nsm_clnt;
+ };
+ 
+ extern int lockd_net_id;
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 31a63f8..7e35587 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -596,6 +596,7 @@ static int lockd_init_net(struct net *net)
+ 
+ 	INIT_DELAYED_WORK(&ln->grace_period_end, grace_ender);
+ 	INIT_LIST_HEAD(&ln->grace_list);
++	spin_lock_init(&ln->nsm_clnt_lock);
+ 	return 0;
  }
  
- static void nsm_xdr_enc_unmon(struct rpc_rqst *req, struct xdr_stream *xdr,
- 			      const struct nsm_args *argp)
- {
--	encode_mon_id(xdr, argp);
-+	encode_mon_id(xdr, argp, req->rq_task->tk_client->cl_nodename);
- }
- 
- static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,
 
