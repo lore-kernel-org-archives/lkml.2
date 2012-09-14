@@ -1,142 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab2INO11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:27:27 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:31593 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147Ab2INO1Y (ORCPT
+	id S1757235Ab2INO2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:28:03 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36413 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab2INO2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:27:24 -0400
-X-IronPort-AV: E=Sophos;i="4.80,423,1344211200"; 
-   d="scan'208";a="14549060"
-Date: Fri, 14 Sep 2012 15:26:34 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	Fri, 14 Sep 2012 10:28:00 -0400
+Subject: Re: [PATCH] Xen backend support for paged out grant targets.
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+In-Reply-To: <20120914124411.GB25249@phenom.dumpdata.com>
+Date: Fri, 14 Sep 2012 10:27:59 -0400
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
+        "xen-devel@xen.lists.org" <xen-devel@xen.lists.org>,
         David Vrabel <david.vrabel@citrix.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [PATCH v4 06/24] docs: Xen ARM DT bindings
-In-Reply-To: <20120914130151.GH25249@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1209141514590.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120914130151.GH25249@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3763C0C3-282F-403F-8665-47A13E5C1D29@gridcentric.ca>
+References: <1347557306-25453-1-git-send-email-andres@lagarcavilla.org> <1347559899.25803.64.camel@dagon.hellion.org.uk> <B4C805E1-3390-4002-BECC-7D1AFF2BD56D@gmail.com> <1347607141.25803.73.camel@dagon.hellion.org.uk> <20120914124411.GB25249@phenom.dumpdata.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 14, 2012 at 12:13:08PM +0100, Stefano Stabellini wrote:
-> > Add a doc to describe the Xen ARM device tree bindings
-> > 
-> > 
-> > Changes in v4:
-> > 
-> > - "xen,xen" should be last as it is less specific;
-> > - update reg property using 2 address-cells and 2 size-cells.
-> > 
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > CC: devicetree-discuss@lists.ozlabs.org
-> > CC: David Vrabel <david.vrabel@citrix.com>
-> > CC: Rob Herring <robherring2@gmail.com>
-> > CC: Dave Martin <dave.martin@linaro.org>
-> > ---
-> >  Documentation/devicetree/bindings/arm/xen.txt |   22 ++++++++++++++++++++++
-> >  1 files changed, 22 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
-> > new file mode 100644
-> > index 0000000..1f8f7d4
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/arm/xen.txt
-> > @@ -0,0 +1,22 @@
-> > +* Xen hypervisor device tree bindings
-> > +
-> > +Xen ARM virtual platforms shall have the following properties:
-> > +
-> > +- compatible:
-> > +	compatible = "xen,xen-<version>", "xen,xen";
-> > +  where <version> is the version of the Xen ABI of the platform.
-> > +
-> > +- reg: specifies the base physical address and size of a region in
-> > +  memory where the grant table should be mapped to, using an
-> > +  HYPERVISOR_memory_op hypercall. 
-> > +
-> > +- interrupts: the interrupt used by Xen to inject event notifications.
+
+On Sep 14, 2012, at 8:44 AM, Konrad Rzeszutek Wilk wrote:
+
+> On Fri, Sep 14, 2012 at 08:19:01AM +0100, Ian Campbell wrote:
+>> On Thu, 2012-09-13 at 20:45 +0100, Andres Lagar-Cavilla wrote:
+>>> On Sep 13, 2012, at 2:11 PM, Ian Campbell wrote:
+>>> 
+>>>> On Thu, 2012-09-13 at 18:28 +0100, Andres Lagar-Cavilla wrote:
+>>>>> 
+>>>>> * Add placeholder in array of grant table error descriptions for
+>>>>> unrelated error code we jump over. 
+>>>> 
+>>>> Why not just define it, it's listed here:
+>>>> http://xenbits.xen.org/docs/unstable/hypercall/include,public,grant_table.h.html#Enum_grant_status
+>>> Well, a) we'd be defining something no one will be using (for the
+>>> moment)
+>> 
+>> Even if no one in the kernel is using it, having "placeholder" as an
+>> entry in GNTTABOP_error_msgs is just silly, even things which don't
+>> understand GNTST_address_too_big directly could end up looking it up
+>> here.
+>> 
+>>> b) I would be signing-off on something unrelated.
+>> 
+>> Lets take this patch instead then.
+>> 
+>> 8<------------------------------------------------
+>> 
+>>> From cb9daaf3029accb6d5fef58b450a625b27190429 Mon Sep 17 00:00:00 2001
+>> From: Ian Campbell <ian.campbell@citrix.com>
+>> Date: Fri, 14 Sep 2012 08:10:06 +0100
+>> Subject: [PATCH] xen: resynchronise grant table status codes with upstream
+>> 
+>> Adds GNTST_address_too_big and GNTST_eagain.
+>> 
+>> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 > 
-> Its singular here.. but in the example its plurar. What if you use
-> multiple of the same number ("16 0xf")?
-
-The "interrupts" property in the example below is a standard property to
-describe interrupts. We just happen to declare only one interrupt.
-
->From the device tree point of view it would be possible to declare more
-than one interrupt here, but Xen only supports one really.
-
-Regarding the three cells used in the example (<1 15 0xf08>), they have
-a specific meaning in the GIC context:
-
-"""
-  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
-  interrupts.
-
-  The 2nd cell contains the interrupt number for the interrupt type.
-  SPI interrupts are in the range [0-987].  PPI interrupts are in the
-  range [0-15].
-
-  The 3rd cell is the flags, encoded as follows:
-	bits[3:0] trigger type and level flags.
-		1 = low-to-high edge triggered
-		2 = high-to-low edge triggered
-		4 = active high level-sensitive
-		8 = active low level-sensitive
-	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
-	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
-	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
-"""
-
-So <1 15 0xf08> means the last PPI.
-
-
-
-> > +
-> > +
-> > +Example:
-> > +
-> > +hypervisor {
-> > +	compatible = "xen,xen-4.3", "xen,xen";
-> > +	reg = <0 0xb0000000 0 0x20000>;
+> applied.
+Thanks. Rebased on top of this and just sent.
+Andres
 > 
-> So two grant tables?
-> 
-> Hm, physical address is zero, and the size is 0xbignumber?
-> Or is the '0' denotating a seperator of arguments, so it is
-> 0xb000.. for physical address and 0x20000 for size?
+>> ---
+>> include/xen/interface/grant_table.h |    8 ++++++--
+>> 1 file changed, 6 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
+>> index a17d844..84a8fbf 100644
+>> --- a/include/xen/interface/grant_table.h
+>> +++ b/include/xen/interface/grant_table.h
+>> @@ -519,7 +519,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+>> #define GNTST_no_device_space  (-7) /* Out of space in I/O MMU.              */
+>> #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
+>> #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
+>> -#define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary */
+>> +#define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary.   */
+>> +#define GNTST_address_too_big (-11) /* transfer page address too large.      */
+>> +#define GNTST_eagain          (-12) /* Operation not done; try again.        */
+>> 
+>> #define GNTTABOP_error_msgs {                   \
+>>     "okay",                                     \
+>> @@ -532,7 +534,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+>>     "no spare translation slot in the I/O MMU", \
+>>     "permission denied",                        \
+>>     "bad page",                                 \
+>> -    "copy arguments cross page boundary"        \
+>> +    "copy arguments cross page boundary",       \
+>> +    "page address size too large",              \
+>> +    "operation not done; try again"             \
+>> }
+>> 
+>> #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */
+>> -- 
+>> 1.7.10.4
+>> 
+>> 
 
-from http://devicetree.org/Device_Tree_Usage:
-
-"Each addressable device gets a reg which is a list of tuples in the
-form reg = <address1 length1 [address2 length2] [address3 length3] ...
-Each tuple represents an address range used by the device. Each address
-value is a list of one or more 32 bit integers called cells. Similarly,
-the length value can either be a list of cells, or empty."
-
-In this case the address is: [0 0xb0000000], that means
-0x00000000b0000000, and the length is [0 0x20000], that means
-0x0000000000020000.
