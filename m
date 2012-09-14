@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2INMuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:50:07 -0400
+	id S1756061Ab2INMuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:50:19 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63481 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab2INMt7 (ORCPT
+	with ESMTP id S1755974Ab2INMuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:49:59 -0400
+	Fri, 14 Sep 2012 08:50:09 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Manjunath Hadli <manjunath.hadli@ti.com>,
         "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH 08/14] davinci: vpfe: previewer driver based on v4l2 media controller framework
-Date: Fri, 14 Sep 2012 18:16:38 +0530
-Message-Id: <1347626804-5703-9-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH 09/14] davinci: vpfe: resizer driver based on media framework
+Date: Fri, 14 Sep 2012 18:16:39 +0530
+Message-Id: <1347626804-5703-10-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
 References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com>
@@ -26,31 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Add the video previewer driver with the v4l2 media controller framework
-which takes care of converting the video frames from bayer to YUV or RGB.
-The driver supports both continuous mode where it works in tandem with
-the CCDC and single shot mode where it can be used in isolation. The
-driver underneath uses the dm365 IPIPE module for programming the
-hardware. The driver supports previewer as a subdevice and a media entity,
-and the enumerable pads are 2(1 input and 1 output). The driver supports
-streaing and all the pad and link related operations. Specific functions
-like defect pixel correction, LUT are supported through private ioctls.
+Add the video resizer driver with the v4l2 media controller framework
+which takes care of resizing the video frames with both up-scaling
+downscaling facility. The formats that is supported is YUV422.
+The driver supports both continuous mode where it works in
+tandem with the CCDC and previewer and single shot mode where
+it can be used in isolation or with previewer. The driver underneath
+uses the dm365 IPIPE module for programming the hardware.
+The driver supports resizer as a subdevice and a media entity,
+and the enumerable pads are 2(1 input and 1 output). The driver
+supports streaming and all the pad and link related operations.
+Specific filter functionality including filter types are set
+through private ioctls.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/media/platform/davinci/vpfe_previewer.c | 1041 +++++++++++++++++++++++
- drivers/media/platform/davinci/vpfe_previewer.h |   71 ++
- 2 files changed, 1112 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/platform/davinci/vpfe_previewer.c
- create mode 100644 drivers/media/platform/davinci/vpfe_previewer.h
+ drivers/media/platform/davinci/vpfe_resizer.c | 1080 +++++++++++++++++++++++++
+ drivers/media/platform/davinci/vpfe_resizer.h |   66 ++
+ 2 files changed, 1146 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/platform/davinci/vpfe_resizer.c
+ create mode 100644 drivers/media/platform/davinci/vpfe_resizer.h
 
-diff --git a/drivers/media/platform/davinci/vpfe_previewer.c b/drivers/media/platform/davinci/vpfe_previewer.c
+diff --git a/drivers/media/platform/davinci/vpfe_resizer.c b/drivers/media/platform/davinci/vpfe_resizer.c
 new file mode 100644
-index 0000000..4a0fc8e
+index 0000000..8b98ff5
 --- /dev/null
-+++ b/drivers/media/platform/davinci/vpfe_previewer.c
-@@ -0,0 +1,1041 @@
++++ b/drivers/media/platform/davinci/vpfe_resizer.c
+@@ -0,0 +1,1080 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -74,83 +77,106 @@ index 0000000..4a0fc8e
 +
 +#include <linux/slab.h>
 +#include <linux/videodev2.h>
-+#include <linux/v4l2-mediabus.h>
 +#include <linux/platform_device.h>
-+#include <linux/davinci_vpfe.h>
++#include <linux/v4l2-mediabus.h>
 +
 +#include <media/v4l2-device.h>
-+#include <media/davinci/vpss.h>
 +#include <media/media-entity.h>
++#include <media/davinci/vpss.h>
 +#include <media/davinci/vpfe_types.h>
 +
 +#include "vpfe_mc_capture.h"
 +#include "imp_hw_if.h"
 +
-+#define MIN_OUT_WIDTH	32
-+#define MIN_OUT_HEIGHT	32
 +
-+static int serializer_initialized;
-+static struct imp_serializer imp_serializer_info;
++#define MIN_IN_WIDTH		32
++#define MIN_IN_HEIGHT		32
++#define MAX_IN_WIDTH		4095
++#define MAX_IN_HEIGHT		4095
++#define MIN_OUT_WIDTH		16
++#define MIN_OUT_HEIGHT		2
 +
-+/* previewer input format descriptions */
-+static const unsigned int prev_input_fmts[] = {
++/* resizer pixel formats */
++static const unsigned int resz_input_fmts[] = {
 +	V4L2_MBUS_FMT_UYVY8_2X8,
-+	V4L2_MBUS_FMT_SGRBG12_1X12,
++#ifdef CONFIG_ARCH_DAVINCI_DM365
++	V4L2_MBUS_FMT_Y8_1X8,
++	V4L2_MBUS_FMT_UV8_1X8,
++#endif
 +};
 +
-+/* previewer ouput format descriptions */
-+static const unsigned int prev_output_fmts[] = {
++static const unsigned int resz_output_fmts[] = {
 +	V4L2_MBUS_FMT_UYVY8_2X8,
++#ifdef CONFIG_ARCH_DAVINCI_DM365
++	V4L2_MBUS_FMT_Y8_1X8,
++	V4L2_MBUS_FMT_UV8_1X8,
++	V4L2_MBUS_FMT_YDYUYDYV8_1X16,
++#endif
 +};
 +
++static char resizer_chained;
 +/*
-+ * imp_set_preview_config() - set previewer config
-+ * @sd: Pointer previewer subdevice
-+ * @chan_config: previewer channel configuration
++ * imp_set_resizer_config() - set resizer config
++ * @resizer: vpfe resizer device pointer
++ * @channel: image processor logical channel
++ * @chan_config: resizer channel configuration
 + */
-+static int
-+imp_set_preview_config(struct v4l2_subdev *sd,
-+		       struct vpfe_prev_config *chan_config)
++static int imp_set_resizer_config(struct vpfe_resizer_device *resizer,
++			   struct imp_logical_channel *channel,
++			   struct vpfe_rsz_config *chan_config)
 +{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct device *dev = resizer->subdev.v4l2_dev->dev;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
 +	int ret;
 +
 +	if (channel->config_state == STATE_NOT_CONFIGURED) {
-+		channel->config = imp_hw_if->alloc_config_block(dev,
-+							vpfe_dev->ipipe);
++		channel->config =
++			imp_hw_if->alloc_config_block(dev, vpfe_dev->ipipe);
++
++		if (!channel->config) {
++			dev_err(dev,
++			"Failed to allocate memory for channel config\n");
++			return -EFAULT;
++		}
 +		/* allocate buffer for holding user configuration */
 +		channel->user_config = imp_hw_if->alloc_user_config_block(dev,
-+						vpfe_dev->ipipe, IMP_PREVIEWER);
++					vpfe_dev->ipipe, IMP_RESIZER);
++
 +		if (!channel->user_config) {
 +			dev_err(dev,
-+				"Failed to allocate memory for user config\n");
++			"Failed to allocate memory for user config\n");
++			if (!resizer_chained)
++				kfree(channel->config);
 +			return -EFAULT;
 +		}
 +	}
 +
-+	if (!chan_config->ipipeif_config) {
-+		dev_dbg(dev, "imp_set_preview_config: default configuration set\n");
++	if (!chan_config->config) {
 +		/* put defaults for user configuration */
 +		imp_hw_if->set_user_config_defaults(dev, vpfe_dev->ipipe,
-+					IMP_PREVIEWER, channel->user_config);
++					IMP_RESIZER, channel->user_config);
++
++		dev_dbg(dev,
++			"imp_set_resizer_config: default configuration set\n");
 +	} else {
-+		dev_dbg(dev, "imp_set_preview_config: user configuration set\n");
-+		if (copy_from_user(channel->user_config,
-+			chan_config->ipipeif_config,
-+				sizeof(struct prev_ipipeif_config)))
++		if (copy_from_user(channel->user_config, chan_config->config,
++			sizeof(struct rsz_config)))
 +			return -EFAULT;
++		dev_dbg(dev,
++			"imp_set_resizer_config: user configuration set\n");
 +	}
 +
-+	/* Update the user configuration in the hw config block */
-+	ret = imp_hw_if->set_preview_config(dev, vpfe_dev->ipipe,
-+				channel->user_config, channel->config);
++	/* Update the user configuration in the hw config block or
++	   if chained, copy it to the shared block and allow previewer
++	   to configure it */
++	ret = imp_hw_if->set_resizer_config(dev, vpfe_dev->ipipe,
++					    resizer_chained,
++					    channel->user_config,
++					    channel->config);
 +
 +	if (ret < 0)
-+		dev_err(dev, "Failed to set previewer config\n");
++		dev_err(dev, "Failed to set resizer configuration\n");
 +
 +	channel->config_state = STATE_CONFIGURED;
 +
@@ -158,33 +184,33 @@ index 0000000..4a0fc8e
 +}
 +
 +/*
-+ * imp_get_preview_config() - get current previewer config
-+ * @previewer: vpfe previewer device pointer
++ * imp_get_resizer_config() - set resizer config
++ * @resizer: vpfe resizer device pointer
 + * @channel: image processor logical channel
-+ * @chan_config: previewer channel configuration
++ * @chan_config: resizer channel configuration
 + */
-+static int
-+imp_get_preview_config(struct v4l2_subdev *sd,
-+		       struct vpfe_prev_config *chan_config)
++static int imp_get_resize_config(struct vpfe_resizer_device *resizer,
++			  struct imp_logical_channel *channel,
++			  struct vpfe_rsz_config *chan_config)
 +{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	struct device *dev = resizer->subdev.v4l2_dev->dev;
++
++	dev_dbg(dev, "imp_get_resize_config\n");
 +
 +	if (channel->config_state != STATE_CONFIGURED) {
-+		dev_err(dev, "previewer channel not configured\n");
++		dev_err(dev, "Resizer channel not configured\n");
 +		return -EINVAL;
 +	}
 +
-+	if (!chan_config->ipipeif_config) {
-+		dev_err(dev, "Invalid channel configuration pointer\n");
++	if (!chan_config->config) {
++		dev_err(dev, "Resizer channel invalid pointer\n");
 +		return -EINVAL;
 +	}
 +
-+	if (copy_to_user((void *)chan_config->ipipeif_config,
++	if (copy_to_user((void *)chan_config->config,
 +			 (void *)channel->user_config,
-+			 sizeof(struct prev_ipipeif_config))) {
-+		dev_err(dev, "imp_get_preview_config: Error in copy to user\n");
++			 sizeof(struct rsz_config))) {
++		dev_err(dev, "imp_get_resize_config: Error in copy to user\n");
 +		return -EFAULT;
 +	}
 +
@@ -192,144 +218,147 @@ index 0000000..4a0fc8e
 +}
 +
 +/*
-+ * imp_init_serializer - intilaize serializer
++ * set_resizer_channel_cont_mode() - Set continous channel mode
++ * @resizer: vpfe resizer device pointer
 + */
-+static int imp_init_serializer(void)
++static void set_resizer_channel_cont_mode(struct vpfe_resizer_device *resizer)
 +{
-+	if (serializer_initialized)
-+		return 0;
++	struct imp_logical_channel *channel = &resizer->channel;
 +
-+	memset((void *)&imp_serializer_info, (char)0,
-+		sizeof(struct imp_serializer));
-+	init_completion(&imp_serializer_info.sem_isr);
-+	imp_serializer_info.sem_isr.done = 0;
-+	imp_serializer_info.array_count = 0;
-+	mutex_init(&imp_serializer_info.array_sem);
-+	serializer_initialized = 1;
-+
-+	return 0;
++	channel->config_state = STATE_NOT_CONFIGURED;
++	channel->user_config = NULL;
 +}
 +
 +/*
-+ * set_channel_prv_cont_mode() - Set continous channel mode
-+ * @previewer: vpfe previewer device pointer
++ * set_resizer_channel_ss_mode() - Set single-shot channel mode
++ * @resizer: vpfe resizer device pointer
 + */
-+static int set_channel_prv_cont_mode(struct vpfe_previewer_device *previewer)
++static int set_resizer_channel_ss_mode(struct vpfe_resizer_device *resizer)
 +{
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct imp_logical_channel *channel = &resizer->channel;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
 +
-+	channel->type = IMP_PREVIEWER;
 +	channel->config_state = STATE_NOT_CONFIGURED;
-+
-+	return imp_hw_if->set_oper_mode(vpfe_dev->ipipe, IMP_MODE_CONTINUOUS);
-+}
-+
-+/*
-+ * set_channel_prv_ss_mode() - Set single-shot channel mode
-+ * @previewer: vpfe previewer device pointer
-+ */
-+static int set_channel_prv_ss_mode(struct vpfe_previewer_device *previewer)
-+{
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+
-+	channel->type = IMP_PREVIEWER;
-+	channel->config_state = STATE_NOT_CONFIGURED;
-+
++	channel->user_config = NULL;
 +	return imp_hw_if->set_oper_mode(vpfe_dev->ipipe, IMP_MODE_SINGLE_SHOT);
 +}
 +
 +/*
-+ * reset_channel_prv_mode() - Reset channel mode
-+ * @previewer: vpfe previewer device pointer
++ * reset_resizer_channel_mode() - Reset channel mode
++ * @resizer: vpfe resizer device pointer
 + */
-+static void reset_channel_prv_mode(struct vpfe_previewer_device *previewer)
++static void reset_resizer_channel_mode(struct vpfe_resizer_device *resizer)
 +{
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct imp_logical_channel *channel = &resizer->channel;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
 +
-+	imp_hw_if->reset_oper_mode(vpfe_dev->ipipe);
++	if (resizer->input == RESIZER_INPUT_MEMORY)
++		imp_hw_if->reset_oper_mode(vpfe_dev->ipipe);
 +
 +	if (channel->config_state == STATE_CONFIGURED) {
 +		kfree(channel->user_config);
-+		memset(channel, 0, sizeof(struct imp_logical_channel));
++		channel->user_config = NULL;
 +	}
 +}
 +
 +/*
-+ * prv_video_in_queue() - PREVIEWER video in queue
++ * VPFE video operations
++ */
++
++/* rsz_video_in_queue() - RESIZER video in queue
 + * @vpfe_dev: vpfe device pointer
 + * @addr: buffer address
 + */
-+static void
-+prv_video_in_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
++static void rsz_video_in_queue(struct vpfe_device *vpfe_dev,
++			       unsigned long addr)
 +{
-+	struct vpfe_previewer_device *previewer = &vpfe_dev->vpfe_previewer;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct imp_logical_channel *chan = &previewer->channel;
++	struct vpfe_resizer_device *resizer = &vpfe_dev->vpfe_resizer;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct imp_logical_channel *chan = &resizer->channel;
 +
-+	if (previewer->input == PREVIEWER_INPUT_MEMORY)
++	if (resizer->input == RESIZER_INPUT_MEMORY)
 +		imp_hw_if->update_inbuf_address(chan->config, addr);
 +	else
 +		imp_hw_if->update_inbuf_address(NULL, addr);
 +}
 +
 +/*
-+ * prv_video_out_queue() - PREVIEWER video out queue
++ * rsz_video_out1_queue() - RESIZER-A video out queue
 + * @vpfe_dev: vpfe device pointer
 + * @addr: buffer address
 + */
-+static void
-+prv_video_out_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
++static void rsz_video_out1_queue(struct vpfe_device *vpfe_dev,
++				 unsigned long addr)
 +{
-+	struct vpfe_previewer_device *previewer = &vpfe_dev->vpfe_previewer;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct imp_logical_channel *chan = &previewer->channel;
++	struct vpfe_resizer_device *resizer = &vpfe_dev->vpfe_resizer;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_pipeline *pipe = &resizer->video_out.pipe;
++	struct imp_logical_channel *chan = &resizer->channel;
 +
-+	if (previewer->input == PREVIEWER_INPUT_MEMORY)
++	if (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT)
 +		imp_hw_if->update_outbuf1_address(vpfe_dev->ipipe,
 +						  chan->config, addr);
 +	else
 +		imp_hw_if->update_outbuf1_address(vpfe_dev->ipipe, NULL, addr);
++
++}
++
++/*
++ * rsz_video_out2_queue() - RESIZER-B video out queue
++ * @vpfe_dev: vpfe device pointer
++ * @addr: buffer address
++ */
++static void rsz_video_out2_queue(struct vpfe_device *vpfe_dev,
++				 unsigned long addr)
++{
++	struct vpfe_resizer_device *resizer = &vpfe_dev->vpfe_resizer;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_pipeline *pipe = &resizer->video_out.pipe;
++	struct imp_logical_channel *chan = &resizer->channel;
++
++	if (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT)
++		imp_hw_if->update_outbuf2_address(vpfe_dev->ipipe,
++						  chan->config, addr);
++	else
++		imp_hw_if->update_outbuf2_address(vpfe_dev->ipipe, NULL, addr);
 +}
 +
 +static const struct vpfe_video_operations video_in_ops = {
-+	.queue = prv_video_in_queue,
++	.queue = rsz_video_in_queue,
 +};
 +
-+static const struct vpfe_video_operations video_out_ops = {
-+	.queue = prv_video_out_queue,
++static const struct vpfe_video_operations video_out1_ops = {
++	.queue = rsz_video_out1_queue,
++};
++
++static const struct vpfe_video_operations video_out2_ops = {
++	.queue = rsz_video_out2_queue,
 +};
 +
 +/*
-+ * prv_ss_buffer_isr() - PREVIEWER module single-shot buffer scheduling isr
-+ * @previewer: PREVIEWER device pointer
-+ *
++ * rsz_ss_buffer_isr() - RESIZER module single-shot buffer scheduling isr
++ * @resizer: RESIZER device pointer
 + */
-+static void prv_ss_buffer_isr(struct vpfe_previewer_device *previewer)
++static void rsz_ss_buffer_isr(struct vpfe_resizer_device *resizer)
 +{
-+	struct vpfe_video_device *video_out = &previewer->video_out;
-+	struct vpfe_video_device *video_in = &previewer->video_in;
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct imp_logical_channel *chan = &previewer->channel;
++	struct vpfe_video_device *video_out = &resizer->video_out;
++	struct vpfe_video_device *video_in = &resizer->video_in;
++	struct vpfe_video_device *video_out2 = &resizer->video_out2;
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct imp_logical_channel *chan = &resizer->channel;
 +	struct vpfe_pipeline *pipe = &video_out->pipe;
 +	u32 val;
 +
-+	if (!video_in->started)
-+		return;
-+
-+	if (previewer->output == PREVIEWER_OUTPUT_MEMORY) {
++	if (resizer->output == RESIZER_OUPUT_MEMORY) {
 +		val = vpss_dma_complete_interrupt();
 +		if (val != 0 && val != 2)
 +			return;
 +	}
 +
-+	if (previewer->input == PREVIEWER_INPUT_MEMORY) {
++	if (resizer->input == RESIZER_INPUT_MEMORY) {
 +		spin_lock(&video_in->dma_queue_lock);
 +		vpfe_process_buffer_complete(video_in);
 +		video_in->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
@@ -337,45 +366,72 @@ index 0000000..4a0fc8e
 +		spin_unlock(&video_in->dma_queue_lock);
 +	}
 +
-+	if (previewer->output == PREVIEWER_OUTPUT_MEMORY) {
++	if (resizer->output == RESIZER_OUPUT_MEMORY) {
 +		spin_lock(&video_out->dma_queue_lock);
 +		vpfe_process_buffer_complete(video_out);
 +		video_out->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
 +		vpfe_schedule_next_buffer(video_out);
 +		spin_unlock(&video_out->dma_queue_lock);
-+
-+		/* start HW if buffers are queued */
-+		if (is_pipe_ready(pipe))
-+			imp_hw_if->enable(vpfe_dev->ipipe, 1, chan->config);
 +	}
++
++	/* If resizer B is enabled */
++	if (pipe->output_num > 1 && resizer->output2 == RESIZER_OUPUT_MEMORY) {
++		spin_lock(&video_out->dma_queue_lock);
++		vpfe_process_buffer_complete(video_out2);
++		video_out2->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
++		vpfe_schedule_next_buffer(video_out2);
++		spin_unlock(&video_out2->dma_queue_lock);
++	}
++
++	/* start HW if buffers are queued */
++	if (is_pipe_ready(pipe) && resizer->output == RESIZER_OUPUT_MEMORY)
++		imp_hw_if->enable(vpfe_dev->ipipe, 1, chan->config);
 +}
 +
 +/*
-+ * prv_buffer_isr() - PREVIEWER module buffer scheduling isr
-+ * @previewer: PREVIEWER device pointer
-+ *
++ * rsz_buffer_isr() - RESIZER module buffer scheduling isr
++ * @resizer: RESIZER device pointer
 + */
-+void prv_buffer_isr(struct vpfe_previewer_device *previewer)
++void rsz_buffer_isr(struct vpfe_resizer_device *resizer)
 +{
-+	struct vpfe_video_device *video_out = &previewer->video_out;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct vpfe_video_device *video_out2 = &resizer->video_out2;
++	struct vpfe_video_device *video_out = &resizer->video_out;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct vpfe_pipeline *pipe = &resizer->video_out.pipe;
 +	enum v4l2_field field;
 +	int fid;
 +
 +	if (!video_out->started)
 +		return;
 +
-+	if (previewer->input != PREVIEWER_INPUT_CCDC)
++	if (resizer->input != RESIZER_INPUT_PREVIEWER)
 +		return;
 +
 +	field = video_out->fmt.fmt.pix.field;
 +
 +	if (field == V4L2_FIELD_NONE) {
++		struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++
 +		/* handle progressive frame capture */
-+		if (video_out->cur_frm != video_out->next_frm)
++		if (video_out->cur_frm != video_out->next_frm) {
 +			vpfe_process_buffer_complete(video_out);
++			if (pipe->output_num > 1)
++				vpfe_process_buffer_complete(video_out2);
++		}
++
++		video_out->skip_frame_count--;
++		if (!video_out->skip_frame_count) {
++			video_out->skip_frame_count =
++				video_out->skip_frame_count_init;
++			if (imp_hw_if->enable_resize)
++				imp_hw_if->enable_resize(1);
++		} else {
++			if (imp_hw_if->enable_resize)
++				imp_hw_if->enable_resize(0);
++		}
 +		return;
 +	}
++
 +	/* handle interlaced frame capture */
 +	fid = ccdc_get_fid(vpfe_dev);
 +
@@ -388,156 +444,144 @@ index 0000000..4a0fc8e
 +		 * next frame is available, release the current
 +		 * frame and move on
 +		 */
-+		if (fid == 0 && video_out->cur_frm != video_out->next_frm)
++		if (fid == 0 && video_out->cur_frm != video_out->next_frm) {
 +			vpfe_process_buffer_complete(video_out);
++			if (pipe->output_num > 1)
++				vpfe_process_buffer_complete(video_out2);
++		}
 +	} else if (fid == 0) {
 +		/*
-+		  * out of sync. Recover from any hardware out-of-sync.
-+		  * May loose one frame
-+		  */
++		* out of sync. Recover from any hardware out-of-sync.
++		* May loose one frame
++		*/
 +		video_out->field_id = fid;
 +	}
 +}
 +
 +/*
-+ * prv_dma_isr() - PREVIEWER module dma isr
-+ * @previewer: PREVIEWER device pointer
-+ *
++ * rsz_dma_isr() - RESIZER module dma isr
++ * @resizer: RESIZER device pointer
 + */
-+void prv_dma_isr(struct vpfe_previewer_device *previewer)
++void rsz_dma_isr(struct vpfe_resizer_device *resizer)
 +{
-+	struct vpfe_video_device *video_out = &previewer->video_out;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct vpfe_video_device *video_out = &resizer->video_out;
++	struct vpfe_video_device *video_out2 = &resizer->video_out2;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct vpfe_pipeline *pipe = &video_out->pipe;
 +	enum v4l2_field field;
 +	int schedule_capture = 0;
 +	int fid;
 +
-+	if (previewer->input == PREVIEWER_INPUT_MEMORY) {
-+		prv_ss_buffer_isr(previewer);
-+		return;
-+	}
-+
 +	if (!video_out->started)
 +		return;
++
++	if (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT) {
++		rsz_ss_buffer_isr(resizer);
++		return;
++	}
 +
 +	field = video_out->fmt.fmt.pix.field;
 +
 +	if (field == V4L2_FIELD_NONE) {
 +		if (!list_empty(&video_out->dma_queue) &&
-+				video_out->cur_frm == video_out->next_frm)
++			video_out->cur_frm == video_out->next_frm)
 +			schedule_capture = 1;
 +	} else {
 +		fid = ccdc_get_fid(vpfe_dev);
 +		if (fid == video_out->field_id) {
 +			/* we are in-sync here,continue */
 +			if (fid == 1 && !list_empty(&video_out->dma_queue) &&
-+				  video_out->cur_frm == video_out->next_frm)
++			    video_out->cur_frm == video_out->next_frm)
 +				schedule_capture = 1;
 +		}
 +	}
 +	if (!schedule_capture)
 +		return;
-+	spin_lock(&video_out->dma_queue_lock);
 +
++	spin_lock(&video_out->dma_queue_lock);
 +	vpfe_schedule_next_buffer(video_out);
 +	spin_unlock(&video_out->dma_queue_lock);
-+
-+	return;
-+}
-+
-+static int
-+preview_s_config(struct v4l2_subdev *sd, struct vpfe_prev_config *cfg)
-+{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct device *dev = previewer->subdev.v4l2_dev->dev;
-+	unsigned int bit = 1 << 0;
-+	int ret;
-+
-+	/* if ipipeif params are set */
-+	if (cfg->flag & bit) {
-+		ret =  imp_set_preview_config(sd, cfg);
-+		if (ret)
-+			return ret;
++	if (pipe->output_num > 1) {
++		spin_lock(&video_out2->dma_queue_lock);
++		vpfe_schedule_next_buffer(video_out2);
++		spin_unlock(&video_out2->dma_queue_lock);
 +	}
-+	return imp_hw_if->set_preview_module_params(dev, vpfe_dev->ipipe, cfg);
-+
-+}
-+
-+static int
-+preview_g_config(struct v4l2_subdev *sd, struct vpfe_prev_config *cfg)
-+{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct device *dev = previewer->subdev.v4l2_dev->dev;
-+	unsigned int bit = 1 << 0;
-+	int ret;
-+
-+	/* get ipipeif params */
-+	if (cfg->flag & bit) {
-+		ret =  imp_get_preview_config(sd, cfg);
-+		if (ret)
-+			return ret;
-+	}
-+	return imp_hw_if->get_preview_module_params(dev, vpfe_dev->ipipe, cfg);
 +}
 +
 +/*
-+ * previewer_ioctl() - PREVIEWER module private ioctl's
-+ * @sd: VPFE PREVIEWER V4L2 subdevice
++ * V4L2 subdev operations
++ */
++
++/*
++ * resizer_ioctl() - RESIZER module private ioctl's
++ * @sd: VPFE RESZIER V4L2 subdevice
 + * @cmd: ioctl command
 + * @arg: ioctl argument
 + *
 + * Return 0 on success or a negative error code otherwise.
 + */
-+static long previewer_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
++static long resizer_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 +{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct imp_logical_channel *rsz_conf_chan = &resizer->channel;
++	struct device *dev = resizer->subdev.v4l2_dev->dev;
++	struct vpfe_rsz_config *user_config;
 +	int ret = 0;
 +
 +	switch (cmd) {
-+	case VIDIOC_VPFE_PRV_S_CONFIG:
-+		ret = preview_s_config(sd, arg);
++	case VIDIOC_VPFE_RSZ_S_CONFIG:
++		user_config = (struct vpfe_rsz_config *)arg;
++
++		dev_dbg(dev, "VIDIOC_VPFE_RSZ_S_CONFIG:\n");
++		ret = imp_set_resizer_config(resizer, rsz_conf_chan,
++						user_config);
 +		break;
-+	case VIDIOC_VPFE_PRV_G_CONFIG:
-+		ret = preview_g_config(sd, arg);
++	case VIDIOC_VPFE_RSZ_G_CONFIG:
++		user_config = (struct vpfe_rsz_config *)arg;
++		dev_dbg(dev, "VIDIOC_VPFE_RSZ_G_CONFIG\n");
++		if (!user_config->config) {
++			dev_err(dev, "error in VIDIOC_VPFE_RSZ_G_CONFIG\n");
++			goto ERROR;
++		}
++		ret = imp_get_resize_config(resizer, rsz_conf_chan,
++							user_config);
 +		break;
 +	default:
 +		ret = -ENOIOCTLCMD;
 +	}
 +
++ERROR:
 +	return ret;
 +}
 +
 +/*
-+ * previewer_set_stream() - Enable/Disable streaming on the PREVIEWER module
-+ * @sd: VPFE PREVIEWER V4L2 subdevice
++ * resizer_set_stream() - Enable/Disable streaming on the RESIZER module
++ * @sd: VPFE RESIZER V4L2 subdevice
 + * @enable: Enable/disable stream
 + */
-+static int previewer_set_stream(struct v4l2_subdev *sd, int enable)
++static int resizer_set_stream(struct v4l2_subdev *sd, int enable)
 +{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct imp_logical_channel *chan = &previewer->channel;
-+	struct device *dev = previewer->subdev.v4l2_dev->dev;
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
++	struct vpfe_pipeline *pipe = &resizer->video_out.pipe;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct imp_logical_channel *chan = &resizer->channel;
++	struct device *dev = resizer->subdev.v4l2_dev->dev;
 +
-+	/* in case of single shot, send config to ipipe */
-+	void *config = (previewer->input == PREVIEWER_INPUT_MEMORY) ?
++	void *config = (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT) ?
 +				chan->config : NULL;
 +
-+	if (previewer->output != PREVIEWER_OUTPUT_MEMORY)
++	if (resizer->output != RESIZER_OUPUT_MEMORY)
 +		return 0;
 +
 +	switch (enable) {
 +	case 1:
-+		if (previewer->input == PREVIEWER_INPUT_MEMORY &&
++		if (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT &&
 +				imp_hw_if->serialize(vpfe_dev->ipipe)) {
 +			if (imp_hw_if->hw_setup(dev, vpfe_dev->ipipe,
 +							config) < 0)
 +				return -EINVAL;
-+		} else if (previewer->input == PREVIEWER_INPUT_CCDC) {
++		} else if (pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS) {
 +			imp_hw_if->lock_chain(vpfe_dev->ipipe);
 +			if (imp_hw_if->hw_setup(dev, vpfe_dev->ipipe, NULL))
 +				return -EINVAL;
@@ -546,7 +590,7 @@ index 0000000..4a0fc8e
 +		break;
 +	case 0:
 +		imp_hw_if->enable(vpfe_dev->ipipe, 0, config);
-+		if (previewer->input == PREVIEWER_INPUT_CCDC)
++		if ((pipe->state == VPFE_PIPELINE_STREAM_CONTINUOUS))
 +			imp_hw_if->unlock_chain(vpfe_dev->ipipe);
 +		break;
 +	}
@@ -555,108 +599,144 @@ index 0000000..4a0fc8e
 +}
 +
 +/*
-+ * Retrieve active or try format based on the request
++ * __resizer_get_format() - helper function for getting resizer format
++ * @res   : pointer to resizer private structure
++ * @pad   : pad number
++ * @fh    : V4L2 subdev file handle
++ * @which : wanted subdev format
++ * Retun wanted mbus frame format
 + */
 +static struct v4l2_mbus_framefmt *
-+__previewer_get_format(struct vpfe_previewer_device *prev,
-+		       struct v4l2_subdev_fh *fh, unsigned int pad,
-+		       enum v4l2_subdev_format_whence which)
++__resizer_get_format(struct vpfe_resizer_device *res, struct v4l2_subdev_fh *fh,
++		     unsigned int pad, enum v4l2_subdev_format_whence which)
 +{
 +	if (which == V4L2_SUBDEV_FORMAT_TRY)
 +		return v4l2_subdev_get_try_format(fh, pad);
-+	return &prev->formats[pad];
++	return &res->formats[pad];
 +}
 +
 +/*
-+ * preview_try_format() - Handle try format by pad subdev method
-+ * @prev: VPFE preview device
-+ * @fh : V4L2 subdev file handle
-+ * @pad: pad num
-+ * @fmt: pointer to v4l2 format structure
++ * resizer_try_format() - Handle try format by pad subdev method
++ * @res   : VPFE resizer device
++ * @fh    : V4L2 subdev file handle
++ * @pad   : pad num
++ * @fmt   : pointer to v4l2 format structure
++ * @which : wanted subdev format
 + */
-+static void
-+preview_try_format(struct vpfe_previewer_device *prev,
-+		   struct v4l2_subdev_fh *fh, unsigned int pad,
-+		   struct v4l2_mbus_framefmt *fmt,
-+		   enum v4l2_subdev_format_whence which)
++static void resizer_try_format(struct vpfe_resizer_device *res,
++			struct v4l2_subdev_fh *fh, unsigned int pad,
++			struct v4l2_mbus_framefmt *fmt,
++			enum v4l2_subdev_format_whence which)
 +{
 +	struct imp_hw_interface *imp_hw_if;
 +	unsigned int max_out_height;
 +	unsigned int max_out_width;
 +	unsigned int i;
 +
-+	imp_hw_if = prev->imp_hw_if;
-+	max_out_width = imp_hw_if->get_max_output_width(0);
-+	max_out_height = imp_hw_if->get_max_output_height(0);
++	imp_hw_if = res->imp_hw_if;
 +
-+	if (pad == PREVIEWER_PAD_SINK) {
-+		for (i = 0; i < ARRAY_SIZE(prev_input_fmts); i++) {
-+			if (fmt->code == prev_input_fmts[i])
-+				break;
-+		}
-+
-+		/* If not found, use SBGGR10 as default */
-+		if (i >= ARRAY_SIZE(prev_input_fmts))
-+			fmt->code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	} else if (pad == PREVIEWER_PAD_SOURCE) {
-+		for (i = 0; i < ARRAY_SIZE(prev_output_fmts); i++) {
-+			if (fmt->code == prev_output_fmts[i])
++	if (pad == RESIZER_PAD_SINK) {
++		for (i = 0; i < ARRAY_SIZE(resz_input_fmts); i++) {
++			if (fmt->code == resz_input_fmts[i])
 +				break;
 +		}
 +
 +		/* If not found, use UYVY as default */
-+		if (i >= ARRAY_SIZE(prev_output_fmts))
++		if (i >= ARRAY_SIZE(resz_input_fmts))
 +			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
-+	}
 +
-+	fmt->width = clamp_t(u32, fmt->width, MIN_OUT_HEIGHT, max_out_width);
-+	fmt->height = clamp_t(u32, fmt->height, MIN_OUT_WIDTH, max_out_height);
++		fmt->width = clamp_t(u32, fmt->width, MIN_IN_WIDTH,
++					MAX_IN_WIDTH);
++		fmt->height = clamp_t(u32, fmt->height, MIN_IN_HEIGHT,
++				MAX_IN_HEIGHT);
++	} else if (pad == RESIZER_PAD_SOURCE) {
++		max_out_width = imp_hw_if->get_max_output_width(0);
++		max_out_height = imp_hw_if->get_max_output_height(0);
++
++		for (i = 0; i < ARRAY_SIZE(resz_output_fmts); i++) {
++			if (fmt->code == resz_output_fmts[i])
++				break;
++		}
++
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(resz_output_fmts))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++
++		fmt->width = clamp_t(u32, fmt->width, MIN_OUT_WIDTH,
++					max_out_width);
++		fmt->width &= ~15;
++		fmt->height = clamp_t(u32, fmt->height, MIN_OUT_HEIGHT,
++				max_out_height);
++	} else if (pad == RESIZER_PAD_SOURCE2) {
++		max_out_width = imp_hw_if->get_max_output_width(1);
++		max_out_height = imp_hw_if->get_max_output_height(1);
++
++		for (i = 0; i < ARRAY_SIZE(resz_output_fmts); i++) {
++			if (fmt->code == resz_output_fmts[i])
++				break;
++		}
++
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(resz_output_fmts))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++
++		fmt->width = clamp_t(u32, fmt->width, MIN_OUT_WIDTH,
++					max_out_width);
++		fmt->width &= ~15;
++		fmt->height = clamp_t(u32, fmt->height, MIN_OUT_HEIGHT,
++				max_out_height);
++	}
 +}
 +
 +/*
-+ * previewer_set_format() - Set the video format on a pad
-+ * @sd : VPFE PREVIEWER V4L2 subdevice
-+ * @fh : V4L2 subdev file handle
-+ * @fmt: Format
-+ *
-+ * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
-+ * to the format type.
-+ */
-+static int
-+previewer_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		     struct v4l2_subdev_format *fmt)
++* resizer_set_format() - set format on pad
++* @sd    : VPFE resizer device
++* @fh    : V4L2 subdev file handle
++* @fmt   : pointer to v4l2 subdev format structure
++*/
++static int resizer_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			   struct v4l2_subdev_format *fmt)
 +{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct imp_hw_interface *imp_hw_if = resizer->imp_hw_if;
 +	struct v4l2_mbus_framefmt *format;
 +
-+	format = __previewer_get_format(previewer, fh, fmt->pad, fmt->which);
++	format = __resizer_get_format(resizer, fh, fmt->pad, fmt->which);
 +	if (format == NULL)
 +		return -EINVAL;
 +
-+	preview_try_format(previewer, fh, fmt->pad, &fmt->format, fmt->which);
++	resizer_try_format(resizer, fh, fmt->pad, &fmt->format, fmt->which);
 +	*format = fmt->format;
 +
 +	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
 +		return 0;
 +
-+	if (fmt->pad == PREVIEWER_PAD_SINK &&
-+			(previewer->input == PREVIEWER_INPUT_CCDC ||
-+				previewer->input == PREVIEWER_INPUT_MEMORY)) {
++	if (fmt->pad == RESIZER_PAD_SINK &&
++			resizer->input == RESIZER_INPUT_PREVIEWER) {
 +		/*
-+		 *In continous mode,set IPEPE input format here.
++		 *This is continous mode, input format is already set in
++		 *PREVIEWER sink set format, no need to do here.
++		 */
++		resizer->formats[fmt->pad] = fmt->format;
++	} else if (fmt->pad == RESIZER_PAD_SOURCE &&
++			resizer->output == RESIZER_OUPUT_MEMORY) {
++
++		imp_hw_if->set_out_mbus_format(vpfe_dev->ipipe, &fmt->format);
++		resizer->formats[fmt->pad] = fmt->format;
++
++	} else if (fmt->pad == RESIZER_PAD_SINK &&
++			resizer->input == RESIZER_INPUT_MEMORY) {
++		/*
++		 * single shot mode
 +		 */
 +		imp_hw_if->set_in_mbus_format(vpfe_dev->ipipe, &fmt->format);
-+		previewer->formats[fmt->pad] = fmt->format;
++		resizer->formats[fmt->pad] = fmt->format;
++	} else if (fmt->pad == RESIZER_PAD_SOURCE2 &&
++		resizer->output2 == RESIZER_OUPUT_MEMORY) {
++		imp_hw_if->set_out2_mbus_format(vpfe_dev->ipipe, &fmt->format);
++		resizer->formats[fmt->pad] = fmt->format;
 +
-+	} else if (fmt->pad == PREVIEWER_PAD_SOURCE &&
-+			previewer->output == PREVIEWER_OUTPUT_RESIZER) {
-+		previewer->formats[fmt->pad] = fmt->format;
-+	} else if (fmt->pad == PREVIEWER_PAD_SOURCE &&
-+			previewer->output == PREVIEWER_OUTPUT_MEMORY) {
-+		imp_hw_if->set_out_mbus_format(vpfe_dev->ipipe, &fmt->format);
-+		previewer->formats[fmt->pad] = fmt->format;
 +	} else {
 +		return -EINVAL;
 +	}
@@ -665,39 +745,40 @@ index 0000000..4a0fc8e
 +}
 +
 +/*
-+ * previewer_get_format() - Retrieve the video format on a pad
-+ * @sd : VPFE PREVIEWER V4L2 subdevice
++ * resizer_get_format() - Retrieve the video format on a pad
++ * @sd : VPFE RESIZER V4L2 subdevice
 + * @fh : V4L2 subdev file handle
 + * @fmt: Format
 + *
 + * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
 + * to the format type.
 + */
-+static int
-+previewer_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		     struct v4l2_subdev_format *fmt)
++static int resizer_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			   struct v4l2_subdev_format *fmt)
 +{
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct vpfe_resizer_device *res = v4l2_get_subdevdata(sd);
++	struct v4l2_mbus_framefmt *format;
 +
-+	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE)
-+		fmt->format = previewer->formats[fmt->pad];
-+	else
-+		fmt->format = *(v4l2_subdev_get_try_format(fh, fmt->pad));
++	format = __resizer_get_format(res, fh, fmt->pad, fmt->which);
++	if (format == NULL)
++		return -EINVAL;
++
++	fmt->format = *format;
 +
 +	return 0;
 +}
 +
 +/*
-+ * previewer_enum_frame_size() - enum frame sizes on pads
-+ * @sd: VPFE previewer V4L2 subdevice
++ * resizer_enum_frame_size() - enum frame sizes on pads
++ * @sd: VPFE resizer V4L2 subdevice
 + * @fh: V4L2 subdev file handle
 + * @code: pointer to v4l2_subdev_frame_size_enum structure
 + */
-+static int
-+previewer_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+			  struct v4l2_subdev_frame_size_enum *fse)
++static int resizer_enum_frame_size(struct v4l2_subdev *sd,
++				struct v4l2_subdev_fh *fh,
++				struct v4l2_subdev_frame_size_enum *fse)
 +{
-+	struct vpfe_previewer_device *prev = v4l2_get_subdevdata(sd);
++	struct vpfe_resizer_device *res = v4l2_get_subdevdata(sd);
 +	struct v4l2_mbus_framefmt format;
 +
 +	if (fse->index != 0)
@@ -706,8 +787,7 @@ index 0000000..4a0fc8e
 +	format.code = fse->code;
 +	format.width = 1;
 +	format.height = 1;
-+	preview_try_format(prev, fh, fse->pad, &format,
-+			   V4L2_SUBDEV_FORMAT_TRY);
++	resizer_try_format(res, fh, fse->pad, &format, V4L2_SUBDEV_FORMAT_TRY);
 +	fse->min_width = format.width;
 +	fse->min_height = format.height;
 +
@@ -717,8 +797,7 @@ index 0000000..4a0fc8e
 +	format.code = fse->code;
 +	format.width = -1;
 +	format.height = -1;
-+	preview_try_format(prev, fh, fse->pad, &format,
-+			   V4L2_SUBDEV_FORMAT_TRY);
++	resizer_try_format(res, fh, fse->pad, &format, V4L2_SUBDEV_FORMAT_TRY);
 +	fse->max_width = format.width;
 +	fse->max_height = format.height;
 +
@@ -726,118 +805,93 @@ index 0000000..4a0fc8e
 +}
 +
 +/*
-+ * previewer_enum_mbus_code() - enum mbus codes for pads
-+ * @sd: VPFE previewer V4L2 subdevice
++ * resizer_enum_mbus_code() - enum mbus codes for pads
++ * @sd: VPFE resizer V4L2 subdevice
 + * @fh: V4L2 subdev file handle
 + * @code: pointer to v4l2_subdev_mbus_code_enum structure
 + */
-+static int
-+previewer_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+			 struct v4l2_subdev_mbus_code_enum *code)
++static int resizer_enum_mbus_code(struct v4l2_subdev *sd,
++			       struct v4l2_subdev_fh *fh,
++			       struct v4l2_subdev_mbus_code_enum *code)
 +{
-+	switch (code->pad) {
-+	case PREVIEWER_PAD_SINK:
-+		if (code->index >= ARRAY_SIZE(prev_input_fmts))
++	if (code->pad == RESIZER_PAD_SINK) {
++		if (code->index >= ARRAY_SIZE(resz_input_fmts))
 +			return -EINVAL;
 +
-+		code->code = prev_input_fmts[code->index];
-+		break;
-+	case PREVIEWER_PAD_SOURCE:
-+		if (code->index >= ARRAY_SIZE(prev_output_fmts))
++		code->code = resz_input_fmts[code->index];
++	} else if (code->pad == RESIZER_PAD_SOURCE) {
++		if (code->index >= ARRAY_SIZE(resz_output_fmts))
 +			return -EINVAL;
 +
-+		code->code = prev_output_fmts[code->index];
-+		break;
-+	default:
-+		return -EINVAL;
++		code->code = resz_output_fmts[code->index];
 +	}
 +
 +	return 0;
 +}
 +
 +/*
-+ * preview_s_ctrl() - Handle set control subdev method
-+ * @ctrl: pointer to v4l2 control structure
-+ */
-+static int preview_s_ctrl(struct v4l2_ctrl *ctrl)
-+{
-+	struct vpfe_previewer_device *previewer =
-+	     container_of(ctrl->handler, struct vpfe_previewer_device, ctrls);
-+	struct imp_hw_interface *imp_hw_if = previewer->imp_hw_if;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+
-+	return imp_hw_if->prv_s_ctrl(vpfe_dev->ipipe,
-+				ctrl->id, ctrl->val);
-+
-+}
-+
-+/*
-+ * previewer_init_formats() - Initialize formats on all pads
-+ * @sd: VPFE previewer V4L2 subdevice
++ * resizer_init_formats() - Initialize formats on all pads
++ * @sd: VPFE resizer V4L2 subdevice
 + * @fh: V4L2 subdev file handle
 + *
 + * Initialize all pad formats with default values. If fh is not NULL, try
 + * formats are initialized on the file handle. Otherwise active formats are
 + * initialized on the device.
 + */
-+static int
-+previewer_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
++static int resizer_init_formats(struct v4l2_subdev *sd,
++				struct v4l2_subdev_fh *fh)
 +{
-+	struct vpfe_previewer_device *prv = v4l2_get_subdevdata(sd);
-+	struct imp_hw_interface *imp_hw_if = prv->imp_hw_if;
++	struct vpfe_resizer_device *res = v4l2_get_subdevdata(sd);
++	struct imp_hw_interface *imp_hw_if = res->imp_hw_if;
 +	struct v4l2_subdev_format format;
 +
 +	memset(&format, 0, sizeof(format));
-+	format.pad = PREVIEWER_PAD_SINK;
++	format.pad = RESIZER_PAD_SINK;
 +	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	format.format.width = imp_hw_if->get_max_output_width(0);
-+	format.format.height = imp_hw_if->get_max_output_height(0);
-+	previewer_set_format(sd, fh, &format);
++	format.format.code = V4L2_MBUS_FMT_YUYV8_2X8;
++	format.format.width = MAX_IN_WIDTH;
++	format.format.height = MAX_IN_HEIGHT;
++	resizer_set_format(sd, fh, &format);
 +
 +	memset(&format, 0, sizeof(format));
-+	format.pad = PREVIEWER_PAD_SOURCE;
++	format.pad = RESIZER_PAD_SOURCE;
 +	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
 +	format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
 +	format.format.width = imp_hw_if->get_max_output_width(0);
 +	format.format.height = imp_hw_if->get_max_output_height(0);
-+	previewer_set_format(sd, fh, &format);
++	resizer_set_format(sd, fh, &format);
 +
 +	return 0;
 +}
 +
-+/* subdev core operations */
-+static const struct v4l2_subdev_core_ops previewer_v4l2_core_ops = {
-+	.ioctl = previewer_ioctl,
-+};
-+
-+static const struct v4l2_ctrl_ops preview_ctrl_ops = {
-+	.s_ctrl = preview_s_ctrl,
++/* V4L2 subdev core operations */
++static const struct v4l2_subdev_core_ops resizer_v4l2_core_ops = {
++	.ioctl = resizer_ioctl,
 +};
 +
 +/* subdev file operations */
-+static const struct  v4l2_subdev_internal_ops preview_v4l2_internal_ops = {
-+	.open = previewer_init_formats,
++static const struct v4l2_subdev_internal_ops resizer_v4l2_internal_ops = {
++	.open = resizer_init_formats,
 +};
 +
-+/* subdev video operations */
-+static const struct v4l2_subdev_video_ops previewer_v4l2_video_ops = {
-+	.s_stream = previewer_set_stream,
++/* V4L2 subdev video operations */
++static const struct v4l2_subdev_video_ops resizer_v4l2_video_ops = {
++	.s_stream = resizer_set_stream,
 +};
 +
-+/* subdev pad operations */
-+static const struct v4l2_subdev_pad_ops previewer_v4l2_pad_ops = {
-+	.enum_mbus_code = previewer_enum_mbus_code,
-+	.enum_frame_size = previewer_enum_frame_size,
-+	.get_fmt = previewer_get_format,
-+	.set_fmt = previewer_set_format,
++/* V4L2 subdev pad operations */
++static const struct v4l2_subdev_pad_ops resizer_v4l2_pad_ops = {
++	.enum_mbus_code = resizer_enum_mbus_code,
++	.enum_frame_size = resizer_enum_frame_size,
++	.get_fmt = resizer_get_format,
++	.set_fmt = resizer_set_format,
 +};
 +
-+/* v4l2 subdev operation */
-+static const struct v4l2_subdev_ops previewer_v4l2_ops = {
-+	.core = &previewer_v4l2_core_ops,
-+	.video = &previewer_v4l2_video_ops,
-+	.pad = &previewer_v4l2_pad_ops,
++/* V4L2 subdev operations */
++static const struct v4l2_subdev_ops resizer_v4l2_ops = {
++	.core = &resizer_v4l2_core_ops,
++	.video = &resizer_v4l2_video_ops,
++	.pad = &resizer_v4l2_pad_ops,
 +};
 +
 +/*
@@ -845,259 +899,247 @@ index 0000000..4a0fc8e
 + */
 +
 +/*
-+ * previewer_link_setup - Setup PREVIEWER connections
-+ * @entity: PREVIEWER media entity
++ * resizer_link_setup() - Setup RESIZER connections
++ * @entity: RESIZER media entity
 + * @local: Pad at the local end of the link
 + * @remote: Pad at the remote end of the link
 + * @flags: Link flags
 + *
 + * return -EINVAL or zero on success
 + */
-+static int
-+previewer_link_setup(struct media_entity *entity, const struct media_pad *local,
-+		     const struct media_pad *remote, u32 flags)
++static int resizer_link_setup(struct media_entity *entity,
++			   const struct media_pad *local,
++			   const struct media_pad *remote, u32 flags)
 +{
 +	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
-+	struct vpfe_previewer_device *previewer = v4l2_get_subdevdata(sd);
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++
 +
 +	switch (local->index | media_entity_type(remote->entity)) {
-+	case PREVIEWER_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
-+		/* Read from ccdc - continous mode */
++	case RESIZER_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
++		/* Read from previewer - continous mode */
 +		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
-+			previewer->input = PREVIEWER_INPUT_NONE;
-+			reset_channel_prv_mode(previewer);
++			reset_resizer_channel_mode(resizer);
++			resizer->input = RESIZER_INPUT_NONE;
 +			break;
 +		}
-+		if (previewer->input != PREVIEWER_INPUT_NONE)
++
++		if (resizer->input != RESIZER_INPUT_NONE)
 +			return -EBUSY;
 +
-+		if (set_channel_prv_cont_mode(previewer))
-+			return -EINVAL;
-+		previewer->input = PREVIEWER_INPUT_CCDC;
++		resizer->input = RESIZER_INPUT_PREVIEWER;
++		set_resizer_channel_cont_mode(resizer);
++		resizer_chained = 1;
 +		break;
-+	case PREVIEWER_PAD_SINK | MEDIA_ENT_T_DEVNODE:
++	case RESIZER_PAD_SINK | MEDIA_ENT_T_DEVNODE:
 +		/* Read from memory - single shot mode*/
 +		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
-+			previewer->input = PREVIEWER_INPUT_NONE;
-+			reset_channel_prv_mode(previewer);
++			reset_resizer_channel_mode(resizer);
++			resizer->input = RESIZER_INPUT_NONE;
 +			break;
 +		}
-+		if (set_channel_prv_ss_mode(previewer))
++
++		if (set_resizer_channel_ss_mode(resizer))
 +			return -EINVAL;
 +
-+		previewer->input = PREVIEWER_INPUT_MEMORY;
++		resizer->input = RESIZER_INPUT_MEMORY;
++		resizer_chained = 0;
 +		break;
-+	case PREVIEWER_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
-+		/* out to RESIZER */
-+		if (flags & MEDIA_LNK_FL_ENABLED)
-+			previewer->output = PREVIEWER_OUTPUT_RESIZER;
-+		else
-+			previewer->output = PREVIEWER_OUTPUT_NONE;
-+
-+		break;
-+	case PREVIEWER_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
++	case RESIZER_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
 +		/* Write to memory */
 +		if (flags & MEDIA_LNK_FL_ENABLED)
-+			previewer->output = PREVIEWER_OUTPUT_MEMORY;
++			resizer->output = RESIZER_OUPUT_MEMORY;
 +		else
-+			previewer->output = PREVIEWER_OUTPUT_NONE;
-+		break;
++			resizer->output = RESIZER_OUTPUT_NONE;
 +
++		break;
++	case RESIZER_PAD_SOURCE2 | MEDIA_ENT_T_DEVNODE:
++		/* Write to memory */
++		if (flags & MEDIA_LNK_FL_ENABLED)
++			resizer->output2 = RESIZER_OUPUT_MEMORY;
++		else
++			resizer->output2 = RESIZER_OUTPUT_NONE;
++
++		break;
 +	default:
 +		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
-+
-+static const struct media_entity_operations previewer_media_ops = {
-+	.link_setup = previewer_link_setup,
++static const struct media_entity_operations resizer_media_ops = {
++	.link_setup = resizer_link_setup,
 +};
 +
 +/*
-+ * vpfe_previewer_unregister_entities - PREVIEWER subdevs/video
++ * vpfe_resizer_unregister_entities() - RESIZER subdevs/video
 + * driver unregistrations.
-+ * @vpfe_prev - pointer to previewer subdevice structure.
++ * @vpfe_rsz - pointer to resizer subdevice structure.
 + */
-+void vpfe_previewer_unregister_entities(struct vpfe_previewer_device *vpfe_prev)
++void vpfe_resizer_unregister_entities(struct vpfe_resizer_device *vpfe_rsz)
 +{
 +	/* unregister video devices */
-+	vpfe_video_unregister(&vpfe_prev->video_in);
-+	vpfe_video_unregister(&vpfe_prev->video_out);
++	vpfe_video_unregister(&vpfe_rsz->video_in);
++	vpfe_video_unregister(&vpfe_rsz->video_out);
++	vpfe_video_unregister(&vpfe_rsz->video_out2);
 +
 +	/* cleanup entity */
-+	media_entity_cleanup(&vpfe_prev->subdev.entity);
++	media_entity_cleanup(&vpfe_rsz->subdev.entity);
 +	/* unregister subdev */
-+	v4l2_device_unregister_subdev(&vpfe_prev->subdev);
++	v4l2_device_unregister_subdev(&vpfe_rsz->subdev);
 +}
 +
 +/*
-+ * vpfe_previewer_register_entities() - PREVIEWER subdevs/video
++ * vpfe_resizer_register_entities() - RESIZER subdevs/video
 + * driver registrations.
-+ * @previewer - pointer to previewer subdevice structure.
++ * @resizer - pointer to resizer subdevice structure.
 + * @vdev: pointer to v4l2 device structure.
 + */
-+int
-+vpfe_previewer_register_entities(struct vpfe_previewer_device *previewer,
-+				 struct v4l2_device *vdev)
++int vpfe_resizer_register_entities(struct vpfe_resizer_device *resizer,
++				   struct v4l2_device *vdev)
 +{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
 +	unsigned int flags;
 +	int ret;
 +
 +	/* Register the subdev */
-+	ret = v4l2_device_register_subdev(vdev, &previewer->subdev);
-+	if (ret) {
-+		pr_err("Failed to register previewer as v4l2 subdevice\n");
++	ret = v4l2_device_register_subdev(vdev, &resizer->subdev);
++	if (ret < 0) {
++		pr_err("Failed to register resizer as v4l2-subdev\n");
 +		return ret;
 +	}
 +
-+	ret = vpfe_video_register(&previewer->video_in, vdev);
++	ret = vpfe_video_register(&resizer->video_in, vdev);
 +	if (ret) {
-+		pr_err("Failed to register previewer video-in device\n");
++		pr_err("Failed to register RSZ video-in device\n");
 +		goto out_video_in_register;
 +	}
 +
-+	previewer->video_in.vpfe_dev = vpfe_dev;
++	resizer->video_in.vpfe_dev = vpfe_dev;
 +
-+	ret = vpfe_video_register(&previewer->video_out, vdev);
++	ret = vpfe_video_register(&resizer->video_out, vdev);
 +	if (ret) {
-+		pr_err("Failed to register previewer video-out device\n");
++		pr_err("Failed to register RSZ video-out device\n");
 +		goto out_video_out_register;
 +	}
 +
-+	previewer->video_out.vpfe_dev = vpfe_dev;
++	resizer->video_out.vpfe_dev = vpfe_dev;
++
++	ret = vpfe_video_register(&resizer->video_out2, vdev);
++	if (ret) {
++		pr_err("Failed to register RSZ video-out2 device\n");
++		goto out_video_out2_register;
++	}
++
++	resizer->video_out2.vpfe_dev = vpfe_dev;
 +
 +	flags = 0;
-+	ret = media_entity_create_link(&previewer->video_in.video_dev.entity, 0,
-+				       &previewer->subdev.entity, 0, flags);
++	ret = media_entity_create_link(&resizer->video_in.video_dev.entity, 0,
++				       &resizer->subdev.entity, 0, flags);
 +	if (ret < 0)
 +		goto out_create_link;
 +
-+	ret = media_entity_create_link(&previewer->subdev.entity, 1,
-+				       &previewer->video_out.video_dev.entity,
++	ret = media_entity_create_link(&resizer->subdev.entity, 1,
++				       &resizer->video_out.video_dev.entity,
 +				       0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	ret = media_entity_create_link(&resizer->subdev.entity, 2,
++					&resizer->video_out2.video_dev.entity,
++					0, flags);
 +	if (ret < 0)
 +		goto out_create_link;
 +
 +	return 0;
 +
 +out_create_link:
-+	vpfe_video_unregister(&previewer->video_out);
++	vpfe_video_unregister(&resizer->video_out2);
++out_video_out2_register:
++	vpfe_video_unregister(&resizer->video_out);
 +out_video_out_register:
-+	vpfe_video_unregister(&previewer->video_in);
++	vpfe_video_unregister(&resizer->video_in);
 +out_video_in_register:
-+	media_entity_cleanup(&previewer->subdev.entity);
-+	v4l2_device_unregister_subdev(&previewer->subdev);
++	media_entity_cleanup(&resizer->subdev.entity);
++	v4l2_device_unregister_subdev(&resizer->subdev);
 +	return ret;
 +}
 +
-+#define PRV_CONTRAST_HIGH	0xff
-+#define PRV_BRIGHT_HIGH		0xff
-+#define PRV_GAIN_HIGH		0x3ff
-+
 +/*
-+ * vpfe_previewer_init - PREVIEWER module initilaization.
-+ * @vpfe_prev - pointer to previewer subdevice structure.
++ * vpfe_resizer_init() - RESIZER module initilaization.
++ * @vpfe_rsz - pointer to resizer subdevice structure.
 + * @pdev: platform device pointer.
 + */
-+int
-+vpfe_previewer_init(struct vpfe_previewer_device *previewer,
-+		    struct platform_device *pdev)
++int vpfe_resizer_init(struct vpfe_resizer_device *vpfe_rsz,
++		      struct platform_device *pdev)
 +{
-+	struct imp_logical_channel *channel = &previewer->channel;
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(previewer);
-+	struct media_pad *pads = &previewer->pads[0];
-+	struct v4l2_subdev *sd = &previewer->subdev;
-+	struct media_entity *me = &sd->entity;
-+	int ret = 0;
++	struct imp_logical_channel *channel = &vpfe_rsz->channel;
++	struct v4l2_subdev *resizer = &vpfe_rsz->subdev;
++	struct media_pad *pads = &vpfe_rsz->pads[0];
++	struct media_entity *me = &resizer->entity;
++	int ret;
 +
-+	if (ipipe_init(&vpfe_dev->ipipe))
++	vpfe_rsz->imp_hw_if = imp_get_hw_if();
++	if (!vpfe_rsz->imp_hw_if)
 +		return -EINVAL;
 +
-+	previewer->imp_hw_if = imp_get_hw_if();
-+	if (!previewer->imp_hw_if)
-+		return -EINVAL;
++	vpfe_rsz->video_in.ops = &video_in_ops;
++	vpfe_rsz->video_out.ops = &video_out1_ops;
++	vpfe_rsz->video_out2.ops = &video_out2_ops;
 +
-+	previewer->video_in.ops = &video_in_ops;
-+	previewer->video_out.ops = &video_out_ops;
++	v4l2_subdev_init(resizer, &resizer_v4l2_ops);
++	resizer->internal_ops = &resizer_v4l2_internal_ops;
++	strlcpy(resizer->name, "DAVINCI RESIZER", sizeof(resizer->name));
++	resizer->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(resizer, vpfe_rsz);
++	resizer->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 +
-+	v4l2_subdev_init(sd, &previewer_v4l2_ops);
-+	sd->internal_ops = &preview_v4l2_internal_ops;
-+	strlcpy(sd->name, "DAVINCI PREVIEWER", sizeof(sd->name));
-+	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
-+	v4l2_set_subdevdata(sd, previewer);
-+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++	pads[RESIZER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[RESIZER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++	pads[RESIZER_PAD_SOURCE2].flags = MEDIA_PAD_FL_SOURCE;
 +
-+	pads[PREVIEWER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-+	pads[PREVIEWER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++	vpfe_rsz->input = RESIZER_INPUT_NONE;
++	vpfe_rsz->output = RESIZER_OUTPUT_NONE;
++	vpfe_rsz->output2 = RESIZER_OUTPUT_NONE;
 +
-+	previewer->input = PREVIEWER_INPUT_NONE;
-+	previewer->output = PREVIEWER_OUTPUT_NONE;
-+
-+	channel->type = IMP_PREVIEWER;
++	channel->type = IMP_RESIZER;
 +	channel->config_state = STATE_NOT_CONFIGURED;
 +
-+	me->ops = &previewer_media_ops;
++	me->ops = &resizer_media_ops;
 +
-+	v4l2_ctrl_handler_init(&previewer->ctrls, 3);
-+	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
-+			  V4L2_CID_BRIGHTNESS, 0,
-+			  PRV_BRIGHT_HIGH, 1, 16);
-+	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
-+			  V4L2_CID_CONTRAST, 0,
-+			  PRV_CONTRAST_HIGH, 1, 16);
-+	v4l2_ctrl_new_std(&previewer->ctrls, &preview_ctrl_ops,
-+			  V4L2_CID_GAIN, 0,
-+			  PRV_GAIN_HIGH, 1, 512);
-+	v4l2_ctrl_new_std_menu(&previewer->ctrls, &preview_ctrl_ops,
-+			V4L2_CID_DPCM_PREDICTOR,
-+			V4L2_DPCM_PREDICTOR_ADVANCED, 0,
-+			V4L2_DPCM_PREDICTOR_SIMPLE);
-+
-+	v4l2_ctrl_handler_setup(&previewer->ctrls);
-+	sd->ctrl_handler = &previewer->ctrls;
-+
-+	ret = media_entity_init(me, PREVIEWER_PADS_NUM, pads, 0);
++	ret = media_entity_init(me, RESIZER_PADS_NUM, pads, 0);
 +	if (ret)
 +		return ret;
 +
-+	previewer->video_in.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-+	ret = vpfe_video_init(&previewer->video_in, "PRV");
++	vpfe_rsz->video_in.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
++	ret = vpfe_video_init(&vpfe_rsz->video_in, "RSZ");
 +	if (ret) {
-+		pr_err("Failed to init PRV video-in device\n");
-+		goto out_ipipe_init;
++		pr_err("Failed to init RSZ video-in device\n");
++		return ret;
 +	}
-+	previewer->video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-+	ret = vpfe_video_init(&previewer->video_out, "PRV");
++
++	vpfe_rsz->video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	ret = vpfe_video_init(&vpfe_rsz->video_out, "RSZ");
 +	if (ret) {
-+		pr_err("Failed to init PRV video-out device\n");
-+		goto out_ipipe_init;
++		pr_err("Failed to init RSZ video-out device\n");
++		return ret;
 +	}
-+	imp_init_serializer();
++
++	vpfe_rsz->video_out2.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	ret = vpfe_video_init(&vpfe_rsz->video_out2, "RSZB");
++	if (ret) {
++		pr_err("Failed to init RSZ video-out2 device\n");
++		return ret;
++	}
 +
 +	return 0;
-+
-+out_ipipe_init:
-+	v4l2_ctrl_handler_free(&previewer->ctrls);
-+	ipipe_cleanup(vpfe_dev->ipipe);
-+	return ret;
 +}
-+
-+/*
-+ * vpfe_previewer_cleanup() - PREVIEWER module cleanup.
-+ * @dev: Device pointer specific to the VPFE.
-+ */
-+void vpfe_previewer_cleanup(struct platform_device *pdev, void *ipipe)
-+{
-+	ipipe_cleanup(ipipe);
-+}
-diff --git a/drivers/media/platform/davinci/vpfe_previewer.h b/drivers/media/platform/davinci/vpfe_previewer.h
+diff --git a/drivers/media/platform/davinci/vpfe_resizer.h b/drivers/media/platform/davinci/vpfe_resizer.h
 new file mode 100644
-index 0000000..152ab71
+index 0000000..819af1f
 --- /dev/null
-+++ b/drivers/media/platform/davinci/vpfe_previewer.h
-@@ -0,0 +1,71 @@
++++ b/drivers/media/platform/davinci/vpfe_resizer.h
+@@ -0,0 +1,66 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -1119,34 +1161,31 @@ index 0000000..152ab71
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#ifndef _VPFE_PREV_H
-+#define _VPFE_PREV_H
++#ifndef _VPFE_RSZ_H
++#define _VPFE_RSZ_H
 +
-+#include <media/v4l2-ctrls.h>
++#define RESIZER_PAD_SINK	0
++#define RESIZER_PAD_SOURCE	1
++#define RESIZER_PAD_SOURCE2	2
 +
-+#define PREVIEWER_PAD_SINK	0
-+#define PREVIEWER_PAD_SOURCE	1
++#define RESIZER_PADS_NUM	3
 +
-+#define PREVIEWER_PADS_NUM	2
-+
-+#define PREVIEWER_OUTPUT_NONE		0
-+#define PREVIEWER_OUTPUT_MEMORY		(1 << 0)
-+#define PREVIEWER_OUTPUT_RESIZER	(1 << 1)
-+
-+enum previewer_input_entity {
-+	PREVIEWER_INPUT_NONE,
-+	PREVIEWER_INPUT_MEMORY,
-+	PREVIEWER_INPUT_CCDC,
++enum resizer_input_entity {
++	RESIZER_INPUT_NONE,
++	RESIZER_INPUT_MEMORY,
++	RESIZER_INPUT_PREVIEWER,
 +};
 +
++#define RESIZER_OUTPUT_NONE	0
++#define RESIZER_OUPUT_MEMORY	(1 << 0)
 +
-+struct vpfe_previewer_device {
++struct vpfe_resizer_device {
 +	struct v4l2_subdev		subdev;
-+	struct media_pad		pads[PREVIEWER_PADS_NUM];
-+	struct v4l2_mbus_framefmt	formats[PREVIEWER_PADS_NUM];
-+	enum previewer_input_entity	input;
++	struct media_pad		pads[RESIZER_PADS_NUM];
++	struct v4l2_mbus_framefmt	formats[RESIZER_PADS_NUM];
++	enum resizer_input_entity	input;
 +	unsigned int			output;
-+	struct v4l2_ctrl_handler        ctrls;
++	unsigned int                    output2;
 +
 +	/* pointer to ipipe function pointers */
 +	struct imp_hw_interface		*imp_hw_if;
@@ -1154,20 +1193,18 @@ index 0000000..152ab71
 +
 +	struct vpfe_video_device	video_in;
 +	struct vpfe_video_device	video_out;
++	struct vpfe_video_device        video_out2;
 +};
 +
-+int vpfe_previewer_register_entities(struct vpfe_previewer_device *vpfe_prev,
-+					struct v4l2_device *v4l2_dev);
-+int vpfe_previewer_init(struct vpfe_previewer_device *vpfe_prev,
-+					struct platform_device *pdev);
-+void vpfe_previewer_unregister_entities
-+			(struct vpfe_previewer_device *vpfe_prev);
-+void prv_buffer_isr(struct vpfe_previewer_device *previewer);
-+void vpfe_previewer_cleanup(struct platform_device *pdev, void *ipipe);
-+void prv_dma_isr(struct vpfe_previewer_device *previewer);
-+void enable_serializer(void *ipipe, int val);
-+void ipipe_cleanup(void *ipipe);
-+int ipipe_init(void **ipipe);
++void vpfe_resizer_unregister_entities(struct vpfe_resizer_device *vpfe_rsz);
++int vpfe_resizer_register_entities(struct vpfe_resizer_device *vpfe_rsz,
++				   struct v4l2_device *v4l2_dev);
++int vpfe_resizer_init(struct vpfe_resizer_device *vpfe_rsz,
++		      struct platform_device *pdev);
++void rsz_buffer_isr(struct vpfe_resizer_device *resizer);
++void vpfe_resizer_cleanup(struct platform_device *pdev);
++void rsz_dma_isr(struct vpfe_resizer_device *resizer);
++
 +#endif
 -- 
 1.7.4.1
