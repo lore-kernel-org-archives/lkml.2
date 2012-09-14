@@ -1,314 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2INJm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:42:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8341 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab2INJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
-   d="scan'208";a="193000175"
-Subject: Re: [RFC] dmaengine: add dmanegine slave map api's
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dan Williams <djbw@fb.com>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
-        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        viresh kumar <viresh.kumar@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
-References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 15:09:25 +0530
-Message-ID: <1347615565.1943.48.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754587Ab2INJub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:50:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64519 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab2INJu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:50:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABRT9RDdbqz6iscOz7BYwEQPOo8xfstfUZyBqVw44gmPsauLTg@mail.gmail.com>
+References: <CABRT9RDdbqz6iscOz7BYwEQPOo8xfstfUZyBqVw44gmPsauLTg@mail.gmail.com>
+From: Marti Raudsepp <marti@juffo.org>
+Date: Fri, 14 Sep 2012 12:49:45 +0300
+Message-ID: <CABRT9RCWU1RqpAay9iWPKwduejvkdk_CA2P_gV70iiEE2FS5HQ@mail.gmail.com>
+Subject: tulip Ethernet driver messes up USB keyboard
+To: Kernel hackers <linux-kernel@vger.kernel.org>,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        Linux network list <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 15:03 +0530, Vinod Koul wrote:
+Hi lists,
 
-Sorry, this is a RFC, and not a PATCH yet.
+After installing an old 100Mbit PCI Ethernet card to my machine, it has
+complained a few times about spurious interrupts ("nobody cared") at a
+random time of the day. After the oops is reported, my USB keyboard (HP
+smart card keyboard) stops working properly -- it has lots of delay, it
+misses some keystrokes and also causes "stuck keys". Strangely enough my USB
+mouse continues to work without problems. Apparently the USB controller and
+the Ethernet card share an interrupt line. Un-/replugging the keyboard does
+not help.
 
-> when allocating a channel the dmaengine finds first channel that matches the
-> mask and calls filter function
-> In slave dmaengine model, there already exists a mapping, either hardwired in
-> SoC or thru a configurable mux. So we typically need channel from controller X
-> and in same cases a partcular channel Y.
-> 
-> Add new APIs which allow adding channel map for client-dma relationship.
-> This mapping needs to be registered with dmaengine by platform specfic code
-> which is aware of this mapping. This mapping needs to be added _before_ any
-> client tries to access a channel.
-> 
-> Then in order for slave devices to get a channel based on above mapping, add new
-> slave specfic dmanengine channel request/free APIs
-> 
-> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> ---
-> this is the first attempt to do the slave dma mapping, we have been discussing
-> this and we all agree to need for this. This is the same patch which was shown
-> at KS and attempts to build the mapping information within dmaengine which is
-> platform and arch agnostic.
-> 
-> The arch code like DT/board-files/SFI etc can use these APIs to build dmaengine
-> mapping and then dmaengine filters channels based on this mapping.
-> 
-> Now Credits:
-> the orginal idea was from Linus Walleij and has been discussed in similar
-> format.
-> ---
->  drivers/dma/dmaengine.c   |  152 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/dmaengine.h |   50 +++++++++++++++
->  2 files changed, 202 insertions(+)
-> 
-> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> index 3491654..293dfd0 100644
-> --- a/drivers/dma/dmaengine.c
-> +++ b/drivers/dma/dmaengine.c
-> @@ -1066,6 +1066,158 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx)
->  }
->  EXPORT_SYMBOL_GPL(dma_run_dependencies);
->  
-> +/* slave channel mapping code*/
-> +static LIST_HEAD(dma_slave_map);
-> +
-> +/*called under lock held */
-> +static struct dma_chan *dmaengine_get_slave_channel(char *requestor, dma_cap_mask_t *mask)
-> +{
-> +
-> +	struct dma_device *device, *_d;
-> +	struct dma_chan *chan = NULL;
-> +	int err;
-> +
-> +	list_for_each_entry_safe(device, _d, &dma_device_list, global_node) {
-> +		if (strcmp(requestor, dev_name(device->dev)))
-> +			continue;
-> +
-> +		chan = private_candidate(mask, device, NULL, NULL);
-> +		if (chan) {
-> +			/* Found a suitable channel, try to grab, prep, and
-> +			 * return it.  We first set DMA_PRIVATE to disable
-> +			 * balance_ref_count as this channel will not be
-> +			 * published in the general-purpose allocator
-> +			 */
-> +			dma_cap_set(DMA_PRIVATE, device->cap_mask);
-> +			device->privatecnt++;
-> +			err = dma_chan_get(chan);
-> +
-> +			if (err == -ENODEV) {
-> +				pr_debug("%s: %s module removed\n",
-> +					 __func__, dma_chan_name(chan));
-> +				list_del_rcu(&device->global_node);
-> +			} else if (err)
-> +				pr_debug("%s: failed to get %s: (%d)\n",
-> +					 __func__, dma_chan_name(chan), err);
-> +			else
-> +				break;
-> +			if (--device->privatecnt == 0)
-> +				dma_cap_clear(DMA_PRIVATE, device->cap_mask);
-> +			chan = NULL;
-> +		}
-> +	}
-> +	return chan;
-> +}
-> +
-> +/**
-> + * dmaengine_request_slave_channel - request a slave channel for which damengine
-> + * knows the channel mapping
-> + *
-> + * This is generic API which should work on all arch and doesnt assume any arch
-> + * implementation of how map is constructed. Arch code should call map apis to
-> + * build the channel map first
-> + *
-> + * @requestor: client name
-> + * @config: dma_slave_config, this is set post channle allocation
-> + * @mask: capabilities that the channel must satisfy
-> + * @fn: optional filter function should be unused typically
-> + * @fn_param: filter fn params
-> + */
-> +struct dma_chan *dmaengine_request_slave_channel(
-> +		char *requestor, struct dma_slave_config *config,
-> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
-> +{
-> +	struct dma_chan *slave = NULL;
-> +	struct dmaengine_slave_map_entries *entry, *_e;
-> +
-> +	/* perhpas we dont need mask arg, it should be slave anyway */
-> +	if (!__dma_has_cap(DMA_SLAVE, mask))
-> +		return NULL;
-> +
-> +	mutex_lock(&dma_list_mutex);
-> +	/* find a channel which maps to this request */
-> +	list_for_each_entry_safe(entry, _e, &dma_slave_map, node) {
-> +		if (strcmp(requestor, entry->map->client))
-> +			continue;
-> +
-> +		/* have we already allocated this mapping */
-> +		if (entry->used == true)
-> +			continue;
-> +
-> +		/* now we hit an entry in map,
-> +		 * see if we can get a channel in controller */
-> +		slave = dmaengine_get_slave_channel(requestor, mask);
-> +		if (!slave)
-> +			continue;
-> +
-> +		/* check if client is requesting some specfic slave channel */
-> +		if ((entry->map->ch != -1) && (entry->map->ch != slave->chan_id))
-> +			continue;
-> +
-> +		/* now call filter fn but it should not be used anyway */
-> +		if (fn && !fn(slave, fn_param))
-> +			continue;
-> +
-> +		entry->used = true;
-> +		mutex_unlock(&dma_list_mutex);
-> +
-> +		/* pick slave id from map if not set */
-> +		if (!config->slave_id)
-> +			config->slave_id = entry->map->slave_id;
-> +
-> +		/*now lets set slave params */
-> +		dmaengine_slave_config(slave, config);
-> +
-> +		return slave;
-> +	}
-> +	mutex_unlock(&dma_list_mutex);
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(dmaengine_request_slave_channel);
-> +
-> +int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
-> +		unsigned int num_entries)
-> +{
-> +	int i = 0;
-> +	struct dmaengine_slave_map_entries *entry;
-> +
-> +	entry = kzalloc(sizeof(struct dmaengine_slave_map) * num_entries, GFP_KERNEL);
-> +	if (entry == NULL)
-> +		return -ENOMEM;
-> +	entry->num_entries = num_entries;
-> +	mutex_lock(&dma_list_mutex);
-> +	for (i = 0; i < num_entries; i++) {
-> +		entry->map = map;
-> +		entry->used = false;
-> +		entry->map->entry = entry;
-> +		list_add_tail(&entry->node, &dma_slave_map);
-> +		entry++;
-> +		map++;
-> +	}
-> +	mutex_unlock(&dma_list_mutex);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(dmaengine_add_channel_map);
-> +
-> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map)
-> +{
-> +	struct dmaengine_slave_map_entries *entry;
-> +	unsigned int i, num_entries;
-> +
-> +	BUG_ON(map);
-> +	mutex_lock(&dma_list_mutex);
-> +	entry = map->entry;
-> +	num_entries = entry->num_entries;
-> +	for (i = 0; i < num_entries; i++) {
-> +		list_del(&entry->node);
-> +		entry++;
-> +	}
-> +	kfree(entry);
-> +	mutex_unlock(&dma_list_mutex);
-> +	return;
-> +}
-> +EXPORT_SYMBOL_GPL(dmaengine_free_channel_map);
-> +
->  static int __init dma_bus_init(void)
->  {
->  	return class_register(&dma_devclass);
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 9c02a45..54dd1d5 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -371,6 +371,35 @@ struct dma_slave_config {
->  	unsigned int slave_id;
->  };
->  
-> +struct dmaengine_slave_map_entries;
-> +/* dmaengine slave channel map
-> + *
-> + * @dma: dma controller, mandatory
-> + * @client: clinet associated with the controller, mandatory
-> + * @ch: channel index, desired but optional
-> + * @slave_id: slave id for programming mux
-> + *
-> + * the platform needs to tell the channel mapping information to the dmaengine
-> + * code thru this structure.
-> + * This is used by dmanengine to find the channel to be allocated during
-> + * dma_rquest_channel process for slave channels
-> + */
-> +struct dmaengine_slave_map {
-> +	char *dma;
-> +	char *client;
-> +	int ch;
-> +	int slave_id;
-> +	struct dmaengine_slave_map_entries *entry;
-> +};
-> +
-> +struct dmaengine_slave_map_entries {
-> +	struct dmaengine_slave_map *map;
-> +	bool used;
-> +	struct list_head node;
-> +	unsigned int num_entries;
-> +};
-> +
-> +
->  static inline const char *dma_chan_name(struct dma_chan *chan)
->  {
->  	return dev_name(&chan->dev->device);
-> @@ -974,6 +1003,12 @@ enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
->  void dma_issue_pending_all(void);
->  struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
->  void dma_release_channel(struct dma_chan *chan);
-> +struct dma_chan *dmaengine_request_slave_channel(
-> +		char *requestor, struct dma_slave_config *config,
-> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
-> +int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
-> +		unsigned int num_entries);
-> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map);
->  #else
->  static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
->  {
-> @@ -990,6 +1025,21 @@ static inline struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask,
->  static inline void dma_release_channel(struct dma_chan *chan)
->  {
->  }
-> +struct dma_chan *dmaengine_request_slave_channel(
-> +		char *requestor, struct dma_slave_config *config,
-> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
-> +{
-> +	return NULL;
-> +}
-> +static inline int dmaengine_add_channel_map(struct dmaengine_slave_map *map,
-> +		unsigned int num_entries)
-> +{
-> +	return -EIO;
-> +}
-> +void dmaengine_free_channel_map(struct dmaengine_slave_map *map)
-> +{
-> +	return;
-> +}
->  #endif
->  
->  /* --- DMA device --- */
+So far I have simply rebooted to fix the issue. I haven't been able to
+reproduce this on will despite my best attempts.
+
+The Ethernet card is driven by the tulip driver and is listed as "ADMtek
+NC100 Network Everywhere Fast Ethernet 10/100 (rev 11)" in lspci. My
+motherboard uses the Intel H77 chipset (ASRock H77 Pro4/MVP)
+
+Here are two slightly different examples of the oops report; the effect is
+the same:
+
+kernel: irq 16: nobody cared (try booting with the "irqpoll" option)
+kernel: Pid: 0, comm: swapper/2 Not tainted 3.5.3-1-ARCH #1
+kernel: Call Trace:
+kernel:  <IRQ>  [<ffffffff810d4d3d>] __report_bad_irq+0x3d/0xe0
+kernel:  [<ffffffff810d5033>] note_interrupt+0x1a3/0x1f0
+kernel:  [<ffffffff810d292f>] handle_irq_event_percpu+0xbf/0x260
+kernel:  [<ffffffff810d2b18>] handle_irq_event+0x48/0x70
+kernel:  [<ffffffff810d5b4a>] handle_fasteoi_irq+0x5a/0x100
+kernel:  [<ffffffff810160c2>] handle_irq+0x22/0x40
+kernel:  [<ffffffff81484cea>] do_IRQ+0x5a/0xe0
+kernel:  [<ffffffff8147c12a>] common_interrupt+0x6a/0x6a
+kernel:  <EOI>  [<ffffffffa02d8f01>] ? acpi_idle_enter_c1+0xda/0x104
+[processor]
+kernel:  [<ffffffffa02d8edc>] ? acpi_idle_enter_c1+0xb5/0x104 [processor]
+kernel:  [<ffffffff8134f159>] cpuidle_enter+0x19/0x20
+kernel:  [<ffffffff8134f7a6>] cpuidle_idle_call+0xa6/0x330
+kernel:  [<ffffffff8101daaf>] cpu_idle+0xbf/0x130
+kernel:  [<ffffffff8146a19b>] start_secondary+0x203/0x20a
+kernel: handlers:
+kernel: [<ffffffffa012c0b0>] usb_hcd_irq [usbcore]
+kernel: [<ffffffffa023b1c0>] tulip_interrupt [tulip]
+kernel: Disabling IRQ #16
+
+kernel: irq 16: nobody cared (try booting with the "irqpoll" option)
+kernel: Pid: 0, comm: swapper/0 Not tainted 3.5.3-1-ARCH #1
+kernel: Call Trace:
+kernel:  <IRQ>  [<ffffffff810d4d3d>] __report_bad_irq+0x3d/0xe0
+kernel:  [<ffffffff810d5033>] note_interrupt+0x1a3/0x1f0
+kernel:  [<ffffffff810d292f>] handle_irq_event_percpu+0xbf/0x260
+kernel:  [<ffffffff810d2b18>] handle_irq_event+0x48/0x70
+kernel:  [<ffffffff810d5b4a>] handle_fasteoi_irq+0x5a/0x100
+kernel:  [<ffffffff810160c2>] handle_irq+0x22/0x40
+kernel:  [<ffffffff81484cea>] do_IRQ+0x5a/0xe0
+kernel:  [<ffffffff8147c12a>] common_interrupt+0x6a/0x6a
+kernel:  <EOI>  [<ffffffffa01b6f01>] ? acpi_idle_enter_c1+0xda/0x104
+[processor]
+kernel:  [<ffffffffa01b6edc>] ? acpi_idle_enter_c1+0xb5/0x104 [processor]
+kernel:  [<ffffffff8134f159>] cpuidle_enter+0x19/0x20
+kernel:  [<ffffffff8134f7a6>] cpuidle_idle_call+0xa6/0x330
+kernel:  [<ffffffff8101daaf>] cpu_idle+0xbf/0x130
+kernel:  [<ffffffff81456fbc>] rest_init+0x80/0x84
+kernel:  [<ffffffff818bbc35>] start_kernel+0x3c1/0x3ce
+kernel:  [<ffffffff818bb673>] ? repair_env_string+0x5e/0x5e
+kernel:  [<ffffffff818bb356>] x86_64_start_reservations+0x131/0x135
+kernel:  [<ffffffff818bb45a>] x86_64_start_kernel+0x100/0x10f
+kernel: handlers:
+kernel: [<ffffffffa012c0b0>] usb_hcd_irq [usbcore]
+kernel: [<ffffffffa02b41c0>] tulip_interrupt [tulip]
+kernel: Disabling IRQ #16
+
+These are after a fresh reboot...
+
+% lspci |grep Eth
+03:00.0 Ethernet controller: ADMtek NC100 Network Everywhere Fast Ethernet
+10/100 (rev 11)
+04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B
+PCI Express Gigabit Ethernet controller (rev 06)
+
+% dmesg |egrep -i 'eth|tulip'
+[    7.868120] tulip: Linux Tulip driver version 1.1.15 (Feb 27, 2007)
+[    7.868146] tulip: tulip_init_one: Enabled WOL support for AN983B
+[    7.870487] tulip0:  MII transceiver #1 config 1000 status 786d
+advertising 05e1
+[    7.893274] net eth0: ADMtek Comet rev 17 at Port 0xe000,
+00:06:25:48:7f:16, IRQ 16
+[    7.902994] systemd-udevd[162]: renamed network interface eth0 to eth1
+[    7.989822] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+[    7.990148] r8169 0000:04:00.0: eth0: RTL8168evl/8111evl at
+0xffffc90005798000, bc:5f:f4:44:29:6c, XID 0c900800 IRQ 47
+[    7.990150] r8169 0000:04:00.0: eth0: jumbo features [frames: 9200 bytes,
+tx checksumming: ko]
+[   16.032206] r8169 0000:04:00.0: eth0: link down
+[   16.032568] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   18.287417] r8169 0000:04:00.0: eth0: link up
+[   18.287761] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[   18.437518] tulip 0000:03:00.0: eth1: tulip_stop_rxtx() failed (CSR5
+0xfc664010 CSR6 0xff972113)
+[   18.437530] net eth1: Setting full-duplex based on MII#1 link partner
+capability of 45e1
+
+Somewhat suspect is the "tulip_stop_rxtx() failed" line. I also get that
+line every time I stop the interface (using ip link set eth1 down):
+Sep 14 12:40:11 wrx kernel: tulip 0000:03:00.0: eth1: tulip_stop_rxtx()
+failed (CSR5 0xfc664010 CSR6 0xff972113)
+Sep 14 12:40:11 wrx kernel: net eth1: Setting full-duplex based on MII#1
+link partner capability of 45e1
+Sep 14 12:40:12 wrx NetworkManager[386]: <info> (eth1): carrier now OFF
+(device state 100, deferring action for 4 seconds)
+Sep 14 12:40:12 wrx kernel: tulip 0000:03:00.0: eth1: tulip_stop_rxtx()
+failed (CSR5 0xfc07c013 CSR6 0xff970111)
+
+% cat /proc/interrupts
+           CPU0       CPU1       CPU2       CPU3
+  0:         48          0          0          0   IO-APIC-edge      timer
+  1:          2          1          0          0   IO-APIC-edge      i8042
+  8:        164          5          2          0   IO-APIC-edge      rtc0
+  9:          0          0          0          0   IO-APIC-fasteoi   acpi
+ 12:          3          0          1          0   IO-APIC-edge      i8042
+ 16:        141        346    8067481       2394   IO-APIC-fasteoi
+ehci_hcd:usb1, eth1
+ 23:        319      18623       7406      31659   IO-APIC-fasteoi
+ehci_hcd:usb2
+ 40:          0          0          0          0   PCI-MSI-edge      PCIe
+PME
+ 41:          0          0          0          0   PCI-MSI-edge      PCIe
+PME
+ 42:          0          0          0          0   PCI-MSI-edge      PCIe
+PME
+ 43:      22382      61895      31816      10217   PCI-MSI-edge      ahci
+ 44:          0          0          0          0   PCI-MSI-edge      ahci
+ 45:          0          0          0          0   PCI-MSI-edge
+xhci_hcd
+ 46:         12          1          0          0   PCI-MSI-edge      mei
+ 47:          6          2          2      32904   PCI-MSI-edge      eth0
+ 48:      75136      39014      54183      22566   PCI-MSI-edge      i915
+ 49:        267        295        254         57   PCI-MSI-edge
+snd_hda_intel
+NMI:      40906      21860      26792      17063   Non-maskable interrupts
+LOC:     362056     362594     377195     364303   Local timer interrupts
+SPU:          0          0          0          0   Spurious interrupts
+PMI:      40906      21860      26792      17063   Performance monitoring
+interrupts
+IWI:          6          3          3          2   IRQ work interrupts
+RTR:          3          0          0          0   APIC ICR read retries
+RES:     241774      18622      10902       4227   Rescheduling interrupts
+CAL:        108        116        119        139   Function call interrupts
+TLB:      26279      11870      16395      25314   TLB shootdowns
+TRM:          0          0          0          0   Thermal event interrupts
+THR:          0          0          0          0   Threshold APIC interrupts
+MCE:          0          0          0          0   Machine check exceptions
+MCP:         11         11         11         11   Machine check polls
+ERR:          0
+MIS:          0
 
 
--- 
-~Vinod
-
+Regards,
+Marti
