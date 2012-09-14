@@ -1,112 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759837Ab2INSLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:11:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759782Ab2INSLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:11:21 -0400
-Date: Fri, 14 Sep 2012 20:10:50 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net, tzanussi@gmail.com
-Subject: Re: perf script: rwtop: SIGALRM and pipe read race
-Message-ID: <20120914181049.GA16618@turtle.usersys.redhat.com>
-References: <20120914153952.GA8834@turtle.usersys.redhat.com>
- <505355AF.7000006@gmail.com>
+	id S1759264Ab2INSNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:13:46 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63759 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2INSNo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 14:13:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505355AF.7000006@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120823213529.GH14962@google.com>
+References: <20120823213529.GH14962@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 14 Sep 2012 12:13:21 -0600
+Message-ID: <CAErSpo7p_fx9oCNFXdP7JVN_2ZPWN=t4Gsx9M7JLy8hpSn0dYQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: rewrite pci_call_probe() to use workqueue instead of work_on_cpu()
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:05:03AM -0600, David Ahern wrote:
-> On 9/14/12 9:39 AM, Andrew Jones wrote:
-> >
-> >I recently tried 'perf script rwtop', and it immediately failed with
-> >'failed to read event header'. Running it through strace I found that the
-> >when rwtop.pl is reading from the pipe, and gets one of it's alarms, that
-> >the ERESTARTSYS seems to confuse it - causing it to fail. It also appears
-> >that the problem only happens early in execution, or not at all. If I get
-> >lucky and don't hit the problem right away, then rwtop will run fine as
-> >long as I want, without any ERESTARTSYS's in its trace. I also found that
-> >I can avoid hitting the problem by throwing a 'pv -q' in front of the perf
-> >command in tools/perf/scripts/perl/bin/rwtop-report. Which I guess slows
-> >things down in the reader enough to always avoid the race.
-> >
-> >Sorry I don't have a solution (patch). I'll look at it more as time
-> >permits, but I thought I'd get it reported for starters though.
-> 
-> 
-> This fixes the run-time problem:
-> 
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index 1b8775c..a4371ae 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -142,6 +142,9 @@ int readn(int fd, void *buf, size_t n)
->     while (n) {
->         int ret = read(fd, buf, n);
-> 
-> +        if ((ret < 0) && (errno == EINTR))
-> +            continue;
+On Thu, Aug 23, 2012 at 3:35 PM, Tejun Heo <tj@kernel.org> wrote:
+> pci_call_probe() uses work_on_cpu(), which creates and tears down a
+> full kthread on each call, to invoke ->probe() on node local CPU for
+> allocation affinity.
+>
+> The same goal can easily be achieved using a work item.  This patch
+> rewrites pci_call_probe() so that it uses a work item instead of
+> work_on_cpu().
+>
+> Note that the function is restructured for simplicity.  This adds
+> get/put_online_cpus() pair for devices without node but the overhead
+> of doing so isn't anything material at this level.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+
+I applied this to my "next" branch and pushed it.  Thanks!
+
+> ---
+> I tested both paths but had to simulate device on foreign node.
+>
+> Thanks.
+>
+>  drivers/pci/pci-driver.c |   48 +++++++++++++++++++++++++++--------------------
+>  1 file changed, 28 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 5270f1a..554c15a 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -274,11 +274,14 @@ struct drv_dev_and_id {
+>         struct pci_driver *drv;
+>         struct pci_dev *dev;
+>         const struct pci_device_id *id;
+> +       struct work_struct work;
+> +       int error;
+>  };
+>
+> -static long local_pci_probe(void *_ddi)
+> +static void pci_probe_fn(struct work_struct *work)
+>  {
+> -       struct drv_dev_and_id *ddi = _ddi;
+> +       struct drv_dev_and_id *ddi = container_of(work, struct drv_dev_and_id,
+> +                                                 work);
+>         struct device *dev = &ddi->dev->dev;
+>         int rc;
+>
+> @@ -298,33 +301,38 @@ static long local_pci_probe(void *_ddi)
+>                 pm_runtime_set_suspended(dev);
+>                 pm_runtime_put_noidle(dev);
+>         }
+> -       return rc;
 > +
->         if (ret <= 0)
->             return ret;
-> 
-> 
-> 
-> The only problem you will find with rwtop is that bytes_read will be
-> really whacky. I traced it to:
-> 
->     if ($ret > 0) {
-> printf("comm %s bytes_read %d\n", $common_comm, $ret);
->         $reads{$common_pid}{bytes_read} += $ret;
-> 
-> Somehow the $ret > 0 is passing when in fact it is negative. I do
-> not know much about perl to fix it.
-> 
-
-This actually appears to be an issue with how perl sighandlers are
-supposed to work.
-
-http://perldoc.perl.org/perlipc.html#Restartable-system-calls
-
-I tried the below patch though, and while it gets me past the read failure
-it still doesn't solve the problem. With it the script stops processing
-events after the first one.
-
-Drew
-
-diff --git a/tools/perf/scripts/perl/rwtop.pl
-b/tools/perf/scripts/perl/rwtop.pl
-index 4bb3ecd..8b20787 100644
---- a/tools/perf/scripts/perl/rwtop.pl
-+++ b/tools/perf/scripts/perl/rwtop.pl
-@@ -17,6 +17,7 @@ use lib
-"$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/l
- use lib "./Perf-Trace-Util/lib";
- use Perf::Trace::Core;
- use Perf::Trace::Util;
-+use POSIX qw/SIGALRM SA_RESTART/;
- 
- my $default_interval = 3;
- my $nlines = 20;
-@@ -90,7 +91,10 @@ sub syscalls::sys_enter_write
- 
- sub trace_begin
- {
--    $SIG{ALRM} = \&set_print_pending;
-+    my $sa = POSIX::SigAction->new(\&set_print_pending);
-+    $sa->flags(SA_RESTART);
-+    $sa->safe(1);
-+    POSIX::sigaction(SIGALRM, $sa) or die "Can't set SIGALRM handler:
-$!\n";
-     alarm 1;
- }
- 
-Drew
+> +       ddi->error = rc;
+>  }
+>
+>  static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+>                           const struct pci_device_id *id)
+>  {
+> -       int error, node;
+> +       int node;
+> +       int cpu = nr_cpu_ids;
+>         struct drv_dev_and_id ddi = { drv, dev, id };
+>
+> -       /* Execute driver initialization on node where the device's
+> -          bus is attached to.  This way the driver likely allocates
+> -          its local memory on the right node without any need to
+> -          change it. */
+> -       node = dev_to_node(&dev->dev);
+> -       if (node >= 0) {
+> -               int cpu;
+> +       /*
+> +        * Execute driver initialization on node where the device's bus is
+> +        * attached to.  This way the driver likely allocates its local
+> +        * memory on the right node without any need to change it.
+> +        */
+> +       get_online_cpus();
+>
+> -               get_online_cpus();
+> +       node = dev_to_node(&dev->dev);
+> +       if (node >= 0)
+>                 cpu = cpumask_any_and(cpumask_of_node(node), cpu_online_mask);
+> -               if (cpu < nr_cpu_ids)
+> -                       error = work_on_cpu(cpu, local_pci_probe, &ddi);
+> -               else
+> -                       error = local_pci_probe(&ddi);
+> -               put_online_cpus();
+> -       } else
+> -               error = local_pci_probe(&ddi);
+> -       return error;
+> +
+> +       if (cpu < nr_cpu_ids) {
+> +               INIT_WORK_ONSTACK(&ddi.work, pci_probe_fn);
+> +               schedule_work_on(cpu, &ddi.work);
+> +               flush_work(&ddi.work);
+> +       } else {
+> +               pci_probe_fn(&ddi.work);
+> +       }
+> +
+> +       put_online_cpus();
+> +       return ddi.error;
+>  }
+>
+>  /**
