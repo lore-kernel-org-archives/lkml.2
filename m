@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2INI4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 04:56:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40852 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588Ab2INI4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 04:56:40 -0400
-Date: Fri, 14 Sep 2012 09:56:34 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 1/3 v2] mm: Batch unmapping of file mapped pages in
- shrink_page_list
-Message-ID: <20120914085634.GM11157@csn.ul.ie>
-References: <1347293965.9977.71.camel@schen9-DESK>
- <20120911110535.GO11157@csn.ul.ie>
- <1347552370.9977.99.camel@schen9-DESK>
+	id S1754669Ab2INJCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:02:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45338 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab2INJCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:02:35 -0400
+Date: Fri, 14 Sep 2012 10:02:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 12/19] i2c-nomadik: Register sub-devices when passed via
+ Device Tree
+Message-ID: <20120914090228.GH3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-13-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
+ <20120912105202.GD2624@pengutronix.de>
+ <20120914082754.GE3374@gmail.com>
+ <20120914084141.GA2630@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1347552370.9977.99.camel@schen9-DESK>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120914084141.GA2630@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 09:06:10AM -0700, Tim Chen wrote:
-> On Tue, 2012-09-11 at 12:05 +0100, Mel Gorman wrote:
+
+> > > First, I'd like to have this patch squashed with "i2c: nomadik: Add
+> > > Device Tree support to the Nomadik I2C driver". I wanted to do this on
+> > > my own, but the patches do not apply to 3.6-rc5 (with or without
+> > > regulator removal patch from Linus)?
+> > 
+> > I'm really not keen on squashing all my patches together. They are
+> > clearly have very different purposes. If you think they are closely
+> > related, then pull them in sequentially, but please don't squash
+> > all my work into a single patch for no other reason than convenience.
 > 
+> I can't follow this reasoning. I never asked you to squash all patches,
+> only those two needed to get proper device tree support. Why would you
+> want to let the device being detected via DT and not scan the child
+> nodes immediately?
+
+Ah, sorry. That's my fault for rushing though my ridiculously bloated post-
+vacation inbox. I *stupidly* thought you wanted me to squash two different
+patches, rather than these two. As such I unreservedly retract my previous
+statement. Yes, please squash.
+
+> > > I can also take the I2C related changes to the devicetrees via my tree.
+> > > This is not uncommon. Some people prefer to do this via their soc-trees,
+> > > though. I don't care much since this is not really a hard dependency
+> > > causing build failures or merge conflicts, but just needs a little extra
+> > > time until the patches are all there...
 > > 
-> > One *massive* change here that is not called out in the changelog is that
-> > the reclaim path now holds the page lock on multiple pages at the same
-> > time waiting for them to be batch unlocked in __remove_mapping_batch.
-> > This is suspicious for two reasons.
-> > 
-> > The first suspicion is that it is expected that there are filesystems
-> > that lock multiple pages in page->index order and page reclaim tries to
-> > lock pages in a random order.  You are "ok" because you trylock the pages
-> > but there should be a comment explaining the situation and why you're
-> > ok.
-> > 
-> > My *far* greater concern is that the hold time for a locked page is
-> > now potentially much longer. You could lock a bunch of filesystem pages
-> > and then call pageout() on an swapcache page that takes a long time to
-> > write. This potentially causes a filesystem (or flusher threads etc)
-> > to stall on lock_page and that could cause all sorts of latency trouble.
-> > It will be hard to hit this bug and diagnose it but I believe it's
-> > there.
-> > 
-> > That second risk *really* must be commented upon and ideally reviewed by
-> > the filesystem people. However, I very strongly suspect that the outcome
-> > of such a review will be a suggestion to unlock the pages and reacquire
-> > the lock in __remove_mapping_batch(). Bear in mind that if you take this
-> > approach that you *must* use trylock when reacquiring the page lock and
-> > handle being unable to lock the page.
-> > 
+> > It would be better for all the Device Tree changes go in as a single
+> > patch-set. Again, I don't care where they go, so long as they go in
+> > together. arm-soc seems like the most generic place for them to be
+> > pulled into though.
 > 
-> Mel,
-> 
-> Thanks for your detailed comments and analysis.  If I unlock the pages,
-> will flusher threads be the only things that will touch them? 
+> This reasoning I can follow, but how should I know you aimed for that? I
+> only saw a patch [3/3] in one series making the driver probable via DT
+> and a patch [12/19] in another series to scan the child nodes. That's
+> all the infos I got. Some more context would have been helpful. Is there
+> a branch somewhere with all the things collected?
 
-I don't think so. The pages are still in the mappings radix tree so
-potentially can be still read()/write() to and recreate empty buffers
-potentially. Something like;
+There will be. I'm currently just Ack collecting. 
 
-writepage handler
--> block_write_full_page
-  -> block_write_full_page_endio
-    -> __block_write_full_page
-      -> create_empty_buffers
+In fact wait ...
 
-Offhand I would also expect it's possible to fault the page again once
-the page lock is released.
+<3 mins pass>
 
-> Or do I
-> have to worry about potentially other things done to the pages that will
-> make it invalid for me to unmap the pages later and put them on free
-> list?
-> 
-
-I expect that you'll have to double check that the page is still eligible
-to be removed from the mapping and added to the free list.  This could get
-complex because you then have to retry reclaim with those pages without
-any batching and it may offset the advantage you are measuring.
-
-You have potentially another option as well that you should consider. I
-was complaining about holding multiple locks because of the potentially
-unbounded length of time you hold those locks.  It now occurs to me that
-you could hold these locks but call __remove_mapping_batch() and drain
-the list before calling long-lived operations like pageout(). That might
-be easier to implement.
+Now there is:
+  git://git.linaro.org/people/ljones/linux-3.0-ux500.git preview-for-next
 
 -- 
-Mel Gorman
-SUSE Labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
