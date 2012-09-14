@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759834Ab2INSdX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:33:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40510 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759317Ab2INSdV (ORCPT
+	id S1759853Ab2INSeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:34:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45267 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759541Ab2INSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:33:21 -0400
-Date: Fri, 14 Sep 2012 11:33:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120914183316.GG17747@google.com>
-References: <20120913205827.GO7677@google.com>
- <5052E7DF.7040000@parallels.com>
- <5052F4FF.6070508@huawei.com>
- <20120914175944.GF17747@google.com>
- <1347647021.7172.74.camel@twins>
+	Fri, 14 Sep 2012 14:34:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347647021.7172.74.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120913115438.0557462f@lwn.net>
+References: <1347544368-30583-1-git-send-email-federico.vaga@gmail.com>
+	<1347544368-30583-3-git-send-email-federico.vaga@gmail.com>
+	<201209131608.05869.hverkuil@xs4all.nl>
+	<17733334.UmoCxqVfBu@harkonnen>
+	<20120913115438.0557462f@lwn.net>
+Date: Fri, 14 Sep 2012 15:34:09 -0300
+Message-ID: <CALF0-+XAMHXTgi88dYqoSkAnBp6WTYdY80pgOTK74RNmqeWkxA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Federico Vaga <federico.vaga@gmail.com>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Jon,
 
-On Fri, Sep 14, 2012 at 08:23:41PM +0200, Peter Zijlstra wrote:
-> Its hotplug, all hotplug stuff is synchronous, the last thing hotplug
-> needs is the added complexity of async callbacks. Also pushing stuff out
-> into worklets just to work around locking issues is vile.
+On Thu, Sep 13, 2012 at 2:54 PM, Jonathan Corbet <corbet@lwn.net> wrote:
 
-I was asking whether it *has* to be part of synchronous CPU hotplug
-operation.  IOW, do all tasks in the depleted cgroup have to be moved
-to its parent before CPU hotunplug can proceed to completion or is it
-okay to happen afterwards?  Making the migration part asynchronous
-doesn't add much complexity.  The only thing you have to make sure is
-flushing the previously scheduled one from the next CPU_UP_PREPARE.
+>
+> Well, there is some documentation here:
+>
+>         https://lwn.net/Articles/447435/
+>
 
-Also note that this can't easily be solved by splitting tree
-protecting inner lock from the outer lock.  We're talking about doing
-full migration operations which likely require the outer one too.
+I thank you for this. It really helped me getting started on videobuf2.
 
-> <handwave as I never can remember all the cgroup stuff/>
-> 
-> Can't we play games by pinning both cgroups with a reference and playing
-> games with threadgroup_change / task_lock for the individual tasks being
-> moved about?
+> This reminds me that I've always meant to turn it into something to put
+> into Documentation/.  I'll try to get to that soon.
+>
 
-I'm lost.  Can you please elaborate?
+Yes, that's something many of us will appreciate A LOT.
 
-Thanks.
+Perhaps we could start with some skeleton documentation and then build
+from there.
+I maybe naive, but I think that way other developers might add little
+contributions.
 
--- 
-tejun
+Regards,
+Ezequiel.
+
+PS: I wish I had some time to do it myself.
