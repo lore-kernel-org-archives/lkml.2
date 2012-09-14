@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759705Ab2INSH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 14:07:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41239 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756082Ab2INSH1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 14:07:27 -0400
-Message-ID: <1347646039.7172.66.camel@twins>
-Subject: Re: [PATCH 3/3 v2] perf tool: give user better message if precise
- is not supported
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>
-Date: Fri, 14 Sep 2012 20:07:19 +0200
-In-Reply-To: <20120914180013.GA27766@ghostprotocols.net>
-References: <1347569955-54626-1-git-send-email-dsahern@gmail.com>
-	 <1347569955-54626-4-git-send-email-dsahern@gmail.com>
-	 <20120914054344.GB9043@gmail.com> <50531151.9020202@gmail.com>
-	 <20120914113617.GA13299@gmail.com> <5053186E.6000302@gmail.com>
-	 <20120914180013.GA27766@ghostprotocols.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1759765Ab2INSIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 14:08:45 -0400
+Received: from mail.digium.com ([216.207.245.2]:50982 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754618Ab2INSIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 14:08:44 -0400
+Date: Fri, 14 Sep 2012 13:01:32 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] edac_mc: fix kfree calls in the error path
+Message-ID: <20120914180132.GC18672@digium.com>
+References: <1345349484-31552-1-git-send-email-sruffell@digium.com>
+ <1347645498-21215-1-git-send-email-sruffell@digium.com>
+ <1347645498-21215-2-git-send-email-sruffell@digium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347645498-21215-2-git-send-email-sruffell@digium.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 11:00 -0700, Arnaldo Carvalho de Melo wrote:
-> > Understood and there have been suggestions on how to definitely state
-> > what the kernel side did not like. I like Peter's last suggestion --
-> > something along the lines of clearing attr on a failure except the
-> > offending setting.
+On Fri, Sep 14, 2012 at 12:58:16PM -0500, Shaun Ruffell wrote:
+> From: Fengguang Wu <fengguang.wu@intel.com>
 > 
-> I think ws need to use a new bit 
-
-Quite so, for all the reasons you list. But you like the general idea? I
-wasn't sure I did, but it was the only thing I could come up with that
-would sort of do what we need it to.
-
-The fact that you destroy the user input is awkward, I don't think
-there's another syscall that behaves in this fashion.
+> From: Fengguang Wu <fengguang.wu@intel.com>
+ 
+Darn it. If you push this through, mind fixing the above?
