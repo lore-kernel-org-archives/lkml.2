@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627Ab2INRei (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 13:34:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46863 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759068Ab2INRee (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 13:34:34 -0400
-Date: Fri, 14 Sep 2012 18:33:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
+	id S1759613Ab2INRih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 13:38:37 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:42379 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758935Ab2INRif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 13:38:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,423,1344236400"; 
+   d="scan'208";a="689775256"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 07/31] arm64: Process management
-Message-ID: <20120914173352.GC2927@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-8-git-send-email-catalin.marinas@arm.com>
- <20120814235013.GC19607@quad.lixom.net>
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
+Thread-Topic: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
+Thread-Index: AQHNkoXiw9uFuLP9oU2/5Ud3jGv0jJeKhW2AgAAKVgA=
+Date: Fri, 14 Sep 2012 17:38:18 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120914140811.10835.81465.stgit@localhost.localdomain>
+	 <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
+In-Reply-To: <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <8123AE52F6FD5B4DAF238BC39230C081@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814235013.GC19607@quad.lixom.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8EHchpE011305
 
-On Wed, Aug 15, 2012 at 12:50:13AM +0100, Olof Johansson wrote:
-> On Tue, Aug 14, 2012 at 06:52:08PM +0100, Catalin Marinas wrote:
-> 
-> > diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> > new file mode 100644
-> > index 0000000..c4a4e1c
-> > --- /dev/null
-> > +++ b/arch/arm64/kernel/process.c
-> > @@ -0,0 +1,416 @@
-> 
-> [...]
-> > +/*
-> > + * Function pointers to optional machine specific functions
-> > + */
-> > +void (*pm_power_off)(void);
-> > +EXPORT_SYMBOL(pm_power_off);
-> > +
-> > +void (*pm_restart)(const char *cmd);
-> > +EXPORT_SYMBOL_GPL(pm_restart);
-> [...]
-> > +void (*pm_idle)(void) = default_idle;
-> > +EXPORT_SYMBOL(pm_idle);
-> 
-> Does it really make sense to export these to modules?
+On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
+> What happens if statd is restarted?
 
-Changed them to _GPL now but we may still want them exported to modules.
-Who knows, we may just have the SoC code in a loadable module (from
-initramfs).
+Nothing unusual. Why?
 
-> I find the powerpc way of having a machine descriptor structure with these
-> (and other) function pointers in it a bit cleaner, since it gives you
-> one place to plug it all in. I'd recommend that you consider doing that
-> here as well, for these three and potentially other cases in the future.
+> Sent from my iPhone
 > 
-> (See arch/powerpc/include/asm/machdep.h, struct machdep_calls).
-
-At some point we may add them but currently I want the SoC code to be
-minimal.
+> On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> 
+> > This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
+> > 
+> > The problem is that with NFSv4 mount in container (with separated mount
+> > namesapce) and active lock on it, dying child reaped of this container will
+> > try to umount NFS and doing this will try to create RPC client to send
+> > unmonitor request to statd.
+> > But creation of RCP client requires valid current->nsproxy (for operation with
+> > utsname()) and during umount on child reaper exit it's equal to zero.
+> > 
+> > Proposed solution is to introduce refrence-counter per-net NSM client, which
+> > is created on fist monitor call and destroyed after the lst monitor call.
+> > 
+> > The following series implements...
+> > 
+> > ---
+> > 
+> > Stanislav Kinsbursky (3):
+> >      lockd: use rpc client's cl_nodename for id encoding
+> >      lockd: per-net NSM client creation and destruction helpers introduced
+> >      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
+> > 
+> > 
+> > fs/lockd/mon.c   |   91 +++++++++++++++++++++++++++++++++++++++++++-----------
+> > fs/lockd/netns.h |    4 ++
+> > fs/lockd/svc.c   |    1 +
+> > 3 files changed, 77 insertions(+), 19 deletions(-)
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Catalin
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
