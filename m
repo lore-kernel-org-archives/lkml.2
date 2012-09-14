@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab2INNY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:24:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37451 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2INNY5 (ORCPT
+	id S1754062Ab2INNZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:25:10 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27543 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab2INNZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:24:57 -0400
+	Fri, 14 Sep 2012 09:25:01 -0400
+Date: Fri, 14 Sep 2012 09:13:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: arnd@arndb.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
+        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        tim@xen.org, Ian.Campbell@citrix.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 23/24] xen: update xen_add_to_physmap interface
+Message-ID: <20120914131357.GO25249@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+ <1347621207-11294-23-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <1347628339.21322.16.camel@shinybook.infradead.org>
-References: <1347627426-3813-1-git-send-email-grant.likely@secretlab.ca>
- <84c8a8$5o3dgr@orsmga001.jf.intel.com> <CACxGe6u0+LC4G-87PsEK3ys7qqeJ2WnqnCdaegMK7=M9xpA8ug@mail.gmail.com>
- <1347628339.21322.16.camel@shinybook.infradead.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 14 Sep 2012 14:24:36 +0100
-X-Google-Sender-Auth: JHY0A77rvxuBqcF-mdMnBBGxaGw
-Message-ID: <CACxGe6szLVwsdNOvpB9v8pGDrygu+Go5Vf3bvpE19v3+Hkv4ww@mail.gmail.com>
-Subject: Re: [PATCH] i915: Quirk out disconnected backlight
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347621207-11294-23-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 2:12 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Fri, 2012-09-14 at 14:09 +0100, Grant Likely wrote:
->> On Fri, Sep 14, 2012 at 2:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> > On Fri, 14 Sep 2012 13:57:06 +0100, Grant Likely <grant.likely@secretlab.ca> wrote:
->> >> Some platforms (for instance MacbookPros) have custom backlight drivers
->> >> and don't use the integrated i915 backlight control. This patch adds a
->> >> quirk to disable registering the intel backlight when unused on a
->> >> platform.
->> >>
->> >> Tested on MacbookPro8,3. Without this patch both the intel_backlight and
->> >> gmux_backlight devices get registered and userspace doesn't know which
->> >> it should use.
->> >
->> > Userspace is informed throught the backlight/type property.
->>
->> Perhaps, but userspace (Ubuntu) isn't doing anything with it, and it
->> still remains that it makes no sense whatsoever to register a
->> backlight device that doesn't exist.
->
-> Indeed. Userspace (well, gnome-settings-daemon) will use the backlight
-> provided by X, in preference to anything it finds
-> in /sys/class/backlight. So if the Intel one is present (and thus
-> exposed via X) then userspace will never bother with comparing types and
-> choosing the sanest backlight to use.
->
-> See https://bugzilla.redhat.com/show_bug.cgi?id=752595
+On Fri, Sep 14, 2012 at 12:13:25PM +0100, Stefano Stabellini wrote:
+> Update struct xen_add_to_physmap to be in sync with Xen's version of the
+> structure.
+> The size field was introduced by:
+> 
+> changeset:   24164:707d27fe03e7
+> user:        Jean Guyader <jean.guyader@eu.citrix.com>
+> date:        Fri Nov 18 13:42:08 2011 +0000
+> summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
+> 
+> According to the comment:
+> 
+> "This new field .size is located in the 16 bits padding between .domid
+> and .space in struct xen_add_to_physmap to stay compatible with older
+> versions."
+> 
+> Note: this patch should be already in Konrad's tree, it is here just for
+> convenience.
+> 
+> Changes in v2:
+> 
+> - remove erroneous comment in the commit message.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-In that bug you mention that the intel backlight sets a bogus max of
-'1' when a backlight isn't present. I saw that too here. Here's the
-offending code:
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-u32 intel_panel_get_max_backlight(struct drm_device *dev)
-{
-        struct drm_i915_private *dev_priv = dev->dev_private;
-        u32 max;
-
-        max = i915_read_blc_pwm_ctl(dev_priv);
-        if (max == 0) {
-                /* XXX add code here to query mode clock or hardware clock
-                 * and program max PWM appropriately.
-                 */
-                pr_warn_once("fixme: max PWM is zero\n");
-                return 1;
-        }
-
-I used a quirk in my patch, but I could instead change the driver to
-bail here instead of trying to limp along.
-
-g.
+.. and I already have this queued for 3.7.
+> ---
+>  include/xen/interface/memory.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+> index b5c3098..b66d04c 100644
+> --- a/include/xen/interface/memory.h
+> +++ b/include/xen/interface/memory.h
+> @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
+>      /* Which domain to change the mapping for. */
+>      domid_t domid;
+>  
+> +    /* Number of pages to go through for gmfn_range */
+> +    uint16_t    size;
+> +
+>      /* Source mapping space. */
+>  #define XENMAPSPACE_shared_info 0 /* shared info page */
+>  #define XENMAPSPACE_grant_table 1 /* grant table page */
+> -- 
+> 1.7.2.5
