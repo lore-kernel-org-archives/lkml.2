@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760302Ab2INXJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 19:09:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752155Ab2INXJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 19:09:27 -0400
-Date: Sat, 15 Sep 2012 00:09:14 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
-        bharrosh@panasas.com, tj@kernel.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 2] dm: Use bioset's front_pad for
-	dm_target_io
-Message-ID: <20120914230914.GR15728@agk-dp.fab.redhat.com>
-Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
-	Kent Overstreet <koverstreet@google.com>,
-	Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com,
-	linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-	"Alasdair G. Kergon" <agk@redhat.com>, bharrosh@panasas.com,
-	tj@kernel.org, Vivek Goyal <vgoyal@redhat.com>
-References: <20120829171345.GC20312@google.com> <20120830220745.GI27257@redhat.com> <20120831014359.GB15218@moria.home.lan> <Pine.LNX.4.64.1209031638110.15620@file.rdu.redhat.com> <20120904034100.GA21602@moria.home.lan> <Pine.LNX.4.64.1209041509160.22689@file.rdu.redhat.com> <20120904195156.GE25236@google.com> <Pine.LNX.4.64.1209111349210.23947@file.rdu.redhat.com> <20120911195029.GJ19739@google.com> <Pine.LNX.4.64.1209121831110.21106@file.rdu.redhat.com>
+	id S1760316Ab2INX1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 19:27:23 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33366 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab2INX1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 19:27:22 -0400
+Date: Sat, 15 Sep 2012 00:27:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 22/24] scsi: eesox: use __iomem pointers for MMIO
+Message-ID: <20120914232703.GE12245@n2100.arm.linux.org.uk>
+References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-23-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1209121831110.21106@file.rdu.redhat.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1347658492-11608-23-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 06:31:53PM -0400, Mikulas Patocka wrote:
-> This is the patch based on this tree.
- 
-I've pulled this into the dm tree for now.
+On Fri, Sep 14, 2012 at 11:34:50PM +0200, Arnd Bergmann wrote:
+> ARM is moving to stricter checks on readl/write functions,
+> so we need to use the correct types everywhere.
 
-Alasdair
+There's nothing wrong with const iomem pointers.  If you think
+otherwise, patch x86 not to use const in its accessor implementation
+and watch the reaction:
+
+#define build_mmio_read(name, size, type, reg, barrier) \
+static inline type name(const volatile void __iomem *addr) \
+{ type ret; asm volatile("mov" size " %1,%0":reg (ret) \
+:"m" (*(volatile type __force *)addr) barrier); return ret; }
+
+build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
+build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
+build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
 
