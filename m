@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab2INLl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:41:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:9235 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758708Ab2INLlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:41:18 -0400
-X-IronPort-AV: E=Sophos;i="4.80,422,1344211200"; 
-   d="scan'208";a="37874972"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <linaro-dev@lists.linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <tim@xen.org>, <Ian.Campbell@citrix.com>, <konrad.wilk@oracle.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 19/24] xen/arm: compile blkfront and blkback
-Date: Fri, 14 Sep 2012 12:13:21 +0100
-Message-ID: <1347621207-11294-19-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+	id S1758822Ab2INLqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:46:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51312 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757672Ab2INLk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 07:40:58 -0400
+Date: Fri, 14 Sep 2012 04:40:41 -0700
+From: tip-bot for Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Message-ID: <tip-76bab1b78ab6f25d5f74165f94526c25fc93d984@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yuanhan.liu@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yuanhan.liu@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1346051625-25231-1-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1346051625-25231-1-git-send-email-yuanhan.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Skip printing "OK"
+  if failed to disable event
+Git-Commit-ID: 76bab1b78ab6f25d5f74165f94526c25fc93d984
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 14 Sep 2012 04:40:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Commit-ID:  76bab1b78ab6f25d5f74165f94526c25fc93d984
+Gitweb:     http://git.kernel.org/tip/76bab1b78ab6f25d5f74165f94526c25fc93d984
+Author:     Yuanhan Liu <yuanhan.liu@linux.intel.com>
+AuthorDate: Mon, 27 Aug 2012 15:13:45 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 13 Sep 2012 22:52:07 -0400
+
+tracing: Skip printing "OK" if failed to disable event
+
+No acutal case found. But logically, we should skip "OK" in case any
+error met.
+
+Link: http://lkml.kernel.org/r/1346051625-25231-1-git-send-email-yuanhan.liu@linux.intel.com
+
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/block/xen-blkback/blkback.c  |    1 +
- include/xen/interface/io/protocols.h |    3 +++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/trace/trace_events.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 73f196c..63dd5b9 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -42,6 +42,7 @@
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 6825d83..bbb0e63 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1646,9 +1646,11 @@ static __init void event_trace_self_tests(void)
+ 		event_test_stuff();
  
- #include <xen/events.h>
- #include <xen/page.h>
-+#include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- #include "common.h"
-diff --git a/include/xen/interface/io/protocols.h b/include/xen/interface/io/protocols.h
-index 01fc8ae..0eafaf2 100644
---- a/include/xen/interface/io/protocols.h
-+++ b/include/xen/interface/io/protocols.h
-@@ -5,6 +5,7 @@
- #define XEN_IO_PROTO_ABI_X86_64     "x86_64-abi"
- #define XEN_IO_PROTO_ABI_IA64       "ia64-abi"
- #define XEN_IO_PROTO_ABI_POWERPC64  "powerpc64-abi"
-+#define XEN_IO_PROTO_ABI_ARM        "arm-abi"
+ 		ret = __ftrace_set_clr_event(NULL, system->name, NULL, 0);
+-		if (WARN_ON_ONCE(ret))
++		if (WARN_ON_ONCE(ret)) {
+ 			pr_warning("error disabling system %s\n",
+ 				   system->name);
++			continue;
++		}
  
- #if defined(__i386__)
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_X86_32
-@@ -14,6 +15,8 @@
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_IA64
- #elif defined(__powerpc64__)
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_POWERPC64
-+#elif defined(__arm__)
-+# define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_ARM
- #else
- # error arch fixup needed here
- #endif
--- 
-1.7.2.5
-
+ 		pr_cont("OK\n");
+ 	}
