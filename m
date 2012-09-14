@@ -1,140 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2INJkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:40:23 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:54819 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab2INJkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:40:18 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, aris@redhat.com,
-        Tejun Heo <tj@kernel.org>, lizefan@huawei.com
-Subject: [PATCH] cgroup: fix invalid rcu dereference
-Date: Fri, 14 Sep 2012 11:40:12 +0200
-Message-Id: <1347615612-11450-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <5052F78A.7010007@suse.cz>
-References: <5052F78A.7010007@suse.cz>
+	id S1757206Ab2INJlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:41:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58821 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755696Ab2INJli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:41:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
+   d="scan'208";a="221989240"
+Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to
+ dmaengine_prep_dma_cyclic()
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>
+In-Reply-To: <5052F8BC.4020102@ti.com>
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
+	 <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com>
+	 <5051FB4D.3000009@metafoo.de> <1347593217.1943.26.camel@vkoul-udesk3>
+	 <5052E72A.8040207@metafoo.de> <1347612630.1943.29.camel@vkoul-udesk3>
+	 <5052F8BC.4020102@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Sep 2012 15:08:08 +0530
+Message-ID: <1347615488.1943.47.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "device_cgroup: convert device_cgroup internally to policy +
-exceptions" removed rcu locks which are needed in task_devcgroup
-called in this chain: devcgroup_inode_mknod OR
-__devcgroup_inode_permission -> __devcgroup_inode_permission ->
-task_devcgroup -> task_subsys_state -> task_subsys_state_check.
+On Fri, 2012-09-14 at 12:28 +0300, Peter Ujfalusi wrote:
+> Hi,
+> 
+> On 09/14/2012 11:50 AM, Vinod Koul wrote:
+> >> Well, the idea was that the driver would disable interrupts if there is no
+> >> callback to call, since there would be nothing to do in the interrupt
+> >> handler anyway. But I guess the flags approach should work fine as well.
+> > Yes we _could_ do that, but this relies on dmaengine driver to have this
+> > implicit understanding. Anyone using dmaengine library in ASoC may or
+> > may not be aware of this, so i would consider it hackish.
+> > 
+> > Using this flag explicitly makes everyone aware what the intended
+> > behaviour is.
+> 
+> I'm not sure about which flags should ASoC set for the two case we are going
+> to have. I think it should be something like this:
+> 
+> unsigned long flags = DMA_CTRL_ACK;
+usage of ACK flag is mostly async_tx thingy, we can skip it for slave.
+> 
+> if (!substream->runtime->no_period_wakeup)
+> 	flags |= DMA_PREP_INTERRUPT;
+> I'm not 100% sure of the role of DMA_CTRL_ACK in this case. Or should we only
+> handle the DMA_PREP_INTERRUPT flag, like this:
+> 
+> unsigned long flags = 0;
+> 
+> if (!substream->runtime->no_period_wakeup)
+> 	flags |= DMA_PREP_INTERRUPT;
+> 
+> 
+> What do you think?
+Looks fine.
 
-Change the code so that task_devcgroup is safely called with rcu read
-lock held.
-
-===============================
-[ INFO: suspicious RCU usage. ]
-3.6.0-rc5-next-20120913+ #42 Not tainted
--------------------------------
-/home/latest/linux/include/linux/cgroup.h:553 suspicious
-rcu_dereference_check() usage!
-
-other info that might help us debug this:
-
-rcu_scheduler_active = 1, debug_locks = 0
-2 locks held by kdevtmpfs/23:
- #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
-mnt_want_write+0x1f/0x50
- #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
-kern_path_create+0x7f/0x170
-
-stack backtrace:
-Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
-Call Trace:
- [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
- [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
- [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
- [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
- [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
- [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
- [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
- [<ffffffff81093ad6>] kthread+0xd6/0xe0
- [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
- [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
- [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
- [<ffffffff81654f20>] ? gs_change+0xb/0xb
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: aris@redhat.com
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com
----
-
-And this should fix it.
-
- security/device_cgroup.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 8d21ded..2178886 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -524,10 +524,10 @@ struct cgroup_subsys devices_subsys = {
-  *
-  * returns 0 on success, -EPERM case the operation is not permitted
-  */
--static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
--					short type, u32 major, u32 minor,
-+static int __devcgroup_check_permission(short type, u32 major, u32 minor,
- 				        short access)
- {
-+	struct dev_cgroup *dev_cgroup;
- 	struct dev_exception_item ex;
- 	int rc;
- 
-@@ -538,6 +538,7 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
- 	ex.access = access;
- 
- 	rcu_read_lock();
-+	dev_cgroup = task_devcgroup(current);
- 	rc = may_access(dev_cgroup, &ex);
- 	rcu_read_unlock();
- 
-@@ -549,7 +550,6 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
- 
- int __devcgroup_inode_permission(struct inode *inode, int mask)
- {
--	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
- 	short type, access = 0;
- 
- 	if (S_ISBLK(inode->i_mode))
-@@ -561,13 +561,12 @@ int __devcgroup_inode_permission(struct inode *inode, int mask)
- 	if (mask & MAY_READ)
- 		access |= ACC_READ;
- 
--	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
--					    iminor(inode), access);
-+	return __devcgroup_check_permission(type, imajor(inode), iminor(inode),
-+			access);
- }
- 
- int devcgroup_inode_mknod(int mode, dev_t dev)
- {
--	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
- 	short type;
- 
- 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
-@@ -578,7 +577,7 @@ int devcgroup_inode_mknod(int mode, dev_t dev)
- 	else
- 		type = DEV_CHAR;
- 
--	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
--					    MINOR(dev), ACC_MKNOD);
-+	return __devcgroup_check_permission(type, MAJOR(dev), MINOR(dev),
-+			ACC_MKNOD);
- 
- }
 -- 
-1.7.11.5
-
+~Vinod
 
