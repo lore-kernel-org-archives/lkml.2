@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760200Ab2INWiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 18:38:05 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50635 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760135Ab2INWiC (ORCPT
+	id S932332Ab2INWjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 18:39:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62404 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760135Ab2INWjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 18:38:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6835"; a="237064407"
-Message-ID: <5053B1C9.10103@codeaurora.org>
-Date: Fri, 14 Sep 2012 15:38:01 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 14 Sep 2012 18:39:51 -0400
+Message-ID: <5053B24D.8010005@gmail.com>
+Date: Sat, 15 Sep 2012 00:40:13 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH 12/24] ARM: msm: use __iomem pointers for MMIO
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-13-git-send-email-arnd@arndb.de>
-In-Reply-To: <1347658492-11608-13-git-send-email-arnd@arndb.de>
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 6/7] mm: add CONFIG_DEBUG_VM_RB build option
+References: <1346750457-12385-1-git-send-email-walken@google.com> <1346750457-12385-7-git-send-email-walken@google.com> <5053AC2F.3070203@gmail.com>
+In-Reply-To: <5053AC2F.3070203@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/12 14:34, Arnd Bergmann wrote:
-> ARM is moving to stricter checks on readl/write functions,
-> so we need to use the correct types everywhere.
->
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: Daniel Walker <dwalker@fifo99.com>
-> Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+On 09/15/2012 12:14 AM, Sasha Levin wrote:
+> On 09/04/2012 11:20 AM, Michel Lespinasse wrote:
+>> Add a CONFIG_DEBUG_VM_RB build option for the previously existing
+>> DEBUG_MM_RB code. Now that Andi Kleen modified it to avoid using
+>> recursive algorithms, we can expose it a bit more.
+>>
+>> Also extend this code to validate_mm() after stack expansion, and to
+>> check that the vma's start and last pgoffs have not changed since the
+>> nodes were inserted on the anon vma interval tree (as it is important
+>> that the nodes be reindexed after each such update).
+> 
+> This patch exposes the following warning:
+> 
+> [   24.977502] ------------[ cut here ]------------
+> [   24.979089] WARNING: at mm/interval_tree.c:110
+> anon_vma_interval_tree_verify+0x81/0xa0()
+> [   24.981765] Pid: 5928, comm: trinity-child37 Tainted: G        W
+> 3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #333
+> [   24.985501] Call Trace:
+> [   24.986345]  [<ffffffff81224c91>] ? anon_vma_interval_tree_verify+0x81/0xa0
+> [   24.988535]  [<ffffffff81106766>] warn_slowpath_common+0x86/0xb0
+> [   24.990636]  [<ffffffff81106855>] warn_slowpath_null+0x15/0x20
+> [   24.992658]  [<ffffffff81224c91>] anon_vma_interval_tree_verify+0x81/0xa0
+> [   24.994980]  [<ffffffff8122e6e8>] validate_mm+0x58/0x1e0
+> [   24.996772]  [<ffffffff8122e934>] vma_link+0x94/0xe0
+> [   24.997719]  [<ffffffff812315e9>] copy_vma+0x279/0x2e0
+> [   24.998522]  [<ffffffff8117a7fd>] ? trace_hardirqs_off+0xd/0x10
+> [   25.000772]  [<ffffffff81232e89>] move_vma+0xa9/0x260
+> [   25.002499]  [<ffffffff812334b5>] sys_mremap+0x475/0x540
+> [   25.004364]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
+> [   25.006108] ---[ end trace 7c901670963aa6e2 ]---
+> 
+> The code line is
+> 
+>         WARN_ON_ONCE(node->cached_vma_last != avc_last_pgoff(node));
+> 
 
-I was going to send this patch out today. Thanks.
+The second WARN in the function also triggers once in a while:
 
-Acked-by: Stephen Boyd <sboyd@codeaurora.org>
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+[   18.360283] ------------[ cut here ]------------
+[   18.360289] WARNING: at mm/interval_tree.c:109
+anon_vma_interval_tree_verify+0x36/0xa0()
+[   18.360292] Pid: 5694, comm: trinity-child15 Tainted: G        W
+3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #335
+[   18.360293] Call Trace:
+[   18.360297]  [<ffffffff81224c26>] ? anon_vma_interval_tree_verify+0x36/0xa0
+[   18.360300]  [<ffffffff81106746>] warn_slowpath_common+0x86/0xb0
+[   18.360303]  [<ffffffff81106835>] warn_slowpath_null+0x15/0x20
+[   18.360305]  [<ffffffff81224c26>] anon_vma_interval_tree_verify+0x36/0xa0
+[   18.360309]  [<ffffffff8122e6c8>] validate_mm+0x58/0x1e0
+[   18.360312]  [<ffffffff8122e914>] vma_link+0x94/0xe0
+[   18.360315]  [<ffffffff812315c9>] copy_vma+0x279/0x2e0
+[   18.360319]  [<ffffffff8117a7dd>] ? trace_hardirqs_off+0xd/0x10
+[   18.360322]  [<ffffffff81232e69>] move_vma+0xa9/0x260
+[   18.360326]  [<ffffffff81233495>] sys_mremap+0x475/0x540
+[   18.360330]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
+[   18.360332] ---[ end trace de862a218d00cefd ]---
