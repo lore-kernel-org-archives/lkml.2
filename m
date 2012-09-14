@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab2INQlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 12:41:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44448 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab2INQli (ORCPT
+	id S1757207Ab2INQlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 12:41:53 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46111 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931Ab2INQlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 12:41:38 -0400
+	Fri, 14 Sep 2012 12:41:50 -0400
+Message-ID: <50535E49.5060903@wwwdotorg.org>
+Date: Fri, 14 Sep 2012 10:41:45 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <87obl9rsg2.fsf@rustcorp.com.au>
-References: <87obl9rsg2.fsf@rustcorp.com.au>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Fri, 14 Sep 2012 13:41:18 -0300
-Message-ID: <CAMOw1v4LydKrkxCMNqX3QJex9KEUBHaEv-QF0yfwpM4WjEWx8w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] module: fix symbol waiting when module fails before init
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jon Masters <jonathan@jonmasters.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/10] pinctrl: mvebu: pinctrl driver
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1347550912-18021-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 4:09 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> We use resolve_symbol_wait(), which blocks if the module containing
-> the symbol is still loading.  However:
->
-> 1) The module_wq we use is only woken after calling the modules' init
->    function, but there are other failure paths after the module is
->    placed in the linked list where we need to do the same thing.
->
-> 2) wake_up() only wakes one waiter, and our waitqueue is shared by all
->    modules, so we need to wake them all.
->
-> 3) wake_up_all() doesn't imply a memory barrier: I feel happier calling
->    it after we've grabbed and dropped the module_mutex, not just after
->    the state assignment.
->
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  kernel/module.c |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2959,7 +2959,7 @@ static struct module *load_module(void _
->         /* Unlink carefully: kallsyms could be walking list. */
->         list_del_rcu(&mod->list);
->         module_bug_cleanup(mod);
-> -
-> +       wake_up_all(&module_wq);
->   ddebug:
->         dynamic_debug_remove(info.debug);
->   unlock:
-> @@ -3034,7 +3034,7 @@ SYSCALL_DEFINE3(init_module, void __user
->                 blocking_notifier_call_chain(&module_notify_list,
->                                              MODULE_STATE_GOING, mod);
->                 free_module(mod);
-> -               wake_up(&module_wq);
-> +               wake_up_all(&module_wq);
->                 return ret;
->         }
->         if (ret > 0) {
-> @@ -3046,9 +3046,8 @@ SYSCALL_DEFINE3(init_module, void __user
->                 dump_stack();
->         }
->
-> -       /* Now it's a first class citizen!  Wake up anyone waiting for it. */
-> +       /* Now it's a first class citizen! */
->         mod->state = MODULE_STATE_LIVE;
-> -       wake_up(&module_wq);
->         blocking_notifier_call_chain(&module_notify_list,
->                                      MODULE_STATE_LIVE, mod);
->
-> @@ -3071,6 +3070,7 @@ SYSCALL_DEFINE3(init_module, void __user
->         mod->init_ro_size = 0;
->         mod->init_text_size = 0;
->         mutex_unlock(&module_mutex);
-> +       wake_up_all(&module_wq);
->
->         return 0;
->  }
+On 09/13/2012 09:41 AM, Sebastian Hesselbarth wrote:
+> This patch set adds a core pinctrl driver for Marvell MVEBU SoCs and
+> SoC specific stubs for Armada 370, Armada XP, Dove, and Kirkwood.
+> The SoC specific stubs use the pinctrl-mvebu core driver that handles
+> pinctrl API and register accesses for common pinctrl registers.
+> 
+> As especially Dove has some pinctrl registers that do not match the
+> common pinctrl register layout the core driver has been extended by
+> some callbacks to allow uncommon Dove pinctrl registers.
+> 
+> DT binding documentation is added for all supported SoCs but as
+> Dove and Kirkwood are not yet ready for full DT support, the pinctrl
+> driver is only activated for Armada 370 and XP.
+> 
+> The driver of latest patch v4 has been tested on Dove, Armada 370, 
+> Armada XP, and 88f6281 variant of Kirkwood.
 
-Ack.
+The series,
+Reviewed-by: Stephen Warren <swarren@wwwdotorg.org>
 
-cheers,
-Lucas De Marchi
+(Mainly the DT bindings and .dts file edits)
+
+In past versions of this series, we were had discussions about the best
+way to represent the data tables in the SoC-specific pinctrl drivers. I
+haven't actually looked at the current state in this patchset, but since
+this is an internal implementation detail and doesn't affect the DT
+bindings at all, I figure it's not a big deal right now; if it is ever a
+problem, it can be fixed without affecting anything outside the driver,
+so I won't worry about it:-)
