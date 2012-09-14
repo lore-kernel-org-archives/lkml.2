@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab2INMqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:46:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5548 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335Ab2INMqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:46:39 -0400
+	id S1755635Ab2INMqv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 08:46:51 -0400
+Received: from mga05.intel.com ([192.55.52.89]:48352 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755232Ab2INMqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 08:46:45 -0400
 Subject: Re: [PATCHv3 0/4] Fix ACPI BGRT support for images located in EFI
  boot services memory
 From: Matt Fleming <matt.fleming@intel.com>
@@ -22,8 +23,8 @@ References: <cover.1347141698.git.josh@joshtriplett.org>
 Content-Type: text/plain; charset="UTF-8"
 Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
  Way, Swindon SN3 1RJ
-Date: Wed, 12 Sep 2012 16:27:11 +0100
-Message-ID: <1347463631.24512.5.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Fri, 14 Sep 2012 13:46:32 +0100
+Message-ID: <1347626792.14222.1.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -66,20 +67,9 @@ On Sat, 2012-09-08 at 15:06 -0700, Josh Triplett wrote:
 >   efi: Add a function to look up existing IO memory mappings
 >   efi: Fix the ACPI BGRT driver for images located in EFI boot services
 >     memory
-> 
->  arch/x86/platform/efi/Makefile   |    1 +
->  arch/x86/platform/efi/efi-bgrt.c |   76 ++++++++++++++++++++++++++++++++++++++
->  arch/x86/platform/efi/efi.c      |   65 +++++++++++++++++++++++++-------
->  drivers/acpi/Kconfig             |    4 +-
->  drivers/acpi/bgrt.c              |   76 +++++---------------------------------
->  include/linux/efi-bgrt.h         |   21 +++++++++++
->  include/linux/efi.h              |    9 +++++
->  init/main.c                      |    7 +++-
->  8 files changed, 175 insertions(+), 84 deletions(-)
->  create mode 100644 arch/x86/platform/efi/efi-bgrt.c
->  create mode 100644 include/linux/efi-bgrt.h
 
-Looks good to me.
+I thought I'd replied to this but I can't find it anywhere. I think my
+MUA ate my ACK.
 
 Acked-by: Matt Fleming <matt.fleming@intel.com>
 
