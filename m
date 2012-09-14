@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab2INGYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:24:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49110 "EHLO
+	id S1755841Ab2INGZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:25:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49133 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab2INGYn (ORCPT
+	with ESMTP id S1755548Ab2INGZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:24:43 -0400
-Date: Thu, 13 Sep 2012 23:24:22 -0700
+	Fri, 14 Sep 2012 02:25:40 -0400
+Date: Thu, 13 Sep 2012 23:25:18 -0700
 From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-3120e25efdc0834c88e1c0f8394e2087444f8c19@git.kernel.org>
+Message-ID: <tip-4fe84fb8c6b5081f7364af63aee8e118a665b966@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, jbeulich@suse.com, JBeulich@suse.com,
-        tglx@linutronix.de
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, JBeulich@suse.com, jbeulich@suse.com,
-        tglx@linutronix.de
-In-Reply-To: <504DEE19020000780009A285@nat28.tlf.novell.com>
-References: <504DEE19020000780009A285@nat28.tlf.novell.com>
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <504DF2AC020000780009A2DF@nat28.tlf.novell.com>
+References: <504DF2AC020000780009A2DF@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86/Kconfig: Clean up Kconfig defaults
-Git-Commit-ID: 3120e25efdc0834c88e1c0f8394e2087444f8c19
+Subject: [tip:core/locking] locking:
+  Adjust spin lock inlining Kconfig options
+Git-Commit-ID: 4fe84fb8c6b5081f7364af63aee8e118a665b966
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,195 +30,210 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:24:27 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:25:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3120e25efdc0834c88e1c0f8394e2087444f8c19
-Gitweb:     http://git.kernel.org/tip/3120e25efdc0834c88e1c0f8394e2087444f8c19
+Commit-ID:  4fe84fb8c6b5081f7364af63aee8e118a665b966
+Gitweb:     http://git.kernel.org/tip/4fe84fb8c6b5081f7364af63aee8e118a665b966
 Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Mon, 10 Sep 2012 12:41:45 +0100
+AuthorDate: Mon, 10 Sep 2012 13:01:16 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 13 Sep 2012 17:45:33 +0200
+CommitDate: Thu, 13 Sep 2012 17:56:13 +0200
 
-x86/Kconfig: Clean up Kconfig defaults
+locking: Adjust spin lock inlining Kconfig options
 
-The main goal here is to have the resulting .config no carry any
-options that aren't enabled and can't be (i.e such where the
-default is "no" and can't be changed), so that if any such
-option later gets a user visible prompt, the user will actually
-be prompted on a "make ...oldconfig" rather than keeping the
-previously invisible option disabled.
+Break out the DEBUG_SPINLOCK dependency (requires moving up
+UNINLINE_SPIN_UNLOCK, as this was the only one in that block not
+depending on that option).
 
-There's a little bit of other trivial cleanup mixed in here.
+Avoid putting values not selected into the resulting .config -
+they are not useful for anything, make the output less legible,
+and just consume space: Use "depends on" rather than directly
+setting the default from the combined dependency values.
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/504DEE19020000780009A285@nat28.tlf.novell.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/504DF2AC020000780009A2DF@nat28.tlf.novell.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/Kconfig     |   50 ++++++++++++++++++++++++++++++--------------------
- arch/x86/Kconfig.cpu |    5 +++--
- 2 files changed, 33 insertions(+), 22 deletions(-)
+ kernel/Kconfig.locks |  103 ++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 63 insertions(+), 40 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 8ec3a1a..3fb8719 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -7,11 +7,13 @@ config 64BIT
- 	  Say no to build a 32-bit kernel - formerly known as i386
- 
- config X86_32
--	def_bool !64BIT
-+	def_bool y
-+	depends on !64BIT
- 	select CLKSRC_I8253
- 
- config X86_64
--	def_bool 64BIT
-+	def_bool y
-+	depends on 64BIT
- 	select X86_DEV_DMA_OPS
- 
- ### Arch settings
-@@ -99,7 +101,8 @@ config X86
- 	select GENERIC_STRNLEN_USER
- 
- config INSTRUCTION_DECODER
--	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-+	def_bool y
-+	depends on KPROBES || PERF_EVENTS || UPROBES
- 
- config OUTPUT_FORMAT
- 	string
-@@ -127,13 +130,15 @@ config SBUS
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 2251882..44511d1 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -87,6 +87,9 @@ config ARCH_INLINE_WRITE_UNLOCK_IRQ
+ config ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
  	bool
  
- config NEED_DMA_MAP_STATE
--       def_bool (X86_64 || INTEL_IOMMU || DMA_API_DEBUG)
++config UNINLINE_SPIN_UNLOCK
++	bool
++
+ #
+ # lock_* functions are inlined when:
+ #   - DEBUG_SPINLOCK=n and GENERIC_LOCKBREAK=n and ARCH_INLINE_*LOCK=y
+@@ -103,100 +106,120 @@ config ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+ #   - DEBUG_SPINLOCK=n and ARCH_INLINE_*LOCK=y
+ #
+ 
++if !DEBUG_SPINLOCK
++
+ config INLINE_SPIN_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_TRYLOCK
 +	def_bool y
-+	depends on X86_64 || INTEL_IOMMU || DMA_API_DEBUG
++	depends on ARCH_INLINE_SPIN_TRYLOCK
  
- config NEED_SG_DMA_LENGTH
- 	def_bool y
- 
- config GENERIC_ISA_DMA
--	def_bool ISA_DMA_API
+ config INLINE_SPIN_TRYLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_TRYLOCK_BH
 +	def_bool y
-+	depends on ISA_DMA_API
++	depends on ARCH_INLINE_SPIN_TRYLOCK_BH
  
- config GENERIC_BUG
- 	def_bool y
-@@ -150,13 +155,16 @@ config GENERIC_GPIO
- 	bool
- 
- config ARCH_MAY_HAVE_PC_FDC
--	def_bool ISA_DMA_API
+ config INLINE_SPIN_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK
 +	def_bool y
-+	depends on ISA_DMA_API
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK
  
- config RWSEM_GENERIC_SPINLOCK
--	def_bool !X86_XADD
+ config INLINE_SPIN_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_BH
 +	def_bool y
-+	depends on !X86_XADD
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_BH
  
- config RWSEM_XCHGADD_ALGORITHM
--	def_bool X86_XADD
+ config INLINE_SPIN_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_IRQ
 +	def_bool y
-+	depends on X86_XADD
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_IRQ
  
- config GENERIC_CALIBRATE_DELAY
- 	def_bool y
-@@ -752,7 +760,8 @@ config SWIOTLB
- 	  3 GB of memory. If unsure, say Y.
- 
- config IOMMU_HELPER
--	def_bool (CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU)
-+	def_bool y
-+	depends on CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU
- 
- config MAXSMP
- 	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
-@@ -1159,10 +1168,12 @@ config X86_PAE
- 	  consumes more pagetable space per process.
- 
- config ARCH_PHYS_ADDR_T_64BIT
--	def_bool X86_64 || X86_PAE
-+	def_bool y
-+	depends on X86_64 || X86_PAE
- 
- config ARCH_DMA_ADDR_T_64BIT
--	def_bool X86_64 || HIGHMEM64G
-+	def_bool y
-+	depends on X86_64 || HIGHMEM64G
- 
- config DIRECT_GBPAGES
- 	bool "Enable 1GB pages for kernel pagetables" if EXPERT
-@@ -1285,8 +1296,8 @@ config ARCH_SELECT_MEMORY_MODEL
- 	depends on ARCH_SPARSEMEM_ENABLE
- 
- config ARCH_MEMORY_PROBE
--	def_bool X86_64
--	depends on MEMORY_HOTPLUG
-+	def_bool y
-+	depends on X86_64 && MEMORY_HOTPLUG
- 
- config ARCH_PROC_KCORE_TEXT
- 	def_bool y
-@@ -1975,7 +1986,6 @@ config PCI_MMCONFIG
- 
- config PCI_CNB20LE_QUIRK
- 	bool "Read CNB20LE Host Bridge Windows" if EXPERT
--	default n
- 	depends on PCI && EXPERIMENTAL
- 	help
- 	  Read the PCI windows out of the CNB20LE host bridge. This allows
-@@ -2186,18 +2196,18 @@ config COMPAT
- 	depends on IA32_EMULATION || X86_X32
- 	select ARCH_WANT_OLD_COMPAT_IPC
- 
-+if COMPAT
- config COMPAT_FOR_U64_ALIGNMENT
--	def_bool COMPAT
--	depends on X86_64
-+	def_bool y
- 
- config SYSVIPC_COMPAT
- 	def_bool y
--	depends on COMPAT && SYSVIPC
-+	depends on SYSVIPC
- 
- config KEYS_COMPAT
+ config INLINE_SPIN_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_SPIN_LOCK_IRQSAVE
+-
+-config UNINLINE_SPIN_UNLOCK
 -	bool
--	depends on COMPAT && KEYS
--	default y
 +	def_bool y
-+	depends on KEYS
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_SPIN_LOCK_IRQSAVE
+ 
+ config INLINE_SPIN_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
+ 
+ 
+ config INLINE_READ_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_TRYLOCK
++	def_bool y
++	depends on ARCH_INLINE_READ_TRYLOCK
+ 
+ config INLINE_READ_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK
+ 
+ config INLINE_READ_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_BH
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_BH
+ 
+ config INLINE_READ_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_IRQ
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_IRQ
+ 
+ config INLINE_READ_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_READ_LOCK_IRQSAVE
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_READ_LOCK_IRQSAVE
+ 
+ config INLINE_READ_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_READ_UNLOCK)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK
+ 
+ config INLINE_READ_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_READ_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_READ_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_READ_UNLOCK_IRQRESTORE
+ 
+ 
+ config INLINE_WRITE_TRYLOCK
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_TRYLOCK
++	def_bool y
++	depends on ARCH_INLINE_WRITE_TRYLOCK
+ 
+ config INLINE_WRITE_LOCK
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK
+ 
+ config INLINE_WRITE_LOCK_BH
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_BH
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_BH
+ 
+ config INLINE_WRITE_LOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_IRQ
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_IRQ
+ 
+ config INLINE_WRITE_LOCK_IRQSAVE
+-	def_bool !DEBUG_SPINLOCK && !GENERIC_LOCKBREAK && \
+-		 ARCH_INLINE_WRITE_LOCK_IRQSAVE
++	def_bool y
++	depends on !GENERIC_LOCKBREAK && ARCH_INLINE_WRITE_LOCK_IRQSAVE
+ 
+ config INLINE_WRITE_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_WRITE_UNLOCK)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK
+ 
+ config INLINE_WRITE_UNLOCK_BH
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_BH
++	def_bool y
++	depends on ARCH_INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQ
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH)
++	def_bool y
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQRESTORE
+-	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
++	def_bool y
++	depends on ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
++
 +endif
  
- endmenu
- 
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 706e12e..f3b86d0 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -306,7 +306,8 @@ config X86_INTERNODE_CACHE_SHIFT
- 	default X86_L1_CACHE_SHIFT
- 
- config X86_CMPXCHG
--	def_bool X86_64 || (X86_32 && !M386)
+ config MUTEX_SPIN_ON_OWNER
+-	def_bool SMP && !DEBUG_MUTEXES
 +	def_bool y
-+	depends on X86_64 || (X86_32 && !M386)
- 
- config X86_L1_CACHE_SHIFT
- 	int
-@@ -317,7 +318,7 @@ config X86_L1_CACHE_SHIFT
- 
- config X86_XADD
- 	def_bool y
--	depends on X86_64 || !M386
-+	depends on !M386
- 
- config X86_PPRO_FENCE
- 	bool "PentiumPro memory ordering errata workaround"
++	depends on SMP && !DEBUG_MUTEXES
