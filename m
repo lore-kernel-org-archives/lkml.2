@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab2INM7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 08:59:34 -0400
-Received: from ares07.inai.de ([5.9.24.206]:51104 "EHLO seven.medozas.de"
+	id S1752915Ab2INNBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:01:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37232 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab2INM7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 08:59:32 -0400
-Date: Fri, 14 Sep 2012 14:59:28 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        Jim Rees <rees@umich.edu>
-Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
- unsigned integer
-In-Reply-To: <1347614276.26071.15.camel@thorin>
-Message-ID: <alpine.LNX.2.01.1209141456290.18169@frira.zrqbmnf.qr>
-References: <20120821212910.GD18637@fieldses.org>  <alpine.LNX.2.01.1209100803060.22738@frira.zrqbmnf.qr> <1347614276.26071.15.camel@thorin>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1751427Ab2INNBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 09:01:20 -0400
+From: "Dowdal, John" <jdowdal@ti.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, "Chemparathy, Cyril" <cyril@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "david.ward@ll.mit.edu" <david.ward@ll.mit.edu>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
+Subject: RE: [PATCH] sch_red: fix weighted average calculation
+Thread-Topic: [PATCH] sch_red: fix weighted average calculation
+Thread-Index: AQHNkbXNoKB7JQ9aeEuY08ljyh27ZZeIns+AgAEvUrA=
+Date: Fri, 14 Sep 2012 13:01:12 +0000
+Message-ID: <2D29FFBF554947468515B8EF6C733BB72E564F65@DLEE09.ent.ti.com>
+References: <1347543820-27548-1-git-send-email-cyril@ti.com>
+ <1347544431.13103.1557.camel@edumazet-glaptop>
+In-Reply-To: <1347544431.13103.1557.camel@edumazet-glaptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8ED1Si5010131
+
+Eric, thank you for reviewing the code.  I now see the problem with the patch since backlog is an integer and qavg is a fixed point number at logW.  
+
+We are considering another patch to update the comments to this code (with the actual C code change reverted) to stop the FPP by showing the derivation of the equation in the comments.  Does this sound good?
 
 
-On Friday 2012-09-14 11:17, Bernd Petrovitsch wrote:
->Shouldn't that have been
->----  snip ----
->#define base10len(i) ((const int[]){1,3,5,8,10,13,15,17,20}[sizeof(i)])
->----  snip ----
-Yeah.
+-----Original Message-----
+From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
+Sent: Thursday, September 13, 2012 9:54 AM
+To: Chemparathy, Cyril
+Cc: linux-kernel@vger.kernel.org; netdev@vger.kernel.org; davem@davemloft.net; david.ward@ll.mit.edu; Dowdal, John; paul.gortmaker@windriver.com
+Subject: Re: [PATCH] sch_red: fix weighted average calculation
 
->A pure K&R-C version would use a string:
->#define base10len(i) "\0x1\0x3\0x5\0x8\0x0A\0x0D\0x0F\0x11\0x14"[sizeof(i)]
->(if I converted them properly into hexadecimal)
-The syntax is \x01\x03\x05...
+On Thu, 2012-09-13 at 09:43 -0400, Cyril Chemparathy wrote:
+> This patch fixes an apparent bug in the running weighted average calculation
+> used in the RED algorithm.
+> 
+> Going by the described formula:
+> 	   qavg = qavg*(1-W) + backlog*W
+> 	=> qavg = qavg + (backlog - qavg) * W
+> 
+> ... with W converted to a pre-calculated shift, this then becomes:
+> 	qavg = qavg + (backlog - qavg) >> logW
+> 
+> ... giving the modified expression introduced by this patch.
+> 
+> Signed-off-by: John Dowdal <jdowdal@ti.com>
+> ---
+>  include/net/red.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/net/red.h b/include/net/red.h
+> index ef46058..05960a4 100644
+> --- a/include/net/red.h
+> +++ b/include/net/red.h
+> @@ -287,7 +287,7 @@ static inline unsigned long red_calc_qavg_no_idle_time(const struct red_parms *p
+>  	 *
+>  	 * --ANK (980924)
+>  	 */
+> -	return v->qavg + (backlog - (v->qavg >> p->Wlog));
+> +	return v->qavg + (backlog - v->qavg) >> p->Wlog;
+>  }
+>  
+>  static inline unsigned long red_calc_qavg(const struct red_parms *p,
 
->and that gives a "char"
->which is happily promoted to whatever one needs in that place.
+This is going to be a FPP (Frequently Posted Patch)
 
-So just convert it; there are no less than two ways to do so
- ((const unsigned char *)"\x01\x03...")[sizeof(i)]
- (boatfloating_t)("\x01\x03..."[sizeof(i)])
+Current formulae is fine.
+
+Thats because backlog, at start of red_calc_qavg_no_idle_time() is not
+yet scaled by p->Wlog. v->avg is scaled, but not backlog.
+
+Have you tested RED after your patch ?
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
