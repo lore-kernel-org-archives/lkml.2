@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2INOpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 10:45:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57733 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab2INOpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 10:45:46 -0400
-Date: Fri, 14 Sep 2012 16:45:43 +0200
-From: Jan Kara <jack@suse.cz>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        viro@zeniv.linux.org.uk, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120914144543.GB4952@quack.suse.cz>
-References: <87wr002z39.fsf@devron.myhome.or.jp>
- <20120913063906.GA24974@localhost>
- <871ui6e4tl.fsf@devron.myhome.or.jp>
- <20120914111429.GA19509@localhost>
- <87r4q4n6r1.fsf@devron.myhome.or.jp>
- <20120914131952.GA4952@quack.suse.cz>
- <87ipbgn2gz.fsf@devron.myhome.or.jp>
+	id S1758444Ab2INOuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 10:50:22 -0400
+Received: from hotel311.server4you.de ([85.25.146.15]:35524 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757601Ab2INOuU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 10:50:20 -0400
+Message-ID: <5053442A.7040801@monom.org>
+Date: Fri, 14 Sep 2012 16:50:18 +0200
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ipbgn2gz.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: sedat.dilek@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        Joe Perches <joe@perches.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Li Zefan <lizefan@huawei.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Rick Jones <rick.jones2@hp.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Tejun Heo <tj@kernel.org>, netdev@vger.kernel.org,
+        cgroups@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] cgroup: net_cls: Include missing header with sock_update_classid()
+ definition
+References: <1347633184-26837-1-git-send-email-wagi@monom.org> <1347633184-26837-3-git-send-email-wagi@monom.org> <CA+icZUUrdGgUM32r88EyRHEb3Q6bULqnk74PikQ8A9q25ZA3NA@mail.gmail.com>
+In-Reply-To: <CA+icZUUrdGgUM32r88EyRHEb3Q6bULqnk74PikQ8A9q25ZA3NA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-09-12 22:44:28, OGAWA Hirofumi wrote:
-> Jan Kara <jack@suse.cz> writes:
-> 
-> >> page reclaim and fsync path have FS handler. So, FS can control those.
-> >> 
-> >> The modern FS have to control to flush carefully. Many FSes are already
-> >> ignoring if wbc->sync_mode != WB_SYNC_ALL (e.g. ext3_write_inode,
-> >> nilfs_writepages), and have own FS task to flush.
-> >   Out of curiosity, what exactly do you need to control in your filesystem
-> > that makes flusher thread unusable for you? You still have a lot of
-> > flexibility with ->write_inode() and ->writepages() callbacks...
-> 
-> If flusher is working, it clears dirty flags of inode. But if those
-> handers can't flush at the time, we have to do redirty or something to
-> prevent the reclaim.
-  Well, if this is your only problem then I'd see better options than just
-disabling flusher thread. If the inability to write inode is rare, then
-redirtying seems like a reasonable option (despite I agree it's a bit
-ugly). If the inability to write is common, then you'll probably have to do
-the dirty inode tracking yourself in some list and expose inodes to VM when
-they are ready to be written. Or you handle writing of inodes yourself but
-leave writing of pages on flusher thread...
+Hi Sedat,
 
-Because when you disable flusher thread completely you have to put all the
-smarts to avoid livelocks, keep fairness among processes, write old data,
-keep number of dirty pages under control into your filesystem which leads
-to a lot of duplication.
+On 14.09.2012 16:43, Sedat Dilek wrote:
+> On Fri, Sep 14, 2012 at 4:33 PM, Daniel Wagner <wagi@monom.org> wrote:
+>> From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+>>
+>> commit 1f66c0a8833c3974ab6b35edcf4f8585b2f94592
+>> Author: Daniel Wagner <daniel.wagner@bmw-carit.de>
+>> Date:   Wed Sep 12 16:12:01 2012 +0200
+>>
+>>      cgroup: net_cls: Move sock_update_classid() declaration to cls_cgroup.h
+>>
+>> Claimed that there was only net/socket.c depending on
+>> sock_update_class(). That is not true drivers/net/tun.c needs to
+>> include the cls_cgroup.h header too.
+>>
+>> Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>> Cc: Gao feng <gaofeng@cn.fujitsu.com>
+>> Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+>> Cc: Joe Perches <joe@perches.com>
+>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>> Cc: Li Zefan <lizefan@huawei.com>
+>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>> Cc: Rick Jones <rick.jones2@hp.com>
+>> Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: netdev@vger.kernel.org
+>> Cc: cgroups@vger.kernel.org
+>> ---
+>>
+>> This version is on top of the latest cgroup for-3.7 branch.
+>>
+>
+> Thanks for the quick fix.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+No problem. I am still ashamed not finding it myself.
+
+> Please honour Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>.
+
+Sure, will do next time.
+
+> If this is the fix for the breakage in today's Linux-Next
+> (next-20120914), please add a "-next" to the subject next time.
+
+Correct, this one is for linux-next but I got the impression that cgroup 
+for-3.7 branch was ignored because of this. Therefore I have send two 
+versions. Hmm, I'll need to check the results of todays next tree.
+
+thanks,
+daniel
+
