@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab2INGOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 02:14:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48950 "EHLO
+	id S1755415Ab2INGPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 02:15:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48976 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab2INGO2 (ORCPT
+	with ESMTP id S1755068Ab2INGPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 02:14:28 -0400
-Date: Thu, 13 Sep 2012 23:14:08 -0700
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-08bedae1d0acd8c9baf514fb69fa199d0c8345f6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1346882630.2600.59.camel@twins>
-References: <1346882630.2600.59.camel@twins>
+	Fri, 14 Sep 2012 02:15:19 -0400
+Date: Thu, 13 Sep 2012 23:15:04 -0700
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-c1cc017c59c44d9ede7003631c43adc0cfdce2f9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, alex.shi@intel.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, venki@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        alex.shi@intel.com, venki@google.com
+In-Reply-To: <1347261059-24747-1-git-send-email-alex.shi@intel.com>
+References: <1347261059-24747-1-git-send-email-alex.shi@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix load avg vs. cpu-hotplug
-Git-Commit-ID: 08bedae1d0acd8c9baf514fb69fa199d0c8345f6
+Subject: [tip:sched/core] sched/nohz: Clean up select_nohz_load_balancer()
+Git-Commit-ID: c1cc017c59c44d9ede7003631c43adc0cfdce2f9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,50 +29,143 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:14:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 13 Sep 2012 23:15:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08bedae1d0acd8c9baf514fb69fa199d0c8345f6
-Gitweb:     http://git.kernel.org/tip/08bedae1d0acd8c9baf514fb69fa199d0c8345f6
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 6 Sep 2012 00:03:50 +0200
+Commit-ID:  c1cc017c59c44d9ede7003631c43adc0cfdce2f9
+Gitweb:     http://git.kernel.org/tip/c1cc017c59c44d9ede7003631c43adc0cfdce2f9
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Mon, 10 Sep 2012 15:10:58 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 13 Sep 2012 16:52:05 +0200
 
-sched: Fix load avg vs. cpu-hotplug
+sched/nohz: Clean up select_nohz_load_balancer()
 
-Commit f319da0c68 ("sched: Fix load avg vs cpu-hotplug") was an
-incomplete fix:
+There is no load_balancer to be selected now. It just sets the
+state of the nohz tick to stop.
 
-In particular, the problem is that at the point it calls
-calc_load_migrate() nr_running := 1 (the stopper thread), so move the
-call to CPU_DEAD where we're sure that nr_running := 0.
+So rename the function, pass the 'cpu' as a parameter and then
+remove the useless call from tick_nohz_restart_sched_tick().
 
-Also note that we can call calc_load_migrate() without serialization, we
-know the state of rq is stable since its cpu is dead, and we modify the
-global state using appropriate atomic ops.
-
-Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[ s/set_nohz_tick_stopped/nohz_balance_enter_idle/g
+  s/clear_nohz_tick_stopped/nohz_balance_exit_idle/g ]
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1346882630.2600.59.camel@twins
+Link: http://lkml.kernel.org/r/1347261059-24747-1-git-send-email-alex.shi@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/sched.h    |    4 ++--
+ kernel/sched/fair.c      |   25 ++++++++++---------------
+ kernel/time/tick-sched.c |    3 +--
+ 3 files changed, 13 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 8b51b2d..ba144b1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5048,7 +5048,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		migrate_tasks(cpu);
- 		BUG_ON(rq->nr_running != 1); /* the migration thread */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
-+		break;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 60e5e38..8c38df0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -273,11 +273,11 @@ extern void init_idle_bootup_task(struct task_struct *idle);
+ extern int runqueue_is_locked(int cpu);
  
-+	case CPU_DEAD:
- 		calc_load_migrate(rq);
- 		break;
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+-extern void select_nohz_load_balancer(int stop_tick);
++extern void nohz_balance_enter_idle(int cpu);
+ extern void set_cpu_sd_state_idle(void);
+ extern int get_nohz_timer_target(void);
+ #else
+-static inline void select_nohz_load_balancer(int stop_tick) { }
++static inline void nohz_balance_enter_idle(int cpu) { }
+ static inline void set_cpu_sd_state_idle(void) { }
  #endif
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9ae3a5b..de596a2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4603,7 +4603,7 @@ static void nohz_balancer_kick(int cpu)
+ 	return;
+ }
+ 
+-static inline void clear_nohz_tick_stopped(int cpu)
++static inline void nohz_balance_exit_idle(int cpu)
+ {
+ 	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
+ 		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+@@ -4643,28 +4643,23 @@ void set_cpu_sd_state_idle(void)
+ }
+ 
+ /*
+- * This routine will record that this cpu is going idle with tick stopped.
++ * This routine will record that the cpu is going idle with tick stopped.
+  * This info will be used in performing idle load balancing in the future.
+  */
+-void select_nohz_load_balancer(int stop_tick)
++void nohz_balance_enter_idle(int cpu)
+ {
+-	int cpu = smp_processor_id();
+-
+ 	/*
+ 	 * If this cpu is going down, then nothing needs to be done.
+ 	 */
+ 	if (!cpu_active(cpu))
+ 		return;
+ 
+-	if (stop_tick) {
+-		if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+-			return;
++	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
++		return;
+ 
+-		cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
+-		atomic_inc(&nohz.nr_cpus);
+-		set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+-	}
+-	return;
++	cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
++	atomic_inc(&nohz.nr_cpus);
++	set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+ }
+ 
+ static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
+@@ -4672,7 +4667,7 @@ static int __cpuinit sched_ilb_notifier(struct notifier_block *nfb,
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DYING:
+-		clear_nohz_tick_stopped(smp_processor_id());
++		nohz_balance_exit_idle(smp_processor_id());
+ 		return NOTIFY_OK;
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -4833,7 +4828,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 	* busy tick after returning from idle, we will update the busy stats.
+ 	*/
+ 	set_cpu_sd_state_busy();
+-	clear_nohz_tick_stopped(cpu);
++	nohz_balance_exit_idle(cpu);
+ 
+ 	/*
+ 	 * None are in tickless mode and hence no need for NOHZ idle load
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3a9e5d5..1a5ee90 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -372,7 +372,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 		 * the scheduler tick in nohz_restart_sched_tick.
+ 		 */
+ 		if (!ts->tick_stopped) {
+-			select_nohz_load_balancer(1);
++			nohz_balance_enter_idle(cpu);
+ 			calc_load_enter_idle();
+ 
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+@@ -569,7 +569,6 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ {
+ 	/* Update jiffies first */
+-	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+ 	update_cpu_load_nohz();
+ 
