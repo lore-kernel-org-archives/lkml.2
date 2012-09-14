@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab2INIWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 04:22:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39340 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758123Ab2INIWS (ORCPT
+	id S1759241Ab2INIYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 04:24:02 -0400
+Received: from ppsw-43.csi.cam.ac.uk ([131.111.8.143]:56360 "EHLO
+	ppsw-43.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757519Ab2INIX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 04:22:18 -0400
-Date: Fri, 14 Sep 2012 09:22:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-i2c@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH 12/19] i2c-nomadik: Register sub-devices when passed via
- Device Tree
-Message-ID: <20120914082210.GD3374@gmail.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-13-git-send-email-lee.jones@linaro.org>
- <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
+	Fri, 14 Sep 2012 04:23:56 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <5052E9A3.9030200@kernel.org>
+Date: Fri, 14 Sep 2012 09:24:03 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] iio: inkern: add error case in iio_channel_get()
+References: <A874F61F95741C4A9BA573A70FE3998F41EF45EB@DQHE02.ent.ti.com> <504DAFF7.1070902@jic23.retrosnub.co.uk> <A874F61F95741C4A9BA573A70FE3998F41EF4C19@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF4C19@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:42:36AM -0700, Linus Walleij wrote:
-> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Each I2C device can be correctly probed already using Device Tree,
-> > but the sub-devices still have to be registered by calls to
-> > i2c_register_board_info(). After this patch, each sub-device can
-> > be registered directly from Device Tree instead, removing the
-> > requirement for the aforementioned calls from platform code.
-> >
-> > CC: linux-i2c@vger.kernel.org
-> > CC: Wolfram Sang <w.sang@pengutronix.de>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> The patch as such is fine.
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> ...but there will be merge issues (of the type I'm
-> discussing with Arnd in another thread).
-> 
-> > ---
-> >  drivers/i2c/busses/i2c-nomadik.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-> > index 5d1a970..01231c2 100644
-> > --- a/drivers/i2c/busses/i2c-nomadik.c
-> > +++ b/drivers/i2c/busses/i2c-nomadik.c
-> > @@ -26,6 +26,7 @@
-> >  #include <linux/pm_runtime.h>
-> >  #include <linux/platform_data/i2c-nomadik.h>
-> >  #include <linux/of.h>
-> > +#include <linux/of_i2c.h>
-> 
-> This is clearly dependent on the other patches to I2C to
-> be merged first (the include above is not yet there in
-> linux-next even), so this patch should go into Wolfram's
-> tree right? Else we have to rip out all the patches to the
-> I2C driver from his tree and funnel it all through ARM SoC.
-> 
-> With the changes to the device tree itself being dependent
-> on this, they should thus also go through the I2C tree.
-> 
-> But they may be heavily dependent on the other DT
-> changes you've done, so they cannot be applied to
-> Wolfram's tree...
-> 
-> And thus you may need to hold this change off
-> until the I2C changes are upstream, or start creating
-> cross-tree dependencies.
-> 
-> Maybe I shouldn't worry about these things and just
-> ACK stuff, but I have such problems with cross-tree
-> merges myself so just trying to be helpful :-/
+On 14/09/12 01:59, Kim, Milo wrote:
+>> On 10/09/12 09:02, Kim, Milo wrote:
+>>>    The datasheet name is defined in the IIO driver.
+>>>    On the other hand, the adc_channel_label is configured in
+>>>    the platform machine side.
+>>>    If the datasheet name is not matched with any adc_channel_label,
+>>>    the iio_channel_get() should be returned as error for preventing
+>>>    using invalid IIO channel data.
+>>>
+>>>    Moreover, this patch detects NULL pointer dereference problem at
+>> early time.
+>>>    In general, the IIO driver just accesses to any member of the
+>> iio_chan_spec
+>>>    in own xxx_read_raw() function.
+>>>    If the iio_chan_spec is invalid pointer, NULL dereference problem
+>> may occur
+>>>    such like 'iio_chan_spec->channel' or 'iio_chan_spec->type'.
+>>>    If the iio_channel_get() gets failed in the IIO consumer,
+>>>    then no read_raw() operation proceeds.
+>
+>> I guess this is marginally cleaner, but either way it is up to the
+>> calling driver to check whether the call succeeded.
+>
+> IMO, it would be better if iio_channel_get() gets failed
+> when the consumer tries to get the channel rather than when using it.
+>
+> The channel spec is retrieved when the channel is requested, - iio_channel_get()
+> So it's reasonable if error returns in case of invalid channel spcec.
+>
+> And I just found similar handling in iio_channel_get_all().
+> But my patch needs releasing the memory as Lars-Peter noted.
+Fine, I'm convinced.  Certainly less weird doing it your way ;)
+Please do fix up the get all case as well.
+>
+> Thanks !
+>
+> Best Regards,
+> Milo
+>
+>>>
+>>> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+>>> ---
+>>>    drivers/iio/inkern.c |    6 +++++-
+>>>    1 file changed, 5 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+>>> index 1faa240..a5caf6b 100644
+>>> --- a/drivers/iio/inkern.c
+>>> +++ b/drivers/iio/inkern.c
+>>> @@ -136,11 +136,15 @@ struct iio_channel *iio_channel_get(const char
+>> *name, const char *channel_name)
+>>>
+>>>    	channel->indio_dev = c->indio_dev;
+>>>
+>>> -	if (c->map->adc_channel_label)
+>>> +	if (c->map->adc_channel_label) {
+>>>    		channel->channel =
+>>>    			iio_chan_spec_from_name(channel->indio_dev,
+>>>    						c->map->adc_channel_label);
+>>>
+>>> +		if (channel->channel == NULL)
+>>> +			return ERR_PTR(-ENODEV);
+>>> +	}
+>>> +
+>>>    	return channel;
+>>>    }
+>>>    EXPORT_SYMBOL_GPL(iio_channel_get);
+>>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-If I send all my stuff though arm-soc, then I have no
-dependencies at all. All my patches are based on the latest
--rc. It seems a little silly to split them all up and push
-them through lots of different trees. That way we're bound
-to increase the chances of merge conflicts surely?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
