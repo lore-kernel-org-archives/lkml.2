@@ -1,77 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab2INJlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:41:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58821 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755696Ab2INJli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:41:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,422,1344236400"; 
-   d="scan'208";a="221989240"
-Subject: Re: [PATCH v2 03/15] dmaengine: Add no_wakeup parameter to
- dmaengine_prep_dma_cyclic()
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>
-In-Reply-To: <5052F8BC.4020102@ti.com>
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
-	 <1347543485-339-4-git-send-email-peter.ujfalusi@ti.com>
-	 <5051FB4D.3000009@metafoo.de> <1347593217.1943.26.camel@vkoul-udesk3>
-	 <5052E72A.8040207@metafoo.de> <1347612630.1943.29.camel@vkoul-udesk3>
-	 <5052F8BC.4020102@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Sep 2012 15:08:08 +0530
-Message-ID: <1347615488.1943.47.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758980Ab2INJmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:42:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60994 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2INJmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 05:42:10 -0400
+Date: Fri, 14 Sep 2012 10:41:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
+        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
+Message-ID: <20120914094155.GC12245@n2100.arm.linux.org.uk>
+References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 12:28 +0300, Peter Ujfalusi wrote:
-> Hi,
-> 
-> On 09/14/2012 11:50 AM, Vinod Koul wrote:
-> >> Well, the idea was that the driver would disable interrupts if there is no
-> >> callback to call, since there would be nothing to do in the interrupt
-> >> handler anyway. But I guess the flags approach should work fine as well.
-> > Yes we _could_ do that, but this relies on dmaengine driver to have this
-> > implicit understanding. Anyone using dmaengine library in ASoC may or
-> > may not be aware of this, so i would consider it hackish.
-> > 
-> > Using this flag explicitly makes everyone aware what the intended
-> > behaviour is.
-> 
-> I'm not sure about which flags should ASoC set for the two case we are going
-> to have. I think it should be something like this:
-> 
-> unsigned long flags = DMA_CTRL_ACK;
-usage of ACK flag is mostly async_tx thingy, we can skip it for slave.
-> 
-> if (!substream->runtime->no_period_wakeup)
-> 	flags |= DMA_PREP_INTERRUPT;
-> I'm not 100% sure of the role of DMA_CTRL_ACK in this case. Or should we only
-> handle the DMA_PREP_INTERRUPT flag, like this:
-> 
-> unsigned long flags = 0;
-> 
-> if (!substream->runtime->no_period_wakeup)
-> 	flags |= DMA_PREP_INTERRUPT;
-> 
-> 
-> What do you think?
-Looks fine.
+On Fri, Sep 14, 2012 at 03:03:09PM +0530, Vinod Koul wrote:
+> +/*called under lock held */
+> +static struct dma_chan *dmaengine_get_slave_channel(char *requestor, dma_cap_mask_t *mask)
+> +{
+> +
+> +	struct dma_device *device, *_d;
+> +	struct dma_chan *chan = NULL;
+> +	int err;
+> +
+> +	list_for_each_entry_safe(device, _d, &dma_device_list, global_node) {
+> +		if (strcmp(requestor, dev_name(device->dev)))
+> +			continue;
 
--- 
-~Vinod
+So, this finds a DMA device where the struct device's name corresponds
+with the name passed in as 'requestor' (note that requestor should be
+const.)
 
+> +
+> +		chan = private_candidate(mask, device, NULL, NULL);
+> +		if (chan) {
+
+And this finds _any_ channel on the device.
+
+> +			/* Found a suitable channel, try to grab, prep, and
+> +			 * return it.  We first set DMA_PRIVATE to disable
+> +			 * balance_ref_count as this channel will not be
+> +			 * published in the general-purpose allocator
+> +			 */
+> +			dma_cap_set(DMA_PRIVATE, device->cap_mask);
+> +			device->privatecnt++;
+> +			err = dma_chan_get(chan);
+> +
+> +			if (err == -ENODEV) {
+> +				pr_debug("%s: %s module removed\n",
+> +					 __func__, dma_chan_name(chan));
+> +				list_del_rcu(&device->global_node);
+> +			} else if (err)
+> +				pr_debug("%s: failed to get %s: (%d)\n",
+> +					 __func__, dma_chan_name(chan), err);
+> +			else
+> +				break;
+> +			if (--device->privatecnt == 0)
+> +				dma_cap_clear(DMA_PRIVATE, device->cap_mask);
+> +			chan = NULL;
+> +		}
+> +	}
+> +	return chan;
+
+and returns it...
+
+> +struct dma_chan *dmaengine_request_slave_channel(
+> +		char *requestor, struct dma_slave_config *config,
+> +		dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
+> +{
+> +	struct dma_chan *slave = NULL;
+> +	struct dmaengine_slave_map_entries *entry, *_e;
+> +
+> +	/* perhpas we dont need mask arg, it should be slave anyway */
+> +	if (!__dma_has_cap(DMA_SLAVE, mask))
+> +		return NULL;
+> +
+> +	mutex_lock(&dma_list_mutex);
+> +	/* find a channel which maps to this request */
+> +	list_for_each_entry_safe(entry, _e, &dma_slave_map, node) {
+> +		if (strcmp(requestor, entry->map->client))
+> +			continue;
+> +
+> +		/* have we already allocated this mapping */
+> +		if (entry->used == true)
+> +			continue;
+> +
+> +		/* now we hit an entry in map,
+> +		 * see if we can get a channel in controller */
+> +		slave = dmaengine_get_slave_channel(requestor, mask);
+> +		if (!slave)
+> +			continue;
+
+Ok, so here we've got a channel - any old channel what so ever on the
+device described by 'requestor'.  And we're holding a reference to it.
+
+> +
+> +		/* check if client is requesting some specfic slave channel */
+> +		if ((entry->map->ch != -1) && (entry->map->ch != slave->chan_id))
+> +			continue;
+
+If the channel number isn't what we wanted, where do we drop this
+reference?  Also note that this 'continue' causes us to move to the
+next entry in the map list - whereas what may have happened is that
+the channel on the DMA engine is free, but it simply wasn't the first
+free channel.  I don't see how this can work sanely.
+
+> +		/* now call filter fn but it should not be used anyway */
+> +		if (fn && !fn(slave, fn_param))
+> +			continue;
+> +
+> +		entry->used = true;
+> +		mutex_unlock(&dma_list_mutex);
+> +
+> +		/* pick slave id from map if not set */
+> +		if (!config->slave_id)
+> +			config->slave_id = entry->map->slave_id;
+
+So, with this level, we're talking about tying DMA channels to slave IDs.
+What about the case where you may have a DMA engine with just two channels
+but 16 request signals?  (as is the case with PL081).
+
+We're still into having 'virtual' DMA channels in DMA engines, this just
+adds an additional layer of complexity on top.
+
+Maybe a better idea would be to pass the map entry down to the DMA engine
+driver itself, and let it return the appropriate struct dma_chan?
