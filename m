@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab2INWKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 18:10:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60495 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2INWKt convert rfc822-to-8bit (ORCPT
+	id S1756269Ab2INWNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 18:13:48 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64664 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab2INWNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 18:10:49 -0400
-Message-ID: <1347660634.2341.5.camel@twins>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Date: Sat, 15 Sep 2012 00:10:34 +0200
-In-Reply-To: <CA+55aFwKEjsPKYNFkkNfrr9V=vyEO6M9o_48be4y9w6=h-06UQ@mail.gmail.com>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic> <1347658843.7172.90.camel@twins>
-	 <CA+55aFz6SxLEr0MNubz7rcwcqki7EM33Vp-q3KFEvuLG6a61ZQ@mail.gmail.com>
-	 <1347659777.7172.97.camel@twins>
-	 <CA+55aFwKEjsPKYNFkkNfrr9V=vyEO6M9o_48be4y9w6=h-06UQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 14 Sep 2012 18:13:46 -0400
+Message-ID: <5053AC2F.3070203@gmail.com>
+Date: Sat, 15 Sep 2012 00:14:07 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120902 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 6/7] mm: add CONFIG_DEBUG_VM_RB build option
+References: <1346750457-12385-1-git-send-email-walken@google.com> <1346750457-12385-7-git-send-email-walken@google.com>
+In-Reply-To: <1346750457-12385-7-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 15:01 -0700, Linus Torvalds wrote:
-> Sure, it doesn't take tsk_cpus_allowed() into account while setting up
-> the cache (since it's not dynamic enough), but *assuming* the common
-> case is that people let threads be on any of the cores of a package,
-> it should be possible to make the cache 100% equivalent with no
-> semantic change. No? 
+On 09/04/2012 11:20 AM, Michel Lespinasse wrote:
+> Add a CONFIG_DEBUG_VM_RB build option for the previously existing
+> DEBUG_MM_RB code. Now that Andi Kleen modified it to avoid using
+> recursive algorithms, we can expose it a bit more.
+> 
+> Also extend this code to validate_mm() after stack expansion, and to
+> check that the vma's start and last pgoffs have not changed since the
+> nodes were inserted on the anon vma interval tree (as it is important
+> that the nodes be reindexed after each such update).
 
-I'm not seeing how it could be. Only ever looking at 1 other cpu
-(regardless which one) cannot be the same as checking 'all' of them.
+This patch exposes the following warning:
 
-Suppose we have the 6 core AMD chip, a task being woken on cpu0 would
-look at cpus 1-6 (the entire package shares cache) to see if any of them
-was idle. Only looking at a single cpu will avoid looking at the other
-4.
+[   24.977502] ------------[ cut here ]------------
+[   24.979089] WARNING: at mm/interval_tree.c:110
+anon_vma_interval_tree_verify+0x81/0xa0()
+[   24.981765] Pid: 5928, comm: trinity-child37 Tainted: G        W
+3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #333
+[   24.985501] Call Trace:
+[   24.986345]  [<ffffffff81224c91>] ? anon_vma_interval_tree_verify+0x81/0xa0
+[   24.988535]  [<ffffffff81106766>] warn_slowpath_common+0x86/0xb0
+[   24.990636]  [<ffffffff81106855>] warn_slowpath_null+0x15/0x20
+[   24.992658]  [<ffffffff81224c91>] anon_vma_interval_tree_verify+0x81/0xa0
+[   24.994980]  [<ffffffff8122e6e8>] validate_mm+0x58/0x1e0
+[   24.996772]  [<ffffffff8122e934>] vma_link+0x94/0xe0
+[   24.997719]  [<ffffffff812315e9>] copy_vma+0x279/0x2e0
+[   24.998522]  [<ffffffff8117a7fd>] ? trace_hardirqs_off+0xd/0x10
+[   25.000772]  [<ffffffff81232e89>] move_vma+0xa9/0x260
+[   25.002499]  [<ffffffff812334b5>] sys_mremap+0x475/0x540
+[   25.004364]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
+[   25.006108] ---[ end trace 7c901670963aa6e2 ]---
 
-The chance of finding an idle cpu to run on is much bigger the more cpus
-you look at (also more expensive).
+The code line is
 
+        WARN_ON_ONCE(node->cached_vma_last != avc_last_pgoff(node));
