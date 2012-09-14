@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab2INLmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:42:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:58176 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759326Ab2INLmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:42:00 -0400
+	id S1759398Ab2INLmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:42:24 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:18879 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab2INLmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 07:42:16 -0400
 X-IronPort-AV: E=Sophos;i="4.80,422,1344211200"; 
-   d="scan'208";a="208103004"
+   d="scan'208";a="37875022"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <arnd@arndb.de>
 CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
@@ -17,9 +16,9 @@ CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
         <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
         <linux-kernel@vger.kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 20/24] xen/arm: compile netback
-Date: Fri, 14 Sep 2012 12:13:22 +0100
-Message-ID: <1347621207-11294-20-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
+Date: Fri, 14 Sep 2012 12:13:14 +0100
+Message-ID: <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
@@ -29,66 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes in v2:
+
+- mark Xen guest support on ARM as EXPERIMENTAL.
+
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/arm/include/asm/xen/hypercall.h |   19 +++++++++++++++++++
- drivers/net/xen-netback/netback.c    |    1 +
- drivers/net/xen-netfront.c           |    1 +
- 3 files changed, 21 insertions(+), 0 deletions(-)
+ arch/arm/Kconfig |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/xen/hypercall.h b/arch/arm/include/asm/xen/hypercall.h
-index 4ac0624..8a82325 100644
---- a/arch/arm/include/asm/xen/hypercall.h
-+++ b/arch/arm/include/asm/xen/hypercall.h
-@@ -47,4 +47,23 @@ unsigned long HYPERVISOR_hvm_op(int op, void *arg);
- int HYPERVISOR_memory_op(unsigned int cmd, void *arg);
- int HYPERVISOR_physdev_op(int cmd, void *arg);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2f88d8d..e92518d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
+ 	  This was deprecated in 2001 and announced to live on for 5 years.
+ 	  Some old boot loaders still use this way.
  
-+static inline void
-+MULTI_update_va_mapping(struct multicall_entry *mcl, unsigned long va,
-+			unsigned int new_val, unsigned long flags)
-+{
-+	BUG();
-+}
++config XEN_DOM0
++	def_bool y
 +
-+static inline void
-+MULTI_mmu_update(struct multicall_entry *mcl, struct mmu_update *req,
-+		 int count, int *success_count, domid_t domid)
-+{
-+	BUG();
-+}
++config XEN
++	bool "Xen guest support on ARM (EXPERIMENTAL)"
++	depends on EXPERIMENTAL && ARM && OF
++	select XEN_DOM0
++	help
++	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
 +
-+static inline int
-+HYPERVISOR_multicall(void *call_list, int nr_calls)
-+{
-+	BUG();
-+}
- #endif /* _ASM_ARM_XEN_HYPERCALL_H */
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 682633b..1c0a302 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -40,6 +40,7 @@
+ endmenu
  
- #include <net/tcp.h>
- 
-+#include <xen/xen.h>
- #include <xen/events.h>
- #include <xen/interface/memory.h>
- 
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 650f79a..24d968d 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -43,6 +43,7 @@
- #include <linux/slab.h>
- #include <net/ip.h>
- 
-+#include <asm/xen/page.h>
- #include <xen/xen.h>
- #include <xen/xenbus.h>
- #include <xen/events.h>
+ menu "Boot options"
 -- 
 1.7.2.5
 
