@@ -1,131 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759316Ab2INJUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:20:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44404 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758328Ab2INJUv (ORCPT
+	id S1759322Ab2INJX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:23:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59413 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758462Ab2INJX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:20:51 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to drivers/bus/
-Date: Fri, 14 Sep 2012 14:50:34 +0530
-Message-ID: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 14 Sep 2012 05:23:27 -0400
+Message-ID: <5052F78A.7010007@suse.cz>
+Date: Fri, 14 Sep 2012 11:23:22 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: aris@redhat.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: include/linux/cgroup.h:553 suspicious rcu_dereference_check() usage!
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP interconnect drivers are used for the interconnect error handling.
-Since they are bus driver, lets move it to newly created drivers/bus.
+Hi,
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Lindgren <tony@atomide.com>
-Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
-Patch just moves OMAP interconnect drivers as is to the newly created
-driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
-tree and test on all OMAP boards.
+with current -next trees and LDEP enabled, I'm getting:
+===============================
+[ INFO: suspicious RCU usage. ]
+3.6.0-rc5-next-20120913+ #42 Not tainted
+-------------------------------
+/home/latest/linux/include/linux/cgroup.h:553 suspicious
+rcu_dereference_check() usage!
 
- arch/arm/mach-omap2/Kconfig                        |    2 ++
- arch/arm/mach-omap2/Makefile                       |    5 -----
- drivers/bus/Kconfig                                |    6 ++++++
- drivers/bus/Makefile                               |    3 +++
- {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.c |    0
- {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.h |    0
- {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.c |    0
- {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.h |    0
- 8 files changed, 11 insertions(+), 5 deletions(-)
- rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.c (100%)
- rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_noc.h (100%)
- rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.c (100%)
- rename {arch/arm/mach-omap2 => drivers/bus}/omap_l3_smx.h (100%)
+other info that might help us debug this:
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index dd2db02..7d3c8ab 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -44,6 +44,7 @@ config ARCH_OMAP3
- 	select ARM_CPU_SUSPEND if PM
- 	select MULTI_IRQ_HANDLER
- 	select SOC_HAS_OMAP2_SDRC
-+	select OMAP_INTERCONNECT
- 
- config ARCH_OMAP4
- 	bool "TI OMAP4"
-@@ -63,6 +64,7 @@ config ARCH_OMAP4
- 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
- 	select ARM_CPU_SUSPEND if PM
- 	select ARCH_NEEDS_CPU_IDLE_COUPLED
-+	select OMAP_INTERCONNECT
- 
- config SOC_OMAP5
- 	bool "TI OMAP5"
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index f6a24b3..7fed980 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -199,11 +199,6 @@ obj-$(CONFIG_ARCH_OMAP4)		+= omap_hwmod_44xx_data.o
- # EMU peripherals
- obj-$(CONFIG_OMAP3_EMU)			+= emu.o
- 
--# L3 interconnect
--obj-$(CONFIG_ARCH_OMAP3)		+= omap_l3_smx.o
--obj-$(CONFIG_ARCH_OMAP4)		+= omap_l3_noc.o
--obj-$(CONFIG_SOC_OMAP5)			+= omap_l3_noc.o
--
- obj-$(CONFIG_OMAP_MBOX_FWK)		+= mailbox_mach.o
- mailbox_mach-objs			:= mailbox.o
- 
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 6270415..bbec35d 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -12,4 +12,10 @@ config OMAP_OCP2SCP
- 	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
- 	  OCP2SCP.
- 
-+config OMAP_INTERCONNECT
-+	tristate "OMAP INTERCONNECT DRIVER"
-+	depends on ARCH_OMAP2PLUS
-+
-+	help
-+	  Driver to enable OMAP interconnect error handling driver.
- endmenu
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 0ec50bc..45d997c 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -3,3 +3,6 @@
- #
- 
- obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
-+
-+# Interconnect bus driver for OMAP SoCs.
-+obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
-diff --git a/arch/arm/mach-omap2/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-similarity index 100%
-rename from arch/arm/mach-omap2/omap_l3_noc.c
-rename to drivers/bus/omap_l3_noc.c
-diff --git a/arch/arm/mach-omap2/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-similarity index 100%
-rename from arch/arm/mach-omap2/omap_l3_noc.h
-rename to drivers/bus/omap_l3_noc.h
-diff --git a/arch/arm/mach-omap2/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
-similarity index 100%
-rename from arch/arm/mach-omap2/omap_l3_smx.c
-rename to drivers/bus/omap_l3_smx.c
-diff --git a/arch/arm/mach-omap2/omap_l3_smx.h b/drivers/bus/omap_l3_smx.h
-similarity index 100%
-rename from arch/arm/mach-omap2/omap_l3_smx.h
-rename to drivers/bus/omap_l3_smx.h
+
+rcu_scheduler_active = 1, debug_locks = 0
+2 locks held by kdevtmpfs/23:
+ #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
+mnt_want_write+0x1f/0x50
+ #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
+kern_path_create+0x7f/0x170
+
+stack backtrace:
+Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
+Call Trace:
+ [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
+ [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
+ [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
+ [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
+ [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
+ [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
+ [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
+ [<ffffffff81093ad6>] kthread+0xd6/0xe0
+ [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
+ [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
+ [<ffffffff81654f20>] ? gs_change+0xb/0xb
+
+
+It's due to the commit "device_cgroup: convert device_cgroup internally
+to policy + exceptions". It removed rcu locks which are needed in
+task_devcgroup called in this chain: devcgroup_inode_mknod OR
+__devcgroup_inode_permission -> __devcgroup_inode_permission ->
+task_devcgroup -> task_subsys_state -> task_subsys_state_check.
+
+regards,
 -- 
-1.7.9.5
-
+js
+suse labs
