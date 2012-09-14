@@ -1,99 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2INJjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 05:39:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45849 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2INJju (ORCPT
+	id S1757625Ab2INJkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 05:40:23 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:54819 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab2INJkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 05:39:50 -0400
-Date: Fri, 14 Sep 2012 11:39:45 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 12/19] i2c-nomadik: Register sub-devices when passed
- via Device Tree
-Message-ID: <20120914093945.GB2630@pengutronix.de>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-13-git-send-email-lee.jones@linaro.org>
- <CACRpkdaCrus9SOpxyK+kV2gKr3sEZJsHCn6ivn2gA3ri0rcvHw@mail.gmail.com>
- <20120912105202.GD2624@pengutronix.de>
- <20120914082754.GE3374@gmail.com>
- <20120914084141.GA2630@pengutronix.de>
- <20120914090228.GH3374@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
-Content-Disposition: inline
-In-Reply-To: <20120914090228.GH3374@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 14 Sep 2012 05:40:18 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, aris@redhat.com,
+        Tejun Heo <tj@kernel.org>, lizefan@huawei.com
+Subject: [PATCH] cgroup: fix invalid rcu dereference
+Date: Fri, 14 Sep 2012 11:40:12 +0200
+Message-Id: <1347615612-11450-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.11.5
+In-Reply-To: <5052F78A.7010007@suse.cz>
+References: <5052F78A.7010007@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit "device_cgroup: convert device_cgroup internally to policy +
+exceptions" removed rcu locks which are needed in task_devcgroup
+called in this chain: devcgroup_inode_mknod OR
+__devcgroup_inode_permission -> __devcgroup_inode_permission ->
+task_devcgroup -> task_subsys_state -> task_subsys_state_check.
 
---i9LlY+UWpKt15+FH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Change the code so that task_devcgroup is safely called with rcu read
+lock held.
+
+===============================
+[ INFO: suspicious RCU usage. ]
+3.6.0-rc5-next-20120913+ #42 Not tainted
+-------------------------------
+/home/latest/linux/include/linux/cgroup.h:553 suspicious
+rcu_dereference_check() usage!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+2 locks held by kdevtmpfs/23:
+ #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
+mnt_want_write+0x1f/0x50
+ #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
+kern_path_create+0x7f/0x170
+
+stack backtrace:
+Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
+Call Trace:
+ [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
+ [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
+ [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
+ [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
+ [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
+ [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
+ [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
+ [<ffffffff81093ad6>] kthread+0xd6/0xe0
+ [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
+ [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
+ [<ffffffff81654f20>] ? gs_change+0xb/0xb
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: aris@redhat.com
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com
+---
+
+And this should fix it.
+
+ security/device_cgroup.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 8d21ded..2178886 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -524,10 +524,10 @@ struct cgroup_subsys devices_subsys = {
+  *
+  * returns 0 on success, -EPERM case the operation is not permitted
+  */
+-static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
+-					short type, u32 major, u32 minor,
++static int __devcgroup_check_permission(short type, u32 major, u32 minor,
+ 				        short access)
+ {
++	struct dev_cgroup *dev_cgroup;
+ 	struct dev_exception_item ex;
+ 	int rc;
+ 
+@@ -538,6 +538,7 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
+ 	ex.access = access;
+ 
+ 	rcu_read_lock();
++	dev_cgroup = task_devcgroup(current);
+ 	rc = may_access(dev_cgroup, &ex);
+ 	rcu_read_unlock();
+ 
+@@ -549,7 +550,6 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
+ 
+ int __devcgroup_inode_permission(struct inode *inode, int mask)
+ {
+-	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
+ 	short type, access = 0;
+ 
+ 	if (S_ISBLK(inode->i_mode))
+@@ -561,13 +561,12 @@ int __devcgroup_inode_permission(struct inode *inode, int mask)
+ 	if (mask & MAY_READ)
+ 		access |= ACC_READ;
+ 
+-	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
+-					    iminor(inode), access);
++	return __devcgroup_check_permission(type, imajor(inode), iminor(inode),
++			access);
+ }
+ 
+ int devcgroup_inode_mknod(int mode, dev_t dev)
+ {
+-	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
+ 	short type;
+ 
+ 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
+@@ -578,7 +577,7 @@ int devcgroup_inode_mknod(int mode, dev_t dev)
+ 	else
+ 		type = DEV_CHAR;
+ 
+-	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
+-					    MINOR(dev), ACC_MKNOD);
++	return __devcgroup_check_permission(type, MAJOR(dev), MINOR(dev),
++			ACC_MKNOD);
+ 
+ }
+-- 
+1.7.11.5
 
 
-> Ah, sorry. That's my fault for rushing though my ridiculously bloated pos=
-t-
-> vacation inbox.
-
-:)
-
-> > all the infos I got. Some more context would have been helpful. Is there
-> > a branch somewhere with all the things collected?
->=20
-> There will be. I'm currently just Ack collecting.=20
->=20
-> In fact wait ...
->=20
-> <3 mins pass>
->=20
-> Now there is:
->   git://git.linaro.org/people/ljones/linux-3.0-ux500.git preview-for-next
-
-OK from having a glimpse, I'd prefer to squash (or have squashed)
-
-	i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
-	Documentation: Device Tree binding information for i2c-nomadik driver
-		(Documentation should go along with the code)
-	i2c-nomadik: Register sub-devices when passed via Device Tree
-
-into one patch and take that via the I2C tree. This will allow me to
-resolve the merge conflict in my tree on my own. I don't see a strong
-reason to have those go via arm-soc (like prevented build-failures or
-easier merges), if I missed such a reason, please let me know.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---i9LlY+UWpKt15+FH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlBS+2EACgkQD27XaX1/VRtJ+QCggp2+0Dm+twmxqaBtQgraVDhM
-w9IAn3V8y8ESJ1xAw8kN9Md37aTJX2VD
-=/HGK
------END PGP SIGNATURE-----
-
---i9LlY+UWpKt15+FH--
