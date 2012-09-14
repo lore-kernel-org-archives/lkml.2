@@ -1,91 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2INNdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 09:33:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20133 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab2INNdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 09:33:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,423,1344236400"; 
-   d="scan'208";a="222161248"
-Date: Fri, 14 Sep 2012 21:33:00 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, hch@lst.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120914133300.GA22390@localhost>
-References: <87wr002z39.fsf@devron.myhome.or.jp>
- <20120913063906.GA24974@localhost>
- <871ui6e4tl.fsf@devron.myhome.or.jp>
- <20120914111429.GA19509@localhost>
- <87r4q4n6r1.fsf@devron.myhome.or.jp>
- <20120914125312.GA20973@localhost>
- <87mx0sn463.fsf@devron.myhome.or.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mx0sn463.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754209Ab2INNdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 09:33:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16284 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab2INNdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 09:33:04 -0400
+X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZDDkTe9yP_wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=cf0L7CG27rcA:10 a=mDV3o1hIAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=yWGnIIe_ebuLAofsvJMA:9 a=PUjeQqilurYA:10 a=lM8EmwarS4gA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=xrf48phdYvfyvlb8:21 a=zh2BkHmXDenowtv6:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347629582.10751.90.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/2] Update FSF postal address to be URL's.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jon Stanley <jonstanley@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Fri, 14 Sep 2012 09:33:02 -0400
+In-Reply-To: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
+References: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:07:48PM +0900, OGAWA Hirofumi wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
+On Fri, 2012-09-07 at 16:32 -0400, Jon Stanley wrote:
+> The FSF now prefers to use URL's in copyright headers rather than
+> their postal address. This change updates the address to be
+> <http://www.gnu.org/licenses> per http://www.gnu.org/licenses/gpl-howto.html
 > 
-> >> The writeback task is always called with sync_mode != WB_SYNC_ALL except
-> >> sync_inodes_sb(). But FS has sb->s_op->sync_fs() handler for
-> >> sync_inodes_sb() path. So, writeback task just bothers FS to control to
-> >> flush.
-> >> 
-> >> Also it wants to control the reclaimable of inode cache too, because FS
-> >> have to control to flush, and wants to use inode in own FS task, and it
-> >> knows when inode is cleaned and can be reclaimed.
-> >> 
-> >> I thought there are 2 options - 1) pin inode with iget(), and iput() on
-> >> own FS task, 2) disable writeback task and care about inode reclaim by
-> >> dirty flags.
-> >> 
-> >> (1) was complex (e.g. inode can be the orphan inode), and seems to be
-> >> ineffective workaround to survive with writeback task.
-> >
-> > In principle, the VFS should of course give enough flexibility for the
-> > FS. But it's all about the details that matter. As for the
-> > BDI_CAP_NO_WRITEBACK approach, I'm afraid you'll not get the expected
-> > "FS control" through it. Because the flusher thread may already have a
-> > long queue of works which will take long time to finish. It even have
-> > its internal background/periodic works that's not controllable this
-> > way, see wb_check_background_flush().
-> 
-> wb_check_background_flush() is called from,
-> 
-> bdi_forker_thread()
->     bdi_writeback_thread()
->         wb_do_writeback()
->             wb_check_background_flush()
-> 
-> But, bdi_forker_thread() never start bdi_writeback_thread() if
-> !bdi_cap_writeback_dirty(bdi).
-> 
-> Or I'm seeing something wrong here?
+> Signed-off-by: Jon Stanley <jonstanley@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Nothing wrong.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-> > And BDI_CAP_NO_WRITEBACK is expected to be a static/constant flag that
-> > always evaluate to true/false for a given bdi.  There will be
-> > correctness problems if you change the BDI_CAP_NO_WRITEBACK flag
-> > dynamically.
-> 
-> I'm going to use it as static or per-sb by initialized in
-> fill_super(). And it uses always BDI_CAP_NO_WRITEBACK if sb is
-> available. Because own FS task flush instead.
-
-Ah OK, sorry I didn't quite catch your use case.
-
-But then if you set BDI_CAP_NO_WRITEBACK in the beginning, how come
-__bdi_start_writeback() will be called at all?
+Arnaldo, can you pull these patches into your queue.
 
 Thanks,
-Fengguang
+
+-- Steve
+
+> ---
+>  tools/lib/traceevent/event-parse.c  |    3 +--
+>  tools/lib/traceevent/event-parse.h  |    3 +--
+>  tools/lib/traceevent/event-utils.h  |    3 +--
+>  tools/lib/traceevent/parse-filter.c |    3 +--
+>  tools/lib/traceevent/trace-seq.c    |    3 +--
+>  5 files changed, 5 insertions(+), 10 deletions(-)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 5f34aa3..7b946f9 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   *
+> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+> index 5772ad8..ea93a1a 100644
+> --- a/tools/lib/traceevent/event-parse.h
+> +++ b/tools/lib/traceevent/event-parse.h
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+> index 0829638..ebd970c 100644
+> --- a/tools/lib/traceevent/event-utils.h
+> +++ b/tools/lib/traceevent/event-utils.h
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+> index ad17855..5527c32 100644
+> --- a/tools/lib/traceevent/parse-filter.c
+> +++ b/tools/lib/traceevent/parse-filter.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+> index b1ccc92..a57db80 100644
+> --- a/tools/lib/traceevent/trace-seq.c
+> +++ b/tools/lib/traceevent/trace-seq.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+
+
