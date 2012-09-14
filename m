@@ -1,64 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759398Ab2INLmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 07:42:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:18879 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab2INLmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 07:42:16 -0400
-X-IronPort-AV: E=Sophos;i="4.80,422,1344211200"; 
-   d="scan'208";a="37875022"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <arnd@arndb.de>
-CC: <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <linaro-dev@lists.linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <tim@xen.org>, <Ian.Campbell@citrix.com>, <konrad.wilk@oracle.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
-Date: Fri, 14 Sep 2012 12:13:14 +0100
-Message-ID: <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+	id S1759465Ab2INLmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 07:42:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51334 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab2INLmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 07:42:03 -0400
+Date: Fri, 14 Sep 2012 04:41:36 -0700
+From: tip-bot for Josh Triplett <josh@joshtriplett.org>
+Message-ID: <tip-ea632e9f12033346cc68247faa3b924d54936b8b@git.kernel.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, viro@zeniv.linux.org.uk,
+        ebiederm@xmission.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, josh@joshtriplett.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, viro@zeniv.linux.org.uk,
+        ebiederm@xmission.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, josh@joshtriplett.org, tglx@linutronix.de
+In-Reply-To: <20120903024513.GA19583@leaf>
+References: <20120903024513.GA19583@leaf>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] trace:
+  Stop compiling in trace_clock unconditionally
+Git-Commit-ID: ea632e9f12033346cc68247faa3b924d54936b8b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 14 Sep 2012 04:41:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v2:
+Commit-ID:  ea632e9f12033346cc68247faa3b924d54936b8b
+Gitweb:     http://git.kernel.org/tip/ea632e9f12033346cc68247faa3b924d54936b8b
+Author:     Josh Triplett <josh@joshtriplett.org>
+AuthorDate: Sun, 2 Sep 2012 19:45:14 -0700
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 13 Sep 2012 22:52:08 -0400
 
-- mark Xen guest support on ARM as EXPERIMENTAL.
+trace: Stop compiling in trace_clock unconditionally
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Commit 56449f437 "tracing: make the trace clocks available generally",
+in April 2009, made trace_clock available unconditionally, since
+CONFIG_X86_DS used it too.
+
+Commit faa4602e47 "x86, perf, bts, mm: Delete the never used BTS-ptrace code",
+in March 2010, removed CONFIG_X86_DS, and now only CONFIG_RING_BUFFER (split
+out from CONFIG_TRACING for general use) has a dependency on trace_clock. So,
+only compile in trace_clock with CONFIG_RING_BUFFER or CONFIG_TRACING
+enabled.
+
+Link: http://lkml.kernel.org/r/20120903024513.GA19583@leaf
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/Kconfig |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/Makefile       |    2 +-
+ kernel/trace/Kconfig  |    5 +++++
+ kernel/trace/Makefile |    6 +-----
+ 3 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2f88d8d..e92518d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
- 	  This was deprecated in 2001 and announced to live on for 5 years.
- 	  Some old boot loaders still use this way.
+diff --git a/kernel/Makefile b/kernel/Makefile
+index c0cc67a..29d993b 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -98,7 +98,7 @@ obj-$(CONFIG_COMPAT_BINFMT_ELF) += elfcore.o
+ obj-$(CONFIG_BINFMT_ELF_FDPIC) += elfcore.o
+ obj-$(CONFIG_FUNCTION_TRACER) += trace/
+ obj-$(CONFIG_TRACING) += trace/
+-obj-$(CONFIG_X86_DS) += trace/
++obj-$(CONFIG_TRACE_CLOCK) += trace/
+ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_TRACEPOINTS) += trace/
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 9301a0e..4cea4f4 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -62,8 +62,12 @@ config HAVE_C_RECORDMCOUNT
+ config TRACER_MAX_TRACE
+ 	bool
  
-+config XEN_DOM0
-+	def_bool y
++config TRACE_CLOCK
++	bool
 +
-+config XEN
-+	bool "Xen guest support on ARM (EXPERIMENTAL)"
-+	depends on EXPERIMENTAL && ARM && OF
-+	select XEN_DOM0
-+	help
-+	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-+
- endmenu
+ config RING_BUFFER
+ 	bool
++	select TRACE_CLOCK
  
- menu "Boot options"
--- 
-1.7.2.5
-
+ config FTRACE_NMI_ENTER
+        bool
+@@ -114,6 +118,7 @@ config TRACING
+ 	select NOP_TRACER
+ 	select BINARY_PRINTF
+ 	select EVENT_TRACING
++	select TRACE_CLOCK
+ 
+ config GENERIC_TRACER
+ 	bool
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index 8370908..d7e2068 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -19,11 +19,7 @@ endif
+ 
+ CFLAGS_trace_events_filter.o := -I$(src)
+ 
+-#
+-# Make the trace clocks available generally: it's infrastructure
+-# relied on by ptrace for example:
+-#
+-obj-y += trace_clock.o
++obj-$(CONFIG_TRACE_CLOCK) += trace_clock.o
+ 
+ obj-$(CONFIG_FUNCTION_TRACER) += libftrace.o
+ obj-$(CONFIG_RING_BUFFER) += ring_buffer.o
