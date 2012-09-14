@@ -1,108 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab2INPkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 11:40:49 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:42383 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757859Ab2INPkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 11:40:47 -0400
-Date: Fri, 14 Sep 2012 17:40:44 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: Memory size reported double on processor
- family 0Fh
-Message-ID: <20120914154044.GD8789@aftab.osrc.amd.com>
-References: <20120912153016.GA12103@aftab.osrc.amd.com>
- <5050AC2E.3050408@akamai.com>
- <20120912154943.GB12103@aftab.osrc.amd.com>
- <5050B708.5020308@akamai.com>
- <20120912164843.GC12103@aftab.osrc.amd.com>
- <5050BF1F.1080503@akamai.com>
- <20120912170629.GD12103@aftab.osrc.amd.com>
- <20120912172351.GE12103@aftab.osrc.amd.com>
- <50532940.10201@akamai.com>
- <50534184.1050208@akamai.com>
+	id S1758812Ab2INPnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 11:43:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64889 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757859Ab2INPnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 11:43:02 -0400
+Date: Fri, 14 Sep 2012 17:43:30 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Bobby Powers <bobbypowers@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, daniel@ffwll.ch
+Subject: Re: [Intel-gfx] [pull] drm-intel-next
+Message-ID: <20120914154330.GA5799@phenom.ffwll.local>
+Mail-Followup-To: Bobby Powers <bobbypowers@gmail.com>,
+	Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120913141841.GC5693@phenom.ffwll.local>
+ <CAArOQ2UahPkBw9dxX7YQqGzDz6r0QgigjtEVoDTF6pS4=KQ-4w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50534184.1050208@akamai.com>
+In-Reply-To: <CAArOQ2UahPkBw9dxX7YQqGzDz6r0QgigjtEVoDTF6pS4=KQ-4w@mail.gmail.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 09:39:00AM -0500, Josh Hunt wrote:
-> On 09/14/2012 07:55 AM, Josh Hunt wrote:
+On Fri, Sep 14, 2012 at 09:55:58AM -0400, Bobby Powers wrote:
+> This tree gives me recursive dependency problems, which ends up
+> removing a big (& important) part of my .config:
+> 
+> [bpowers@fina linux]$ git reset --hard drm-intel-next-2012-09-09
+> HEAD is now at e04190e drm/fb helper: don't call
+> drm_helper_connector_dpms directly
+> [bpowers@fina linux]$ git status
+> # On branch master
+> # Your branch and 'origin/master' have diverged,
+> # and have 207 and 323 different commits each, respectively.
+> #
+> nothing to commit (working directory clean)
+> [bpowers@fina linux]$ make oldconfig
+> scripts/kconfig/conf --oldconfig Kconfig
+> drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
+> drivers/gpu/drm/udl/Kconfig:1:	symbol DRM_UDL depends on USB_ARCH_HAS_HCD
+> drivers/usb/Kconfig:76:	symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
+> drivers/usb/Kconfig:58:	symbol USB_SUPPORT is selected by DRM_USB
+> drivers/gpu/drm/Kconfig:22:	symbol DRM_USB is selected by DRM_UDL
+> #
+> # configuration written to .config
+> #
+
+That's an issue with Dave Airlie's udl code I'd say - the drm-intel-next
+tree here simply includes a few drm-next patches already. Dave?
+-Daniel
+
+> 
+> 
+> I've attached my config & the diff between what is attached and the
+> result of make oldconfig.  Let me know if there is any other info that
+> would help, or if I'm just doing something boneheaded.  Thanks!
+> 
+> yours,
+> Bobby
+> 
+> On Thu, Sep 13, 2012 at 10:18 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > Hi Dave,
 > >
-> >Thanks to your help I was able to test your branch, but it still does
-> >not resolve the problem. Removal of the "factor=1" workaround fixes the
-> >memory size reporting on boot, but the sysfs values are still incorrect.
+> > The big ticket item here is the new i915 modeset infrastructure.
+> > Shockingly it didn't not blow up all over the place (i.e. I've managed to
+> > fix the ugly issues before merging). 1-2 smaller corner cases broke, but
+> > we have patches. Also, there's tons of patches on top of this that clean
+> > out cruft and fix a few bugs that couldn't be fixed with the crtc helper
+> > based stuff. So more stuff to come ;-)
 > >
-> 
-> Please disregard what I said earlier about the shift still being
-> wrong. Looking at the dmesg more I see now that the # of pages are
-> correctly reported (262144), however sysfs is still wrong.
-> 
-> [   25.837588] EDAC DEBUG: init_csrows: MC node: 0, csrow: 0
-> [   25.837589] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 0, channel:
-> 0, DBAM idx: 2
-> [   25.837591] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.837592] EDAC amd64: CS0: Unbuffered DDR2 RAM
-> [   25.837724] EDAC DEBUG: init_csrows: Total csrow0 pages: 262144
-> [   25.837725] DBG: init_csrows: channel_count:2
-> [   25.837856] DBG: init_csrows: channel_count:2
-> [   25.837988] EDAC DEBUG: init_csrows: MC node: 0, csrow: 1
-> [   25.837989] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 1, channel:
-> 0, DBAM idx: 2
-> [   25.837991] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.837992] EDAC amd64: CS1: Unbuffered DDR2 RAM
-> [   25.838157] EDAC DEBUG: init_csrows: Total csrow1 pages: 262144
-> [   25.838158] DBG: init_csrows: channel_count:2
-> [   25.838289] DBG: init_csrows: channel_count:2
-> [   25.838421] EDAC DEBUG: init_csrows: MC node: 0, csrow: 2
-> [   25.838422] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 2, channel:
-> 0, DBAM idx: 2
-> [   25.838424] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.838425] EDAC amd64: CS2: Unbuffered DDR2 RAM
-> [   25.838556] EDAC DEBUG: init_csrows: Total csrow2 pages: 262144
-> [   25.838558] DBG: init_csrows: channel_count:2
-> [   25.838689] DBG: init_csrows: channel_count:2
-> [   25.838820] EDAC DEBUG: init_csrows: MC node: 0, csrow: 3
-> [   25.838822] EDAC DEBUG: amd64_csrow_nr_pages: csrow: 3, channel:
-> 0, DBAM idx: 2
-> [   25.838823] EDAC DEBUG: amd64_csrow_nr_pages: nr_pages/channel: 262144
-> [   25.838824] EDAC amd64: CS3: Unbuffered DDR2 RAM
-> [   25.838957] EDAC DEBUG: init_csrows: Total csrow3 pages: 262144
-> 
-> I looked into this and see that sysfs is doing the double counting
-> b/c it loops over the # of channels:
-> 
-> [  131.423949] DBG: csrow_size_show: i:0 nr_pages:262144 nr_channels:2
-> [  131.424112] DBG: csrow_size_show: i:1 nr_pages:524288 nr_channels:2
-> 
-> I verified this in init_csrows:
-> [   25.838958] DBG: init_csrows: channel_count:2
-> 
-> Since I don't know the details of the hardware here it's hard for me
-> to suggest a fix, but it would seem that k8_early_channel_count()
-> needs to be modified to only return 1 in this case?
+> > Also a few other things:
+> > - Tiny fix in the fb helper to go through the official dpms interface
+> >   instead of calling the crtc helper code.
+> > - forcewake code frobbery from Ben, code should be more in-line with
+> >   what Windows does now.
+> > - fixes for the render ring flush on hsw (Paulo)
+> > - gpu frequency tracepoint
+> > - vlv forcewake changes to better align it with our understanding of the
+> >   forcewake magic.
+> > - a few smaller cleanups
+> >
+> > Cheers, Daniel
+> >
+> >
+> > The following changes since commit d7c3b937bdf45f0b844400b7bf6fd3ed50bac604:
+> >
+> >   drm/i915: Remove __GFP_NO_KSWAPD (2012-08-27 17:11:38 +0200)
+> >
+> > are available in the git repository at:
+> >
+> >   git://people.freedesktop.org/~danvet/drm-intel tags/drm-intel-next-2012-09-09
+> >
+> > for you to fetch changes up to e04190e0ecb236c51af181c18c545ea076fb9cca:
+> >
+> >   drm/fb helper: don't call drm_helper_connector_dpms directly (2012-09-08 00:51:15 +0200)
+> >
+> > ----------------------------------------------------------------
+> >
+> > Ben Widawsky (5):
+> >       drm/i915: Extract forcewake ack timeout
+> >       drm/i915: use cpu_relax() in wait_for_atomic
+> >       drm/i915: Change forcewake timeout to 2ms
+> >       drm/i915: Never read FORCEWAKE
+> >       drm/i915: Enable some sysfs stuff without CONFIG_PM
+> >
+> > Chris Wilson (1):
+> >       drm/i915: Convert remaining debugfs iterators over rings to for_each_ring()
+> >
+> > Daniel Vetter (66):
+> >       drm/ips: move drps/ips/ilk related variables into dev_priv->ips
+> >       drm/i915: add a tracepoint for gpu frequency changes
+> >       drm/i915: align vlv forcewake with common lore
+> >       drm/i915: differ error message between forcwake timeouts
+> >       drm/i915: add crtc->enable/disable vfuncs insted of dpms
+> >       drm/i915: rip out crtc prepare/commit indirection
+> >       drm/i915: add direct encoder disable/enable infrastructure
+> >       drm/i915/hdmi: convert to encoder->disable/enable
+> >       drm/i915/tv: convert to encoder enable/disable
+> >       drm/i915/lvds: convert to encoder disable/enable
+> >       drm/i915/dp: convert to encoder disable/enable
+> >       drm/i915/crt: convert to encoder disable/enable
+> >       drm/i915/sdvo: convert to encoder disable/enable
+> >       drm/i915/dvo: convert to encoder disable/enable
+> >       drm/i915: convert dpms functions of dvo/sdvo/crt
+> >       drm/i915: rip out encoder->disable/enable checks
+> >       drm/i915: clean up encoder_prepare/commit
+> >       drm/i915: copy&paste drm_crtc_helper_set_config
+> >       drm/i915: call set_base directly
+> >       drm/i915: inline intel_best_encoder
+> >       drm/i915: copy&paste drm_crtc_helper_set_mode
+> >       drm/i915: simplify intel_crtc_prepare_encoders
+> >       drm/i915: rip out encoder->prepare/commit
+> >       drm/i915: call crtc functions directly
+> >       drm/i915: WARN when trying to enabled an unused crtc
+> >       drm/i915: Add interfaces to read out encoder/connector hw state
+> >       drm/i915/dp: implement get_hw_state
+> >       drm/i915/hdmi: implement get_hw_state
+> >       drm/i915/tv: implement get_hw_state
+> >       drm/i915/lvds: implement get_hw_state
+> >       drm/i915/crt: implement get_hw_state
+> >       drm/i915/sdvo: implement get_hw_state
+> >       drm/i915/dvo: implement get_hw_state
+> >       drm/i915: read out the modeset hw state at load and resume time
+> >       drm/i915: check connector hw/sw state
+> >       drm/i915: rip out intel_crtc->dpms_mode
+> >       drm/i915: rip out intel_dp->dpms_mode
+> >       drm/i915: ensure the force pipe A quirk is actually followed
+> >       drm/i915: introduce struct intel_set_config
+> >       drm/i915: extract modeset config save/restore code
+> >       drm/i915: extract intel_set_config_compute_mode_changes
+> >       drm/i915: extract intel_set_config_update_output_state
+> >       drm/i915: implement crtc helper semantics relied upon by the fb helper
+> >       drm/i915: don't update the fb base if there is no fb
+> >       drm/i915: convert pointless error checks in set_config to BUGs
+> >       drm/i915: don't save all the encoder/crtc state in set_config
+> >       drm/i915: stage modeset output changes
+> >       drm/i915: push crtc->fb update into pipe_set_base
+> >       drm/i915: remove crtc disabling special case
+> >       drm/i915: move output commit and crtc disabling into set_mode
+> >       drm/i915: extract adjusted mode computation
+> >       drm/i915: use staged outuput config in tv->mode_fixup
+> >       drm/i915: use staged outuput config in lvds->mode_fixup
+> >       drm/i915: compute masks of crtcs affected in set_mode
+> >       drm/i915: implement new set_mode code flow
+> >       drm/i915: push commit_output_state past crtc disabling
+> >       drm/i915: s/intel_encoder_disable/intel_encoder_noop
+> >       drm/i915: WARN if the pipe won't turn off
+> >       drm/i915: switch the load detect code to the staged modeset config
+> >       drm/i915: push commit_output_state past the crtc/encoder preparing
+> >       drm/i915: disable all crtcs at suspend time
+> >       drm/i915: no longer call drm_helper_resume_force_mode
+> >       drm/i915: add tons of modeset state checks
+> >       drm/i915: improve modeset state checking after dpms calls
+> >       Merge the modeset-rework, basic conversion into drm-intel-next
+> >       drm/fb helper: don't call drm_helper_connector_dpms directly
+> >
+> > Jani Nikula (2):
+> >       drm/i915: only enable sdvo hotplug irq if needed
+> >       drm/i915: fix sdvo hotplug support check and activation
+> >
+> > Paulo Zanoni (3):
+> >       drm/i915: add gen7_render_ring_flush
+> >       drm/i915: add workarounds directly to gen6_render_ring_flush
+> >       drm/i915: add workarounds to gen7_render_ring_flush
+> >
+> > --
+> > Daniel Vetter
+> > Software Engineer, Intel Corporation
+> > +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> > _______________________________________________
+> > Intel-gfx mailing list
+> > Intel-gfx@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
-Yeah, there are still some issues after the whole change to per-dimm
-accounting came in. I'm looking into it.
 
-Thanks for testing and reporting. If you see anything else out of the
-ordinary, let me know too so that I can fix it.
 
-Thanks.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
