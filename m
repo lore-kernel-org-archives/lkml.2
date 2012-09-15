@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab2IODMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 23:12:37 -0400
+	id S1756282Ab2IODN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 23:13:27 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:51468 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab2IODMf (ORCPT
+	with ESMTP id S1755862Ab2IODMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 23:12:35 -0400
+	Fri, 14 Sep 2012 23:12:43 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
@@ -14,54 +14,82 @@ Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 0/9] enhance PCI related drivers to handle hotplug events
-Date: Sat, 15 Sep 2012 11:05:03 +0800
-Message-Id: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH v2 1/9] PCI: make PCI device create/destroy logic symmetric
+Date: Sat, 15 Sep 2012 11:05:04 +0800
+Message-Id: <1347678312-11124-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several PCI related drivers, such as pci_bind, pci_slot, acpiphp and
-aerdrv, don't handle PCI device hotplug events, which may cause stale
-state and even system crashes.
+According to device model documentation, the way to create/destroy PCI
+devices should be symmetric.
 
-This patch set registers bus notification callbacks to update driver
-states when PCI device hotplug happens.
+/**
+ * device_del - delete device from system.
+ * @dev: device.
+ *
+ * This is the first part of the device unregistration
+ * sequence. This removes the device from the lists we control
+ * from here, has it removed from the other driver model
+ * subsystems it was added to in device_add(), and removes it
+ * from the kobject hierarchy.
+ *
+ * NOTE: this should be called manually _iff_ device_add() was
+ * also called manually.
+ */
 
-V1->V2:
-	Hook pcie_port_bus_type instead of pci_bus_type for aerdrv
+The rule is to either use
+1) device_register()/device_unregister()
+or
+2) device_initialize()/device_add()/device_del()/put_device().
 
-Jiang Liu (7):
-  PCI: make PCI device create/destroy logic symmetric
-  PCI: split registration of PCI bus devices into two stages
-  ACPI/pci_bind: correctly update binding relationship for PCI hotplug
-  ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
-  ACPI/pci_slot: update PCI slot information when PCI hotplug event
-    happens
-  PCI/acpiphp: update ACPI hotplug slot information when PCI hotplug
-    happens
-  PCI/acpiphp: serialize access to the bridge_list list
+So change PCI core logic to follow the rule and get rid of the redundant
+pci_dev_get()/pci_dev_put() pair.
 
-Yijing Wang (2):
-  PCI: preserve dev->subordinate until pci_stop_dev() has been called
-  PCI/AER: update AER configuration when PCI hotplug event happens
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/probe.c  |    1 -
+ drivers/pci/remove.c |    4 ++--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
- drivers/acpi/glue.c                |    6 ++-
- drivers/acpi/internal.h            |    2 +
- drivers/acpi/pci_bind.c            |   85 ++++++++++++-----------------------
- drivers/acpi/pci_root.c            |   31 -------------
- drivers/acpi/pci_slot.c            |   86 ++++++++++++++++++++++++++++++++----
- drivers/acpi/scan.c                |   21 +--------
- drivers/pci/bus.c                  |    2 +-
- drivers/pci/hotplug/acpiphp_glue.c |   75 +++++++++++++++++++++++++++++--
- drivers/pci/pcie/aer/aerdrv.c      |   63 +++++++++++++++++++++++++-
- drivers/pci/probe.c                |    4 +-
- drivers/pci/remove.c               |   20 ++++-----
- include/acpi/acpi_bus.h            |    4 --
- include/acpi/acpi_drivers.h        |    1 -
- 13 files changed, 262 insertions(+), 138 deletions(-)
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 2396111..5dbad03 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1293,7 +1293,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+ {
+ 	device_initialize(&dev->dev);
+ 	dev->dev.release = pci_release_dev;
+-	pci_dev_get(dev);
+ 
+ 	dev->dev.dma_mask = &dev->dma_mask;
+ 	dev->dev.dma_parms = &dev->dma_parms;
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 4f9ca91..37b9407 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
+-		device_unregister(&dev->dev);
++		device_del(&dev->dev);
+ 		dev->is_added = 0;
+ 	}
+ 
+@@ -37,7 +37,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
+ 	up_write(&pci_bus_sem);
+ 
+ 	pci_free_resources(dev);
+-	pci_dev_put(dev);
++	put_device(&dev->dev);
+ }
+ 
+ void pci_remove_bus(struct pci_bus *bus)
 -- 
 1.7.9.5
 
