@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2IOX12 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 19:27:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52917 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab2IOX1Y (ORCPT
+	id S1752621Ab2IOXfY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 19:35:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49990 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab2IOXfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 19:27:24 -0400
+	Sat, 15 Sep 2012 19:35:23 -0400
+Date: Sat, 15 Sep 2012 19:35:18 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@ubuntu
+To: Guenter Roeck <linux@roeck-us.net>
+cc: Parag Warudkar <parag.lkml@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, rydberg@euromail.se, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+In-Reply-To: <20120915225841.GA3816@roeck-us.net>
+Message-ID: <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+References: <alpine.DEB.2.02.1209151834120.2271@ubuntu> <20120915225841.GA3816@roeck-us.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
-References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
-	<1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
-Date: Sat, 15 Sep 2012 16:27:22 -0700
-X-Google-Sender-Auth: uiskAnJUbXmbUeGCAM1sirZeOgs
-Message-ID: <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
-Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
->  From: Jiang Liu <jiang.liu@huawei.com>
->
-> Now ACPI devices are created before/destroyed after corresponding PCI
-> devices, and acpi_platform_notify/acpi_platform_notify_remove will
-> update PCI<->ACPI binding relationship when creating/destroying PCI
-> devices, there's no need to invoke bind/unbind callbacks from ACPI
-> device probe/destroy routines anymore. So remove bind/unbind callbacks
-> from acpi_device_ops.
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/acpi/pci_bind.c     |  100 +++++++++----------------------------------
->  drivers/acpi/pci_root.c     |    9 ----
->  drivers/acpi/scan.c         |   21 +--------
->  include/acpi/acpi_bus.h     |    4 --
->  include/acpi/acpi_drivers.h |    1 -
->  5 files changed, 23 insertions(+), 112 deletions(-)
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index d1ecca2..f31cb2f 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1232,17 +1232,8 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->         dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
->         device_release_driver(&dev->dev);
->
-> -       if (!rmdevice)
-> -               return 0;
-> -
-> -       /*
-> -        * unbind _ADR-Based Devices when hot removal
-> -        */
-> -       if (dev->flags.bus_address) {
-> -               if ((dev->parent) && (dev->parent->ops.unbind))
-> -                       dev->parent->ops.unbind(dev);
-> -       }
-> -       acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
-> +       if (rmdevice)
-> +               acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
->
->         return 0;
->  }
 
-for pci root bus, acpi_bus_trim() is used to remove acpi_device.
 
-and later in acpi_pci_root_remove to stop pci drivers/ioapic driver,
-iommu driver then remove pci devices.
+On Sat, 15 Sep 2012, Guenter Roeck wrote:
 
-if call back is removed there, then could some functions in
-acpi_pci_unbind() will be skipped.
+> On Sat, Sep 15, 2012 at 06:42:30PM -0400, Parag Warudkar wrote:
+> > I have been getting a steady stream of wait_read timeouts on my 2010 MBP.
+> > 
+> > After playing around with various values of APPLESMC_MAX_WAIT a value of 
+> > 0x10000 reduces the wait_read failures to zero under most normal workloads 
+> > - with and without AC power plugged in, at idle and and at make -j4 loads.
+> > 
+> > While there I noticed we don't really need to udelay before first inb() - 
+> > so I moved it down to after first and subsequent failures.
+> > 
+> > Been running this for couple days without any issues.
+> > 
+> > Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
+> > 
+> > diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> > index 2827088..46cb458 100644
+> > --- a/drivers/hwmon/applesmc.c
+> > +++ b/drivers/hwmon/applesmc.c
+> > @@ -56,7 +56,7 @@
+> >  /* wait up to 32 ms for a status change. */
+> >  #define APPLESMC_MIN_WAIT	0x0010
+> >  #define APPLESMC_RETRY_WAIT	0x0100
+> > -#define APPLESMC_MAX_WAIT	0x8000
+> > +#define APPLESMC_MAX_WAIT	0x10000
+> >  
+> >  #define APPLESMC_READ_CMD	0x10
+> >  #define APPLESMC_WRITE_CMD	0x11
+> > @@ -170,11 +170,11 @@ static int wait_read(void)
+> >  	u8 status;
+> >  	int us;
+> >  	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+> 
+> I wonder if it would make sense to keep APPLESMC_MAX_WAIT as it is now
+> and replace the loop termination conditions with
+> 				us <= APPLESMC_MAX_WAIT
+> 
+> That would accomplish the same, and APPLESMC_MAX_WAIT would reflect
+> the real maximum wait time.
 
-I really do not want to add pci_stop_bus_devices() in
-pci_root_hp.c::handle_root_bridge_removal before
-calling acpi_bus_trim...
+Yeah, that would fix the code to match what it says and eliminate most 
+failures. But in my testing sometimes it needed a max wait of 57344 us - 
+I wrote a separate patch to instrument it by bumping up max wait in 
+increments of 0x2000 until it no longer failed under my normal workloads. 
 
-Thanks
+Under normal use 32us seemed to work but rarely when machine was 
+slow - throttled, on  battery, on kernel build load etc.- the additional 
+wait helped.
 
-Yinghai
+So I think it makes sense to fix the loop termination condition and also 
+bump to max wait to 0x10000.
+
+> 
+> Also, since the delay time can get quite large, would it make sense to replace
+> udelay with usleep_range() ?
+> 
+
+Yes, I think that would be a good thing to do. We could sleep in range of 
+us<<=1 and us<<1 and if usleep_range() returns actual sleep time we can 
+factor that in for next loop iteration if necessary. Gotta think a bit on 
+that one.
+
+I will rework the patch to fix the loop termination and keep the bump to 
+0x10000 in place and possibly also experiment with usleep_range().
+
+Thanks,
+Parag
