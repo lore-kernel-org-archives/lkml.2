@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab2IODNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 23:13:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64718 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2IODNF (ORCPT
+	id S1756851Ab2IODN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 23:13:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33180 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756721Ab2IODNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 23:13:05 -0400
+	Fri, 14 Sep 2012 23:13:47 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Tony Luck <tony.luck@intel.com>, Yijing Wang <wangyijing@huawei.com>,
+Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>
-Subject: [PATCH v2 3/9] PCI: preserve dev->subordinate until pci_stop_dev() has been called
-Date: Sat, 15 Sep 2012 11:05:06 +0800
-Message-Id: <1347678312-11124-4-git-send-email-jiang.liu@huawei.com>
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v2 8/9] PCI/acpiphp: serialize access to the bridge_list list
+Date: Sat, 15 Sep 2012 11:05:11 +0800
+Message-Id: <1347678312-11124-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
 References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
@@ -24,51 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yijing Wang <wangyijing@huawei.com>
+Serialize access to the bridge_list in the acpiphp driver.
 
-Changeset 2ed168eeb3edec029aa0eca5cb981d6376f931f9 "PCI: Fold stop and
-remove helpers into their callers" has changed the behavior when
-removing a PCI device.
-
-Previously, for a PCI bridge device with secondary bus, dev->subordinate
-is valid when calling PCI bus notification callbacks for
-BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events. Now dev->subordinate
-has been reset to NULL when calling callbacks for BUS_NOTIFY_DEL_DEVICE
-events, which may break some PCI bus notification callbacks.
-
-So revert to the original behavior to keep dev->subordinate valid for
-both BUS_NOTIFY_ADD_DEVICE events and BUS_NOTIFY_DEL_DEVICE events.
-
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/remove.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 86a4636..6244956 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -79,16 +79,16 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
- 	 * iterator.  Therefore, iterate in reverse so we remove the VFs
- 	 * first, then the PF.
- 	 */
--	if (bus) {
-+	if (bus)
- 		list_for_each_entry_safe_reverse(child, tmp,
- 						 &bus->devices, bus_list)
- 			pci_stop_and_remove_bus_device(child);
-+	pci_stop_dev(dev);
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 1fb0eb7..348afd7 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -53,6 +53,7 @@
+ #include "../pci.h"
+ #include "acpiphp.h"
  
-+	if (bus) {
- 		pci_remove_bus(bus);
- 		dev->subordinate = NULL;
++static DEFINE_MUTEX(bridge_mutex);
+ static LIST_HEAD(bridge_list);
+ 
+ #define MY_NAME "acpiphp_glue"
+@@ -497,8 +498,10 @@ static int add_bridge(acpi_handle handle)
  	}
--
--	pci_stop_dev(dev);
- 	pci_destroy_dev(dev);
+ 
+ 	/* search P2P bridges under this host bridge */
++	mutex_lock(&bridge_mutex);
+ 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
+ 				     find_p2p_bridge, NULL, NULL, NULL);
++	mutex_unlock(&bridge_mutex);
+ 
+ 	if (ACPI_FAILURE(status))
+ 		warn("find_p2p_bridge failed (error code = 0x%x)\n", status);
+@@ -595,6 +598,8 @@ static void remove_bridge(acpi_handle handle)
+ {
+ 	struct acpiphp_bridge *bridge;
+ 
++	mutex_lock(&bridge_mutex);
++
+ 	/* cleanup p2p bridges under this host bridge
+ 	   in a depth-first manner */
+ 	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
+@@ -613,6 +618,8 @@ static void remove_bridge(acpi_handle handle)
+ 	else
+ 		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+ 					   handle_hotplug_event_bridge);
++
++	mutex_unlock(&bridge_mutex);
  }
- EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+ 
+ static int power_on_slot(struct acpiphp_slot *slot)
+@@ -1415,11 +1422,13 @@ static void acpiphp_hp_notify_add(struct pci_dev *dev)
+ 	if (!dev->subordinate || !handle)
+ 		return;
+ 
++	mutex_lock(&bridge_mutex);
+ 	/* check if this bridge has ejectable slots */
+ 	if (detect_ejectable_slots(handle) > 0) {
+ 		dbg("found PCI-to-PCI bridge at PCI %s\n", pci_name(dev));
+ 		add_p2p_bridge(handle);
+ 	}
++	mutex_unlock(&bridge_mutex);
+ }
+ 
+ static void acpiphp_hp_notify_del(struct pci_dev *dev)
+@@ -1430,11 +1439,13 @@ static void acpiphp_hp_notify_del(struct pci_dev *dev)
+ 	if (!bus)
+ 		return;
+ 
++	mutex_lock(&bridge_mutex);
+ 	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
+ 		if (bridge->pci_bus == bus) {
+ 			cleanup_bridge(bridge);
+ 			break;
+ 		}
++	mutex_unlock(&bridge_mutex);
+ }
+ 
+ static int acpi_pci_hp_notify_fn(struct notifier_block *nb,
 -- 
 1.7.9.5
 
