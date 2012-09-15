@@ -1,188 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab2IODPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 23:15:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64718 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab2IODNc (ORCPT
+	id S1756375Ab2IODWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 23:22:36 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:54604 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756013Ab2IODWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 23:13:32 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v2 6/9] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Sat, 15 Sep 2012 11:05:09 +0800
-Message-Id: <1347678312-11124-7-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
-References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+	Fri, 14 Sep 2012 23:22:24 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH] i2c/scx200_*: replace printks with pr_<level>s
+Date: Fri, 14 Sep 2012 21:21:58 -0600
+Message-Id: <1347679318-6834-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.487.ga3935e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the pci_slot driver doesn't update PCI slot information
-when PCI device hotplug event happens, which may cause memory leak
-and returning stale information to user.
+Replace printks with pr_<level>s, add pr_fmt()s to replace NAMEs
 
-So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-update PCI slot information when PCI hotplug event happens.
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- drivers/acpi/pci_slot.c |   86 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 78 insertions(+), 8 deletions(-)
+ drivers/i2c/busses/scx200_acb.c | 18 ++++++++++--------
+ drivers/i2c/busses/scx200_i2c.c | 12 +++++++-----
+ 2 files changed, 17 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index e50e31a..96dcc19 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -32,6 +32,7 @@
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <linux/pci-acpi.h>
- #include <linux/dmi.h>
+diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
+index 2eacb77..8851526 100644
+--- a/drivers/i2c/busses/scx200_acb.c
++++ b/drivers/i2c/busses/scx200_acb.c
+@@ -23,6 +23,8 @@
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
  
- static bool debug;
-@@ -123,12 +124,7 @@ struct callback_args {
- /*
-  * register_slot
-  *
-- * Called once for each SxFy object in the namespace. Don't worry about
-- * calling pci_create_slot multiple times for the same pci_bus:device,
-- * since each subsequent call simply bumps the refcount on the pci_slot.
-- *
-- * The number of calls to pci_destroy_slot from unregister_slot is
-- * symmetrical.
-+ * Called once for each SxFy object in the namespace.
-  */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -145,6 +141,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	if (device < 0)
- 		return AE_OK;
- 
-+	/* Avoid duplicated records for the same slot */
-+	list_for_each_entry(slot, &slot_list, list) {
-+		pci_slot = slot->pci_slot;
-+		if (pci_slot && pci_slot->bus == pci_bus &&
-+		    pci_slot->number == device) {
-+			return AE_OK;
-+		}
-+	}
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot) {
- 		err("%s: cannot allocate memory\n", __func__);
-@@ -162,9 +167,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	slot->root_handle = parent_context->root_handle;
- 	slot->pci_slot = pci_slot;
- 	INIT_LIST_HEAD(&slot->list);
--	mutex_lock(&slot_list_lock);
- 	list_add(&slot->list, &slot_list);
--	mutex_unlock(&slot_list_lock);
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -398,7 +400,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 	outb(0x70, ACBCTL2);
  
- 	get_device(&pci_bus->dev);
+ 	if (inb(ACBCTL2) != 0x70) {
+-		pr_debug(NAME ": ACBCTL2 readback failed\n");
++		pr_debug("ACBCTL2 readback failed\n");
+ 		return -ENXIO;
+ 	}
  
-@@ -299,7 +302,9 @@ acpi_pci_slot_add(acpi_handle handle)
+@@ -406,7 +408,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if (val) {
+-		pr_debug(NAME ": disabled, but ACBCTL1=0x%02x\n",
++		pr_debug("disabled, but ACBCTL1=0x%02x\n",
+ 			val);
+ 		return -ENXIO;
+ 	}
+@@ -417,7 +419,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 
+ 	val = inb(ACBCTL1);
+ 	if ((val & ACBCTL1_NMINTE) != ACBCTL1_NMINTE) {
+-		pr_debug(NAME ": enabled, but NMINTE won't be set, "
++		pr_debug("enabled, but NMINTE won't be set, "
+ 			 "ACBCTL1=0x%02x\n", val);
+ 		return -ENXIO;
+ 	}
+@@ -433,7 +435,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
+ 
+ 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
+ 	if (!iface) {
+-		printk(KERN_ERR NAME ": can't allocate memory\n");
++		pr_err("can't allocate memory\n");
+ 		return NULL;
+ 	}
+ 
+@@ -459,14 +461,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
+ 
+ 	rc = scx200_acb_probe(iface);
+ 	if (rc) {
+-		printk(KERN_WARNING NAME ": probe failed\n");
++		pr_warning("probe failed\n");
+ 		return rc;
+ 	}
+ 
+ 	scx200_acb_reset(iface);
+ 
+ 	if (i2c_add_adapter(adapter) < 0) {
+-		printk(KERN_ERR NAME ": failed to register\n");
++		pr_err("failed to register\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -493,7 +495,7 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
+ 		return NULL;
+ 
+ 	if (!request_region(base, 8, iface->adapter.name)) {
+-		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
++		pr_err("can't allocate io 0x%lx-0x%lx\n",
+ 		       base, base + 8 - 1);
+ 		goto errout_free;
+ 	}
+@@ -583,7 +585,7 @@ static __init void scx200_scan_isa(void)
+ 
+ static int __init scx200_acb_init(void)
  {
- 	acpi_status status;
+-	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
++	pr_debug("NatSemi SCx200 ACCESS.bus Driver\n");
  
-+	mutex_lock(&slot_list_lock);
- 	status = walk_root_bridge(handle, register_slot);
-+	mutex_unlock(&slot_list_lock);
- 	if (ACPI_FAILURE(status))
- 		err("%s: register_slot failure - %d\n", __func__, status);
+ 	/* First scan for ISA-based devices */
+ 	scx200_scan_isa();	/* XXX: should we care about errors? */
+diff --git a/drivers/i2c/busses/scx200_i2c.c b/drivers/i2c/busses/scx200_i2c.c
+index 7ee0d50..355a8a5 100644
+--- a/drivers/i2c/busses/scx200_i2c.c
++++ b/drivers/i2c/busses/scx200_i2c.c
+@@ -21,6 +21,8 @@
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.		     
+ */
  
-@@ -354,17 +359,82 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
- 	{}
- };
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -88,17 +90,17 @@ static struct i2c_adapter scx200_i2c_ops = {
  
-+static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-+{
-+	acpi_handle handle;
-+	struct callback_args context;
-+
-+	if (!dev->subordinate)
-+		return;
-+
-+	mutex_lock(&slot_list_lock);
-+	handle = DEVICE_ACPI_HANDLE(&dev->dev);
-+	context.root_handle = acpi_find_root_bridge_handle(dev);
-+	if (handle && context.root_handle) {
-+		context.pci_bus = dev->subordinate;
-+		context.user_function = register_slot;
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-+				    register_slot, NULL, &context, NULL);
-+	}
-+	mutex_unlock(&slot_list_lock);
-+}
-+
-+static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-+{
-+	struct acpi_pci_slot *slot, *tmp;
-+	struct pci_bus *bus = dev->subordinate;
-+
-+	if (!bus)
-+		return;
-+
-+	mutex_lock(&slot_list_lock);
-+	list_for_each_entry_safe(slot, tmp, &slot_list, list)
-+		if (slot->pci_slot && slot->pci_slot->bus == bus) {
-+			list_del(&slot->list);
-+			pci_destroy_slot(slot->pci_slot);
-+			put_device(&bus->dev);
-+			kfree(slot);
-+		}
-+	mutex_unlock(&slot_list_lock);
-+}
-+
-+static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-+				   unsigned long event, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (event) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		acpi_pci_slot_notify_add(to_pci_dev(dev));
-+		break;
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		acpi_pci_slot_notify_del(to_pci_dev(dev));
-+		break;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block acpi_pci_slot_notifier = {
-+	.notifier_call = &acpi_pci_slot_notify_fn,
-+};
-+
- static int __init
- acpi_pci_slot_init(void)
+ static int scx200_i2c_init(void)
  {
- 	dmi_check_system(acpi_pci_slot_dmi_table);
- 	acpi_pci_register_driver(&acpi_pci_slot_driver);
-+	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-+
- 	return 0;
- }
+-	pr_debug(NAME ": NatSemi SCx200 I2C Driver\n");
++	pr_debug("NatSemi SCx200 I2C Driver\n");
  
- static void __exit
- acpi_pci_slot_exit(void)
- {
-+	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
- 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
- }
+ 	if (!scx200_gpio_present()) {
+-		printk(KERN_ERR NAME ": no SCx200 gpio pins available\n");
++		pr_err("no SCx200 gpio pins available\n");
+ 		return -ENODEV;
+ 	}
  
+-	pr_debug(NAME ": SCL=GPIO%02u, SDA=GPIO%02u\n", scl, sda);
++	pr_debug("SCL=GPIO%02u, SDA=GPIO%02u\n", scl, sda);
+ 
+ 	if (scl == -1 || sda == -1 || scl == sda) {
+-		printk(KERN_ERR NAME ": scl and sda must be specified\n");
++		pr_err("scl and sda must be specified\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -107,7 +109,7 @@ static int scx200_i2c_init(void)
+ 	scx200_gpio_configure(sda, ~2, 5);
+ 
+ 	if (i2c_bit_add_bus(&scx200_i2c_ops) < 0) {
+-		printk(KERN_ERR NAME ": adapter %s registration failed\n", 
++		pr_err("adapter %s registration failed\n", 
+ 		       scx200_i2c_ops.name);
+ 		return -ENODEV;
+ 	}
 -- 
-1.7.9.5
+1.7.10.1.487.ga3935e6
 
