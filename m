@@ -1,238 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab2IOJxG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 05:53:06 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43596 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2IOJxE (ORCPT
+	id S1753266Ab2IOKa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 06:30:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65227 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2IOKay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 05:53:04 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, ebiederm@xmission.com,
-        mathieu.desnoyers@efficios.com, neilb@suse.de, bfields@fieldses.org,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        josh@joshtriplett.org, David.Laight@ACULAB.COM, rmallon@gmail.com,
-        palves@redhat.com, Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v5] hashtable: introduce a small and naive hashtable
-Date: Sat, 15 Sep 2012 11:53:18 +0200
-Message-Id: <1347702798-19202-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.12
+	Sat, 15 Sep 2012 06:30:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 22/24] scsi: eesox: use __iomem pointers for MMIO
+Date: Sat, 15 Sep 2012 10:30:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+References: <201209150800.35605.arnd@arndb.de> <20120915085734.GG12245@n2100.arm.linux.org.uk>
+In-Reply-To: <20120915085734.GG12245@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209151030.44105.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZW9RcqCyZ7j31ZLFlYIgH37P2EJyxy82Wb6z25+7Kbz
+ QI4cpVQfxbZx66ze6KWTNG48FPizg98aK0KaTC9gGmSj9Ri3rP
+ yKkDWuidy6lnYZgTxwvZRKr26O5W4IwN8QJ47vONRC3Z613r8l
+ iUg+5PQoeYirQtTJAidyXmwUq7ukdajQ3gQEH4ya52OO9pfmeB
+ f/K8Qw2ZsT/pMlTQY1K0iUyTgKAoaFvFYNfLvPXI1ofVQsD4uH
+ fGvQXQOFIcV0+u3f3yHDcayVJ+BMo76PsoDGGEuLxAfohbeE/2
+ 7+KIuSnDJIH2P95sZfk3JH2iqft7M5+JjBra2ptCsmS3zAGj/7
+ NwtPpLwsBkD0FxdtBPx8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hashtable implementation is using hlist buckets to provide a simple
-hashtable to prevent it from getting reimplemented all over the kernel.
+On Saturday 15 September 2012, Russell King - ARM Linux wrote:
+> On Sat, Sep 15, 2012 at 08:00:35AM +0000, Arnd Bergmann wrote:
+> > On Friday 14 September 2012, Russell King - ARM Linux wrote:
+> > > On Fri, Sep 14, 2012 at 11:34:50PM +0200, Arnd Bergmann wrote:
+> > > > ARM is moving to stricter checks on readl/write functions,
+> > > > so we need to use the correct types everywhere.
+> > > 
+> > > There's nothing wrong with const iomem pointers.  If you think
+> > > otherwise, patch x86 not to use const in its accessor implementation
+> > > and watch the reaction:
+> > > 
+> > > #define build_mmio_read(name, size, type, reg, barrier) \
+> > > static inline type name(const volatile void __iomem *addr) \
+> > > { type ret; asm volatile("mov" size " %1,%0":reg (ret) \
+> > > :"m" (*(volatile type __force *)addr) barrier); return ret; }
+> > > 
+> > > build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
+> > > build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
+> > > build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
+> > 
+> > Ok, fair enough. Can you fold the patch below into 
+> > "ARM: 7500/1: io: avoid writeback addressing modes for __raw_
+> > accessors", or apply on top then?
+> 
+> No - const is not appropriate for the write accessors.  Again, this puts
+> us at odds with x86:
+> 
+> #define build_mmio_write(name, size, type, reg, barrier) \
+> static inline void name(type val, volatile void __iomem *addr) \
+> { asm volatile("mov" size " %0,%1": :reg (val), \
+> "m" (*(volatile type __force *)addr) barrier); }
+> 
+> build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
+> build_mmio_write(writew, "w", unsigned short, "r", :"memory")
+> build_mmio_write(writel, "l", unsigned int, "r", :"memory")
+> 
+> So, readl etc are all const volatile void __iomem *, but writel etc are
+> all volatile void __iomem *.
+> 
+> How they're defined on ARM after 7500/1 copies how they're defined on
+> x86.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
+Well, you have to make up your mind what you want. Right now, we get these
+warnings in rpc_defconfig:
 
-Changes from v4:
+  Generating include/generated/mach-types.h
+/home/arnd/linux-arm/drivers/net/ethernet/seeq/ether3.c: In function 'ether3_outb':
+/home/arnd/linux-arm/drivers/net/ethernet/seeq/ether3.c:104:2: error: passing argument 2 of '__raw_writeb' discards 'const' qualifier from pointer target type [-Werror]
+/home/arnd/linux-arm/arch/arm/include/asm/io.h:81:91: note: expected 'volatile void *' but argument is of type 'const void *'
+/home/arnd/linux-arm/drivers/scsi/arm/eesox.c: In function 'eesoxscsi_buffer_out':
+/home/arnd/linux-arm/drivers/scsi/arm/eesox.c:310:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
+/home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
+/home/arnd/linux-arm/drivers/scsi/arm/eesox.c:324:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
+/home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
+/home/arnd/linux-arm/drivers/scsi/arm/eesox.c:325:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
+/home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
 
- - Addressed comments by Mathieu Desnoyers.
+Either we allow drivers to write to const __iomem pointers or we don't. I
+don't care which way we do it, but just saying both patches are wrong is
+not very helpful.
 
- include/linux/hashtable.h | 190 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 190 insertions(+)
- create mode 100644 include/linux/hashtable.h
-
-diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-new file mode 100644
-index 0000000..6d0c6c2
---- /dev/null
-+++ b/include/linux/hashtable.h
-@@ -0,0 +1,190 @@
-+/*
-+ * Hash table implementation
-+ * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
-+ */
-+
-+#ifndef _LINUX_HASHTABLE_H
-+#define _LINUX_HASHTABLE_H
-+
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/hash.h>
-+#include <linux/rculist.h>
-+
-+#define DEFINE_HASHTABLE(name, bits)						\
-+	struct hlist_head name[HASH_SIZE(bits)] =				\
-+			{ [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT }
-+
-+#define DECLARE_HASHTABLE(name, bits)                                   	\
-+	struct hlist_head name[1 << (bits)]
-+
-+#define HASH_SIZE(name) (1 << HASH_BITS(name))
-+#define HASH_BITS(name) ilog2(ARRAY_SIZE(name))
-+
-+/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-+#define hash_min(val, bits)							\
-+({										\
-+	sizeof(val) <= 4 ?							\
-+	hash_32(val, bits) :							\
-+	hash_long(val, bits);							\
-+})
-+
-+/**
-+ * hash_init - initialize a hash table
-+ * @hashtable: hashtable to be initialized
-+ *
-+ * Calculates the size of the hashtable from the given parameter, otherwise
-+ * same as hash_init_size.
-+ *
-+ * This has to be a macro since HASH_BITS() will not work on pointers since
-+ * it calculates the size during preprocessing.
-+ */
-+#define hash_init(hashtable)							\
-+({										\
-+	int __i;								\
-+										\
-+	for (__i = 0; __i < HASH_BITS(hashtable); __i++)			\
-+		INIT_HLIST_HEAD(&hashtable[__i]);				\
-+})
-+
-+/**
-+ * hash_add - add an object to a hashtable
-+ * @hashtable: hashtable to add to
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add(hashtable, node, key)						\
-+	hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
-+
-+/**
-+ * hash_add_rcu - add an object to a rcu enabled hashtable
-+ * @hashtable: hashtable to add to
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add_rcu(hashtable, node, key)					\
-+	hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
-+
-+/**
-+ * hash_hashed - check whether an object is in any hashtable
-+ * @node: the &struct hlist_node of the object to be checked
-+ */
-+#define hash_hashed(node) (!hlist_unhashed(node))
-+
-+/**
-+ * hash_empty - check whether a hashtable is empty
-+ * @hashtable: hashtable to check
-+ *
-+ * This has to be a macro since HASH_BITS() will not work on pointers since
-+ * it calculates the size during preprocessing.
-+ */
-+#define hash_empty(hashtable)							\
-+({										\
-+	int __i;								\
-+	bool __ret = true;							\
-+										\
-+	for (__i = 0; __i < HASH_SIZE(hashtable); __i++)			\
-+		if (!hlist_empty(&hashtable[__i]))				\
-+			__ret = false;						\
-+										\
-+	__ret;									\
-+})
-+
-+/**
-+ * hash_del - remove an object from a hashtable
-+ * @node: &struct hlist_node of the object to remove
-+ */
-+static inline void hash_del(struct hlist_node *node)
-+{
-+	hlist_del_init(node);
-+}
-+
-+/**
-+ * hash_del_rcu - remove an object from a rcu enabled hashtable
-+ * @node: &struct hlist_node of the object to remove
-+ */
-+static inline void hash_del_rcu(struct hlist_node *node)
-+{
-+	hlist_del_init_rcu(node);
-+}
-+
-+/**
-+ * hash_for_each - iterate over a hashtable
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each(name, bkt, node, obj, member)				\
-+	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-+		hlist_for_each_entry(obj, node, &name[bkt], member)
-+
-+/**
-+ * hash_for_each_rcu - iterate over a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_rcu(name, bkt, node, obj, member)				\
-+	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-+		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-+
-+/**
-+ * hash_for_each_safe - iterate over a hashtable safe against removal of
-+ * hash entry
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @tmp: a &struct used for temporary storage
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
-+	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-+		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible(name, obj, node, member, key)			\
-+	hlist_for_each_entry(obj, node,	&name[hash_min(key, HASH_BITS(name))], member)
-+
-+/**
-+ * hash_for_each_possible_rcu - iterate over all possible objects hashing to the
-+ * same bucket in an rcu enabled hashtable
-+ * in a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
-+	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, HASH_BITS(name))], member)
-+
-+/**
-+ * hash_for_each_possible_safe - iterate over all possible objects hashing to the
-+ * same bucket safe against removals
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @tmp: a &struct used for temporary storage
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
-+	hlist_for_each_entry_safe(obj, node, tmp,				\
-+		&name[hash_min(key, HASH_BITS(name))], member)
-+
-+
-+#endif
--- 
-1.7.12
-
+	Arnd
