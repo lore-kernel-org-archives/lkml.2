@@ -1,135 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab2IOCt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 22:49:28 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:60863 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab2IOCt0 (ORCPT
+	id S1755989Ab2IOCzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 22:55:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40179 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab2IOCzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 22:49:26 -0400
-Subject: Re: [RFC,PATCH v2] efi: Add support for a UEFI variable filesystem
-From: joeyli <jlee@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Jones <pjones@redhat.com>, jeremy.kerr@canonical.com,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        Matt Domsch <Matt_Domsch@Dell.com>, glin@suse.com
-In-Reply-To: <5052B576.8010500@zytor.com>
-References: <1346910035.47691.188651047712.1.gpush@pecola>
-	 <CAGLnvc9BXAW8F8WWyDxuF1_J+0np3uqUBmknuJewOJHhe-mxvw@mail.gmail.com>
-	 <1347523843.596.30.camel@linux-s257.site>
-	 <1347544333.6707.1.camel@eddie.install.bos.redhat.com>
-	 <1347594342.705.33.camel@linux-s257.site>  <5052B576.8010500@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Sep 2012 10:44:11 +0800
-Message-ID: <1347677051.705.59.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 14 Sep 2012 22:55:09 -0400
+Date: Sat, 15 Sep 2012 08:25:02 +0530
+From: Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: jeremy@goop.org, mingo@redhat.com, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re:  Re: [PATCH] IRQ: Add a check for uninitialized irqs.
+Message-ID: <20120915025502.GB58426@Archie.local>
+References: <9250ef1afde6ddd2bab613bd847ad54adc014bac.1347218449.git.rprabhu@wnohang.net>
+ <504DEE1D.3040704@windriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Disposition: inline
+In-Reply-To: <504DEE1D.3040704@windriver.com>
+X-Operating-System: Arch linux x86_64 3.5.3-1-ARCH
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2012-09-13 於 21:41 -0700，H. Peter Anvin 提到：
-> On 09/13/2012 08:45 PM, joeyli wrote:
-> > Hi Peter,
-> >
-> > 於 四，2012-09-13 於 09:52 -0400，Peter Jones 提到：
-> >> On Thu, 2012-09-13 at 16:10 +0800, joeyli wrote:
-> >>
-> >>> Do we have plan to create a new kobject add to /sys/firmware/efi for
-> >>> provide a fixed mount point to efivars fs?
-> >>> e.g. /sys/firmware/efi/efivars
-> >>>
-> >>> Or we just direct reuse current /sys/firmeware/efi/vars? But, that means
-> >>> we need think for the backward compatibility if choice reuse vars
-> >>> folder.
-> >>
-> >> I'm not sure that's a terribly large concern - if you haven't updated
-> >> your tools to use the new efivars, don't mount the new efivars.
-> >>
-> >
-> > Thanks for your comment!
-> >
-> 
-> I think it is wrong.  The new API should have a different path.
-> 
-> 	-hpa
-> 
 
-OK, so, if still keep the old API and have new mount point for UEFI
-variable filesystem. Then how about add this simple patch for create new
-mount point to /sys/firmware/efi/efivars.
+--Pd0ReVV5GZGQvF3a
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
 
 
-Thanks a lot!
-Joey Lee
+* On Mon, Sep 10, 2012 at 09:41:49AM -0400, Paul Gortmaker <paul.gortmaker@=
+windriver.com> wrote:
+>On 12-09-09 03:25 PM, raghu.prabhu13@gmail.com wrote:
+>> From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+>>
+>> Errors like "do_IRQ: 0.84 No Irq handler for vector (irq -1)" have been =
+reported
+>> earlier filling up the console/logs. So this adds a condition to check f=
+or
+>
+>Reported by who, and where, and on what hardware, and under what
+>circumstances?
 
+I have seen it reported in many places like=20
+https://bugzilla.redhat.com/show_bug.cgi?id=3D225399 and=20
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/480997
 
->From 5e64382a9a4ad538dd5ca94072d19c7a70e4c650 Mon Sep 17 00:00:00 2001
-From: Lee, Chun-Yi <jlee@suse.com>
-Date: Sat, 15 Sep 2012 10:33:46 +0800
-Subject: [PATCH] efi: add efivars kobject to efi sysfs folder
+>
+>You are adding another if statement to the hot path of do_IRQ just
+>to mask some random unknown symptom. instead of trying to understand
+>(and then solve) what the real breakage is.  Which is not the right
+>approach.
 
-UEFI variable filesystem need a new mount point, so this patch add
-efivars kobject to efi_kobj for create a /sys/firmware/efi/efivars
-folder.
+I just realized that handler_irq checks for < NR_IRQS where the=20
+underflow will fail and will return. So this patch is not required.
 
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/firmware/efivars.c |   11 +++++++++++
- include/linux/efi.h        |    1 +
- 2 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 1e1aad0..7c1234e 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1487,6 +1487,7 @@ void unregister_efivars(struct efivars *efivars)
- 		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
- 	kfree(efivars->new_var);
- 	kfree(efivars->del_var);
-+	kobject_put(efivars->kobject);
- 	kset_unregister(efivars->kset);
- }
- EXPORT_SYMBOL_GPL(unregister_efivars);
-@@ -1518,6 +1519,13 @@ int register_efivars(struct efivars *efivars,
- 		goto out;
- 	}
- 
-+	efivars->kobject = kobject_create_and_add("efivars", parent_kobj);
-+	if (!efivars->kobject) {
-+		pr_err("efivars: Subsystem registration failed.\n");
-+		error = -ENOMEM;
-+		goto err_unreg_vars;
-+	}
-+
- 	/*
- 	 * Per EFI spec, the maximum storage allocated for both
- 	 * the variable name and variable data is 1024 bytes.
-@@ -1562,6 +1570,9 @@ int register_efivars(struct efivars *efivars,
- 
- 	register_filesystem(&efivars_fs_type);
- 
-+err_unreg_vars:
-+	kset_unregister(efivars->kset);
-+
- out:
- 	kfree(variable_name);
- 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 1829a97..c993f54 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -654,6 +654,7 @@ struct efivars {
- 	spinlock_t lock;
- 	struct list_head list;
- 	struct kset *kset;
-+	struct kobject *kobject;
- 	struct bin_attribute *new_var, *del_var;
- 	const struct efivar_operations *ops;
- 	struct efivar_entry *walk_entry;
--- 
-1.7.7
+However,  I think we need to fix the unsigned / int mixup by=20
+assigning vector_irq[..] to NR_IRQS+1  as guard value and=20
+changing unsigned to signed as in patch.
+>
+>Paul.
+>--
+>
+>> uninitialized irqs so that it exits early and doesn't proceed further. A=
+lso, irq
+>> is made a signed integer, since if it is not mapped to a vector, it will=
+ be
+>> assigned -1 which will be UINT_MAX otherwise.
+>>
+>> Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
+>> ---
+>>  arch/x86/kernel/irq.c | 13 ++++++++-----
+>>  1 file changed, 8 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+>> index d44f782..ddba63a 100644
+>> --- a/arch/x86/kernel/irq.c
+>> +++ b/arch/x86/kernel/irq.c
+>> @@ -184,21 +184,24 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *re=
+gs)
+>>
+>>  	/* high bit used in ret_from_ code  */
+>>  	unsigned vector =3D ~regs->orig_ax;
+>> -	unsigned irq;
+>> +	int irq;
+>>
+>>  	irq_enter();
+>>  	exit_idle();
+>>
+>> -	irq =3D __this_cpu_read(vector_irq[vector]);
+>> +	if (unlikely((irq =3D __this_cpu_read(vector_irq[vector])) =3D=3D -1))=
+ {
+>> +		pr_emerg_ratelimited("IRQ handler not setup for vector %u", vector);
+>> +		goto err_exit;
+>> +	}
+>>
+>>  	if (!handle_irq(irq, regs)) {
+>>  		ack_APIC_irq();
+>>
+>> -		if (printk_ratelimit())
+>> -			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+>> -				__func__, smp_processor_id(), vector, irq);
+>> +		pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %u)\n",
+>> +			__func__, smp_processor_id(), vector, irq);
+>>  	}
+>>
+>> +err_exit:
+>>  	irq_exit();
+>>
+>>  	set_irq_regs(old_regs);
+>>
+>
 
 
 
+
+Regards,
+--=20
+Raghavendra Prabhu
+GPG Id : 0xD72BE977
+Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+www: wnohang.net
+
+--Pd0ReVV5GZGQvF3a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQU+4GAAoJEKYW3KHXK+l3GjMH/13tFhVkqOXX3/uj5ifwgPKG
+2f6wHfMOWv579Nn9OCcrE33i3yuf+QD7pyan1c0PXfPQ2xJ7nIDS/q/puIweGLYI
+LYQy1GllqJd/klPROnOpMjyqOdc+YC+6lZgSbZCrvHHON2uRvgiisU7UFrhFhGrF
+DQ+UIGiBJbNlCKscVkAGFwbIPnJ7OgzAXfDbs//vw7bnV5bVLbHjUQ0hRMg4GWv8
+lmKzpbhcd4kHpKqjBAsU5+yVQvD2xzOHzYxY5LQwhnkzgkqGoqpiKI7N0bKA5Bs9
+x1QcUAfXrHH40zatLiGbWEqHX1xZmqAZxnn13GQWX6vHwHYbWkCS5mFoYk0QFbA=
+=a8sv
+-----END PGP SIGNATURE-----
+
+--Pd0ReVV5GZGQvF3a--
