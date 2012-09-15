@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab2IOQPW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 12:15:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64453 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab2IOQPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 12:15:20 -0400
-Date: Sat, 15 Sep 2012 18:15:18 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
-Subject: Re: [PATCH] leds: add led_trigger_rename function
-Message-ID: <20120915161518.GA1687@gmail.com>
-References: <1347204474-1694-1-git-send-email-fabio.baltieri@gmail.com>
- <20120910135535.GA2405@vandijck-laurijssen.be>
+	id S1754818Ab2IOQRF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 12:17:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59111 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753126Ab2IOQRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Sep 2012 12:17:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,428,1344236400"; 
+   d="scan'208";a="193416643"
+From: Andi Kleen <andi@firstfloor.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to 3.6-rc5 on AMD chipsets - bisected
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	<20120914212717.GA29307@liondog.tnic>
+	<CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	<1347680006.4340.142.camel@marge.simpson.net>
+Date: Sat, 15 Sep 2012 09:16:59 -0700
+In-Reply-To: <1347680006.4340.142.camel@marge.simpson.net> (Mike Galbraith's
+	message of "Sat, 15 Sep 2012 05:33:26 +0200")
+Message-ID: <m24nmzz2f8.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120910135535.GA2405@vandijck-laurijssen.be>
-X-Operating-System: Linux balto-eee 3.6.0-rc3-balto-eee-00471-g4379212-dirty
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kurt,
+Mike Galbraith <efault@gmx.de> writes:
+>
+> The only reason I can think of why pgbench might suffer is postgres's
+> userspace spinlocks.  If you always look for an idle core, you improve
+> the odds that the wakeup won't preempt a lock holder, sending others
+> into a long spin.
 
-On Mon, Sep 10, 2012 at 03:55:35PM +0200, Kurt Van Dijck wrote:
-> > 
-> > This also implies that "name" in "struct led_trigger" is not const
-> > anymore.
-> IMHO, this is wrong. This forces all other led_triggers
-> to put their name in non-const storage.
+User space spinlocks like this unfortunately have a tendency to break
+with all kinds of scheduler changes. We've seen this frequently too
+with other users. The best bet currently is to use the real time
+scheduler, but with various tweaks to get its overhead down.
 
-I had a second check on the patch and now I see your point.
+Ultimatively the problem is that user space spinlocks with CPU
+oversubcription is a very unstable setup and small changes can
+easily disturb it.
 
-> I see 2 options here:
-> * let 'name' be a 'const char *', and do a typecast.
->   This works as long as led_trigger_rename is called only on led_triggers
->   with non-const 'name' storage.
-> * put the storage of trigger name inside struct led_trigger conditionally
->   (like can_dev does with their echo_skb), and when calling
->   led_trigger_rename(), test if 'name' points to that storage.
-> 
-> Maybe there are other possibilities.
+Just using futex is unfortunately not the answer either.
 
-Modifying other driver would involve some useless kstrdup on constant
-strigs or another unsafe casting, so I prefer to cast here in that case.
-
-I'll send a v2 with the first solution you proposed, but I don't see a
-really clean implementation here.
-
-Any better idea?
-
-Fabio
+-Andi
 
 -- 
-Fabio Baltieri
+ak@linux.intel.com -- Speaking for myself only
