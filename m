@@ -1,33 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab2INX4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 19:56:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33387 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab2INX4V (ORCPT
+	id S1752300Ab2IOAAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 20:00:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35865 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab2IOAAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 19:56:21 -0400
-Date: Sat, 15 Sep 2012 00:56:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 24/24] net: seeq: use __iomem pointers for MMIO
-Message-ID: <20120914235607.GF12245@n2100.arm.linux.org.uk>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-25-git-send-email-arnd@arndb.de>
+	Fri, 14 Sep 2012 20:00:34 -0400
+Date: Fri, 14 Sep 2012 17:00:29 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-mm@kvack.org, riel@redhat.com, peterz@infradead.org,
+        aarcange@redhat.com, hughd@google.com, daniel.santos@pobox.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Dave Jones <davej@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 6/7] mm: add CONFIG_DEBUG_VM_RB build option
+Message-ID: <20120915000029.GA29426@google.com>
+References: <1346750457-12385-1-git-send-email-walken@google.com>
+ <1346750457-12385-7-git-send-email-walken@google.com>
+ <5053AC2F.3070203@gmail.com>
+ <CANN689Ff3W4z=+3J8aGO-2GrPHGJ=ote_f5q9jzRQRAP+b0T4Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347658492-11608-25-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CANN689Ff3W4z=+3J8aGO-2GrPHGJ=ote_f5q9jzRQRAP+b0T4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 11:34:52PM +0200, Arnd Bergmann wrote:
-> ARM is moving to stricter checks on readl/write functions,
-> so we need to use the correct types everywhere.
+On Fri, Sep 14, 2012 at 3:46 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Fri, Sep 14, 2012 at 3:14 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> On 09/04/2012 11:20 AM, Michel Lespinasse wrote:
+>>> Add a CONFIG_DEBUG_VM_RB build option for the previously existing
+>>> DEBUG_MM_RB code. Now that Andi Kleen modified it to avoid using
+>>> recursive algorithms, we can expose it a bit more.
+>>>
+>>> Also extend this code to validate_mm() after stack expansion, and to
+>>> check that the vma's start and last pgoffs have not changed since the
+>>> nodes were inserted on the anon vma interval tree (as it is important
+>>> that the nodes be reindexed after each such update).
+>>
+>> This patch exposes the following warning:
+>>
+>> [   24.977502] ------------[ cut here ]------------
+>> [   24.979089] WARNING: at mm/interval_tree.c:110
+>> anon_vma_interval_tree_verify+0x81/0xa0()
+>> [   24.981765] Pid: 5928, comm: trinity-child37 Tainted: G        W
+>> 3.6.0-rc5-next-20120914-sasha-00003-g7deb7fa-dirty #333
+>> [   24.985501] Call Trace:
+>> [   24.986345]  [<ffffffff81224c91>] ? anon_vma_interval_tree_verify+0x81/0xa0
+>> [   24.988535]  [<ffffffff81106766>] warn_slowpath_common+0x86/0xb0
+>> [   24.990636]  [<ffffffff81106855>] warn_slowpath_null+0x15/0x20
+>> [   24.992658]  [<ffffffff81224c91>] anon_vma_interval_tree_verify+0x81/0xa0
+>> [   24.994980]  [<ffffffff8122e6e8>] validate_mm+0x58/0x1e0
+>> [   24.996772]  [<ffffffff8122e934>] vma_link+0x94/0xe0
+>> [   24.997719]  [<ffffffff812315e9>] copy_vma+0x279/0x2e0
+>> [   24.998522]  [<ffffffff8117a7fd>] ? trace_hardirqs_off+0xd/0x10
+>> [   25.000772]  [<ffffffff81232e89>] move_vma+0xa9/0x260
+>> [   25.002499]  [<ffffffff812334b5>] sys_mremap+0x475/0x540
+>> [   25.004364]  [<ffffffff8374b6e8>] tracesys+0xe1/0xe6
+>> [   25.006108] ---[ end trace 7c901670963aa6e2 ]---
+>>
+>> The code line is
+>>
+>>         WARN_ON_ONCE(node->cached_vma_last != avc_last_pgoff(node));
+>
+> That's very interesting (and potentially relevant to another bug
+> that's been reported too).
+>
+> I'd like to know, what workload did you use that triggered this ?
+> (I find it hard to test mremap as I don't know of enough users of it)
 
-Same comment as for eesox.  const void __iomem * is not a problem on
-x86, so it should not be a problem on ARM.
+All right. Hugh managed to reproduce the issue on his suse laptop, and
+I came up with a fix.
+
+The problem was that in mremap, the new vma's vm_{start,end,pgoff}
+fields need to be updated before calling anon_vma_clone() so that the
+new vma will be properly indexed.
+
+Patch attached. I expect this should also explain Jiri's reported
+failure involving splitting THP pages during mremap(), even though we
+did not manage to reproduce that one.
+
+---------------------------------8<-------------------------------
+
+From: Michel Lespinasse <walken@google.com>
+Date: Fri, 14 Sep 2012 16:43:49 -0700
+Subject: [PATCH] mm anon rmap: in mremap, set the new vma's position before
+ anon_vma_clone()
+
+anon_vma_clone() expects new_vma->vm_{start,end,pgoff} to be correctly set
+so that the new vma can be indexed on the anon interval tree.
+
+copy_vma() was failing to do that, which broke mremap().
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+---
+ mm/mmap.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index cc8c64077a42..7e672800b5d4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2446,16 +2446,16 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
+ 		if (new_vma) {
+ 			*new_vma = *vma;
++			new_vma->vm_start = addr;
++			new_vma->vm_end = addr + len;
++			new_vma->vm_pgoff = pgoff;
+ 			pol = mpol_dup(vma_policy(vma));
+ 			if (IS_ERR(pol))
+ 				goto out_free_vma;
++			vma_set_policy(new_vma, pol);
+ 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
+ 			if (anon_vma_clone(new_vma, vma))
+ 				goto out_free_mempol;
+-			vma_set_policy(new_vma, pol);
+-			new_vma->vm_start = addr;
+-			new_vma->vm_end = addr + len;
+-			new_vma->vm_pgoff = pgoff;
+ 			if (new_vma->vm_file) {
+ 				get_file(new_vma->vm_file);
+ 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
