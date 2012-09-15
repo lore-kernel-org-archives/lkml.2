@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2IOLaa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 07:30:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63736 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab2IOLa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 07:30:29 -0400
+	id S1753166Ab2IOLeb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 07:34:31 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:33919 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab2IOLea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Sep 2012 07:34:30 -0400
+Date: Sat, 15 Sep 2012 13:33:56 +0200
+From: Alessandro Rubini <rubini@unipv.it>
+To: arnd@arndb.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, rmk+kernel@arm.linux.org.uk, nico@linaro.org,
+        linus.walleij@linaro.org, STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCH 13/24] ARM: nomadik: use __iomem pointers for MMIO
+Message-ID: <20120915113356.GA31284@mail.gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <20120914181610.C4CD06F443@smtp.hushmail.com>
-References: <20120914181610.C4CD06F443@smtp.hushmail.com>
-Date: Sat, 15 Sep 2012 13:30:27 +0200
-Message-ID: <CAFLxGvw8Z5hULUzJckyQbRk3Sn-GC+bWNqCtMw1=zmiSYzhxgw@mail.gmail.com>
-Subject: Re: [BUG 3.6-rc] samba works rather randomly with w2k+debian server
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: auto75914331@hushmail.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <1347658492-11608-14-git-send-email-arnd@arndb.de>
+References: <1347658492-11608-14-git-send-email-arnd@arndb.de>
+  <1347658492-11608-1-git-send-email-arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 8:16 PM,  <auto75914331@hushmail.com> wrote:
-> 3.5.3 and older works, 3.6-rc not -> shared directories sometimes work, sometimes not,
-> /etc/init.d/samba restart did help atleast once with 3.6-rc5,
+> -	.options	= NAND_COPYBACK | NAND_CACHEPRG | NAND_NO_PADDING \
+> -			| NAND_NO_READRDY,
+> +	.options	= NAND_COPYBACK | NAND_CACHEPRG | NAND_NO_PADDING,
 
-What exactly does not work?
-Can you provide a test case?
+This is not clear to me, and it looks unrelated. But I admit I haven't
+studied what happened to NAND_NO_READRDY lately.
 
-> hope this helps
+If this hunk is desired and not just something else
+that slipped in, then
 
-Sorry, not at all.
+  Acked-by: Alessandro Rubini <rubini@unipv.it>
 
--- 
-Thanks,
-//richard
