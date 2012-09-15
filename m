@@ -1,204 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2IOKtE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 06:49:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44024 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab2IOKtB (ORCPT
+	id S1753427Ab2IOK4p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 06:56:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62242 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab2IOK4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 06:49:01 -0400
-Message-ID: <50545D5D.6010101@gmail.com>
-Date: Sat, 15 Sep 2012 12:50:05 +0200
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sat, 15 Sep 2012 06:56:42 -0400
+Message-ID: <50545EE4.5050004@openvz.org>
+Date: Sat, 15 Sep 2012 14:56:36 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120831 Firefox/10.0.7 Iceape/2.7.7
 MIME-Version: 1.0
-To: Rajanikanth HV <rajanikanth.hv@linaro.org>
-CC: Lee Jones <lee.jones@linaro.org>, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linaro-dev@lists.linaro.org,
-        linus.walleij@stericsson.com,
-        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH] mfd: Implement devicetree support for AB8500 fg
-References: <CAB4BAkvdwEDViLGXfHHzYjkoL6qPZca2dzOin3GhBrqRJ3xNAg@mail.gmail.com>
-In-Reply-To: <CAB4BAkvdwEDViLGXfHHzYjkoL6qPZca2dzOin3GhBrqRJ3xNAg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Wen Congyang <wency@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Jiang Liu <liuj97@gmail.com>, "mhocko@suse.cz" <mhocko@suse.cz>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
+ onlined
+References: <505187D4.7070404@cn.fujitsu.com> <20120913205935.GK1560@cmpxchg.org> <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hugh Dickins wrote:
+> On Thu, 13 Sep 2012, Johannes Weiner wrote:
+>> On Thu, Sep 13, 2012 at 03:14:28PM +0800, Wen Congyang wrote:
+>>> root_mem_cgroup->info.nodeinfo is initialized when the system boots.
+>>> But NODE_DATA(nid) is null if the node is not onlined, so
+>>> root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone contains
+>>> an invalid pointer. If we use numactl to bind a program to the node
+>>> after onlining the node and its memory, it will cause the kernel
+>>> panicked:
+>>
+>> Is there any chance we could get rid of the zone backpointer in lruvec
+>> again instead?
+>
+> It could be done, but it would make me sad :(
 
-On 09/10/2012 11:44 AM, Rajanikanth HV wrote:
-...
-> +static int __devinit
-> +fg_of_probe(struct device *dev,
-> +		struct device_node *np,
-> +		struct abx500_bm_plat_data *bm_pdata)
-> +{
-> +	u8	val;
-> +	u32	pval;
-> +	int	i;
-> +	int	ext_thermister, lion_battery, ret = 0;
-> +	const char *bm_dev_name;
-> +	struct	abx500_fg_platform_data *fg = bm_pdata->fg;
-> +	struct	abx500_bm_data		   *bat;
-> +	struct	abx500_battery_type	   *btype;
-> +
-> +	ret = of_property_read_u32(np, "num_supplicants", &pval);
-> +	if (ret) {
-> +		dev_err(dev, "missing property num_supplicants\n");
-> +		ret = -EINVAL;
-> +		goto inval_pval;
-> +	}
-> +	fg->num_supplicants = pval;
-> +	fg->supplied_to =
-> +		devm_kzalloc(dev, fg->num_supplicants *
-> +			sizeof(const char *), GFP_KERNEL);
-> +	if (fg->supplied_to == NULL) {
-> +		dev_err(dev, "%s no mem for supplied_to\n", __func__);
-> +		ret = -ENOMEM;
-> +		goto inval_pval;
-> +	}
-> +	for (val = 0; val < fg->num_supplicants; ++val)
-> +		if (of_property_read_string_index
-> +			(np, "supplied_to", val, &bm_dev_name) == 0)
-> +			*(fg->supplied_to + val) = (char *)bm_dev_name;
-> +		else {
-> +			dev_err(dev, "insufficient number of supplied_to data found\n");
-> +			ret = -EINVAL;
-> +			goto free_dev_mem;
-> +		}
-> +	ret = of_property_read_u32(np, "thermister_on_batctrl", &pval);
-> +	if (ret) {
-> +		dev_err(dev, "missing property thermister_on_batctrl\n");
-> +		ret = -EINVAL;
-> +		goto free_dev_mem;
-> +	}
-> +	bm_pdata->battery = &ab8500_bm_data;
-> +	bat = bm_pdata->battery;
-> +	ext_thermister = 0;
-> +	if (pval == 0) {
-> +		bat->n_btypes = 4;
-> +		bat->bat_type = bat_type_ext_thermister;
-> +		bat->adc_therm = ABx500_ADC_THERM_BATTEMP;
-> +		ext_thermister = 1;
-> +	}
-> +	ret = of_property_read_u32(np, "li_ion_9100", &pval);
-> +	if (ret) {
-> +		dev_err(dev, "missing property li_ion_9100\n");
-> +		ret = -EINVAL;
-> +		goto free_dev_mem;
-> +	}
-> +	lion_battery = 0;
-> +	if (pval == 1) {
-> +		bat->no_maintenance = true;
-> +		bat->chg_unknown_bat = true;
-> +		bat->bat_type[BATTERY_UNKNOWN].charge_full_design = 2600;
-> +		bat->bat_type[BATTERY_UNKNOWN].termination_vol = 4150;
-> +		bat->bat_type[BATTERY_UNKNOWN].recharge_vol = 4130;
-> +		bat->bat_type[BATTERY_UNKNOWN].normal_cur_lvl = 520;
-> +		bat->bat_type[BATTERY_UNKNOWN].normal_vol_lvl = 4200;
-> +		lion_battery = 1;
-> +	}
-> +	/* select the battery resolution table */
-> +	for (i = 0; i < bat->n_btypes; ++i) {
-> +		btype = (bat->bat_type + i);
-> +		if (ext_thermister) {
-> +			btype->batres_tbl =
-> +				temp_to_batres_tbl_ext_thermister;
-> +		} else if (lion_battery) {
-> +			btype->batres_tbl =
-> +				temp_to_batres_tbl_9100;
-> +		} else {
-> +			btype->batres_tbl =
-> +				temp_to_batres_tbl_thermister;
-> +		}
-> +	}
-> +	return ret;
-> +free_dev_mem:
-> +	devm_kfree(dev, fg->supplied_to);
-> +inval_pval:
-> +	return ret;
-> +}
+Me too
 
-Since when fg_of_probe() fails, the driver probe function returns error,
-there is no need to devm_kfree() data allocated with devm_kzalloc(), so
-you can get rid of the goto statements
-
->  static int __devinit ab8500_fg_probe(struct platform_device *pdev)
->  {
->  	int i, irq;
->  	int ret = 0;
->  	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
-> +	struct device_node *np = pdev->dev.of_node;
->  	struct ab8500_fg *di;
-> 
-> +	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
-> +	if (!di) {
-> +		dev_err(&pdev->dev, "%s no mem for ab8500_btemp\n", __func__);
-
-Copy&paste error, this is not btemp
-
-> +		ret = -ENOMEM;
-> +		goto err_no_mem;
+>
+>> Adding new nodes is a rare event and so updating every
+>> single memcg in the system might be just borderline crazy.
+>
+> Not horribly crazy, but rather ugly, yes.
+>
+>> But can't
+>> we just go back to passing the zone along with the lruvec down
+>> vmscan.c paths?  I agree it's ugly to pass both, given their
+>> relationship.  But I don't think the backpointer is any cleaner but in
+>> addition less robust.
+>
+> It's like how we use vma->mm: we could change everywhere to pass mm with
+> vma, but it looks cleaner and cuts down on long arglists to have mm in vma.
+>  From past experience, one of the things I worried about was adding extra
+> args to the reclaim stack.
+>
+>>
+>> That being said, the crashing code in particular makes me wonder:
+>>
+>> static __always_inline void add_page_to_lru_list(struct page *page,
+>> 				struct lruvec *lruvec, enum lru_list lru)
+>> {
+>> 	int nr_pages = hpage_nr_pages(page);
+>> 	mem_cgroup_update_lru_size(lruvec, lru, nr_pages);
+>> 	list_add(&page->lru,&lruvec->lists[lru]);
+>> 	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, nr_pages);
+>> }
+>>
+>> Why did we ever pass zone in here and then felt the need to replace it
+>> with lruvec->zone in fa9add6 "mm/memcg: apply add/del_page to lruvec"?
+>> A page does not roam between zones, its zone is a static property that
+>> can be retrieved with page_zone().
+>
+> Just as in vmscan.c, we have the lruvec to hand, and that's what we
+> mainly want to operate upon, but there is also some need for zone.
+>
+> (Both Konstantin and I were looking towards the day when we move the
+> lru_lock into the lruvec, removing more dependence on "zone".  Pretty
+> much the only reason that hasn't happened yet, is that we have not found
+> time to make a performance case convincingly - but that's another topic.)
+>
+> Yes, page_zone(page) is a static property of the page, but it's not
+> necessarily cheap to evaluate: depends on how complex the memory model
+> and the spare page flags space, doesn't it?  We both preferred to
+> derive zone from lruvec where convenient.
+>
+> How do you feel about this patch, and does it work for you guys?
+>
+> You'd be right if you guessed that I started out without the
+> mem_cgroup_zone_lruvec part of it, but oops in get_scan_count
+> told me that's needed too.
+>
+> Description to be filled in later: would it be needed for -stable,
+> or is onlining already broken in other ways that you're now fixing up?
+>
+> Reported-by: Tang Chen<tangchen@cn.fujitsu.com>
+> Signed-off-by: Hugh Dickins<hughd@google.com>
+> ---
+>
+>   include/linux/mmzone.h |    2 -
+>   mm/memcontrol.c        |   40 ++++++++++++++++++++++++++++++++-------
+>   mm/mmzone.c            |    6 -----
+>   mm/page_alloc.c        |    2 -
+>   4 files changed, 36 insertions(+), 14 deletions(-)
+>
+> --- 3.6-rc5/include/linux/mmzone.h	2012-08-03 08:31:26.892842267 -0700
+> +++ linux/include/linux/mmzone.h	2012-09-13 17:07:51.893772372 -0700
+> @@ -744,7 +744,7 @@ extern int init_currently_empty_zone(str
+>   				     unsigned long size,
+>   				     enum memmap_context context);
+>
+> -extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
+> +extern void lruvec_init(struct lruvec *lruvec);
+>
+>   static inline struct zone *lruvec_zone(struct lruvec *lruvec)
+>   {
+> --- 3.6-rc5/mm/memcontrol.c	2012-08-03 08:31:27.060842270 -0700
+> +++ linux/mm/memcontrol.c	2012-09-13 17:46:36.870804625 -0700
+> @@ -1061,12 +1061,25 @@ struct lruvec *mem_cgroup_zone_lruvec(st
+>   				      struct mem_cgroup *memcg)
+>   {
+>   	struct mem_cgroup_per_zone *mz;
+> +	struct lruvec *lruvec;
+>
+> -	if (mem_cgroup_disabled())
+> -		return&zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec =&zone->lruvec;
+> +		goto out;
 > +	}
-> +	if (np) {
-> +		if (!plat_data) {
-> +			plat_data =
-> +			devm_kzalloc(&pdev->dev, sizeof(*plat_data), GFP_KERNEL);
-> +			if (!plat_data) {
-> +				dev_err(&pdev->dev,
-> +					"%s no mem for plat_data\n", __func__);
-> +				ret = -ENOMEM;
-> +				goto free_device_info;
-> +			}
-> +			plat_data->fg = devm_kzalloc(&pdev->dev,
-> +					sizeof(*plat_data->fg), GFP_KERNEL);
-> +			if (!plat_data->fg) {
-> +				devm_kfree(&pdev->dev, plat_data);
-> +				dev_err(&pdev->dev,
-> +					"%s no mem for pdata->fg\n",
-> +					__func__);
-> +				ret = -ENOMEM;
-> +				goto free_device_info;
-> +			}
-> +		}
-> +		/* get battery specific platform data */
-> +		ret = fg_of_probe(&pdev->dev, np, plat_data);
-> +		if (ret) {
-> +			devm_kfree(&pdev->dev, plat_data->fg);
-> +			devm_kfree(&pdev->dev, plat_data);
-> +			goto free_device_info;
-> +		}
+>
+>   	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
+> -	return&mz->lruvec;
+> +	lruvec =&mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone)) {
+> +		VM_BUG_ON(lruvec->zone);
+> +		lruvec->zone = zone;
 > +	}
->  	if (!plat_data) {
-> -		dev_err(&pdev->dev, "No platform data\n");
-> -		return -EINVAL;
-> +		dev_err(&pdev->dev,
-> +			"%s no fg platform data found\n", __func__);
-> +		ret = -EINVAL;
-> +		goto free_device_info;
->  	}
-> 
->  	di = kzalloc(sizeof(*di), GFP_KERNEL);
+> +	return lruvec;
+>   }
 
-This should be removed, and kfree(di) should be removed from
-ab8500_fg_remove()
+Whoaaa, this makes me dizzy. I prefer hook in register_one_node().
+BTW It would be nice to add notifier-chains into memory-hotplug.
 
-> @@ -2606,11 +2737,17 @@ free_irq:
->  free_inst_curr_wq:
->  	destroy_workqueue(di->fg_wq);
->  free_device_info:
-> -	kfree(di);
-> +	devm_kfree(&pdev->dev, di);
-> +err_no_mem:
-> 
->  	return ret;
->  }
+>
+>   /*
+> @@ -1093,9 +1106,12 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>   	struct mem_cgroup_per_zone *mz;
+>   	struct mem_cgroup *memcg;
+>   	struct page_cgroup *pc;
+> +	struct lruvec *lruvec;
+>
+> -	if (mem_cgroup_disabled())
+> -		return&zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec =&zone->lruvec;
+> +		goto out;
+> +	}
+>
+>   	pc = lookup_page_cgroup(page);
+>   	memcg = pc->mem_cgroup;
+> @@ -1113,7 +1129,17 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>   		pc->mem_cgroup = memcg = root_mem_cgroup;
+>
+>   	mz = page_cgroup_zoneinfo(memcg, page);
+> -	return&mz->lruvec;
+> +	lruvec =&mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone)) {
+> +		VM_BUG_ON(lruvec->zone);
+> +		lruvec->zone = zone;
+> +	}
+> +	return lruvec;
+>   }
+>
+>   /**
+> @@ -4742,7 +4768,7 @@ static int alloc_mem_cgroup_per_zone_inf
+>
+>   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
+>   		mz =&pn->zoneinfo[zone];
+> -		lruvec_init(&mz->lruvec,&NODE_DATA(node)->node_zones[zone]);
+> +		lruvec_init(&mz->lruvec);
+>   		mz->usage_in_excess = 0;
+>   		mz->on_tree = false;
+>   		mz->memcg = memcg;
+> --- 3.6-rc5/mm/mmzone.c	2012-08-03 08:31:27.064842271 -0700
+> +++ linux/mm/mmzone.c	2012-09-13 17:06:28.921766001 -0700
+> @@ -87,7 +87,7 @@ int memmap_valid_within(unsigned long pf
+>   }
+>   #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+>
+> -void lruvec_init(struct lruvec *lruvec, struct zone *zone)
+> +void lruvec_init(struct lruvec *lruvec)
+>   {
+>   	enum lru_list lru;
+>
+> @@ -95,8 +95,4 @@ void lruvec_init(struct lruvec *lruvec,
+>
+>   	for_each_lru(lru)
+>   		INIT_LIST_HEAD(&lruvec->lists[lru]);
+> -
+> -#ifdef CONFIG_MEMCG
+> -	lruvec->zone = zone;
+> -#endif
+>   }
+> --- 3.6-rc5/mm/page_alloc.c	2012-08-22 14:25:39.508279046 -0700
+> +++ linux/mm/page_alloc.c	2012-09-13 17:06:08.265763526 -0700
+> @@ -4456,7 +4456,7 @@ static void __paginginit free_area_init_
+>   		zone->zone_pgdat = pgdat;
+>
+>   		zone_pcp_init(zone);
+> -		lruvec_init(&zone->lruvec, zone);
+> +		lruvec_init(&zone->lruvec);
+>   		if (!size)
+>   			continue;
+>
 
-Also in this function, no need to call devm_kfree() on error
-
-Regards,
-Francesco
