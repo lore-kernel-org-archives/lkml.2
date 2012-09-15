@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750877Ab2IOEBD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 00:01:03 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34601 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab2IOEBB (ORCPT
+	id S1750945Ab2IOELK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 00:11:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:54553 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750740Ab2IOELI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 00:01:01 -0400
-Date: Sat, 15 Sep 2012 00:00:59 -0400 (EDT)
-Message-Id: <20120915.000059.636218745264773259.davem@davemloft.net>
-To: linux@arm.linux.org.uk
-Cc: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, will.deacon@arm.com, nico@linaro.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 24/24] net: seeq: use __iomem pointers for MMIO
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120914235607.GF12245@n2100.arm.linux.org.uk>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
-	<1347658492-11608-25-git-send-email-arnd@arndb.de>
-	<20120914235607.GF12245@n2100.arm.linux.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sat, 15 Sep 2012 00:11:08 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1++t0gFASW+D45fbm0NDypLkAYOHN/OHNhKC3C1T9
+	9fEWiUDRFZRXGX
+Message-ID: <1347682262.4340.160.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Sat, 15 Sep 2012 06:11:02 +0200
+In-Reply-To: <20120914212717.GA29307@liondog.tnic>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Sat, 15 Sep 2012 00:56:07 +0100
-
-> On Fri, Sep 14, 2012 at 11:34:52PM +0200, Arnd Bergmann wrote:
->> ARM is moving to stricter checks on readl/write functions,
->> so we need to use the correct types everywhere.
+On Fri, 2012-09-14 at 23:27 +0200, Borislav Petkov wrote: 
+> (Adding everybody to CC and leaving the below for reference.)
 > 
-> Same comment as for eesox.  const void __iomem * is not a problem on
-> x86, so it should not be a problem on ARM.
+> Guys,
+> 
+> as Nikolay says below, we have a regression in 3.6 with pgbench's
+> benchmark in postgresql.
+> 
+> I was able to reproduce it on another box here and did a bisection run.
+> It pointed to the commit below.
+> 
+> And yes, reverting that commit fixes the issue here.
 
-Agreed.
+My wild (and only) theory is that this is userspace spinlock related.
+If so, starting the server and benchmark SCHED_BATCH should not only
+kill the regression, but likely improve throughput as well.
+
+-Mike
+
