@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2IODN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 23:13:57 -0400
+	id S1756943Ab2IODOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 23:14:00 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:33180 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab2IODNr (ORCPT
+	with ESMTP id S1751424Ab2IODNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 23:13:47 -0400
+	Fri, 14 Sep 2012 23:13:55 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+Cc: Tony Luck <tony.luck@intel.com>, Yijing Wang <wangyijing@huawei.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 8/9] PCI/acpiphp: serialize access to the bridge_list list
-Date: Sat, 15 Sep 2012 11:05:11 +0800
-Message-Id: <1347678312-11124-9-git-send-email-jiang.liu@huawei.com>
+        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>
+Subject: [PATCH v2 9/9] PCI/AER: update AER configuration when PCI hotplug event happens
+Date: Sat, 15 Sep 2012 11:05:12 +0800
+Message-Id: <1347678312-11124-10-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
 References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
@@ -24,83 +24,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serialize access to the bridge_list in the acpiphp driver.
+From: Yijing Wang <wangyijing@huawei.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+The AER driver only configures downstream PCIe devices at driver
+binding time and all hot-added PCIe devices won't be managed by
+the AER driver.  So hook PCIe device hotplug events to setup AER
+configuration for hot-added PCIe devices.
+
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/pci/pcie/aer/aerdrv.c |   63 ++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 1fb0eb7..348afd7 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -53,6 +53,7 @@
- #include "../pci.h"
- #include "acpiphp.h"
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index 030cf12..b70ec84 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -408,6 +408,55 @@ static void aer_error_resume(struct pci_dev *dev)
+ 	pci_write_config_dword(dev, pos + PCI_ERR_UNCOR_STATUS, status);
+ }
  
-+static DEFINE_MUTEX(bridge_mutex);
- static LIST_HEAD(bridge_list);
- 
- #define MY_NAME "acpiphp_glue"
-@@ -497,8 +498,10 @@ static int add_bridge(acpi_handle handle)
- 	}
- 
- 	/* search P2P bridges under this host bridge */
-+	mutex_lock(&bridge_mutex);
- 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
- 				     find_p2p_bridge, NULL, NULL, NULL);
-+	mutex_unlock(&bridge_mutex);
- 
- 	if (ACPI_FAILURE(status))
- 		warn("find_p2p_bridge failed (error code = 0x%x)\n", status);
-@@ -595,6 +598,8 @@ static void remove_bridge(acpi_handle handle)
++static void acpi_pcie_aer_notify_dev(struct pcie_device *dev, bool enable)
++{
++	int rc, pos;
++	u32 val = 0;
++	struct pci_dev *pdev = dev->port;
++
++	if (dev->service != PCIE_PORT_SERVICE_AER)
++		return;
++	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT)
++		return;
++	while (pci_pcie_type(pdev) != PCI_EXP_TYPE_ROOT_PORT) {
++		pdev = pdev->bus->self;
++		if (!pdev)
++			return;
++	}
++
++	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ERR);
++	if (!pos)
++		return;
++	rc = pci_read_config_dword(pdev, pos + PCI_ERR_ROOT_COMMAND, &val);
++	if (rc || val == 0xFFFFFFFF || !(val & ROOT_PORT_INTR_ON_MESG_MASK))
++		return;
++
++	set_device_error_reporting(dev->port, &enable);
++}
++
++static int acpi_pcie_aer_notify(struct notifier_block *nb,
++		unsigned long event, void *data)
++{
++	struct device *dev = data;
++
++	switch (event) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		acpi_pcie_aer_notify_dev(to_pcie_device(dev), true);
++		break;
++	case BUS_NOTIFY_DEL_DEVICE:
++		acpi_pcie_aer_notify_dev(to_pcie_device(dev), false);
++		break;
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block acpi_pcie_aer_notifier = {
++	.notifier_call = &acpi_pcie_aer_notify,
++};
++
+ /**
+  * aer_service_init - register AER root service driver
+  *
+@@ -415,9 +464,20 @@ static void aer_error_resume(struct pci_dev *dev)
+  */
+ static int __init aer_service_init(void)
  {
- 	struct acpiphp_bridge *bridge;
- 
-+	mutex_lock(&bridge_mutex);
++	int ret;
 +
- 	/* cleanup p2p bridges under this host bridge
- 	   in a depth-first manner */
- 	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-@@ -613,6 +618,8 @@ static void remove_bridge(acpi_handle handle)
- 	else
- 		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 					   handle_hotplug_event_bridge);
+ 	if (!pci_aer_available() || aer_acpi_firmware_first())
+ 		return -ENXIO;
+-	return pcie_port_service_register(&aerdriver);
 +
-+	mutex_unlock(&bridge_mutex);
++	ret = pcie_port_service_register(&aerdriver);
++	if (!ret) {
++		ret = bus_register_notifier(&pcie_port_bus_type,
++					    &acpi_pcie_aer_notifier);
++		if (ret)
++			pcie_port_service_unregister(&aerdriver);
++	}
++
++	return ret;
  }
  
- static int power_on_slot(struct acpiphp_slot *slot)
-@@ -1415,11 +1422,13 @@ static void acpiphp_hp_notify_add(struct pci_dev *dev)
- 	if (!dev->subordinate || !handle)
- 		return;
- 
-+	mutex_lock(&bridge_mutex);
- 	/* check if this bridge has ejectable slots */
- 	if (detect_ejectable_slots(handle) > 0) {
- 		dbg("found PCI-to-PCI bridge at PCI %s\n", pci_name(dev));
- 		add_p2p_bridge(handle);
- 	}
-+	mutex_unlock(&bridge_mutex);
+ /**
+@@ -427,6 +487,7 @@ static int __init aer_service_init(void)
+  */
+ static void __exit aer_service_exit(void)
+ {
++	bus_unregister_notifier(&pcie_port_bus_type, &acpi_pcie_aer_notifier);
+ 	pcie_port_service_unregister(&aerdriver);
  }
  
- static void acpiphp_hp_notify_del(struct pci_dev *dev)
-@@ -1430,11 +1439,13 @@ static void acpiphp_hp_notify_del(struct pci_dev *dev)
- 	if (!bus)
- 		return;
- 
-+	mutex_lock(&bridge_mutex);
- 	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
- 		if (bridge->pci_bus == bus) {
- 			cleanup_bridge(bridge);
- 			break;
- 		}
-+	mutex_unlock(&bridge_mutex);
- }
- 
- static int acpi_pci_hp_notify_fn(struct notifier_block *nb,
 -- 
 1.7.9.5
 
