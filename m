@@ -1,116 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751036Ab2IOEPT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 00:15:19 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56843 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab2IOEPQ (ORCPT
+	id S1751261Ab2IOEP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 00:15:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36835 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2IOEPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 00:15:16 -0400
-Date: Sat, 15 Sep 2012 13:15:14 +0900
-From: Norbert Preining <preining@logic.at>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: rtl8192se: ping router gives mdev of 25387.102???
-Message-ID: <20120915041513.GF30623@gamma.logic.tuwien.ac.at>
-References: <505251FD.2090901@lwfinger.net> <5051EF3C.3020401@lwfinger.net> <20120913222850.GA438@gandalf.dynalias.org>
+	Sat, 15 Sep 2012 00:15:55 -0400
+Date: Fri, 14 Sep 2012 21:15:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-usb@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Neil Zhang <zhangwm@marvell.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] USB: remove CONFIG_EXPERIMENTAL dependancies
+Message-ID: <20120915041550.GA28736@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120913222850.GA438@gandalf.dynalias.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Larry, hi all,
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-On Fr, 14 Sep 2012,  wrote:
-> I am running on top of default kernel git, will try wireless-testing, too.
+As discussed at the kernel summit this year, CONFIG_EXPERIMENTAL means
+nothing, so let's get rid of it.
 
-I tried now with wireless-testing from yesterday, and had the same problem.
-Actually, I got even *better* results:
-64 bytes from 192.168.0.1: icmp_req=75 ttl=255 time=137856 ms
-64 bytes from 192.168.0.1: icmp_req=76 ttl=255 time=136848 ms
-64 bytes from 192.168.0.1: icmp_req=78 ttl=255 time=134943 ms
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Neil Zhang <zhangwm@marvell.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-...
-rtt min/avg/max/mdev = 1.110/46967.879/137856.232/49666.671 ms, pipe 138
+---
+ drivers/usb/core/Kconfig     |    2 +-
+ drivers/usb/gadget/Kconfig   |   17 ++++++-----------
+ drivers/usb/host/Kconfig     |   22 ++++++++++------------
+ drivers/usb/wusbcore/Kconfig |    3 +--
+ 4 files changed, 18 insertions(+), 26 deletions(-)
 
+Any objections to me applying this patch to the usb-next branch?
 
-So now we are mdev of 50secs sometimes ;-)
-
-
-Another interesting things:
-At home I have the problems with the NEC router, but I am now at
-the university. I am writing this email over a very very stable 
-ssh link to another server.
-
-Here is the output iof ifconfig:
-$ ifconfig
-eth0      Link encap:Ethernet  HWaddr 60:eb:69:c9:0c:ea  
-          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-          RX packets:20418 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:20418 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:1950587 (1.8 MiB)  TX bytes:1950587 (1.8 MiB)
-
-wlan0     Link encap:Ethernet  HWaddr 88:9f:fa:f9:07:28  
-          inet addr:150.65.206.200  Bcast:150.65.207.255  Mask:255.255.252.0
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:232640 errors:0 dropped:1 overruns:0 frame:0
-          TX packets:69798 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:85599897 (81.6 MiB)  TX bytes:8925832 (8.5 MiB)
-
-
-But the kernel is convinced that I am not connected ...:
-$ iw dev wlan0 link
-Not connected.
-$ iwconfig wlan0
-wlan0     IEEE 802.11bgn  ESSID:off/any  
-          Mode:Managed  Access Point: Not-Associated   Tx-Power=20 dBm   
-          Retry  long limit:7   RTS thr=2347 B   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-
-
-And no, I guarantee you there is no ethernet cable plugged in ;-)
-
-I can only assume that is a problem with iwconfig/iw being too old,
-although according to the output of iwconfig it is fine:
-# iw --version
-iw version 3.4
-# iwconfig --version
-iwconfig  Wireless-Tools version 30
-          Compatible with Wireless Extension v11 to v22.
-
-Kernel    Currently compiled with Wireless Extension v22.
-
-wlan0     Recommend Wireless Extension v21 or later,
-          Currently compiled with Wireless Extension v22.
-
-#  uname -a
-Linux tofuschnitzel 3.6.0-rc5-wl+ #19 SMP PREEMPT Fri Sep 14 13:14:15 JST 2012 x86_64 GNU/Linux
-
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-CHICAGO (n.)
-The foul-smelling wind which precedes an underground railway train.
-			--- Douglas Adams, The Meaning of Liff
+diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+index 9981984..f70c1a1 100644
+--- a/drivers/usb/core/Kconfig
++++ b/drivers/usb/core/Kconfig
+@@ -56,7 +56,7 @@ config USB_SUSPEND
+ 
+ config USB_OTG
+ 	bool "OTG support"
+-	depends on USB && EXPERIMENTAL
++	depends on USB
+ 	depends on USB_SUSPEND
+ 	default n
+ 	help
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index a53be32..dfb51a4 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -557,7 +557,7 @@ config USB_ZERO_HNPTEST
+ 	  one serve as the USB host instead (in the "B-Host" role).
+ 
+ config USB_AUDIO
+-	tristate "Audio Gadget (EXPERIMENTAL)"
++	tristate "Audio Gadget"
+ 	depends on SND
+ 	select USB_LIBCOMPOSITE
+ 	select SND_PCM
+@@ -672,8 +672,7 @@ config USB_G_NCM
+ 	  dynamically linked module called "g_ncm".
+ 
+ config USB_GADGETFS
+-	tristate "Gadget Filesystem (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Gadget Filesystem"
+ 	help
+ 	  This driver provides a filesystem based API that lets user mode
+ 	  programs implement a single-configuration USB device, including
+@@ -681,15 +680,11 @@ config USB_GADGETFS
+ 	  All endpoints, transfer speeds, and transfer types supported by
+ 	  the hardware are available, through read() and write() calls.
+ 
+-	  Currently, this option is still labelled as EXPERIMENTAL because
+-	  of existing race conditions in the underlying in-kernel AIO core.
+-
+ 	  Say "y" to link the driver statically, or "m" to build a
+ 	  dynamically linked module called "gadgetfs".
+ 
+ config USB_FUNCTIONFS
+-	tristate "Function Filesystem (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Function Filesystem"
+ 	select USB_LIBCOMPOSITE
+ 	select USB_FUNCTIONFS_GENERIC if !(USB_FUNCTIONFS_ETH || USB_FUNCTIONFS_RNDIS)
+ 	help
+@@ -799,8 +794,8 @@ config USB_G_SERIAL
+ 	  make MS-Windows work with CDC ACM.
+ 
+ config USB_MIDI_GADGET
+-	tristate "MIDI Gadget (EXPERIMENTAL)"
+-	depends on SND && EXPERIMENTAL
++	tristate "MIDI Gadget"
++	depends on SND
+ 	select USB_LIBCOMPOSITE
+ 	select SND_RAWMIDI
+ 	help
+@@ -867,7 +862,7 @@ config USB_G_ACM_MS
+ 	  dynamically linked module called "g_acm_ms".
+ 
+ config USB_G_MULTI
+-	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
++	tristate "Multifunction Composite Gadget"
+ 	depends on BLOCK && NET
+ 	select USB_G_MULTI_CDC if !USB_G_MULTI_RNDIS
+ 	select USB_LIBCOMPOSITE
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 13cd6d5..b1deb0f 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -18,8 +18,8 @@ config USB_C67X00_HCD
+ 	  module will be called c67x00.
+ 
+ config USB_XHCI_HCD
+-	tristate "xHCI HCD (USB 3.0) support (EXPERIMENTAL)"
+-	depends on USB && USB_ARCH_HAS_XHCI && EXPERIMENTAL
++	tristate "xHCI HCD (USB 3.0) support"
++	depends on USB && USB_ARCH_HAS_XHCI
+ 	---help---
+ 	  The eXtensible Host Controller Interface (xHCI) is standard for USB 3.0
+ 	  "SuperSpeed" host controller hardware.
+@@ -262,7 +262,7 @@ config USB_ISP116X_HCD
+ 
+ config USB_ISP1760_HCD
+ 	tristate "ISP 1760 HCD support"
+-	depends on USB && EXPERIMENTAL
++	depends on USB
+ 	---help---
+ 	  The ISP1760 chip is a USB 2.0 host controller.
+ 
+@@ -376,7 +376,7 @@ config USB_OHCI_HCD_PCI
+ 
+ config USB_OHCI_HCD_SSB
+ 	bool "OHCI support for Broadcom SSB OHCI core (DEPRECATED)"
+-	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD) && EXPERIMENTAL
++	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD)
+ 	select USB_HCD_SSB
+ 	select USB_OHCI_HCD_PLATFORM
+ 	default n
+@@ -414,7 +414,7 @@ config USB_CNS3XXX_OHCI
+ 
+ config USB_OHCI_HCD_PLATFORM
+ 	bool "Generic OHCI driver for a platform device"
+-	depends on USB_OHCI_HCD && EXPERIMENTAL
++	depends on USB_OHCI_HCD
+ 	default n
+ 	---help---
+ 	  Adds an OHCI host driver for a generic platform device, which
+@@ -424,7 +424,7 @@ config USB_OHCI_HCD_PLATFORM
+ 
+ config USB_EHCI_HCD_PLATFORM
+ 	bool "Generic EHCI driver for a platform device"
+-	depends on USB_EHCI_HCD && EXPERIMENTAL
++	depends on USB_EHCI_HCD
+ 	default n
+ 	---help---
+ 	  Adds an EHCI host driver for a generic platform device, which
+@@ -591,8 +591,7 @@ config USB_RENESAS_USBHS_HCD
+ 	  module will be called renesas-usbhs.
+ 
+ config USB_WHCI_HCD
+-	tristate "Wireless USB Host Controller Interface (WHCI) driver (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Wireless USB Host Controller Interface (WHCI) driver"
+ 	depends on PCI && USB && UWB
+ 	select USB_WUSB
+ 	select UWB_WHCI
+@@ -604,8 +603,7 @@ config USB_WHCI_HCD
+ 	  will be called "whci-hcd".
+ 
+ config USB_HWA_HCD
+-	tristate "Host Wire Adapter (HWA) driver (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Host Wire Adapter (HWA) driver"
+ 	depends on USB && UWB
+ 	select USB_WUSB
+ 	select UWB_HWA
+@@ -656,7 +654,7 @@ config USB_OCTEON2_COMMON
+ 
+ config USB_HCD_BCMA
+ 	tristate "BCMA usb host driver"
+-	depends on BCMA && EXPERIMENTAL
++	depends on BCMA
+ 	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+ 	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+ 	help
+@@ -668,7 +666,7 @@ config USB_HCD_BCMA
+ 
+ config USB_HCD_SSB
+ 	tristate "SSB usb host driver"
+-	depends on SSB && EXPERIMENTAL
++	depends on SSB
+ 	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+ 	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+ 	help
+diff --git a/drivers/usb/wusbcore/Kconfig b/drivers/usb/wusbcore/Kconfig
+index f29fdd7..8bf1976 100644
+--- a/drivers/usb/wusbcore/Kconfig
++++ b/drivers/usb/wusbcore/Kconfig
+@@ -2,8 +2,7 @@
+ # Wireless USB Core configuration
+ #
+ config USB_WUSB
+-	tristate "Enable Wireless USB extensions (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Enable Wireless USB extensions"
+ 	depends on USB
+ 	depends on PCI
+ 	depends on UWB
