@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2IOXJN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 19:09:13 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40617 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186Ab2IOXJL (ORCPT
+	id S1752154Ab2IOX12 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 19:27:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52917 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab2IOX1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 19:09:11 -0400
+	Sat, 15 Sep 2012 19:27:24 -0400
 MIME-Version: 1.0
-X-Originating-IP: [187.113.203.103]
-From: Matthias Diener <matthias.diener@mdiener.org>
-Date: Sat, 15 Sep 2012 20:08:39 -0300
-Message-ID: <CAKBUcnA4b8HaV3-20C8QXXgFXW4ZDfOc6SvYCFsA3mtdyEd89Q@mail.gmail.com>
-Subject: Re: [PATCH v5] hashtable: introduce a small and naive hashtable
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+	<1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 15 Sep 2012 16:27:22 -0700
+X-Google-Sender-Auth: uiskAnJUbXmbUeGCAM1sirZeOgs
+Message-ID: <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
+Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin (levinsasha928 <at> gmail.com) wrote:
->On Sat, Sep 15, 2012 at 5:14 PM, Mathieu Desnoyers
-><mathieu.desnoyers <at> efficios.com> wrote:
->> * Sasha Levin (levinsasha928 <at> gmail.com) wrote:
-[...]
->>> +#define hash_init(hashtable)                                                 \
->>> +({                                                                           \
->>> +     int __i;                                                                \
->>> +                                                                             \
->>> +     for (__i = 0; __i < HASH_BITS(hashtable); __i++)                        \
->>
->> I think this fails to initialize the whole table. You'd need
->>
->>   HASH_BITS -> HASH_SIZE
+On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+>  From: Jiang Liu <jiang.liu@huawei.com>
 >
->Right.
+> Now ACPI devices are created before/destroyed after corresponding PCI
+> devices, and acpi_platform_notify/acpi_platform_notify_remove will
+> update PCI<->ACPI binding relationship when creating/destroying PCI
+> devices, there's no need to invoke bind/unbind callbacks from ACPI
+> device probe/destroy routines anymore. So remove bind/unbind callbacks
+> from acpi_device_ops.
 >
->Unfortunately it's pretty hard catching something like this :/
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  drivers/acpi/pci_bind.c     |  100 +++++++++----------------------------------
+>  drivers/acpi/pci_root.c     |    9 ----
+>  drivers/acpi/scan.c         |   21 +--------
+>  include/acpi/acpi_bus.h     |    4 --
+>  include/acpi/acpi_drivers.h |    1 -
+>  5 files changed, 23 insertions(+), 112 deletions(-)
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index d1ecca2..f31cb2f 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -1232,17 +1232,8 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>         dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+>         device_release_driver(&dev->dev);
 >
->> Which brings the following question: how did you test this code ? It
->> would be nice to have a small test module along with this patchset that
->> stress-tests this simple hash table in various configurations (on stack,
->> in data, etc).
+> -       if (!rmdevice)
+> -               return 0;
+> -
+> -       /*
+> -        * unbind _ADR-Based Devices when hot removal
+> -        */
+> -       if (dev->flags.bus_address) {
+> -               if ((dev->parent) && (dev->parent->ops.unbind))
+> -                       dev->parent->ops.unbind(dev);
+> -       }
+> -       acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+> +       if (rmdevice)
+> +               acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
 >
->I do two things:
->
-> - A small userspace test (since this header works just fine from
->userspace as well).
+>         return 0;
+>  }
 
+for pci root bus, acpi_bus_trim() is used to remove acpi_device.
 
-It would be interesting to run some experiments with this hashtable in
-userspace.
-Could you post the test code here?
+and later in acpi_pci_root_remove to stop pci drivers/ioapic driver,
+iommu driver then remove pci devices.
 
-Thanks,
-Matthias
+if call back is removed there, then could some functions in
+acpi_pci_unbind() will be skipped.
+
+I really do not want to add pci_stop_bus_devices() in
+pci_root_hp.c::handle_root_bridge_removal before
+calling acpi_bus_trim...
+
+Thanks
+
+Yinghai
