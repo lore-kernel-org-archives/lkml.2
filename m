@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab2IODNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 23:13:36 -0400
+	id S1756782Ab2IODPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 23:15:53 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:64718 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab2IODM5 (ORCPT
+	with ESMTP id S1756336Ab2IODNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 23:12:57 -0400
+	Fri, 14 Sep 2012 23:13:32 -0400
 From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 2/9] PCI: split registration of PCI bus devices into two stages
-Date: Sat, 15 Sep 2012 11:05:05 +0800
-Message-Id: <1347678312-11124-3-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v2 6/9] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
+Date: Sat, 15 Sep 2012 11:05:09 +0800
+Message-Id: <1347678312-11124-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
 References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
@@ -24,82 +25,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
-the notification handler can't hold reference count to the new PCI bus
-because the device object for the new bus (pci_dev->subordinate->dev)
-hasn't been initialized yet.
+Currently the pci_slot driver doesn't update PCI slot information
+when PCI device hotplug event happens, which may cause memory leak
+and returning stale information to user.
 
-Split the registration of PCI bus device into two stages as below,
-so that the event handler could hold reference count to the new PCI bus
-when handling BUS_NOTIFY_ADD_DEVICE event.
-
-1) device_initialize(&pci_dev->dev)
-2) device_initialize(&pci_dev->subordinate->dev)
-3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
-4) device_add(&pci_dev->dev)
-5) device_add(&pci_dev->subordinate->dev)
+So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
+update PCI slot information when PCI hotplug event happens.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/bus.c    |    2 +-
- drivers/pci/probe.c  |    3 ++-
- drivers/pci/remove.c |   10 +++++-----
- 3 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/acpi/pci_slot.c |   86 ++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 78 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 4b0970b..11a5c28 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -189,7 +189,7 @@ int pci_bus_add_child(struct pci_bus *bus)
- 	if (bus->bridge)
- 		bus->dev.parent = bus->bridge;
+diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+index e50e31a..96dcc19 100644
+--- a/drivers/acpi/pci_slot.c
++++ b/drivers/acpi/pci_slot.c
+@@ -32,6 +32,7 @@
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <linux/pci-acpi.h>
+ #include <linux/dmi.h>
  
--	retval = device_register(&bus->dev);
-+	retval = device_add(&bus->dev);
- 	if (retval)
- 		return retval;
+ static bool debug;
+@@ -123,12 +124,7 @@ struct callback_args {
+ /*
+  * register_slot
+  *
+- * Called once for each SxFy object in the namespace. Don't worry about
+- * calling pci_create_slot multiple times for the same pci_bus:device,
+- * since each subsequent call simply bumps the refcount on the pci_slot.
+- *
+- * The number of calls to pci_destroy_slot from unregister_slot is
+- * symmetrical.
++ * Called once for each SxFy object in the namespace.
+  */
+ static acpi_status
+ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+@@ -145,6 +141,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	if (device < 0)
+ 		return AE_OK;
  
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 5dbad03..ddc8f7f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -464,6 +464,7 @@ static struct pci_bus * pci_alloc_bus(void)
- 		INIT_LIST_HEAD(&b->resources);
- 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
- 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
-+		device_initialize(&b->dev);
- 	}
- 	return b;
- }
-@@ -1672,7 +1673,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	b->dev.class = &pcibus_class;
- 	b->dev.parent = b->bridge;
- 	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
--	error = device_register(&b->dev);
-+	error = device_add(&b->dev);
- 	if (error)
- 		goto class_dev_reg_err;
- 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 37b9407..86a4636 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
- 	list_del(&bus->node);
- 	pci_bus_release_busn_res(bus);
- 	up_write(&pci_bus_sem);
--	if (!bus->is_added)
--		return;
--
--	pci_remove_legacy_files(bus);
--	device_unregister(&bus->dev);
-+	if (bus->is_added) {
-+		pci_remove_legacy_files(bus);
-+		device_del(&bus->dev);
++	/* Avoid duplicated records for the same slot */
++	list_for_each_entry(slot, &slot_list, list) {
++		pci_slot = slot->pci_slot;
++		if (pci_slot && pci_slot->bus == pci_bus &&
++		    pci_slot->number == device) {
++			return AE_OK;
++		}
 +	}
-+	put_device(&bus->dev);
++
+ 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
+ 	if (!slot) {
+ 		err("%s: cannot allocate memory\n", __func__);
+@@ -162,9 +167,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	slot->root_handle = parent_context->root_handle;
+ 	slot->pci_slot = pci_slot;
+ 	INIT_LIST_HEAD(&slot->list);
+-	mutex_lock(&slot_list_lock);
+ 	list_add(&slot->list, &slot_list);
+-	mutex_unlock(&slot_list_lock);
+ 
+ 	get_device(&pci_bus->dev);
+ 
+@@ -299,7 +302,9 @@ acpi_pci_slot_add(acpi_handle handle)
+ {
+ 	acpi_status status;
+ 
++	mutex_lock(&slot_list_lock);
+ 	status = walk_root_bridge(handle, register_slot);
++	mutex_unlock(&slot_list_lock);
+ 	if (ACPI_FAILURE(status))
+ 		err("%s: register_slot failure - %d\n", __func__, status);
+ 
+@@ -354,17 +359,82 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+ 	{}
+ };
+ 
++static void acpi_pci_slot_notify_add(struct pci_dev *dev)
++{
++	acpi_handle handle;
++	struct callback_args context;
++
++	if (!dev->subordinate)
++		return;
++
++	mutex_lock(&slot_list_lock);
++	handle = DEVICE_ACPI_HANDLE(&dev->dev);
++	context.root_handle = acpi_find_root_bridge_handle(dev);
++	if (handle && context.root_handle) {
++		context.pci_bus = dev->subordinate;
++		context.user_function = register_slot;
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
++				    register_slot, NULL, &context, NULL);
++	}
++	mutex_unlock(&slot_list_lock);
++}
++
++static void acpi_pci_slot_notify_del(struct pci_dev *dev)
++{
++	struct acpi_pci_slot *slot, *tmp;
++	struct pci_bus *bus = dev->subordinate;
++
++	if (!bus)
++		return;
++
++	mutex_lock(&slot_list_lock);
++	list_for_each_entry_safe(slot, tmp, &slot_list, list)
++		if (slot->pci_slot && slot->pci_slot->bus == bus) {
++			list_del(&slot->list);
++			pci_destroy_slot(slot->pci_slot);
++			put_device(&bus->dev);
++			kfree(slot);
++		}
++	mutex_unlock(&slot_list_lock);
++}
++
++static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
++				   unsigned long event, void *data)
++{
++	struct device *dev = data;
++
++	switch (event) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		acpi_pci_slot_notify_add(to_pci_dev(dev));
++		break;
++	case BUS_NOTIFY_DEL_DEVICE:
++		acpi_pci_slot_notify_del(to_pci_dev(dev));
++		break;
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block acpi_pci_slot_notifier = {
++	.notifier_call = &acpi_pci_slot_notify_fn,
++};
++
+ static int __init
+ acpi_pci_slot_init(void)
+ {
+ 	dmi_check_system(acpi_pci_slot_dmi_table);
+ 	acpi_pci_register_driver(&acpi_pci_slot_driver);
++	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
++
+ 	return 0;
  }
- EXPORT_SYMBOL(pci_remove_bus);
+ 
+ static void __exit
+ acpi_pci_slot_exit(void)
+ {
++	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
+ 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
+ }
  
 -- 
 1.7.9.5
