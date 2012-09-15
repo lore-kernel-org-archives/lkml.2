@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab2IOEmX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 00:42:23 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42970 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750720Ab2IOEmW (ORCPT
+	id S1751457Ab2IOFJl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 01:09:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65402 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab2IOFJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 00:42:22 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18t7OFf+4ktqCypWCRmZPZjR0BO5WOlD7uOnctpXG
-	6ufUwtpMmoGe2G
-Message-ID: <1347684137.4340.166.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Nikolay Ulyanitsky <lystor@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Sat, 15 Sep 2012 06:42:17 +0200
-In-Reply-To: <CA+55aFz1A7HbMYS9o-GTS5Zm=Xx8MUD7cR05GMVo--2E34jcgQ@mail.gmail.com>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic>
-	 <1347682262.4340.160.camel@marge.simpson.net>
-	 <CA+55aFz1A7HbMYS9o-GTS5Zm=Xx8MUD7cR05GMVo--2E34jcgQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sat, 15 Sep 2012 01:09:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347678312-11124-4-git-send-email-jiang.liu@huawei.com>
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+	<1347678312-11124-4-git-send-email-jiang.liu@huawei.com>
+Date: Fri, 14 Sep 2012 22:09:37 -0700
+X-Google-Sender-Auth: VKETQKeR16Jfx0m5jCIkRVyurdM
+Message-ID: <CAE9FiQU66sW4HsDuqh69evvcT0cfx61=6JtgrU7FTJjMo-_Njw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/9] PCI: preserve dev->subordinate until
+ pci_stop_dev() has been called
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 21:15 -0700, Linus Torvalds wrote:
-> We don't do random crazy "use another scheduler" to hide problems with
-> the default one.
+On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+> From: Yijing Wang <wangyijing@huawei.com>
+>
+> Changeset 2ed168eeb3edec029aa0eca5cb981d6376f931f9 "PCI: Fold stop and
+> remove helpers into their callers" has changed the behavior when
+> removing a PCI device.
+>
+> Previously, for a PCI bridge device with secondary bus, dev->subordinate
+> is valid when calling PCI bus notification callbacks for
+> BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events. Now dev->subordinate
+> has been reset to NULL when calling callbacks for BUS_NOTIFY_DEL_DEVICE
+> events, which may break some PCI bus notification callbacks.
+>
+> So revert to the original behavior to keep dev->subordinate valid for
+> both BUS_NOTIFY_ADD_DEVICE events and BUS_NOTIFY_DEL_DEVICE events.
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/pci/remove.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 86a4636..6244956 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -79,16 +79,16 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>          * iterator.  Therefore, iterate in reverse so we remove the VFs
+>          * first, then the PF.
+>          */
+> -       if (bus) {
+> +       if (bus)
+>                 list_for_each_entry_safe_reverse(child, tmp,
+>                                                  &bus->devices, bus_list)
+>                         pci_stop_and_remove_bus_device(child);
+> +       pci_stop_dev(dev);
+>
+> +       if (bus) {
+>                 pci_remove_bus(bus);
+>                 dev->subordinate = NULL;
+>         }
+> -
+> -       pci_stop_dev(dev);
+>         pci_destroy_dev(dev);
+>  }
+>  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
 
-I was proposing a diagnostic.
-> 
-> And since you are the author of the regressing patch, and don't seem
-> to treat the regression as something serious, I really see no
-> alternative to just reverting it.
+for support root bus support with acpi_pci_root (ioapic/iommu) will
+need pci_stop_bus_devices()
 
-Wow, I don't know how you obtained that impression, but fine, nuke it.
+so I just put those function back...
 
->       Linus
-> 
-> On Sep 14, 2012 9:11 PM, "Mike Galbraith" <efault@gmx.de> wrote:
->         On Fri, 2012-09-14 at 23:27 +0200, Borislav Petkov wrote:
->         > (Adding everybody to CC and leaving the below for
->         reference.)
->         >
->         > Guys,
->         >
->         > as Nikolay says below, we have a regression in 3.6 with
->         pgbench's
->         > benchmark in postgresql.
->         >
->         > I was able to reproduce it on another box here and did a
->         bisection run.
->         > It pointed to the commit below.
->         >
->         > And yes, reverting that commit fixes the issue here.
->         
->         My wild (and only) theory is that this is userspace spinlock
->         related.
->         If so, starting the server and benchmark SCHED_BATCH should
->         not only
->         kill the regression, but likely improve throughput as well.
->         
->         -Mike
->         
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=247a40206cf44488f21bc6074cf0ba2805d4d840
 
+Thanks
 
+Yinghai
