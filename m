@@ -1,406 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2IOPXM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 11:23:12 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58767 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2IOPXI (ORCPT
+	id S1753340Ab2IOP0A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 11:26:00 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:56914 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2IOPZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 11:23:08 -0400
-Date: Sat, 15 Sep 2012 17:23:03 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-leds@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        shuahkhan@gmail.com, raph@8d.com, tpiepho@freescale.com
-Subject: Re: [PATCH 1/2] leds: use workqueue in led_set_brightness() API
- internally
-Message-ID: <20120915152303.GA1434@gmail.com>
-References: <1347609183-26730-1-git-send-email-bryan.wu@canonical.com>
- <1347609183-26730-2-git-send-email-bryan.wu@canonical.com>
+	Sat, 15 Sep 2012 11:25:57 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmRPAIydVFBV5h1yPGdsb2JhbABFhR6FI7FJGQEBAQE3NIIhAQUnExweBRAISRQlChqIJLplFJEVYAOVYIEVhFuNGg
+X-IronPort-AV: E=Sophos;i="4.80,428,1344204000"; 
+   d="scan'208";a="193583233"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 15 Sep 2012 17:33:23 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Input and HID updates for 3.7, version 4
+Message-ID: <20120915153323.GA1391@polaris.bitmath.org>
+References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
+ <20120910190226.GA877@polaris.bitmath.org>
+ <alpine.LNX.2.00.1209102248250.22683@pobox.suse.cz>
+ <5556929.93aC5q4087@dtor-d630.eng.vmware.com>
+ <20120914192554.GA6498@polaris.bitmath.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347609183-26730-2-git-send-email-bryan.wu@canonical.com>
-X-Operating-System: Linux balto-eee 3.6.0-rc3-balto-eee-00471-g4379212-dirty
- GNU/Linux
+In-Reply-To: <20120914192554.GA6498@polaris.bitmath.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bryan,
+Ok, here is version 4 of the patchset. Rather than sending out all the
+patches again, the diff to linux-next is given below, and the
+refreshed tree can be pulled from
 
-On Fri, Sep 14, 2012 at 03:53:02PM +0800, Bryan Wu wrote:
-> The API function led_set_brightness() and __led_set_brightness will
-> call .brightness_set() function provided by led class drivers. So
-> .brightness_set() function will run in atomic context, which requires
-> led class drivers use workqueue in .brightness_set().
-> 
-> Finally, all the led class driver implemented their own workqueue in
-> .brightness_set(). For those missing this, we will face runtime warning
-> or error when running it in atomic context.
-> 
-> This patch adds a workqueue in led_set_brightness() internally. LED
-> class driver doesn't need to care about duplicated workqueue stuff in
-> their own driver.
-> 
-> Also this patch unified the led_set_brightness() and __led_set_brightness()
+  git://github.com/rydberg/linux.git maybe
 
-I like the idea of a semplification of led driver's code and the removal
-of the confusion between the two variants of led_set_brightness.
-Despite that, due to the lockless nature of the soft-blink code in the
-led subsystem I expect it to break quite easility with this kind of
-modification.
+All Dmitry's comments are addressed. Changes in short:
 
-> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> ---
->  drivers/leds/led-class.c          | 23 ++++++++++++-----------
->  drivers/leds/led-core.c           | 15 +++++++--------
->  drivers/leds/leds.h               | 11 ++---------
->  drivers/leds/ledtrig-backlight.c  |  8 ++++----
->  drivers/leds/ledtrig-default-on.c |  2 +-
->  drivers/leds/ledtrig-gpio.c       |  6 +++---
->  drivers/leds/ledtrig-heartbeat.c  |  2 +-
->  drivers/leds/ledtrig-oneshot.c    |  4 ++--
->  drivers/leds/ledtrig-transient.c  |  8 ++++----
->  include/linux/leds.h              | 12 +++++++-----
->  10 files changed, 43 insertions(+), 48 deletions(-)
-> 
-> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-> index 48cce18..7a3e886 100644
-> --- a/drivers/leds/led-class.c
-> +++ b/drivers/leds/led-class.c
-> @@ -53,7 +53,7 @@ static ssize_t led_brightness_store(struct device *dev,
->  
->  	if (state == LED_OFF)
->  		led_trigger_remove(led_cdev);
-> -	__led_set_brightness(led_cdev, state);
-> +	led_set_brightness(led_cdev, state);
->  
->  	return size;
->  }
-> @@ -82,7 +82,7 @@ static void led_timer_function(unsigned long data)
->  	unsigned long delay;
->  
->  	if (!led_cdev->blink_delay_on || !led_cdev->blink_delay_off) {
-> -		__led_set_brightness(led_cdev, LED_OFF);
-> +		led_set_brightness(led_cdev, LED_OFF);
->  		return;
->  	}
->  
-> @@ -105,7 +105,7 @@ static void led_timer_function(unsigned long data)
->  		delay = led_cdev->blink_delay_off;
->  	}
->  
-> -	__led_set_brightness(led_cdev, brightness);
-> +	led_set_brightness(led_cdev, brightness);
->  
->  	/* Return in next iteration if led is in one-shot mode and we are in
->  	 * the final blink state so that the led is toggled each delay_on +
-> @@ -124,14 +124,15 @@ static void led_timer_function(unsigned long data)
->  	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
->  }
->  
-> -static void set_brightness_delayed(struct work_struct *ws)
-> +static void led_set_brightness_work(struct work_struct *ws)
->  {
->  	struct led_classdev *led_cdev =
->  		container_of(ws, struct led_classdev, set_brightness_work);
->  
-> -	led_stop_software_blink(led_cdev);
-> +	if (led_cdev->blink_delay_on || led_cdev->blink_delay_off)
-> +		led_stop_software_blink(led_cdev);
+* Also move 'slot' to input_mt
+* Oops fix amended
+* New patch to allow driver pressure handling
+* Keep the synaptics specials in bcm5974
 
-This actually breaks soft-blink, as led_set_brightness_work is called by
-the soft-blink code itself when soft blink is active.  You may probabily
-want replicate the actual set code in led_timer_function() or to keep it
-in an internal function.
+Needless to say, I want to move this tree to linux-next soonish, so if
+there are more comments coming, I would appreciate a heads-up.
 
-One of the effects is that blink_delay_{on,off} are erroneously set to 0
-when setting 'timer' or 'oneshot' as current trigger.
+Thanks,
+Henrik
 
-> -	__led_set_brightness(led_cdev, led_cdev->delayed_set_value);
-> +	led_cdev->brightness_set(led_cdev, led_cdev->brightness);
-
-Is it ok to access led_cdev->brightness without locks?  I'm afraid that
-this may race in SMP if another CPU is running led_set_brightness.
-
-The lockless solution would be to make sure the work is canceled before
-setting the new value, through that may not be kind to hardirq context.
-
->  }
->  
->  /**
-> @@ -141,7 +142,7 @@ static void set_brightness_delayed(struct work_struct *ws)
->  void led_classdev_suspend(struct led_classdev *led_cdev)
->  {
->  	led_cdev->flags |= LED_SUSPENDED;
-> -	led_cdev->brightness_set(led_cdev, 0);
-> +	led_set_brightness(led_cdev, 0);
->  }
->  EXPORT_SYMBOL_GPL(led_classdev_suspend);
->  
-> @@ -151,7 +152,7 @@ EXPORT_SYMBOL_GPL(led_classdev_suspend);
->   */
->  void led_classdev_resume(struct led_classdev *led_cdev)
->  {
-> -	led_cdev->brightness_set(led_cdev, led_cdev->brightness);
-> +	led_set_brightness(led_cdev, led_cdev->brightness);
->  	led_cdev->flags &= ~LED_SUSPENDED;
->  }
->  EXPORT_SYMBOL_GPL(led_classdev_resume);
-> @@ -201,7 +202,7 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
->  
->  	led_update_brightness(led_cdev);
->  
-> -	INIT_WORK(&led_cdev->set_brightness_work, set_brightness_delayed);
-> +	INIT_WORK(&led_cdev->set_brightness_work, led_set_brightness_work);
->  
->  	init_timer(&led_cdev->blink_timer);
->  	led_cdev->blink_timer.function = led_timer_function;
-> @@ -233,12 +234,12 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
->  	up_write(&led_cdev->trigger_lock);
->  #endif
->  
-> -	cancel_work_sync(&led_cdev->set_brightness_work);
-> -
->  	/* Stop blinking */
->  	led_stop_software_blink(led_cdev);
->  	led_set_brightness(led_cdev, LED_OFF);
->  
-> +	flush_work(&led_cdev->set_brightness_work);
-> +
-
-Is it possible that this code runs with led_set_brightness_work()
-already scheduled on another CPU?  In that case flush_work would not
-wait for it.
-
-Fabio
-
->  	device_unregister(led_cdev->dev);
->  
->  	down_write(&leds_list_lock);
-> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-> index ce8921a..c212262 100644
-> --- a/drivers/leds/led-core.c
-> +++ b/drivers/leds/led-core.c
-> @@ -45,7 +45,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
->  
->  	/* never off - just set to brightness */
->  	if (!delay_off) {
-> -		__led_set_brightness(led_cdev, led_cdev->blink_brightness);
-> +		led_set_brightness(led_cdev, led_cdev->blink_brightness);
->  		return;
->  	}
->  
-> @@ -114,13 +114,12 @@ EXPORT_SYMBOL_GPL(led_stop_software_blink);
->  void led_set_brightness(struct led_classdev *led_cdev,
->  			enum led_brightness brightness)
->  {
-> -	/* delay brightness setting if need to stop soft-blink timer */
-> -	if (led_cdev->blink_delay_on || led_cdev->blink_delay_off) {
-> -		led_cdev->delayed_set_value = brightness;
-> -		schedule_work(&led_cdev->set_brightness_work);
-> -		return;
-> -	}
-> +	if (brightness > led_cdev->max_brightness)
-> +		brightness = led_cdev->max_brightness;
->  
-> -	__led_set_brightness(led_cdev, brightness);
-> +	led_cdev->brightness = brightness;
-> +
-> +	if (!(led_cdev->flags & LED_SUSPENDED))
-> +		schedule_work(&led_cdev->set_brightness_work);
->  }
->  EXPORT_SYMBOL(led_set_brightness);
-> diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
-> index 4c50365..745bf06 100644
-> --- a/drivers/leds/leds.h
-> +++ b/drivers/leds/leds.h
-> @@ -17,15 +17,8 @@
->  #include <linux/rwsem.h>
->  #include <linux/leds.h>
->  
-> -static inline void __led_set_brightness(struct led_classdev *led_cdev,
-> -					enum led_brightness value)
-> -{
-> -	if (value > led_cdev->max_brightness)
-> -		value = led_cdev->max_brightness;
-> -	led_cdev->brightness = value;
-> -	if (!(led_cdev->flags & LED_SUSPENDED))
-> -		led_cdev->brightness_set(led_cdev, value);
-> -}
-> +void led_set_brightness(struct led_classdev *led_cdev,
-> +				enum led_brightness value);
->  
->  static inline int led_get_brightness(struct led_classdev *led_cdev)
->  {
-> diff --git a/drivers/leds/ledtrig-backlight.c b/drivers/leds/ledtrig-backlight.c
-> index b941685..e272686 100644
-> --- a/drivers/leds/ledtrig-backlight.c
-> +++ b/drivers/leds/ledtrig-backlight.c
-> @@ -46,9 +46,9 @@ static int fb_notifier_callback(struct notifier_block *p,
->  
->  		if ((n->old_status == UNBLANK) ^ n->invert) {
->  			n->brightness = led->brightness;
-> -			__led_set_brightness(led, LED_OFF);
-> +			led_set_brightness(led, LED_OFF);
->  		} else {
-> -			__led_set_brightness(led, n->brightness);
-> +			led_set_brightness(led, n->brightness);
->  		}
->  
->  		n->old_status = new_status;
-> @@ -87,9 +87,9 @@ static ssize_t bl_trig_invert_store(struct device *dev,
->  
->  	/* After inverting, we need to update the LED. */
->  	if ((n->old_status == BLANK) ^ n->invert)
-> -		__led_set_brightness(led, LED_OFF);
-> +		led_set_brightness(led, LED_OFF);
->  	else
-> -		__led_set_brightness(led, n->brightness);
-> +		led_set_brightness(led, n->brightness);
->  
->  	return num;
->  }
-> diff --git a/drivers/leds/ledtrig-default-on.c b/drivers/leds/ledtrig-default-on.c
-> index eac1f1b..a4ef54b 100644
-> --- a/drivers/leds/ledtrig-default-on.c
-> +++ b/drivers/leds/ledtrig-default-on.c
-> @@ -19,7 +19,7 @@
->  
->  static void defon_trig_activate(struct led_classdev *led_cdev)
->  {
-> -	__led_set_brightness(led_cdev, led_cdev->max_brightness);
-> +	led_set_brightness(led_cdev, led_cdev->max_brightness);
->  }
->  
->  static struct led_trigger defon_led_trigger = {
-> diff --git a/drivers/leds/ledtrig-gpio.c b/drivers/leds/ledtrig-gpio.c
-> index ba215dc..f057c10 100644
-> --- a/drivers/leds/ledtrig-gpio.c
-> +++ b/drivers/leds/ledtrig-gpio.c
-> @@ -54,12 +54,12 @@ static void gpio_trig_work(struct work_struct *work)
->  
->  	if (tmp) {
->  		if (gpio_data->desired_brightness)
-> -			__led_set_brightness(gpio_data->led,
-> +			led_set_brightness(gpio_data->led,
->  					   gpio_data->desired_brightness);
->  		else
-> -			__led_set_brightness(gpio_data->led, LED_FULL);
-> +			led_set_brightness(gpio_data->led, LED_FULL);
->  	} else {
-> -		__led_set_brightness(gpio_data->led, LED_OFF);
-> +		led_set_brightness(gpio_data->led, LED_OFF);
->  	}
->  }
->  
-> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
-> index 1edc746..a019fbb 100644
-> --- a/drivers/leds/ledtrig-heartbeat.c
-> +++ b/drivers/leds/ledtrig-heartbeat.c
-> @@ -74,7 +74,7 @@ static void led_heartbeat_function(unsigned long data)
->  		break;
->  	}
->  
-> -	__led_set_brightness(led_cdev, brightness);
-> +	led_set_brightness(led_cdev, brightness);
->  	mod_timer(&heartbeat_data->timer, jiffies + delay);
->  }
->  
-> diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
-> index 2c029aa..2b10b28 100644
-> --- a/drivers/leds/ledtrig-oneshot.c
-> +++ b/drivers/leds/ledtrig-oneshot.c
-> @@ -63,9 +63,9 @@ static ssize_t led_invert_store(struct device *dev,
->  	oneshot_data->invert = !!state;
->  
->  	if (oneshot_data->invert)
-> -		__led_set_brightness(led_cdev, LED_FULL);
-> +		led_set_brightness(led_cdev, LED_FULL);
->  	else
-> -		__led_set_brightness(led_cdev, LED_OFF);
-> +		led_set_brightness(led_cdev, LED_OFF);
->  
->  	return size;
->  }
-> diff --git a/drivers/leds/ledtrig-transient.c b/drivers/leds/ledtrig-transient.c
-> index 398f104..83179f4 100644
-> --- a/drivers/leds/ledtrig-transient.c
-> +++ b/drivers/leds/ledtrig-transient.c
-> @@ -41,7 +41,7 @@ static void transient_timer_function(unsigned long data)
->  	struct transient_trig_data *transient_data = led_cdev->trigger_data;
->  
->  	transient_data->activate = 0;
-> -	__led_set_brightness(led_cdev, transient_data->restore_state);
-> +	led_set_brightness(led_cdev, transient_data->restore_state);
->  }
->  
->  static ssize_t transient_activate_show(struct device *dev,
-> @@ -72,7 +72,7 @@ static ssize_t transient_activate_store(struct device *dev,
->  	if (state == 0 && transient_data->activate == 1) {
->  		del_timer(&transient_data->timer);
->  		transient_data->activate = state;
-> -		__led_set_brightness(led_cdev, transient_data->restore_state);
-> +		led_set_brightness(led_cdev, transient_data->restore_state);
->  		return size;
->  	}
->  
-> @@ -80,7 +80,7 @@ static ssize_t transient_activate_store(struct device *dev,
->  	if (state == 1 && transient_data->activate == 0 &&
->  	    transient_data->duration != 0) {
->  		transient_data->activate = state;
-> -		__led_set_brightness(led_cdev, transient_data->state);
-> +		led_set_brightness(led_cdev, transient_data->state);
->  		transient_data->restore_state =
->  		    (transient_data->state == LED_FULL) ? LED_OFF : LED_FULL;
->  		mod_timer(&transient_data->timer,
-> @@ -203,7 +203,7 @@ static void transient_trig_deactivate(struct led_classdev *led_cdev)
->  
->  	if (led_cdev->activated) {
->  		del_timer_sync(&transient_data->timer);
-> -		__led_set_brightness(led_cdev, transient_data->restore_state);
-> +		led_set_brightness(led_cdev, transient_data->restore_state);
->  		device_remove_file(led_cdev->dev, &dev_attr_activate);
->  		device_remove_file(led_cdev->dev, &dev_attr_duration);
->  		device_remove_file(led_cdev->dev, &dev_attr_state);
-> diff --git a/include/linux/leds.h b/include/linux/leds.h
-> index 5676197..d7f5697 100644
-> --- a/include/linux/leds.h
-> +++ b/include/linux/leds.h
-> @@ -43,10 +43,15 @@ struct led_classdev {
->  #define LED_BLINK_ONESHOT_STOP	(1 << 18)
->  #define LED_BLINK_INVERT	(1 << 19)
->  
-> -	/* Set LED brightness level */
-> -	/* Must not sleep, use a workqueue if needed */
-> +	/*
-> +	 * Set LED brightness level
-> +	 * use a workqueue internally, so driver writer doesn't need to
-> +	 * care about using duplicated workqueue in brightness_set()
-> +	 */
->  	void		(*brightness_set)(struct led_classdev *led_cdev,
->  					  enum led_brightness brightness);
-> +	struct work_struct	set_brightness_work;
-> +
->  	/* Get LED brightness level */
->  	enum led_brightness (*brightness_get)(struct led_classdev *led_cdev);
->  
-> @@ -70,9 +75,6 @@ struct led_classdev {
->  	struct timer_list	 blink_timer;
->  	int			 blink_brightness;
->  
-> -	struct work_struct	set_brightness_work;
-> -	int			delayed_set_value;
-> -
->  #ifdef CONFIG_LEDS_TRIGGERS
->  	/* Protects the trigger data below */
->  	struct rw_semaphore	 trigger_lock;
-> -- 
-> 1.7.11.4
-> 
-
--- 
-Fabio Baltieri
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index 4c0e531..c0ec7d4 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -107,7 +107,6 @@ void input_mt_destroy_slots(struct input_dev *dev)
+ 		kfree(dev->mt);
+ 	}
+ 	dev->mt = NULL;
+-	dev->slot = 0;
+ }
+ EXPORT_SYMBOL(input_mt_destroy_slots);
+ 
+@@ -133,7 +132,7 @@ void input_mt_report_slot_state(struct input_dev *dev,
+ 	if (!mt)
+ 		return;
+ 
+-	slot = &mt->slots[dev->slot];
++	slot = &mt->slots[mt->slot];
+ 	slot->frame = mt->frame;
+ 
+ 	if (!active) {
+@@ -215,13 +214,17 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
+ 	if (oldest) {
+ 		int x = input_mt_get_value(oldest, ABS_MT_POSITION_X);
+ 		int y = input_mt_get_value(oldest, ABS_MT_POSITION_Y);
+-		int p = input_mt_get_value(oldest, ABS_MT_PRESSURE);
+ 
+ 		input_event(dev, EV_ABS, ABS_X, x);
+ 		input_event(dev, EV_ABS, ABS_Y, y);
+-		input_event(dev, EV_ABS, ABS_PRESSURE, p);
++
++		if (test_bit(ABS_MT_PRESSURE, dev->absbit)) {
++			int p = input_mt_get_value(oldest, ABS_MT_PRESSURE);
++			input_event(dev, EV_ABS, ABS_PRESSURE, p);
++		}
+ 	} else {
+-		input_event(dev, EV_ABS, ABS_PRESSURE, 0);
++		if (test_bit(ABS_MT_PRESSURE, dev->absbit))
++			input_event(dev, EV_ABS, ABS_PRESSURE, 0);
+ 	}
+ }
+ EXPORT_SYMBOL(input_mt_report_pointer_emulation);
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 2dff71b..5244f3d 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -208,6 +208,7 @@ static void input_repeat_key(unsigned long data)
+ static int input_handle_abs_event(struct input_dev *dev,
+ 				  unsigned int code, int *pval)
+ {
++	struct input_mt *mt = dev->mt;
+ 	bool is_mt_event;
+ 	int *pold;
+ 
+@@ -216,8 +217,8 @@ static int input_handle_abs_event(struct input_dev *dev,
+ 		 * "Stage" the event; we'll flush it later, when we
+ 		 * get actual touch data.
+ 		 */
+-		if (dev->mt && *pval >= 0 && *pval < dev->mt->num_slots)
+-			dev->slot = *pval;
++		if (mt && *pval >= 0 && *pval < mt->num_slots)
++			mt->slot = *pval;
+ 
+ 		return INPUT_IGNORE_EVENT;
+ 	}
+@@ -226,8 +227,8 @@ static int input_handle_abs_event(struct input_dev *dev,
+ 
+ 	if (!is_mt_event) {
+ 		pold = &dev->absinfo[code].value;
+-	} else if (dev->mt) {
+-		pold = &dev->mt->slots[dev->slot].abs[code - ABS_MT_FIRST];
++	} else if (mt) {
++		pold = &mt->slots[mt->slot].abs[code - ABS_MT_FIRST];
+ 	} else {
+ 		/*
+ 		 * Bypass filtering for multi-touch events when
+@@ -246,8 +247,8 @@ static int input_handle_abs_event(struct input_dev *dev,
+ 	}
+ 
+ 	/* Flush pending "slot" event */
+-	if (is_mt_event && dev->slot != input_abs_get_val(dev, ABS_MT_SLOT)) {
+-		input_abs_set_val(dev, ABS_MT_SLOT, dev->slot);
++	if (is_mt_event && mt && mt->slot != input_abs_get_val(dev, ABS_MT_SLOT)) {
++		input_abs_set_val(dev, ABS_MT_SLOT, mt->slot);
+ 		return INPUT_PASS_TO_HANDLERS | INPUT_SLOT;
+ 	}
+ 
+@@ -378,7 +379,7 @@ static void input_handle_event(struct input_dev *dev,
+ 			v = &dev->vals[dev->num_vals++];
+ 			v->type = EV_ABS;
+ 			v->code = ABS_MT_SLOT;
+-			v->value = dev->slot;
++			v->value = dev->mt->slot;
+ 		}
+ 
+ 		v = &dev->vals[dev->num_vals++];
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index 9555aa5..3a78f23 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -216,10 +216,11 @@ struct bcm5974_config {
+ 	enum tp_type tp_type;	/* type of trackpad interface */
+ 	int tp_offset;		/* offset to trackpad finger data */
+ 	int tp_datalen;		/* data length of the trackpad interface */
+-	struct bcm5974_param o;	/* orientation limits */
++	struct bcm5974_param p;	/* finger pressure limits */
+ 	struct bcm5974_param w;	/* finger width limits */
+ 	struct bcm5974_param x;	/* horizontal limits */
+ 	struct bcm5974_param y;	/* vertical limits */
++	struct bcm5974_param o;	/* orientation limits */
+ };
+ 
+ /* logical device structure */
+@@ -241,9 +242,10 @@ struct bcm5974 {
+ };
+ 
+ /* logical signal quality */
+-#define SN_ORIENT	10		/* orientation signal-to-noise ratio */
+-#define SN_WIDTH	100		/* width signal-to-noise ratio */
++#define SN_PRESSURE	45		/* pressure signal-to-noise ratio */
++#define SN_WIDTH	25		/* width signal-to-noise ratio */
+ #define SN_COORD	250		/* coordinate signal-to-noise ratio */
++#define SN_ORIENT	10		/* orientation signal-to-noise ratio */
+ 
+ /* device constants */
+ static const struct bcm5974_config bcm5974_config_table[] = {
+@@ -254,10 +256,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		0,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE1, FINGER_TYPE1, FINGER_TYPE1 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 256 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4824, 5342 },
+-		{ SN_COORD, -172, 5820 }
++		{ SN_COORD, -172, 5820 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING2_ANSI,
+@@ -266,10 +269,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		0,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE1, FINGER_TYPE1, FINGER_TYPE1 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 256 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4824, 4824 },
+-		{ SN_COORD, -172, 4290 }
++		{ SN_COORD, -172, 4290 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI,
+@@ -278,10 +282,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4460, 5166 },
+-		{ SN_COORD, -75, 6700 }
++		{ SN_COORD, -75, 6700 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI,
+@@ -290,10 +295,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4620, 5140 },
+-		{ SN_COORD, -150, 6600 }
++		{ SN_COORD, -150, 6600 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI,
+@@ -302,10 +308,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4616, 5112 },
+-		{ SN_COORD, -142, 5234 }
++		{ SN_COORD, -142, 5234 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI,
+@@ -314,10 +321,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4415, 5050 },
+-		{ SN_COORD, -55, 6680 }
++		{ SN_COORD, -55, 6680 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI,
+@@ -326,10 +334,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4620, 5140 },
+-		{ SN_COORD, -150, 6600 }
++		{ SN_COORD, -150, 6600 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI,
+@@ -338,10 +347,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4750, 5280 },
+-		{ SN_COORD, -150, 6730 }
++		{ SN_COORD, -150, 6730 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI,
+@@ -350,10 +360,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4620, 5140 },
+-		{ SN_COORD, -150, 6600 }
++		{ SN_COORD, -150, 6600 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{
+ 		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
+@@ -362,10 +373,11 @@ static const struct bcm5974_config bcm5974_config_table[] = {
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+-		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION },
++		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4750, 5280 },
+-		{ SN_COORD, -150, 6730 }
++		{ SN_COORD, -150, 6730 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
+ 	{}
+ };
+@@ -402,6 +414,10 @@ static void setup_events_to_report(struct input_dev *input_dev,
+ {
+ 	__set_bit(EV_ABS, input_dev->evbit);
+ 
++	/* for synaptics only */
++	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 256, 5, 0);
++	input_set_abs_params(input_dev, ABS_TOOL_WIDTH, 0, 16, 0, 0);
++
+ 	/* finger touch area */
+ 	set_abs(input_dev, ABS_MT_TOUCH_MAJOR, &cfg->w);
+ 	set_abs(input_dev, ABS_MT_TOUCH_MINOR, &cfg->w);
+@@ -462,6 +478,25 @@ static void report_finger_data(struct input_dev *input, int slot,
+ 	input_report_abs(input, ABS_MT_POSITION_Y, pos->y);
+ }
+ 
++static void report_synaptics_data(struct input_dev *input,
++				  const struct bcm5974_config *cfg,
++				  const struct tp_finger *f, int raw_n)
++{
++	int abs_p = 0, abs_w = 0;
++
++	if (raw_n) {
++		int p = raw2int(f->touch_major);
++		int w = raw2int(f->tool_major);
++		if (p > 0 && raw2int(f->origin)) {
++			abs_p = clamp_val(256 * p / cfg->p.max, 0, 255);
++			abs_w = clamp_val(16 * w / cfg->w.max, 0, 15);
++		}
++	}
++
++	input_report_abs(input, ABS_PRESSURE, abs_p);
++	input_report_abs(input, ABS_TOOL_WIDTH, abs_w);
++}
++
+ /* report trackpad data as logical trackpad state */
+ static int report_tp_state(struct bcm5974 *dev, int size)
+ {
+@@ -493,6 +528,8 @@ static int report_tp_state(struct bcm5974 *dev, int size)
+ 
+ 	input_mt_sync_frame(input);
+ 
++	report_synaptics_data(input, c, f, raw_n);
++
+ 	/* type 2 reports button events via ibt only */
+ 	if (c->tp_type == TYPE2) {
+ 		int ibt = raw2int(dev->tp_data[BUTTON_TYPE2]);
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 797f335..ba48743 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -1216,7 +1216,6 @@ struct input_value {
+  * @timer: timer for software autorepeat
+  * @rep: current values for autorepeat parameters (delay, rate)
+  * @mt: pointer to multitouch state
+- * @slot: MT slot currently being transmitted
+  * @absinfo: array of &struct input_absinfo elements holding information
+  *	about absolute axes (current value, min, max, flat, fuzz,
+  *	resolution)
+@@ -1296,7 +1295,6 @@ struct input_dev {
+ 	int rep[REP_CNT];
+ 
+ 	struct input_mt *mt;
+-	int slot;
+ 
+ 	struct input_absinfo *absinfo;
+ 
+diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+index bbdc694..cc5cca7 100644
+--- a/include/linux/input/mt.h
++++ b/include/linux/input/mt.h
+@@ -36,6 +36,7 @@ struct input_mt_slot {
+  * struct input_mt - state of tracked contacts
+  * @trkid: stores MT tracking ID for the next contact
+  * @num_slots: number of MT slots the device uses
++ * @slot: MT slot currently being transmitted
+  * @flags: input_mt operation flags
+  * @frame: increases every time input_mt_sync_frame() is called
+  * @red: reduced cost matrix for in-kernel tracking
+@@ -44,6 +45,7 @@ struct input_mt_slot {
+ struct input_mt {
+ 	int trkid;
+ 	int num_slots;
++	int slot;
+ 	unsigned int flags;
+ 	unsigned int frame;
+ 	int *red;
