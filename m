@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2IOV2R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 17:28:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59806 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2IOV2P (ORCPT
+	id S1752871Ab2IOVdi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 17:33:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33725 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab2IOVd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 17:28:15 -0400
-Date: Sat, 15 Sep 2012 22:32:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-Message-ID: <20120915223212.4174a314@pyramind.ukuu.org.uk>
-In-Reply-To: <1347727001.7029.37.camel@marge.simpson.net>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	<20120914212717.GA29307@liondog.tnic>
-	<CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	<1347680006.4340.142.camel@marge.simpson.net>
-	<m24nmzz2f8.fsf@firstfloor.org>
-	<1347727001.7029.37.camel@marge.simpson.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Sep 2012 17:33:27 -0400
+Date: Sat, 15 Sep 2012 22:31:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Greg Ungerer <gerg@snapgear.com>, dedekind1@gmail.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Turquette <mturquette@ti.com>, Greg Ungerer <gerg@uclinux.org>,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] clk: Make the managed clk functions generically
+	available
+Message-ID: <20120915213151.GM12245@n2100.arm.linux.org.uk>
+References: <1347202862-1617-1-git-send-email-lars@metafoo.de> <20120909235059.GA2643@sirena.org.uk> <20120910001524.GL13739@n2100.arm.linux.org.uk> <20120910002020.GB16249@opensource.wolfsonmicro.com> <20120910003913.GM13739@n2100.arm.linux.org.uk> <504F4E36.20309@metafoo.de> <1347375033.27206.3.camel@sauron.fi.intel.com> <504FE633.2090304@snapgear.com> <5050F3DB.1050202@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5050F3DB.1050202@metafoo.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, postgress performs loads better with it's spinlocks, but due to
-> that, it necessarily _hates_ preemption.  How the is the scheduler
-> supposed to know that any specific userland task _really_ shouldn't be
-> preempted at any specific time, else bad things follow?
+On Wed, Sep 12, 2012 at 10:43:07PM +0200, Lars-Peter Clausen wrote:
+> I wouldn't mind having this merged sooner rather than later, there is at least
+> one driver in next which is currently broken due to the missing devm_clk_get.
+> Russell what's your plan for the patch? Maybe under the given circumstances it
+> makes sense to let it go through the m68k tree.
 
-You provide a shared page for a process group so it can write hints to
-which is kernel mapped so the scheduler can peek..
+Ok, I've merged it but there was no indication in the patch that it was
+supposed to be a fix... there's no cc: to stable.  Does it need to go to
+stable?  When was this brokenness introduced?  What's the story for the
+m68k bit?
 
-Alan
+(Cc on this thread to stable added so they can hear the reply... so if
+it does end up with a Cc: being added to the commit, they have the
+background... this is *not* a stable submission request.)
