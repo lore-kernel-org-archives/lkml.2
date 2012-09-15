@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab2IOUCG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 16:02:06 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55850 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755122Ab2IOUCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 16:02:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Power management fixes for 3.6-rc6
-Date: Sat, 15 Sep 2012 22:08:25 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
+	id S1753054Ab2IOUOn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 16:14:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50417 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2IOUOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Sep 2012 16:14:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 17/24] ARM: OMAP: use __iomem pointers for MMIO
+Date: Sat, 15 Sep 2012 20:14:37 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Nicolas Pitre <nico@linaro.org>
+References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-18-git-send-email-arnd@arndb.de> <20120915181057.GH4521@atomide.com>
+In-Reply-To: <20120915181057.GH4521@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209152208.25990.rjw@sisk.pl>
+Message-Id: <201209152014.37989.arnd@arndb.de>
+X-Provags-ID: V02:K0:3TO6y9v6xK1Z5QkOydXUhGx98XQqR79D6an375OYQNy
+ yb/EUUEKvHBtqyiY+uoRpXuFgOK9txoF3Wsyh+z3NzYlVa00Dr
+ HAtEUc/Xn4fxkFHRAFJJXyyy8NCnghQOMFEa7sMbxVG4rJk9lT
+ 7CmJ9wjI3xDSO67PidyeJdDY1TA+o3rhIoKo8FNa5BQjlcEbi8
+ UszDwCVGbDLXJUZP0TU6VjOrLw4sNqg8l8odMXf2w9EKiGqsyH
+ keZsobGfirCWG5FiFLJlVtLQMwkKLL0IKjIgeynrbibU/U0mrM
+ T2laiyNA7PKNKfjnjsmxfrXlv5Z1yoohzgaifl/tE9Idku0kk4
+ EYp30hFMayIzVEQmiIJE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Saturday 15 September 2012, Tony Lindgren wrote:
+> With my patches, this is now all omap1 specific and
+> moved to arch/arm/mach-omap1/include/mach/hardware.h.
+> It's probably easiest to just update this patch on
+> top of the hardware.h changes I've done.
 
-Please pull from the git repository at
+Yes, sounds good. Do you want to send a patch for that
+and let me drop this one then?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-3.6-rc6
-
-to receive power management fixes for v3.6-rc6 with top-most commit
-f25b70613c048ceb1df052576fda03321ebf41cf
-
-  ACPI / PM: Use KERN_DEBUG when no power resources are found
-
-on top of commit 55d512e245bc7699a8800e23df1a24195dd08217
-
-  Linux 3.6-rc5
-
-Included are 3 fixes for ACPI device power management issues we've had for some
-time that have been uncovered or started to really annoy people recently.  All
-of them are -stable material.
-
-Thanks!
-
-
- drivers/acpi/bus.c   | 10 ++++++++++
- drivers/acpi/power.c | 36 ++++++++++++++++++++++++------------
- 2 files changed, 34 insertions(+), 12 deletions(-)
-
----------------
-
-Aaron Lu (1):
-      ACPI / PM: Use KERN_DEBUG when no power resources are found
-
-Lin Ming (1):
-      ACPI / PM: Fix resource_lock dead lock in acpi_power_on_device
-
-Rafael J. Wysocki (1):
-      ACPI / PM: Infer parent power state from child if unknown, v2
-
+	Arnd
