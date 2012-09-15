@@ -1,229 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab2IOEP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 00:15:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36835 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2IOEPz (ORCPT
+	id S1751298Ab2IOEmX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 00:42:23 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:42970 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750720Ab2IOEmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 00:15:55 -0400
-Date: Fri, 14 Sep 2012 21:15:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-usb@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Neil Zhang <zhangwm@marvell.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] USB: remove CONFIG_EXPERIMENTAL dependancies
-Message-ID: <20120915041550.GA28736@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 15 Sep 2012 00:42:22 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18t7OFf+4ktqCypWCRmZPZjR0BO5WOlD7uOnctpXG
+	6ufUwtpMmoGe2G
+Message-ID: <1347684137.4340.166.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Nikolay Ulyanitsky <lystor@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 15 Sep 2012 06:42:17 +0200
+In-Reply-To: <CA+55aFz1A7HbMYS9o-GTS5Zm=Xx8MUD7cR05GMVo--2E34jcgQ@mail.gmail.com>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <1347682262.4340.160.camel@marge.simpson.net>
+	 <CA+55aFz1A7HbMYS9o-GTS5Zm=Xx8MUD7cR05GMVo--2E34jcgQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Fri, 2012-09-14 at 21:15 -0700, Linus Torvalds wrote:
+> We don't do random crazy "use another scheduler" to hide problems with
+> the default one.
 
-As discussed at the kernel summit this year, CONFIG_EXPERIMENTAL means
-nothing, so let's get rid of it.
+I was proposing a diagnostic.
+> 
+> And since you are the author of the regressing patch, and don't seem
+> to treat the regression as something serious, I really see no
+> alternative to just reverting it.
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Neil Zhang <zhangwm@marvell.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Wow, I don't know how you obtained that impression, but fine, nuke it.
 
----
- drivers/usb/core/Kconfig     |    2 +-
- drivers/usb/gadget/Kconfig   |   17 ++++++-----------
- drivers/usb/host/Kconfig     |   22 ++++++++++------------
- drivers/usb/wusbcore/Kconfig |    3 +--
- 4 files changed, 18 insertions(+), 26 deletions(-)
+>       Linus
+> 
+> On Sep 14, 2012 9:11 PM, "Mike Galbraith" <efault@gmx.de> wrote:
+>         On Fri, 2012-09-14 at 23:27 +0200, Borislav Petkov wrote:
+>         > (Adding everybody to CC and leaving the below for
+>         reference.)
+>         >
+>         > Guys,
+>         >
+>         > as Nikolay says below, we have a regression in 3.6 with
+>         pgbench's
+>         > benchmark in postgresql.
+>         >
+>         > I was able to reproduce it on another box here and did a
+>         bisection run.
+>         > It pointed to the commit below.
+>         >
+>         > And yes, reverting that commit fixes the issue here.
+>         
+>         My wild (and only) theory is that this is userspace spinlock
+>         related.
+>         If so, starting the server and benchmark SCHED_BATCH should
+>         not only
+>         kill the regression, but likely improve throughput as well.
+>         
+>         -Mike
+>         
 
-Any objections to me applying this patch to the usb-next branch?
 
-diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-index 9981984..f70c1a1 100644
---- a/drivers/usb/core/Kconfig
-+++ b/drivers/usb/core/Kconfig
-@@ -56,7 +56,7 @@ config USB_SUSPEND
- 
- config USB_OTG
- 	bool "OTG support"
--	depends on USB && EXPERIMENTAL
-+	depends on USB
- 	depends on USB_SUSPEND
- 	default n
- 	help
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index a53be32..dfb51a4 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -557,7 +557,7 @@ config USB_ZERO_HNPTEST
- 	  one serve as the USB host instead (in the "B-Host" role).
- 
- config USB_AUDIO
--	tristate "Audio Gadget (EXPERIMENTAL)"
-+	tristate "Audio Gadget"
- 	depends on SND
- 	select USB_LIBCOMPOSITE
- 	select SND_PCM
-@@ -672,8 +672,7 @@ config USB_G_NCM
- 	  dynamically linked module called "g_ncm".
- 
- config USB_GADGETFS
--	tristate "Gadget Filesystem (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Gadget Filesystem"
- 	help
- 	  This driver provides a filesystem based API that lets user mode
- 	  programs implement a single-configuration USB device, including
-@@ -681,15 +680,11 @@ config USB_GADGETFS
- 	  All endpoints, transfer speeds, and transfer types supported by
- 	  the hardware are available, through read() and write() calls.
- 
--	  Currently, this option is still labelled as EXPERIMENTAL because
--	  of existing race conditions in the underlying in-kernel AIO core.
--
- 	  Say "y" to link the driver statically, or "m" to build a
- 	  dynamically linked module called "gadgetfs".
- 
- config USB_FUNCTIONFS
--	tristate "Function Filesystem (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Function Filesystem"
- 	select USB_LIBCOMPOSITE
- 	select USB_FUNCTIONFS_GENERIC if !(USB_FUNCTIONFS_ETH || USB_FUNCTIONFS_RNDIS)
- 	help
-@@ -799,8 +794,8 @@ config USB_G_SERIAL
- 	  make MS-Windows work with CDC ACM.
- 
- config USB_MIDI_GADGET
--	tristate "MIDI Gadget (EXPERIMENTAL)"
--	depends on SND && EXPERIMENTAL
-+	tristate "MIDI Gadget"
-+	depends on SND
- 	select USB_LIBCOMPOSITE
- 	select SND_RAWMIDI
- 	help
-@@ -867,7 +862,7 @@ config USB_G_ACM_MS
- 	  dynamically linked module called "g_acm_ms".
- 
- config USB_G_MULTI
--	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
-+	tristate "Multifunction Composite Gadget"
- 	depends on BLOCK && NET
- 	select USB_G_MULTI_CDC if !USB_G_MULTI_RNDIS
- 	select USB_LIBCOMPOSITE
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 13cd6d5..b1deb0f 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -18,8 +18,8 @@ config USB_C67X00_HCD
- 	  module will be called c67x00.
- 
- config USB_XHCI_HCD
--	tristate "xHCI HCD (USB 3.0) support (EXPERIMENTAL)"
--	depends on USB && USB_ARCH_HAS_XHCI && EXPERIMENTAL
-+	tristate "xHCI HCD (USB 3.0) support"
-+	depends on USB && USB_ARCH_HAS_XHCI
- 	---help---
- 	  The eXtensible Host Controller Interface (xHCI) is standard for USB 3.0
- 	  "SuperSpeed" host controller hardware.
-@@ -262,7 +262,7 @@ config USB_ISP116X_HCD
- 
- config USB_ISP1760_HCD
- 	tristate "ISP 1760 HCD support"
--	depends on USB && EXPERIMENTAL
-+	depends on USB
- 	---help---
- 	  The ISP1760 chip is a USB 2.0 host controller.
- 
-@@ -376,7 +376,7 @@ config USB_OHCI_HCD_PCI
- 
- config USB_OHCI_HCD_SSB
- 	bool "OHCI support for Broadcom SSB OHCI core (DEPRECATED)"
--	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD) && EXPERIMENTAL
-+	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD)
- 	select USB_HCD_SSB
- 	select USB_OHCI_HCD_PLATFORM
- 	default n
-@@ -414,7 +414,7 @@ config USB_CNS3XXX_OHCI
- 
- config USB_OHCI_HCD_PLATFORM
- 	bool "Generic OHCI driver for a platform device"
--	depends on USB_OHCI_HCD && EXPERIMENTAL
-+	depends on USB_OHCI_HCD
- 	default n
- 	---help---
- 	  Adds an OHCI host driver for a generic platform device, which
-@@ -424,7 +424,7 @@ config USB_OHCI_HCD_PLATFORM
- 
- config USB_EHCI_HCD_PLATFORM
- 	bool "Generic EHCI driver for a platform device"
--	depends on USB_EHCI_HCD && EXPERIMENTAL
-+	depends on USB_EHCI_HCD
- 	default n
- 	---help---
- 	  Adds an EHCI host driver for a generic platform device, which
-@@ -591,8 +591,7 @@ config USB_RENESAS_USBHS_HCD
- 	  module will be called renesas-usbhs.
- 
- config USB_WHCI_HCD
--	tristate "Wireless USB Host Controller Interface (WHCI) driver (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Wireless USB Host Controller Interface (WHCI) driver"
- 	depends on PCI && USB && UWB
- 	select USB_WUSB
- 	select UWB_WHCI
-@@ -604,8 +603,7 @@ config USB_WHCI_HCD
- 	  will be called "whci-hcd".
- 
- config USB_HWA_HCD
--	tristate "Host Wire Adapter (HWA) driver (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Host Wire Adapter (HWA) driver"
- 	depends on USB && UWB
- 	select USB_WUSB
- 	select UWB_HWA
-@@ -656,7 +654,7 @@ config USB_OCTEON2_COMMON
- 
- config USB_HCD_BCMA
- 	tristate "BCMA usb host driver"
--	depends on BCMA && EXPERIMENTAL
-+	depends on BCMA
- 	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
- 	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
- 	help
-@@ -668,7 +666,7 @@ config USB_HCD_BCMA
- 
- config USB_HCD_SSB
- 	tristate "SSB usb host driver"
--	depends on SSB && EXPERIMENTAL
-+	depends on SSB
- 	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
- 	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
- 	help
-diff --git a/drivers/usb/wusbcore/Kconfig b/drivers/usb/wusbcore/Kconfig
-index f29fdd7..8bf1976 100644
---- a/drivers/usb/wusbcore/Kconfig
-+++ b/drivers/usb/wusbcore/Kconfig
-@@ -2,8 +2,7 @@
- # Wireless USB Core configuration
- #
- config USB_WUSB
--	tristate "Enable Wireless USB extensions (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Enable Wireless USB extensions"
- 	depends on USB
- 	depends on PCI
- 	depends on UWB
