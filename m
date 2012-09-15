@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab2IOWWi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 18:22:38 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62639 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751343Ab2IOWWd (ORCPT
+	id S1754258Ab2IOWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 18:23:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62273 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2IOWXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 18:22:33 -0400
+	Sat, 15 Sep 2012 18:23:55 -0400
 MIME-Version: 1.0
 In-Reply-To: <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
 References: <1347655456-2542-1-git-send-email-thierry.reding@avionic-design.de>
  <1347655456-2542-2-git-send-email-thierry.reding@avionic-design.de>
  <CAMuHMdWuR_tdMw9iVkaQ3D9p1HVU_L05ap=MzBuo1jLD6YdHHw@mail.gmail.com> <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 15 Sep 2012 16:22:11 -0600
-Message-ID: <CAErSpo7q9fvtjatfKqtb8SP3UOJdEXpbvFC_qMBTc6mAoRTQuA@mail.gmail.com>
+Date: Sat, 15 Sep 2012 16:23:33 -0600
+Message-ID: <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
 Subject: Re: [PATCH 2/2] PCI: Provide a default pcibios_update_irq()
 To: Thierry Reding <thierry.reding@avionic-design.de>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
@@ -63,3 +63,11 @@ On Sat, Sep 15, 2012 at 1:53 AM, Thierry Reding
 > The problem with pr_debug() and dev_dbg() is that they will be compiled
 > out if DEBUG is not defined. Perhaps we should pass -DDEBUG if PCI_DEBUG
 > is configured and make this dev_dbg()?
+
+Sorry, fat-fingered the previous empty response.
+
+We already have this in drivers/pci/Makefile:
+
+    ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
+
+so dev_dbg() should be perfect.
