@@ -1,104 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2IOICZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 04:02:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54948 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2IOICM (ORCPT
+	id S1752622Ab2IOIDs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 04:03:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63629 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab2IOIDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 04:02:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 22/24] scsi: eesox: use __iomem pointers for MMIO
-Date: Sat, 15 Sep 2012 08:00:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-23-git-send-email-arnd@arndb.de> <20120914232703.GE12245@n2100.arm.linux.org.uk>
-In-Reply-To: <20120914232703.GE12245@n2100.arm.linux.org.uk>
+	Sat, 15 Sep 2012 04:03:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209150800.35605.arnd@arndb.de>
-X-Provags-ID: V02:K0:JBsT3JEgNwTnerWTKVjcvbqYYTlm8XfXIaHXcNECxZq
- NTl1dyFC2KU5DoT6lZyO4hVw5EcgdvqdDpr24EqGsRBLjqz3eQ
- NdRc3ELur8U4LXOOQRDJt27Kk/H1CCYnq2+JxSOg5Th3jlTPMm
- Sl6jjVvQrSbEExvrurOIzJzbElrlMH/uHOiOw1yn9+LCdHPD2u
- gdwmylUBJTFdd+DkNzPdokuR26iAwgKT5MrFyIoEMOMI6L5fEp
- TE3b6DdpeLilW/FmjhkG4x2VMsY7jo/XCfj9GNeyr82Sj6skYb
- oOZdhVtIz1zAFIAZn34LLXVDpbpUv0HCqgd0CMP2qf8bfP531n
- PK+nUPcsMBHO5Q7Bmg+U=
+In-Reply-To: <1347678312-11124-3-git-send-email-jiang.liu@huawei.com>
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+	<1347678312-11124-3-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 15 Sep 2012 01:03:40 -0700
+X-Google-Sender-Auth: y6r_WjxxRPQfgcdcGn000RROmwY
+Message-ID: <CAE9FiQVyEskBfBxM90fD2BFVNGTYa75QCtkZp+5n8cLh3y395Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/9] PCI: split registration of PCI bus devices into
+ two stages
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 September 2012, Russell King - ARM Linux wrote:
-> On Fri, Sep 14, 2012 at 11:34:50PM +0200, Arnd Bergmann wrote:
-> > ARM is moving to stricter checks on readl/write functions,
-> > so we need to use the correct types everywhere.
-> 
-> There's nothing wrong with const iomem pointers.  If you think
-> otherwise, patch x86 not to use const in its accessor implementation
-> and watch the reaction:
-> 
-> #define build_mmio_read(name, size, type, reg, barrier) \
-> static inline type name(const volatile void __iomem *addr) \
-> { type ret; asm volatile("mov" size " %1,%0":reg (ret) \
-> :"m" (*(volatile type __force *)addr) barrier); return ret; }
-> 
-> build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
-> build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
-> build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
+On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+> When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
+> the notification handler can't hold reference count to the new PCI bus
+> because the device object for the new bus (pci_dev->subordinate->dev)
+> hasn't been initialized yet.
+>
+> Split the registration of PCI bus device into two stages as below,
+> so that the event handler could hold reference count to the new PCI bus
+> when handling BUS_NOTIFY_ADD_DEVICE event.
+>
+> 1) device_initialize(&pci_dev->dev)
+> 2) device_initialize(&pci_dev->subordinate->dev)
+> 3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
+> 4) device_add(&pci_dev->dev)
+> 5) device_add(&pci_dev->subordinate->dev)
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/pci/bus.c    |    2 +-
+>  drivers/pci/probe.c  |    3 ++-
+>  drivers/pci/remove.c |   10 +++++-----
+>  3 files changed, 8 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 4b0970b..11a5c28 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -189,7 +189,7 @@ int pci_bus_add_child(struct pci_bus *bus)
+>         if (bus->bridge)
+>                 bus->dev.parent = bus->bridge;
+>
+> -       retval = device_register(&bus->dev);
+> +       retval = device_add(&bus->dev);
+>         if (retval)
+>                 return retval;
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 5dbad03..ddc8f7f 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -464,6 +464,7 @@ static struct pci_bus * pci_alloc_bus(void)
+>                 INIT_LIST_HEAD(&b->resources);
+>                 b->max_bus_speed = PCI_SPEED_UNKNOWN;
+>                 b->cur_bus_speed = PCI_SPEED_UNKNOWN;
+> +               device_initialize(&b->dev);
+>         }
+>         return b;
+>  }
+> @@ -1672,7 +1673,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>         b->dev.class = &pcibus_class;
+>         b->dev.parent = b->bridge;
+>         dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+> -       error = device_register(&b->dev);
+> +       error = device_add(&b->dev);
+>         if (error)
+>                 goto class_dev_reg_err;
 
-Ok, fair enough. Can you fold the patch below into 
-"ARM: 7500/1: io: avoid writeback addressing modes for __raw_
-accessors", or apply on top then?
+failing path in pci_create_root_bus is not handled.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+you could try to move
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 35c1ed8..4c5f708 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -39,9 +39,9 @@
-  * Generic IO read/write.  These perform native-endian accesses.  Note
-  * that some architectures will want to re-define __raw_{read,write}w.
-  */
--extern void __raw_writesb(void __iomem *addr, const void *data, int bytelen);
--extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
--extern void __raw_writesl(void __iomem *addr, const void *data, int longlen);
-+extern void __raw_writesb(const void __iomem *addr, const void *data, int bytelen);
-+extern void __raw_writesw(const void __iomem *addr, const void *data, int wordlen);
-+extern void __raw_writesl(const void __iomem *addr, const void *data, int longlen);
- 
- extern void __raw_readsb(const void __iomem *addr, void *data, int bytelen);
- extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
-@@ -61,7 +61,7 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
-  * writeback addressing modes as these incur a significant performance
-  * overhead (the address generation must be emulated in software).
-  */
--static inline void __raw_writew(u16 val, volatile void __iomem *addr)
-+static inline void __raw_writew(u16 val, const volatile void __iomem *addr)
- {
- 	asm volatile("strh %1, %0"
- 		     : "+Qo" (*(volatile u16 __force *)addr)
-@@ -78,14 +78,14 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
- }
- #endif
- 
--static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
-+static inline void __raw_writeb(u8 val, const volatile void __iomem *addr)
- {
- 	asm volatile("strb %1, %0"
- 		     : "+Qo" (*(volatile u8 __force *)addr)
- 		     : "r" (val));
- }
- 
--static inline void __raw_writel(u32 val, volatile void __iomem *addr)
-+static inline void __raw_writel(u32 val, const volatile void __iomem *addr)
- {
- 	asm volatile("str %1, %0"
- 		     : "+Qo" (*(volatile u32 __force *)addr)
+     device_initialize(&b->dev);
+
+to
+     pci_add_new_bus and pci_create_root_bus instead.
+
+
+>
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 37b9407..86a4636 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
+>         list_del(&bus->node);
+>         pci_bus_release_busn_res(bus);
+>         up_write(&pci_bus_sem);
+> -       if (!bus->is_added)
+> -               return;
+> -
+> -       pci_remove_legacy_files(bus);
+> -       device_unregister(&bus->dev);
+> +       if (bus->is_added) {
+> +               pci_remove_legacy_files(bus);
+> +               device_del(&bus->dev);
+> +       }
+> +       put_device(&bus->dev);
+>  }
+>  EXPORT_SYMBOL(pci_remove_bus);
+>
+> --
+> 1.7.9.5
+>
