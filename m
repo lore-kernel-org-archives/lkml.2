@@ -1,51 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2IOJac (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 05:30:32 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53504 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751530Ab2IOJab (ORCPT
+	id S1752492Ab2IOJxG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 05:53:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43596 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab2IOJxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 05:30:31 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/ap1962OXaU3VPAzcuuVZ+7oMUKo2F5+rTbNHLsX
-	NqCd8Zo49Wm15i
-Message-ID: <50544AB2.302@gmx.de>
-Date: Sat, 15 Sep 2012 11:30:26 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: w/ current kernel (3.5.3) I need 2 attempts for s2disk in a row
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Sat, 15 Sep 2012 05:53:04 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, ebiederm@xmission.com,
+        mathieu.desnoyers@efficios.com, neilb@suse.de, bfields@fieldses.org,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        josh@joshtriplett.org, David.Laight@ACULAB.COM, rmallon@gmail.com,
+        palves@redhat.com, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH v5] hashtable: introduce a small and naive hashtable
+Date: Sat, 15 Sep 2012 11:53:18 +0200
+Message-Id: <1347702798-19202-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WIth a ThinkPad T420 latest BIOS and current kernel, ( GB RAM and 10 GB swap space Ioften need 2 attempts in a row to s2disk.
-The first fails while the second (immediately after it) works :
+This hashtable implementation is using hlist buckets to provide a simple
+hashtable to prevent it from getting reimplemented all over the kernel.
 
-22012-09-15T05:17:54.114+02:00 n22 kernel: PM: Need to copy 719868 pages
-2012-09-15T05:17:54.114+02:00 n22 kernel: PM: Normal pages needed: 146128 + 1024, available pages: 81456
-2012-09-15T05:17:54.114+02:00 n22 kernel: PM: Not enough free memory
-2012-09-15T05:17:54.114+02:00 n22 kernel: PM: Error -12 creating hibernation image
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
 
+Changes from v4:
 
-...
+ - Addressed comments by Mathieu Desnoyers.
 
-2012-09-15T11:02:43.192+02:00 n22 kernel: PM: Creating hibernation image:
-2012-09-15T11:02:43.192+02:00 n22 kernel: PM: Need to copy 384852 pages
-2012-09-15T11:02:43.202+02:00 n22 kernel: PM: Normal pages needed: 65642 + 1024, available pages: 161930
-2012-09-15T11:02:43.202+02:00 n22 kernel: PM: Restoring platform NVS memory
+ include/linux/hashtable.h | 190 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 190 insertions(+)
+ create mode 100644 include/linux/hashtable.h
 
-
-/me wonders whether it is a known issue or special to my system.
-
-
+diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+new file mode 100644
+index 0000000..6d0c6c2
+--- /dev/null
++++ b/include/linux/hashtable.h
+@@ -0,0 +1,190 @@
++/*
++ * Hash table implementation
++ * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
++ */
++
++#ifndef _LINUX_HASHTABLE_H
++#define _LINUX_HASHTABLE_H
++
++#include <linux/list.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/hash.h>
++#include <linux/rculist.h>
++
++#define DEFINE_HASHTABLE(name, bits)						\
++	struct hlist_head name[HASH_SIZE(bits)] =				\
++			{ [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT }
++
++#define DECLARE_HASHTABLE(name, bits)                                   	\
++	struct hlist_head name[1 << (bits)]
++
++#define HASH_SIZE(name) (1 << HASH_BITS(name))
++#define HASH_BITS(name) ilog2(ARRAY_SIZE(name))
++
++/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
++#define hash_min(val, bits)							\
++({										\
++	sizeof(val) <= 4 ?							\
++	hash_32(val, bits) :							\
++	hash_long(val, bits);							\
++})
++
++/**
++ * hash_init - initialize a hash table
++ * @hashtable: hashtable to be initialized
++ *
++ * Calculates the size of the hashtable from the given parameter, otherwise
++ * same as hash_init_size.
++ *
++ * This has to be a macro since HASH_BITS() will not work on pointers since
++ * it calculates the size during preprocessing.
++ */
++#define hash_init(hashtable)							\
++({										\
++	int __i;								\
++										\
++	for (__i = 0; __i < HASH_BITS(hashtable); __i++)			\
++		INIT_HLIST_HEAD(&hashtable[__i]);				\
++})
++
++/**
++ * hash_add - add an object to a hashtable
++ * @hashtable: hashtable to add to
++ * @node: the &struct hlist_node of the object to be added
++ * @key: the key of the object to be added
++ */
++#define hash_add(hashtable, node, key)						\
++	hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
++
++/**
++ * hash_add_rcu - add an object to a rcu enabled hashtable
++ * @hashtable: hashtable to add to
++ * @node: the &struct hlist_node of the object to be added
++ * @key: the key of the object to be added
++ */
++#define hash_add_rcu(hashtable, node, key)					\
++	hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
++
++/**
++ * hash_hashed - check whether an object is in any hashtable
++ * @node: the &struct hlist_node of the object to be checked
++ */
++#define hash_hashed(node) (!hlist_unhashed(node))
++
++/**
++ * hash_empty - check whether a hashtable is empty
++ * @hashtable: hashtable to check
++ *
++ * This has to be a macro since HASH_BITS() will not work on pointers since
++ * it calculates the size during preprocessing.
++ */
++#define hash_empty(hashtable)							\
++({										\
++	int __i;								\
++	bool __ret = true;							\
++										\
++	for (__i = 0; __i < HASH_SIZE(hashtable); __i++)			\
++		if (!hlist_empty(&hashtable[__i]))				\
++			__ret = false;						\
++										\
++	__ret;									\
++})
++
++/**
++ * hash_del - remove an object from a hashtable
++ * @node: &struct hlist_node of the object to remove
++ */
++static inline void hash_del(struct hlist_node *node)
++{
++	hlist_del_init(node);
++}
++
++/**
++ * hash_del_rcu - remove an object from a rcu enabled hashtable
++ * @node: &struct hlist_node of the object to remove
++ */
++static inline void hash_del_rcu(struct hlist_node *node)
++{
++	hlist_del_init_rcu(node);
++}
++
++/**
++ * hash_for_each - iterate over a hashtable
++ * @name: hashtable to iterate
++ * @bkt: integer to use as bucket loop cursor
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @obj: the type * to use as a loop cursor for each entry
++ * @member: the name of the hlist_node within the struct
++ */
++#define hash_for_each(name, bkt, node, obj, member)				\
++	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
++		hlist_for_each_entry(obj, node, &name[bkt], member)
++
++/**
++ * hash_for_each_rcu - iterate over a rcu enabled hashtable
++ * @name: hashtable to iterate
++ * @bkt: integer to use as bucket loop cursor
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @obj: the type * to use as a loop cursor for each entry
++ * @member: the name of the hlist_node within the struct
++ */
++#define hash_for_each_rcu(name, bkt, node, obj, member)				\
++	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
++		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
++
++/**
++ * hash_for_each_safe - iterate over a hashtable safe against removal of
++ * hash entry
++ * @name: hashtable to iterate
++ * @bkt: integer to use as bucket loop cursor
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @tmp: a &struct used for temporary storage
++ * @obj: the type * to use as a loop cursor for each entry
++ * @member: the name of the hlist_node within the struct
++ */
++#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
++	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
++		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
++
++/**
++ * hash_for_each_possible - iterate over all possible objects hashing to the
++ * same bucket
++ * @name: hashtable to iterate
++ * @obj: the type * to use as a loop cursor for each entry
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @member: the name of the hlist_node within the struct
++ * @key: the key of the objects to iterate over
++ */
++#define hash_for_each_possible(name, obj, node, member, key)			\
++	hlist_for_each_entry(obj, node,	&name[hash_min(key, HASH_BITS(name))], member)
++
++/**
++ * hash_for_each_possible_rcu - iterate over all possible objects hashing to the
++ * same bucket in an rcu enabled hashtable
++ * in a rcu enabled hashtable
++ * @name: hashtable to iterate
++ * @obj: the type * to use as a loop cursor for each entry
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @member: the name of the hlist_node within the struct
++ * @key: the key of the objects to iterate over
++ */
++#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
++	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, HASH_BITS(name))], member)
++
++/**
++ * hash_for_each_possible_safe - iterate over all possible objects hashing to the
++ * same bucket safe against removals
++ * @name: hashtable to iterate
++ * @obj: the type * to use as a loop cursor for each entry
++ * @node: the &struct list_head to use as a loop cursor for each entry
++ * @tmp: a &struct used for temporary storage
++ * @member: the name of the hlist_node within the struct
++ * @key: the key of the objects to iterate over
++ */
++#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
++	hlist_for_each_entry_safe(obj, node, tmp,				\
++		&name[hash_min(key, HASH_BITS(name))], member)
++
++
++#endif
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+1.7.12
+
