@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab2IOQMu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 12:12:50 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:40953 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2IOQMr (ORCPT
+	id S1754772Ab2IOQNy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 12:13:54 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49275 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754223Ab2IOQNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 12:12:47 -0400
-Message-ID: <5054A816.1090807@linux.vnet.ibm.com>
-Date: Sat, 15 Sep 2012 21:38:54 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>
-CC: Andrew Theurer <habanero@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
-References: <20120908084345.GU30238@linux.vnet.ibm.com> <1347283005.10325.55.camel@oc6622382223.ibm.com> <1347293035.2124.22.camel@twins> <20120910165653.GA28033@linux.vnet.ibm.com> <1347297124.2124.42.camel@twins> <1347307972.7332.78.camel@oc2024037011.ibm.com> <504ED54E.6040608@linux.vnet.ibm.com> <1347388061.19098.20.camel@oc2024037011.ibm.com> <20120913114813.GA11797@linux.vnet.ibm.com> <1347571858.5586.44.camel@oc2024037011.ibm.com> <20120914171038.GB8834@turtle.usersys.redhat.com>
-In-Reply-To: <20120914171038.GB8834@turtle.usersys.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 15 Sep 2012 12:13:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19zbUEAS99zQcBKvk+7ZxN/g3X9kh3v1b+L/rdRgr
+	DaQCXfXkXcTbGb
+Message-ID: <1347725625.7029.25.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Nikolay Ulyanitsky <lystor@gmail.com>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Sat, 15 Sep 2012 18:13:45 +0200
+In-Reply-To: <20120915151827.GA17439@liondog.tnic>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <1347682262.4340.160.camel@marge.simpson.net>
+	 <20120915104451.GC12364@liondog.tnic>
+	 <1347720459.7256.11.camel@marge.simpson.net>
+	 <20120915151827.GA17439@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091516-1618-0000-0000-0000027BD17F
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 10:40 PM, Andrew Jones wrote:
-> On Thu, Sep 13, 2012 at 04:30:58PM -0500, Andrew Theurer wrote:
->> On Thu, 2012-09-13 at 17:18 +0530, Raghavendra K T wrote:
->>> * Andrew Theurer<habanero@linux.vnet.ibm.com>  [2012-09-11 13:27:41]:
->>>
-[...]
->>
->> On picking a better vcpu to yield to:  I really hesitate to rely on
->> paravirt hint [telling us which vcpu is holding a lock], but I am not
->> sure how else to reduce the candidate vcpus to yield to.  I suspect we
->> are yielding to way more vcpus than are prempted lock-holders, and that
->> IMO is just work accomplishing nothing.  Trying to think of way to
->> further reduce candidate vcpus....
->>
->
-> wrt to yielding to vcpus for the same cpu, I recently noticed that
-> there's a bug in yield_to_task_fair. yield_task_fair() calls
-> clear_buddies(), so if we're yielding to a task that has been running on
-> the same cpu that we're currently running on, and thus is also on the
-> current cfs runqueue, then our 'who to pick next' hint is getting cleared
-> right after we set it.
->
-> I had hoped that the patch below would show a general improvement in the
-> vpu overcommit performance, however the results were variable - no worse,
-> no better. Based on your results above showing good improvement from
-> interleaving vcpus across the cpus, then that means there was a decent
-> percent of these types of yields going on. So since the patch didn't
-> change much that indicates that the next hinting isn't generally taken
-> too seriously by the scheduler.  Anyway, the patch should correct the
-> code per its design, and testing shows that it didn't make anything worse,
-> so I'll post it soon. Also, in order to try and improve how far set-next
-> can jump ahead in the queue, I tested a kernel with group scheduling
-> compiled out (libvirt uses cgroups and I'm not sure autogroups may affect
-> things). I did get slight improvement with that, but nothing to write home
-> to mom about.
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index c219bf8..7d8a21d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3037,11 +3037,12 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
->   	if (!se->on_rq || throttled_hierarchy(cfs_rq_of(se)))
->   		return false;
->
-> +	/* We're yielding, so tell the scheduler we don't want to be picked */
-> +	yield_task_fair(rq);
-> +
->   	/* Tell the scheduler that we'd really like pse to run next. */
->   	set_next_buddy(se);
->
-> -	yield_task_fair(rq);
-> -
->   	return true;
->   }
->
+On Sat, 2012-09-15 at 17:18 +0200, Borislav Petkov wrote: 
+> On Sat, Sep 15, 2012 at 04:47:39PM +0200, Mike Galbraith wrote:
+> > Increasing /proc/sys/kernel/sched_min_granularity_ns to roughly half
+> > of sched_latency_ns should also help. That will allow LAST_BUDDY to do
+> > it's job, try to hand the CPU back to a preempted task if possible.
+> 
+> Just for my n00b scheduler understanding: this way you're practically
+> extending the timeslice of the task so that it gets done without being
+> preempted and the lock-holding period of the preempted task gets smaller
+> and thus you get more completed transactions in postgres during the
+> benchmark run?
 
-Hi Drew,  Agree with your fix and tested the patch too.. results are
-pretty much same.  puzzled why so.
+Not really, preemption will happen, but when the preempting task goes to
+sleep (or uses it's fair share), instead of selecting the leftmost task
+(lowest vruntime), the preempted task gets the CPU back if we can do
+that without violating fairness.  If the preempted task happens to be a
+userland spinlock holder, it then release the lock sooner, others don't
+spin as long, do more work, less playing space heater while lock holder
+waits for spinners to eat enough CPU to become less deserving that it.
 
-thinking ... may be we hit this when #vcpu (of a  VM) > #pcpu?
-(pigeonhole principle ;)).
+> > The change that increased sched_nr_latency to 8 should have injured
+> > postgress as well. ATM, it's disabled unless you're massively loaded.
+> >
+> > I _think_ it's about preemption, but it doesn't matter, patch is
+> > toast.
+> 
+> In any case, if you wanna retry the buddy thing for 3.7, ping me and I
+> can run it on the assortment of machines I have here.
+
+Thanks, but off the top of my head I see no way to fix it up without
+there being side effects somewhere, there always are.
+
+-Mike
 
