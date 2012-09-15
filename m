@@ -1,41 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2IOM4v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 08:56:51 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46937 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab2IOM4u (ORCPT
+	id S1751518Ab2IONW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 09:22:57 -0400
+Received: from outgoing.email.vodafone.de ([139.7.28.128]:33755 "EHLO
+	outgoing.email.vodafone.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750852Ab2IONWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 08:56:50 -0400
+	Sat, 15 Sep 2012 09:22:55 -0400
+X-Authentication-Info: Sender authenticated as deathsimple@vodafone.de (using CRAM-MD5)
+Message-ID: <50548124.4020104@vodafone.de>
+Date: Sat, 15 Sep 2012 15:22:44 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1347644982-17386-2-git-send-email-Dmitrii.Cherkasov@amd.com>
-References: <1347644982-17386-1-git-send-email-Dmitrii.Cherkasov@amd.com>
-	<1347644982-17386-2-git-send-email-Dmitrii.Cherkasov@amd.com>
-Date: Sat, 15 Sep 2012 14:56:49 +0200
-Message-ID: <CAGZ4FESdyqFbMxJir=QdRURU1J-03NLOr+XT-TzqHFf+S=J8WQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Add 2-level GPUVM pagetables support to radeon
- driver. v2
-From: Maarten Maathuis <madman2003@gmail.com>
 To: Dmitry Cherkasov <dcherkassov@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>,
-        Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Dmitry Cherkassov <Dmitrii.Cherkasov@amd.com>
+Subject: Re: [PATCH 1/2] drm/radeon: refactor set_page chipset interface v2
+References: <1347644982-17386-1-git-send-email-Dmitrii.Cherkasov@amd.com>
+In-Reply-To: <1347644982-17386-1-git-send-email-Dmitrii.Cherkasov@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 7:49 PM, Dmitry Cherkasov <dcherkassov@gmail.com> wrote:
-> +#define RADEON_PT_OFFSET(_rdev) \
-> +       (RADEON_GPU_PAGE_ALIGN(RADEON_TOTAL_PDE_COUNT(rdev) * RADEON_PDE_SIZE))
+Looks good in general, some minor comments below:
 
-Shouldn't that be _rdev too?
+On 14.09.2012 19:49, Dmitry Cherkasov wrote:
+> From: Christian König <deathsimple@vodafone.de>
+>
+> Cleanup the interface in preparation for hierarchical page tables.
+> v2: * add incr parameter to set_page for simple scattered PTs uptates
+>      * added PDE-specific flags to r600_flags and radeon_drm.h
+>      * removed superflous value masking with 0xffffffff
+>
+> Signed-off-by: Christian König <deathsimple@vodafone.de>
+> Signed-off-by: Dmitry Cherkassov <Dmitrii.Cherkasov@amd.com>
+> ---
+>   drivers/gpu/drm/radeon/ni.c          |   47 ++++++++++++++++++++-----------
+>   drivers/gpu/drm/radeon/radeon.h      |   14 +++++-----
+>   drivers/gpu/drm/radeon/radeon_asic.h |    6 ++--
+>   drivers/gpu/drm/radeon/radeon_gart.c |   51 +++++++++++++---------------------
+>   include/drm/radeon_drm.h             |    1 +
+>   5 files changed, 62 insertions(+), 57 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+> index b238216..0355c8d 100644
+> --- a/drivers/gpu/drm/radeon/ni.c
+> +++ b/drivers/gpu/drm/radeon/ni.c
+> @@ -1497,6 +1497,7 @@ void cayman_vm_fini(struct radeon_device *rdev)
+>   {
+>   }
+>   
+> +#define R600_PDE_VALID     (1 << 0)
+>   #define R600_PTE_VALID     (1 << 0)
+Why the distinction between R600_PDE_VALID and R600_PTE_VALID?
+Just renaming the R600_PTE_* flags sound more sane to me.
 
-Also a few lines above that you use rdev instead of _rdev.
+>   #define R600_PTE_SYSTEM    (1 << 1)
+>   #define R600_PTE_SNOOPED   (1 << 2)
+> @@ -1507,6 +1508,7 @@ uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags)
+>   {
+>   	uint32_t r600_flags = 0;
+>   
+> +	r600_flags |= (flags & RADEON_VM_PDE_VALID) ? R600_PDE_VALID : 0;
+>   	r600_flags |= (flags & RADEON_VM_PAGE_VALID) ? R600_PTE_VALID : 0;
+>   	r600_flags |= (flags & RADEON_VM_PAGE_READABLE) ? R600_PTE_READABLE : 0;
+>   	r600_flags |= (flags & RADEON_VM_PAGE_WRITEABLE) ? R600_PTE_WRITEABLE : 0;
+> @@ -1521,30 +1523,43 @@ uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags)
+>    * cayman_vm_set_page - update the page tables using the CP
+>    *
+>    * @rdev: radeon_device pointer
+> + * @pe: addr of the page entry
+> + * @addr: dst addr to write into pe
+> + * @count: number of page entries to update
+> + * @flags: access flags
+>    *
+>    * Update the page tables using the CP (cayman-si).
+>    */
+> -void cayman_vm_set_page(struct radeon_device *rdev, struct radeon_vm *vm,
+> -			unsigned pfn, struct ttm_mem_reg *mem,
+> -			unsigned npages, uint32_t flags)
+> +void cayman_vm_set_page(struct radeon_device *rdev, uint64_t pe,
+> +			uint64_t addr, unsigned count,
+> +			uint32_t flags, uint32_t incr)
+>   {
+>   	struct radeon_ring *ring = &rdev->ring[rdev->asic->vm.pt_ring_index];
+> -	uint64_t addr, pt = vm->pt_gpu_addr + pfn * 8;
+> +	uint32_t r600_flags = cayman_vm_page_flags(rdev, flags);
+>   	int i;
+>   
+> -	addr = flags = cayman_vm_page_flags(rdev, flags);
+> -
+> -	radeon_ring_write(ring, PACKET3(PACKET3_ME_WRITE, 1 + npages * 2));
+> -	radeon_ring_write(ring, pt & 0xffffffff);
+> -	radeon_ring_write(ring, (pt >> 32) & 0xff);
+> -	for (i = 0; i < npages; ++i) {
+> -		if (mem) {
+> -			addr = radeon_vm_get_addr(rdev, mem, i);
+> -			addr = addr & 0xFFFFFFFFFFFFF000ULL;
+> -			addr |= flags;
+> +	radeon_ring_write(ring, PACKET3(PACKET3_ME_WRITE, 1 + count * 2));
+> +	radeon_ring_write(ring, pe & 0xffffffff);
+> +	radeon_ring_write(ring, (pe >> 32) & 0xff);
+> +	for (i = 0; i < count; ++i) {
+> +		uint64_t value = 0;
+> +		if (flags & RADEON_VM_PAGE_SYSTEM) {
+> +			value = radeon_vm_map_gart(rdev, addr);
+> +			value &= 0xFFFFFFFFFFFFF000ULL;
+> +			addr += RADEON_GPU_PAGE_SIZE;
+> +
+> +		} else if (flags & RADEON_VM_PAGE_VALID) {
+> +			value = addr;
+> +			addr += RADEON_GPU_PAGE_SIZE;
+> +
+> +		} else if (flags & RADEON_VM_PDE_VALID) {
+> +			value = addr;
+> +			addr += incr;
+>   		}
+Same here, why the distinction between RADEON_VM_PDE_VALID and 
+RADEON_VM_PAGE_VALID?
+Additional to that I would also prefer to always use "incr" for both the 
+RADEON_VM_PAGE_SYSTEMand the RADEON_VM_PAGE_VALID case.
 
-I didn't check the whole thing, just noticed that when i was staring
-at it for no reason :-)
+> -		radeon_ring_write(ring, addr & 0xffffffff);
+> -		radeon_ring_write(ring, (addr >> 32) & 0xffffffff);
+> +
+> +		value |= r600_flags;
+> +		radeon_ring_write(ring, value);
+> +		radeon_ring_write(ring, (value >> 32));
+>   	}
+>   }
+>   
+> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+> index 4d67f0f..f02ea8e 100644
+> --- a/drivers/gpu/drm/radeon/radeon.h
+> +++ b/drivers/gpu/drm/radeon/radeon.h
+> @@ -1141,9 +1141,9 @@ struct radeon_asic {
+>   		void (*fini)(struct radeon_device *rdev);
+>   
+>   		u32 pt_ring_index;
+> -		void (*set_page)(struct radeon_device *rdev, struct radeon_vm *vm,
+> -				 unsigned pfn, struct ttm_mem_reg *mem,
+> -				 unsigned npages, uint32_t flags);
+> +		void (*set_page)
+> +		(struct radeon_device *rdev, uint64_t pe,
+> +		 uint64_t addr, unsigned count, uint32_t flags, uint32_t incr);
+Please don't break the coding style here. Or was it me who did that? 
+Anyway keep the indention as it was before.
 
--- 
-Far away from the primal instinct, the song seems to fade away, the
-river get wider between your thoughts and the things we do and say.
+Additional to that at least I would put the arguments in that order: pe, 
+addr then count, incr and last flags.
+
+>   	} vm;
+>   	/* ring specific callbacks */
+>   	struct {
+> @@ -1755,7 +1755,9 @@ void radeon_ring_write(struct radeon_ring *ring, uint32_t v);
+>   #define radeon_gart_set_page(rdev, i, p) (rdev)->asic->gart.set_page((rdev), (i), (p))
+>   #define radeon_asic_vm_init(rdev) (rdev)->asic->vm.init((rdev))
+>   #define radeon_asic_vm_fini(rdev) (rdev)->asic->vm.fini((rdev))
+> -#define radeon_asic_vm_set_page(rdev, v, pfn, mem, npages, flags) (rdev)->asic->vm.set_page((rdev), (v), (pfn), (mem), (npages), (flags))
+> +#define radeon_asic_vm_set_page(rdev, pe, addr, count, flags, incr) \
+> +	((rdev)->asic->vm.set_page((rdev), (pe), (addr), \
+> +				 (count), (flags), (incr)))
+Same here, no idea why we have those macros all on one line. But please 
+make it look like the rest of the code.
+
+>   #define radeon_ring_start(rdev, r, cp) (rdev)->asic->ring[(r)].ring_start((rdev), (cp))
+>   #define radeon_ring_test(rdev, r, cp) (rdev)->asic->ring[(r)].ring_test((rdev), (cp))
+>   #define radeon_ib_test(rdev, r, cp) (rdev)->asic->ring[(r)].ib_test((rdev), (cp))
+> @@ -1840,9 +1842,7 @@ struct radeon_fence *radeon_vm_grab_id(struct radeon_device *rdev,
+>   void radeon_vm_fence(struct radeon_device *rdev,
+>   		     struct radeon_vm *vm,
+>   		     struct radeon_fence *fence);
+> -u64 radeon_vm_get_addr(struct radeon_device *rdev,
+> -                       struct ttm_mem_reg *mem,
+> -                       unsigned pfn);
+> +uint64_t radeon_vm_map_gart(struct radeon_device *rdev, uint64_t addr);
+>   int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+>   			    struct radeon_vm *vm,
+>   			    struct radeon_bo *bo,
+> diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+> index 29b3d05..7166d5f 100644
+> --- a/drivers/gpu/drm/radeon/radeon_asic.h
+> +++ b/drivers/gpu/drm/radeon/radeon_asic.h
+> @@ -442,9 +442,9 @@ int cayman_vm_init(struct radeon_device *rdev);
+>   void cayman_vm_fini(struct radeon_device *rdev);
+>   void cayman_vm_flush(struct radeon_device *rdev, struct radeon_ib *ib);
+>   uint32_t cayman_vm_page_flags(struct radeon_device *rdev, uint32_t flags);
+> -void cayman_vm_set_page(struct radeon_device *rdev, struct radeon_vm *vm,
+> -			unsigned pfn, struct ttm_mem_reg *mem,
+> -			unsigned npages, uint32_t flags);
+> +void cayman_vm_set_page(struct radeon_device *rdev, uint64_t pe,
+> +			uint64_t addr, unsigned count,
+> +			uint32_t flags, uint32_t incr);
+>   int evergreen_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib);
+>   
+>   /* DCE6 - SI */
+> diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+> index 2f28ff3..badc835 100644
+> --- a/drivers/gpu/drm/radeon/radeon_gart.c
+> +++ b/drivers/gpu/drm/radeon/radeon_gart.c
+> @@ -822,42 +822,26 @@ int radeon_vm_bo_set_addr(struct radeon_device *rdev,
+>   }
+>   
+>   /**
+> - * radeon_vm_get_addr - get the physical address of the page
+> + * radeon_vm_map_gart - get the physical address of a gart page
+>    *
+>    * @rdev: radeon_device pointer
+> - * @mem: ttm mem
+> - * @pfn: pfn
+> + * @addr: the unmapped addr
+>    *
+>    * Look up the physical address of the page that the pte resolves
+>    * to (cayman+).
+>    * Returns the physical address of the page.
+>    */
+> -u64 radeon_vm_get_addr(struct radeon_device *rdev,
+> -		       struct ttm_mem_reg *mem,
+> -		       unsigned pfn)
+> +uint64_t radeon_vm_map_gart(struct radeon_device *rdev, uint64_t addr)
+>   {
+> -	u64 addr = 0;
+> -
+> -	switch (mem->mem_type) {
+> -	case TTM_PL_VRAM:
+> -		addr = (mem->start << PAGE_SHIFT);
+> -		addr += pfn * RADEON_GPU_PAGE_SIZE;
+> -		addr += rdev->vm_manager.vram_base_offset;
+> -		break;
+> -	case TTM_PL_TT:
+> -		/* offset inside page table */
+> -		addr = mem->start << PAGE_SHIFT;
+> -		addr += pfn * RADEON_GPU_PAGE_SIZE;
+> -		addr = addr >> PAGE_SHIFT;
+> -		/* page table offset */
+> -		addr = rdev->gart.pages_addr[addr];
+> -		/* in case cpu page size != gpu page size*/
+> -		addr += (pfn * RADEON_GPU_PAGE_SIZE) & (~PAGE_MASK);
+> -		break;
+> -	default:
+> -		break;
+> -	}
+> -	return addr;
+> +	uint64_t result;
+> +
+> +	/* page table offset */
+> +	result = rdev->gart.pages_addr[addr >> PAGE_SHIFT];
+> +
+> +	/* in case cpu page size != gpu page size*/
+> +	result |= addr & (~PAGE_MASK);
+> +
+> +	return result;
+>   }
+>   
+>   /**
+> @@ -883,7 +867,7 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+>   	struct radeon_semaphore *sem = NULL;
+>   	struct radeon_bo_va *bo_va;
+>   	unsigned ngpu_pages, ndw;
+> -	uint64_t pfn;
+> +	uint64_t pfn, addr;
+>   	int r;
+>   
+>   	/* nothing to do if vm isn't bound */
+> @@ -908,21 +892,25 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+>   	ngpu_pages = radeon_bo_ngpu_pages(bo);
+>   	bo_va->flags &= ~RADEON_VM_PAGE_VALID;
+>   	bo_va->flags &= ~RADEON_VM_PAGE_SYSTEM;
+> +	pfn = bo_va->soffset / RADEON_GPU_PAGE_SIZE;
+>   	if (mem) {
+> +		addr = mem->start << PAGE_SHIFT;
+>   		if (mem->mem_type != TTM_PL_SYSTEM) {
+>   			bo_va->flags |= RADEON_VM_PAGE_VALID;
+>   			bo_va->valid = true;
+>   		}
+>   		if (mem->mem_type == TTM_PL_TT) {
+>   			bo_va->flags |= RADEON_VM_PAGE_SYSTEM;
+> +		} else {
+> +			addr += rdev->vm_manager.vram_base_offset;
+>   		}
+
+>   		if (!bo_va->valid) {
+>   			mem = NULL;
+>   		}
+That check and setting mem = NULL is now superfluous, since we don't use 
+mem anymore.
+Missed that while hacking the initial patch, please just remove.
+
+>   	} else {
+> +		addr = 0;
+>   		bo_va->valid = false;
+>   	}
+> -	pfn = bo_va->soffset / RADEON_GPU_PAGE_SIZE;
+>   
+>   	if (vm->fence && radeon_fence_signaled(vm->fence)) {
+>   		radeon_fence_unref(&vm->fence);
+> @@ -950,7 +938,8 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+>   		radeon_fence_note_sync(vm->fence, ridx);
+>   	}
+>   
+> -	radeon_asic_vm_set_page(rdev, vm, pfn, mem, ngpu_pages, bo_va->flags);
+> +	radeon_asic_vm_set_page(rdev, vm->pt_gpu_addr + pfn * 8, addr,
+> +				ngpu_pages, bo_va->flags, 0);
+>   
+>   	radeon_fence_unref(&vm->fence);
+>   	r = radeon_fence_emit(rdev, &vm->fence, ridx);
+> diff --git a/include/drm/radeon_drm.h b/include/drm/radeon_drm.h
+> index dc3a8cd..f36ebe5 100644
+> --- a/include/drm/radeon_drm.h
+> +++ b/include/drm/radeon_drm.h
+> @@ -896,6 +896,7 @@ struct drm_radeon_gem_pwrite {
+>   #define RADEON_VM_PAGE_WRITEABLE	(1 << 2)
+>   #define RADEON_VM_PAGE_SYSTEM		(1 << 3)
+>   #define RADEON_VM_PAGE_SNOOPED		(1 << 4)
+> +#define RADEON_VM_PDE_VALID		(1 << 5)
+>   
+>   struct drm_radeon_gem_va {
+>   	uint32_t		handle;
+
+Cheers,
+Christian.
