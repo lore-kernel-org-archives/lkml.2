@@ -1,89 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2IOVlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 17:41:09 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:55220 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab2IOVlH convert rfc822-to-8bit (ORCPT
+	id S1753695Ab2IOWEU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 18:04:20 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40995 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab2IOWER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 17:41:07 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: alsa-devel@alsa-project.org
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Ricardo Neri <ricardo.neri@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH v3 00/15] ASoC: OMAP: Convert to use dmaengine
-Date: Sat, 15 Sep 2012 23:38:32 +0200
-Message-ID: <3759862.8IETAs1y1n@acer>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; i686; ; )
-In-Reply-To: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
+	Sat, 15 Sep 2012 18:04:17 -0400
+Date: Sat, 15 Sep 2012 22:05:20 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aristeu Rozanski <aris@ruivo.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Thomas Graf <tgraf@suug.ch>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        cgroups@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Controlling devices and device namespaces
+Message-ID: <20120915220520.GA11364@mail.hallyn.com>
+References: <20120913205827.GO7677@google.com>
+ <20120914183641.GA2191@cathedrallabs.org>
+ <20120915022037.GA6438@mail.hallyn.com>
+ <87wqzv7i08.fsf_-_@xmission.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wqzv7i08.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia piątek, 14 września 2012 15:05:43 Peter Ujfalusi pisze:
-> Hello,
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
 > 
-> Changes since v2:
-> - As it has been discussed the no_wakeup parameter has been replaced with flags
->   for the dmaengine APIs
+> > Quoting Aristeu Rozanski (aris@ruivo.org):
+> >> Tejun,
+> >> On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
+> >> >   memcg can be handled by memcg people and I can handle cgroup_freezer
+> >> >   and others with help from the authors.  The problematic one is
+> >> >   blkio.  If anyone is interested in working on blkio, please be my
+> >> >   guest.  Vivek?  Glauber?
+> >> 
+> >> if Serge is not planning to do it already, I can take a look in device_cgroup.
+> >
+> > That's fine with me, thanks.
+> >
+> >> also, heard about the desire of having a device namespace instead with
+> >> support for translation ("sda" -> "sdf"). If anyone see immediate use for
+> >> this please let me know.
+> >
+> > Before going down this road, I'd like to discuss this with at least you,
+> > me, and Eric Biederman (cc:d) as to how it relates to a device
+> > namespace.
 > 
-> Changes since v1:
-> - Support for pause/resume for OMAP audio via dmaengine
-> - dmaengine: support for NO_PERIOD_WAKEUP in cyclic mode
->  - OMAP to keep supporting NO_PERIOD_WAKEUP for audio
->  - Other plaforms can also try to enable this mode since we have now generic
->    interface to do so.
 > 
-> This series will switch the OMAP audio to use dmaengine.
-> The final patch which does the switch was based on Russell King's earlier patch.
+> The problem with devices.
 > 
-> The first 10 patch is to prepare the OMAP audio drivers for a smooth change to
-> dmaengine:
-> - sDMA FRAME sync mode is removed and replaced with PACKET mode
-> - dai drivers no longer need to configure sDMA sync mode
-> - dai drivers does not need to specify the DMA word length - with the exception
->   of the omap-hdmi driver which requires 32bit word length regardless of the
->   audio format in use
-> - the McPDM driver used (to my surprise) hackish way of getting the DMA channel
->   and address - via defines from some header files
+> - An unrestricted mknod gives you access to effectively any device in
+>   the system.
 > 
-> After the conversion OMAP audio support should have the same features as before,
-> no regressions expected.
+> - During process migration if the device number changes using
+>   stat to file descriptors can fail on the same file descriptor.
 > 
-> I have tested the series on:
-> - BeagleBoard (audio via McBSP): 
->  - aplay/arecord. In element mode and in threshold mode with different period
->    sizes
->  - mplayer -ao alsa: for direct ALSA access
->  - mplayer -ao pulse: via PulseAudio to test NO_PERIOD_WAKEUP feature
-> - OMAP4 Blaze (audio via McPDM and DMIC)
->  - aplay/arecord
->  - mplayer -ao alsa: for direct ALSA access
->  - mplayer -ao pulse: via PulseAudio to test NO_PERIOD_WAKEUP feature
+> - Devices coming from prexisting filesystems that we mount
+>   as unprivileged users are as dangerous as mknod but show
+>   that the problem is not limited to mknod.
 > 
-> The patches has been generated against:
-> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git for-3.7
-> 
-> Janusz: Can you retest this series on OMAP1 to be sure I have not broken it?
+> - udev thinks mknod is a system call we can remove from the kernel.
 
-Hi Peter,
-It looks like you haven't :-).
+Also,
 
-For OMAP1:
-Tested-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+ - udevadm trigger --action=add
 
-Thanks,
-Janusz
+causes all the devices known on the host to be re-sent to
+everyone (all namespaces).  Which floods everyone and causes the
+host to reset some devices.
+
+> ---
+> 
+> The use cases seem comparitively simple to enumerate.
+> 
+> - Giving unfiltered access to a device to someone not root.
+> 
+> - Virtual devices that everyone uses and have no real privilege
+>   requirements: /dev/null /dev/tty /dev/zero etc.
+> 
+> - Dynamically created devices /dev/loopN /dev/tun /dev/macvtapN,
+>   nbd, iscsi, /dev/ptsN, etc
+
+and
+
+ - per-namespace uevent filtering.
+
+> ---
+> 
+> There are a couple of solution to these problems.
+> 
+> - The classic solution of creating a /dev for a container
+>   before starting it.
+> 
+> - The devpts filesystem.  This works well for unprivileged access
+>   to ptys.  Except for the /dev/ptmx sillines I very like how
+>   things are handled today with devpts.
+> 
+> - Device control groups.  I am not quite certain what to make
+>   of them.  The only case I see where they are better than
+>   a prebuilt static dev is if there is a hotppluged device
+>   that I want to push into my container.
+> 
+>   I think the only problem with device control groups and
+>   hierarchies is that removing a device from a whitelist
+>   does not recurse down the hierarchy.
+
+That's going to be fixed soon thanks to Aristeu  :)
+
+>   Can a process inside of a device control group create
+>   a child group that has access to a subset of it's
+>   devices?  The actually checks don't need to be hierarchical
+>   but the presence of device nodes should be.
+
+If I understand your question right, yes.
+
+> ---
+> 
+> I see a couple of holes in the device control picture.
+> 
+> - How do we handle hotplug events?
+> 
+>   I think we can do this by relaying events trough userspace,
+>   upating the device control groups etc.
+> 
+> - Unprivileged processess interacting with all of this.
+>   (possibly with privilege in their user namespace)
+>   What I don't know how to do is how to create a couple of different
+>   subhierarchies each for different child processes.
+> 
+> - Dynamically created devices.
+> 
+>   My gut feel is that we should replicate the success of devpts
+>   and give each type of dynamically created device it's own
+>   filesystem and mount point under /dev, and just bend
+>   the handful of userspace users into that model.
+
+Phew.  Maybe.  Had not considered that.  But seems daunting.
+
+> - Sysfs
+> 
+>   My gut says for the container use case we should aim to
+>   simply not have dynamically created devices in sysfs
+>   and then we can simply not care.
+> 
+> - Migration
+> 
+>   Either we need block device numbers that can migrate with us,
+>   (possibly a subset of the entire range ala devpts) or we need to send
+>   hotplug events to userspace right after a migration so userspace
+>   processes that care can invalidate their caches of stat data.
+> 
+> ---
+> 
+> With the code in my userns development tree I can create a user
+> namespace, create a new mount namespace, and then if I have
+> access to any block devices mount filesystems, all without
+> needing to have any special privileges.  What I haven't
+> figured out is what it would take to get the the device
+> control group into the middle that.
+
+I'm really not sure that's a question we want to ask.  The
+device control group, like the ns cgroup, was meant as a
+temporary workaround to not having user and device namespaces.
+
+If we can come up with a device cgroup model that works to
+fill all the requirements we would have for a devices ns, then
+great.  But I don't want us to be constrained by that.
+
+> It feels like it should be possible to get the checks straight
+> and use the device control group hooks to control which devices
+> are usable in a user namespace.  Unfortunately when I try and work
+> it out the independence of the user namespace and the device
+> control group seem to make that impossible.
+> 
+> Shrug there is most definitely something missing from our
+> model on how to handle devices well.  I am hoping we can
+> sprinkling some devpts derived pixie dust at the problem
+> migrate userspace to some new interfaces and have life
+> be good.
+> 
+> Eric
+
+Me too!
+
+I'm torn between suggesting that we have a session at UDS to
+discuss this, and not wanting to so that we can focus on the
+remaining questions with the user namespace.
+
+thanks,
+-serge
