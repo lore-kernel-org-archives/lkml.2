@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab2IOAuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Sep 2012 20:50:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40947 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab2IOAsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Sep 2012 20:48:55 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org
-Subject: [PATCH] PCI, x86: clear initial value for root info resources
-Date: Fri, 14 Sep 2012 17:48:42 -0700
-Message-Id: <1347670122-25824-3-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1347670122-25824-1-git-send-email-yinghai@kernel.org>
-References: <1347670122-25824-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1753210Ab2IOBGF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Sep 2012 21:06:05 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43931 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab2IOBGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Sep 2012 21:06:01 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/3] Remove jiffies clocksource's dependency on CLOCK_TICK_RATE
+Date: Fri, 14 Sep 2012 21:05:27 -0400
+Message-Id: <1347671130-22095-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+x-cbid: 12091501-3534-0000-0000-00000CAEF248
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found one system one root bus hot remove get panic.
-Panic happens when try to release hostbridge resource.
+Just wanted to send this out for initial review and comments.
 
-It turns out that resource get reject during put into resource tree
-because of conflicts.
-Also that resource parent pointer have random value.
+During Linux Plumbers, Thomas mentioned that Arnd was still
+wanting to kill off the derived values from the compile time
+constant CLOCK_TICK_RATE, as it is a problem for unified zImage
+on ARM. 
 
-That invalid value cause it pass through check __release_pci_root_info
-and panic in release_resource.
+One issue holding this back is that CLOCK_TICK_RATE allows us
+to address the granularity error of the underlying timer
+hardware, allowing for accurate timekeeping with jiffies and
+jiffies derived clocksources.
 
-Try to use kzalloc instead.
+Thomas proposed allowing the jiffies correction to be done
+dynamically at runtime, and this is my first attempt at such
+an approach.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
+* The first patch is a simple cleanup of an unused define.
+* The second patch adds the hook to add a refined jiffies
+  clocksource, and kills the values derived at compile time
+  from CLOCK_TICK_RATE.
+* The third is a patch that adds the refined jiffies
+  registration to all arches.
 
----
- arch/x86/pci/acpi.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Clearly, since in most cases platforms aren't using jiffies
+as a clocksource (except for just briefly in early boot), its
+quality doesn't matter that much. So I'd rather not actually
+submit the third patch, which adds unnecessary code in most
+cases, and instead allow architectures to add their portion
+as they see fit/regressions.
 
-Index: linux-2.6/arch/x86/pci/acpi.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -305,7 +305,6 @@ setup_resource(struct acpi_resource *acp
- 	res->flags = flags;
- 	res->start = start;
- 	res->end = end;
--	res->child = NULL;
- 
- 	if (!pci_use_crs) {
- 		dev_printk(KERN_DEBUG, &info->bridge->dev,
-@@ -434,7 +433,7 @@ probe_pci_root_info(struct pci_root_info
- 
- 	size = sizeof(*info->res) * info->res_num;
- 	info->res_num = 0;
--	info->res = kmalloc(size, GFP_KERNEL);
-+	info->res = kzalloc(size, GFP_KERNEL);
- 	if (!info->res)
- 		return;
- 
+I've only done some initial testing, and haven't tested with
+all HZ values yet, so there may still be issues, but its
+looking reasonably good so far. 
+
+Anyway, I'd appreciate any feedback on this approach, or
+suggestions for other ways to allow for dynamic adjustments
+at runtime.
+
+thanks
+-john
+
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+
+
+John Stultz (3):
+  jiffies: Kill unused TICK_USEC_TO_NSEC
+  jiffies: Remove compile time assumptions about CLOCK_TICK_RATE
+  jiffies: Add register_refined_jiffies() call to every arch
+
+ arch/alpha/kernel/setup.c      |    3 +++
+ arch/arm/kernel/setup.c        |    2 ++
+ arch/avr32/kernel/setup.c      |    2 ++
+ arch/blackfin/kernel/setup.c   |    2 ++
+ arch/c6x/kernel/setup.c        |    2 ++
+ arch/cris/kernel/setup.c       |    2 ++
+ arch/h8300/kernel/setup.c      |    2 ++
+ arch/hexagon/kernel/setup.c    |    2 ++
+ arch/ia64/kernel/setup.c       |    2 ++
+ arch/m32r/kernel/setup.c       |    2 ++
+ arch/m68k/kernel/setup_mm.c    |    2 ++
+ arch/m68k/kernel/setup_no.c    |    2 ++
+ arch/microblaze/kernel/setup.c |    2 ++
+ arch/mips/kernel/setup.c       |    2 ++
+ arch/mn10300/kernel/setup.c    |    2 ++
+ arch/openrisc/kernel/setup.c   |    2 ++
+ arch/parisc/kernel/setup.c     |    3 ++-
+ arch/powerpc/kernel/setup_32.c |    2 ++
+ arch/powerpc/kernel/setup_64.c |    2 ++
+ arch/s390/kernel/setup.c       |    2 ++
+ arch/score/kernel/setup.c      |    2 ++
+ arch/sh/kernel/setup.c         |    2 ++
+ arch/sparc/kernel/setup_32.c   |    2 ++
+ arch/sparc/kernel/setup_64.c   |    2 ++
+ arch/tile/kernel/setup.c       |    2 ++
+ arch/um/kernel/um_arch.c       |    2 ++
+ arch/unicore32/kernel/setup.c  |    2 ++
+ arch/x86/kernel/setup.c        |    3 +++
+ arch/xtensa/kernel/setup.c     |    3 ++-
+ include/linux/jiffies.h        |   21 ++-------------------
+ kernel/time/jiffies.c          |   32 +++++++++++++++++++++++++++++++-
+ 31 files changed, 93 insertions(+), 22 deletions(-)
+
+-- 
+1.7.9.5
+
