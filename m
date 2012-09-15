@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab2IOWX7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 18:23:59 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62273 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2IOWXz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 18:23:55 -0400
+	id S1754190Ab2IOWcS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 18:32:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55420 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905Ab2IOWcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Sep 2012 18:32:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,428,1344236400"; 
+   d="scan'208";a="145472639"
+Date: Sun, 16 Sep 2012 00:32:14 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mfd: MAX77693: Fix bug
+Message-ID: <20120915223214.GF3647@sortiz-mobl>
+References: <1345529747-24808-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
-References: <1347655456-2542-1-git-send-email-thierry.reding@avionic-design.de>
- <1347655456-2542-2-git-send-email-thierry.reding@avionic-design.de>
- <CAMuHMdWuR_tdMw9iVkaQ3D9p1HVU_L05ap=MzBuo1jLD6YdHHw@mail.gmail.com> <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 15 Sep 2012 16:23:33 -0600
-Message-ID: <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI: Provide a default pcibios_update_irq()
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345529747-24808-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 15, 2012 at 1:53 AM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> On Sat, Sep 15, 2012 at 09:32:10AM +0200, Geert Uytterhoeven wrote:
->> On Fri, Sep 14, 2012 at 10:44 PM, Thierry Reding
->> <thierry.reding@avionic-design.de> wrote:
->> > --- a/drivers/pci/setup-irq.c
->> > +++ b/drivers/pci/setup-irq.c
->> > @@ -17,6 +17,14 @@
->> >  #include <linux/ioport.h>
->> >  #include <linux/cache.h>
->> >
->> > +void __devinit __weak pcibios_update_irq(struct pci_dev *dev, int irq)
->> > +{
->> > +#ifdef CONFIG_PCI_DEBUG
->> > +       printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n", irq,
->> > +              pci_name(dev));
->>
->> pr_debug()?
->> Or even better, dev_dbg()?
->
-> The problem with pr_debug() and dev_dbg() is that they will be compiled
-> out if DEBUG is not defined. Perhaps we should pass -DDEBUG if PCI_DEBUG
-> is configured and make this dev_dbg()?
+Hi Chanwoo,
 
-Sorry, fat-fingered the previous empty response.
+On Tue, Aug 21, 2012 at 03:15:47PM +0900, Chanwoo Choi wrote:
+> This patchset fix bug of Maxim MAX77693 chip. First patch unmask interrupt
+> masking bit for charger/flas/muic device of Maxim MAX77693 and second patch
+> remove NULL pointer error when mfd-max77693 driver initialize irqs of Maxim
+> MAX77693 devices.
+> 
+> Chanwoo Choi (2):
+>   mfd: MAX77693: Fix bug of interrupt handlding for MAX77693 devices
+>   mfd: MAX77693: Fix NULL pointer error when initialize irqs of Maxim
+>     MAX77693
+> 
+>  drivers/extcon/extcon-max77693.c |   20 +++++++++++++-------
+>  drivers/mfd/max77693-irq.c       |   36 +++++++++++++++++++++++++++++++-----
+>  drivers/mfd/max77693.c           |   14 ++++++++++++++
+>  3 files changed, 58 insertions(+), 12 deletions(-)
+Both patches applied to my for-linus branch.
 
-We already have this in drivers/pci/Makefile:
+Cheers,
+Samuel.
 
-    ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
-
-so dev_dbg() should be perfect.
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
