@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2IORiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 13:38:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab2IORiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 13:38:06 -0400
-Date: Sat, 15 Sep 2012 19:37:53 +0200
-From: Petr Holasek <pholasek@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v3] KSM: numa awareness sysfs knob
-Message-ID: <20120915173752.GA10698@stainedmachine.redhat.com>
-References: <1347657767-1912-1-git-send-email-pholasek@redhat.com>
- <20120914150248.59e9757d.akpm@linux-foundation.org>
+	id S1754360Ab2IORmx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 13:42:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63928 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab2IORmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Sep 2012 13:42:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH 05/24] ARM: imx: use __iomem pointers for MMIO
+Date: Sat, 15 Sep 2012 17:42:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>
+References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-6-git-send-email-arnd@arndb.de> <CAOMZO5DemdKtxORhRwyGyF46rdden5QRZh9D9f4KRki5+BfM2A@mail.gmail.com>
+In-Reply-To: <CAOMZO5DemdKtxORhRwyGyF46rdden5QRZh9D9f4KRki5+BfM2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120914150248.59e9757d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209151742.41828.arnd@arndb.de>
+X-Provags-ID: V02:K0:y3fLlLkG12SA3HL8xEZHuyxBZopNqhMZdSdOIRjksDU
+ jHA62+O4oce2bgl9K3SYHc5SkMQiqS4EO4gDkHlrczelPYJ6Z1
+ hAEdX/qCaZ7romds7S1hZs7jOrv2zZxLUy96AMuKYoS7y2b8+n
+ 3zQio71M9PD5HPpXTnJEKcbPIfnuuFlT+xJuvW7zUI+B7uH5a0
+ LrRBmANDiW3JMhYNknM7nzQGh+Qeh+FQx92SuxDQ2YbioZ0RRR
+ SnZJIA0SJ1sYG+04hVqYdhaM2WqANfYVi94vGZVH3iakOCEoV8
+ oR4ZkV48BCAPFfV/hbKXQWvFPbrNktmuV05HsmKGeQA5JcsVGx
+ am7rzz9NPeRVTSld2koM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Andrew Morton wrote:
-
-Hi Andrew,
-
-at first thanks for your review!
-
-> On Fri, 14 Sep 2012 23:22:47 +0200
-> Petr Holasek <pholasek@redhat.com> wrote:
+On Friday 14 September 2012, Fabio Estevam wrote:
+> On Fri, Sep 14, 2012 at 6:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > ARM is moving to stricter checks on readl/write functions,
+> > so we need to use the correct types everywhere.
+> >
+> > This found a bug in mach-armadillo5x0.c, where we attempt mmio
+> > on the MXC_CCM_RCSR address that is currently defined to 0xc
+> > and consequently causes an illegal address access.
+> ...
 > 
-> > Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_nodes
+> >         /* set NAND page size to 2k if not configured via boot mode pins */
+> > -       __raw_writel(__raw_readl(MXC_CCM_RCSR) | (1 << 30), MXC_CCM_RCSR);
+> > +       /* FIXME __raw_writel(__raw_readl(MXC_CCM_RCSR) | (1 << 30), MXC_CCM_RCSR); */
 > 
-> I wonder if merge_across_nodes would be a better name.
+> Good catch, the correct access would be:
+> __raw_readl(mx3_ccm_base + MXC_CCM_RCSR) ...
+> 
+> I will fix this after your series reaches linux-next.
 > 
 
-Agreed.
+I think I'd prefer it if you can fix it on the current kernel. This seems to
+be a serious bug that we actually want to fix in 3.6 or maybe backport to
+the stable series (I don't know when it was introduced). I'll just drop
+this hunk from my patch then.
 
-> > which control merging pages across different numa nodes.
-> > When it is set to zero only pages from the same node are merged,
-> > otherwise pages from all nodes can be merged together (default behavior).
-> > 
-> > Typical use-case could be a lot of KVM guests on NUMA machine
-> > and cpus from more distant nodes would have significant increase
-> > of access latency to the merged ksm page. Sysfs knob was choosen
-> > for higher scalability.
-> 
-> Well...  what is the use case for merge_nodes=0?  IOW, why shouldn't we
-> make this change non-optional and avoid the sysfs knob?
-
-I assume that there are still some users who want to use KSM mainly for
-saving of physical memory and access latency is not priority for them.
-
-> > 
-> > This patch also adds share_all sysfs knob which can be used for adding
-> > all anon vmas of all processes in system to ksmd scan queue. Knob can be
-> > triggered only when run knob is set to zero.
-> 
-> I really don't understand this share_all thing.  From reading the code,
-> it is a once-off self-resetting trigger thing.  Why?  How is one to use
-> this?  What's the benefit?  What's the effect?
-
-I introduced it on the basis of our discussion about v2 patch
-https://lkml.org/lkml/2012/6/29/426 as some knob which can madvise all anon
-mappings with MADV_MERGEABLE. But I might have misunderstood your idea.
-If you don't like current self-resetting trigger we either can implement it
-as stable 0/1 knob that would madvise all current and future anon mappings
-when set to 1 or completely exclude this share_all thing from the patch.
-
-I am going to fix all all mistakes you pointed out in your review as well as
-add more verbose documentation and comments in next version.
-
-thanks,
-Petr H
+	Arnd
