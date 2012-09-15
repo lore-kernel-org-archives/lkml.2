@@ -1,170 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab2IOSrr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 14:47:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63604 "EHLO
+	id S1755131Ab2IOSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 14:53:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51000 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754945Ab2IOSrp (ORCPT
+	with ESMTP id S1752141Ab2IOSx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 14:47:45 -0400
+	Sat, 15 Sep 2012 14:53:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVyEskBfBxM90fD2BFVNGTYa75QCtkZp+5n8cLh3y395Q@mail.gmail.com>
+In-Reply-To: <1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
 References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
-	<1347678312-11124-3-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQVyEskBfBxM90fD2BFVNGTYa75QCtkZp+5n8cLh3y395Q@mail.gmail.com>
-Date: Sat, 15 Sep 2012 11:47:43 -0700
-X-Google-Sender-Auth: yR188peeZTZpxEummxzx9qJuyHA
-Message-ID: <CAE9FiQX=NoSBY1vJSqEpRASY92A1C0x2rZONx1Xor_Zm4zCweQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/9] PCI: split registration of PCI bus devices into
- two stages
+	<1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 15 Sep 2012 11:53:23 -0700
+X-Google-Sender-Auth: fQ7ys6Lxj7AAcRQmDvDb0b7NYsA
+Message-ID: <CAE9FiQWBYmRj5--pg8eAwH_RKZsCWo+CVGN_KpeGXeE_3cSq9g@mail.gmail.com>
+Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0015173febeaccb4d504c9c1f9cd
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015173febeaccb4d504c9c1f9cd
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Sat, Sep 15, 2012 at 1:03 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+>  From: Jiang Liu <jiang.liu@huawei.com>
 >
-> failing path in pci_create_root_bus is not handled.
+> Now ACPI devices are created before/destroyed after corresponding PCI
+> devices, and acpi_platform_notify/acpi_platform_notify_remove will
+> update PCI<->ACPI binding relationship when creating/destroying PCI
+> devices, there's no need to invoke bind/unbind callbacks from ACPI
+> device probe/destroy routines anymore. So remove bind/unbind callbacks
+> from acpi_device_ops.
 >
-> you could try to move
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  drivers/acpi/pci_bind.c     |  100 +++++++++----------------------------------
+>  drivers/acpi/pci_root.c     |    9 ----
+>  drivers/acpi/scan.c         |   21 +--------
+>  include/acpi/acpi_bus.h     |    4 --
+>  include/acpi/acpi_drivers.h |    1 -
+>  5 files changed, 23 insertions(+), 112 deletions(-)
 >
->      device_initialize(&b->dev);
+> diff --git a/drivers/acpi/pci_bind.c b/drivers/acpi/pci_bind.c
+> index 320e698..d18316a 100644
+> --- a/drivers/acpi/pci_bind.c
+> +++ b/drivers/acpi/pci_bind.c
+> @@ -35,57 +35,31 @@
+>  #define _COMPONENT             ACPI_PCI_COMPONENT
+>  ACPI_MODULE_NAME("pci_bind");
 >
-> to
->      pci_add_new_bus and pci_create_root_bus instead.
+> -static int acpi_pci_bind_cb(struct acpi_device *device);
+> -
+> -static int acpi_pci_unbind(struct acpi_device *device, struct pci_dev *dev)
+> +static int acpi_pci_unbind(acpi_handle handle, struct pci_dev *dev)
+>  {
+> -       device_set_run_wake(&dev->dev, false);
+> -       pci_acpi_remove_pm_notifier(device);
+> +       struct acpi_device *acpi_dev;
+>
+> -       if (dev->subordinate) {
+> -               acpi_pci_irq_del_prt(dev->subordinate);
+> -               device->ops.bind = NULL;
+> -               device->ops.unbind = NULL;
+> +       if (!acpi_bus_get_device(handle, &acpi_dev) && acpi_dev) {
+> +               device_set_run_wake(&dev->dev, false);
+> +               pci_acpi_remove_pm_notifier(acpi_dev);
+>         }
+>
+> -       return 0;
+> -}
+> -
+> -static int acpi_pci_unbind_cb(struct acpi_device *device)
+> -{
+> -       int rc = 0;
+> -       struct pci_dev *dev;
+> -
+> -       dev = acpi_get_pci_dev(device->handle);
+> -       if (dev) {
+> -               rc = acpi_pci_unbind(device, dev);
+> -               pci_dev_put(dev);
+> -       }
+> +       if (dev->subordinate)
+> +               acpi_pci_irq_del_prt(dev->subordinate);
+>
+> -       return rc;
+> +       return 0;
+>  }
+>
+> -static int acpi_pci_bind(struct acpi_device *device, struct pci_dev *dev)
+> +static int acpi_pci_bind(acpi_handle handle, struct pci_dev *dev)
+>  {
+>         acpi_status status;
+> -       acpi_handle handle;
+>         struct pci_bus *bus;
+> +       struct acpi_device *acpi_dev;
+>
+> -       pci_acpi_add_pm_notifier(device, dev);
+> -       if (device->wakeup.flags.run_wake)
+> -               device_set_run_wake(&dev->dev, true);
+> -
+> -       /*
+> -        * Install the 'bind' function to facilitate callbacks for
+> -        * children of the P2P bridge.
+> -        */
+> -       if (dev->subordinate) {
+> -               ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> -                                 "Device %04x:%02x:%02x.%d is a PCI bridge\n",
+> -                                 pci_domain_nr(dev->bus), dev->bus->number,
+> -                                 PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn)));
+> -               device->ops.bind = acpi_pci_bind_cb;
+> -               device->ops.unbind = acpi_pci_unbind_cb;
+> +       if (!acpi_bus_get_device(handle, &acpi_dev) && acpi_dev) {
+> +               pci_acpi_add_pm_notifier(acpi_dev, dev);
+> +               if (acpi_dev->wakeup.flags.run_wake)
+> +                       device_set_run_wake(&dev->dev, true);
 
-sth like attached...
+why not just keep acpi_device *device in function ? so you can avoid
+extra acpi_bus_get_device() calling.
 
---0015173febeaccb4d504c9c1f9cd
-Content-Type: application/octet-stream; name="jiang_hotplug_rework_2.patch"
-Content-Disposition: attachment; filename="jiang_hotplug_rework_2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h752j88a0
+>         }
+>
+>         /*
+> @@ -96,56 +70,24 @@ static int acpi_pci_bind(struct acpi_device *device, struct pci_dev *dev)
+>          *
+>          * TBD: Can _PRTs exist within the scope of non-bridge PCI devices?
+>          */
+> -       status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
+> +       status = acpi_get_handle(handle, METHOD_NAME__PRT, &handle);
+>         if (ACPI_SUCCESS(status)) {
+>                 if (dev->subordinate)
+>                         bus = dev->subordinate;
+>                 else
+>                         bus = dev->bus;
+> -               acpi_pci_irq_add_prt(device->handle, bus);
+> +               acpi_pci_irq_add_prt(handle, bus);
+>         }
 
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgCkRlbGl2ZXJlZC1UbzogeWhsdS5rZXJuZWxAZ21h
-aWwuY29tDQpSZWNlaXZlZDogYnkgMTAuMjA1LjM3LjEzOCB3aXRoIFNNVFAgaWQgdGUxMGNzcDE4
-NTY0NWJrYjsNCiAgICAgICAgRnJpLCAxNCBTZXAgMjAxMiAyMDoxMzowMyAtMDcwMCAoUERUKQ0K
-UmVjZWl2ZWQ6IGJ5IDEwLjY4LjIwMy4yMzAgd2l0aCBTTVRQIGlkIGt0Nm1yNzk3MDIzOHBiYy4x
-NjMuMTM0NzY3ODc4MjY1OTsNCiAgICAgICAgRnJpLCAxNCBTZXAgMjAxMiAyMDoxMzowMiAtMDcw
-MCAoUERUKQ0KUmV0dXJuLVBhdGg6IDxsaXVqOTdAZ21haWwuY29tPg0KUmVjZWl2ZWQ6IGZyb20g
-bWFpbC5rZXJuZWwub3JnIChtYWlsLmtlcm5lbC5vcmcuIFsxOTguMTQ1LjE5LjIwMV0pDQogICAg
-ICAgIGJ5IG14Lmdvb2dsZS5jb20gd2l0aCBFU01UUCBpZCB2bjlzaTU0MTA5MDlwYmMuMzE3LjIw
-MTIuMDkuMTQuMjAuMTMuMDE7DQogICAgICAgIEZyaSwgMTQgU2VwIDIwMTIgMjA6MTM6MDIgLTA3
-MDAgKFBEVCkNClJlY2VpdmVkLVNQRjogbmV1dHJhbCAoZ29vZ2xlLmNvbTogMTk4LjE0NS4xOS4y
-MDEgaXMgbmVpdGhlciBwZXJtaXR0ZWQgbm9yIGRlbmllZCBieSBkb21haW4gb2YgbGl1ajk3QGdt
-YWlsLmNvbSkgY2xpZW50LWlwPTE5OC4xNDUuMTkuMjAxOw0KQXV0aGVudGljYXRpb24tUmVzdWx0
-czogbXguZ29vZ2xlLmNvbTsgc3BmPW5ldXRyYWwgKGdvb2dsZS5jb206IDE5OC4xNDUuMTkuMjAx
-IGlzIG5laXRoZXIgcGVybWl0dGVkIG5vciBkZW5pZWQgYnkgZG9tYWluIG9mIGxpdWo5N0BnbWFp
-bC5jb20pIHNtdHAubWFpbD1saXVqOTdAZ21haWwuY29tOyBka2ltPXBhc3MgaGVhZGVyLmk9QGdt
-YWlsLmNvbQ0KUmVjZWl2ZWQ6IGJ5IG1haWwua2VybmVsLm9yZyAoUG9zdGZpeCkNCglpZCBDNzg1
-QjIwMTcyOyBTYXQsIDE1IFNlcCAyMDEyIDAzOjEzOjAxICswMDAwIChVVEMpDQpEZWxpdmVyZWQt
-VG86IHlpbmdoYWlAa2VybmVsLm9yZw0KUmVjZWl2ZWQ6IGZyb20gbWFpbC5rZXJuZWwub3JnIChs
-b2NhbGhvc3QgWzEyNy4wLjAuMV0pDQoJYnkgbWFpbC5rZXJuZWwub3JnIChQb3N0Zml4KSB3aXRo
-IEVTTVRQIGlkIDI0Q0VEMjAxN0INCglmb3IgPHlpbmdoYWlAa2VybmVsLm9yZz47IFNhdCwgMTUg
-U2VwIDIwMTIgMDM6MTM6MDEgKzAwMDAgKFVUQykNClJlY2VpdmVkOiBmcm9tIG1haWwtcGIwLWY0
-NC5nb29nbGUuY29tIChtYWlsLXBiMC1mNDQuZ29vZ2xlLmNvbSBbMjA5Ljg1LjE2MC40NF0pDQoJ
-YnkgbWFpbC5rZXJuZWwub3JnIChQb3N0Zml4KSB3aXRoIEVTTVRQIGlkIEE3QUNFMjAxNzINCglm
-b3IgPHlpbmdoYWlAa2VybmVsLm9yZz47IFNhdCwgMTUgU2VwIDIwMTIgMDM6MTI6NTYgKzAwMDAg
-KFVUQykNClJlY2VpdmVkOiBieSBtYWlsLXBiMC1mNDQuZ29vZ2xlLmNvbSB3aXRoIFNNVFAgaWQg
-cnI0c282NjQxNzc3cGJiLjMNCiAgICAgICAgZm9yIDx5aW5naGFpQGtlcm5lbC5vcmc+OyBGcmks
-IDE0IFNlcCAyMDEyIDIwOjEyOjU2IC0wNzAwIChQRFQpDQpES0lNLVNpZ25hdHVyZTogdj0xOyBh
-PXJzYS1zaGEyNTY7IGM9cmVsYXhlZC9yZWxheGVkOw0KICAgICAgICBkPWdtYWlsLmNvbTsgcz0y
-MDEyMDExMzsNCiAgICAgICAgaD1mcm9tOnRvOmNjOnN1YmplY3Q6ZGF0ZTptZXNzYWdlLWlkOngt
-bWFpbGVyOmluLXJlcGx5LXRvOnJlZmVyZW5jZXM7DQogICAgICAgIGJoPTdySS81RXJ4bXZuSHFk
-NkFmOTluak1IZFpRU3hjZzFvU1ZYeGdtSnF1dnM9Ow0KICAgICAgICBiPVdsZTRGRlhuWG80aHEw
-RjMrN2hEWStKVlpRS3dZYzAvVFcxeGNBT0Y3ZG9xd2JmNnJHa0xjb1lVelBRRitvSlUxdQ0KICAg
-ICAgICAgZERPUnBxNUJDZVZoaS9MV1JPR2x0bUpVWjRGQXpqUkp6Yy8zcy9ZRkliMDFLNVB0WHFj
-aGYxR2dIVWdubEx2eXdMMFoNCiAgICAgICAgIHlhcnZoQ3dVV0w5V1RxZDRoNGFoVkI0ZE9wMDBF
-OXlnSkR1WWttcWUwUjdvUXV3OFltVXhNVnFlU0xRTHpJQzN0Mi9VDQogICAgICAgICA2TDk3dFE2
-R2F1eXFyQ2huenlybVhOTGNDOUhpajRHYXF1V1VYV3p6NzFLeENlakVXUlBydnpGRWplQUFPWitU
-SWVVOA0KICAgICAgICAgYitRSTRtMWVDMk9WM3pPRHJOdFpLN0IvMFczU3N3R3ZYTjZiVloxNDdW
-WXY3NG5yelhQNFdnUkg2TU4zWGJhQmxqL3ANCiAgICAgICAgIFErbUE9PQ0KUmVjZWl2ZWQ6IGJ5
-IDEwLjY2LjkwLjM4IHdpdGggU01UUCBpZCBidDZtcjY5MjQwMDFwYWIuNTMuMTM0NzY3ODc3NjUx
-MzsNCiAgICAgICAgRnJpLCAxNCBTZXAgMjAxMiAyMDoxMjo1NiAtMDcwMCAoUERUKQ0KUmVjZWl2
-ZWQ6IGZyb20gbG9jYWxob3N0LmxvY2FsZG9tYWluIChbMjIxLjIyMS4xOC4xMjJdKQ0KICAgICAg
-ICBieSBteC5nb29nbGUuY29tIHdpdGggRVNNVFBTIGlkIGp6MTBzbTIwOTI3NzdwYmMuOC4yMDEy
-LjA5LjE0LjIwLjEyLjQzDQogICAgICAgICh2ZXJzaW9uPVRMU3YxL1NTTHYzIGNpcGhlcj1PVEhF
-Uik7DQogICAgICAgIEZyaSwgMTQgU2VwIDIwMTIgMjA6MTI6NDkgLTA3MDAgKFBEVCkNCkZyb206
-IEppYW5nIExpdSA8bGl1ajk3QGdtYWlsLmNvbT4NClRvOiBCam9ybiBIZWxnYWFzIDxiaGVsZ2Fh
-c0Bnb29nbGUuY29tPg0KQ2M6IFRvbnkgTHVjayA8dG9ueS5sdWNrQGludGVsLmNvbT4sDQoJSmlh
-bmcgTGl1IDxqaWFuZy5saXVAaHVhd2VpLmNvbT4sDQoJWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJu
-ZWwub3JnPiwNCglLZW5qaSBLYW5lc2hpZ2UgPGthbmVzaGlnZS5rZW5qaUBqcC5mdWppdHN1LmNv
-bT4sDQoJWWlqaW5nIFdhbmcgPHdhbmd5aWppbmdAaHVhd2VpLmNvbT4sDQoJSmlhbmcgTGl1IDxs
-aXVqOTdAZ21haWwuY29tPiwNCglsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnLA0KCWxpbnV4
-LXBjaUB2Z2VyLmtlcm5lbC5vcmcNClN1YmplY3Q6IFtQQVRDSCB2MiAyLzldIFBDSTogc3BsaXQg
-cmVnaXN0cmF0aW9uIG9mIFBDSSBidXMgZGV2aWNlcyBpbnRvIHR3byBzdGFnZXMNCkRhdGU6IFNh
-dCwgMTUgU2VwIDIwMTIgMTE6MDU6MDUgKzA4MDANCk1lc3NhZ2UtSWQ6IDwxMzQ3Njc4MzEyLTEx
-MTI0LTMtZ2l0LXNlbmQtZW1haWwtamlhbmcubGl1QGh1YXdlaS5jb20+DQpYLU1haWxlcjogZ2l0
-LXNlbmQtZW1haWwgMS43LjkuNQ0KSW4tUmVwbHktVG86IDwxMzQ3Njc4MzEyLTExMTI0LTEtZ2l0
-LXNlbmQtZW1haWwtamlhbmcubGl1QGh1YXdlaS5jb20+DQpSZWZlcmVuY2VzOiA8MTM0NzY3ODMx
-Mi0xMTEyNC0xLWdpdC1zZW5kLWVtYWlsLWppYW5nLmxpdUBodWF3ZWkuY29tPg0KWC1TcGFtLVN0
-YXR1czogTm8sIHNjb3JlPS0yLjQgcmVxdWlyZWQ9NS4wIHRlc3RzPUJBWUVTXzAwLERLSU1fU0lH
-TkVELA0KCURLSU1fVkFMSUQsREtJTV9WQUxJRF9BVSxGUkVFTUFJTF9FTlZGUk9NX0VORF9ESUdJ
-VCxGUkVFTUFJTF9GUk9NLA0KCVJDVkRfSU5fRE5TV0xfTE9XLFVOUEFSU0VBQkxFX1JFTEFZIGF1
-dG9sZWFybj1oYW0gdmVyc2lvbj0zLjMuMQ0KWC1TcGFtLUNoZWNrZXItVmVyc2lvbjogU3BhbUFz
-c2Fzc2luIDMuMy4xICgyMDEwLTAzLTE2KSBvbiBtYWlsLmtlcm5lbC5vcmcNClgtVmlydXMtU2Nh
-bm5lZDogQ2xhbUFWIHVzaW5nIENsYW1TTVRQDQoNCldoZW4gaGFuZGxpbmcgQlVTX05PVElGWV9B
-RERfREVWSUNFIGV2ZW50IGZvciBhIFBDSSBicmlkZ2UgZGV2aWNlLA0KdGhlIG5vdGlmaWNhdGlv
-biBoYW5kbGVyIGNhbid0IGhvbGQgcmVmZXJlbmNlIGNvdW50IHRvIHRoZSBuZXcgUENJIGJ1cw0K
-YmVjYXVzZSB0aGUgZGV2aWNlIG9iamVjdCBmb3IgdGhlIG5ldyBidXMgKHBjaV9kZXYtPnN1Ym9y
-ZGluYXRlLT5kZXYpDQpoYXNuJ3QgYmVlbiBpbml0aWFsaXplZCB5ZXQuDQoNClNwbGl0IHRoZSBy
-ZWdpc3RyYXRpb24gb2YgUENJIGJ1cyBkZXZpY2UgaW50byB0d28gc3RhZ2VzIGFzIGJlbG93LA0K
-c28gdGhhdCB0aGUgZXZlbnQgaGFuZGxlciBjb3VsZCBob2xkIHJlZmVyZW5jZSBjb3VudCB0byB0
-aGUgbmV3IFBDSSBidXMNCndoZW4gaGFuZGxpbmcgQlVTX05PVElGWV9BRERfREVWSUNFIGV2ZW50
-Lg0KDQoxKSBkZXZpY2VfaW5pdGlhbGl6ZSgmcGNpX2Rldi0+ZGV2KQ0KMikgZGV2aWNlX2luaXRp
-YWxpemUoJnBjaV9kZXYtPnN1Ym9yZGluYXRlLT5kZXYpDQozKSBub3RpZnkgQlVTX05PVElGWV9B
-RERfREVWSUNFIGV2ZW50IGZvciBwY2lfZGV2DQo0KSBkZXZpY2VfYWRkKCZwY2lfZGV2LT5kZXYp
-DQo1KSBkZXZpY2VfYWRkKCZwY2lfZGV2LT5zdWJvcmRpbmF0ZS0+ZGV2KQ0KDQpTaWduZWQtb2Zm
-LWJ5OiBKaWFuZyBMaXUgPGppYW5nLmxpdUBodWF3ZWkuY29tPg0KLS0tDQogZHJpdmVycy9wY2kv
-YnVzLmMgICAgfCAgICAyICstCiBkcml2ZXJzL3BjaS9wcm9iZS5jICB8ICAgIDQgKysrLQogZHJp
-dmVycy9wY2kvcmVtb3ZlLmMgfCAgIDEwICsrKysrLS0tLS0KIDMgZmlsZXMgY2hhbmdlZCwgOSBp
-bnNlcnRpb25zKCspLCA3IGRlbGV0aW9ucygtKQoNCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9w
-Y2kvYnVzLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvYnVzLmMK
-KysrIGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9idXMuYwpAQCAtMTkzLDcgKzE5Myw3IEBAIGludCBw
-Y2lfYnVzX2FkZF9jaGlsZChzdHJ1Y3QgcGNpX2J1cyAqYnUKIAlpZiAoYnVzLT5icmlkZ2UpCiAJ
-CWJ1cy0+ZGV2LnBhcmVudCA9IGJ1cy0+YnJpZGdlOwogCi0JcmV0dmFsID0gZGV2aWNlX3JlZ2lz
-dGVyKCZidXMtPmRldik7CisJcmV0dmFsID0gZGV2aWNlX2FkZCgmYnVzLT5kZXYpOwogCWlmIChy
-ZXR2YWwpCiAJCXJldHVybiByZXR2YWw7CiAKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9w
-cm9iZS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3Byb2JlLmMK
-KysrIGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9wcm9iZS5jCkBAIC02MzcsNiArNjM3LDcgQEAgc3Rh
-dGljIHN0cnVjdCBwY2lfYnVzICpwY2lfYWxsb2NfY2hpbGRfYgogCSAqIG5vdyBhcyB0aGUgcGFy
-ZW50IGlzIG5vdCBwcm9wZXJseSBzZXQgdXAgeWV0LiAgVGhpcyBkZXZpY2Ugd2lsbCBnZXQKIAkg
-KiByZWdpc3RlcmVkIGxhdGVyIGluIHBjaV9idXNfYWRkX2RldmljZXMoKQogCSAqLworCWRldmlj
-ZV9pbml0aWFsaXplKCZjaGlsZC0+ZGV2KTsKIAljaGlsZC0+ZGV2LmNsYXNzID0gJnBjaWJ1c19j
-bGFzczsKIAlkZXZfc2V0X25hbWUoJmNoaWxkLT5kZXYsICIlMDR4OiUwMngiLCBwY2lfZG9tYWlu
-X25yKGNoaWxkKSwgYnVzbnIpOwogCkBAIC0xNjY5LDEwICsxNjcwLDExIEBAIHN0cnVjdCBwY2lf
-YnVzICpwY2lfY3JlYXRlX3Jvb3RfYnVzKHN0cnUKIAlpZiAoIXBhcmVudCkKIAkJc2V0X2Rldl9u
-b2RlKGItPmJyaWRnZSwgcGNpYnVzX3RvX25vZGUoYikpOwogCisJZGV2aWNlX2luaXRpYWxpemUo
-JmItPmRldik7CiAJYi0+ZGV2LmNsYXNzID0gJnBjaWJ1c19jbGFzczsKIAliLT5kZXYucGFyZW50
-ID0gYi0+YnJpZGdlOwogCWRldl9zZXRfbmFtZSgmYi0+ZGV2LCAiJTA0eDolMDJ4IiwgcGNpX2Rv
-bWFpbl9ucihiKSwgYnVzKTsKLQllcnJvciA9IGRldmljZV9yZWdpc3RlcigmYi0+ZGV2KTsKKwll
-cnJvciA9IGRldmljZV9hZGQoJmItPmRldik7CiAJaWYgKGVycm9yKQogCQlnb3RvIGNsYXNzX2Rl
-dl9yZWdfZXJyOwogCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvcmVtb3ZlLmMKPT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcmVtb3ZlLmMKKysrIGxpbnV4LTIu
-Ni9kcml2ZXJzL3BjaS9yZW1vdmUuYwpAQCAtNDgsMTEgKzQ4LDExIEBAIHZvaWQgcGNpX3JlbW92
-ZV9idXMoc3RydWN0IHBjaV9idXMgKmJ1cykKIAlsaXN0X2RlbCgmYnVzLT5ub2RlKTsKIAlwY2lf
-YnVzX3JlbGVhc2VfYnVzbl9yZXMoYnVzKTsKIAl1cF93cml0ZSgmcGNpX2J1c19zZW0pOwotCWlm
-ICghYnVzLT5pc19hZGRlZCkKLQkJcmV0dXJuOwotCi0JcGNpX3JlbW92ZV9sZWdhY3lfZmlsZXMo
-YnVzKTsKLQlkZXZpY2VfdW5yZWdpc3RlcigmYnVzLT5kZXYpOworCWlmIChidXMtPmlzX2FkZGVk
-KSB7CisJCXBjaV9yZW1vdmVfbGVnYWN5X2ZpbGVzKGJ1cyk7CisJCWRldmljZV9kZWwoJmJ1cy0+
-ZGV2KTsKKwl9CisJcHV0X2RldmljZSgmYnVzLT5kZXYpOwogfQogRVhQT1JUX1NZTUJPTChwY2lf
-cmVtb3ZlX2J1cyk7CiAK
---0015173febeaccb4d504c9c1f9cd--
+if not _PRT, handle will become NULL? better to use &handle_tmp etc.
+
+
+
+>
+>         return 0;
+>  }
+>
+> -static int acpi_pci_bind_cb(struct acpi_device *device)
+> -{
+> -       int rc = 0;
+> -       struct pci_dev *dev;
+> -
+> -       dev = acpi_get_pci_dev(device->handle);
+> -       if (dev) {
+> -               rc = acpi_pci_bind(device, dev);
+> -               pci_dev_put(dev);
+> -       }
+> -
+> -       return rc;
+> -}
+> -
+> -int acpi_pci_bind_root(struct acpi_device *device)
+> -{
+> -       device->ops.bind = acpi_pci_bind_cb;
+> -       device->ops.unbind = acpi_pci_unbind_cb;
+> -
+> -       return 0;
+> -}
+> -
+>  void acpi_pci_bind_notify(acpi_handle handle, struct device *dev, bool bind)
+>  {
+> -       struct acpi_device *acpi_dev;
+> -
+> -       if (!dev_is_pci(dev))
+> -               return;
+> -       if (acpi_bus_get_device(handle, &acpi_dev) || !acpi_dev)
+> -               return;
+> -
+> -       if (acpi_dev->parent) {
+> -               if (bind) {
+> -                       if (acpi_dev->parent->ops.bind)
+> -                               acpi_pci_bind(acpi_dev, to_pci_dev(dev));
+> -               } else {
+> -                       if (acpi_dev->parent->ops.unbind)
+> -                               acpi_pci_unbind(acpi_dev, to_pci_dev(dev));
+> -               }
+> +       if (dev_is_pci(dev)) {
+> +               if (bind)
+> +                       acpi_pci_bind(handle, to_pci_dev(dev));
+> +               else
+> +                       acpi_pci_unbind(handle, to_pci_dev(dev));
+>         }
+>  }
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 7509034..25d8ad4 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -505,15 +505,6 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>         /* TBD: Locking */
+>         list_add_tail(&root->node, &acpi_pci_roots);
+>
+> -       /*
+> -        * Attach ACPI-PCI Context
+> -        * -----------------------
+> -        * Thus binding the ACPI and PCI devices.
+> -        */
+> -       result = acpi_pci_bind_root(device);
+> -       if (result)
+> -               goto end;
+> -
+>         printk(KERN_INFO PREFIX "%s [%s] (domain %04x %pR)\n",
+>                acpi_device_name(device), acpi_device_bid(device),
+>                root->segment, &root->secondary);
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index d1ecca2..f31cb2f 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -1232,17 +1232,8 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>         dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+>         device_release_driver(&dev->dev);
+>
+> -       if (!rmdevice)
+> -               return 0;
+> -
+> -       /*
+> -        * unbind _ADR-Based Devices when hot removal
+> -        */
+> -       if (dev->flags.bus_address) {
+> -               if ((dev->parent) && (dev->parent->ops.unbind))
+> -                       dev->parent->ops.unbind(dev);
+> -       }
+> -       acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+> +       if (rmdevice)
+> +               acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+>
+>         return 0;
+>  }
+> @@ -1319,14 +1310,6 @@ static int acpi_add_single_object(struct acpi_device **child,
+>
+>         result = acpi_device_register(device);
+>
+> -       /*
+> -        * Bind _ADR-Based Devices when hot add
+> -        */
+> -       if (device->flags.bus_address) {
+> -               if (device->parent && device->parent->ops.bind)
+> -                       device->parent->ops.bind(device);
+> -       }
+> -
+>  end:
+>         if (!result) {
+>                 acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index bde976e..ef5babf 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -120,8 +120,6 @@ struct acpi_device;
+>  typedef int (*acpi_op_add) (struct acpi_device * device);
+>  typedef int (*acpi_op_remove) (struct acpi_device * device, int type);
+>  typedef int (*acpi_op_start) (struct acpi_device * device);
+> -typedef int (*acpi_op_bind) (struct acpi_device * device);
+> -typedef int (*acpi_op_unbind) (struct acpi_device * device);
+>  typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
+>
+>  struct acpi_bus_ops {
+> @@ -133,8 +131,6 @@ struct acpi_device_ops {
+>         acpi_op_add add;
+>         acpi_op_remove remove;
+>         acpi_op_start start;
+> -       acpi_op_bind bind;
+> -       acpi_op_unbind unbind;
+>         acpi_op_notify notify;
+>  };
+>
+> diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
+> index bb145e4..fb1c0d5 100644
+> --- a/include/acpi/acpi_drivers.h
+> +++ b/include/acpi/acpi_drivers.h
+> @@ -100,7 +100,6 @@ void acpi_pci_irq_del_prt(struct pci_bus *bus);
+>  struct pci_bus;
+>
+>  struct pci_dev *acpi_get_pci_dev(acpi_handle);
+> -int acpi_pci_bind_root(struct acpi_device *device);
+>
+>  /* Arch-defined function to add a bus to the system */
+>
+> --
+> 1.7.9.5
+>
