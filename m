@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2IORBR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 13:01:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:20162 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab2IORA6 (ORCPT
+	id S1754820Ab2IORJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 13:09:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52482 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab2IORJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 13:00:58 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6835"; a="237240495"
-Date: Sat, 15 Sep 2012 10:00:26 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 1/2] ARM: arch timer: Set the TVAL before timer
- is enabled
-Message-ID: <20120915170026.GA8706@codeaurora.org>
-References: <1347694914-1457-1-git-send-email-rvaswani@codeaurora.org>
+	Sat, 15 Sep 2012 13:09:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347694914-1457-1-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347727001.7029.37.camel@marge.simpson.net>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	<20120914212717.GA29307@liondog.tnic>
+	<CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	<1347680006.4340.142.camel@marge.simpson.net>
+	<m24nmzz2f8.fsf@firstfloor.org>
+	<1347727001.7029.37.camel@marge.simpson.net>
+Date: Sat, 15 Sep 2012 19:08:59 +0200
+Message-ID: <CAFLxGvy_yu3L5HrsuF9A=4HpbB-5twjkaswUbb0PUhK9NjKtvA@mail.gmail.com>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 15, 2012 at 12:41:53AM -0700, Rohit Vaswani wrote:
-> On some hardware, the timer deasserts the interrupt when a
-> new TVAL is written only when the enable bit is cleared.
-> Hence explicitly disable the timer and then program the
-> TVAL followed by enabling the timer.
-> If this order is not followed, there are chances that
-> you would not receive any timer interrupts.
+On Sat, Sep 15, 2012 at 6:36 PM, Mike Galbraith <efault@gmx.de> wrote:
+>> Just using futex is unfortunately not the answer either.
+>
+> Yes, postgress performs loads better with it's spinlocks, but due to
+> that, it necessarily _hates_ preemption.  How the is the scheduler
+> supposed to know that any specific userland task _really_ shouldn't be
+> preempted at any specific time, else bad things follow?
 
-It's a little unclear to me who you intend to take this patch.  In the
-To field, you've listed Marc, the MSM maintainers, as well as Russell.
-The MSM tree doesn't really make sense, since this is general ARM
-code.  Marc would make sense if you depend on an active patch series
-he is working on, so he could include it.
-
-I'm guessing you meant it for Russell, though, and the rest of us as
-CCs.
-
-Thanks,
-David
+Why perform custom userspace spinlocks better than futex() based ones?
+I thought we have futex() to get rid of the custom ones...
+Makes futex() only sense when things like priority inheritance are needed?
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+//richard
