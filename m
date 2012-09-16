@@ -1,66 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab2IPTbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 15:31:09 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61437 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab2IPTbH (ORCPT
+	id S1752081Ab2IPTdw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 15:33:52 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51122 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751055Ab2IPTdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 15:31:07 -0400
+	Sun, 16 Sep 2012 15:33:51 -0400
+Date: Sun, 16 Sep 2012 15:33:48 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        ebiederm@xmission.com, neilb@suse.de, bfields@fieldses.org,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        josh@joshtriplett.org, David.Laight@aculab.com, rmallon@gmail.com,
+        palves@redhat.com
+Subject: Re: [PATCH v5] hashtable: introduce a small and naive hashtable
+Message-ID: <20120916193348.GA13726@Krystal>
+References: <1347702798-19202-1-git-send-email-levinsasha928@gmail.com> <20120915151428.GA30459@Krystal> <CA+1xoqcO73Q7KOkoPKGCcWL3CfwpoTSXjhqk+JPwooeQdeYRhA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201208031311.33228.arnd@arndb.de>
-References: <1343310254-7493-1-git-send-email-will.deacon@arm.com>
-	<20120803125144.GD26925@mudshark.cambridge.arm.com>
-	<20120803130230.GA9812@merkur.ravnborg.org>
-	<201208031311.33228.arnd@arndb.de>
-Date: Sun, 16 Sep 2012 21:31:07 +0200
-X-Google-Sender-Auth: _YayyU388Sy20m3TxIbqq2lmnes
-Message-ID: <CAMuHMdUBxwqBJ-XTvupfoz6Srcj9gYjfok3mykD76jgyQ5ySCw@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: kvm: make export of linux/kvm_para.h unconditional
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Will Deacon <will.deacon@arm.com>,
-        Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqcO73Q7KOkoPKGCcWL3CfwpoTSXjhqk+JPwooeQdeYRhA@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 3, 2012 at 3:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 03 August 2012, Sam Ravnborg wrote:
->> > > I know we here hit a bad thing with the generic-y support,
->> > > where we miss a good way to add a file to a lot of archs
->> > > without editing a lot of files.
->> >
->> > If there isn't a generic version of the header, then yes, I guess you have
->> > to modify the architectures that want to export it.
->> >
->> > I'm happy to post an extra patch sorting out kvm.h and a.out.h if that's
->> > what's required to get headers building again.
->>
->> IMO this is required to sort this out for good.
->> I will be happy to review your patches.
->
-> I also owe Mark Brown a solution for the asm/clkdev.h redirect,
-> as by http://lkml.indiana.edu/hypermail/linux/kernel/1207.0/01141.html
->
-> I would very much like to avoid adding another wildcard logic for
-> generic-y, but I could not figure out how to do that better.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On Sat, Sep 15, 2012 at 5:14 PM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> This hashtable implementation is using hlist buckets to provide a simple
+> >> hashtable to prevent it from getting reimplemented all over the kernel.
+> >>
+> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> >> ---
+> >>
+> >> Changes from v4:
+> >>
+> >>  - Addressed comments by Mathieu Desnoyers.
+> >>
+> >>  include/linux/hashtable.h | 190 ++++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 190 insertions(+)
+> >>  create mode 100644 include/linux/hashtable.h
+> >>
+> >> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+> >> new file mode 100644
+> >> index 0000000..6d0c6c2
+> >> --- /dev/null
+> >> +++ b/include/linux/hashtable.h
+> >> @@ -0,0 +1,190 @@
+> >> +/*
+> >> + * Hash table implementation
+> >> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
+> >> + */
+> >> +
+> >> +#ifndef _LINUX_HASHTABLE_H
+> >> +#define _LINUX_HASHTABLE_H
+> >> +
+> >> +#include <linux/list.h>
+> >> +#include <linux/types.h>
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/hash.h>
+> >> +#include <linux/rculist.h>
+> >> +
+> >> +#define DEFINE_HASHTABLE(name, bits)                                         \
+> >> +     struct hlist_head name[HASH_SIZE(bits)] =                               \
+> >> +                     { [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT }
+> >> +
+> >> +#define DECLARE_HASHTABLE(name, bits)                                        \
+> >> +     struct hlist_head name[1 << (bits)]
+> >> +
+> >> +#define HASH_SIZE(name) (1 << HASH_BITS(name))
+> >> +#define HASH_BITS(name) ilog2(ARRAY_SIZE(name))
+> >> +
+> >> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+> >> +#define hash_min(val, bits)                                                  \
+> >> +({                                                                           \
+> >> +     sizeof(val) <= 4 ?                                                      \
+> >> +     hash_32(val, bits) :                                                    \
+> >> +     hash_long(val, bits);                                                   \
+> >> +})
+> >> +
+> >> +/**
+> >> + * hash_init - initialize a hash table
+> >> + * @hashtable: hashtable to be initialized
+> >> + *
+> >> + * Calculates the size of the hashtable from the given parameter, otherwise
+> >> + * same as hash_init_size.
+> >> + *
+> >> + * This has to be a macro since HASH_BITS() will not work on pointers since
+> >> + * it calculates the size during preprocessing.
+> >> + */
+> >> +#define hash_init(hashtable)                                                 \
+> >> +({                                                                           \
+> >> +     int __i;                                                                \
+> >> +                                                                             \
+> >> +     for (__i = 0; __i < HASH_BITS(hashtable); __i++)                        \
+> >
+> > I think this fails to initialize the whole table. You'd need
+> >
+> >   HASH_BITS -> HASH_SIZE
+> 
+> Right.
+> 
+> Unfortunately it's pretty hard catching something like this :/
+> 
+> > Which brings the following question: how did you test this code ? It
+> > would be nice to have a small test module along with this patchset that
+> > stress-tests this simple hash table in various configurations (on stack,
+> > in data, etc).
+> 
+> I do two things:
+> 
+>  - A small userspace test (since this header works just fine from
+> userspace as well).
+>  - Build a kernel with all ~20 commits and stresstest it a bit, since
+> things like workqueue were converted, it finds issues pretty fast.
+> 
+> I agree that there should be something similar to the list sort test
+> we currently have, but I'm not sure if it should be in the scope of
+> this initial patch.
 
-Any progress on this one?
-It's a regression in 3.5 for sh, and 3.6-rc for m68k.
+Fair enough.
 
-Thx!
+> 
+> > Also, I don't see how hash_init() can be useful, since DEFINE_HASHTABLE
+> > already initialize the array entries. If it is for dynamically allocated
+> > hash tables, this also won't work, considering the comment "This has to
+> > be a macro since HASH_BITS() will not work on pointers since it
+> > calculates the size during preprocessing."
+> 
+> hash_init() is actually used to clear the hashtable in two of the
+> commits I've used to send along with this one. Since as you've said we
+> now have DEFINE_HASHTABLE and DECLARE_HASHTABLE, maybe it should be
+> now called hash_clear() or something similar. I don't have a strong
+> opinion about this.
 
-Gr{oetje,eeting}s,
+If it's used somewhere, then it's fine. People are used to "*_init"
+functions, so I don't think there is a point in renaming this to
+"clear".
 
-                        Geert
+> 
+> >> +             INIT_HLIST_HEAD(&hashtable[__i]);                               \
+> >> +})
+> >> +
+> >> +/**
+> >> + * hash_add - add an object to a hashtable
+> >> + * @hashtable: hashtable to add to
+> >> + * @node: the &struct hlist_node of the object to be added
+> >> + * @key: the key of the object to be added
+> >> + */
+> >> +#define hash_add(hashtable, node, key)                                               \
+> >> +     hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
+> >> +
+> >> +/**
+> >> + * hash_add_rcu - add an object to a rcu enabled hashtable
+> >> + * @hashtable: hashtable to add to
+> >> + * @node: the &struct hlist_node of the object to be added
+> >> + * @key: the key of the object to be added
+> >> + */
+> >> +#define hash_add_rcu(hashtable, node, key)                                   \
+> >> +     hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
+> >> +
+> >> +/**
+> >> + * hash_hashed - check whether an object is in any hashtable
+> >> + * @node: the &struct hlist_node of the object to be checked
+> >> + */
+> >> +#define hash_hashed(node) (!hlist_unhashed(node))
+> >> +
+> >> +/**
+> >> + * hash_empty - check whether a hashtable is empty
+> >> + * @hashtable: hashtable to check
+> >> + *
+> >> + * This has to be a macro since HASH_BITS() will not work on pointers since
+> >> + * it calculates the size during preprocessing.
+> >
+> > So I get that hash_empty is only expected to be used for statically
+> > defined hash tables ? Does it support hash tables in dynamically
+> > allocated memory ? On the stack ? If these are never expected to be
+> > supported, this should be documented.
+> 
+> Like the rest of the code, this hashtable implementation only works
+> with non-dynamically allocated hashtables (on the stack/statically
+> defined/etc are supported).
+> 
+> How would you create a dynamic hashtable with this code to begin with?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+With a var. sized array in a structure, e.g.:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+struct hashtable {
+        size_t len;
+        struct hlist_head t[];
+};
+
+Then create a hash table allocation function, and turn both hash_empty
+and hash_init into functions that take a struct simplehash pointer as
+parameter. The downside is to consume extra space (especially because
+the array always has a power of 2 len), but the nice thing is that we
+could use this code with a kmalloc'd/vmalloc'd hash table.
+
+I'm not saying we need to do it (due to the space consumption downside),
+but that we should at least document this limitation.
+
+Thanks,
+
+Mathieu
+
+
+> 
+> 
+> Thanks,
+> Sasha
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
