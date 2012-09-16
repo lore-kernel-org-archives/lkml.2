@@ -1,557 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab2IPVAb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 17:00:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49357 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab2IPVA1 (ORCPT
+	id S1751750Ab2IPVWc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 17:22:32 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60554 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab2IPVWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 17:00:27 -0400
-Date: Sun, 16 Sep 2012 13:57:50 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC/PATCH] Input: Add in-kernel input events transformation
- framework
-Message-ID: <20120916205750.GA11998@lizard>
+	Sun, 16 Sep 2012 17:22:31 -0400
+Date: Sun, 16 Sep 2012 17:22:21 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@ubuntu
+To: Henrik Rydberg <rydberg@euromail.se>
+cc: Guenter Roeck <linux@roeck-us.net>, Parag Warudkar <parag.lkml@gmail.com>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+In-Reply-To: <20120916093520.GA5623@polaris.bitmath.org>
+Message-ID: <alpine.DEB.2.02.1209161712070.14838@ubuntu>
+References: <alpine.DEB.2.02.1209151834120.2271@ubuntu> <20120915225841.GA3816@roeck-us.net> <alpine.DEB.2.02.1209151918210.2271@ubuntu> <alpine.DEB.2.02.1209152323490.2088@ubuntu> <20120916043116.GA4477@roeck-us.net>
+ <20120916093520.GA5623@polaris.bitmath.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new driver allows to perform various input events transformations
-in kernel, e.g. remap one key (or combination) to another key.
 
-The driver uses configfs (/sys/kernel/config/input_xfrm) and includes
-this small readme:
 
-  The transformation files (map, modmap) accept writes in this form:
-  	<+/-> <keycode-map-from> <keycode-map-to>
-  Plus sign to add, and minus sign to remove an entry.
-  Keycodes can be found in /usr/include/linux/input.h
-  For example, to remap KEY_LEFTMETA (125) to KEY_LEFTALT (56):
-  	# echo + 125 56 > map
-  Special mappings with a modifier key can be also created.
-  For example, to remap capslock+left to home key:
-  	# echo 58 42 > modkeys
-  	# echo + 105 102 > modmap
-  The first commands maps KEY_CAPSLOCK (58) to a modifier key,
-  the second command creates the mapping. The second argument (42,
-  which is KEY_LEFTSHIFT) to modkeys specifies the unmodifier key:
-  when pressed together with the modifier key, the mappings will
-  temporary turn off. That is, pressing capslock+leftshift will let
-  use capslock as normal again.
+On Sun, 16 Sep 2012, Henrik Rydberg wrote:
 
-So far it's not possible to switch keys, but if/when needed, it's
-pretty easy to implement: just need to create a virtual input device,
-and pass events through it.
+> On Sat, Sep 15, 2012 at 09:31:16PM -0700, Guenter Roeck wrote:
+> > That looks terribly complicated. Better keep the loop, and just replace
+> > 	udelay(us);
+> > with something like
+> > 	usleep_range(us, us << 1);
+> > 
+> > Alternatively, just use a constant such as
+> > 	usleep_range(us, us + APPLESMC_MIN_WAIT);
+> 
+Well I don't think there is anything terribly complicated there - but I 
+tried to make it simpler. Below patch seems to work better for me for my 
+normal workload - I got no failures or other oddities with the default 
+32ms timeout. I haven't tried very hard to get to the corner cases which 
+earlier required a higher timeout. 
 
-Note that the other approach of these transformations would be to
-export input filters to the userland, then intercept events there, and
-pass the transformed events back (or to the uinput instance). But this
-needlessly requires too much efforts for the simple task.
+I would like to get this in for now if there aren't any further 
+suggestions, as it fixes the failures by making it use the 
+32ms maximum it was originally supposed to and for bonus it's also 
+converted to use usleep_range which is better from PM standpoint.
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
+> It would be worthwhile to check if there are other bits in status that
+> encodes a busy state, similar to what we now have in send_byte(). This
+> is what has finally made almost all machines error-free. Increasing
+> the max wait is possible, of course, but it only kills the symptoms.
+> 
+> So, Parag, would it be possible for you to print the status field as
+> you go through one of those long waits? If you find a bit that seems
+> to change occasionally, you could try to use it as a busy indicator,
+> and use the APPLESMC_RETRY_WAIT for that case.
+> 
+Henrik - if the below patch still results in failures we can 
+revisit the long  wait cases. For now I am satisfied that there aren't any 
+normal case failures like before.
 
-It started with opensuse 12.1 -> 12.2 upgrade, when my XKB keyboard
-setup got broken again.
+Thanks,
+Parag
 
-For years I used a lengthy .xmodmap to remap keys, but the method was
-always unreliable, i.e. before the upgrade I pretty much knew that I'd
-need spend hours to fix my keys. Lately I switched to xkbcomp, but as
-it appears it wasn't a panacea. Latest firefox no longer respect my
-remappings, while xlib/qt apps still work.
+Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
 
-Plus, it appears that some apps can ignore remappings altogether, e.g.
-running QEMU SDL backend never respected my mappings, which always
-annoyed me.
-
-http://ix.io/30i -- That was my xkb setup, if anyone interested.
-It remaps capslock+arrows to home/end/pgup/pgdown, plus win key to alt.
-
-Instead of introducing caps_level2 type I also tried iso level 3 shift,
-and then firefox seem to understand remappings, but then xlib and Qt
-apps break. Heh.
-
-With this driver I can remap keys at the lowest possible level, and so
-it will work everywhere: X11, VTs, SDL, directfb, wayland, etc. It's
-like remapping keys physically, which is exactly what I want.
-
-p.s. Note that I don't use gnome, so it is not the famous "gnome 3.4
-killed my key bindings". :-) Although, maybe it's somehow related,
-dunno.
-
- drivers/input/misc/Kconfig      |  10 +
- drivers/input/misc/Makefile     |   1 +
- drivers/input/misc/input_xfrm.c | 426 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 437 insertions(+)
- create mode 100644 drivers/input/misc/input_xfrm.c
-
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 7c0f1ec..181e8cb 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -600,4 +600,14 @@ config INPUT_XEN_KBDDEV_FRONTEND
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called xen-kbdfront.
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 2827088..569aa8d 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -168,14 +168,14 @@ static struct workqueue_struct *applesmc_led_wq;
+ static int wait_read(void)
+ {
+ 	u8 status;
+-	int us;
+-	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+-		udelay(us);
++	int us = APPLESMC_MIN_WAIT;
++	do {
+ 		status = inb(APPLESMC_CMD_PORT);
+ 		/* read: wait for smc to settle */
+ 		if (status & 0x01)
+ 			return 0;
+-	}
++		usleep_range(us, us << 1);
++	} while ((us <<= 1) <= APPLESMC_MAX_WAIT);
  
-+config INPUT_XFRM
-+	tristate "Input events transformation framework"
-+	depends on CONFIGFS_FS
-+	help
-+	  This driver allows to perform various input events transformations
-+	  in kernel, e.g. remap one key (or combination) to another key.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called input_xfrm.
-+
- endif
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 83fe6f5..b1b5a01 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -55,4 +55,5 @@ obj-$(CONFIG_INPUT_UINPUT)		+= uinput.o
- obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
- obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
- obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
-+obj-$(CONFIG_INPUT_XFRM)		+= input_xfrm.o
- obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
-diff --git a/drivers/input/misc/input_xfrm.c b/drivers/input/misc/input_xfrm.c
-new file mode 100644
-index 0000000..e264a4b
---- /dev/null
-+++ b/drivers/input/misc/input_xfrm.c
-@@ -0,0 +1,426 @@
-+/*
-+ * Input events transformation framework
-+ *
-+ * Copyright 2012  Anton Vorontsov <cbouatmailru@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mod_devicetable.h>
-+#include <linux/printk.h>
-+#include <linux/input.h>
-+#include <linux/slab.h>
-+#include <linux/bitops.h>
-+#include <linux/interrupt.h>
-+#include <linux/kfifo.h>
-+#include <linux/types.h>
-+#include <linux/list.h>
-+#include <linux/configfs.h>
-+
-+#define IXFRM_FIFO_SIZE 8 /* eight should be enough for anyone */
-+
-+struct ixfrm_event {
-+	uint type;
-+	uint code;
-+	uint val;
-+};
-+
-+struct ixfrm {
-+	struct input_handle handle;
-+	struct tasklet_struct tlet;
-+	int xfrming;
-+	bool unxfrm;
-+	STRUCT_KFIFO(struct ixfrm_event, IXFRM_FIFO_SIZE) events;
-+};
-+
-+struct ixfrm_map {
-+	uint from;
-+	uint to;
-+	struct list_head node;
-+};
-+
-+struct ixfrm_cfg {
-+	struct configfs_subsystem subsys;
-+	struct list_head map;
-+	struct list_head modmap;
-+	uint modkey;
-+	uint unmodkey;
-+};
-+CONFIGFS_ATTR_STRUCT(ixfrm_cfg);
-+
-+static void ixfrm_event_sender(ulong data)
-+{
-+	struct ixfrm *ix = (void *)data;
-+	struct ixfrm_event ev;
-+
-+	while (kfifo_out(&ix->events, &ev, 1)) {
-+		input_inject_event(&ix->handle, ev.type, ev.code, ev.val);
-+		input_inject_event(&ix->handle, EV_SYN, SYN_REPORT, 1);
-+	}
-+}
-+
-+static void ixfrm_queue_event(struct ixfrm *ix, uint type, uint code, uint val)
-+{
-+	struct ixfrm_event event = { type, code, val };
-+
-+	kfifo_in(&ix->events, &event, 1);
-+	tasklet_schedule(&ix->tlet);
-+}
-+
-+static bool ixfrm_do_xfrm(struct ixfrm *ixfrm, struct list_head *list,
-+			  uint code, uint val)
-+{
-+	struct ixfrm_map *map;
-+	uint to = KEY_CNT;
-+
-+	list_for_each_entry(map, list, node) {
-+		if (map->from != code)
-+			continue;
-+		to = map->to;
-+		break;
-+	}
-+
-+	if (to == KEY_CNT)
-+		return 0;
-+
-+	ixfrm_queue_event(ixfrm, EV_KEY, to, val);
-+	return 1;
-+}
-+
-+static struct ixfrm_cfg ixfrm_cfg;
-+
-+static bool ixfrm_filter(struct input_handle *handle, uint type, uint code,
-+			 int val)
-+{
-+	struct ixfrm *ix = handle->private;
-+	bool ret;
-+
-+	ret = ixfrm_do_xfrm(ix, &ixfrm_cfg.map, code, val);
-+	if (ret)
-+		return ret;
-+
-+	if (code == ixfrm_cfg.modkey) {
-+		/* Is the event a part of mode switch seq? Ignore. */
-+		if (ix->xfrming > 1)
-+			return 1;
-+		ix->xfrming = val;
-+	} else if (code == ixfrm_cfg.unmodkey && ix->xfrming) {
-+		ix->xfrming += val;
-+		if (val)
-+			return 1;
-+		ix->xfrming = 0;
-+		ix->unxfrm = !ix->unxfrm;
-+		return 1;
-+	}
-+
-+	/* In un-transform mode we behave like normal, pass events thru. */
-+	if (ix->unxfrm)
-+		return 0;
-+
-+	/* In transform mode never pass the mod key. */
-+	if (code == ixfrm_cfg.modkey)
-+		return 1;
-+
-+	/* Not transforming -> nothing to do, pass events thru. */
-+	if (!ix->xfrming)
-+		return 0;
-+
-+	return ixfrm_do_xfrm(ix, &ixfrm_cfg.modmap, code, val);
-+}
-+
-+static int ixfrm_connect(struct input_handler *handler, struct input_dev *dev,
-+			 const struct input_device_id *id)
-+{
-+	struct ixfrm *ix;
-+	int ret;
-+
-+	ix = kzalloc(sizeof(*ix), GFP_KERNEL);
-+	if (!ix)
-+		return -ENOMEM;
-+
-+	INIT_KFIFO(ix->events);
-+	tasklet_init(&ix->tlet, ixfrm_event_sender, (ulong)ix);
-+
-+	ix->handle.dev = dev;
-+	ix->handle.handler = handler;
-+	ix->handle.name = handler->name;
-+	ix->handle.private = ix;
-+
-+	ret = input_register_handle(&ix->handle);
-+	if (ret) {
-+		pr_err("%s: unable to register input handler: %d\n",
-+		       handler->name, ret);
-+		goto err_reg;
-+	}
-+
-+	ret = input_open_device(&ix->handle);
-+	if (ret) {
-+		pr_err("%s: unable to open input device: %d\n",
-+		       handler->name, ret);
-+		goto err_open;
-+	}
-+
-+	return 0;
-+err_open:
-+	input_unregister_handle(&ix->handle);
-+err_reg:
-+	kfree(ix);
-+	return ret;
-+}
-+
-+static void ixfrm_disconnect(struct input_handle *handle)
-+{
-+	struct ixfrm *ix = handle->private;
-+
-+	tasklet_kill(&ix->tlet);
-+	input_close_device(handle);
-+	input_unregister_handle(handle);
-+	kfree(ix);
-+}
-+
-+static const struct input_device_id ixfrm_ids[] = {
-+	{
-+		.flags	= INPUT_DEVICE_ID_MATCH_EVBIT |
-+			  INPUT_DEVICE_ID_MATCH_KEYBIT,
-+		.evbit	= { BIT_MASK(EV_KEY) },
-+	},
-+	{},
-+};
-+
-+static struct input_handler ixfrm_handler = {
-+	.name		= "input_xfrm",
-+	.id_table	= ixfrm_ids,
-+	.filter		= ixfrm_filter,
-+	.connect	= ixfrm_connect,
-+	.disconnect	= ixfrm_disconnect,
-+};
-+
-+static inline struct ixfrm_cfg *to_ixfrm_cfg(struct config_item *item)
-+{
-+	if (!item)
-+		return NULL;
-+	return container_of(to_configfs_subsystem(to_config_group(item)),
-+						  struct ixfrm_cfg, subsys);
-+}
-+
-+static ssize_t __ixfrm_cfg_read_map(struct list_head *map, char *buf)
-+{
-+	struct ixfrm_map *ent;
-+	ssize_t ret = 0;
-+
-+	list_for_each_entry(ent, map, node) {
-+		ssize_t left = PAGE_SIZE - ret;
-+		int c;
-+
-+		if (left <= 0)
-+			return 0;
-+
-+		c = snprintf(buf, left, "%u %u\n", ent->from, ent->to);
-+		if (c < 0)
-+			return -EIO;
-+
-+		buf += c;
-+		ret += c;
-+	}
-+	return ret;
-+}
-+
-+static void ixfrm_try_unregister_handler(void)
-+{
-+	if (!list_empty(&ixfrm_cfg.map) || !list_empty(&ixfrm_cfg.modmap))
-+		return;
-+	input_unregister_handler(&ixfrm_handler);
-+}
-+
-+static int ixfrm_try_register_handler(void)
-+{
-+	if (!list_empty(&ixfrm_cfg.map) || !list_empty(&ixfrm_cfg.modmap))
-+		return 0;
-+	return input_register_handler(&ixfrm_handler);
-+}
-+
-+static int ixfrm_cfg_del_map(struct list_head *map, uint from)
-+{
-+	struct ixfrm_map *ent;
-+
-+	list_for_each_entry(ent, map, node) {
-+		if (ent->from != from)
-+			continue;
-+		list_del(&ent->node);
-+		kfree(ent);
-+		ixfrm_try_unregister_handler();
-+		return 0;
-+	}
-+
-+	return -ENOENT;
-+}
-+
-+static int ixfrm_cfg_add_map(struct list_head *map, uint from, uint to)
-+{
-+	struct ixfrm_map *ent;
-+	int ret;
-+
-+	ent = kzalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->from = from;
-+	ent->to = to;
-+
-+	ret = ixfrm_try_register_handler();
-+	if (ret)
-+		goto err_reg;
-+
-+	list_add(&ent->node, map);
-+	return 0;
-+err_reg:
-+	kfree(ent);
-+	return ret;
-+}
-+
-+static ssize_t __ixfrm_cfg_store_map(struct list_head *map, const char *buf,
-+				     size_t c) {
-+	uint from;
-+	uint to;
-+	int ret;
-+
-+	if (sscanf(buf, "+ %u %u", &from, &to) == 2) {
-+		ret = ixfrm_cfg_add_map(map, from, to);
-+		if (ret)
-+			return ret;
-+	} else if (sscanf(buf, "- %u", &from) == 1) {
-+		ret = ixfrm_cfg_del_map(map, from);
-+		if (ret)
-+			return ret;
-+	}
-+	return c;
-+}
-+
-+static ssize_t ixfrm_cfg_read_map(struct ixfrm_cfg *ic, char *buf)
-+{
-+	return __ixfrm_cfg_read_map(&ic->map, buf);
-+}
-+
-+static ssize_t ixfrm_cfg_store_map(struct ixfrm_cfg *ic, const char *buf,
-+				   size_t c)
-+{
-+	return __ixfrm_cfg_store_map(&ic->map, buf, c);
-+}
-+
-+static ssize_t ixfrm_cfg_read_modmap(struct ixfrm_cfg *ic, char *buf)
-+{
-+	return __ixfrm_cfg_read_map(&ic->modmap, buf);
-+}
-+
-+static ssize_t ixfrm_cfg_store_modmap(struct ixfrm_cfg *ic, const char *buf,
-+				      size_t c)
-+{
-+	return __ixfrm_cfg_store_map(&ic->modmap, buf, c);
-+}
-+
-+static ssize_t ixfrm_cfg_read_modkeys(struct ixfrm_cfg *ic, char *buf)
-+{
-+	return sprintf(buf, "%u %u\n", ic->modkey, ic->unmodkey);
-+}
-+
-+static ssize_t ixfrm_cfg_store_modkeys(struct ixfrm_cfg *ic, const char *buf,
-+				       size_t c)
-+{
-+	if (sscanf(buf, "%u %u", &ic->modkey, &ic->unmodkey) != 2)
-+		return -EINVAL;
-+	return c;
-+}
-+
-+static ssize_t ixfrm_cfg_readme(struct ixfrm_cfg *ic, char *buf)
-+{
-+	return sprintf(buf,
-+	  "The transformation files (map, modmap) accept writes in this form:\n"
-+	  "	<+/-> <keycode-map-from> <keycode-map-to>\n"
-+	  "Plus sign to add, and minus sign to remove an entry.\n"
-+	  "Keycodes can be found in /usr/include/linux/input.h\n"
-+	  "For example, to remap KEY_LEFTMETA (125) to KEY_LEFTALT (56): \n"
-+	  "	# echo + 125 56 > map\n"
-+	  "Special mappings with a modifier key can be also created.\n"
-+	  "For example, to remap capslock+left to home key:\n"
-+	  "	# echo 58 42 > modkeys\n"
-+	  "	# echo + 105 102 > modmap\n"
-+	  "The first commands maps KEY_CAPSLOCK (58) to a modifier key, \n"
-+	  "the second command creates the mapping. The second argument (42, \n"
-+	  "which is KEY_LEFTSHIFT) to modkeys specifies the unmodifier key: \n"
-+	  "when pressed together with the modifier key, the mappings will \n"
-+	  "temporary turn off. That is, pressing capslock+leftshift will let \n"
-+	  "use capslock as normal again.\n");
-+}
-+
-+#define IXFRM_CFG_ATTR(_name, _mode, _show, _store) \
-+	static struct ixfrm_cfg_attribute ixfrm_cfg_attr_##_name = \
-+		__CONFIGFS_ATTR(_name, _mode, _show, _store)
-+IXFRM_CFG_ATTR(map, 0600, ixfrm_cfg_read_map, ixfrm_cfg_store_map);
-+IXFRM_CFG_ATTR(modmap, 0600, ixfrm_cfg_read_modmap, ixfrm_cfg_store_modmap);
-+IXFRM_CFG_ATTR(modkeys, 0600, ixfrm_cfg_read_modkeys, ixfrm_cfg_store_modkeys);
-+IXFRM_CFG_ATTR(readme, 0400, ixfrm_cfg_readme, NULL);
-+
-+static struct configfs_attribute *ixfrm_cfg_attrs[] = {
-+	&ixfrm_cfg_attr_map.attr,
-+	&ixfrm_cfg_attr_modmap.attr,
-+	&ixfrm_cfg_attr_modkeys.attr,
-+	&ixfrm_cfg_attr_readme.attr,
-+	NULL,
-+};
-+
-+CONFIGFS_ATTR_OPS(ixfrm_cfg);
-+
-+static struct configfs_item_operations ixfrm_cfg_item_ops = {
-+	.show_attribute		= ixfrm_cfg_attr_show,
-+	.store_attribute	= ixfrm_cfg_attr_store,
-+};
-+
-+static struct config_item_type ixfrm_cfg_type = {
-+	.ct_item_ops	= &ixfrm_cfg_item_ops,
-+	.ct_attrs	= ixfrm_cfg_attrs,
-+	.ct_owner	= THIS_MODULE,
-+};
-+
-+static struct ixfrm_cfg ixfrm_cfg = {
-+	.subsys.su_group.cg_item.ci_namebuf	= "input_xfrm",
-+	.subsys.su_group.cg_item.ci_type	= &ixfrm_cfg_type,
-+	.map = LIST_HEAD_INIT(ixfrm_cfg.map),
-+	.modmap = LIST_HEAD_INIT(ixfrm_cfg.modmap),
-+};
-+
-+static int ixfrm_module_init(void)
-+{
-+	return configfs_register_subsystem(&ixfrm_cfg.subsys);
-+}
-+module_init(ixfrm_module_init);
-+
-+static void ixfrm_module_exit(void)
-+{
-+	struct ixfrm_map *ent;
-+	struct ixfrm_map *tmp;
-+
-+	configfs_unregister_subsystem(&ixfrm_cfg.subsys);
-+
-+	list_for_each_entry_safe(ent, tmp, &ixfrm_cfg.map, node) {
-+		list_del(&ent->node);
-+		kfree(ent);
-+	}
-+
-+	list_for_each_entry_safe(ent, tmp, &ixfrm_cfg.modmap, node) {
-+		list_del(&ent->node);
-+		kfree(ent);
-+	}
-+
-+	ixfrm_try_unregister_handler();
-+}
-+module_exit(ixfrm_module_exit);
-+
-+MODULE_DESCRIPTION("Input events transformation framework");
-+MODULE_AUTHOR("Anton Vorontsov <cbouatmailru@gmail.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.11.5
+ 	pr_warn("wait_read() fail: 0x%02x\n", status);
+ 	return -EIO;
+@@ -192,19 +192,22 @@ static int send_byte(u8 cmd, u16 port)
+ 
+ 	outb(cmd, port);
+ 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+-		udelay(us);
+ 		status = inb(APPLESMC_CMD_PORT);
+ 		/* write: wait for smc to settle */
+-		if (status & 0x02)
++		if (status & 0x02) {
++			usleep_range(us, us << 1);
+ 			continue;
++		}
+ 		/* ready: cmd accepted, return */
+ 		if (status & 0x04)
+ 			return 0;
+ 		/* timeout: give up */
+-		if (us << 1 == APPLESMC_MAX_WAIT)
++		if (us << 1 > APPLESMC_MAX_WAIT) {
++			pr_warn("Timeout with us: %d\n", us);
+ 			break;
++		}
+ 		/* busy: long wait and resend */
+-		udelay(APPLESMC_RETRY_WAIT);
++		usleep_range(APPLESMC_RETRY_WAIT, APPLESMC_RETRY_WAIT << 1);
+ 		outb(cmd, port);
+ 	}
+ 
+ 
