@@ -1,114 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab2IPT5X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 15:57:23 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47886 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab2IPT5V (ORCPT
+	id S1752732Ab2IPUWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 16:22:04 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:53042 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752575Ab2IPUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 15:57:21 -0400
+	Sun, 16 Sep 2012 16:22:02 -0400
+X-Greylist: delayed 2000 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Sep 2012 16:22:02 EDT
+Message-ID: <505626A8.8040806@mimc.co.uk>
+Date: Sun, 16 Sep 2012 20:21:12 +0100
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+Organization: Mercury HMI Ltd
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1347770100.6952.31.camel@marge.simpson.net>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
- <20120914212717.GA29307@liondog.tnic> <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
- <1347680006.4340.142.camel@marge.simpson.net> <m24nmzz2f8.fsf@firstfloor.org>
- <1347727001.7029.37.camel@marge.simpson.net> <20120915223212.4174a314@pyramind.ukuu.org.uk>
- <1347770100.6952.31.camel@marge.simpson.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Sep 2012 12:57:00 -0700
-X-Google-Sender-Auth: F5FE1O1kQxFKDm5TeXBc8XoE4ZQ
-Message-ID: <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-To: Mike Galbraith <efault@gmx.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: Advice on mmap() "feature"
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 15, 2012 at 9:35 PM, Mike Galbraith <efault@gmx.de> wrote:
->
-> Oh, while I'm thinking about it, there's another scenario that could
-> cause the select_idle_sibling() change to affect pgbench on largeish
-> packages, but it boils down to preemption odds as well.
+Apologies if this is the wrong place to post this query.  Please feel 
+free to redirect me to the correct place.
 
-So here's a possible suggestion..
+I have come across a weird (but documented [1]) "feature" of mmap(), 
+which is:-
 
-Let's assume that the scheduler code to find the next idle CPU on the
-package is actually a good idea, and we shouldn't mess with the idea.
+"The mmap()function adds an extra reference to the file associated with 
+the file descriptor fildeswhich is not removed by a subsequent close() 
+on that file descriptor. This reference is removed when there are no 
+more mappings to the file."
 
-But at the same time, it's clearly an *expensive* idea, which is why
-you introduced the "only test a single CPU buddy" approach instead.
-But that didn't work, and you can come up with multiple reasons why it
-wouldn't work. Plus, quite fundamentally, it's rather understandable
-that "try to find an idle CPU on the same package" really would be a
-good idea, right?
+In my embedded application, this is resulting in the consumption of 
+available file descriptors.
 
-So instead of limiting the "try to find an idle CPU on the same
-package" to "pick *one* idle CPU on the same package to try", how
-about just trying to make the whole "find another idle CPU" much
-cheaper, and much more scalable that way?
+As an example I wrote the following test running on Ubuntu 11.04 64bit.
 
-Quite frankly, the loop in select_idle_sibling() is insanely expensive
-for what it really wants to do. All it really wants to do is:
- - iterate over idle processors on this package
- - make sure that idle processor is in the cpu's allowed.
+#include <fcntl.h>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/mman.h>
 
-Right?
+#define FRAM_SIZE            (64 * 1024)
+#define FRAM_BASE_ADDRESS    0x00000000
 
-But the whole use of "cpumask_intersects()" etc is quite expensive,
-and there's that crazy double loop to do the above. So no wonder that
-it's expensive and causes scalability problems. That would be
-*especially* true if nr_cpumask_bits is big, and we have
-CONFIG_CPUMASK_OFFSTACK defined.
+int main(int argc, char **argv)
+{
+     int i;
+     for (i = 0; i < 5000; i++)
+     {
+         // open the fram device
+         int m_fdFram = open("/dev/mem", O_RDWR | O_SYNC);
+         if (m_fdFram < 0)
+         {
+             printf("could not open /dev/mem, exiting with errno %d\n", 
+errno);
+             return 0;
+         }
 
-So I would suggest:
- (a) revert the original commit (already done in my tree)
- (b) look at just making the loop *much* cheaper.
+         // map the device to memory
+         char *m_pFram = (char *)mmap(    0,
+                                         FRAM_SIZE * sizeof(unsigned short),
+                                         PROT_READ | PROT_WRITE,
+                                         MAP_SHARED,
+                                         m_fdFram,
+                                         FRAM_BASE_ADDRESS);
+         if ((int)m_pFram == -1)
+         {
+             close(m_fdFram);
+             m_fdFram = -1;
+             printf("could not mmap, exiting with errno %d\n", errno);
+             return 0;
+         }
 
-For example, all those "cpumask_intersects()" and "cpumask_first()"
-things are *really* expensive, and expand to tons of code especially
-for the OFFSTACK case (and aren't exactly free even for the smaller
-case). And it really is all stupidly and badly done. I bet we can make
-that code faster without really changing the  end result at all, just
-changing the algorithm.
+         // now remove the mapping
+         if (m_pFram)
+         munmap(m_pFram, FRAM_SIZE);
 
-For example, what if we got rid of all the crazy "sd groups" crap at
-run-time, and just built a single linked circular list of CPU's on the
-same package?
+         if (m_fdFram != -1)
+             close(m_fdFram);
+     }
 
-Then we'd replace that crazy-expensive double loop over sd->groups and
-for_each_cpu() crap (not to mention cpumask_first_and() etc) with just
-a simple loop over that (and pick the *next* idle cpu, instead of
-doing that crazy "pick first one in a bitmask after and'ing").
+     puts("sleeping");
+     sleep(50);
 
-In fact, looking at select_idle_sibling(), I just want to puke. The
-thing is crazy.
+     return 0;
+}
 
-Why the hell isn't the *very* first thing that function does just a simple
+$ gcc test.c -o test
+$ cat /proc/sys/fs/file-nr
+10016    0    387704
+$ ./test &
+sleeping
+$ cat /proc/sys/fs/file-nr
+15008    0    387704
 
-    if (idle_cpu(target))
-        return target;
+As can be seen, when I run the test, it consumes 5000 fd's, but only 
+releases them when the application closes, 50 seconds later.
 
-instead it does totally f*cking insane things, and checks whether
-"target == cpu && idle_cpu(cpu)".
+My application is designed to run for many years without a restart, 
+spawning other tasks to do various system jobs, these fd's never seem to 
+get released, and eventually the system runs out of available fd's.
 
-The code is shit. Just fix the shit, instead of trying to come up with
-some totally different model. Ok? I bet just fixing it to not have
-insane double loops would already get 90% of the speedup that Mike's
-original patch did, but without the downsides of having to pick just a
-single idle-buddy.
+So my questions are:-
 
-We might also possibly add a "look at SMT buddy first" case, because
-Mike is probably right that bouncing all over the package isn't
-necessarily a good idea unless we really need to. But that would be a
-different thing.
+(a) Since all the mappings have been removed, so why don't the fd's get 
+released ?
 
-            Linus
+(b) Can I somehow force some form of garbage collection to allow the 
+fd's to be freed up ?
+
+Again, apologies if this is the wrong place to ask, but I'm out of ideas.
+
+Thanks in advance
+Mark JACKSON
+
+[1] http://pubs.opengroup.org/onlinepubs/007908775/xsh/mmap.html
