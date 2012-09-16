@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751094Ab2IPEbI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 00:31:08 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52452 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2IPEbG (ORCPT
+	id S1751326Ab2IPEfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 00:35:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37445 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750881Ab2IPEfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 00:31:06 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 15 Sep 2012 21:31:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        rydberg@euromail.se, khali@linux-fr.org
-Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
-Message-ID: <20120916043116.GA4477@roeck-us.net>
-References: <alpine.DEB.2.02.1209151834120.2271@ubuntu>
- <20120915225841.GA3816@roeck-us.net>
- <alpine.DEB.2.02.1209151918210.2271@ubuntu>
- <alpine.DEB.2.02.1209152323490.2088@ubuntu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1209152323490.2088@ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Sep 2012 00:35:08 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/OAsMm7IHOFnoyuYYWVkckC4AeMyK61jU+mGsLRv
+	ZGs0+UJBn8vSnk
+Message-ID: <1347770100.6952.31.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Date: Sun, 16 Sep 2012 06:35:00 +0200
+In-Reply-To: <20120915223212.4174a314@pyramind.ukuu.org.uk>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <1347680006.4340.142.camel@marge.simpson.net>
+	 <m24nmzz2f8.fsf@firstfloor.org>
+	 <1347727001.7029.37.camel@marge.simpson.net>
+	 <20120915223212.4174a314@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 15, 2012 at 11:29:58PM -0400, Parag Warudkar wrote:
+On Sat, 2012-09-15 at 22:32 +0100, Alan Cox wrote: 
+> > Yes, postgress performs loads better with it's spinlocks, but due to
+> > that, it necessarily _hates_ preemption.  How the is the scheduler
+> > supposed to know that any specific userland task _really_ shouldn't be
+> > preempted at any specific time, else bad things follow?
 > 
-> 
-> On Sat, 15 Sep 2012, Parag Warudkar wrote:
-> 
-> > 
-> > 
-> > On Sat, 15 Sep 2012, Guenter Roeck wrote:
-> > > 
-> > > Also, since the delay time can get quite large, would it make sense to replace
-> > > udelay with usleep_range() ?
-> > > 
-> > 
-> > Yes, I think that would be a good thing to do. We could sleep in range of 
-> > us<<=1 and us<<1 and if usleep_range() returns actual sleep time we can 
-> > factor that in for next loop iteration if necessary. Gotta think a bit on 
-> > that one.
-> > 
-> > I will rework the patch to fix the loop termination and keep the bump to 
-> > 0x10000 in place and possibly also experiment with usleep_range().
-> > 
-> 
-> Below is what I am experimenting with right now. I chose to keep the 
-> APPLESMC_MAX_WAIT to current 0x8000 (32ms). With the fixed loop 
-> termination and use of usleep_range() instead of udelay - I will try to 
-> run this a couple days and see if I can recreate the failure within 32ms.
-> 
-> Does this look ok? (I haven't yet changed send_byte to use usleep_range - 
-> if this approach looks ok I can change that as well.)
-> 
-> Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index 2827088..6610037 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -168,15 +168,20 @@ static struct workqueue_struct *applesmc_led_wq;
->  static int wait_read(void)
->  {
->  	u8 status;
-> -	int us;
-> -	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
-> -		udelay(us);
-> +	unsigned long r1_us = APPLESMC_MIN_WAIT;
-> +	unsigned long r2_us;
-> +	do {
->  		status = inb(APPLESMC_CMD_PORT);
->  		/* read: wait for smc to settle */
->  		if (status & 0x01)
->  			return 0;
-> -	}
-> -
-> +		r2_us = r1_us << 2;
-> +		if (r2_us > APPLESMC_MAX_WAIT)
-> +			goto fail;
-> +		usleep_range(r1_us, r2_us);
-> +		r1_us = r2_us;
+> You provide a shared page for a process group so it can write hints to
+> which is kernel mapped so the scheduler can peek..
 
-That looks terribly complicated. Better keep the loop, and just replace
-	udelay(us);
-with something like
-	usleep_range(us, us << 1);
+Or perhaps a flag ala SCHED_RESET_ON_FORK to provide a not necessarily
+followed hint.  That hint could be to simply always try the LAST_BUDDY
+thing with flagged tasks, since we know that works (postgress inspired
+LAST_BUDDY).  Even with postgress like things, fast mover kthreads etc
+punching through isn't necessarily a bad thing, you just need to avoid
+the punch leaving a gigantic hole.
 
-Alternatively, just use a constant such as
-	usleep_range(us, us + APPLESMC_MIN_WAIT);
+Oh, while I'm thinking about it, there's another scenario that could
+cause the select_idle_sibling() change to affect pgbench on largeish
+packages, but it boils down to preemption odds as well.  IIRC pgbench
+_was_ at least 1:N, ie one process driving the whole load.  Waker of
+many (singularly bad idea as a way to generate load) being preempted by
+it's wakees stalls the whole load, so expensive spreading of wakees to
+the four winds ala WAKE_BALANCE becomes attractive, that pain being
+markedly less intense than having multiple cores go idle while creator
+or work waits for one.
 
-Guenter
+-Mike
+
