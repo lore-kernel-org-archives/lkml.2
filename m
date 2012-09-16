@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab2IPSlI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 14:41:08 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:40791 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738Ab2IPSlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 14:41:05 -0400
-Date: Sun, 16 Sep 2012 21:36:22 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Felipe Balbi <balbi@ti.com>, Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>
-Subject: Re: [PATCH v4 00/21] OMAP UART Patches
-Message-ID: <20120916183620.GA30189@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <20120906122948.GC29202@arwen.pp.htv.fi>
- <1346935540-1792-1-git-send-email-balbi@ti.com>
- <alpine.DEB.2.00.1209062137000.11516@utopia.booyaka.com>
- <alpine.DEB.2.00.1209112141220.9444@utopia.booyaka.com>
- <20120912062259.GC18563@arwen.pp.htv.fi>
- <alpine.DEB.2.00.1209160117510.23371@utopia.booyaka.com>
+	id S1753061Ab2IPSzi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 14:55:38 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:57820 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752008Ab2IPSzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 14:55:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209160117510.23371@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20566.8247.775868.16409@pilspetsen.it.uu.se>
+Date: Sun, 16 Sep 2012 20:53:43 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: linux-ide@vger.kernel.org
+Subject: [PATCH] sata_promise: fix hardreset lockdep error
+Cc: linux-kernel@vger.kernel.org, Adko Branil <adkobranil@yahoo.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sata_promise's pdc_hard_reset_port() needs to serialize because it
+flips a port-specific bit in controller register that's shared by
+all ports. The code takes the ata host lock for this, but that's
+broken because an interrupt may arrive on our irq during the hard
+reset sequence, and that too will take the ata host lock. With
+lockdep enabled a big nasty warning is seen.
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fixed by adding private state to the ata host structure, containing
+a second lock used only for serializing the hard reset sequences.
+This eliminated the lockdep warnings both on my test rig and on
+the original reporter's machine.
 
-Hi,
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Tested-by: Adko Branil <adkobranil@yahoo.com>
+Cc: stable@vger.kernel.org
+---
+This bug affects 2.6.32 and newer kernels.
 
-On Sun, Sep 16, 2012 at 01:22:01AM +0000, Paul Walmsley wrote:
-> On Wed, 12 Sep 2012, Felipe Balbi wrote:
->=20
-> > On Tue, Sep 11, 2012 at 10:02:48PM +0000, Paul Walmsley wrote:
-> >=20
-> > > The bad news is that N800 no longer boots -- or the UART dies during=
-=20
-> > > serial init:
-> > >=20
-> > > http://www.pwsan.com/omap/testlogs/test_tty_next_e36851d0/20120910020=
-323/boot/2420n800/2420n800_log.txt
-> > >=20
-> > > The problem doesn't seem to affect the 2430SDP.
-> > >=20
-> > > Could you put together a patch to fix N800?
->=20
-> Bisected this down.  It's this one that causes the problem on N800:
->=20
-> commit 93220dcc3052182e7156c09655ad1316055564b9
-> Author: Felipe Balbi <balbi@ti.com>
-> Date:   Thu Sep 6 15:45:27 2012 +0300
->=20
->     serial: omap: set dev->drvdata before enabling pm_runtime
->    =20
->     by the time we call our first pm_runtme_get_sync()
->     after enable pm_runtime, our resume method might
->     be called. To avoid problems, we must make sure
->     that our dev->drvdata is set correctly before
->     our resume method gets called.
->    =20
->     Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
->     Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->     Signed-off-by: Felipe Balbi <balbi@ti.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ drivers/ata/sata_promise.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-Interesting. That simply moves platform_set_drvdata() to a saner
-location... The only way for this to cause problems is if we're trying
-to restore a context which was never saved.
-
-Is there a way to prevent runtime_resume() to be called during probe()
-if I know the HW is already enabled ? Maybe with
-pm_runtime_set_active() ?
-
---=20
-balbi
-
---a8Wt8u1KmwUX3Y2C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQVhwkAAoJEIaOsuA1yqREVJYP/jqYh5vUZOh5Fq/rEsortJiY
-baO1XAXccZhNqo8TyyEqMqMYqA+AtIrj5DROl8ZhBChsxwkKqgvHq/gaAhYMVnq5
-r4LboEbQ17EkJQAIwouTVBVsRpm/IP83bNpLl1dLCIVXMjIXUx6QAXFkIae9iwa9
-j9yTKzjYp7YFdmAINE6kvkoiDtrzu0qMBmUwqHklTqWGEU6xoZRG2QGXuPYWlVIB
-ZTJPTt+osJg1DPrCfZ6ZN0LoJt/snnILlXYZyJQ69B0QOTwLje9rNiYcb9YPseYv
-VurWmRa+u5WTmK0tE5vSrY3OKnIFFHJ9OpK98Ip2Pjx4r5fLQSHN/5xDPY8Tt0qu
-Twc8GML4vF7JYbJjI9JXm0OgwG1/UVeStYrCd0+RU9p/fZtlmL7Q2T7A/z/Ty3Iv
-BzXt7Q7fLsmflj44yPxjO8YNoI9/h6/lJf36eJ3b8k0NqyAYHrvPHDguHRz08ILI
-/SjpEVSMs0BWEh7+scOQJYm8fKtlCLgrzJzJeFoB/YT4zJkkSftyjV4mVyy+tK8n
-oIqtE5UQMlzKa1JnzWajWgyTt3rpjS5obBEKIeKciFhG0ssJ5L7Xl/E+rXSByq5l
-GOI813JXLCYL45ljcxdFDQX8kgwgAJtkFD3aVwjTsyjZzR69rrxQI+1+e6PVCgU/
-adIaEqEePasf5nZrLi42
-=Fdy5
------END PGP SIGNATURE-----
-
---a8Wt8u1KmwUX3Y2C--
+diff -rupN linux-3.6-rc5/drivers/ata/sata_promise.c linux-3.6-rc5.sata_promise-hardreset-lockdep-fix/drivers/ata/sata_promise.c
+--- linux-3.6-rc5/drivers/ata/sata_promise.c	2012-09-09 16:31:11.000000000 +0200
++++ linux-3.6-rc5.sata_promise-hardreset-lockdep-fix/drivers/ata/sata_promise.c	2012-09-09 16:36:38.000000000 +0200
+@@ -147,6 +147,10 @@ struct pdc_port_priv {
+ 	dma_addr_t		pkt_dma;
+ };
+ 
++struct pdc_host_priv {
++	spinlock_t hard_reset_lock;
++};
++
+ static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
+ static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
+ static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+@@ -801,9 +805,10 @@ static void pdc_hard_reset_port(struct a
+ 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
+ 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
+ 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
++	struct pdc_host_priv *hpriv = ap->host->private_data;
+ 	u8 tmp;
+ 
+-	spin_lock(&ap->host->lock);
++	spin_lock(&hpriv->hard_reset_lock);
+ 
+ 	tmp = readb(pcictl_b1_mmio);
+ 	tmp &= ~(0x10 << ata_no);
+@@ -814,7 +819,7 @@ static void pdc_hard_reset_port(struct a
+ 	writeb(tmp, pcictl_b1_mmio);
+ 	readb(pcictl_b1_mmio); /* flush */
+ 
+-	spin_unlock(&ap->host->lock);
++	spin_unlock(&hpriv->hard_reset_lock);
+ }
+ 
+ static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
+@@ -1182,6 +1187,7 @@ static int pdc_ata_init_one(struct pci_d
+ 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
+ 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
+ 	struct ata_host *host;
++	struct pdc_host_priv *hpriv;
+ 	void __iomem *host_mmio;
+ 	int n_ports, i, rc;
+ 	int is_sataii_tx4;
+@@ -1218,6 +1224,11 @@ static int pdc_ata_init_one(struct pci_d
+ 		dev_err(&pdev->dev, "failed to allocate host\n");
+ 		return -ENOMEM;
+ 	}
++	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
++	if (!hpriv)
++		return -ENOMEM;
++	spin_lock_init(&hpriv->hard_reset_lock);
++	host->private_data = hpriv;
+ 	host->iomap = pcim_iomap_table(pdev);
+ 
+ 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);
