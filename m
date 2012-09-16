@@ -1,61 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab2IPEsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 00:48:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39348 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750986Ab2IPEsS (ORCPT
+	id S1751322Ab2IPGlc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 02:41:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60390 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2IPGla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 00:48:18 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19Qr4RiL5VQG2/l95isJcvjDCujlgVIvx4B8vkek0
-	UVGAmGHSrshwJO
-Message-ID: <1347770892.6952.40.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Date: Sun, 16 Sep 2012 06:48:12 +0200
-In-Reply-To: <CAFLxGvy_yu3L5HrsuF9A=4HpbB-5twjkaswUbb0PUhK9NjKtvA@mail.gmail.com>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic>
-	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	 <1347680006.4340.142.camel@marge.simpson.net>
-	 <m24nmzz2f8.fsf@firstfloor.org>
-	 <1347727001.7029.37.camel@marge.simpson.net>
-	 <CAFLxGvy_yu3L5HrsuF9A=4HpbB-5twjkaswUbb0PUhK9NjKtvA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sun, 16 Sep 2012 02:41:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120818145856.GP18957@n2100.arm.linux.org.uk>
+References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
+Date: Sun, 16 Sep 2012 14:41:28 +0800
+Message-ID: <CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
+Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in lost probes
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-09-15 at 19:08 +0200, richard -rw- weinberger wrote: 
-> On Sat, Sep 15, 2012 at 6:36 PM, Mike Galbraith <efault@gmx.de> wrote:
-> >> Just using futex is unfortunately not the answer either.
-> >
-> > Yes, postgress performs loads better with it's spinlocks, but due to
-> > that, it necessarily _hates_ preemption.  How the is the scheduler
-> > supposed to know that any specific userland task _really_ shouldn't be
-> > preempted at any specific time, else bad things follow?
-> 
-> Why perform custom userspace spinlocks better than futex() based ones?
-> I thought we have futex() to get rid of the custom ones...
-> Makes futex() only sense when things like priority inheritance are needed?
+On Sat, Aug 18, 2012 at 10:58 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> Okay, so EPROBE_DEFER seems to work when I build everything into the
+> kernel, but when I build a pile of ASoC drivers as modules, it fails
+> every time I've tried booting the platform so far.
+>
+> This is a v3.5 based kernel, with preempt enabled.
+>
+> Okay, what I have is a bunch of devices already pre-registered in the
+> system:
+>
+>         kirkwood-spdif-audio.1 (requiring module snd_soc_kirkwood_spdif)
+>         kirkwood-i2s.1 (requiring module snd_soc_kirkwood_i2s)
+>         kirkwood-pcm-audio.1 (requiring module snd_soc_kirkwood)
+>         spdif-dit (requiring module snd_soc_spdif)
+>
+> and the modules were loaded in this order:
+>
+> Module                  Size  Used by
+> snd_soc_spdif           1020  0         (spdif-dit driver)
+> dove                   24577  1         (dove-drm driver)
+> snd_soc_kirkwood_i2s     5209  0        (kirkwood-i2s driver)
+> snd_soc_kirkwood        3629  0         (kirkwood-pcm-audio driver)
+> snd_soc_kirkwood_spdif     1449  0      (kirkwood-spdif-audio driver)
+>
+> snd_soc_kirkwood_spdif will return -EPROBE_DEFER if it can't find the
+> devices registered into ASoC by the other three modules (referred to as
+> the CPU DAI, and Codec DAI).
+>
+> What I see in the debugging is this (I've added some to increase the
+> debuggability):
+>
+> bus: 'platform': add driver kirkwood-spdif-audio
+> bus: 'platform': driver_probe_device: matched device kirkwood-spdif-audio.1 with driver kirkwood-spdif-audio
+> bus: 'platform': really_probe: probing driver kirkwood-spdif-audio with device kirkwood-spdif-audio.1
+> kirkwood-spdif-audio kirkwood-spdif-audio.1: CPU DAI kirkwood-i2s.1 not registered
+> bus: 'platform': add driver kirkwood-pcm-audio
+> bus: 'platform': add driver kirkwood-i2s
+> kirkwood-spdif-audio kirkwood-spdif-audio.1: failed to register card
+> bus: 'platform': add driver dove-drm
+> platform kirkwood-spdif-audio.1: Driver kirkwood-spdif-audio requests probe deferral
+> platform kirkwood-spdif-audio.1: Added to deferred list
+> bus: 'platform': driver_probe_device: matched device kirkwood-pcm-audio.1 with driver kirkwood-pcm-audio
+> bus: 'platform': really_probe: probing driver kirkwood-pcm-audio with device kirkwood-pcm-audio.1
+> driver: 'kirkwood-pcm-audio.1': driver_bound: bound to device 'kirkwood-pcm-audio'
+> bus: 'platform': really_probe: bound device kirkwood-pcm-audio.1 to driver kirkwood-pcm-audio
+> platform kirkwood-spdif-audio.1: Retrying from deferred list
+> bus: device_attach 'kirkwood-spdif-audio.1' unbound
 
-Dunno.  Likely because data doesn't go cold when you spin a bit, but go
-to sleep and the next guy may stomp cache flat with size XXL boots.
+Looks the above message is added by yourself, where did you add
+the message?
 
--Mike
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'dove-temp'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'galcore'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'alarmtimer'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor_shared'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'serial8250'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sata_mv'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion_spi'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth_port'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'ap510-vmeta'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion-ehci'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'rtc-mv'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv64xxx_i2c'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'gpio-rc-recv'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-pxav2'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-dove'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'leds-gpio'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'snd-soc-dummy'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'soc-audio'
+> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'kirkwood-pcm-audio'
+>
+> What you notice here is that the kirkwood-spdif-audio driver has gone
+> missing - it hasn't been unloaded, and it still appears in sysfs, and
+> it can still be cleanly unloaded and reloaded.
 
+It is a bit weird, and I am wondering why is the driver of  kirkwood-spdif-audio
+deleted from bus->p->klist_drivers without being unregistered from
+platform bus?
+
+>
+> bus: 'platform': driver_probe_device: matched device kirkwood-i2s.1 with driver kirkwood-i2s
+> bus: 'platform': really_probe: probing driver kirkwood-i2s with device kirkwood-i2s.1
+> kirkwood-i2s kirkwood-i2s.1: found external clock
+> driver: 'kirkwood-i2s.1': driver_bound: bound to device 'kirkwood-i2s'
+> bus: 'platform': really_probe: bound device kirkwood-i2s.1 to driver kirkwood-i2s
+> bus: 'platform': driver_probe_device: matched device dove-drm with driver dove-drm
+> bus: 'platform': really_probe: probing driver dove-drm with device dove-drm
+> bus: 'platform': add driver spdif-dit
+> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [drm] No driver support for vblank timestamp query.
+> fb0: dove-drmfb frame buffer device
+> drm: registered panic notifier
+> [drm] Initialized dove-drm 1.0.0 20120730 on minor 0
+> driver: 'dove-drm': driver_bound: bound to device 'dove-drm'
+> bus: 'platform': really_probe: bound device dove-drm to driver dove-drm
+> bus: 'platform': driver_probe_device: matched device spdif-dit with driver spdif-dit
+> bus: 'platform': really_probe: probing driver spdif-dit with device spdif-dit
+> driver: 'spdif-dit': driver_bound: bound to device 'spdif-dit'
+> bus: 'platform': really_probe: bound device spdif-dit to driver spdif-dit
+>
+> I suspect what is going on is that we have a race condition between the
+> device being added to the deferred list vs other drivers successfully
+> probing and running the deferred list, and the driver with the deferred
+> device being added to the driver list.
+>
+> This allows the deferred list to be run *before* the driver is placed
+> onto the bus driver list, which means when we try to re-probe deferred
+
+Looks the above should not be a problem. After the driver is placed
+on the bus, it still will call driver_attach to probe all unbound devices
+on the bus.
+
+> devices, we find no matching driver to probe the device with.  This
+> then results in the device being dropped off the deferred probe list
+> (as the only way it stays on that list is if a driver is probed _and_
+> it returns -EPROBE_DEFER.)
+
+
+Thanks,
+-- 
+Ming Lei
