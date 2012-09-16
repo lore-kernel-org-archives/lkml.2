@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab2IPP7Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 11:59:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58047 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751202Ab2IPP7P (ORCPT
+	id S1751956Ab2IPQJt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 12:09:49 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60231 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab2IPQJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 11:59:15 -0400
-Message-ID: <1347811144.13258.281.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 0/3] 3.2-stable timekeeping fixes merged in 3.6
-From: Ben Hutchings <ben@decadent.org.uk>
-To: John Stultz <john.stultz@linaro.org>
-Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 16 Sep 2012 16:59:04 +0100
-In-Reply-To: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
-References: <1347402926-34813-1-git-send-email-john.stultz@linaro.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-I+BSdaxWgt5annBvlZWI"
-X-Mailer: Evolution 3.4.3-1 
+	Sun, 16 Sep 2012 12:09:47 -0400
+Date: Sun, 16 Sep 2012 17:13:16 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Serge Hallyn <serge@hallyn.com>, Aristeu Rozanski <aris@ruivo.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Thomas Graf <tgraf@suug.ch>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        cgroups@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Controlling devices and device namespaces
+Message-ID: <20120916171316.517ad0fd@pyramind.ukuu.org.uk>
+In-Reply-To: <87k3vuqc5l.fsf@xmission.com>
+References: <20120913205827.GO7677@google.com>
+	<20120914183641.GA2191@cathedrallabs.org>
+	<20120915022037.GA6438@mail.hallyn.com>
+	<87wqzv7i08.fsf_-_@xmission.com>
+	<20120915220520.GA11364@mail.hallyn.com>
+	<87y5kazuez.fsf@xmission.com>
+	<20120916122112.3f16178d@pyramind.ukuu.org.uk>
+	<87sjaiuqp5.fsf@xmission.com>
+	<87d31mupp3.fsf@xmission.com>
+	<5055D4D1.3070407@hallyn.com>
+	<87k3vuqc5l.fsf@xmission.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> At least with a recent modern distro I can't imagine this to be an
+> issue.  I expect we could have a kernel build option that removed the
+> mknod system call and a modern distro wouldn't notice.
 
---=-I+BSdaxWgt5annBvlZWI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+A few things beyond named pipes will break. PCMCIA I believe still
+depends on ugly mknod hackery of its own. You also need it for some
+classes of non detectable device.
 
-On Tue, 2012-09-11 at 18:35 -0400, John Stultz wrote:
-> Just wanted to send out a few timekeeping fixes that were merged
-> in 3.6 which are appropriate for -stable.
->=20
-> This queue backports the following fixes:
-> -----------------------------------------
-> cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow c=
-hecking into timespec_valid_strict
-> bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustment=
-s if we haven't accumulated anything
-> 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking=
- of timekeeping inputs
-[...]
+Basically though you could.
 
-All queued up for 3.2, thanks.
+> For migration with direct access to real hardware devices we must treat
+> it as hardware hotunplug.  There is nothing else we can do.
 
-Ben.
+That is demonstrably false for a shared bus or a network linked device.
+Consider a firewire camera wired to two systems at once. Consider SAN
+storage.
 
---=20
-Ben Hutchings
-Experience is what causes a person to make new mistakes instead of old ones=
-.
-
---=-I+BSdaxWgt5annBvlZWI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUFX3SOe/yOyVhhEJAQpoRA/+IdDikzeDWqMamVAtrbRwPgh8DsH4Lyq+
-sW7PRGfglTdrdPNYHxyGwn11PZEe7cRUlQWM85Wk0wxA/+lVkr+FjCEdxD1BhAfA
-g07/IYJbA8Ke82TViWHyOEaIpO31o3gQJmRjTfRgDh3kyDuNxVJN1kszcS9w+wda
-EECXdZLdFYjO91L9w3yWcxnPVSC9Z2JING40spfq+yzemLZb+dB6qHw9I4uCBw6S
-0EvSh+16MCd7VvpFLuLpQVaRhOXOTgP7sLYqKUdSVRjjsWZTRQJHXqqzGodFgic3
-aYqQdEIWgMdC1/CEIh2/Qw/b1B7uYbm+g1wTngao0kfm7Pd08GckaVdGeeUO6YKN
-ifzitZPWwRdElOZNga0/m1f3SzmaaLtu0+5RqQz2yBTHev3qHrdZV7j6Y7EtcRLW
-NEfwWcZbTZtnCW5BMgJJdHZxcCJvPXFkuIc6SCwuWPC+Jcf9EJIHs9gjnW9ZdtkJ
-k1Axc50a9J7hTVSvG+luTWDp6zkkkq7Zq/HXCf6S/CbfH+n28aTM++PHnq2xENoL
-GQi/JQeNQQMwtIXCr05owDfvu536XhZ/O9lnBceXvbRpTT8bO2nf3SdQ42UL2Bhf
-Yxm1QjGN2RccoFlGW6Lb54yy0l8378gzgf/5XvRqS+NyJPizUL7/+WXuNjmk4lEP
-YjIcmce5VaY=
-=vmkV
------END PGP SIGNATURE-----
-
---=-I+BSdaxWgt5annBvlZWI--
+Alan
