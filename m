@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab2IPMWi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 08:22:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46740 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab2IPMWh (ORCPT
+	id S1752634Ab2IPMWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 08:22:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59184 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab2IPMWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 08:22:37 -0400
+	Sun, 16 Sep 2012 08:22:53 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: bfields@fieldses.org, viro@zeniv.linux.org.uk,
@@ -14,9 +14,9 @@ Cc: bfields@fieldses.org, viro@zeniv.linux.org.uk,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ravishankar N <ravi.n1@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v3 2/5] fat: allocate persistent inode numbers
-Date: Sun, 16 Sep 2012 08:22:28 -0400
-Message-Id: <1347798148-2660-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v3 3/5] fat (exportfs): rebuild inode if ilookup() fails
+Date: Sun, 16 Sep 2012 08:22:42 -0400
+Message-Id: <1347798163-2697-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,34 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-All the files on a FAT partition have an on-disk directory entry.
-The location of these entries, i_pos, is unique and is constructed by
-the fat_make_i_pos() function.We can use this as the inode number making
-it persistent across remounts.
+Since the previous patch in this patch-set uses i_pos as the inode
+number, we can use it to find the directory entry of the inode and
+subsequently rebuild the inode if the cache lookups fail.
+
+Since this involves  accessing the FAT media,it is better to do this
+only if the 'nfs' mount option is enabled with limited_stable.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/inode.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/fat/nfs.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 2689ef5..c3dad9b 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -458,7 +458,10 @@ struct inode *fat_build_inode(struct super_block *sb,
- 		inode = ERR_PTR(-ENOMEM);
- 		goto out;
+diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+index ef4b5fa..3cf5412 100644
+--- a/fs/fat/nfs.c
++++ b/fs/fat/nfs.c
+@@ -52,6 +52,31 @@ static struct inode *fat_nfs_get_inode(struct super_block *sb,
+ 		iput(inode);
+ 		inode = NULL;
  	}
--	inode->i_ino = iunique(sb, MSDOS_ROOT_INO);
-+	if (MSDOS_SB(sb)->options.nfs == FAT_NFS_LIMITED)
-+		inode->i_ino = i_pos;
-+	else
-+		inode->i_ino = iunique(sb, MSDOS_ROOT_INO);
- 	inode->i_version = 1;
- 	err = fat_fill_inode(inode, de);
- 	if (err) {
++	if (inode == NULL && MSDOS_SB(sb)->options.nfs == FAT_NFS_LIMITED) {
++		struct buffer_head *bh = NULL;
++		struct msdos_dir_entry *de ;
++		loff_t i_pos = (loff_t)ino;
++		int bits = MSDOS_SB(sb)->dir_per_block_bits;
++		loff_t blocknr = i_pos >> bits;
++		bh = sb_bread(sb, blocknr);
++		if (!bh) {
++			fat_msg(sb, KERN_ERR,
++				 "unable to read block(%llu) for building NFS inode",
++				(llu)blocknr);
++			return inode;
++		}
++		de = (struct msdos_dir_entry *)bh->b_data;
++		/* If a file is deleted on server and client is not updated
++		 * yet, we must not build the inode upon a lookup call.
++		 */
++		if (de[i_pos&((1<<bits)-1)].name[0] == DELETED_FLAG)
++
++			inode = NULL;
++		else
++			inode = fat_build_inode(sb, &de[i_pos&((1<<bits)-1)],
++					i_pos);
++		brelse(bh);
++	}
+ 
+ 	return inode;
+ }
 -- 
 1.7.9.5
 
