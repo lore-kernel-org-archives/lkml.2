@@ -1,273 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab2IPDaI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 23:30:08 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:57424 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab2IPDaF (ORCPT
+	id S1751964Ab2IPDbT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 23:31:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40188 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab2IPDaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 23:30:05 -0400
-Date: Sun, 16 Sep 2012 03:31:08 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Aristeu Rozanski <aris@ruivo.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Controlling devices and device namespaces
-Message-ID: <20120916033108.GA13073@mail.hallyn.com>
-References: <20120913205827.GO7677@google.com>
- <20120914183641.GA2191@cathedrallabs.org>
- <20120915022037.GA6438@mail.hallyn.com>
- <87wqzv7i08.fsf_-_@xmission.com>
- <20120915220520.GA11364@mail.hallyn.com>
- <87y5kazuez.fsf@xmission.com>
+	Sat, 15 Sep 2012 23:30:07 -0400
+Date: Sat, 15 Sep 2012 23:29:58 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@ubuntu
+To: Parag Warudkar <parag.lkml@gmail.com>
+cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, rydberg@euromail.se, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+In-Reply-To: <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+Message-ID: <alpine.DEB.2.02.1209152323490.2088@ubuntu>
+References: <alpine.DEB.2.02.1209151834120.2271@ubuntu> <20120915225841.GA3816@roeck-us.net> <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5kazuez.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
+
+
+On Sat, 15 Sep 2012, Parag Warudkar wrote:
+
 > 
-> Thinking about this a bit more I think we have been asking the wrong
-> question.
 > 
-> I think the correct question should be: How do we safely allow for
-> unprivileged creation of device nodes and devices?
+> On Sat, 15 Sep 2012, Guenter Roeck wrote:
+> > 
+> > Also, since the delay time can get quite large, would it make sense to replace
+> > udelay with usleep_range() ?
+> > 
 > 
-> One piece of the puzzle is that we should be able to allow unprivileged
-> device node creation and access for any device on any filesystem
-> for which it unprivileged access is safe.
+> Yes, I think that would be a good thing to do. We could sleep in range of 
+> us<<=1 and us<<1 and if usleep_range() returns actual sleep time we can 
+> factor that in for next loop iteration if necessary. Gotta think a bit on 
+> that one.
 > 
-> Something like the current device control group hooks but
-> with the whitelist implemented like:
+> I will rework the patch to fix the loop termination and keep the bump to 
+> 0x10000 in place and possibly also experiment with usleep_range().
 > 
-> static bool unpriv_mknod_ok(struct device *dev)
-> {
-> 	char *tmp, *name;
-> 	umode_t mode = 0;
-> 
-> 	name = device_get_devnode(dev, &mode, &tmp);
-> 	if (!name)
->         	return false;
-> 	kfree(tmp);
->         return mode == 0666;
-> }
-> 
-> Are there current use cases where people actually want arbitrary
-> access to hardware devices?  I really want to say no and get
-> udev and sysfs out of the picture as much as possible.
 
-Other devices I'm pretty sure people will be asking for include audio
-and video devices, input devices, usb drives, LVM volumes and probably
-volume groups and PVs as well.  I do believe people want to dedicate
-drives to containers.
+Below is what I am experimenting with right now. I chose to keep the 
+APPLESMC_MAX_WAIT to current 0x8000 (32ms). With the fixed loop 
+termination and use of usleep_range() instead of udelay - I will try to 
+run this a couple days and see if I can recreate the failure within 32ms.
 
-Of course there is also /dev/random, and /dev/kmsg which I think
-needs to be tied to the also sorely missing syslog namespace.
+Does this look ok? (I haven't yet changed send_byte to use usleep_range - 
+if this approach looks ok I can change that as well.)
 
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> 
-> > Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> >> 
-> >> > Quoting Aristeu Rozanski (aris@ruivo.org):
-> >> >> Tejun,
-> >> >> On Thu, Sep 13, 2012 at 01:58:27PM -0700, Tejun Heo wrote:
-> >> >> >   memcg can be handled by memcg people and I can handle cgroup_freezer
-> >> >> >   and others with help from the authors.  The problematic one is
-> >> >> >   blkio.  If anyone is interested in working on blkio, please be my
-> >> >> >   guest.  Vivek?  Glauber?
-> >> >> 
-> >> >> if Serge is not planning to do it already, I can take a look in device_cgroup.
-> >> >
-> >> > That's fine with me, thanks.
-> >> >
-> >> >> also, heard about the desire of having a device namespace instead with
-> >> >> support for translation ("sda" -> "sdf"). If anyone see immediate use for
-> >> >> this please let me know.
-> >> >
-> >> > Before going down this road, I'd like to discuss this with at least you,
-> >> > me, and Eric Biederman (cc:d) as to how it relates to a device
-> >> > namespace.
-> >> 
-> >> 
-> >> The problem with devices.
-> >> 
-> >> - An unrestricted mknod gives you access to effectively any device in
-> >>   the system.
-> >> 
-> >> - During process migration if the device number changes using
-> >>   stat to file descriptors can fail on the same file descriptor.
-> >> 
-> >> - Devices coming from prexisting filesystems that we mount
-> >>   as unprivileged users are as dangerous as mknod but show
-> >>   that the problem is not limited to mknod.
-> >> 
-> >> - udev thinks mknod is a system call we can remove from the kernel.
-> >
-> > Also,
-> >
-> >  - udevadm trigger --action=add
-> >
-> > causes all the devices known on the host to be re-sent to
-> > everyone (all namespaces).  Which floods everyone and causes the
-> > host to reset some devices.
-> 
-> I think this is all userspace activity,
+Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
 
-Well the uevents are sent from the kernel, and cause a flurry
-of userspace activity.  (But not sending uevents to the containers
-as you suggest below would work)
-
-> and should be largely
-> fixed by not begin root in a container.
-
-That doesn't fit with our goal, which is to run the same, unmodified
-userspace on hardware, virtualization (kvm/vmware), and containers.
-This is important - the more we have to have different init and userspace
-in containers (there are a few things we have to special-case still
-at the moment) the more duplicated testing and otherwise avoidable
-bugs we'll have.
-
-Or did you just mean not being GLOBAL_ROOT_UID in a container?
-
-> >> The use cases seem comparitively simple to enumerate.
-> >> 
-> >> - Giving unfiltered access to a device to someone not root.
-> >> 
-> >> - Virtual devices that everyone uses and have no real privilege
-> >>   requirements: /dev/null /dev/tty /dev/zero etc.
-> >> 
-> >> - Dynamically created devices /dev/loopN /dev/tun /dev/macvtapN,
-> >>   nbd, iscsi, /dev/ptsN, etc
-> >
-> > and
-> >
-> >  - per-namespace uevent filtering.
-> 
-> One possible solution there is to just send the kernel uevents (except
-> for the network ones) into the initial network namespace.
-
-We'd also want storage (especially usb but not just) passed in,
-and audio, video and input - but maybe those should be faked from
-userspace from the host (or parent container)?
-
-Also, there *are* containers which are not in private network
-namespaces.  Now I'm not sure how much we worry about those,
-as they generally need custom init anyway (so as not to reconfigure
-the host's networking etc).
-
-> >> There are a couple of solution to these problems.
-> >> 
-> >> - The classic solution of creating a /dev for a container
-> >>   before starting it.
-> >> 
-> >> - The devpts filesystem.  This works well for unprivileged access
-> >>   to ptys.  Except for the /dev/ptmx sillines I very like how
-> >>   things are handled today with devpts.
-> >> 
-> >> - Device control groups.  I am not quite certain what to make
-> >>   of them.  The only case I see where they are better than
-> >>   a prebuilt static dev is if there is a hotppluged device
-> >>   that I want to push into my container.
-> >> 
-> >>   I think the only problem with device control groups and
-> >>   hierarchies is that removing a device from a whitelist
-> >>   does not recurse down the hierarchy.
-> >
-> > That's going to be fixed soon thanks to Aristeu  :)
-> >
-> >>   Can a process inside of a device control group create
-> >>   a child group that has access to a subset of it's
-> >>   devices?  The actually checks don't need to be hierarchical
-> >>   but the presence of device nodes should be.
-> >
-> > If I understand your question right, yes.
-> 
-> I should also have asked can we do this without any capabilities
-> and without our uid being 0?
-
-Currently you need CAP_SYS_ADMIN to update device cgroup permissions.
-
-> >> I see a couple of holes in the device control picture.
-> >> 
-> >> - How do we handle hotplug events?
-> >> 
-> >>   I think we can do this by relaying events trough userspace,
-> >>   upating the device control groups etc.
-> >> 
-> >> - Unprivileged processess interacting with all of this.
-> >>   (possibly with privilege in their user namespace)
-> >>   What I don't know how to do is how to create a couple of different
-> >>   subhierarchies each for different child processes.
-> >> 
-> >> - Dynamically created devices.
-> >> 
-> >>   My gut feel is that we should replicate the success of devpts
-> >>   and give each type of dynamically created device it's own
-> >>   filesystem and mount point under /dev, and just bend
-> >>   the handful of userspace users into that model.
-> >
-> > Phew.  Maybe.  Had not considered that.  But seems daunting.
-> 
-> I think the list of device types that we care about here is pretty
-> small.  Please correct me if I am wrong.
-> 
-> loop nbd iscsi macvtap
-
-I assume you're asking only about devices that need virtualized
-instances, with the instances either unique or mapped between
-namespaces.  (and I assume the hope is that we can get away with them
-being unique, as with devpts, and mappable with bind mounts)  I can't
-think of any others offhand.
-
-Common devices used in containers include tty*, rtc, fuse, tun, hpet,
-kvm.  /dev/tty and /dev/console are special anyway.  The tty*  in
-containers are always bind mounted with devpts.  So I don't think any
-of those fit the criteria - no work needed.
-
-> And if we want it to be safe to use these devices in a user namespace
-> without global root privileges we need to go through the code anyway.
-
-Agreed.
-
-> So I think it is the gradual safe and sane approach assume we don't
-> run into something like the devpts /dev/ptmx silliness that stalled
-> devpts.
-
-Agreed.
-
-> >> - Sysfs
-> >> 
-> >>   My gut says for the container use case we should aim to
-> >>   simply not have dynamically created devices in sysfs
-> >>   and then we can simply not care.
-> 
-> I guess what I keep thinking for sysfs is that it should be for real
-> hardware backed devices.  If we can get away with that like we do with
-> ptys it just makes everyone's life simpler.
-
-You've brought up /sys and /proc, does devtmpfs further complicate
-things?
-
-> Primarily sysfs and uevents are for allowing the system to take
-> automatic action when a new device is created.  Do we have an actual
-> need for hotplug support in containers?
-
-As I argue above, I claim we need them for the event-drive init
-systems to see NICs and other devices brought up, and to handle
-passing in usb devices etc.
-
--serge
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 2827088..6610037 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -168,15 +168,20 @@ static struct workqueue_struct *applesmc_led_wq;
+ static int wait_read(void)
+ {
+ 	u8 status;
+-	int us;
+-	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+-		udelay(us);
++	unsigned long r1_us = APPLESMC_MIN_WAIT;
++	unsigned long r2_us;
++	do {
+ 		status = inb(APPLESMC_CMD_PORT);
+ 		/* read: wait for smc to settle */
+ 		if (status & 0x01)
+ 			return 0;
+-	}
+-
++		r2_us = r1_us << 2;
++		if (r2_us > APPLESMC_MAX_WAIT)
++			goto fail;
++		usleep_range(r1_us, r2_us);
++		r1_us = r2_us;
++	} while (1);
++fail:
+ 	pr_warn("wait_read() fail: 0x%02x\n", status);
+ 	return -EIO;
+ }
+@@ -191,12 +196,13 @@ static int send_byte(u8 cmd, u16 port)
+ 	int us;
+ 
+ 	outb(cmd, port);
+-	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+-		udelay(us);
++	for (us = APPLESMC_MIN_WAIT; us <= APPLESMC_MAX_WAIT; us <<= 1) {
+ 		status = inb(APPLESMC_CMD_PORT);
+ 		/* write: wait for smc to settle */
+-		if (status & 0x02)
++		if (status & 0x02) {
++			udelay(us);
+ 			continue;
++		}
+ 		/* ready: cmd accepted, return */
+ 		if (status & 0x04)
+ 			return 0;
