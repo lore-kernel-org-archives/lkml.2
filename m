@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2IPAaG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 20:30:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58011 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab2IPAaD (ORCPT
+	id S1753701Ab2IPAiD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 20:38:03 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42604 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab2IPAhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 20:30:03 -0400
-Date: Sat, 15 Sep 2012 17:29:57 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 07/31] arm64: Process management
-Message-ID: <20120916002957.GB7028@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-8-git-send-email-catalin.marinas@arm.com>
- <20120814235013.GC19607@quad.lixom.net>
- <20120914173352.GC2927@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120914173352.GC2927@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 15 Sep 2012 20:37:46 -0400
+Subject: [GIT PULL] target fixes for v3.6-rc6
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Fengguang Wu <wfg@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Sep 2012 17:37:22 -0700
+Message-ID: <1347755842.10711.23.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 06:33:52PM +0100, Catalin Marinas wrote:
-> On Wed, Aug 15, 2012 at 12:50:13AM +0100, Olof Johansson wrote:
-> > On Tue, Aug 14, 2012 at 06:52:08PM +0100, Catalin Marinas wrote:
-> > 
-> > > diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> > > new file mode 100644
-> > > index 0000000..c4a4e1c
-> > > --- /dev/null
-> > > +++ b/arch/arm64/kernel/process.c
-> > > @@ -0,0 +1,416 @@
-> > 
-> > [...]
-> > > +/*
-> > > + * Function pointers to optional machine specific functions
-> > > + */
-> > > +void (*pm_power_off)(void);
-> > > +EXPORT_SYMBOL(pm_power_off);
-> > > +
-> > > +void (*pm_restart)(const char *cmd);
-> > > +EXPORT_SYMBOL_GPL(pm_restart);
-> > [...]
-> > > +void (*pm_idle)(void) = default_idle;
-> > > +EXPORT_SYMBOL(pm_idle);
-> > 
-> > Does it really make sense to export these to modules?
-> 
-> Changed them to _GPL now but we may still want them exported to modules.
-> Who knows, we may just have the SoC code in a loadable module (from
-> initramfs).
+Hello Linus!
 
-Ok, keeping the option open for that makes some sense.
+Here is the current set of target-pending fixes headed for v3.6-final.
 
-> > I find the powerpc way of having a machine descriptor structure with these
-> > (and other) function pointers in it a bit cleaner, since it gives you
-> > one place to plug it all in. I'd recommend that you consider doing that
-> > here as well, for these three and potentially other cases in the future.
-> > 
-> > (See arch/powerpc/include/asm/machdep.h, struct machdep_calls).
-> 
-> At some point we may add them but currently I want the SoC code to be
-> minimal.
+Please go ahead and pull from:
 
-It's not about the size of the code, it's about having one place where
-the SoC divergence is exposed instead of adding hooks here and there. But
-agreed, it could be moved to over time.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
+The main parts of this series include bug-fixes from Paolo Bonzini to
+address an use-after-free bug in pSCSI sense exception handling, along
+with addressing some long-standing bugs wrt the handling of zero-length
+SCSI CDB payloads also specific to pSCSI pass-through device backends.
 
--Olof
+A heads up that the following patch of the series:
+
+target: go through normal processing for zero-length PSCSI commands
+http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=306c11b28d7bb85a7adda741798a2b6b60dd305a
+
+does not compile due to a minor syntax error in the original patch, that
+unfortunately had already been pushed to target-pending/master before
+being caught by Wu's 0-day build script.
+
+So it's ultimately my fault for not catching this during review +
+testing, and to avoid this in the future if I don't have the immediate
+time to compile test each patch headed into master, they will now go
+into target-pending/queue (for a day or two) so that the 0-day build
+scripts can do their thing and notify us of bi-sectable trouble ahead of
+time.
+
+Please let me know if you'd prefer a re-spin branch to address this, or
+if you'd rather fix this up on your end before pushing.
+
+Thank you,
+
+--nab
+
+Benjamin Wang (1):
+  target: Check idr_get_new return value in iscsi_login_zero_tsih_s1
+
+Nicholas Bellinger (1):
+  target: Fix ->data_length re-assignment bug with SCSI overflow
+
+Paolo Bonzini (9):
+  target: move transport_get_sense_data
+  target: simplify code around transport_get_sense_data
+  target: fix use-after-free with PSCSI sense data
+  target: go through normal processing for zero-length PSCSI commands
+  target: report too-small parameter lists everywhere
+  target: fail REPORT LUNS with less than 16 bytes of payload
+  target: support zero-size allocation lengths in
+    transport_kmap_data_sg
+  target: support zero allocation length in REQUEST SENSE
+  target: go through normal processing for zero-length REQUEST_SENSE
+
+ drivers/target/iscsi/iscsi_target_login.c |   11 ++-
+ drivers/target/target_core_alua.c         |    7 ++
+ drivers/target/target_core_device.c       |    7 ++
+ drivers/target/target_core_iblock.c       |   17 +++-
+ drivers/target/target_core_pr.c           |    8 ++
+ drivers/target/target_core_pscsi.c        |   29 ++----
+ drivers/target/target_core_spc.c          |   35 ++++----
+ drivers/target/target_core_transport.c    |  148 ++++++++++++-----------------
+ include/target/target_core_backend.h      |    4 +-
+ include/target/target_core_base.h         |    1 +
+ 10 files changed, 141 insertions(+), 126 deletions(-)
+
