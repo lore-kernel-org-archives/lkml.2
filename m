@@ -1,151 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322Ab2IPGlc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 02:41:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60390 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2IPGla (ORCPT
+	id S1751666Ab2IPGwG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 02:52:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab2IPGv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 02:41:30 -0400
+	Sun, 16 Sep 2012 02:51:59 -0400
+Date: Sun, 16 Sep 2012 08:50:38 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/2] PCI: Provide a default pcibios_update_irq()
+Message-ID: <20120916065038.GB11030@avionic-0098.mockup.avionic-design.de>
+References: <1347655456-2542-1-git-send-email-thierry.reding@avionic-design.de>
+ <1347655456-2542-2-git-send-email-thierry.reding@avionic-design.de>
+ <CAMuHMdWuR_tdMw9iVkaQ3D9p1HVU_L05ap=MzBuo1jLD6YdHHw@mail.gmail.com>
+ <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
+ <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120818145856.GP18957@n2100.arm.linux.org.uk>
-References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
-Date: Sun, 16 Sep 2012 14:41:28 +0800
-Message-ID: <CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
-Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in lost probes
-From: Ming Lei <tom.leiming@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8GpibOaaTibBMecb"
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:EkMl3hHk5YfsOSdCevVlgtpPEoeHE8N0MWpcfsVR7t6
+ 0M+LIsicD2sFuhx4GLfzcGs0GW/HfNHC/ePGpoIHsCjyKZGnTw
+ d++nxw9/G3YqJ8V3WEc38bHzwrT4o8eOZst5uretJf/w2JGvIM
+ Q43CvklyK4HD75jmiBYss4rZufeupfvQQ8HNM29PG/2AeaxQgs
+ dSZ2hQdvxkLs5Gcqce4iXCogwg4dGRwP3QjmodI7lzl9k1NvBW
+ Je0U/I45FV5Oo3GV/OsEEWoshN44OjQVwJIhRfhuiCh0U8RL19
+ fDo1sr5G2v1kDETH1bMZSMAXNhTaWxKPpTALAYkYck+zZOclhC
+ VPyd7m7+4p4/kpw3kzPAc/VrPklL0Sj1Q4KkMYldYLKvNffqas
+ cNKAI//TEIjg5vt83u96RBzzAR7wThmhqZxR0L3gX3PyNd/F6l
+ r5l8u
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 10:58 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> Okay, so EPROBE_DEFER seems to work when I build everything into the
-> kernel, but when I build a pile of ASoC drivers as modules, it fails
-> every time I've tried booting the platform so far.
->
-> This is a v3.5 based kernel, with preempt enabled.
->
-> Okay, what I have is a bunch of devices already pre-registered in the
-> system:
->
->         kirkwood-spdif-audio.1 (requiring module snd_soc_kirkwood_spdif)
->         kirkwood-i2s.1 (requiring module snd_soc_kirkwood_i2s)
->         kirkwood-pcm-audio.1 (requiring module snd_soc_kirkwood)
->         spdif-dit (requiring module snd_soc_spdif)
->
-> and the modules were loaded in this order:
->
-> Module                  Size  Used by
-> snd_soc_spdif           1020  0         (spdif-dit driver)
-> dove                   24577  1         (dove-drm driver)
-> snd_soc_kirkwood_i2s     5209  0        (kirkwood-i2s driver)
-> snd_soc_kirkwood        3629  0         (kirkwood-pcm-audio driver)
-> snd_soc_kirkwood_spdif     1449  0      (kirkwood-spdif-audio driver)
->
-> snd_soc_kirkwood_spdif will return -EPROBE_DEFER if it can't find the
-> devices registered into ASoC by the other three modules (referred to as
-> the CPU DAI, and Codec DAI).
->
-> What I see in the debugging is this (I've added some to increase the
-> debuggability):
->
-> bus: 'platform': add driver kirkwood-spdif-audio
-> bus: 'platform': driver_probe_device: matched device kirkwood-spdif-audio.1 with driver kirkwood-spdif-audio
-> bus: 'platform': really_probe: probing driver kirkwood-spdif-audio with device kirkwood-spdif-audio.1
-> kirkwood-spdif-audio kirkwood-spdif-audio.1: CPU DAI kirkwood-i2s.1 not registered
-> bus: 'platform': add driver kirkwood-pcm-audio
-> bus: 'platform': add driver kirkwood-i2s
-> kirkwood-spdif-audio kirkwood-spdif-audio.1: failed to register card
-> bus: 'platform': add driver dove-drm
-> platform kirkwood-spdif-audio.1: Driver kirkwood-spdif-audio requests probe deferral
-> platform kirkwood-spdif-audio.1: Added to deferred list
-> bus: 'platform': driver_probe_device: matched device kirkwood-pcm-audio.1 with driver kirkwood-pcm-audio
-> bus: 'platform': really_probe: probing driver kirkwood-pcm-audio with device kirkwood-pcm-audio.1
-> driver: 'kirkwood-pcm-audio.1': driver_bound: bound to device 'kirkwood-pcm-audio'
-> bus: 'platform': really_probe: bound device kirkwood-pcm-audio.1 to driver kirkwood-pcm-audio
-> platform kirkwood-spdif-audio.1: Retrying from deferred list
-> bus: device_attach 'kirkwood-spdif-audio.1' unbound
 
-Looks the above message is added by yourself, where did you add
-the message?
+--8GpibOaaTibBMecb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'dove-temp'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'galcore'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'alarmtimer'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor_shared'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'serial8250'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sata_mv'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion_spi'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth_port'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'ap510-vmeta'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion-ehci'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'rtc-mv'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv64xxx_i2c'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'gpio-rc-recv'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-pxav2'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-dove'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'leds-gpio'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'snd-soc-dummy'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'soc-audio'
-> bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'kirkwood-pcm-audio'
->
-> What you notice here is that the kirkwood-spdif-audio driver has gone
-> missing - it hasn't been unloaded, and it still appears in sysfs, and
-> it can still be cleanly unloaded and reloaded.
+On Sat, Sep 15, 2012 at 04:23:33PM -0600, Bjorn Helgaas wrote:
+> On Sat, Sep 15, 2012 at 1:53 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Sat, Sep 15, 2012 at 09:32:10AM +0200, Geert Uytterhoeven wrote:
+> >> On Fri, Sep 14, 2012 at 10:44 PM, Thierry Reding
+> >> <thierry.reding@avionic-design.de> wrote:
+> >> > --- a/drivers/pci/setup-irq.c
+> >> > +++ b/drivers/pci/setup-irq.c
+> >> > @@ -17,6 +17,14 @@
+> >> >  #include <linux/ioport.h>
+> >> >  #include <linux/cache.h>
+> >> >
+> >> > +void __devinit __weak pcibios_update_irq(struct pci_dev *dev, int i=
+rq)
+> >> > +{
+> >> > +#ifdef CONFIG_PCI_DEBUG
+> >> > +       printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n", irq,
+> >> > +              pci_name(dev));
+> >>
+> >> pr_debug()?
+> >> Or even better, dev_dbg()?
+> >
+> > The problem with pr_debug() and dev_dbg() is that they will be compiled
+> > out if DEBUG is not defined. Perhaps we should pass -DDEBUG if PCI_DEBUG
+> > is configured and make this dev_dbg()?
+>=20
+> Sorry, fat-fingered the previous empty response.
+>=20
+> We already have this in drivers/pci/Makefile:
+>=20
+>     ccflags-$(CONFIG_PCI_DEBUG) :=3D -DDEBUG
+>=20
+> so dev_dbg() should be perfect.
 
-It is a bit weird, and I am wondering why is the driver of  kirkwood-spdif-audio
-deleted from bus->p->klist_drivers without being unregistered from
-platform bus?
+Yeah, this occurred to me as well and I was just about to look it up
+when I read your response. I'll make it dev_dbg() then.
 
->
-> bus: 'platform': driver_probe_device: matched device kirkwood-i2s.1 with driver kirkwood-i2s
-> bus: 'platform': really_probe: probing driver kirkwood-i2s with device kirkwood-i2s.1
-> kirkwood-i2s kirkwood-i2s.1: found external clock
-> driver: 'kirkwood-i2s.1': driver_bound: bound to device 'kirkwood-i2s'
-> bus: 'platform': really_probe: bound device kirkwood-i2s.1 to driver kirkwood-i2s
-> bus: 'platform': driver_probe_device: matched device dove-drm with driver dove-drm
-> bus: 'platform': really_probe: probing driver dove-drm with device dove-drm
-> bus: 'platform': add driver spdif-dit
-> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-> [drm] No driver support for vblank timestamp query.
-> fb0: dove-drmfb frame buffer device
-> drm: registered panic notifier
-> [drm] Initialized dove-drm 1.0.0 20120730 on minor 0
-> driver: 'dove-drm': driver_bound: bound to device 'dove-drm'
-> bus: 'platform': really_probe: bound device dove-drm to driver dove-drm
-> bus: 'platform': driver_probe_device: matched device spdif-dit with driver spdif-dit
-> bus: 'platform': really_probe: probing driver spdif-dit with device spdif-dit
-> driver: 'spdif-dit': driver_bound: bound to device 'spdif-dit'
-> bus: 'platform': really_probe: bound device spdif-dit to driver spdif-dit
->
-> I suspect what is going on is that we have a race condition between the
-> device being added to the deferred list vs other drivers successfully
-> probing and running the deferred list, and the driver with the deferred
-> device being added to the driver list.
->
-> This allows the deferred list to be run *before* the driver is placed
-> onto the bus driver list, which means when we try to re-probe deferred
+Thierry
 
-Looks the above should not be a problem. After the driver is placed
-on the bus, it still will call driver_attach to probe all unbound devices
-on the bus.
+--8GpibOaaTibBMecb
+Content-Type: application/pgp-signature
 
-> devices, we find no matching driver to probe the device with.  This
-> then results in the device being dropped off the deferred probe list
-> (as the only way it stays on that list is if a driver is probed _and_
-> it returns -EPROBE_DEFER.)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQVXa+AAoJEN0jrNd/PrOh00IQAJSTG1Ukqu3ay8m7AznzjD2Y
+eRN6wDO0Pd37qkHr46rMO2UVPCavDFnoS6gsGhuTzdQgIOnVO9NKGUPm71xAhBnt
+Yq+rYhg8i2cHNjZVKy8Kn5EY0Ly8k0yunH1KFMEodzeS2ZU/wrHSJZmkyKIUzMdN
+AdMoFV81Q7So+JEdG1zIaM1hsDl3t18gt+9SlRSJZ6T4kXlv0j1pD9Jy2d0OC7bx
+Yu8DDnNI33FIcZQnHsO50okCU0o4SqZHFmL/xm4Aa3JiQ5H4gMKiCYNXvFQ5M/gr
+jU+cj0P1WdIPQVof9uie8TCiPCtNEJMbUQsgbhQuFf6eEefuUIbqkfETjmY8rNk9
+NoNp1anLNxxxp2L17e8dN9VTJgNUi+lrpvcG6gqVBs7rE9ruo/6NVnFHwUUHd3Q3
+o9ivpbuYPfJCRSW1r+TbE74iVQdg7jKO+p1cIZjMQOcv9B88M8KJaS60wpgxn9S+
+f/eLoMlUK2wIbP3Zj4MR3DIorUOTyi7f14+J448Y5D9Ci86QU/+4bmMexqEVxsRS
+Un+iARiZQlrWnmVjva4iG8g2mOxcmDPzHSlcE9+uIIdNdPCUWusrt81PAyIjTlUX
+xo2R3G3LIVA4lfOiUSdQB2RYPmQHAXW/Tul5aBvXk11jsl0BN1Hbk2qO4641Puej
+LLzcEjPu0384yupX0hSL
+=/+fm
+-----END PGP SIGNATURE-----
 
-Thanks,
--- 
-Ming Lei
+--8GpibOaaTibBMecb--
