@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2IPUi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 16:38:59 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23521 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752636Ab2IPUiz (ORCPT
+	id S1753032Ab2IPUwV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 16:52:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35436 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab2IPUwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 16:38:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/R9c1X6aYqv95sSX97NDYG
-Date: Sun, 16 Sep 2012 13:38:50 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH 17/24] ARM: OMAP: use __iomem pointers for MMIO
-Message-ID: <20120916203850.GI4521@atomide.com>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
- <1347658492-11608-18-git-send-email-arnd@arndb.de>
- <20120915181057.GH4521@atomide.com>
- <201209152014.37989.arnd@arndb.de>
+	Sun, 16 Sep 2012 16:52:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209152014.37989.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <505626A8.8040806@mimc.co.uk>
+References: <505626A8.8040806@mimc.co.uk>
+Date: Sun, 16 Sep 2012 22:52:18 +0200
+Message-ID: <CAFLxGvy_VMTMZxESgDoZrOaxm94q+BeSfEb+tXeWrUc5J0gHbw@mail.gmail.com>
+Subject: Re: Advice on mmap() "feature"
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Mark Jackson <mpfj-list@mimc.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [120915 13:15]:
-> On Saturday 15 September 2012, Tony Lindgren wrote:
-> > With my patches, this is now all omap1 specific and
-> > moved to arch/arm/mach-omap1/include/mach/hardware.h.
-> > It's probably easiest to just update this patch on
-> > top of the hardware.h changes I've done.
-> 
-> Yes, sounds good. Do you want to send a patch for that
-> and let me drop this one then?
+On Sun, Sep 16, 2012 at 9:21 PM, Mark Jackson <mpfj-list@mimc.co.uk> wrote:
+> Apologies if this is the wrong place to post this query.  Please feel free
+> to redirect me to the correct place.
+>
+> I have come across a weird (but documented [1]) "feature" of mmap(), which
+> is:-
+>
+> "The mmap()function adds an extra reference to the file associated with the
+> file descriptor fildeswhich is not removed by a subsequent close() on that
+> file descriptor. This reference is removed when there are no more mappings
+> to the file."
+>
+> In my embedded application, this is resulting in the consumption of
+> available file descriptors.
+>
+> As an example I wrote the following test running on Ubuntu 11.04 64bit.
+>
+> #include <fcntl.h>
+> #include <errno.h>
+> #include <stdio.h>
+> #include <sys/mman.h>
+>
+> #define FRAM_SIZE            (64 * 1024)
+> #define FRAM_BASE_ADDRESS    0x00000000
+>
+> int main(int argc, char **argv)
+> {
+>     int i;
+>     for (i = 0; i < 5000; i++)
+>     {
+>         // open the fram device
+>         int m_fdFram = open("/dev/mem", O_RDWR | O_SYNC);
+>         if (m_fdFram < 0)
+>         {
+>             printf("could not open /dev/mem, exiting with errno %d\n",
+> errno);
+>             return 0;
+>         }
+>
+>         // map the device to memory
+>         char *m_pFram = (char *)mmap(    0,
+>                                         FRAM_SIZE * sizeof(unsigned short),
+>                                         PROT_READ | PROT_WRITE,
+>                                         MAP_SHARED,
+>                                         m_fdFram,
+>                                         FRAM_BASE_ADDRESS);
+>         if ((int)m_pFram == -1)
+>         {
+>             close(m_fdFram);
+>             m_fdFram = -1;
+>             printf("could not mmap, exiting with errno %d\n", errno);
+>             return 0;
+>         }
+>
+>         // now remove the mapping
+>         if (m_pFram)
+>         munmap(m_pFram, FRAM_SIZE);
 
-Yes I can pick this one and update it against one of my
-branches to avoid merge conflicts.
+You unmap less memory than you map...
 
-Regards,
-
-Tony
+-- 
+Thanks,
+//richard
