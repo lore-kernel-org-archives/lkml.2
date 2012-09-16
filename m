@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2IPAiD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 20:38:03 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:42604 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2IPAhq (ORCPT
+	id S1751570Ab2IPBWG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Sep 2012 21:22:06 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:49095 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab2IPBWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 20:37:46 -0400
-Subject: [GIT PULL] target fixes for v3.6-rc6
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Fengguang Wu <wfg@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Sep 2012 17:37:22 -0700
-Message-ID: <1347755842.10711.23.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Sep 2012 21:22:02 -0400
+Date: Sun, 16 Sep 2012 01:22:01 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Felipe Balbi <balbi@ti.com>, Shubhrajyoti Datta <shubhrajyoti@ti.com>
+cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>
+Subject: Re: [PATCH v4 00/21] OMAP UART Patches
+In-Reply-To: <20120912062259.GC18563@arwen.pp.htv.fi>
+Message-ID: <alpine.DEB.2.00.1209160117510.23371@utopia.booyaka.com>
+References: <20120906122948.GC29202@arwen.pp.htv.fi> <1346935540-1792-1-git-send-email-balbi@ti.com> <alpine.DEB.2.00.1209062137000.11516@utopia.booyaka.com> <alpine.DEB.2.00.1209112141220.9444@utopia.booyaka.com> <20120912062259.GC18563@arwen.pp.htv.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
+On Wed, 12 Sep 2012, Felipe Balbi wrote:
 
-Here is the current set of target-pending fixes headed for v3.6-final.
+> On Tue, Sep 11, 2012 at 10:02:48PM +0000, Paul Walmsley wrote:
+> 
+> > The bad news is that N800 no longer boots -- or the UART dies during 
+> > serial init:
+> > 
+> > http://www.pwsan.com/omap/testlogs/test_tty_next_e36851d0/20120910020323/boot/2420n800/2420n800_log.txt
+> > 
+> > The problem doesn't seem to affect the 2430SDP.
+> > 
+> > Could you put together a patch to fix N800?
 
-Please go ahead and pull from:
+Bisected this down.  It's this one that causes the problem on N800:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+commit 93220dcc3052182e7156c09655ad1316055564b9
+Author: Felipe Balbi <balbi@ti.com>
+Date:   Thu Sep 6 15:45:27 2012 +0300
 
-The main parts of this series include bug-fixes from Paolo Bonzini to
-address an use-after-free bug in pSCSI sense exception handling, along
-with addressing some long-standing bugs wrt the handling of zero-length
-SCSI CDB payloads also specific to pSCSI pass-through device backends.
+    serial: omap: set dev->drvdata before enabling pm_runtime
+    
+    by the time we call our first pm_runtme_get_sync()
+    after enable pm_runtime, our resume method might
+    be called. To avoid problems, we must make sure
+    that our dev->drvdata is set correctly before
+    our resume method gets called.
+    
+    Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+    Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+    Signed-off-by: Felipe Balbi <balbi@ti.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-A heads up that the following patch of the series:
-
-target: go through normal processing for zero-length PSCSI commands
-http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=306c11b28d7bb85a7adda741798a2b6b60dd305a
-
-does not compile due to a minor syntax error in the original patch, that
-unfortunately had already been pushed to target-pending/master before
-being caught by Wu's 0-day build script.
-
-So it's ultimately my fault for not catching this during review +
-testing, and to avoid this in the future if I don't have the immediate
-time to compile test each patch headed into master, they will now go
-into target-pending/queue (for a day or two) so that the 0-day build
-scripts can do their thing and notify us of bi-sectable trouble ahead of
-time.
-
-Please let me know if you'd prefer a re-spin branch to address this, or
-if you'd rather fix this up on your end before pushing.
-
-Thank you,
-
---nab
-
-Benjamin Wang (1):
-  target: Check idr_get_new return value in iscsi_login_zero_tsih_s1
-
-Nicholas Bellinger (1):
-  target: Fix ->data_length re-assignment bug with SCSI overflow
-
-Paolo Bonzini (9):
-  target: move transport_get_sense_data
-  target: simplify code around transport_get_sense_data
-  target: fix use-after-free with PSCSI sense data
-  target: go through normal processing for zero-length PSCSI commands
-  target: report too-small parameter lists everywhere
-  target: fail REPORT LUNS with less than 16 bytes of payload
-  target: support zero-size allocation lengths in
-    transport_kmap_data_sg
-  target: support zero allocation length in REQUEST SENSE
-  target: go through normal processing for zero-length REQUEST_SENSE
-
- drivers/target/iscsi/iscsi_target_login.c |   11 ++-
- drivers/target/target_core_alua.c         |    7 ++
- drivers/target/target_core_device.c       |    7 ++
- drivers/target/target_core_iblock.c       |   17 +++-
- drivers/target/target_core_pr.c           |    8 ++
- drivers/target/target_core_pscsi.c        |   29 ++----
- drivers/target/target_core_spc.c          |   35 ++++----
- drivers/target/target_core_transport.c    |  148 ++++++++++++-----------------
- include/target/target_core_backend.h      |    4 +-
- include/target/target_core_base.h         |    1 +
- 10 files changed, 141 insertions(+), 126 deletions(-)
-
+- Paul
