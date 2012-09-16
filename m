@@ -1,123 +1,522 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab2IPGwG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 02:52:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55954 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2IPGv7 (ORCPT
+	id S1751743Ab2IPHPL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 03:15:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34890 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab2IPHPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 02:51:59 -0400
-Date: Sun, 16 Sep 2012 08:50:38 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI: Provide a default pcibios_update_irq()
-Message-ID: <20120916065038.GB11030@avionic-0098.mockup.avionic-design.de>
-References: <1347655456-2542-1-git-send-email-thierry.reding@avionic-design.de>
- <1347655456-2542-2-git-send-email-thierry.reding@avionic-design.de>
- <CAMuHMdWuR_tdMw9iVkaQ3D9p1HVU_L05ap=MzBuo1jLD6YdHHw@mail.gmail.com>
- <20120915075301.GA31044@avionic-0098.mockup.avionic-design.de>
- <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8GpibOaaTibBMecb"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6WaFv=CXtiWeDDvThjZRBRJKfJMgovuMjjZRpQGK-WJA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:EkMl3hHk5YfsOSdCevVlgtpPEoeHE8N0MWpcfsVR7t6
- 0M+LIsicD2sFuhx4GLfzcGs0GW/HfNHC/ePGpoIHsCjyKZGnTw
- d++nxw9/G3YqJ8V3WEc38bHzwrT4o8eOZst5uretJf/w2JGvIM
- Q43CvklyK4HD75jmiBYss4rZufeupfvQQ8HNM29PG/2AeaxQgs
- dSZ2hQdvxkLs5Gcqce4iXCogwg4dGRwP3QjmodI7lzl9k1NvBW
- Je0U/I45FV5Oo3GV/OsEEWoshN44OjQVwJIhRfhuiCh0U8RL19
- fDo1sr5G2v1kDETH1bMZSMAXNhTaWxKPpTALAYkYck+zZOclhC
- VPyd7m7+4p4/kpw3kzPAc/VrPklL0Sj1Q4KkMYldYLKvNffqas
- cNKAI//TEIjg5vt83u96RBzzAR7wThmhqZxR0L3gX3PyNd/F6l
- r5l8u
+	Sun, 16 Sep 2012 03:15:07 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: lars@metafoo.de, jic23@cam.ac.uk, cbou@mail.ru
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] [V1]power: battery: Generic battery driver using IIO
+Date: Sun, 16 Sep 2012 12:44:43 +0530
+Message-Id: <1347779683-5025-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: anish kumar <anish198519851985@gmail.com>
 
---8GpibOaaTibBMecb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In last version:
+Addressed concerns raised by lars:
+a. made the adc_bat per device.
+b. get the IIO channel using hardcoded channel names.
+c. Minor issues related to gpio_is_valid and some code
+   refactoring.
 
-On Sat, Sep 15, 2012 at 04:23:33PM -0600, Bjorn Helgaas wrote:
-> On Sat, Sep 15, 2012 at 1:53 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Sat, Sep 15, 2012 at 09:32:10AM +0200, Geert Uytterhoeven wrote:
-> >> On Fri, Sep 14, 2012 at 10:44 PM, Thierry Reding
-> >> <thierry.reding@avionic-design.de> wrote:
-> >> > --- a/drivers/pci/setup-irq.c
-> >> > +++ b/drivers/pci/setup-irq.c
-> >> > @@ -17,6 +17,14 @@
-> >> >  #include <linux/ioport.h>
-> >> >  #include <linux/cache.h>
-> >> >
-> >> > +void __devinit __weak pcibios_update_irq(struct pci_dev *dev, int i=
-rq)
-> >> > +{
-> >> > +#ifdef CONFIG_PCI_DEBUG
-> >> > +       printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n", irq,
-> >> > +              pci_name(dev));
-> >>
-> >> pr_debug()?
-> >> Or even better, dev_dbg()?
-> >
-> > The problem with pr_debug() and dev_dbg() is that they will be compiled
-> > out if DEBUG is not defined. Perhaps we should pass -DDEBUG if PCI_DEBUG
-> > is configured and make this dev_dbg()?
->=20
-> Sorry, fat-fingered the previous empty response.
->=20
-> We already have this in drivers/pci/Makefile:
->=20
->     ccflags-$(CONFIG_PCI_DEBUG) :=3D -DDEBUG
->=20
-> so dev_dbg() should be perfect.
+In this version:
+Addressed concerns raised by Anton:
+a. changed the struct name to gab(generic adc battery).
+b. Added some functions to neaten the code.
+c. Some minor coding guidelines changes.
+d. Used the latest function introduce by lars:
+   iio_read_channel_processed to streamline the code.
 
-Yeah, this occurred to me as well and I was just about to look it up
-when I read your response. I'll make it dev_dbg() then.
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ drivers/power/generic-adc-battery.c       |  442 +++++++++++++++++++++++++++++
+ include/linux/power/generic-adc-battery.h |   19 ++
+ 2 files changed, 461 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/generic-adc-battery.c
+ create mode 100644 include/linux/power/generic-adc-battery.h
 
-Thierry
+diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
+new file mode 100644
+index 0000000..fd62916
+--- /dev/null
++++ b/drivers/power/generic-adc-battery.c
+@@ -0,0 +1,442 @@
++/*
++ * Generic battery driver code using IIO
++ * Copyright (C) 2012, Anish Kumar <anish198519851985@gmail.com>
++ * based on jz4740-battery.c
++ * based on s3c_adc_battery.c
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ *
++ */
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/gpio.h>
++#include <linux/err.h>
++#include <linux/timer.h>
++#include <linux/jiffies.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/iio/consumer.h>
++#include <linux/iio/types.h>
++#include <linux/power/generic-adc-battery.h>
++
++enum gab_chan_type {
++	VOLTAGE = 0,
++	CURRENT,
++	POWER,
++	MAX_CHAN_TYPE
++};
++
++/*
++ * gab_chan_name suggests the standard channel names for commonly used
++ * channel types.
++ */
++static char *gab_chan_name[] = {
++	[VOLTAGE]	= "voltage",
++	[CURRENT]	= "current",
++	[POWER]		= "power",
++};
++
++struct gab {
++	struct power_supply	psy;
++	struct iio_channel	**channel;
++	struct gab_platform_data	*pdata;
++	struct delayed_work bat_work;
++	int		was_plugged;
++	int		volt_value;
++	int		cur_value;
++	int		level;
++	int		status;
++	int		cable_plugged:1;
++};
++
++struct gab *to_generic_bat(struct power_supply *psy)
++{
++	return	container_of(psy, struct gab, psy);
++}
++
++static void gab_ext_power_changed(struct power_supply *psy)
++{
++	struct gab *adc_bat;
++	adc_bat = to_generic_bat(psy);
++
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++}
++
++static enum power_supply_property gab_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++};
++
++/*
++ * This properties are set based on the received platform data and this
++ * should correspond one-to-one with enum chan_type.
++ */
++static enum power_supply_property gab_dyn_props[] = {
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_POWER_NOW,
++};
++
++static bool charge_finished(struct gab *adc_bat)
++{
++	bool ret = gpio_get_value(adc_bat->pdata->gpio_charge_finished);
++	bool inv = adc_bat->pdata->gpio_inverted;
++
++	return ret ^ inv;
++}
++
++int gab_get_status(struct gab *adc_bat)
++{
++	struct gab_platform_data *pdata = adc_bat->pdata;
++	int chg_gpio = pdata->gpio_charge_finished;
++
++	if (!gpio_is_valid(chg_gpio) || adc_bat->level < 100000)
++		return adc_bat->status;
++
++	return POWER_SUPPLY_STATUS_FULL;
++}
++
++enum gab_chan_type gab_prop_to_chan(enum power_supply_property psp)
++{
++	switch (psp) {
++	case POWER_SUPPLY_PROP_POWER_NOW:
++		return POWER;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		return VOLTAGE;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		return CURRENT;
++	default:
++		WARN_ON(1);
++	}
++	return POWER;
++}
++
++int read_channel(struct gab *adc_bat, enum power_supply_property psp,
++		int *result)
++{
++	int ret = 0;
++	int chan_index;
++
++	chan_index = gab_prop_to_chan(psp);
++	ret = iio_read_channel_processed(adc_bat->channel[chan_index],
++			result);
++	if (ret < 0)
++		pr_err("read channel error\n");
++	return ret;
++}
++
++static int gab_get_property(struct power_supply *psy,
++		enum power_supply_property psp, union power_supply_propval *val)
++{
++	struct gab *adc_bat;
++	struct gab_platform_data *pdata;
++	struct power_supply_info *bat_info;
++	int result;
++	int ret = 0;
++
++	adc_bat = to_generic_bat(psy);
++	if (!adc_bat) {
++		dev_err(psy->dev, "no battery infos ?!\n");
++		return -EINVAL;
++	}
++	pdata = adc_bat->pdata;
++	bat_info = &pdata->battery_info;
++
++	ret = read_channel(adc_bat, psp, &result);
++	if (ret < 0)
++		goto err;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		gab_get_status(adc_bat);
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
++		val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		val->intval = pdata->cal_charge(result);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_POWER_NOW:
++		val->intval = result;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = bat_info->technology;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = bat_info->voltage_min_design;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		val->intval = bat_info->voltage_max_design;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		val->intval = bat_info->charge_full_design;
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = bat_info->name;
++		break;
++	default:
++		return -EINVAL;
++	}
++err:
++	return ret;
++}
++
++static void gab_work(struct work_struct *work)
++{
++	struct gab *adc_bat;
++	struct gab_platform_data *pdata;
++	struct delayed_work *delayed_work;
++	int is_charged;
++	int is_plugged;
++
++	delayed_work = container_of(work, struct delayed_work, work);
++	adc_bat = container_of(delayed_work, struct gab, bat_work);
++	pdata = adc_bat->pdata;
++
++	is_plugged = power_supply_am_i_supplied(&adc_bat->psy);
++	adc_bat->cable_plugged = is_plugged;
++	if (is_plugged != adc_bat->was_plugged) {
++		adc_bat->was_plugged = is_plugged;
++		if (is_plugged)
++			adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
++		else
++			adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
++	} else {
++		if (gpio_is_valid(pdata->gpio_charge_finished)) {
++			if (is_plugged) {
++				is_charged = charge_finished(adc_bat);
++				if (is_charged)
++					adc_bat->status =
++						POWER_SUPPLY_STATUS_FULL;
++				else
++					adc_bat->status =
++						POWER_SUPPLY_STATUS_CHARGING;
++			}
++		}
++	}
++
++	power_supply_changed(&adc_bat->psy);
++}
++
++static irqreturn_t gab_charged(int irq, void *dev_id)
++{
++	struct gab *adc_bat = dev_id;
++
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++	return IRQ_HANDLED;
++}
++
++static int __devinit gab_probe(struct platform_device *pdev)
++{
++	struct gab *adc_bat;
++	struct power_supply	*psy;
++	struct gab_platform_data *pdata = pdev->dev.platform_data;
++	int ret;
++	int num_chans;
++	int fail = 0;
++
++	adc_bat = devm_kzalloc(&pdev->dev, sizeof(*adc_bat), GFP_KERNEL);
++	if (!adc_bat) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	psy = &adc_bat->psy;
++
++	/* copying the battery name from platform data */
++	psy->name = pdata->battery_name;
++
++	/* bootup default values for the battery */
++	adc_bat->volt_value = -1;
++	adc_bat->cur_value = -1;
++	adc_bat->cable_plugged = 0;
++	adc_bat->status = POWER_SUPPLY_STATUS_DISCHARGING;
++	psy->type = POWER_SUPPLY_TYPE_BATTERY;
++	psy->get_property = gab_get_property;
++	psy->external_power_changed = gab_ext_power_changed;
++	adc_bat->pdata = pdata;
++
++	/* calculate the total number of channels */
++	num_chans = ARRAY_SIZE(gab_chan_name);
++
++	/*
++	 * copying the static properties and allocating extra memory for holding
++	 * the extra configurable properties received from platform data.
++	 */
++	psy->properties = devm_kzalloc(&pdev->dev, sizeof(gab_props) +
++			sizeof(*(psy->properties)) * num_chans,	GFP_KERNEL);
++	if (!psy->properties) {
++		ret = -ENOMEM;
++		goto first_mem_fail;
++	}
++
++	memcpy(psy->properties, gab_props, sizeof(gab_props));
++
++	/* allocating memory for iio channels */
++	adc_bat->channel = devm_kzalloc(&pdev->dev,
++				num_chans * sizeof(struct iio_channel),
++					GFP_KERNEL);
++	if (!adc_bat->channel) {
++		ret = -ENOMEM;
++		goto first_mem_fail;
++	}
++
++	/*
++	 * getting channel from iio and copying the battery properties
++	 * based on the channel supported by consumer device.
++	 */
++	for (num_chans = 0; gab_chan_name[num_chans]; num_chans++) {
++		adc_bat->channel[num_chans] =
++			iio_channel_get(dev_name(&pdev->dev),
++					gab_chan_name[num_chans]);
++		/* we skip for channels which fail */
++		if (IS_ERR(adc_bat->channel[num_chans])) {
++			pr_err("%s failed\n", gab_chan_name[num_chans]);
++			fail++;
++		} else {
++			static int index;
++			memcpy(psy->properties + sizeof(gab_props) +
++					sizeof(*(psy->properties))*index,
++					&gab_dyn_props[num_chans],
++					sizeof(gab_dyn_props[num_chans]));
++			index++;
++		}
++	}
++
++	/* none of the channels are supported so let's bail out */
++	if (fail == num_chans) {
++		ret = PTR_ERR(adc_bat->channel[num_chans]);
++		goto first_mem_fail;
++	}
++
++	/*
++	 * Total number of properties is equal to static properties
++	 * plus the dynamic properties.Some properties may not be set
++	 * as come channels may be not be supported by the device.So
++	 * we need to take care of that.
++	 */
++	psy->num_properties = ARRAY_SIZE(gab_props) +
++		ARRAY_SIZE(gab_dyn_props) - fail;
++
++	ret = power_supply_register(&pdev->dev, psy);
++	if (ret)
++		goto err_reg_fail;
++
++	INIT_DELAYED_WORK(&adc_bat->bat_work, gab_work);
++
++	if (gpio_is_valid(pdata->gpio_charge_finished)) {
++		int irq;
++		ret = gpio_request(pdata->gpio_charge_finished, "charged");
++		if (ret)
++			goto err_gpio;
++
++		irq = gpio_to_irq(pdata->gpio_charge_finished);
++		ret = request_any_context_irq(irq, gab_charged,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				"battery charged", &adc_bat);
++		if (ret)
++			goto err_gpio;
++	} else
++		goto err_gpio; /* let's bail out */
++
++	platform_set_drvdata(pdev, &adc_bat);
++
++	/* Schedule timer to check current status */
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(0));
++	return 0;
++
++err_gpio:
++	power_supply_unregister(psy);
++err_reg_fail:
++	for (num_chans = 0; gab_chan_name[num_chans]; num_chans++)
++		iio_channel_release(adc_bat->channel[num_chans]);
++first_mem_fail:
++	return ret;
++}
++
++static int gab_remove(struct platform_device *pdev)
++{
++	int num_chans;
++	struct gab_platform_data	*pdata;
++	struct gab *adc_bat = platform_get_drvdata(pdev);
++
++	pdata = adc_bat->pdata;
++	power_supply_unregister(&adc_bat->psy);
++
++	if (gpio_is_valid(pdata->gpio_charge_finished)) {
++		free_irq(gpio_to_irq(pdata->gpio_charge_finished), NULL);
++		gpio_free(pdata->gpio_charge_finished);
++	}
++
++	for (num_chans = 0; gab_chan_name[num_chans]; num_chans++)
++		iio_channel_release(adc_bat->channel[num_chans]);
++	cancel_delayed_work(&adc_bat->bat_work);
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int gab_suspend(struct device *dev)
++{
++	struct gab *adc_bat = dev_get_drvdata(dev);
++
++	cancel_delayed_work_sync(&adc_bat->bat_work);
++	adc_bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
++	return 0;
++}
++
++static int gab_resume(struct device *dev)
++{
++	struct gab *adc_bat = dev_get_drvdata(dev);
++
++	/* Schedule timer to check current status */
++	schedule_delayed_work(&adc_bat->bat_work,
++			msecs_to_jiffies(adc_bat->pdata->jitter_delay));
++	return 0;
++}
++
++static const struct dev_pm_ops gab_pm_ops = {
++	.suspend        = gab_suspend,
++	.resume         = gab_resume,
++};
++
++#define GAB_PM_OPS       (&gab_pm_ops)
++#else
++#define GAB_PM_OPS       (NULL)
++#endif
++
++static struct platform_driver gab_driver = {
++	.driver		= {
++		.name	= "generic-adc-battery",
++		.owner	= THIS_MODULE,
++		.pm	= GAB_PM_OPS
++	},
++	.probe		= gab_probe,
++	.remove		= gab_remove,
++};
++module_platform_driver(gab_driver);
++
++MODULE_AUTHOR("anish kumar <anish198519851985@gmail.com>");
++MODULE_DESCRIPTION("generic battery driver using IIO");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/power/generic-adc-battery.h b/include/linux/power/generic-adc-battery.h
+new file mode 100644
+index 0000000..8f02e9e
+--- /dev/null
++++ b/include/linux/power/generic-adc-battery.h
+@@ -0,0 +1,19 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef GENERIC_ADC_BATTERY_H
++#define GENERIC_ADC_BATTERY_H
++
++struct gab_platform_data {
++	struct power_supply_info battery_info;
++	char	*battery_name;
++	int	(*cal_charge)(long value);
++	int	gpio_charge_finished;
++	bool	gpio_inverted;
++	int	jitter_delay;
++};
++
++#endif /* GENERIC_ADC_BATTERY_H */
+-- 
+1.7.1
 
---8GpibOaaTibBMecb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQVXa+AAoJEN0jrNd/PrOh00IQAJSTG1Ukqu3ay8m7AznzjD2Y
-eRN6wDO0Pd37qkHr46rMO2UVPCavDFnoS6gsGhuTzdQgIOnVO9NKGUPm71xAhBnt
-Yq+rYhg8i2cHNjZVKy8Kn5EY0Ly8k0yunH1KFMEodzeS2ZU/wrHSJZmkyKIUzMdN
-AdMoFV81Q7So+JEdG1zIaM1hsDl3t18gt+9SlRSJZ6T4kXlv0j1pD9Jy2d0OC7bx
-Yu8DDnNI33FIcZQnHsO50okCU0o4SqZHFmL/xm4Aa3JiQ5H4gMKiCYNXvFQ5M/gr
-jU+cj0P1WdIPQVof9uie8TCiPCtNEJMbUQsgbhQuFf6eEefuUIbqkfETjmY8rNk9
-NoNp1anLNxxxp2L17e8dN9VTJgNUi+lrpvcG6gqVBs7rE9ruo/6NVnFHwUUHd3Q3
-o9ivpbuYPfJCRSW1r+TbE74iVQdg7jKO+p1cIZjMQOcv9B88M8KJaS60wpgxn9S+
-f/eLoMlUK2wIbP3Zj4MR3DIorUOTyi7f14+J448Y5D9Ci86QU/+4bmMexqEVxsRS
-Un+iARiZQlrWnmVjva4iG8g2mOxcmDPzHSlcE9+uIIdNdPCUWusrt81PAyIjTlUX
-xo2R3G3LIVA4lfOiUSdQB2RYPmQHAXW/Tul5aBvXk11jsl0BN1Hbk2qO4641Puej
-LLzcEjPu0384yupX0hSL
-=/+fm
------END PGP SIGNATURE-----
-
---8GpibOaaTibBMecb--
