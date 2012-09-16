@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab2IPWdH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 18:33:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54687 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2IPWdF (ORCPT
+	id S1751959Ab2IPWf7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 18:35:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33926 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab2IPWf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 18:33:05 -0400
+	Sun, 16 Sep 2012 18:35:57 -0400
+Date: Sun, 16 Sep 2012 23:35:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH 06/24] ARM: integrator: use __iomem pointers for MMIO
+Message-ID: <20120916223541.GA26353@n2100.arm.linux.org.uk>
+References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <1347658492-11608-7-git-send-email-arnd@arndb.de> <CACRpkdYsv7LJj=aJj3y-GhpAMD8PTKdLsYO8KATWevMM4F5MaQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CC51EC7B5B7F984AA566DC102237848896F57221@hkdcw-mail1.synaptics-inc.local>
-References: <CC51EC7B5B7F984AA566DC102237848896F57221@hkdcw-mail1.synaptics-inc.local>
-Date: Mon, 17 Sep 2012 00:33:03 +0200
-Message-ID: <CACRpkdah8jqHRVRiA35H8eSugPkWuAZES_0J+OmmBr2yR07nZw@mail.gmail.com>
-Subject: Re: [PATCH] Input: Add new driver into Input Subsystem for Synaptics
- DS4 touchscreen I2C devices
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandra Chin <alexandra.chin@tw.synaptics.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYsv7LJj=aJj3y-GhpAMD8PTKdLsYO8KATWevMM4F5MaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 11:56 AM, Alexandra Chin
-<alexandra.chin@tw.synaptics.com> wrote:
+On Mon, Sep 17, 2012 at 12:19:11AM +0200, Linus Walleij wrote:
+> On Fri, Sep 14, 2012 at 11:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > ARM is moving to stricter checks on readl/write functions,
+> > so we need to use the correct types everywhere.
+> >
+> > This patch has a few small conflicts with stuff in linux-next, which
+> > we have to sort out in arm-soc.
+> >
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> However if Russell applies some of the stuff that is pending
+> in his tracker (was pending uncertain acceptance of
+> CONFIG_ATAGS, which is merged now) this will likely
+> conflict.
 
-> Synaptics DS4 touchscreen driver implements a generic driver supporting I2C
-> protocol for Synaptics Design Studio 4 (DS4) family of Touchscreen Controllers
-> which include the following:
->
-> - S32xX series
-> - S730X series
-> - S22xx series
->
-> The driver supports multifinger pointing functionality and power management.
-> The driver is based on the original work submitted by
-> Linus Walleij <linus.walleij@stericsson.com> and
-> Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>.
-
-Naveen's driver is sitting in drivers/staging/ste_rmi4 right now because
-Christopher Heiny is working on a RMI4 bus driver, and wanted to
-merge that.
-
-I am happy with this being merged for now if the plan is
-to eventually replace it with Christopher's (et al) driver,
-if it's not going to disturb the other driver in the end.
-
-How are Synaptics planning to handle the transition?
-(I assume you are coordinated... not always the case in
-big companies, I know from experience :-)
-
-Remember to keep Henrik Rydberg in the loop on touch
-controllers.
-
-Yours,
-Linus Walleij
+I'm actually a little confused... 7514/1 apparantly has a comment from
+me on it, but I don't remember making any comments against it - and the
+comment is definitely crap for the patch.  I certainly wasn't processing
+patches at 20:38 on Friday 7th, so, I'm wondering what's going on there.
