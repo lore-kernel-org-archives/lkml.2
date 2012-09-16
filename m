@@ -1,120 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2IPUWE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 16:22:04 -0400
-Received: from mercuryimc.plus.com ([80.229.200.144]:53042 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752575Ab2IPUWC (ORCPT
+	id S1752879Ab2IPUXQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 16:23:16 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44273 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab2IPUXO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 16:22:02 -0400
-X-Greylist: delayed 2000 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Sep 2012 16:22:02 EDT
-Message-ID: <505626A8.8040806@mimc.co.uk>
-Date: Sun, 16 Sep 2012 20:21:12 +0100
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-Organization: Mercury HMI Ltd
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sun, 16 Sep 2012 16:23:14 -0400
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-Subject: Advice on mmap() "feature"
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [72.177.21.136]
+In-Reply-To: <CA+cF-pv-a37D=a-ugNSWp8=z+y6H04B+eJHhnmBADsTBe1Edrw@mail.gmail.com>
+References: <CA+cF-pv-a37D=a-ugNSWp8=z+y6H04B+eJHhnmBADsTBe1Edrw@mail.gmail.com>
+Date: Sun, 16 Sep 2012 15:23:12 -0500
+Message-ID: <CAOS_Y6QgFTu9=R4aQuo4J3JMaaCSxTsNmq1rrojFuNf3B3EpUQ@mail.gmail.com>
+Subject: Re: Getting debugfs mountpoint?
+From: Rob Landley <rob@landley.net>
+To: Jacob Sowles <sowlesj@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies if this is the wrong place to post this query.  Please feel 
-free to redirect me to the correct place.
+>From userspace? Something like:
 
-I have come across a weird (but documented [1]) "feature" of mmap(), 
-which is:-
+  grep " debugfs " /proc/mounts | awk '{print $2}' | xargs echo -e
 
-"The mmap()function adds an extra reference to the file associated with 
-the file descriptor fildeswhich is not removed by a subsequent close() 
-on that file descriptor. This reference is removed when there are no 
-more mappings to the file."
+>From kernel space? There isn't guaranteed to be _one_, you can mount
+multiple instances of most filesystems, and with container support you can
+even have multiple debugfs superblocks.
 
-In my embedded application, this is resulting in the consumption of 
-available file descriptors.
+Rob
 
-As an example I wrote the following test running on Ubuntu 11.04 64bit.
-
-#include <fcntl.h>
-#include <errno.h>
-#include <stdio.h>
-#include <sys/mman.h>
-
-#define FRAM_SIZE            (64 * 1024)
-#define FRAM_BASE_ADDRESS    0x00000000
-
-int main(int argc, char **argv)
-{
-     int i;
-     for (i = 0; i < 5000; i++)
-     {
-         // open the fram device
-         int m_fdFram = open("/dev/mem", O_RDWR | O_SYNC);
-         if (m_fdFram < 0)
-         {
-             printf("could not open /dev/mem, exiting with errno %d\n", 
-errno);
-             return 0;
-         }
-
-         // map the device to memory
-         char *m_pFram = (char *)mmap(    0,
-                                         FRAM_SIZE * sizeof(unsigned short),
-                                         PROT_READ | PROT_WRITE,
-                                         MAP_SHARED,
-                                         m_fdFram,
-                                         FRAM_BASE_ADDRESS);
-         if ((int)m_pFram == -1)
-         {
-             close(m_fdFram);
-             m_fdFram = -1;
-             printf("could not mmap, exiting with errno %d\n", errno);
-             return 0;
-         }
-
-         // now remove the mapping
-         if (m_pFram)
-         munmap(m_pFram, FRAM_SIZE);
-
-         if (m_fdFram != -1)
-             close(m_fdFram);
-     }
-
-     puts("sleeping");
-     sleep(50);
-
-     return 0;
-}
-
-$ gcc test.c -o test
-$ cat /proc/sys/fs/file-nr
-10016    0    387704
-$ ./test &
-sleeping
-$ cat /proc/sys/fs/file-nr
-15008    0    387704
-
-As can be seen, when I run the test, it consumes 5000 fd's, but only 
-releases them when the application closes, 50 seconds later.
-
-My application is designed to run for many years without a restart, 
-spawning other tasks to do various system jobs, these fd's never seem to 
-get released, and eventually the system runs out of available fd's.
-
-So my questions are:-
-
-(a) Since all the mappings have been removed, so why don't the fd's get 
-released ?
-
-(b) Can I somehow force some form of garbage collection to allow the 
-fd's to be freed up ?
-
-Again, apologies if this is the wrong place to ask, but I'm out of ideas.
-
-Thanks in advance
-Mark JACKSON
-
-[1] http://pubs.opengroup.org/onlinepubs/007908775/xsh/mmap.html
+On Fri, Sep 14, 2012 at 8:49 PM, Jacob Sowles <sowlesj@gmail.com> wrote:
+> Is there an easy way to get the path to where debugfs is mounted? I
+> found a function called debugfs_find_mountpoint(), which is exactly
+> what I want, but it’s not exported, so I can’t use it. The only
+> exported debugfs functions that I could find are the ones that create,
+> remove, etc.
+>
+> Jacob
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
