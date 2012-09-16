@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab2IPXYy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 19:24:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19711 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab2IPXYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 19:24:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,432,1344236400"; 
-   d="scan'208";a="193428550"
-Date: Mon, 17 Sep 2012 01:24:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] drivers/mfd: drop frees of devm allocated data
-Message-ID: <20120916232448.GO3647@sortiz-mobl>
-References: <1344099049-15212-2-git-send-email-Julia.Lawall@lip6.fr>
- <20120806140515.GM4352@mwanda>
- <alpine.DEB.2.02.1208132135380.2355@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1208132135380.2355@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752346Ab2IPXas (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 19:30:48 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:50886 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab2IPXaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 19:30:46 -0400
+X-AuditID: cbfee61b-b7f2b6d000000f14-de-505661242352
+Message-id: <50566124.2020303@samsung.com>
+Date: Mon, 17 Sep 2012 08:30:44 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mfd: MAX77693: Fix bug
+References: <1345529747-24808-1-git-send-email-cw00.choi@samsung.com>
+ <20120915223214.GF3647@sortiz-mobl>
+In-reply-to: <20120915223214.GF3647@sortiz-mobl>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jQV3VxLAAg8V/2Cwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG6mlZBa/YK+4vP8ncwDiVrYuRk0NCwETi59wuKFtM4sK99UA2
+	F4eQwHRGifl3/kI5XUwSWxa2glXxCmhJTJi+kgXEZhFQlTg35xkjiM0GFN//4gZQDQeHqECE
+	xK9+DohyQYkfk++xgIRFBDQk9vbUgISZBYol+tqXMYPYwgL6EpNOPAKbKCSQLdH+8CqYzSlg
+	IPFv5SlmiHodif2t09ggbHmJzWveMk9gFJiFZMMsJGWzkJQtYGRexSiaWpBcUJyUnmukV5yY
+	W1yal66XnJ+7iREcfM+kdzCuarA4xCjAwajEwxtgHhogxJpYVlyZe4hRgoNZSYT3V2RYgBBv
+	SmJlVWpRfnxRaU5q8SFGaQ4WJXFe4U+BAUIC6YklqdmpqQWpRTBZJg5OqQbGhT+9bDIt79qc
+	2xWjz/Ej4fGG3gvPObJXblmi7rTkh9rrny/+Fn7aUWFvPumYrP3lG/vvzvHjEL9dPltzqjBD
+	sf3j1pd/c9VjdBfusPof1/egvqLU1ybxw8sfkjz/UlNWrko64Xgx5/9GP5GCKaKf1+x9mOjc
+	sS7hVZlIeknFVQ4n3n2Xt9SWKrEUZyQaajEXFScCABKdM+s6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+On 09/16/2012 07:32 AM, Samuel Ortiz wrote:
 
-On Mon, Aug 13, 2012 at 09:36:06PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> Hi Chanwoo,
 > 
-> devm_kfree should not have to be explicitly used.
-> devm_regmap_init_i2c also does not require an explicit free.
+> On Tue, Aug 21, 2012 at 03:15:47PM +0900, Chanwoo Choi wrote:
+>> This patchset fix bug of Maxim MAX77693 chip. First patch unmask interrupt
+>> masking bit for charger/flas/muic device of Maxim MAX77693 and second patch
+>> remove NULL pointer error when mfd-max77693 driver initialize irqs of Maxim
+>> MAX77693 devices.
+>>
+>> Chanwoo Choi (2):
+>>   mfd: MAX77693: Fix bug of interrupt handlding for MAX77693 devices
+>>   mfd: MAX77693: Fix NULL pointer error when initialize irqs of Maxim
+>>     MAX77693
+>>
+>>  drivers/extcon/extcon-max77693.c |   20 +++++++++++++-------
+>>  drivers/mfd/max77693-irq.c       |   36 +++++++++++++++++++++++++++++++-----
+>>  drivers/mfd/max77693.c           |   14 ++++++++++++++
+>>  3 files changed, 58 insertions(+), 12 deletions(-)
+> Both patches applied to my for-linus branch.
 > 
-> The semantic patch that fixes the first problem is as follows:
-> (http://coccinelle.lip6.fr/)
+> Cheers,
+> Samuel.
 > 
-> // <smpl>
-> @@
-> expression x,d;
-> @@
-> 
-> x = devm_kzalloc(...)
-> ...
-> ?-devm_kfree(d,x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> v2: Removed over-eager optimization of some error-handling code.
-> 
->  drivers/mfd/88pm800.c |    5 +----
->  drivers/mfd/88pm80x.c |   19 +++----------------
->  2 files changed, 4 insertions(+), 20 deletions(-)
-This one does not apply to my for-next branch, would you please mind rebasing
-it against that branch ?
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks for your reply and applied it.
+
+Best Regards,
+Chanwoo Choi
