@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2IPXYo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 19:24:44 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:39456 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2IPXYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 19:24:16 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, viro@zeniv.linux.org.uk, hch@lst.de,
+	id S1752540Ab2IPXYy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 19:24:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19711 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab2IPXYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 19:24:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,432,1344236400"; 
+   d="scan'208";a="193428550"
+Date: Mon, 17 Sep 2012 01:24:48 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-References: <87wr002z39.fsf@devron.myhome.or.jp>
-	<20120913063906.GA24974@localhost>
-	<871ui6e4tl.fsf@devron.myhome.or.jp>
-	<20120914111429.GA19509@localhost>
-	<87r4q4n6r1.fsf@devron.myhome.or.jp>
-	<20120914131952.GA4952@quack.suse.cz>
-	<87ipbgn2gz.fsf@devron.myhome.or.jp>
-	<20120914144543.GB4952@quack.suse.cz>
-	<878vccmygy.fsf@devron.myhome.or.jp>
-	<20120916214912.GA7503@quack.suse.cz>
-Date: Mon, 17 Sep 2012 08:24:08 +0900
-In-Reply-To: <20120916214912.GA7503@quack.suse.cz> (Jan Kara's message of
-	"Sun, 16 Sep 2012 23:49:12 +0200")
-Message-ID: <87wqzt7drb.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+Subject: Re: [PATCH 2/6] drivers/mfd: drop frees of devm allocated data
+Message-ID: <20120916232448.GO3647@sortiz-mobl>
+References: <1344099049-15212-2-git-send-email-Julia.Lawall@lip6.fr>
+ <20120806140515.GM4352@mwanda>
+ <alpine.DEB.2.02.1208132135380.2355@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1208132135380.2355@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+Hi Julia,
 
->> I'm not sure what you meant though. What is the difference with ignoring
->> WBC_SYNC_NONE?
->   When you completely ignore WB_SYNC_NONE writeback, you'll soon drive the
-> machine close to dirty limits and processes dirtying pages will get
-> throttled. Because flusher threads won't be able to write pages - they
-> do WB_SYNC_NONE writeback when we have too many dirty pages - processes
-> will be throttled until somebody calls sync(1) or someone writes the data
-> for some other reason... So I suspect things won't really work as you
-> expect.
+On Mon, Aug 13, 2012 at 09:36:06PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> devm_kfree should not have to be explicitly used.
+> devm_regmap_init_i2c also does not require an explicit free.
+> 
+> The semantic patch that fixes the first problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression x,d;
+> @@
+> 
+> x = devm_kzalloc(...)
+> ...
+> ?-devm_kfree(d,x);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> v2: Removed over-eager optimization of some error-handling code.
+> 
+>  drivers/mfd/88pm800.c |    5 +----
+>  drivers/mfd/88pm80x.c |   19 +++----------------
+>  2 files changed, 4 insertions(+), 20 deletions(-)
+This one does not apply to my for-next branch, would you please mind rebasing
+it against that branch ?
 
-I think you know how to solve it though. You can add the periodic flush
-in own task. And you can check bdi->dirty_exceeded in any handlers.
+Cheers,
+Samuel.
 
-Well, ok. The alternative plan but more bigger change is to add the
-handler to writeback task path. This would be better way, and core
-should be able to request to flush with usual way (I guess this is what
-you are concerning).  And I believe some FS can implement the simpler
-and more efficient writeback path.
-
-But this would look like what reiserfs4 was submitted in past (before
-bdi was introduced), and unfortunately never accepted though.
-
-Since situation was changed, will we accept it?
-
-OK, why my FS requires it? Because basic strategy try to keep the
-consistency of user view, not only internal metadata consistency.
-I.e. it works like to flush the snapshot of user view.
-
-So, flushing metadata/data by arbitrary order like current writeback
-task does is unacceptable (of course, except request by user). And
-writeback task will never know the correct order of FS.
-
-Thanks.
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Intel Open Source Technology Centre
+http://oss.intel.com/
