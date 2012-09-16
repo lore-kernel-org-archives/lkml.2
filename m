@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab2IPDeH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Sep 2012 23:34:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44984 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab2IPDeF (ORCPT
+	id S1751094Ab2IPEbI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 00:31:08 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52452 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2IPEbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Sep 2012 23:34:05 -0400
+	Sun, 16 Sep 2012 00:31:06 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 15 Sep 2012 21:31:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        rydberg@euromail.se, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+Message-ID: <20120916043116.GA4477@roeck-us.net>
+References: <alpine.DEB.2.02.1209151834120.2271@ubuntu>
+ <20120915225841.GA3816@roeck-us.net>
+ <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+ <alpine.DEB.2.02.1209152323490.2088@ubuntu>
 MIME-Version: 1.0
-In-Reply-To: <50519848.6050901@openwrt.org>
-References: <1347490239-1351-1-git-send-email-tdent48227@gmail.com>
-	<CAFLxGvxL+2PG-MvNQTQ8a7hKaC3TBZutEBAPETDb_pkMwBSbZQ@mail.gmail.com>
-	<50519848.6050901@openwrt.org>
-Date: Sat, 15 Sep 2012 23:34:03 -0400
-Message-ID: <CAHXy_rONp7EULEJzH9Ari2m660hEgF_1=1gkp7RZyTWEuGZxhw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Arch: mips: Delete Makefile.rej
-From: Tracey Dent <tdent48227@gmail.com>
-To: John Crispin <blogic@openwrt.org>
-Cc: akpm@linux-foundation.org,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1209152323490.2088@ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/13/12, John Crispin <blogic@openwrt.org> wrote:
-> On 13/09/12 01:15, richard -rw- weinberger wrote:
->> On Thu, Sep 13, 2012 at 12:50 AM, Tracey Dent<tdent48227@gmail.com>
->> wrote:
->>> Makefile.rej should not be there. That was introduced
->>> in commit 3fa68afc3d774bab1e91cbb3a3cdd1e36068ee95 .
->> Linus' tree does not contain such a commit id.
->>
+On Sat, Sep 15, 2012 at 11:29:58PM -0400, Parag Warudkar wrote:
+> 
+> 
+> On Sat, 15 Sep 2012, Parag Warudkar wrote:
+> 
+> > 
+> > 
+> > On Sat, 15 Sep 2012, Guenter Roeck wrote:
+> > > 
+> > > Also, since the delay time can get quite large, would it make sense to replace
+> > > udelay with usleep_range() ?
+> > > 
+> > 
+> > Yes, I think that would be a good thing to do. We could sleep in range of 
+> > us<<=1 and us<<1 and if usleep_range() returns actual sleep time we can 
+> > factor that in for next loop iteration if necessary. Gotta think a bit on 
+> > that one.
+> > 
+> > I will rework the patch to fix the loop termination and keep the bump to 
+> > 0x10000 in place and possibly also experiment with usleep_range().
+> > 
+> 
+> Below is what I am experimenting with right now. I chose to keep the 
+> APPLESMC_MAX_WAIT to current 0x8000 (32ms). With the fixed loop 
+> termination and use of usleep_range() instead of udelay - I will try to 
+> run this a couple days and see if I can recreate the failure within 32ms.
+> 
+> Does this look ok? (I haven't yet changed send_byte to use usleep_range - 
+> if this approach looks ok I can change that as well.)
+> 
+> Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 2827088..6610037 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -168,15 +168,20 @@ static struct workqueue_struct *applesmc_led_wq;
+>  static int wait_read(void)
+>  {
+>  	u8 status;
+> -	int us;
+> -	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+> -		udelay(us);
+> +	unsigned long r1_us = APPLESMC_MIN_WAIT;
+> +	unsigned long r2_us;
+> +	do {
+>  		status = inb(APPLESMC_CMD_PORT);
+>  		/* read: wait for smc to settle */
+>  		if (status & 0x01)
+>  			return 0;
+> -	}
+> -
+> +		r2_us = r1_us << 2;
+> +		if (r2_us > APPLESMC_MAX_WAIT)
+> +			goto fail;
+> +		usleep_range(r1_us, r2_us);
+> +		r1_us = r2_us;
 
-Your right but its in linux-next
+That looks terribly complicated. Better keep the loop, and just replace
+	udelay(us);
+with something like
+	usleep_range(us, us << 1);
 
->
-> Hi,
->
-> my bad .. its in linux-next (3fa68afc3d774bab1e91cbb3a3cdd1e36068ee95)
-> and comes from the upstream-sfr tree on linux-mips.org
->
-> i will talk to Ralf and fix it inside the lmo tree.
+Alternatively, just use a constant such as
+	usleep_range(us, us + APPLESMC_MIN_WAIT);
 
-Okay
-
->
-> Thanks,
-> John
->
+Guenter
