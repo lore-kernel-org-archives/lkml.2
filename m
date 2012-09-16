@@ -1,117 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2IPQol (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 12:44:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58412 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751747Ab2IPQoN (ORCPT
+	id S1752731Ab2IPQtF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 12:49:05 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.18.13]:47485 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab2IPQtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 12:44:13 -0400
-Message-ID: <1347813844.13258.287.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 34/95] USB: option: add ZTE K5006-Z
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Thomas =?ISO-8859-1?Q?Sch=E4fer?= <tschaefer@t-online.de>
-Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Date: Sun, 16 Sep 2012 17:44:04 +0100
-In-Reply-To: <201209131722.19730.tschaefer@t-online.de>
-References: <20120909224155.514234762@decadent.org.uk>
-	 <87zk4xm2cd.fsf@nemi.mork.no>
-	 <1347416977.6699.1.camel@deadeye.wl.decadent.org.uk>
-	 <201209131722.19730.tschaefer@t-online.de>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-JBVLMVCfkv0vN8M+xTn0"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 16 Sep 2012 12:49:01 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Sep 2012 12:49:00 EDT
+Date: Sun, 16 Sep 2012 18:39:14 +0200
+Message-ID: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
+From: Stephan Schreiber <info@fs-driver.org>
+To: linux-ia64@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, linux-pci@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        679545@bugs.debian.org, jrnieder@gmail.com
+Subject: [RFC/PATCH] ia64, SR870, EFI bug breaks ata_piix, uninitialized
+ ICH4 IDE EXBAR mem resource
+User-Agent: Internet Messaging Program (IMP) H4 (5.0.19)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
+X-Df-Sender: aW5mb0Bmcy1kcml2ZXIub3Jn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
+please could you add some comments about the problem or review the  
+proposed patch?
 
---=-JBVLMVCfkv0vN8M+xTn0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Kernel 3.2.23 with Debian patches (Debian Wheezy, testing)
+Debian bug#679545 (http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=679545)
 
-On Thu, 2012-09-13 at 17:22 +0200, Thomas Sch=C3=A4fer wrote:
-> http://git.kernel.org/?p=3Dlinux/kernel/git/next/linux-next.git;a=3Dcommi=
-tdiff;h=3Dba9edaa468869a8cea242a411066b0f490751798
+Machine: Dell PowerEdge 3250 (equivalent with Intel SR870BH2)
+Processor: 2x Itanium Madison 1.5GHz 6M
+Memory: 4GB
 
-I've added this and the previous change to the queue for 3.2.
+Intel ICH4 (82801DB), IDE host adapter. The ata_piix module fails to  
+initialize.
 
-Ben.
+A snippet from dmesg:
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Linux version 3.2.0-3-mckinley (Debian 3.2.23-1)  
+(debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-8) )  
+#1 SMP Mon Jul 23 09:01:02 UTC 2012
+...
+[    0.065516] pci 0000:00:1f.1: [8086:24cb] type 0 class 0x000101
+[    0.065530] pci 0000:00:1f.1: reg 10: [io  0x0000-0x0007]
+[    0.065541] pci 0000:00:1f.1: reg 14: [io  0x0000-0x0003]
+[    0.065552] pci 0000:00:1f.1: reg 18: [io  0x0000-0x0007]
+[    0.065563] pci 0000:00:1f.1: reg 1c: [io  0x0000-0x0003]
+[    0.065574] pci 0000:00:1f.1: reg 20: [io  0x1000-0x100f]
+[    0.065585] pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff]
+...
+[    1.640965] libata version 3.00 loaded.
+[    1.641656] ata_piix 0000:00:1f.1: version 2.13
+[    1.641671] ata_piix 0000:00:1f.1: device not available (can't  
+reserve [mem 0x00000000-0x000003ff])
+[    1.641747] ata_piix: probe of 0000:00:1f.1 failed with error -22
+...
 
->  index cc40f47..5ce88d1 100644 (file)
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-> @@ -886,8 +886,6 @@ static const struct usb_device_id option_ids[] =3D {
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff=
-, 0xff),
->           .driver_info =3D (kernel_ulong_t)&net_intf4_blacklist },
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff=
-, 0xff) },
-> -       { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff=
-, 0xff),
-> -         .driver_info =3D (kernel_ulong_t)&net_intf3_blacklist },
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff=
-, 0xff) },
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff=
-, 0xff) },
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff=
-, 0xff) },
-> @@ -1092,6 +1090,10 @@ static const struct usb_device_id option_ids[] =3D=
- {
->          .driver_info =3D (kernel_ulong_t)&zte_ad3812_z_blacklist },
->         { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716=
-, 0xff, 0xff, 0xff),
->          .driver_info =3D (kernel_ulong_t)&zte_mc2716_z_blacklist },
-> +       { USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) =
-},
-> +       { USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) =
-},
-> +       { USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) =
-},
-> +
->         { USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
->         { USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
->         { USB_DEVICE(ALINK_VENDOR_ID, DLINK_PRODUCT_DWM_652_U5) }, /* Yes=
-, ALINK_VENDOR_ID */
->=20
->=20
-> I tested the new patch with linux-next-20120913
->=20
-> It works as expected, at least for the K5006-Z.
->=20
-> Sorry for the confusion I triggered. I have no clue about the best
-> matching methods. My focus is on testing.
+lspci -vvxxx reports:
 
---=20
-Ben Hutchings
-Experience is what causes a person to make new mistakes instead of old ones=
-.
+00:1f.1 IDE interface: Intel Corporation 82801DB (ICH4) IDE Controller  
+(rev 02) (prog-if 8a [Master SecP PriP])
+	Subsystem: Intel Corporation Device 3404
+	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-  
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-  
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 0
+	Region 0: I/O ports at 01f0 [size=8]
+	Region 1: I/O ports at 03f4 [size=1]
+	Region 2: I/O ports at 0170 [size=8]
+	Region 3: I/O ports at 0374 [size=1]
+	Region 4: I/O ports at 1000 [size=16]
+00: 86 80 cb 24 05 00 80 02 02 8a 01 01 00 00 00 00
+10: 01 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00
+20: 01 10 00 00 00 00 00 00 00 00 00 00 86 80 04 34
+30: 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00
+40: 03 a3 00 80 00 00 00 00 01 00 02 00 00 00 00 00
+50: 00 00 00 00 00 04 00 00 00 00 00 00 00 00 00 00
+60: 08 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00
+70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+f0: 00 00 00 00 00 00 00 00 60 0f 00 00 00 00 00 00
 
---=-JBVLMVCfkv0vN8M+xTn0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+You can read in the "Intel 82801DB I/O Controller Hub 4 (ICH4)" datasheet
+(http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/82801db-io-controller-hub-4-datasheet.pdf)
+about the EXBAR register at offset 0x24 (4 bytes):
+"EXBAR register
+This is a memory mapped BAR that requires 1 KB of DWord-aligned memory  
+that is Intel reserved
+for future functionality. BIOS needs to program the base address for a  
+1-KB memory space."
 
-iQIVAwUAUFYB1Oe/yOyVhhEJAQp17g//bodVml0Gw94FbaDxPyP6gMw2Obm9H646
-pkWKlUGMjSJ0GHX4L9kdGe62uGhOLP8Ytg/b5dwaTWW+AlRQ1ucRrX0GzerFNw6F
-1hSNvEGDNRRneJAbN7djjouSmG83xb6TeAHmC3cgeKwduIPaHnTS7+K8/q0OX+Ow
-NXVnmSybr+cLe1hjey41K+1uTzsVqRRNPX2G6Mod9HWWb1XjCVAsouKef5LnzRn1
-+oKrxKcjwLBPUCgE8yc2QLYMpCYgg/FOf7uwt12hxjUv7piUU8fkIfL0P4jhltyz
-owxXuVS/VWO2xadLn6CnGETf4FVdf6o732I50FhQS3steKO2FjGHu8yRtMN2U82q
-7ULGol7CCx/KOC148suLFCS21bMAjY+s32FG+Sxl1TWr+aRPfiEW+itDpaNe6lul
-m6BRDuCzNtwWJfGVmITAslvEdzA0IeRsF/3G831S3T8q+WUlBv/RYIOIEDnabD1J
-Y+mPMPr+sl4JxkcdPNDfArPbQC4LMR7U9xMBA6onAbyrdsVjZk37hzjRRAJ1R6Or
-8ohYRwKT1IrjkSaI0vMGjoOJLLMt0lLYpoaDaYJJHh/Da4rr0TQcXT/sOqvCGbxO
-KMsSaTIhzFQyDeLwD+6J8nuIl/cMP8c2luBdPS8+bKFOxPYKjZSOOiOrg/7pZWY+
-mi5VDNyoqPc=
-=BebN
------END PGP SIGNATURE-----
+The dump shows that EXBAR is 0x0000, equal to the default value after  
+reset; EFI doesn't initialize it.
 
---=-JBVLMVCfkv0vN8M+xTn0--
+ata_piix uses pcim_enable_device() which enables this along with the  
+I/O BARs. In systems based on the Intel SR870 platform the firmware  
+does not initialize the EXBAR and pcim_enable_device() fails because  
+the memory region 0x0-0x3FF cannot be allocated.
+
+The proposed patch adds ia64 arch-specific 'pci quirk' code.
+Since the patched Kernel doesn't see any memory resource of IDE  
+hostadapter, it doesn't set the PCI_COMMAND_MEMORY bit in the CMD  
+register; the EXBAR resource is *not* visible in the memeory space at  
+all.
+
+A snippet of the dmesg output on the patched Kernel:
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Linux version 3.2.0-3-mckinley (Debian 3.2.23-1)  
+(debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-8) )  
+#1 SMP Sun Sep 16 15:16:55 CEST 2012
+...
+[    0.065491] pci 0000:00:1f.1: [8086:24cb] type 0 class 0x000101
+[    0.065505] pci 0000:00:1f.1: reg 10: [io  0x0000-0x0007]
+[    0.065516] pci 0000:00:1f.1: reg 14: [io  0x0000-0x0003]
+[    0.065527] pci 0000:00:1f.1: reg 18: [io  0x0000-0x0007]
+[    0.065537] pci 0000:00:1f.1: reg 1c: [io  0x0000-0x0003]
+[    0.065548] pci 0000:00:1f.1: reg 20: [io  0x1000-0x100f]
+[    0.065559] pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff]
+[    0.065574] pci 0000:00:1f.1: SR870 EFI bug workaround; hide EXBAR  
+memory resource.
+...
+[    1.391942] libata version 3.00 loaded.
+[    1.392567] ata_piix 0000:00:1f.1: version 2.13
+[    1.392807] ata_piix 0000:00:1f.1: can't derive routing for PCI INT A
+[    1.399383] scsi0 : ata_piix
+[    1.402505] scsi1 : ata_piix
+[    1.402609] ata1: PATA max UDMA/100 cmd 0x1f0 ctl 0x3f6 bmdma 0x1000 irq 34
+[    1.402658] ata2: PATA max UDMA/100 cmd 0x170 ctl 0x376 bmdma 0x1008 irq 33
+[    1.565703] ata1.00: ATAPI: HL-DT-ST DVDRAM GSA-T40N, JR03, max UDMA/33
+[    1.581571] ata1.00: configured for UDMA/33
+[    1.587075] scsi 0:0:0:0: CD-ROM            HL-DT-ST DVDRAM  
+GSA-T40N  JR03 PQ: 0 ANSI: 5
+[    1.598796] sr0: scsi3-mmc drive: 24x/24x writer dvd-ram cd/rw  
+xa/form2 cdda tray
+[    1.598863] cdrom: Uniform CD-ROM driver Revision: 3.20
+[    1.599263] sr 0:0:0:0: Attached scsi CD-ROM sr0
+[    1.601972] sr 0:0:0:0: Attached scsi generic sg0 type 5
+...
+
+
+(Note: The patch of this posting differs slightly from the one which I  
+have posted on Debian bug#679545 - just cosmetic improvements.)
+
+Kind regards,
+Stephan Schreiber
+
+
+
+--- linux-3.2.23/arch/ia64/pci/fixup.c.orig	2012-09-16  
+11:23:30.000000000 +0200
++++ linux-3.2.23/arch/ia64/pci/fixup.c	2012-09-16 11:52:13.000000000 +0200
+@@ -67,3 +67,40 @@ static void __devinit pci_fixup_video(st
+  	}
+  }
+  DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, pci_fixup_video);
++
++
++/*
++ * Fixup the EFI bug of Intel's SR870 platform
++ *
++ * The EFI of Intel's SR870BH2 and SR870BN4 including their OEM  
+equivalents by
++ * Fujitsu and Dell doesn't initialize the memory resource of the ICH4 IDE
++ * hostadapter. The memory resource has the default after reset: 0x0-0x3FF.
++ * The ata_piix driver uses pcim_enable_device() which attempts to  
+enable this
++ * along with the I/O BARs and pcim_enable_device() fails because the memory
++ * region 0x0-0x3FF cannot be allocated.
++ * The memory resource is the 6th resource of the ICH4 IDE hostadapter;
++ * Intel's datasheet "Intel 82801DB I/O Controller Hub 4 (ICH4)" (Document
++ * Number: 290744-001) states in section "10.1.15 EXBAR - Expansion Base
++ * Address Register (IDE-D31:F1)" on page 389:
++ * "This is a memory mapped BAR ... that is Intel reserved for future
++ * functionality. BIOS needs to program the base address for a 1-KB memory
++ * space."
++ * Since nothing uses the EXBAR, we hide it so that only the I/O BARs will be
++ * enabled.
++ */
++
++static void __devinit pci_fixup_sr870_ich4(struct pci_dev *dev)
++{
++	struct resource *r;
++
++	r = &dev->resource[5];
++	if ((r->flags & IORESOURCE_MEM)
++	&& r->start == 0 && r->end != 0) {
++		dev_info(&dev->dev,
++			"SR870 EFI bug workaround; hide EXBAR memory resource.\n");
++		r->flags = 0;
++		r->end = 0;
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82801DB_11,
++						pci_fixup_sr870_ich4);
+
+Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+
+
