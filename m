@@ -1,35 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab2IPRHx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 13:07:53 -0400
-Received: from mail.vitelcom.net ([65.112.145.73]:45527 "EHLO
-	stt-cha-ms1.vipowernet.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751118Ab2IPRHw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 13:07:52 -0400
-X-Greylist: delayed 1296 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Sep 2012 13:07:52 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=65.112.145.73;
-From: "Admin" <no-reply@secure-email.dk>
-Reply-to: no-reply@secure-email.dk
-Subject: Postkassen har overskredet det lagringsgrense
-X-Mailer: Quality Web Email v3.1t
-X-Originating-IP: 46.165.211.57
-Date: Sun, 16 Sep 2012 17:41:21 +0100
-Message-id: <50560131.9e.682d.967416731@vitelcom.net>
+	id S1752282Ab2IPR3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 13:29:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37498 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2IPR3K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 13:29:10 -0400
+Message-ID: <50560C5F.3020700@gmail.com>
+Date: Sun, 16 Sep 2012 19:29:03 +0200
+From: Johannes Thumshirn <morbidrsa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-To-Not-Matched: true
-X-Authenticated-User: sunnyisle@vitelcom.net 
-To: unlisted-recipients:; (no To-header on input)
+To: linux-kernel@vger.kernel.org
+Subject: staging: Line6 - Steps needed to get driver out of staging area
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi LKML,
 
+I wanted to ask for the steps that are needed to get the line6 driver 
+out of the staging area (apart from minor getpatch.pl fixes).
 
-Postkassen har overskredet det lagringskapasiteten som satt
-av administrator, og du vil ikke være i stand til å
-motta nye e-postmeldinger før du igjen bekrefte det. Å
-re-validere -> klikk her
-https://docs.google.com/a/sau.edu/spreadsheet/viewform?formkey=dFpMOHQzbU9FUXFPd2lRVFZXTmtCZmc6MQ
+Regards,
+Johannes Thumshirn
