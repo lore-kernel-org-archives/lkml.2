@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209Ab2IPNSi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 09:18:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37761 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2IPNSg (ORCPT
+	id S1751490Ab2IPNYp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 09:24:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61035 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab2IPNYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 09:18:36 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v3] PCI: split registration of PCI bus devices into two stages
-Date: Sun, 16 Sep 2012 21:16:01 +0800
-Message-Id: <1347801361-18565-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CAE9FiQX=NoSBY1vJSqEpRASY92A1C0x2rZONx1Xor_Zm4zCweQ@mail.gmail.com>
-References: <CAE9FiQX=NoSBY1vJSqEpRASY92A1C0x2rZONx1Xor_Zm4zCweQ@mail.gmail.com>
+	Sun, 16 Sep 2012 09:24:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120916082510.GN12245@n2100.arm.linux.org.uk>
+References: <20120818145856.GP18957@n2100.arm.linux.org.uk>
+	<CACVXFVPahbFVEP4p2Z9-TvjQ52tUCMuDeLx0X6GP5t0h5gEV8g@mail.gmail.com>
+	<20120916082510.GN12245@n2100.arm.linux.org.uk>
+Date: Sun, 16 Sep 2012 21:24:43 +0800
+Message-ID: <CACVXFVOZ=4HFAy38q_8ZUjOPffcv_mMTi7KCdh3HcX=MCLw5SQ@mail.gmail.com>
+Subject: Re: [BUG] Deferred probing in driver model is racy, resulting in lost probes
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
-the notification handler can't hold reference count to the new PCI bus
-because the device object for the new bus (pci_dev->subordinate->dev)
-hasn't been initialized yet.
+On Sun, Sep 16, 2012 at 4:25 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> It isn't.  As I said, it's a race condition due to lack of locking - the
+> driver hasn't been added to the list of drivers at this point:
+>
+> int bus_add_driver(struct device_driver *drv)
+> {
+> ...
+>         if (drv->bus->p->drivers_autoprobe) {
+>                 error = driver_attach(drv);
+>                 if (error)
+>                         goto out_unregister;
+>         }
+>         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+> ...
+> }
+>
+> Notice that the attaching is done _before_ the driver is added to the
+> bus driver list.
 
-Split the registration of PCI bus device into two stages as below,
-so that the event handler could hold reference count to the new PCI bus
-when handling BUS_NOTIFY_ADD_DEVICE event.
+Yes, it is a problem since a new device may be added to bus
+and bus_probe_device() may not see the new added driver.
 
-1) device_initialize(&pci_dev->dev)
-2) device_initialize(&pci_dev->subordinate->dev)
-3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
-4) device_add(&pci_dev->dev)
-5) device_add(&pci_dev->subordinate->dev)
+So looks klist_add_tail() should complete before driver_attach()
+inside bus_add_driver().
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
-V2->V3
-Fix a failing in error recover path according to Yinghai's suggestion.
----
- drivers/pci/bus.c    |    2 +-
- drivers/pci/probe.c  |    4 +++-
- drivers/pci/remove.c |   10 +++++-----
- 3 files changed, 9 insertions(+), 7 deletions(-)
+The attached one line change should fix the problem because the
+below way can guarantee that no probe(dev) may be lost.
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 4b0970b..11a5c28 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -189,7 +189,7 @@ int pci_bus_add_child(struct pci_bus *bus)
- 	if (bus->bridge)
- 		bus->dev.parent = bus->bridge;
- 
--	retval = device_register(&bus->dev);
-+	retval = device_add(&bus->dev);
- 	if (retval)
- 		return retval;
- 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 5dbad03..7ef8c1b 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -639,6 +639,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	 */
- 	child->dev.class = &pcibus_class;
- 	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-+	device_initialize(&child->dev);
- 
- 	/*
- 	 * Set up the primary, secondary and subordinate
-@@ -1672,7 +1673,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	b->dev.class = &pcibus_class;
- 	b->dev.parent = b->bridge;
- 	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
--	error = device_register(&b->dev);
-+	device_initialize(&b->dev);
-+	error = device_add(&b->dev);
+
+CPU0				CPU1
+driver_register
+	...
+	write(bus->driver_list)
+	smp_mb()
+	read(bus->device_list)
+	...
+				device_add
+					/* bus_add_device */	
+					write(bus->device_list)
+					smp_mb()
+					/* bus_probe_device*/
+					read(bus->driver_list)
+
+And the smp_mb() has been implicit by UNLOCK+LOCK
+of 'klist' according to 'VARIETIES OF MEMORY BARRIER' part
+of Documentation/memory-barriers.txt.
+
+Could you test the below patch to see if it can fix your problem?
+
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 181ed26..17d7437 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -714,12 +714,12 @@ int bus_add_driver(struct device_driver *drv)
  	if (error)
- 		goto class_dev_reg_err;
- 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 37b9407..86a4636 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
- 	list_del(&bus->node);
- 	pci_bus_release_busn_res(bus);
- 	up_write(&pci_bus_sem);
--	if (!bus->is_added)
--		return;
--
--	pci_remove_legacy_files(bus);
--	device_unregister(&bus->dev);
-+	if (bus->is_added) {
-+		pci_remove_legacy_files(bus);
-+		device_del(&bus->dev);
-+	}
-+	put_device(&bus->dev);
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
--- 
-1.7.9.5
+ 		goto out_unregister;
 
++	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	if (drv->bus->p->drivers_autoprobe) {
+ 		error = driver_attach(drv);
+ 		if (error)
+ 			goto out_unregister;
+ 	}
+-	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	module_add_driver(drv->owner, drv);
+
+ 	error = driver_create_file(drv, &driver_attr_uevent);
+
+
+
+Thanks,
+-- 
+Ming Lei
