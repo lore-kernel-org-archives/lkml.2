@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2IQQcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:32:24 -0400
-Received: from mail.mars-solutions.de ([213.239.212.107]:20860 "EHLO
-	mail.mars-solutions.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab2IQQcX (ORCPT
+	id S1753398Ab2IQQcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:32:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40226 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab2IQQck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:32:23 -0400
-X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Sep 2012 12:32:23 EDT
-From: Andreas Pretzsch <apr@cn-eng.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: Use devm_* APIs for mc13xxx: remove leftover kfree
-Date: Mon, 17 Sep 2012 18:17:21 +0200
-Message-Id: <1347898641-17575-1-git-send-email-apr@cn-eng.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Assp-Version: 1.8.1.3(0.0.06) on ASSP.nospam
-X-Assp-Passing: authenticated
-X-Assp-ID: ASSP.nospam id-98661-11188
-X-Assp-Intended-For: axel.lin@gmail.com
-X-Assp-Envelope-From: apr@cn-eng.de
+	Mon, 17 Sep 2012 12:32:40 -0400
+Message-ID: <505750A4.9080207@gmail.com>
+Date: Mon, 17 Sep 2012 10:32:36 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        tzanussi@gmail.com
+Subject: Re: perf script: rwtop: SIGALRM and pipe read race
+References: <20120914153952.GA8834@turtle.usersys.redhat.com> <505355AF.7000006@gmail.com> <20120914181049.GA16618@turtle.usersys.redhat.com> <505739EF.5010000@gmail.com> <50573EC3.6020209@gmail.com> <20120917160211.GC31375@ghostprotocols.net>
+In-Reply-To: <20120917160211.GC31375@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e7c706b1e5ccf28eaaf76c7a4613e80b0ca52863 migrated the allocation
-of struct mc13xxx to devm_* functions, but left a kfree(mc13xxx) in the
-mc13xxx_common_init error path. Remove it to prevent memory corruption.
+On 9/17/12 10:02 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Sep 17, 2012 at 09:16:19AM -0600, David Ahern escreveu:
+>> On 9/17/12 8:55 AM, David Ahern wrote:
+>>> 2. the rwtop.pl script is not handling negative return values ($ret < 0)
+>>> properly -- the '$ret > 0' check is succeeding even though $ret is
+>>> negative (e.g., -EAGAIN) leading to astronomical read values
+>>
+>> I think perl is treating $ret as an unsigned integer.
+>>
+>> Again, I know little about perl, but this change to
+>> ./scripts/perl/rwtop.pl makes it behave properly:
+>>
+>>      my $n = sprintf("%d", $ret);
+>>
+>>      if ($n > 0) {
+>>      ...
+>
+> I think what you figured out makes sense, its the best we have and you
+> found it to get it back working, could you please send the two patches
+> properly signed-off, etc?
 
-Signed-off-by: Andreas Pretzsch <apr@cn-eng.de>
----
- drivers/mfd/mc13xxx-core.c |    1 -
- 1 file changed, 1 deletion(-)
+I'll do that for the readn.
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 1ec79b5..1aba023 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -676,7 +676,6 @@ int mc13xxx_common_init(struct mc13xxx *mc13xxx,
- err_mask:
- err_revision:
- 		mc13xxx_unlock(mc13xxx);
--		kfree(mc13xxx);
- 		return ret;
- 	}
- 
--- 
-1.7.10.4
+The above change seems like a workaround - not a proper fix. Why is perl 
+treating it like an unsigned int? The trace format for the read syscall 
+shows long. How is the binding done for perl? I can't make heads or 
+tails of it scanning the files under perl. If we are forced to do a hack 
+like the above is there a better way? I tried (int) $ret and perl did 
+not like that. Any other (better) options?
+
+David
 
