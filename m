@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab2IQAua (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33375 "EHLO
+	id S1753689Ab2IQAu3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33369 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753033Ab2IQAth (ORCPT
+	by vger.kernel.org with ESMTP id S1753017Ab2IQAte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:37 -0400
-Message-Id: <20120917003628.725374376@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:34 -0400
+Message-Id: <20120917003627.763652634@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:43 +0100
+Date: Mon, 17 Sep 2012 01:36:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Yong Shen <yong.shen@linaro.org>
-Subject: [ 018/135] ARM: imx: select CPU_FREQ_TABLE when needed
+        alan@lxorguk.ukuu.org.uk, Luca Tettamanti <kronos.it@gmail.com>,
+        =?ISO-8859-15?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 011/135] hwmon: (asus_atk0110) Add quirk for Asus M5A78L
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,47 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit f637c4c9405e21f44cf0045eaf77eddd3a79ca5a upstream.
+commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
 
-The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
-so it needs to select that code to be built. This problem has
-apparently existed since the i.MX cpufreq code was first merged
-in v2.6.37.
+The old interface is bugged and reads the wrong sensor when retrieving
+the reading for the chassis fan (it reads the CPU sensor); the new
+interface works fine.
 
-Building IMX without CPU_FREQ_TABLE results in:
-
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
-arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
-arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
-arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
-arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
-arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
-arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
-arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Yong Shen <yong.shen@linaro.org>
+Reported-by: Göran Uddeborg <goeran@uddeborg.se>
+Tested-by: Göran Uddeborg <goeran@uddeborg.se>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/asus_atk0110.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e91c7cd..84b5a0c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2150,6 +2150,7 @@ source "drivers/cpufreq/Kconfig"
- config CPU_FREQ_IMX
- 	tristate "CPUfreq driver for i.MX CPUs"
- 	depends on ARCH_MXC && CPU_FREQ
-+	select CPU_FREQ_TABLE
- 	help
- 	  This enables the CPUfreq driver for i.MX CPUs.
- 
+diff --git a/drivers/hwmon/asus_atk0110.c b/drivers/hwmon/asus_atk0110.c
+index 351d1f4..4ee5789 100644
+--- a/drivers/hwmon/asus_atk0110.c
++++ b/drivers/hwmon/asus_atk0110.c
+@@ -34,6 +34,12 @@ static const struct dmi_system_id __initconst atk_force_new_if[] = {
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
+ 		}
++	}, {
++		/* Old interface reads the same sensor for fan0 and fan1 */
++		.ident = "Asus M5A78L",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
++		}
+ 	},
+ 	{ }
+ };
 
 
