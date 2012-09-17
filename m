@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab2IQHwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:52:43 -0400
-Received: from void.printf.net ([89.145.121.20]:36577 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754066Ab2IQHwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:52:42 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: linux-mmc@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/3] mmc: davinci_mmc: convert to DMA engine API
-References: <1345574589-24757-1-git-send-email-mporter@ti.com>
-	<1345574589-24757-3-git-send-email-mporter@ti.com>
-	<k139rl$gbm$2@ger.gmane.org>
-Date: Mon, 17 Sep 2012 03:52:52 -0400
-In-Reply-To: <k139rl$gbm$2@ger.gmane.org> (Koen Kooi's message of "Wed, 22 Aug
-	2012 20:53:43 +0200")
-Message-ID: <m3ipbdytkb.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1.90 (gnu/linux)
+	id S1754540Ab2IQHy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:54:26 -0400
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:55543
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754238Ab2IQHyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 03:54:25 -0400
+X-Greylist: delayed 45190 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Sep 2012 03:54:25 EDT
+Message-ID: <5056D71C.70209@mimc.co.uk>
+Date: Mon, 17 Sep 2012 08:54:04 +0100
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Advice on mmap() "feature"
+References: <505626A8.8040806@mimc.co.uk> <CAFLxGvy_VMTMZxESgDoZrOaxm94q+BeSfEb+tXeWrUc5J0gHbw@mail.gmail.com>
+In-Reply-To: <CAFLxGvy_VMTMZxESgDoZrOaxm94q+BeSfEb+tXeWrUc5J0gHbw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 16/09/12 21:52, richard -rw- weinberger wrote:
+> On Sun, Sep 16, 2012 at 9:21 PM, Mark Jackson <mpfj-list@mimc.co.uk> wrote:
+>>         // now remove the mapping
+>>         if (m_pFram)
+>>         munmap(m_pFram, FRAM_SIZE);
+> 
+> You unmap less memory than you map...
+> 
 
-On Wed, Aug 22 2012, Koen Kooi wrote:
-> Op 21-08-12 20:43, Matt Porter schreef:
->> Removes use of the DaVinci EDMA private DMA API and replaces it with use
->> of the DMA engine API.
->> 
->> Signed-off-by: Matt Porter <mporter@ti.com>
->
-> Runtime tested on hawkboard with 3.6.0-rc2 with rootfs on SD and running
-> bonnie++ on it.
->
-> Tested-by: Koen Kooi <koen@dominion.thruhere.net>
+I hang my head in shame ... what a stupid mistake to miss !!
 
-Thanks, pushed to mmc-next for 3.7.
+Thank you
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
