@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab2IQWDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 18:03:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34619 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab2IQWDq (ORCPT
+	id S932294Ab2IQWDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 18:03:50 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54298 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757298Ab2IQWDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 18:03:46 -0400
-Date: Mon, 17 Sep 2012 23:03:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 22/24] scsi: eesox: use __iomem pointers for MMIO
-Message-ID: <20120917220334.GU12245@n2100.arm.linux.org.uk>
-References: <201209150800.35605.arnd@arndb.de> <20120915085734.GG12245@n2100.arm.linux.org.uk> <201209151030.44105.arnd@arndb.de>
+	Mon, 17 Sep 2012 18:03:48 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 17 Sep 2012 15:03:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Parag Warudkar <parag.lkml@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+Message-ID: <20120917220356.GA9287@roeck-us.net>
+References: <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+ <alpine.DEB.2.02.1209152323490.2088@ubuntu>
+ <20120916043116.GA4477@roeck-us.net>
+ <20120916093520.GA5623@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161712070.14838@ubuntu>
+ <20120916223003.GA2160@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161957490.2808@ubuntu>
+ <20120917162705.GA2854@polaris.bitmath.org>
+ <20120917163722.GA1925@roeck-us.net>
+ <20120917201436.GA320@polaris.bitmath.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201209151030.44105.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120917201436.GA320@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 15, 2012 at 10:30:43AM +0000, Arnd Bergmann wrote:
-> On Saturday 15 September 2012, Russell King - ARM Linux wrote:
-> > On Sat, Sep 15, 2012 at 08:00:35AM +0000, Arnd Bergmann wrote:
-> > > On Friday 14 September 2012, Russell King - ARM Linux wrote:
-> > > > On Fri, Sep 14, 2012 at 11:34:50PM +0200, Arnd Bergmann wrote:
-> > > > > ARM is moving to stricter checks on readl/write functions,
-> > > > > so we need to use the correct types everywhere.
-> > > > 
-> > > > There's nothing wrong with const iomem pointers.  If you think
-> > > > otherwise, patch x86 not to use const in its accessor implementation
-> > > > and watch the reaction:
-> > > > 
-> > > > #define build_mmio_read(name, size, type, reg, barrier) \
-> > > > static inline type name(const volatile void __iomem *addr) \
-> > > > { type ret; asm volatile("mov" size " %1,%0":reg (ret) \
-> > > > :"m" (*(volatile type __force *)addr) barrier); return ret; }
-> > > > 
-> > > > build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
-> > > > build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
-> > > > build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
-> > > 
-> > > Ok, fair enough. Can you fold the patch below into 
-> > > "ARM: 7500/1: io: avoid writeback addressing modes for __raw_
-> > > accessors", or apply on top then?
-> > 
-> > No - const is not appropriate for the write accessors.  Again, this puts
-> > us at odds with x86:
-> > 
-> > #define build_mmio_write(name, size, type, reg, barrier) \
-> > static inline void name(type val, volatile void __iomem *addr) \
-> > { asm volatile("mov" size " %0,%1": :reg (val), \
-> > "m" (*(volatile type __force *)addr) barrier); }
-> > 
-> > build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
-> > build_mmio_write(writew, "w", unsigned short, "r", :"memory")
-> > build_mmio_write(writel, "l", unsigned int, "r", :"memory")
-> > 
-> > So, readl etc are all const volatile void __iomem *, but writel etc are
-> > all volatile void __iomem *.
-> > 
-> > How they're defined on ARM after 7500/1 copies how they're defined on
-> > x86.
+On Mon, Sep 17, 2012 at 10:14:36PM +0200, Henrik Rydberg wrote:
+> > Any better/other ideas ? Is the problem that we have to increase the wait time,
+> > or is something else going on ?
 > 
-> Well, you have to make up your mind what you want. Right now, we get these
-> warnings in rpc_defconfig:
+> No, it makes sense now that I got the right number of zeroes. ;-)
 > 
->   Generating include/generated/mach-types.h
-> /home/arnd/linux-arm/drivers/net/ethernet/seeq/ether3.c: In function 'ether3_outb':
-> /home/arnd/linux-arm/drivers/net/ethernet/seeq/ether3.c:104:2: error: passing argument 2 of '__raw_writeb' discards 'const' qualifier from pointer target type [-Werror]
-> /home/arnd/linux-arm/arch/arm/include/asm/io.h:81:91: note: expected 'volatile void *' but argument is of type 'const void *'
-> /home/arnd/linux-arm/drivers/scsi/arm/eesox.c: In function 'eesoxscsi_buffer_out':
-> /home/arnd/linux-arm/drivers/scsi/arm/eesox.c:310:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
-> /home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
-> /home/arnd/linux-arm/drivers/scsi/arm/eesox.c:324:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
-> /home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
-> /home/arnd/linux-arm/drivers/scsi/arm/eesox.c:325:4: error: passing argument 2 of '__raw_writel' discards 'const' qualifier from pointer target type [-Werror]
-> /home/arnd/linux-arm/arch/arm/include/asm/io.h:88:91: note: expected 'volatile void *' but argument is of type 'const void *'
+> So, to be explicit, this is the patch I would like to go in. It is
+> completely safe, back-portable, and a no-brainer. Parag, are you ok
+> with being the author on this one?
 > 
-> Either we allow drivers to write to const __iomem pointers or we don't. I
-> don't care which way we do it, but just saying both patches are wrong is
-> not very helpful.
+> Thanks,
+> Henrik
+> 
+> From 868fc42edcb3a338ce0a0334e2dc50b01a7f6844 Mon Sep 17 00:00:00 2001
+> From: Parag Warudkar <parag.lkml@gmail.com>
+> Date: Mon, 17 Sep 2012 17:49:55 +0200
+> Subject: [PATCH] applesmc: Bump max wait
+> 
+> A heavy-load test on a MacBookPro6,1 is still showing a substantial
+> amount of read errors.  Increasing the maximum wait time to 128 ms
+> resolves the issue.
+> 
+> maybe-Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-In both of my replies, I've said "as x86 does".  We need to follow
-x86's behaviour here, which is as I've quoted - it's not a matter
-that "I need to make up my mind" - my mind is already well made up.
-That is, we need to follow x86 here.
+Applied after s/maybe-//.
 
-That is, const volatile void __iomem * for reads, and volatile void
-__iomem * for writes.
+Thanks,
+Guenter
