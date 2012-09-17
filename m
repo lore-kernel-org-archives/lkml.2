@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab2IQWIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 18:08:43 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:52559 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab2IQWIl (ORCPT
+	id S1757352Ab2IQWKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 18:10:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59972 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab2IQWKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 18:08:41 -0400
-Date: Mon, 17 Sep 2012 22:08:40 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] mfd: Fix compile for twl-core.c by removing cpu_is_omap
- usage
-In-Reply-To: <20120917202943.GV4521@atomide.com>
-Message-ID: <alpine.DEB.2.00.1209172207480.16117@utopia.booyaka.com>
-References: <20120917202943.GV4521@atomide.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 17 Sep 2012 18:10:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120917203946.GV13973@ZenIV.linux.org.uk>
+References: <871ui01jr1.fsf@tucsk.pomaz.szeredi.hu> <20120917203946.GV13973@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Sep 2012 15:09:39 -0700
+X-Google-Sender-Auth: TaJE2N-xH3yqCTialqaW2TF53ys
+Message-ID: <CA+55aFxeghUVxiFS=P+ck_BCnOuMm=HFAkqTBccxJoubk96afQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vfs: dcache: fix deadlock in tree traversal
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        Trond.Myklebust@netapp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Tony Lindgren wrote:
+On Mon, Sep 17, 2012 at 1:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Egads...  The problem is real and analysis, AFAICS, is correct, but result
+> is extremely ugly ;-/
 
-> Commit 7d7e1eba (ARM: OMAP2+: Prepare for irqs.h removal) broke
-> compile for non-omap as include plat/cpu.h was added:
-> 
-> drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
-> 
-> This header was indirectly included earlier when SPARSE_IRQ was not
-> set, but does not exist on most platforms.
-> 
-> Fix the problem by removing the cpu_is_omap usage that should
-> not exist in drivers at all. We can do this by adding proper
-> clock aliases for the twl-core.c drivers, and drop separate
-> handling for cases when clock framework is not available as
-> the behaviour will stay the same.
-> 
-> Note that we need to add a platform device to avoid using the
-> i2c provided names that may be different on various omaps.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> 
-> ---
-> 
-> Samuel, I'd like to queue this via arm-soc as that's where I have
-> the breaking patch is if this patch is OK with you.
+Agreed.
 
-It would be ideal if I could queue this one, due to the clock dependency.  
-Still hoping that we can get the CCF conversion patches in for 3.7.
+The problem (or at least one *part* of the problem) is that the "goto
+rename_retry" case is done for two different entities entirely:
 
+ - the "try_to_ascend()" failure path, which can happen even when
+renamelock is held for writing.
 
-- Paul
+ - the "if we weren't write-locked before, and the read-lock failed"
+case (which obviously cannot happen if we already held things for
+writing)
+
+That said, I'm not sure why/how that try_to_ascend() could even fail
+when we're holding things locked. I guess it's the DCACHE_DISCONNECTED
+case that triggers.
+
+So I'll ignore this series for now, hoping that Al will send a nicer
+version. Al, Miklos, please make sure this issue doesn't get dropped
+by mistake.
+
+            Linus
