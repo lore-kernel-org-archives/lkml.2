@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2IQAyw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:54:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33983 "EHLO
+	id S1755119Ab2IQAyt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:54:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33981 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754819Ab2IQAvi (ORCPT
+	by vger.kernel.org with ESMTP id S1754813Ab2IQAvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:38 -0400
-Message-Id: <20120917003630.287836054@decadent.org.uk>
+Message-Id: <20120917003630.687695143@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:54 +0100
+Date: Mon, 17 Sep 2012 01:36:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Kristian Nielsen <knielsen@knielsen-hq.org>
-Subject: [ 029/135] ext3: Fix fdatasync() for files with only i_size changes
+        alan@lxorguk.ukuu.org.uk, Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 032/135] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,72 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
 
-commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
+commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
+Backtrace:
+[   79.660000] =============================================
+[   79.660000] [ INFO: possible recursive locking detected ]
+[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
+[   79.660000] ---------------------------------------------
+[   79.660000] swapper/0 is trying to acquire lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
+[   79.660000]
+[   79.660000] but task is already holding lock:
+[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] other info that might help us debug this:
+[   79.660000]  Possible unsafe locking scenario:
+[   79.660000]
+[   79.660000]        CPU0
+[   79.660000]        ----
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]   lock(&(&host->lock)->rlock#2);
+[   79.660000]
+[   79.660000]  *** DEADLOCK ***
+[   79.660000]
+[   79.660000]  May be due to missing lock nesting notation
+[   79.660000]
+[   79.660000] 1 lock held by swapper/0:
+[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
+[   79.660000]
+[   79.660000] stack backtrace:
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
+[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
+[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
+[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
+[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
+[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
+[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
+[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
+[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
+[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
+[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
+[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
+[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
+[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
+[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
+[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
+[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
+[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
 
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext3/inode.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/mmc/host/mxs-mmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -3072,6 +3072,8 @@ static int ext3_do_update_inode(handle_t
- 	struct ext3_inode_info *ei = EXT3_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
-+	__le32 disksize;
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -279,11 +279,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
+ 	writel(stat & MXS_MMC_IRQ_BITS,
+ 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
  
- again:
- 	/* we can't allow multiple procs in here at once, its a bit racey */
-@@ -3109,7 +3111,11 @@ again:
- 		raw_inode->i_gid_high = 0;
- 	}
- 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
--	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
-+	disksize = cpu_to_le32(ei->i_disksize);
-+	if (disksize != raw_inode->i_size) {
-+		need_datasync = 1;
-+		raw_inode->i_size = disksize;
-+	}
- 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
- 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
- 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
-@@ -3125,8 +3131,11 @@ again:
- 	if (!S_ISREG(inode->i_mode)) {
- 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
- 	} else {
--		raw_inode->i_size_high =
--			cpu_to_le32(ei->i_disksize >> 32);
-+		disksize = cpu_to_le32(ei->i_disksize >> 32);
-+		if (disksize != raw_inode->i_size_high) {
-+			raw_inode->i_size_high = disksize;
-+			need_datasync = 1;
-+		}
- 		if (ei->i_disksize > 0x7fffffffULL) {
- 			struct super_block *sb = inode->i_sb;
- 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
-@@ -3179,6 +3188,8 @@ again:
- 	ext3_clear_inode_state(inode, EXT3_STATE_NEW);
++	spin_unlock(&host->lock);
++
+ 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
+ 		mmc_signal_sdio_irq(host->mmc);
  
- 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
-+	if (need_datasync)
-+		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
- out_brelse:
- 	brelse (bh);
- 	ext3_std_error(inode->i_sb, err);
+-	spin_unlock(&host->lock);
+-
+ 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
+ 		cmd->error = -ETIMEDOUT;
+ 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
 
 
