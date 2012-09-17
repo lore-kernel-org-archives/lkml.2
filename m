@@ -1,120 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab2IQNv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 09:51:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23963 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab2IQNvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 09:51:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,435,1344236400"; 
-   d="scan'208";a="145899790"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        arjan@linux.intel.com, lenb@kernel.org
-Cc: Rik van Riel <riel@redhat.com>,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH V2 2/3] x86,idle: Quickly notice prediction failure in general case
-Date: Mon, 17 Sep 2012 21:53:28 -0400
-Message-Id: <1347933209-25939-3-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1347933209-25939-2-git-send-email-youquan.song@intel.com>
-References: <1347933209-25939-1-git-send-email-youquan.song@intel.com>
- <1347933209-25939-2-git-send-email-youquan.song@intel.com>
+	id S1755429Ab2IQNvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 09:51:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20245 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab2IQNvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 09:51:11 -0400
+Date: Mon, 17 Sep 2012 09:39:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: joerg.roedel@amd.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        rob@landley.net, akpm@linux-foundation.org, bhelgaas@google.com,
+        stern@rowland.harvard.edu, LKML <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, devel@linuxdriverproject.org,
+        shuahkhan@gmail.com, x86@kernel.org
+Subject: Re: [PATCH] dma-debug: New interfaces to debug dma mapping errors
+Message-ID: <20120917133937.GC11553@phenom.dumpdata.com>
+References: <1347843171.4370.13.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347843171.4370.13.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prediction for future is difficult and when the cpuidle governor prediction 
-fails and govenor possibly choose the shallower C-state than it should. How to 
-quickly notice and find the failure becomes important for power saving.    
+On Sun, Sep 16, 2012 at 06:52:51PM -0600, Shuah Khan wrote:
+> A recent dma mapping error analysis effort showed that a large percentage
+> of dma_map_single() and dma_map_page() returns are not checked for mapping
+> errors.
+> 
+> Reference:
+> http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
+> 
+> Adding support for tracking dma mapping and unmapping errors to help assess
+> the following:
+> 
+> When do dma mapping errors get detected?
+> How often do these errors occur?
+> Why don't we see failures related to missing dma mapping error checks?
+> Are they silent failures?
+> 
+> Four new fields are added to struct device when CONFIG_DMA_API_DEBUG is
+> enabled, to track the following:
+> 
+> dma_map_errors:
+>   Total number of dma mapping errors returned by the dma mapping interfaces,
+>   in response to mapping requests from this device.
+> dma_map_errors_not_checked:
+>   Total number of dma mapping errors the device failed to check before using
+>   the returned address.
+> dma_unmap_errors:
+>   Total number of times the device tried to unmap or free an invalid dma
+>   address.
+> iotlb_overflow_cnt:
+>   Tracks how many times a swiotlb overflow buffer is returned to this device
+>   when regular iotlb is full.
+> 
+> Enhancements to dma-debug api are made to add new debugfs interfaces to
+> report total dma errors, dma errors that are not checked, and unmap errors
+> for the entire system. Please note that these are counts for all devices in
+> the system.
+> 
+> The following new dma-debug interfaces are added:
+> 
+> debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr):
+> 	Tracks dma mapping errors checked by the device. It decrements
+> 	the dma_map_errors_not_checked counter that was incremented by
+> 	debug_dma_map_page() when it checked for errors.
+> debug_dma_dump_map_errors(struct device *dev, int all):
+> 	Allows dump of dma mapping error summary or just the errors if any.
+> 
+> The following existing dma-debug api are changed to support this feature:
+> debug_dma_map_page():
+> 	Increments dma_map_errors and dma_map_errors_not_checked errors for
+> 	the current device as well as totals for the system, dma-debug api
+> 	keeps track of, when dma_addr is invalid. Please note that this
+> 	routine can no longer call dma_mapping_error(), because of the newly
+> 	added debug_dma_mapping_error() interface. Calling this routine at the
+> 	time dma error unchecked state is registered, will not help if state
+> 	gets changed right away.
+> check_unmap():
+> 	This is an existing internal routines that checks for unmap errors,
+> 	changed to increment dma_unmap_errors for the current device, as well
+> 	as the dma_unmap_errors counter for the system, dma-debug api keeps
+> 	track of, when a device requests an invalid address to be unmapped.
+> 	Please note that this routine can no longer call dma_mapping_error(),
+> 	because of the newly added debug_dma_mapping_error() interface. Calling
+> 	dma_mapping_error() from this routine will decrement
+> 	dma_map_errors_not_checked counter incorrectly.
 
-The patch extends the patch to enhance the prediction for repeat mode by add a 
-timer when menu governor choose a shallow C-state. 
-The timer is set to time out in 50 milli-seconds by default. It is special twist
- that there are no power saving gains even sleep longer than it.
-  
-When C-state is waken up prior to the adding timer, the timer will be cancelled 
-initiatively. When the timer is triggered and menu governor will quickly notice
-prediction failure and re-evaluates deeper C-states possibility. 
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- drivers/cpuidle/governors/menu.c |   48 ++++++++++++++++++++++++++------------
- 1 files changed, 33 insertions(+), 15 deletions(-)
+I like the direction of this patch. That said I am wondering why you
+choose to do it this way? Was there no way to have all of the logic within
+debug dma file, and within check_unmap?
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 8c23fbd..9f92dd4 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -113,6 +113,13 @@ static DEFINE_PER_CPU(int, hrtimer_started);
-  * represented in the system load average.
-  *
-  */
-+
-+/*
-+ * Default set to 50 milliseconds based on special twist mentioned above that
-+ * there are no power gains sleep longer than it.
-+ */
-+static unsigned int perfect_cstate_ms __read_mostly = 50;
-+module_param(perfect_cstate_ms, uint, 0000);
- 
- struct menu_device {
- 	int		last_state_idx;
-@@ -343,26 +350,37 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 			data->exit_us = s->exit_latency;
- 		}
- 	}
--
-+
-+	/* not deepest C-state chosen */
- 	if (data->last_state_idx < drv->state_count - 1) { 
-+		unsigned int repeat_us = 0;
-+		unsigned int perfect_us = 0;
-+
-+		/*
-+		 * Set enough timer to recognize the repeat mode broken.
-+		 * If the timer is time out, the repeat mode prediction
-+		 * fails,then re-evaluate deeper C-states possibility.
-+		 * If the timer is not triggered, the timer will be
-+		 * cancelled when CPU waken up.
-+		 */
-+		repeat_us =
-+			(repeat ? (2 * data->predicted_us + MAX_DEVIATION) : 0);
-+		perfect_us = perfect_cstate_ms * 1000;
- 
- 		/* Repeat mode detected */
--		if (repeat) {
--			unsigned int repeat_us = 0;
--			/* 
--			 * Set enough timer to recognize the repeat mode broken.
--			 * If the timer is time out, the repeat mode prediction
--			 * fails,then re-evaluate deeper C-states possibility. 
--			 * If the timer is not triggered, the timer will be
--			 * cancelled when CPU waken up.
--			 */
--			repeat_us = 2 * data->predicted_us + MAX_DEVIATION;
--			hrtimer_start(hrtmr, ns_to_ktime(1000 * repeat_us),
--	      			HRTIMER_MODE_REL_PINNED);
-+		if (repeat && (repeat_us  < perfect_us)) {
-+			hrtimer_start(hrtmr, ns_to_ktime(1000 * repeat_us),
-+				HRTIMER_MODE_REL_PINNED);
-+			/* menu hrtimer is started */
-+			per_cpu(hrtimer_started, cpu) = 1;
-+		} else if (perfect_us < data->expected_us) {
-+			/* expected time is larger than adding timer time */
-+			hrtimer_start(hrtmr, ns_to_ktime(1000 * perfect_us),
-+					HRTIMER_MODE_REL_PINNED);
- 			/* menu hrtimer is started */
- 			per_cpu(hrtimer_started, cpu) = 1;
--		}
--	}
-+		}
-+	}
- 
- 	return data->last_state_idx;
- }
--- 
-1.6.4.2
+> 
+> The following new swiotlb interface is changed:
+> swiotlb_map_page():
+> 	Increments iotlb_overflow_cnt for the device when iotlb overflow
+> 	buffer is returned when swiotlb is full.
+> 
+> Changed arch/x86/include/asm/dma-mapping.h to call debug_dma_mapping_error()
+> to validate these new interfaces on x86_64. Other architectures will be
+> changed in a subsequent patch.
+> 
+> The current dma-debug infrastructure is designed to track dma mappings, and
+> debug entries are added only for correctly mapped addresses and not when
+> mapping fails. Enhancing the current infrastructure to track failed mappings
+> will result in unnecessary complexity. The approach to add counters to
 
+What is the extra complexity? Can you explain as if I was a newbie to debug DMA
+API - perhaps there is still some hope in doing it there?
+
+> struct device eliminates the need for maintaining failed mappings in dma-debug
+> infrastructure and is cleaner and simpler without impacting the existing
+> dma-debug infrastructure.
+
+Could you explain please why it would be more difficult to do it in the existing
+dma-debug infrastructure?
