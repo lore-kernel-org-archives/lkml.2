@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2IQVqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 17:46:04 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56821 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2IQVqA (ORCPT
+	id S1756668Ab2IQVvf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 17:51:35 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30612 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754112Ab2IQVvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 17:46:00 -0400
+	Mon, 17 Sep 2012 17:51:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19NQhKUnpcqNA3aKMpVmFwe
+Date: Mon, 17 Sep 2012 14:51:28 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to
+ drivers/bus/
+Message-ID: <20120917215128.GF11762@atomide.com>
+References: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120917214136.GO18677@google.com>
-References: <20120823213529.GH14962@google.com> <CAErSpo7p_fx9oCNFXdP7JVN_2ZPWN=t4Gsx9M7JLy8hpSn0dYQ@mail.gmail.com>
- <20120917214136.GO18677@google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 17 Sep 2012 15:45:38 -0600
-Message-ID: <CAErSpo4NLi8-aDByFjDPsL-KnK2HXrvWQiYVKEcFwcv=_n_k7A@mail.gmail.com>
-Subject: Re: [PATCH] pci: rewrite pci_call_probe() to use workqueue instead of work_on_cpu()
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 3:41 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, Sep 14, 2012 at 12:13:21PM -0600, Bjorn Helgaas wrote:
->> On Thu, Aug 23, 2012 at 3:35 PM, Tejun Heo <tj@kernel.org> wrote:
->> > pci_call_probe() uses work_on_cpu(), which creates and tears down a
->> > full kthread on each call, to invoke ->probe() on node local CPU for
->> > allocation affinity.
->> >
->> > The same goal can easily be achieved using a work item.  This patch
->> > rewrites pci_call_probe() so that it uses a work item instead of
->> > work_on_cpu().
->> >
->> > Note that the function is restructured for simplicity.  This adds
->> > get/put_online_cpus() pair for devices without node but the overhead
->> > of doing so isn't anything material at this level.
->> >
->> > Signed-off-by: Tejun Heo <tj@kernel.org>
->>
->> I applied this to my "next" branch and pushed it.  Thanks!
->
-> Can you please drop / revert this one?  It seems we need work_on_cpu()
-> after all and I'm gonna reimplement it in sane way.
+* Santosh Shilimkar <santosh.shilimkar@ti.com> [120914 02:21]:
+> OMAP interconnect drivers are used for the interconnect error handling.
+> Since they are bus driver, lets move it to newly created drivers/bus.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+> Patch just moves OMAP interconnect drivers as is to the newly created
+> driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
+> tree and test on all OMAP boards.
 
-I dropped it.  Thanks for the heads-up.
+Great, looks like this should not conflict with other
+omap patches queued, so Arnd should probably take this into
+the bus branch:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
