@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2IQLkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:40:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46111 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755973Ab2IQLkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:40:02 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Andre Przywara <andre.przywara@amd.com>
-Subject: Re: [PATCH 2/8 v2] acpi-cpufreq: Add quirk to disable _PSD usage on all AMD CPUs
-Date: Mon, 17 Sep 2012 13:40:23 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garret <mjg@redhat.com>
-References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com> <CACJDEmrOoZ_azqTrtfoGC-O=H0V=AHy8VExoFYYPhbUUx+7UAg@mail.gmail.com> <5056D420.80808@amd.com>
-In-Reply-To: <5056D420.80808@amd.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209171340.23801.trenn@suse.de>
+	id S1756046Ab2IQLtj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:49:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40642 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755887Ab2IQLti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 07:49:38 -0400
+Date: Mon, 17 Sep 2012 21:49:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Fries <david@fries.net>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20120917214929.c41984a57b061048b857e876@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Sep_2012_21_49_29_+1000_zBg7eDwY30C0m=2t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 17, 2012 09:41:20 AM Andre Przywara wrote:
-> On 09/15/2012 01:20 PM, Konrad Rzeszutek Wilk wrote:
-> >
-...
-> This was to overcome some nasty interaction between the Windows 
-> scheduler and their version of the ondemand governor.
-Whoever is/was responsible for this, can you explain him/her that
-this was a bad idea and why.
+--Signature=_Mon__17_Sep_2012_21_49_29_+1000_zBg7eDwY30C0m=2t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is this part of a BKDG?
-Can you point to a public spec and the exact wording of the
-"Windows scheduler workaround" BIOS vendors shall do?
+Hi all,
 
-> +               pr_info_once(PFX "overriding BIOS provided _PSD data\n");
-The message shows up on nearly every platform wether a _PSD
-function exists or not. This is wrong.
+After merging the final tree, today's linux-next build (i386 defconfig)
+failed like this:
 
-If it's _PSD info that should get ignored/overwritten, this should
-be done where _PSD is obtained:
-processor_perflib.c
+drivers/rtc/class.c: In function 'rtc_init':
+drivers/rtc/class.c:261:23: error: 'rtc_suspend' undeclared (first use in t=
+his function)
+drivers/rtc/class.c:261:23: note: each undeclared identifier is reported on=
+ly once for each function it appears in
+drivers/rtc/class.c:262:22: error: 'rtc_resume' undeclared (first use in th=
+is function)
 
-Are you sure that it will never make sense for AMD to make use of
-_PSD tables?
-If yes, then always ignoring might be an option.
+Caused by commit "rtc_sysfs_show_hctosys-return-0-if-resume-failed-fix"
+from the akpm tree.
 
-If not, this might need a more specific check, e.g.:
-   - Latest Windows version support called via OSI interface?
-        Latest Windowses should/may not need this anymore?
-   - Check for Desktop CPUs that are affected by the bad spec?
+I have added the following patch for today:
 
-Hm, as powernow-k8 never made use of _PSD, ignoring it for
-now sounds like a good thing to do. Still the ignoring should get
-moved to processor_perflib.c, best with a pointer or at least
-a comment that _PSD can be dangerous on AMD platforms. At some
-day _PSD may make sense for AMD platforms as well?
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 17 Sep 2012 21:43:56 +1000
+Subject: [PATCH] rtc_sysfs_show_hctosys-return-0-if-resume-failed-fix-2
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/rtc/class.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-    Thomas
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index ca58ea9..f8a0aab 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -34,8 +34,9 @@ static void rtc_device_release(struct device *dev)
+ #ifdef CONFIG_RTC_HCTOSYS_DEVICE
+ /* Result of the last RTC to system clock attempt. */
+ int rtc_hctosys_ret =3D -ENODEV;
++#endif
+=20
+-#ifdef CONFIG_PM
++#if defined(CONFIG_PM) && defined(CONFIG_RTC_HCTOSYS_DEVICE)
+ /*
+  * On suspend(), measure the delta between one RTC and the
+  * system's wall clock; restore it on resume().
+@@ -129,7 +130,6 @@ static int rtc_resume(struct device *dev)
+ #define rtc_suspend	NULL
+ #define rtc_resume	NULL
+ #endif
+-#endif
+=20
+=20
+ /**
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__17_Sep_2012_21_49_29_+1000_zBg7eDwY30C0m=2t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQVw5JAAoJEECxmPOUX5FEwMYP/3ShBW3bnOoFH7PAry5fCcEC
+xDRWVYlFB6cGdbN6a40Y50HWc8DUS/w4BekKQOL9WdfpIWg6evsSXvUr1m4DSA0j
+VTgHI7FcP0zc/XMOpFPvvBkKkFBiBcGzWAlTkHmXarHFpzjcHUtGtLhTrLbqSI0X
+Gv12sWyi64B1dmc/oz5EfnZ4E5MJpCuZmxeHQDzXTsywHFopBoQKfCtQVb3GQsJb
+ZxaZ50QTnnC9nVzToTYtUMCfEYdkC7L55NK3Ge6rOcKIEFevJoc4derisNhWKOhf
+T0z5UHA2+unjpsHb6pB0UB9iOsjx5WYNo/To2LJ86gKItHuT9Pxa8wdVwwN5fx23
+6z3gTTKASRyLJuL0mAirsEzeHK7mqsKTGm65u79CZqZ9ulSm1vzROYfLe1nJ2EOb
+L0bq19JVQ9TMYLS0FYiEl6rU4+k55Ph+FdyVlDkYK/cb7G2P4puUaNefQLJ4WCQt
+sYrG2IOAgsQSgux2vT5RQMFsAFPkfX+gGXKyx5mgqVteiOvM2ONu0XXIUh6KIXwI
+cd9vtSf+dTjj65k4Cf6osx/6v12sdWrSOSy32fisHr7AOUN795rtc8EoV/ML8xS0
+CtGWtMIw6Faa7Tg/jIDfVeMa45646rg5ZpVgJ3JJET0Bdrpyk4yTn80o6CihiQwU
++8SwYawElN+kDry804dF
+=yF26
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Sep_2012_21_49_29_+1000_zBg7eDwY30C0m=2t--
