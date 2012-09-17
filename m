@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2IQA7v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:59:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33896 "EHLO
+	id S1754563Ab2IQAvU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33531 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753196Ab2IQAvV (ORCPT
+	by vger.kernel.org with ESMTP id S1753196Ab2IQAt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:21 -0400
-Message-Id: <20120917003632.057232218@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:57 -0400
+Message-Id: <20120917003644.446833437@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:07 +0100
+Date: Mon, 17 Sep 2012 01:38:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 042/135] udf: Fix data corruption for files in ICB
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@redhat.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 132/135] drm/nouveau: fix booting with plymouth + dumb support
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,96 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 9c2fc0de1a6e638fe58c354a463f544f42a90a09 upstream.
+commit 610bd7da160f76f1644ecb4cd7f39511b49a22cc upstream.
 
-When a file is stored in ICB (inode), we overwrite part of the file, and
-the page containing file's data is not in page cache, we end up corrupting
-file's data by overwriting them with zeros. The problem is we use
-simple_write_begin() which simply zeroes parts of the page which are not
-written to. The problem has been introduced by be021ee4 (udf: convert to
-new aops).
+We noticed a plymouth bug on Fedora 18, and I then
+noticed this stupid thinko, fixing it fixed the problem
+with plymouth.
 
-Fix the problem by providing a ->write_begin function which makes the page
-properly uptodate.
-
-Reported-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Acked-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/udf/file.c |   35 +++++++++++++++++++++++++++++------
- 1 file changed, 29 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/udf/file.c b/fs/udf/file.c
-index 7f3f7ba..d1c6093 100644
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -39,20 +39,24 @@
- #include "udf_i.h"
- #include "udf_sb.h"
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
+index 69688ef..7e16dc5 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -598,7 +598,7 @@ nouveau_display_dumb_create(struct drm_file *file_priv, struct drm_device *dev,
+ 	args->size = args->pitch * args->height;
+ 	args->size = roundup(args->size, PAGE_SIZE);
  
--static int udf_adinicb_readpage(struct file *file, struct page *page)
-+static void __udf_adinicb_readpage(struct page *page)
- {
- 	struct inode *inode = page->mapping->host;
- 	char *kaddr;
- 	struct udf_inode_info *iinfo = UDF_I(inode);
+-	ret = nouveau_gem_new(dev, args->size, 0, TTM_PL_FLAG_VRAM, 0, 0, &bo);
++	ret = nouveau_gem_new(dev, args->size, 0, NOUVEAU_GEM_DOMAIN_VRAM, 0, 0, &bo);
+ 	if (ret)
+ 		return ret;
  
--	BUG_ON(!PageLocked(page));
--
- 	kaddr = kmap(page);
--	memset(kaddr, 0, PAGE_CACHE_SIZE);
- 	memcpy(kaddr, iinfo->i_ext.i_data + iinfo->i_lenEAttr, inode->i_size);
-+	memset(kaddr + inode->i_size, 0, PAGE_CACHE_SIZE - inode->i_size);
- 	flush_dcache_page(page);
- 	SetPageUptodate(page);
- 	kunmap(page);
-+}
-+
-+static int udf_adinicb_readpage(struct file *file, struct page *page)
-+{
-+	BUG_ON(!PageLocked(page));
-+	__udf_adinicb_readpage(page);
- 	unlock_page(page);
- 
- 	return 0;
-@@ -77,6 +81,25 @@ static int udf_adinicb_writepage(struct page *page,
- 	return 0;
- }
- 
-+static int udf_adinicb_write_begin(struct file *file,
-+			struct address_space *mapping, loff_t pos,
-+			unsigned len, unsigned flags, struct page **pagep,
-+			void **fsdata)
-+{
-+	struct page *page;
-+
-+	if (WARN_ON_ONCE(pos >= PAGE_CACHE_SIZE))
-+		return -EIO;
-+	page = grab_cache_page_write_begin(mapping, 0, flags);
-+	if (!page)
-+		return -ENOMEM;
-+	*pagep = page;
-+
-+	if (!PageUptodate(page) && len != PAGE_CACHE_SIZE)
-+		__udf_adinicb_readpage(page);
-+	return 0;
-+}
-+
- static int udf_adinicb_write_end(struct file *file,
- 			struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned copied,
-@@ -98,8 +121,8 @@ static int udf_adinicb_write_end(struct file *file,
- const struct address_space_operations udf_adinicb_aops = {
- 	.readpage	= udf_adinicb_readpage,
- 	.writepage	= udf_adinicb_writepage,
--	.write_begin = simple_write_begin,
--	.write_end = udf_adinicb_write_end,
-+	.write_begin	= udf_adinicb_write_begin,
-+	.write_end	= udf_adinicb_write_end,
- };
- 
- static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 
