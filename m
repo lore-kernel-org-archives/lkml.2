@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab2IQL0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:26:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41008 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab2IQL0X (ORCPT
+	id S1755933Ab2IQL25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:28:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46555 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837Ab2IQL24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:26:23 -0400
-Date: Mon, 17 Sep 2012 21:26:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: build failure after merge of the final tree (arm-soc
- tree related)
-Message-Id: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Sep_2012_21_26_15_+1000_ui3+Hm6YKPaf46XY"
+	Mon, 17 Sep 2012 07:28:56 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Question about cleaning up the LP5521/5523 LED driver
+Thread-Topic: Question about cleaning up the LP5521/5523 LED driver
+Thread-Index: Ac2Ux5p32LFQ6BkaSD2YmDg6N4ig1g==
+Date: Mon, 17 Sep 2012 11:28:47 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Sep_2012_21_26_15_+1000_ui3+Hm6YKPaf46XY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Bryan,
 
-Hi all,
+I would like to have your opinion about cleaning up 
+LP5521 and LP5523/LP55231 drivers.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Three devices have similar features such like multi channels,
+register access via the I2C and internal RAM usage for loading
+various LED patterns.
+Moreover upcoming IC has also similar layout and interface.
 
-drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or dire=
-ctory
+So I would re-design the driver architecture as below.
 
-Caused by commit 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal").
+- Common code which supports shared features.
+- Chip code which enables specific features.
 
-I have added the following patch to restrict this driver to ARM until it
-is fixed:
+For example, leds-lp55xx-common.c is common code.
+Chip specific configurations are leds-lp5521.c, leds-lp5523.c and something like that.
+Then Makefile will be as following.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 17 Sep 2012 21:18:21 +1000
-Subject: [PATCH] ARM: retrict TWL4030_CORE to ARM while it is broken
+obj-$(CONFIG_LEDS_LP5521) 	+= leds-lp5521.o leds-lp55xx-common.o
+obj-$(CONFIG_LEDS_LP5523)	+= leds-lp5523.o leds-lp55xx-common.o
+obj-$(CONFIG_LEDS_LP55AB)	+= leds-lp55ab.o leds-lp55xx-common.o
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/mfd/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Then many duplicated lines can be joined into one file - common code.
+Only IC specific code exists each chip dependant file.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index df850c4..af5e5b7 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -257,6 +257,7 @@ config MENELAUS
- config TWL4030_CORE
- 	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
- 	depends on I2C=3Dy && GENERIC_HARDIRQS
-+	depends on ARM
- 	select IRQ_DOMAIN
- 	help
- 	  Say yes here if you have TWL4030 / TWL6030 family chip on your board.
---=20
-1.7.10.280.gaa39
+But I'm hesitating that some *device attributes* should be kept or not.
+For example, The drivers have each 'engine_load' file for loading LED pattern.
+LED pattern means blinking LED or ramping up/down the brightness.
+To load pattern simply, LP5521/5523/55231 provide programmable memory.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll replace these attributes with the firmware interfaces for simplicity.
+To load a pattern, hex byte stream is put into the sysfs node.
+Then this data is transferred to the internal RAM area of the device.
+This is same concept as the firmware interface.
+Moreover hex code is dependent on the application or platform.
 
---Signature=_Mon__17_Sep_2012_21_26_15_+1000_ui3+Hm6YKPaf46XY
-Content-Type: application/pgp-signature
+But it has a problem, point of view of user-space interface.
+An application needs to be changed also with the driver version.
+The application will failed to run because 'engine_mode' and
+'engine_load' don't exist anymore.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Should I keep the sysfs layout of LP5521 and LP5523?
+When we change the device attributes, do we have to consider the backward compatibility?
 
-iQIcBAEBCAAGBQJQVwjXAAoJEECxmPOUX5FEhz4P/jOmMTIrv8ZHn15/K1Iq9PRA
-WyGm5SDu8HNB1ih6D4I0UEi2FeD7oZ4ktO4dSk7yj8rb/fkCbvy8Hu4y7Yn4q/yc
-t68j7dkBc+7IFXe6WFdhjBzjDmftJGYatN2dCxuSHLkTFbi4FU/7doJPvUX8Onf0
-9Bp+Cvkis5urHu/ZlJhpsPrhh7khtu/WE3HsRrH46p8dvwY6Sx0Kj60ZR4mDQROD
-AJBpr0pQWcbmMfjUaQC47PVItE38ipjgPQo/Bjj+K8K4B6YXnnUKFFaxe32eyH4G
-RNIlcZ6vMa3ByiQFfeNzHRAxrGYnpI1S74/ULtkWmfNQLV38yIszdpTclQ2j5CfW
-JAjRsiUIpJocCqFjh3zEnDkUAHMgoEo04VAcHaJhV1E5fNk0SxhSnzQPYpsLvOal
-fH1tBbEaEUOLI5UqVUf8djqh3OdsY35Wp3WkiboP8eaKWUW+pZOjrWlE28TzyV2M
-+361e9ZZbu2xCy0Iimbk9HATU+vdgmxVF6rgvDUSUinPDnKNnklNRdmBLy07D4z5
-J/sVQyY1YqZKk9sihXOgJ+iWuV29Mw0iWcZlXk6bFFSb2vrUrKFuggy8dKT8EZMo
-FDfh848EKU6X4mU839g9dom+g1mxpo1a40qF+rpwNJV+O1RQ26XcHYDmiWtY3eJR
-pZEbsbnWGabClHZ5YBmR
-=vikz
------END PGP SIGNATURE-----
+Thank you.
 
---Signature=_Mon__17_Sep_2012_21_26_15_+1000_ui3+Hm6YKPaf46XY--
+Best Regards,
+Milo
+
+
