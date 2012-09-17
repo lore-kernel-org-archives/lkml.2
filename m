@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab2IQWFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 18:05:25 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43871 "EHLO e9.ny.us.ibm.com"
+	id S932105Ab2IQWFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 18:05:23 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52905 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815Ab2IQWFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 18:05:21 -0400
+	id S1755123Ab2IQWFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 18:05:20 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Tony Luck <tony.luck@intel.com>,
@@ -17,19 +17,21 @@ Cc: John Stultz <john.stultz@linaro.org>, Tony Luck <tony.luck@intel.com>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/6][RFC] time: Move update_vsyscall definitions to timekeeper_internal.h
-Date: Mon, 17 Sep 2012 18:04:57 -0400
-Message-Id: <1347919501-64534-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 5/6][RFC] time: Only do nanosecond rounding on GENERIC_TIME_VSYSCALL_OLD systems
+Date: Mon, 17 Sep 2012 18:05:00 -0400
+Message-Id: <1347919501-64534-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
 References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
-x-cbid: 12091722-7182-0000-0000-000002A5608D
+x-cbid: 12091722-1976-0000-0000-0000117577B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since users will need to include timekeeper_internal.h, move
-update_vsyscall definitions to timekeeper_internal.h.
+We only do rounding to the next nanosecond so we don't see minor
+1ns inconsistencies in the vsyscall implementations. Since we're
+changing the vsyscall implementations to avoid this, conditionalize
+the rounding only to the GENERIC_TIME_VSYSCALL_OLD architectures.
 
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Paul Mackerras <paulus@samba.org>
@@ -43,133 +45,80 @@ Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/ia64/kernel/time.c             |    2 +-
- arch/powerpc/kernel/time.c          |    2 +-
- arch/s390/kernel/time.c             |    2 +-
- arch/x86/kernel/vsyscall_64.c       |    2 +-
- include/linux/clocksource.h         |   16 ----------------
- include/linux/timekeeper_internal.h |   17 +++++++++++++++++
- kernel/time.c                       |    2 +-
- 7 files changed, 22 insertions(+), 21 deletions(-)
+ kernel/time/timekeeping.c |   45 +++++++++++++++++++++++++++++++--------------
+ 1 file changed, 31 insertions(+), 14 deletions(-)
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index ecc904b..acb688f 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -19,7 +19,7 @@
- #include <linux/interrupt.h>
- #include <linux/efi.h>
- #include <linux/timex.h>
--#include <linux/clocksource.h>
-+#include <linux/timekeeper_internal.h>
- #include <linux/platform_device.h>
- 
- #include <asm/machvec.h>
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index e49e931..613a830d 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -73,7 +73,7 @@
- /* powerpc clocksource/clockevent code */
- 
- #include <linux/clockchips.h>
--#include <linux/clocksource.h>
-+#include <linux/timekeeper_internal.h>
- 
- static cycle_t rtc_read(struct clocksource *);
- static struct clocksource clocksource_rtc = {
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index dcec960..bfb62ad 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -34,7 +34,7 @@
- #include <linux/profile.h>
- #include <linux/timex.h>
- #include <linux/notifier.h>
--#include <linux/clocksource.h>
-+#include <linux/timekeeper_internal.h>
- #include <linux/clockchips.h>
- #include <linux/gfp.h>
- #include <linux/kprobes.h>
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 8d141b3..6ec8411 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -28,7 +28,7 @@
- #include <linux/jiffies.h>
- #include <linux/sysctl.h>
- #include <linux/topology.h>
--#include <linux/clocksource.h>
-+#include <linux/timekeeper_internal.h>
- #include <linux/getcpu.h>
- #include <linux/cpu.h>
- #include <linux/smp.h>
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index fbe89e1..4dceaf8 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -319,22 +319,6 @@ static inline void __clocksource_updatefreq_khz(struct clocksource *cs, u32 khz)
- 	__clocksource_updatefreq_scale(cs, 1000, khz);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 61eaf3b..b976692 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1059,6 +1059,33 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 	return offset;
  }
  
--#ifdef CONFIG_GENERIC_TIME_VSYSCALL
--extern void
--update_vsyscall(struct timespec *ts, struct timespec *wtm,
--			struct clocksource *c, u32 mult);
--extern void update_vsyscall_tz(void);
--#else
--static inline void
--update_vsyscall(struct timespec *ts, struct timespec *wtm,
--			struct clocksource *c, u32 mult)
--{
--}
--
--static inline void update_vsyscall_tz(void)
--{
--}
--#endif
- 
- extern void timekeeping_notify(struct clocksource *clock);
- 
-diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
-index 8ba43fa..9c1c2cf 100644
---- a/include/linux/timekeeper_internal.h
-+++ b/include/linux/timekeeper_internal.h
-@@ -65,4 +65,21 @@ struct timekeeper {
- 	/* Seqlock for all timekeeper values */
- 	seqlock_t		lock;
- };
++#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
++static inline void old_vsyscall_fixup(struct timekeeper *tk)
++{
++	s64 remainder;
 +
++	/*
++	* Store only full nanoseconds into xtime_nsec after rounding
++	* it up and add the remainder to the error difference.
++	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
++	* by truncating the remainder in vsyscalls. However, it causes
++	* additional work to be done in timekeeping_adjust(). Once
++	* the vsyscall implementations are converted to use xtime_nsec
++	* (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
++	* users are removed, this can be killed.
++	*/
++	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
++	tk->xtime_nsec -= remainder;
++	tk->xtime_nsec += 1ULL << tk->shift;
++	tk->ntp_error += remainder << tk->ntp_error_shift;
 +
-+#ifdef CONFIG_GENERIC_TIME_VSYSCALL
-+extern void
-+update_vsyscall(struct timespec *ts, struct timespec *wtm,
-+			struct clocksource *c, u32 mult);
-+extern void update_vsyscall_tz(void);
++}
 +#else
-+static inline void update_vsyscall(struct timespec *ts, struct timespec *wtm,
-+					struct clocksource *c, u32 mult)
-+{
-+}
-+static inline void update_vsyscall_tz(void)
-+{
-+}
++#define old_vsyscall_fixup(tk)
 +#endif
 +
- #endif /* _LINUX_TIMEKEEPER_INTERNAL_H */
-diff --git a/kernel/time.c b/kernel/time.c
-index ba744cf..d226c6a 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -30,7 +30,7 @@
- #include <linux/export.h>
- #include <linux/timex.h>
- #include <linux/capability.h>
--#include <linux/clocksource.h>
-+#include <linux/timekeeper_internal.h>
- #include <linux/errno.h>
- #include <linux/syscalls.h>
- #include <linux/security.h>
++
++
+ /**
+  * update_wall_time - Uses the current clocksource to increment the wall time
+  *
+@@ -1070,7 +1097,6 @@ static void update_wall_time(void)
+ 	cycle_t offset;
+ 	int shift = 0, maxshift;
+ 	unsigned long flags;
+-	s64 remainder;
+ 
+ 	write_seqlock_irqsave(&tk->lock, flags);
+ 
+@@ -1112,20 +1138,11 @@ static void update_wall_time(void)
+ 	/* correct the clock when NTP error is too big */
+ 	timekeeping_adjust(tk, offset);
+ 
+-
+ 	/*
+-	* Store only full nanoseconds into xtime_nsec after rounding
+-	* it up and add the remainder to the error difference.
+-	* XXX - This is necessary to avoid small 1ns inconsistnecies caused
+-	* by truncating the remainder in vsyscalls. However, it causes
+-	* additional work to be done in timekeeping_adjust(). Once
+-	* the vsyscall implementations are converted to use xtime_nsec
+-	* (shifted nanoseconds), this can be killed.
+-	*/
+-	remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
+-	tk->xtime_nsec -= remainder;
+-	tk->xtime_nsec += 1ULL << tk->shift;
+-	tk->ntp_error += remainder << tk->ntp_error_shift;
++	 * XXX This can be killed once everyone converts
++	 * to the new update_vsyscall.
++	 */
++	old_vsyscall_fixup(tk);
+ 
+ 	/*
+ 	 * Finally, make sure that after the rounding
 -- 
 1.7.9.5
 
