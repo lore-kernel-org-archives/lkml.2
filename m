@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab2IQOif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:38:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756257Ab2IQOid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:38:33 -0400
-Date: Mon, 17 Sep 2012 10:37:23 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120917143723.GA5094@redhat.com>
-References: <20120913205827.GO7677@google.com>
- <20120914180754.GF6221@redhat.com>
- <20120914185324.GI17747@google.com>
- <20120914192840.GG6221@redhat.com>
- <20120914194439.GP17747@google.com>
- <20120914194950.GQ17747@google.com>
- <20120914203925.GR17747@google.com>
-MIME-Version: 1.0
+	id S1756638Ab2IQOjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:39:51 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56888 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756348Ab2IQOjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 10:39:49 -0400
+Date: Mon, 17 Sep 2012 16:39:43 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120917143943.GB16230@one.firstfloor.org>
+References: <20120914212717.GA29307@liondog.tnic> <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com> <1347680006.4340.142.camel@marge.simpson.net> <m24nmzz2f8.fsf@firstfloor.org> <1347727001.7029.37.camel@marge.simpson.net> <20120915223212.4174a314@pyramind.ukuu.org.uk> <1347770100.6952.31.camel@marge.simpson.net> <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com> <1347869299.6955.156.camel@marge.simpson.net> <20120917100759.GB32463@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120914203925.GR17747@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120917100759.GB32463@gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 01:39:25PM -0700, Tejun Heo wrote:
-> Hello, again.
-> 
-> On Fri, Sep 14, 2012 at 12:49:50PM -0700, Tejun Heo wrote:
-> > That said, if someone can think of a better solution, I'm all ears.
-> > One thing that *has* to be maintained is that it should be able to tag
-> > a resource in such way that its associated controllers are
-> > identifiable regardless of which task is looking at it.
-> 
-> So, I thought about it more.  How about we do "consider / ignore this
-> node" instead of "(don't) nest beyond this level".  For example, let's
-> assume a tree like the following.
-> 
->         R
->      /  |  \
->     A   B   C
->    / \
->   AA AB
-> 
-> If we want to differentiate between AA and AB, we'll have to consider
-> the whole tree with the previous sheme - A needs to nest, so R needs
-> to nest and we end up with the whole tree.  Instead, if we have honor
-> / ignore this node.  We can set the honor bit on A, AA and AB and see
-> the tree as
-> 
->         R
->      /
->     A
->    / \
->   AA AB
-> 
-> We still see the intermediate A node but can ignore the other
-> branches.  Implementation and concept-wise, it's fairly simple too.
-> For any given node and controller, you travel upwards until you meet a
-> node which has the controller enabled and that's the cgroup the
-> controller considers.
+> IIRC mysql does this properly and outperforms postgresql
 
-I think this proposal sounds reasonable. So by default if a new cgroup
-is created, we can inherit the controller settings of parent. And if
-user does not want to enable particular controller on newly created
-cgroup, it shall have to explicitly disable it.
+Properly = futexes?
 
-Thanks
-Vivek
+It depends on the MySQL engine. Last time I looked InnoDB 
+did use custom spinlocks too.  Some of the other MySQL
+engines seem to use adaptive pthread mutexes in glibc, but those
+have their problems too.
+
+In general unfortunately MySQL is not a single load, it's more 
+like a wide range of loads depending on the underlying storage engine.
+PostgreSQL at least is more consistent in its problems.
+
+-Andi
+
