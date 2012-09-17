@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2IQP56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:57:58 -0400
-Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:38141 "HELO
-	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932147Ab2IQP54 (ORCPT
+	id S932361Ab2IQQCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:02:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36951 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab2IQQCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:57:56 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Mon, 17 Sep 2012 08:57:47 -0700
-Message-Id: <1347897467-7323-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 17 Sep 2012 12:02:17 -0400
+Date: Mon, 17 Sep 2012 09:02:11 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        tzanussi@gmail.com
+Subject: Re: perf script: rwtop: SIGALRM and pipe read race
+Message-ID: <20120917160211.GC31375@ghostprotocols.net>
+References: <20120914153952.GA8834@turtle.usersys.redhat.com>
+ <505355AF.7000006@gmail.com>
+ <20120914181049.GA16618@turtle.usersys.redhat.com>
+ <505739EF.5010000@gmail.com>
+ <50573EC3.6020209@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50573EC3.6020209@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Em Mon, Sep 17, 2012 at 09:16:19AM -0600, David Ahern escreveu:
+> On 9/17/12 8:55 AM, David Ahern wrote:
+> >2. the rwtop.pl script is not handling negative return values ($ret < 0)
+> >properly -- the '$ret > 0' check is succeeding even though $ret is
+> >negative (e.g., -EAGAIN) leading to astronomical read values
+> 
+> I think perl is treating $ret as an unsigned integer.
+> 
+> Again, I know little about perl, but this change to
+> ./scripts/perl/rwtop.pl makes it behave properly:
+> 
+>     my $n = sprintf("%d", $ret);
+> 
+>     if ($n > 0) {
+>     ...
 
-Please pull from
+I think what you figured out makes sense, its the best we have and you
+found it to get it back working, could you please send the two patches
+properly signed-off, etc?
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+If Andrew could please test the patchset so that I could add his
+Tested-by, that would be great,
 
-----------------------------------------------------------------
+Thanks,
 
-Last set of InfiniBand/RDMA fixes for 3.6:
- - Couple more IPoIB fixes for regressions introduced by path database conversion
- - Minor other fixes to low-level drivers (cxgb4, mlx4, qib, ocrdma)
-
-----------------------------------------------------------------
-Mike Marciniszyn (1):
-      IB/qib: Fix failure of compliance test C14-024#06_LocalPortNum
-
-Parav Pandit (1):
-      RDMA/ocrdma: Fix CQE expansion of unsignaled WQE
-
-Roland Dreier (1):
-      Merge branches 'cxgb4', 'ipoib', 'mlx4', 'ocrdma' and 'qib' into for-next
-
-Shlomo Pongratz (2):
-      IPoIB: Fix memory leak in the neigh table deletion flow
-      IPoIB: Fix AB-BA deadlock when deleting neighbours
-
-Wei Yongjun (1):
-      RDMA/cxgb4: Move dereference below NULL test
-
-Yishai Hadas (1):
-      mlx4_core: Fix integer overflows so 8TBs of memory registration works
-
- drivers/infiniband/hw/cxgb4/cm.c               |    2 +-
- drivers/infiniband/hw/ocrdma/ocrdma_verbs.c    |    8 +-
- drivers/infiniband/hw/qib/qib_mad.c            |    3 +-
- drivers/infiniband/ulp/ipoib/ipoib.h           |    5 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |   93 +++++++++++-------------
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    2 -
- drivers/net/ethernet/mellanox/mlx4/icm.c       |   30 +++++---
- drivers/net/ethernet/mellanox/mlx4/icm.h       |   10 +--
- 8 files changed, 78 insertions(+), 75 deletions(-)
+- Arnaldo
