@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab2IQVls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 17:41:48 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64734 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab2IQVlp (ORCPT
+	id S1756386Ab2IQVmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 17:42:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60583 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab2IQVmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 17:41:45 -0400
-Date: Mon, 17 Sep 2012 14:41:36 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci: rewrite pci_call_probe() to use workqueue instead
- of work_on_cpu()
-Message-ID: <20120917214136.GO18677@google.com>
-References: <20120823213529.GH14962@google.com>
- <CAErSpo7p_fx9oCNFXdP7JVN_2ZPWN=t4Gsx9M7JLy8hpSn0dYQ@mail.gmail.com>
+	Mon, 17 Sep 2012 17:42:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7p_fx9oCNFXdP7JVN_2ZPWN=t4Gsx9M7JLy8hpSn0dYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
+References: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 17 Sep 2012 15:41:41 -0600
+Message-ID: <CAErSpo6j==2_HsLrMsJ30SFZkG6q_JqrcKe=XMa1Woy4C_if5Q@mail.gmail.com>
+Subject: Re: [RFC/PATCH] ia64, SR870, EFI bug breaks ata_piix, uninitialized
+ ICH4 IDE EXBAR mem resource
+To: Stephan Schreiber <info@fs-driver.org>
+Cc: linux-ia64@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, 679545@bugs.debian.org,
+        jrnieder@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 12:13:21PM -0600, Bjorn Helgaas wrote:
-> On Thu, Aug 23, 2012 at 3:35 PM, Tejun Heo <tj@kernel.org> wrote:
-> > pci_call_probe() uses work_on_cpu(), which creates and tears down a
-> > full kthread on each call, to invoke ->probe() on node local CPU for
-> > allocation affinity.
-> >
-> > The same goal can easily be achieved using a work item.  This patch
-> > rewrites pci_call_probe() so that it uses a work item instead of
-> > work_on_cpu().
-> >
-> > Note that the function is restructured for simplicity.  This adds
-> > get/put_online_cpus() pair for devices without node but the overhead
-> > of doing so isn't anything material at this level.
-> >
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> 
-> I applied this to my "next" branch and pushed it.  Thanks!
+On Sun, Sep 16, 2012 at 10:39 AM, Stephan Schreiber <info@fs-driver.org> wrote:
 
-Can you please drop / revert this one?  It seems we need work_on_cpu()
-after all and I'm gonna reimplement it in sane way.
+> [    0.065516] pci 0000:00:1f.1: [8086:24cb] type 0 class 0x000101
+> [    0.065530] pci 0000:00:1f.1: reg 10: [io  0x0000-0x0007]
+> [    0.065541] pci 0000:00:1f.1: reg 14: [io  0x0000-0x0003]
+> [    0.065552] pci 0000:00:1f.1: reg 18: [io  0x0000-0x0007]
+> [    0.065563] pci 0000:00:1f.1: reg 1c: [io  0x0000-0x0003]
+> [    0.065574] pci 0000:00:1f.1: reg 20: [io  0x1000-0x100f]
+> [    0.065585] pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff]
+> ...
+> [    1.640965] libata version 3.00 loaded.
+> [    1.641656] ata_piix 0000:00:1f.1: version 2.13
+> [    1.641671] ata_piix 0000:00:1f.1: device not available (can't reserve
+> [mem 0x00000000-0x000003ff])
+> [    1.641747] ata_piix: probe of 0000:00:1f.1 failed with error -22
+> ...
+>
+> lspci -vvxxx reports:
+>
+> 00:1f.1 IDE interface: Intel Corporation 82801DB (ICH4) IDE Controller (rev
+> 02) (prog-if 8a [Master SecP PriP])
+>         Subsystem: Intel Corporation Device 3404
+>         Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0
+>         Interrupt: pin A routed to IRQ 0
+>         Region 0: I/O ports at 01f0 [size=8]
+>         Region 1: I/O ports at 03f4 [size=1]
+>         Region 2: I/O ports at 0170 [size=8]
+>         Region 3: I/O ports at 0374 [size=1]
+>         Region 4: I/O ports at 1000 [size=16]
+> 00: 86 80 cb 24 05 00 80 02 02 8a 01 01 00 00 00 00
+> 10: 01 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00
+> 20: 01 10 00 00 00 00 00 00 00 00 00 00 86 80 04 34
+> 30: 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00
 
-Sorry about the trouble.
+I agree that we should have a generic way to do this rather than an
+ia64-specific way.  In this case you have EFI, but the same thing
+could happen with BIOS.
 
--- 
-tejun
+The firmware left the memory BAR at 0x24 cleared (0x00000000), but it
+also left the MEM bit in the command register disabled.  So it seems
+like a Linux bug that we're trying to use that zero address from the
+BAR.  If the firmware left the MEM or IO decode enable bit cleared,
+why would we assume it put anything useful in the corresponding BARs?
+
+What would break if we paid attention to the command register enables
+in the PCI core and just cleared the resource flags for MEM BARs if
+the MEM-decode bit was off, and those for IO BARs if the IO-decode bit
+was off?
+
+I don't know much of the ancient history here, so maybe there's a good
+reason why this works the way it currently does.
+
+Bjorn
