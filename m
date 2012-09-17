@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab2IQLG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:06:56 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41253 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755788Ab2IQLGx (ORCPT
+	id S1755807Ab2IQLHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:07:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40556 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab2IQLHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:06:53 -0400
-Subject: Re: [PATCH] x86: Switch to vga console only if framebuffer details
- are missing
-From: Matt Fleming <matt@console-pimps.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Peter Jones <pjones@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-In-Reply-To: <20120917120047.42b520ac@pyramind.ukuu.org.uk>
-References: <1347877748-11766-1-git-send-email-matt@console-pimps.org>
-	 <20120917120047.42b520ac@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Sep 2012 12:03:40 +0100
-Message-ID: <1347879820.12641.3.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Sep 2012 07:07:35 -0400
+Date: Mon, 17 Sep 2012 13:07:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: section mismatch for acpi_unmap_lsapic()
+Message-ID: <20120917110729.GA1018@gmail.com>
+References: <20120914163809.GA6854@cantor.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120914163809.GA6854@cantor.us.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-17 at 12:00 +0100, Alan Cox wrote:
-> On Mon, 17 Sep 2012 11:29:08 +0100
-> Matt Fleming <matt@console-pimps.org> wrote:
+
+* Jerry Snitselaar <dev@snitselaar.org> wrote:
+
+> Commit 13ad20c1 "x86 cpu_hotplug: unmap cpu2node when the cpu is
+> hotremoved" in linux-next added code to acpi_unmap_lsapic() that
+> causes section mismatch warnings:
 > 
-> > From: Matt Fleming <matt.fleming@intel.com>
-> > 
-> > The efi_enabled variable has come to mean "Do we have EFI runtime
-> > services available?". However, lack of EFI runtime services does not
-> > mean that we should switch to using the VGA console. Provided that the
-> > boot loader passed the dimensions of the EFI framebuffer there is no
-> > reason we can't use efifb.
+> WARNING: vmlinux.o(.text+0x694f2): Section mismatch in reference from the function acpi_unmap_lsapic()
+> 	  to the function .cpuinit.text:numa_clear_node()
+> WARNING: vmlinux.o(.text+0x694eb): Section mismatch in reference from the function acpi_unmap_lsapic() 
+> 	  to the variable .cpuinit.data:__apicid_to_node
 > 
-> Speed is the obvious one. vga con is fast, efifb is not
+> 
+> Does acpi_unmap_lsapic() need a wrapper like the one that was made for
+> acpi_map_lsapic() or can it just be annotated __ref ? I guess my
+> question is would be there be a reason that the wrapper was created
+> for acpi_map_lsapic() instead of just annotating __ref besides
+> allowing the code for _apic_map_lsapic() to be dropped when
+> HOTPLUG_CPU wasn't configured?
 
-Right, and that's an entirely valid reason for wanting vga con over
-efifb, but in that case users should just disable the efifb driver.
+That commit comes from -mm AFAICS. Involved parties Cc:-ed.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks,
 
+	Ingo
