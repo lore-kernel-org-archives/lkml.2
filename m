@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2IQBGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:06:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53515 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab2IQBGw (ORCPT
+	id S1754085Ab2IQAuy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33440 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753135Ab2IQAto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 21:06:52 -0400
-Date: Sun, 16 Sep 2012 18:06:48 -0700
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL 0/5] MSM changes for 3.7 merge window
-Message-ID: <20120917010648.GC19186@quad.lixom.net>
-References: <20120913185342.GA29823@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120913185342.GA29823@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Sep 2012 20:49:44 -0400
+Message-Id: <20120917003637.839215878@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 17 Sep 2012 01:37:49 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Seth Heasley <seth.heasley@intel.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 084/135] i2c-i801: Add device IDs for Intel Lynx Point
+In-Reply-To: <20120917003625.784119135@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Sep 13, 2012 at 11:53:42AM -0700, David Brown wrote:
-> Following are 5 pull requests for the MSM SoC.  The first 5 are
-> cleanups, fixes, devicetree, and some board changes that finally allow
-> us to build more than one SoC into a single kernel image.
-> 
-> The fifth patch is my merge, which can be used as a reference to the
-> intended merge resolution.
+------------------
 
-Nice cleanups, looking forward to seeing more of them together with
-consolidation work in the next releases!
+From: Seth Heasley <seth.heasley@intel.com>
 
-Pulled all 4, and verified the merge resolution.
+commit 062737fb6d90c632439b1f77ad6a4965cfc84a20 upstream.
+
+Add the SMBus controller device IDs for the Intel Lynx Point PCH.
+
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+)
+
+diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+index 2871fd5..71f55bb 100644
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -20,6 +20,7 @@ Supported adapters:
+   * Intel Patsburg (PCH)
+   * Intel DH89xxCC (PCH)
+   * Intel Panther Point (PCH)
++  * Intel Lynx Point (PCH)
+    Datasheets: Publicly available at the Intel website
+ 
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 71c1b0a..d2c5095 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -103,6 +103,7 @@ config I2C_I801
+ 	    Patsburg (PCH)
+ 	    DH89xxCC (PCH)
+ 	    Panther Point (PCH)
++	    Lynx Point (PCH)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 5d2e281..07d0c95 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -51,6 +51,7 @@
+   Patsburg (PCH) IDF    0x1d72     32     hard     yes     yes     yes
+   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
++  Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -145,6 +146,7 @@
+ #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
+ #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
++#define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
+ 
+ struct i801_priv {
+ 	struct i2c_adapter adapter;
+@@ -633,6 +635,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
+ 	{ 0, }
+ };
+ 
 
 
--Olof
