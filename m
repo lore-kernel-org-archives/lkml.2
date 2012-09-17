@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab2IQAwr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:52:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34003 "EHLO
+	id S1755068Ab2IQAxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:53:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33991 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754857Ab2IQAvl (ORCPT
+	by vger.kernel.org with ESMTP id S1754845Ab2IQAvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:41 -0400
-Message-Id: <20120917003629.437073607@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:40 -0400
+Message-Id: <20120917003629.845954795@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:48 +0100
+Date: Mon, 17 Sep 2012 01:36:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
-Subject: [ 023/135] drm/radeon: dont disable plls that are in use by other crtcs
+        alan@lxorguk.ukuu.org.uk, Adam Jackson <ajax@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 026/135] drm/edid/quirks: ViewSonic VA2026w
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,52 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Adam Jackson <ajax@redhat.com>
 
-commit 4e58591c8961b3e31709313f75819f2eec06e322 upstream.
+commit bc42aabc6a01b92b0f961d65671564e0e1cd7592 upstream.
 
-Some plls are shared for DP.
+Entirely new class of fail for this one.  The detailed timings are for
+normal CVT but the monitor really wanted CVT-R.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-[bwh: Backported to 3.2: add the dev and rdev variables, previously added
- upstream to support DCE6.1 which isn't supported in this version]
+Bugzilla: http://bugzilla.redhat/com/516471
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1578,10 +1578,25 @@ static void atombios_crtc_commit(struct
- static void atombios_crtc_disable(struct drm_crtc *crtc)
- {
- 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
-+	struct drm_device *dev = crtc->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_atom_ss ss;
-+	int i;
+ drivers/gpu/drm/drm_edid.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index 608bddf..c3b5139 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -66,6 +66,8 @@
+ #define EDID_QUIRK_FIRST_DETAILED_PREFERRED	(1 << 5)
+ /* use +hsync +vsync for detailed mode */
+ #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
++/* Force reduced-blanking timings for detailed modes */
++#define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
  
- 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
+ struct detailed_mode_closure {
+ 	struct drm_connector *connector;
+@@ -120,6 +122,9 @@ static struct edid_quirk {
+ 	/* Samsung SyncMaster 22[5-6]BW */
+ 	{ "SAM", 596, EDID_QUIRK_PREFER_LARGE_60 },
+ 	{ "SAM", 638, EDID_QUIRK_PREFER_LARGE_60 },
++
++	/* ViewSonic VA2026w */
++	{ "VSC", 5020, EDID_QUIRK_FORCE_REDUCED_BLANKING },
+ };
  
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (rdev->mode_info.crtcs[i] &&
-+		    rdev->mode_info.crtcs[i]->enabled &&
-+		    i != radeon_crtc->crtc_id &&
-+		    radeon_crtc->pll_id == rdev->mode_info.crtcs[i]->pll_id) {
-+			/* one other crtc is using this pll don't turn
-+			 * off the pll
-+			 */
-+			goto done;
-+		}
+ /*** DDC fetch and block validation ***/
+@@ -885,12 +890,19 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
+ 				"Wrong Hsync/Vsync pulse width\n");
+ 		return NULL;
+ 	}
++
++	if (quirks & EDID_QUIRK_FORCE_REDUCED_BLANKING) {
++		mode = drm_cvt_mode(dev, hactive, vactive, 60, true, false, false);
++		if (!mode)
++			return NULL;
++
++		goto set_size;
 +	}
 +
- 	switch (radeon_crtc->pll_id) {
- 	case ATOM_PPLL1:
- 	case ATOM_PPLL2:
-@@ -1592,6 +1607,7 @@ static void atombios_crtc_disable(struct
- 	default:
- 		break;
+ 	mode = drm_mode_create(dev);
+ 	if (!mode)
+ 		return NULL;
+ 
+-	mode->type = DRM_MODE_TYPE_DRIVER;
+-
+ 	if (quirks & EDID_QUIRK_135_CLOCK_TOO_HIGH)
+ 		timing->pixel_clock = cpu_to_le16(1088);
+ 
+@@ -914,8 +926,6 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
+ 
+ 	drm_mode_do_interlace_quirk(mode, pt);
+ 
+-	drm_mode_set_name(mode);
+-
+ 	if (quirks & EDID_QUIRK_DETAILED_SYNC_PP) {
+ 		pt->misc |= DRM_EDID_PT_HSYNC_POSITIVE | DRM_EDID_PT_VSYNC_POSITIVE;
  	}
-+done:
- 	radeon_crtc->pll_id = -1;
+@@ -925,6 +935,7 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
+ 	mode->flags |= (pt->misc & DRM_EDID_PT_VSYNC_POSITIVE) ?
+ 		DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC;
+ 
++set_size:
+ 	mode->width_mm = pt->width_mm_lo | (pt->width_height_mm_hi & 0xf0) << 4;
+ 	mode->height_mm = pt->height_mm_lo | (pt->width_height_mm_hi & 0xf) << 8;
+ 
+@@ -938,6 +949,9 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
+ 		mode->height_mm = edid->height_cm * 10;
+ 	}
+ 
++	mode->type = DRM_MODE_TYPE_DRIVER;
++	drm_mode_set_name(mode);
++
+ 	return mode;
  }
  
 
