@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2IQBAj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:00:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33890 "EHLO
+	id S1754532Ab2IQAvS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33529 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753200Ab2IQAvT (ORCPT
+	by vger.kernel.org with ESMTP id S1753200Ab2IQAt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:19 -0400
-Message-Id: <20120917003632.350926689@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:57 -0400
+Message-Id: <20120917003644.583170190@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:09 +0100
+Date: Mon, 17 Sep 2012 01:38:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>
-Subject: [ 044/135] Remove user-triggerable BUG from mpol_to_str
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Colin Ian King <colin.king@canonical.com>
+Subject: [ 133/135] eCryptfs: Copy up attributes of the lower target inode after rename
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,43 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
+commit 8335eafc2859e1a26282bef7c3d19f3d68868b8a upstream.
 
-Trivially triggerable, found by trinity:
+After calling into the lower filesystem to do a rename, the lower target
+inode's attributes were not copied up to the eCryptfs target inode. This
+resulted in the eCryptfs target inode staying around, rather than being
+evicted, because i_nlink was not updated for the eCryptfs inode. This
+also meant that eCryptfs didn't do the final iput() on the lower target
+inode so it stayed around, as well. This would result in a failure to
+free up space occupied by the target file in the rename() operation.
+Both target inodes would eventually be evicted when the eCryptfs
+filesystem was unmounted.
 
-  kernel BUG at mm/mempolicy.c:2546!
-  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
-  Call Trace:
-    show_numa_map+0xd5/0x450
-    show_pid_numa_map+0x13/0x20
-    traverse+0xf2/0x230
-    seq_read+0x34b/0x3e0
-    vfs_read+0xac/0x180
-    sys_pread64+0xa2/0xc0
-    system_call_fastpath+0x1a/0x1f
-  RIP: mpol_to_str+0x156/0x360
+This patch calls fsstack_copy_attr_all() after the lower filesystem
+does its ->rename() so that important inode attributes, such as i_nlink,
+are updated at the eCryptfs layer. ecryptfs_evict_inode() is now called
+and eCryptfs can drop its final reference on the lower inode.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+http://launchpad.net/bugs/561129
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Tested-by: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mempolicy.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ecryptfs/inode.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index bd92431..4ada3be 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2562,7 +2562,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
- 		break;
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 534b129..cc7709e 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -619,6 +619,7 @@ ecryptfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	struct dentry *lower_old_dir_dentry;
+ 	struct dentry *lower_new_dir_dentry;
+ 	struct dentry *trap = NULL;
++	struct inode *target_inode;
  
- 	default:
--		BUG();
-+		return -EINVAL;
- 	}
- 
- 	l = strlen(policy_modes[mode]);
+ 	lower_old_dentry = ecryptfs_dentry_to_lower(old_dentry);
+ 	lower_new_dentry = ecryptfs_dentry_to_lower(new_dentry);
+@@ -626,6 +627,7 @@ ecryptfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	dget(lower_new_dentry);
+ 	lower_old_dir_dentry = dget_parent(lower_old_dentry);
+ 	lower_new_dir_dentry = dget_parent(lower_new_dentry);
++	target_inode = new_dentry->d_inode;
+ 	trap = lock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
+ 	/* source should not be ancestor of target */
+ 	if (trap == lower_old_dentry) {
+@@ -641,6 +643,9 @@ ecryptfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			lower_new_dir_dentry->d_inode, lower_new_dentry);
+ 	if (rc)
+ 		goto out_lock;
++	if (target_inode)
++		fsstack_copy_attr_all(target_inode,
++				      ecryptfs_inode_to_lower(target_inode));
+ 	fsstack_copy_attr_all(new_dir, lower_new_dir_dentry->d_inode);
+ 	if (new_dir != old_dir)
+ 		fsstack_copy_attr_all(old_dir, lower_old_dir_dentry->d_inode);
 
 
