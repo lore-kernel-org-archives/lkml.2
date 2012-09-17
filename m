@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2IQUaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:30:05 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:53330 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab2IQUaA (ORCPT
+	id S1755355Ab2IQUb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:31:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61269 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab2IQUbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:30:00 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        Trond.Myklebust@netapp.com
-Subject: [PATCH 2/2] vfs: dcache: use DCACHE_DENTRY_KILLED instead of DCACHE_DISCONNECTED in d_kill()
-References: <871ui01jr1.fsf@tucsk.pomaz.szeredi.hu>
-Date: Mon, 17 Sep 2012 22:31:38 +0200
-In-Reply-To: <871ui01jr1.fsf@tucsk.pomaz.szeredi.hu> (Miklos Szeredi's message
-	of "Mon, 17 Sep 2012 22:23:30 +0200")
-Message-ID: <87txuwz905.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 17 Sep 2012 16:31:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120823215052.GC19305@somewhere.redhat.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+	<CAMuHMdUt62GsYsPMAPbUWZUtFL=c2VmYFintpDAQmSwQrWriuA@mail.gmail.com>
+	<20120823110157.GC18835@somewhere.redhat.com>
+	<CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
+	<20120823215052.GC19305@somewhere.redhat.com>
+Date: Mon, 17 Sep 2012 22:31:24 +0200
+X-Google-Sender-Auth: OSKivg3_AbufzNrHAOvixbsaw-w
+Message-ID: <CAMuHMdURT2vdF8uGZbMO09iGbLeSaVzwNthKEA1WwOtH6dQN_A@mail.gmail.com>
+Subject: Re: [PATCH 00/10] rcu: Add missing RCU idle APIs on idle loop
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
+        "3.2.x.." <stable@kernel.org>, Chen Liqin <liqin.chen@sunplusct.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Hi Frederic, Paul,
 
-IBM reported a soft lockup after applying the fix for the rename_lock deadlock.
-Commit c83ce989 ("VFS: Fix the nfs sillyrename regression in kernel 2.6.38") was
-found to be the culprit.
+On Thu, Aug 23, 2012 at 11:50 PM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Thu, Aug 23, 2012 at 10:23:22PM +0200, Geert Uytterhoeven wrote:
+>> On Thu, Aug 23, 2012 at 1:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Wed, Aug 22, 2012 at 07:18:04PM +0200, Geert Uytterhoeven wrote:
+>> >> On Wed, Aug 22, 2012 at 6:23 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >> > So this fixes some potential RCU stalls in a bunch of architectures.
+>> >> > When rcu_idle_enter()/rcu_idle_exit() became a requirement, we forgot
+>> >> > to handle the architectures that don't support CONFIG_NO_HZ.
+>> >> >
+>> >> > I guess the set should be dispatched into arch maintainer trees.
+>> >>
+>> >> I can take the m68k version, but are you sure you want it this way?
+>> >> Each of them must be in mainline before they can enter stable.
+>> >
+>> > Yeah, I was thinking the right route is for these patches to be
+>> > carried by arch maintainer who then push to Linus and then this goes
+>> > to stable.
+>> >
+>> > Is that ok for you?
+>> >
+>> > Otherwise I can carry the patches myself. In a tree of my own, or
+>> > Paul's or mmotm. As long as I have your ack.
+>>
+>> I applied your patch to the m68k for-3.6/for-linus branch.
+>> I'll ask Linus to pull later in the rc cycle (right now I don't have
+>> anything else
+>> queued for 3.6).
+>> Still, I think it's better to just collect acks and send it to Linus
+>> in one shot,
+>> so it can go into stable in one shot too.
+>
+> Sure I can do that if you prefer.
 
-The nfs sillyrename fix used DCACHE_DISCONNECTED to indicate that the dentry was
-killed.  This flag can be set on non-killed dentries too, which results in
-infinite retries when trying to traverse the dentry tree.
+What's the conclusion on this one? I saw it entered tip.
 
-This patch introduces a separate flag: DCACHE_DENTRY_KILLED, which is only set
-in d_kill() and makes try_to_ascend() test only this flag.
+I still have it (as the only commit) on my for-3.6 branch, but I don't
+think m68k
+is important enough to be the only architecture to have this fix in 3.6 ;-)
 
-IBM reported successful test results with this patch.
+Gr{oetje,eeting}s,
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: stable@vger.kernel.org
----
- fs/dcache.c            |    4 ++--
- include/linux/dcache.h |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+                        Geert
 
-Index: linux-2.6/fs/dcache.c
-===================================================================
---- linux-2.6.orig/fs/dcache.c	2012-09-17 20:04:07.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2012-09-17 20:04:21.000000000 +0200
-@@ -389,7 +389,7 @@ static struct dentry *d_kill(struct dent
- 	 * Inform try_to_ascend() that we are no longer attached to the
- 	 * dentry tree
- 	 */
--	dentry->d_flags |= DCACHE_DISCONNECTED;
-+	dentry->d_flags |= DCACHE_DENTRY_KILLED;
- 	if (parent)
- 		spin_unlock(&parent->d_lock);
- 	dentry_iput(dentry);
-@@ -1048,7 +1048,7 @@ static struct dentry *try_to_ascend(stru
- 	 * or deletion
- 	 */
- 	if (new != old->d_parent ||
--		 (old->d_flags & DCACHE_DISCONNECTED) ||
-+		 (old->d_flags & DCACHE_DENTRY_KILLED) ||
- 		 (!locked && read_seqretry(&rename_lock, seq))) {
- 		spin_unlock(&new->d_lock);
- 		new = NULL;
-Index: linux-2.6/include/linux/dcache.h
-===================================================================
---- linux-2.6.orig/include/linux/dcache.h	2012-09-17 19:56:19.000000000 +0200
-+++ linux-2.6/include/linux/dcache.h	2012-09-17 20:04:21.000000000 +0200
-@@ -206,6 +206,8 @@ struct dentry_operations {
- #define DCACHE_MANAGED_DENTRY \
- 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
- 
-+#define DCACHE_DENTRY_KILLED	0x100000
-+
- extern seqlock_t rename_lock;
- 
- static inline int dname_external(struct dentry *dentry)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
