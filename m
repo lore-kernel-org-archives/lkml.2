@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab2IQObQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:31:16 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:27899 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab2IQObP (ORCPT
+	id S1756634Ab2IQObh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:31:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43335 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab2IQObf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:31:15 -0400
-X-IronPort-AV: E=Sophos;i="4.80,435,1344211200"; 
-   d="scan'208";a="14583396"
-Date: Mon, 17 Sep 2012 15:30:28 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
-In-Reply-To: <alpine.DEB.2.02.1209171454480.29232@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1209171527210.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com> <505374E2.5080308@mvista.com> <alpine.DEB.2.02.1209171155010.29232@kaball.uk.xensource.com> <50571289.3040509@mvista.com>
- <alpine.DEB.2.02.1209171454480.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 17 Sep 2012 10:31:35 -0400
+Message-ID: <5057343C.2010201@gmail.com>
+Date: Mon, 17 Sep 2012 22:31:24 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from
+ acpi_device_ops
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com> <1347678312-11124-6-git-send-email-jiang.liu@huawei.com> <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
+In-Reply-To: <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Stefano Stabellini wrote:
-> On Mon, 17 Sep 2012, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 17-09-2012 14:57, Stefano Stabellini wrote:
-> > 
-> > >>> Changes in v2:
-> > 
-> > >>> - mark Xen guest support on ARM as EXPERIMENTAL.
-> > 
-> > >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > >>> ---
-> > >>>   arch/arm/Kconfig |   10 ++++++++++
-> > >>>   1 files changed, 10 insertions(+), 0 deletions(-)
-> > 
-> > >>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > >>> index 2f88d8d..e92518d 100644
-> > >>> --- a/arch/arm/Kconfig
-> > >>> +++ b/arch/arm/Kconfig
-> > >>> @@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
-> > >>>   	  This was deprecated in 2001 and announced to live on for 5 years.
-> > >>>   	  Some old boot loaders still use this way.
-> > >>>
-> > >>> +config XEN_DOM0
-> > >>> +	def_bool y
-> > >>> +
-> > >>> +config XEN
-> > >>> +	bool "Xen guest support on ARM (EXPERIMENTAL)"
-> > >>> +	depends on EXPERIMENTAL && ARM && OF
-> > >>> +	select XEN_DOM0
-> > 
-> > >>     What's the point of selecting it if it's always "y"?
-> > 
-> > > That's because on X86 is not always "y": there are things under
-> > > drivers/xen that compile on both platforms and depend on XEN_DOM0.
-> > 
-> >     But we're not on x86. On ARM this select is pointless.
+On 09/16/2012 07:27 AM, Yinghai Lu wrote:
+> On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+>>  From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Now ACPI devices are created before/destroyed after corresponding PCI
+>> devices, and acpi_platform_notify/acpi_platform_notify_remove will
+>> update PCI<->ACPI binding relationship when creating/destroying PCI
+>> devices, there's no need to invoke bind/unbind callbacks from ACPI
+>> device probe/destroy routines anymore. So remove bind/unbind callbacks
+>> from acpi_device_ops.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  drivers/acpi/pci_bind.c     |  100 +++++++++----------------------------------
+>>  drivers/acpi/pci_root.c     |    9 ----
+>>  drivers/acpi/scan.c         |   21 +--------
+>>  include/acpi/acpi_bus.h     |    4 --
+>>  include/acpi/acpi_drivers.h |    1 -
+>>  5 files changed, 23 insertions(+), 112 deletions(-)
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index d1ecca2..f31cb2f 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -1232,17 +1232,8 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>>         dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+>>         device_release_driver(&dev->dev);
+>>
+>> -       if (!rmdevice)
+>> -               return 0;
+>> -
+>> -       /*
+>> -        * unbind _ADR-Based Devices when hot removal
+>> -        */
+>> -       if (dev->flags.bus_address) {
+>> -               if ((dev->parent) && (dev->parent->ops.unbind))
+>> -                       dev->parent->ops.unbind(dev);
+>> -       }
+>> -       acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+>> +       if (rmdevice)
+>> +               acpi_device_unregister(dev, ACPI_BUS_REMOVAL_EJECT);
+>>
+>>         return 0;
+>>  }
 > 
-> We need some common code (under drivers/xen) that compiles only if
-> XEN_DOM0 is selected, so it is not pointless after all.
+> for pci root bus, acpi_bus_trim() is used to remove acpi_device.
 > 
-> XEN_DOM0 is not the only symbol that is conditionally compiled on one
-> architectuire and always "y" on another...
+> and later in acpi_pci_root_remove to stop pci drivers/ioapic driver,
+> iommu driver then remove pci devices.
+> 
+> if call back is removed there, then could some functions in
+> acpi_pci_unbind() will be skipped.
+> 
+> I really do not want to add pci_stop_bus_devices() in
+> pci_root_hp.c::handle_root_bridge_removal before
+> calling acpi_bus_trim...
+Hi Yinghai,
+	We are working on a ACPI based hotplug framework for CPU, memory and IOH.
+With our framework, the sequence to remove a IOH is:
+1) unbind all PCI device drivers for affected PCI devices.
+2) stop and remove all affected PCI devices.
+3) stop ACPI ioapic drivers(a new driver like PCI version).
+4) destroy all ACPI devices.
+
+--Gerry
+> 
+> Thanks
+> 
+> Yinghai
 > 
 
-Wait a sec, I have just realized that written this way XEN_DOM0 is
-always "y", even if XEN is not!
-The right way of doing this is:
-
-
-config XEN_DOM0
-	def_bool y
-	depends on XEN
-
-config XEN
-	bool "Xen guest support on ARM (EXPERIMENTAL)"
-	depends on EXPERIMENTAL && ARM && OF
-	help
-	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-
-
-I am not sure if this is what you meant, but thanks for making me
-realize this mistake anyway! :)
