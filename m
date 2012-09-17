@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2IQLi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:38:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59430 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2IQLiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:38:55 -0400
-Date: Mon, 17 Sep 2012 21:38:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: linux-next: build failure after merge of the final tree (mfd tree
- related)
-Message-Id: <20120917213833.2b3ac86e097d131065a0541d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Sep_2012_21_38_33_+1000_sfel/zOer5OHO1wO"
+	id S1756063Ab2IQLkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:40:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46111 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755973Ab2IQLkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 07:40:02 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Andre Przywara <andre.przywara@amd.com>
+Subject: Re: [PATCH 2/8 v2] acpi-cpufreq: Add quirk to disable _PSD usage on all AMD CPUs
+Date: Mon, 17 Sep 2012 13:40:23 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.20-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garret <mjg@redhat.com>
+References: <1346747289-8421-1-git-send-email-andre.przywara@amd.com> <CACJDEmrOoZ_azqTrtfoGC-O=H0V=AHy8VExoFYYPhbUUx+7UAg@mail.gmail.com> <5056D420.80808@amd.com>
+In-Reply-To: <5056D420.80808@amd.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209171340.23801.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Sep_2012_21_38_33_+1000_sfel/zOer5OHO1wO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday, September 17, 2012 09:41:20 AM Andre Przywara wrote:
+> On 09/15/2012 01:20 PM, Konrad Rzeszutek Wilk wrote:
+> >
+...
+> This was to overcome some nasty interaction between the Windows 
+> scheduler and their version of the ondemand governor.
+Whoever is/was responsible for this, can you explain him/her that
+this was a bad idea and why.
 
-Hi all,
+Is this part of a BKDG?
+Can you point to a public spec and the exact wording of the
+"Windows scheduler workaround" BIOS vendors shall do?
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> +               pr_info_once(PFX "overriding BIOS provided _PSD data\n");
+The message shows up on nearly every platform wether a _PSD
+function exists or not. This is wrong.
 
-drivers/mfd/max8907.c: In function 'max8907_i2c_probe':
-drivers/mfd/max8907.c:248:10: error: too few arguments to function 'mfd_add=
-_devices'
-include/linux/mfd/core.h:100:12: note: declared here
+If it's _PSD info that should get ignored/overwritten, this should
+be done where _PSD is obtained:
+processor_perflib.c
 
-Caused by commit 6c2591532a6f ("mfd: Add MAX8907 core driver") from the
-mfd tree interacting with commit 0848c94fb4a5 ("mfd: core: Push irqdomain
-mapping out into devices") from Linus' tree.
+Are you sure that it will never make sense for AMD to make use of
+_PSD tables?
+If yes, then always ignoring might be an option.
 
-I have added the following patch and will carry it as a merge fix:
+If not, this might need a more specific check, e.g.:
+   - Latest Windows version support called via OSI interface?
+        Latest Windowses should/may not need this anymore?
+   - Check for Desktop CPUs that are affected by the bad spec?
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 17 Sep 2012 21:31:20 +1000
-Subject: [PATCH] mfd: fix up for mfd_add_devices() API change
+Hm, as powernow-k8 never made use of _PSD, ignoring it for
+now sounds like a good thing to do. Still the ignoring should get
+moved to processor_perflib.c, best with a pointer or at least
+a comment that _PSD can be dangerous on AMD platforms. At some
+day _PSD may make sense for AMD platforms as well?
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/mfd/max8907.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max8907.c b/drivers/mfd/max8907.c
-index 5295276..6497c98 100644
---- a/drivers/mfd/max8907.c
-+++ b/drivers/mfd/max8907.c
-@@ -245,7 +245,7 @@ static __devinit int max8907_i2c_probe(struct i2c_clien=
-t *i2c,
- 	enable_irq(max8907->i2c_gen->irq);
-=20
- 	ret =3D mfd_add_devices(max8907->dev, -1, max8907_cells,
--			      ARRAY_SIZE(max8907_cells), NULL, 0);
-+			      ARRAY_SIZE(max8907_cells), NULL, 0, NULL);
- 	if (ret !=3D 0) {
- 		dev_err(&i2c->dev, "failed to add MFD devices %d\n", ret);
- 		goto err_add_devices;
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__17_Sep_2012_21_38_33_+1000_sfel/zOer5OHO1wO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQVwu5AAoJEECxmPOUX5FE7bEP/0zCbVtzGxQHwYOG7VVWgs1Y
-H4BYzWNM2tzV0e4Vdi/KnULyOyQFcDc4iEGlDyHRqfupM+4ecRaCKwFUxgNcHqOj
-53vk9kIYu8gQHyifnL0GcURLzC7aAW57jLnZCUr3dpb1WYaG6nmjIwRYIOPuXJGW
-K4Dj/ZFl2IvTAQ+TxHIWe5a6hQmLYIiYjQi+DPK5idVg8NGFtx3mFJu83WcvLiRN
-cIOMUabej8jjVOAwB0YvX5WTwC+tuekuiJoS4cwPkJvvUxqqRLobXhQ/an6ou4N2
-0wYOqOUmCMllC/low+57EUqRTaeOBZDLsQIuPAoCQbrPpjLIKMzyVmEmSe43mPja
-wh7kEN+yorePcKd3iPr4nkuY/L8ba4Hvz5gmmhePfvaeqN9fEkSkb54UdWe82QVh
-WHH3+2lk3nWkZL9tsox5oYGuehKt0q9jy90qZ9Ge5kmocDivoFX/JIIvKpbm5nWB
-KIOJ111UivewkSgT+tE2ZBM1cxkFutsvv+LgxDhrSKAwzTb9NubpFNH89Y1MP/Bg
-M+JX1e+BtTGovR/bHlAfna51Jc3aCsjaOy9njUThdDz3Nw/R+hbdETmyQy2xoBJB
-yZzB0CRu3yY/bSvzK8yp2hUlgK8gHdxt+oYUHb7vioy8DhlHY1Atk8R3OmSXPrp2
-NDc+uofD7Gw7j25UQkZT
-=E3T3
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Sep_2012_21_38_33_+1000_sfel/zOer5OHO1wO--
+    Thomas
