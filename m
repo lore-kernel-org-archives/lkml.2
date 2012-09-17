@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab2IQCej (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 22:34:39 -0400
-Received: from ares07.inai.de ([5.9.24.206]:34649 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab2IQCeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 22:34:36 -0400
-Date: Mon, 17 Sep 2012 04:34:32 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-cc: linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Subject: Re: [ANNOUNCE] kmod 10
-In-Reply-To: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
-References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1753184Ab2IQCiF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 22:38:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:46197 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931Ab2IQCiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 22:38:03 -0400
+X-IronPort-AV: E=Sophos;i="4.80,432,1344182400"; 
+   d="scan'208";a="5854585"
+Message-ID: <50568D85.5030309@cn.fujitsu.com>
+Date: Mon, 17 Sep 2012 10:40:05 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] workqueue: fix leak of active
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/17 10:38:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/17 10:38:21,
+	Serialize complete at 2012/09/17 10:38:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+try_to_grab_pending() leave LINKED tagalong in delayed queue when
+it deletes a work. This behavior will cause future
+cwq_activate_first_delayed() increase the ->nr_active wrongly,
+and may cause the whole cwq frozen.
 
-On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
->
->kmod 10 is out:
->
->ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
->ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
+example:
 
-make check fails here with glibc-2.15, gcc-4.7, x86_64,
-due to what seems to be duplicated symbols(?):
+state:	cwq->max_active = 1, cwq->nr_active = 1
+	one work in cwq->pool, many in cwq->delayed_works.
 
+step1:	try_to_grab_pending() remove a work from delayed_works but leave tagalong.
+step2:	when the work in cwq->pool is finished, cwq_activate_first_delayed()
+	move the tagalong to cwq->pool and increase the ->nr_active.
 
-+ make check V=1
-Making check in .
-make --no-print-directory testsuite/uname.la testsuite/path.la testsuite/init_module.la testsuite/delete_module.la testsuite/libtestsuite.la testsuite/test-init testsuite/test-testsuite testsuite/test-loaded testsuite/test-modinfo testsuite/test-alias testsuite/test-new-module testsuite/test-modprobe testsuite/test-blacklist testsuite/test-dependencies
-depbase=`echo testsuite/uname.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
-/bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
- fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/uname.lo testsuite/uname.c &&\
-mv -f $depbase.Tpo $depbase.Plo
-libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
- synchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF testsuite/.deps/uname.Tpo -c testsuite/uname.c  -fPIC -DPIC -o testsuite/.libs/uname.o
-cc1: warning: /usr/local/include: No such file or directory [enabled by default]
-/bin/sh ./libtool  --tag=CC   --mode=link gcc -std=gnu99 -std=gnu99 -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables -g avoid-version -module -shared -export-dynamic -rpath /nowhere -ldl  -o testsuite/uname.
- la  testsuite/uname.lo  
-libtool: link: gcc -std=gnu99 -shared  -fPIC -DPIC  testsuite/.libs/uname.o   -ldl  -O2   -Wl,-soname -Wl,uname.so.0 -o testsuite/.libs/uname.so.0.0.0
-libtool: link: (cd "testsuite/.libs" && rm -f "uname.so.0" && ln -s "uname.so.0.0.0" "uname.so.0")
-libtool: link: (cd "testsuite/.libs" && rm -f "uname.so" && ln -s "uname.so.0.0.0" "uname.so")
-libtool: link: ( cd "testsuite/.libs" && rm -f "uname.la" && ln -s "../uname.la" "uname.la" )
-depbase=`echo testsuite/path.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
-/bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
- fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/path.lo testsuite/path.c &&\
-mv -f $depbase.Tpo $depbase.Plo
-libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
- synchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF testsuite/.deps/path.Tpo -c testsuite/path.c  -fPIC -DPIC -o testsuite/.libs/path.o
-cc1: warning: /usr/local/include: No such file or directory [enabled by default]
-{standard input}: Assembler messages:
-{standard input}:418: Error: symbol `open64' is already defined
-{standard input}:678: Error: symbol `stat64' is already defined
-{standard input}:758: Error: symbol `lstat64' is already defined
-{standard input}:1234: Error: symbol `__xstat64' is already defined
-{standard input}:1396: Error: symbol `__lxstat64' is already defined
-make[2]: *** [testsuite/path.lo] Error 1
-make[1]: *** [check-am] Error 2
-make: *** [check-recursive] Error 1
-error: Bad exit status from /var/tmp/rpm-tmp.Eq2Axz (%check)
+current state: cwq->nr_active = 1, but works of the cwq in cwq->pool are all NO_COLOR,
+	so even when these works are finished, cwq->nr_active will not be decreased,
+	and no work will be moved from cwq->delayed_works. the cwq is frozen.
 
+Fix it by moving the tagalong to cwq->pool in try_to_grab_pending().
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 7b91332..1a268b2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1101,11 +1101,26 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
+ 		 */
+ 		smp_rmb();
+ 		if (gcwq == get_work_gcwq(work)) {
++			unsigned long delayed;
++
++			/*
++			 * move LINKED tagalong(if exist) out from
++			 * delayed queue. Otherwise some future
++			 * cwq_activate_first_delayed() may move
++			 * works(which are all NO_COLOR) to cwq->pool
++			 * and increase the ->nr_active. It may
++			 * cause the whole cwq frozen.
++			 */
++			delayed = *work_data_bits(work) & WORK_STRUCT_DELAYED;
++			if (delayed)
++				move_linked_works(work,
++					&get_work_cwq(work)->pool->worklist,
++					NULL);
++
+ 			debug_work_deactivate(work);
+ 			list_del_init(&work->entry);
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+-				get_work_color(work),
+-				*work_data_bits(work) & WORK_STRUCT_DELAYED);
++				get_work_color(work), delayed);
+ 
+ 			spin_unlock(&gcwq->lock);
+ 			return 1;
