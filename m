@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab2IQBLY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:11:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33726 "EHLO
+	id S1754118Ab2IQBLW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:11:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33722 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753856Ab2IQAuj (ORCPT
+	by vger.kernel.org with ESMTP id S1753694Ab2IQAuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:50:39 -0400
-Message-Id: <20120917003636.318896221@decadent.org.uk>
+Message-Id: <20120917003636.451514899@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:38 +0100
+Date: Mon, 17 Sep 2012 01:37:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "xeb@mail.ru" <xeb@mail.ru>,
+        alan@lxorguk.ukuu.org.uk,
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 073/135] l2tp: avoid to use synchronize_rcu in tunnel free  function
+Subject: [ 074/135] net: ipv4: ipmr_expire_timer causes crash when  removing net namespace
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,49 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "xeb@mail.ru" <xeb@mail.ru>
+From: Francesco Ruggeri <fruggeri@aristanetworks.com>
 
-[ Upstream commit 99469c32f79a32d8481f87be0d3c66dad286f4ec ]
+[ Upstream commit acbb219d5f53821b2d0080d047800410c0420ea1 ]
 
-Avoid to use synchronize_rcu in l2tp_tunnel_free because context may be
-atomic.
+When tearing down a net namespace, ipv4 mr_table structures are freed
+without first deactivating their timers. This can result in a crash in
+run_timer_softirq.
+This patch mimics the corresponding behaviour in ipv6.
+Locking and synchronization seem to be adequate.
+We are about to kfree mrt, so existing code should already make sure that
+no other references to mrt are pending or can be created by incoming traffic.
+The functions invoked here do not cause new references to mrt or other
+race conditions to be created.
+Invoking del_timer_sync guarantees that ipmr_expire_timer is inactive.
+Both ipmr_expire_process (whose completion we may have to wait in
+del_timer_sync) and mroute_clean_tables internally use mfc_unres_lock
+or other synchronizations when needed, and they both only modify mrt.
 
-Signed-off-by: Dmitry Kozlov <xeb@mail.ru>
+Tested in Linux 3.4.8.
+
+Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_core.c | 3 +--
- net/l2tp/l2tp_core.h | 1 +
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ipmr.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
-index 89ff8c6..7501b22 100644
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -1253,11 +1253,10 @@ static void l2tp_tunnel_free(struct l2tp_tunnel *tunnel)
- 	/* Remove from tunnel list */
- 	spin_lock_bh(&pn->l2tp_tunnel_list_lock);
- 	list_del_rcu(&tunnel->list);
-+	kfree_rcu(tunnel, rcu);
- 	spin_unlock_bh(&pn->l2tp_tunnel_list_lock);
--	synchronize_rcu();
+diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
+index d2aae27..0064394 100644
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -125,6 +125,8 @@ static DEFINE_SPINLOCK(mfc_unres_lock);
+ static struct kmem_cache *mrt_cachep __read_mostly;
  
- 	atomic_dec(&l2tp_tunnel_count);
--	kfree(tunnel);
+ static struct mr_table *ipmr_new_table(struct net *net, u32 id);
++static void ipmr_free_table(struct mr_table *mrt);
++
+ static int ip_mr_forward(struct net *net, struct mr_table *mrt,
+ 			 struct sk_buff *skb, struct mfc_cache *cache,
+ 			 int local);
+@@ -132,6 +134,7 @@ static int ipmr_cache_report(struct mr_table *mrt,
+ 			     struct sk_buff *pkt, vifi_t vifi, int assert);
+ static int __ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
+ 			      struct mfc_cache *c, struct rtmsg *rtm);
++static void mroute_clean_tables(struct mr_table *mrt);
+ static void ipmr_expire_process(unsigned long arg);
+ 
+ #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
+@@ -272,7 +275,7 @@ static void __net_exit ipmr_rules_exit(struct net *net)
+ 
+ 	list_for_each_entry_safe(mrt, next, &net->ipv4.mr_tables, list) {
+ 		list_del(&mrt->list);
+-		kfree(mrt);
++		ipmr_free_table(mrt);
+ 	}
+ 	fib_rules_unregister(net->ipv4.mr_rules_ops);
+ }
+@@ -300,7 +303,7 @@ static int __net_init ipmr_rules_init(struct net *net)
+ 
+ static void __net_exit ipmr_rules_exit(struct net *net)
+ {
+-	kfree(net->ipv4.mrt);
++	ipmr_free_table(net->ipv4.mrt);
+ }
+ #endif
+ 
+@@ -337,6 +340,13 @@ static struct mr_table *ipmr_new_table(struct net *net, u32 id)
+ 	return mrt;
  }
  
- /* Create a socket for the tunnel, if one isn't set up by
-diff --git a/net/l2tp/l2tp_core.h b/net/l2tp/l2tp_core.h
-index a16a48e..4393794 100644
---- a/net/l2tp/l2tp_core.h
-+++ b/net/l2tp/l2tp_core.h
-@@ -157,6 +157,7 @@ struct l2tp_tunnel_cfg {
++static void ipmr_free_table(struct mr_table *mrt)
++{
++	del_timer_sync(&mrt->ipmr_expire_timer);
++	mroute_clean_tables(mrt);
++	kfree(mrt);
++}
++
+ /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
  
- struct l2tp_tunnel {
- 	int			magic;		/* Should be L2TP_TUNNEL_MAGIC */
-+	struct rcu_head rcu;
- 	rwlock_t		hlist_lock;	/* protect session_hlist */
- 	struct hlist_head	session_hlist[L2TP_HASH_SIZE];
- 						/* hashed list of sessions,
+ static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
 
 
