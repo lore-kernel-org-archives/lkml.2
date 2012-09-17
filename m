@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab2IQLBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:01:05 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:47922 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755692Ab2IQLBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:01:03 -0400
-X-AuditID: cbfee61a-b7f726d000000ec7-87-505702ee46dc
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Inderpal Singh'" <inderpal.singh@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, patches@linaro.org, boojin.kim@samsung.com,
-        jassisinghbrar@gmail.com
-References: <1347856065-14027-1-git-send-email-inderpal.singh@linaro.org>
-In-reply-to: <1347856065-14027-1-git-send-email-inderpal.singh@linaro.org>
-Subject: RE: [PATCH] DMA: PL330: return ENOMEM instead of 0 from
- pl330_alloc_chan_resources
-Date: Mon, 17 Sep 2012 20:01:01 +0900
-Message-id: <050c01cd94c3$b97aaa90$2c6fffb0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2UjNMAxW0pbAg+RB2tE93599ulFwANtJ0A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd13TOEBBm/nyltc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGUsbF7PXtDKUXF67wKWBsZjbF2MnBwSAiYSPVfnMEPY
-	YhIX7q0HinNxCAlMZ5TY3L+JFcL5yyjRevw1I0gVm4CGxOH3z9hBbBGBYok7lx6CdTMLJEj0
-	dP4CqxES8JS4d+0BWA2ngJfE2ScHmEBsYYFYid75S1lAbBYBVYmOSwvB6nkFbCUunP3MBmEL
-	SvyYfI8FYqaWxPqdx5kgbHmJzWveAu3iALpUXeLRX12IE4wklszbygZRIiKx78U7xgmMQrOQ
-	TJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4pJ9J7WBc2WBxiFGA
-	g1GJh9dwUliAEGtiWXFl7iFGCQ5mJRHeB2+AQrwpiZVVqUX58UWlOanFhxilOViUxHmFPwUG
-	CAmkJ5akZqemFqQWwWSZODilGhhnT+uI/J+8ZmHBmYdTLG0WZWS9uCiYFq2t/PCj/aPb8z5q
-	x8RXJG9JMA5iXHfsVrWzq9wM5gs/bn2el/p+47Q+v6iwqz/zS1fO996/P+nyk0iRamOe87nK
-	lr6fd87nYbaTXWCvfjvEL+1qQXHpiYne+bPPRRm5XvArDz+lnOsRVHr0r0ixyAQlluKMREMt
-	5qLiRACiIWd4ZQIAAA==
+	id S1755724Ab2IQLEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:04:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754914Ab2IQLEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 07:04:34 -0400
+Date: Mon, 17 Sep 2012 13:04:27 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] HID: roccat: removing devices from blacklist
+In-Reply-To: <1347863645.2606.66.camel@neuromancer.tessier-ashpool>
+Message-ID: <alpine.LNX.2.00.1209171303390.31149@pobox.suse.cz>
+References: <1347863645.2606.66.camel@neuromancer.tessier-ashpool>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inderpal Singh wrote:
+On Mon, 17 Sep 2012, Stefan Achatz wrote:
+
+> I would suggest to remove the Roccat devices from generic drivers blacklist.
 > 
-> Since 0 is not considered as error at dmaengine level, return ENOMEM
-> from pl330_alloc_chan_resources in case of failure.
+> Some Distros tend to have kernels without the special modules compiled, which
+> prevents users of these devices to work with live images or installers.
 > 
-> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
-
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+> The Roccat devices work flawlessly with generic drivers (except the old Kone with a
+> small glitch). My modules are only needed when using my tools for configuration
+> and extended capabilities. These tools come with udev rules which transfer
+> the control from generic driver to externally compiled modules if installed.
+> 
+> I have to update these udev rules for the change from generic-usb to hid-generic
+> anyway, so I would add a rule to also handle the kernel contained modules.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 > ---
->  drivers/dma/pl330.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/hid/hid-core.c |    8 --------
+>  1 files changed, 0 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index e4feba6..14d881c 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2393,7 +2393,7 @@ static int pl330_alloc_chan_resources(struct
-> dma_chan *chan)
->  	pch->pl330_chid = pl330_request_channel(&pdmac->pif);
->  	if (!pch->pl330_chid) {
->  		spin_unlock_irqrestore(&pch->lock, flags);
-> -		return 0;
-> +		return -ENOMEM;
->  	}
-> 
->  	tasklet_init(&pch->task, pl330_tasklet, (unsigned long) pch);
-> --
-> 1.7.9.5
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 8bcd168..4f2ba5a 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1627,14 +1627,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONEPLUS) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KOVAPLUS) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_SAVU) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
 
+Actually what I am planning to do (hopefully for 3.7) is to put an #ifdef 
+around those entries which can function also with the generic driver (only 
+with missing features). We are already doing this for logitech and tpkbd.
+
+Could you please rather take this aproach and resubmit the patch?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
