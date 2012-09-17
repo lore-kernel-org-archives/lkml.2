@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab2IQSGR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 14:06:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38400 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab2IQSGP (ORCPT
+	id S932468Ab2IQSGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 14:06:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39101 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab2IQSGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 14:06:15 -0400
-Date: Mon, 17 Sep 2012 14:06:05 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: parag@ubuntu
-To: Henrik Rydberg <rydberg@euromail.se>
-cc: Parag Warudkar <parag.lkml@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        khali@linux-fr.org
-Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
-In-Reply-To: <20120917162705.GA2854@polaris.bitmath.org>
-Message-ID: <alpine.DEB.2.02.1209171356340.3412@ubuntu>
-References: <alpine.DEB.2.02.1209151834120.2271@ubuntu> <20120915225841.GA3816@roeck-us.net> <alpine.DEB.2.02.1209151918210.2271@ubuntu> <alpine.DEB.2.02.1209152323490.2088@ubuntu> <20120916043116.GA4477@roeck-us.net> <20120916093520.GA5623@polaris.bitmath.org>
- <alpine.DEB.2.02.1209161712070.14838@ubuntu> <20120916223003.GA2160@polaris.bitmath.org> <alpine.DEB.2.02.1209161957490.2808@ubuntu> <20120917162705.GA2854@polaris.bitmath.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 17 Sep 2012 14:06:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1345133009-21941-12-git-send-email-konrad.wilk@oracle.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-12-git-send-email-konrad.wilk@oracle.com>
+From: William Dauchy <wdauchy@gmail.com>
+Date: Mon, 17 Sep 2012 20:06:26 +0200
+Message-ID: <CAJ75kXYG3uPmMhUwB9ivHt0w5gm14aqAynSWQwooWg65xLTzPw@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH 11/11] xen/mmu: Release just the MFN list, not
+ MFN list and part of pagetables.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Konrad,
 
+On Thu, Aug 16, 2012 at 6:03 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> (XEN) mm.c:908:d0 Error getting mfn 116a83 (pfn 14e2a) from L1 entry 8000000116a83067 for l1e_owner=0, pg_owner=0
+> (XEN) mm.c:908:d0 Error getting mfn 4040 (pfn 5555555555555555) from L1 entry 0000000004040601 for l1e_owner=0, pg_owner=0
 
-On Mon, 17 Sep 2012, Henrik Rydberg wrote:
+This is something I also have on my 3.4.x branch. Since then mmu.c has
+change a lot; is there an easy fix to make a backport for 3.4.x?
 
-> The current patch does exactly the same sleeps, the only difference is
-> that the test is also done before the first sleep. Thus, the increased
-> delay, if any, comes from the sleep range.
-My understanding is that the original patch resulted in trying a 
-max udelay(16). The new one does usleep_range(16, 32). That's a minimum 16 
-max 32 - so the fact that it stops read failures means the added delay is 
-present and does help.
-
-> 
-> 
-> The MBP10,1 experiences a lot of write errors with this patch.
-
-Well the send_byte changes are not necessary for fixing my problem - I 
-only converted it because of usleep_range() primarily. What happens if you 
-drop the send_byte() part of the patch and test with only the wait_read() 
-changes? I would be very surprised if that caused write or read failures. 
-
-
-Parag
+-- 
+William
