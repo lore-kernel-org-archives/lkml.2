@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2IQBSq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:18:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33621 "EHLO
+	id S1753493Ab2IQBTH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:19:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33617 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753409Ab2IQAuO (ORCPT
+	by vger.kernel.org with ESMTP id S1753237Ab2IQAuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:14 -0400
-Message-Id: <20120917003641.853905523@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:13 -0400
+Message-Id: <20120917003641.585454627@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:18 +0100
+Date: Mon, 17 Sep 2012 01:38:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>,
+        alan@lxorguk.ukuu.org.uk, Dirk Behme <dirk.behme@de.bosch.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Troy Kisky <troy.kisky@boundarydevices.com>,
+        Xinyu Chen <xinyu.chen@freescale.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 113/135] USB: ftdi-sio: add support for more Physik Instrumente devices
+Subject: [ 111/135] tty: serial: imx: dont reinit clock in imx_setup_ufcr()
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,86 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-commit dafc4f7be1a556ca3868d343c00127728b397068 upstream.
+commit 7be0670f7b9198382938a03ff3db7f47ef6b4780 upstream.
 
-Commit b69cc672052540 added support for the E-861.  After acquiring a C-867, I
-realised that every Physik Instrumente's device has a different PID. They are
-listed in the Windows device driver's .inf file. So here are all PIDs for the
-current (and probably future) USB devices from Physik Instrumente.
+Remove the clock configuration from imx_setup_ufcr(). This
+isn't needed here and will cause garbage output if done.
 
-Compiled, but only actually tested on the E-861 and C-867.
+To be be sure that we only touch the bits we want (TXTL and RXTL)
+we have to mask out all other bits of the UFCR register. Add
+one non-existing bit macro for this, too (bit 6, DCEDTE on i.MX6).
 
-Signed-off-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Troy Kisky <troy.kisky@boundarydevices.com>
+CC: Xinyu Chen <xinyu.chen@freescale.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: deleted code in imx_setup_ufcr() refers to
+ sport->clk not sport->clk_per]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   21 ++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 1 deletion(-)
+ drivers/tty/serial/imx.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 5620db6..1197d47 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -810,7 +810,24 @@ static struct usb_device_id id_table_combined [] = {
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C865_PID) },
-+	{ USB_DEVICE(FTDI_VID, PI_C857_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C866_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C663_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C725_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E517_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C863_PID) },
- 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
-+	{ USB_DEVICE(PI_VID, PI_C867_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E609_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E709_PID) },
-+	{ USB_DEVICE(PI_VID, PI_100F_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1011_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1012_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1013_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1014_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1015_PID) },
-+	{ USB_DEVICE(PI_VID, PI_1016_PID) },
- 	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 5dd96ca..080d158 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -791,8 +791,27 @@
-  * Physik Instrumente
-  * http://www.physikinstrumente.com/en/products/
-  */
-+/* These two devices use the VID of FTDI */
-+#define PI_C865_PID	0xe0a0  /* PI C-865 Piezomotor Controller */
-+#define PI_C857_PID	0xe0a1  /* PI Encoder Trigger Box */
-+
- #define PI_VID              0x1a72  /* Vendor ID */
--#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
-+#define PI_C866_PID	0x1000  /* PI C-866 Piezomotor Controller */
-+#define PI_C663_PID	0x1001  /* PI C-663 Mercury-Step */
-+#define PI_C725_PID	0x1002  /* PI C-725 Piezomotor Controller */
-+#define PI_E517_PID	0x1005  /* PI E-517 Digital Piezo Controller Operation Module */
-+#define PI_C863_PID	0x1007  /* PI C-863 */
-+#define PI_E861_PID	0x1008  /* PI E-861 Piezomotor Controller */
-+#define PI_C867_PID	0x1009  /* PI C-867 Piezomotor Controller */
-+#define PI_E609_PID	0x100D  /* PI E-609 Digital Piezo Controller */
-+#define PI_E709_PID	0x100E  /* PI E-709 Digital Piezo Controller */
-+#define PI_100F_PID	0x100F  /* PI Digital Piezo Controller */
-+#define PI_1011_PID	0x1011  /* PI Digital Piezo Controller */
-+#define PI_1012_PID	0x1012  /* PI Motion Controller */
-+#define PI_1013_PID	0x1013  /* PI Motion Controller */
-+#define PI_1014_PID	0x1014  /* PI Device */
-+#define PI_1015_PID	0x1015  /* PI Device */
-+#define PI_1016_PID	0x1016  /* PI Digital Servo Module */
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -130,6 +130,7 @@
+ #define  UCR4_OREN  	 (1<<1)  /* Receiver overrun interrupt enable */
+ #define  UCR4_DREN  	 (1<<0)  /* Recv data ready interrupt enable */
+ #define  UFCR_RXTL_SHF   0       /* Receiver trigger level shift */
++#define  UFCR_DCEDTE	 (1<<6)  /* DCE/DTE mode select */
+ #define  UFCR_RFDIV      (7<<7)  /* Reference freq divider mask */
+ #define  UFCR_RFDIV_REG(x)	(((x) < 7 ? 6 - (x) : 6) << 7)
+ #define  UFCR_TXTL_SHF   10      /* Transmitter trigger level shift */
+@@ -635,22 +636,11 @@ static void imx_break_ctl(struct uart_po
+ static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
+ {
+ 	unsigned int val;
+-	unsigned int ufcr_rfdiv;
+-
+-	/* set receiver / transmitter trigger level.
+-	 * RFDIV is set such way to satisfy requested uartclk value
+-	 */
+-	val = TXTL << 10 | RXTL;
+-	ufcr_rfdiv = (clk_get_rate(sport->clk) + sport->port.uartclk / 2)
+-			/ sport->port.uartclk;
+-
+-	if(!ufcr_rfdiv)
+-		ufcr_rfdiv = 1;
+-
+-	val |= UFCR_RFDIV_REG(ufcr_rfdiv);
  
- /*
-  * Kondo Kagaku Co.Ltd.
++	/* set receiver / transmitter trigger level */
++	val = readl(sport->port.membase + UFCR) & (UFCR_RFDIV | UFCR_DCEDTE);
++	val |= TXTL << UFCR_TXTL_SHF | RXTL;
+ 	writel(val, sport->port.membase + UFCR);
+-
+ 	return 0;
+ }
+ 
 
 
