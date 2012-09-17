@@ -1,64 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2IQPKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:10:46 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45876 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab2IQPKo convert rfc822-to-8bit (ORCPT
+	id S1756739Ab2IQPQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:16:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:23649 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2IQPQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:10:44 -0400
-Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=utf-8
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <50570052.8050205@parallels.com>
-Date: Mon, 17 Sep 2012 11:10:30 -0400
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D4B752F3-1883-490E-AA5D-B9666472FFF3@oracle.com>
-References: <20120914140811.10835.81465.stgit@localhost.localdomain> <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com> <DA466953-BF79-44F7-8870-AC2FD5E3FEC2@oracle.com> <50570052.8050205@parallels.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-X-Mailer: Apple Mail (2.1278)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 17 Sep 2012 11:16:15 -0400
+From: Rafal Krypa <r.krypa@samsung.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
+Subject: [PATCH] Smack: add support for modification of existing rules
+Date: Mon, 17 Sep 2012 17:15:43 +0200
+Message-id: <1347894944-6866-1-git-send-email-r.krypa@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rule modifications are enabled via /smack/change-rule. Format is as follows:
+"Subject Object rwaxt rwaxt"
 
-On Sep 17, 2012, at 6:49 AM, Stanislav Kinsbursky wrote:
+First two strings are subject and object labels up to 255 characters.
+Third string contains permissions to enable.
+Fourth string contains permissions to disable.
 
-> 14.09.2012 23:10, Chuck Lever пишет:
->> 
->> On Sep 14, 2012, at 1:38 PM, Myklebust, Trond wrote:
->> 
->>> On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
->>>> What happens if statd is restarted?
->>> 
->>> Nothing unusual. Why?
->> 
->> The NSM upcall transport is a potential application for TCP + softconn, now that a persistent rpc_clnt is used.  It just depends on what failure mode we'd like to optimize for.
->> 
-> 
-> I don't understand, where the problem is.
-> Could you be more specific, please?
+All unmentioned permissions will be left unchanged.
+If no rule previously existed, it will be created.
 
-I'm suggesting an enhancement.
+Targeted for git://git.gitorious.org/smack-next/kernel.git
 
-The change is to use TCP for the NSM upcall transport, and set RPC_TASK_SOFTCONN on the individual RPCs.  The advantage of this is that the kernel could discover when statd is not running and fail the upcall immediately, rather than waiting possibly many seconds for each upcall RPC to time out.
+Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
+---
+ Documentation/security/Smack.txt |   11 +++
+ security/smack/smackfs.c         |  152 ++++++++++++++++++++++++++++----------
+ 2 files changed, 122 insertions(+), 41 deletions(-)
 
-The client already has a check in the mount.nfs command to see that statd is running, likely to avoid this lengthly timeout.  Since the client already has long-standing logic to avoid it, I think the benefit would be mostly on the server side.
-
-But this change can be done at some later point.
-
+diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
+index e68536d..ea20fa2 100644
+--- a/Documentation/security/Smack.txt
++++ b/Documentation/security/Smack.txt
+@@ -118,6 +118,17 @@ access2
+ ambient
+ 	This contains the Smack label applied to unlabeled network
+ 	packets.
++change-rule
++	This interface allows modification of existing access control rules.
++	The format accepted on write is:
++		"%s %s %s %s"
++	where the first string is the subject label, the second the
++	object label, the third the access to allow and the fourth the
++	access to deny. The access strings may contain only the characters
++	"rwxat-". If a rule for a given subject and object exists it will be
++	modified by enabling the permissions in the third string and disabling
++	those in the fourth string. If there is no such rule it will be
++	created using the access specified in the third and the fourth strings.
+ cipso
+ 	This interface allows a specific CIPSO header to be assigned
+ 	to a Smack label. The format accepted on write is:
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index 99929a5..dfd9d61 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -50,6 +50,7 @@ enum smk_inos {
+ 	SMK_ACCESS2	= 16,	/* make an access check with long labels */
+ 	SMK_CIPSO2	= 17,	/* load long label -> CIPSO mapping */
+ 	SMK_REVOKE_SUBJ	= 18,	/* set rules with subject label to '-' */
++	SMK_CHANGE_RULE	= 19,	/* change or add rules (long labels) */
+ };
+ 
+ /*
+@@ -210,10 +211,51 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
+ }
+ 
+ /**
++ * smk_perm_from_str - parse smack accesses from a text string
++ * @string: a text string that contains a Smack accesses code
++ *
++ * Returns an integer with respective bits set for specified accesses.
++ */
++static int smk_perm_from_str(const char *string)
++{
++	int perm = 0;
++	const char *cp;
++
++	for (cp = string; ; cp++)
++		switch (*cp) {
++		case '-':
++			break;
++		case 'r':
++		case 'R':
++			perm |= MAY_READ;
++			break;
++		case 'w':
++		case 'W':
++			perm |= MAY_WRITE;
++			break;
++		case 'x':
++		case 'X':
++			perm |= MAY_EXEC;
++			break;
++		case 'a':
++		case 'A':
++			perm |= MAY_APPEND;
++			break;
++		case 't':
++		case 'T':
++			perm |= MAY_TRANSMUTE;
++			break;
++		default:
++			return perm;
++		}
++}
++
++/**
+  * smk_fill_rule - Fill Smack rule from strings
+  * @subject: subject label string
+  * @object: object label string
+  * @access: access string
++ * @access_remove: string with permissions to be removed
+  * @rule: Smack rule
+  * @import: if non-zero, import labels
+  * @len: label length limit
+@@ -221,9 +263,10 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
+  * Returns 0 on success, -1 on failure
+  */
+ static int smk_fill_rule(const char *subject, const char *object,
+-				const char *access, struct smack_rule *rule,
+-				int import, int len)
++				const char *access, const char *access_remove,
++				struct smack_rule *rule, int import, int len)
+ {
++	int rc = -1;
+ 	const char *cp;
+ 	struct smack_known *skp;
+ 
+@@ -255,36 +298,11 @@ static int smk_fill_rule(const char *subject, const char *object,
+ 		rule->smk_object = skp->smk_known;
+ 	}
+ 
+-	rule->smk_access = 0;
+-
+-	for (cp = access; *cp != '\0'; cp++) {
+-		switch (*cp) {
+-		case '-':
+-			break;
+-		case 'r':
+-		case 'R':
+-			rule->smk_access |= MAY_READ;
+-			break;
+-		case 'w':
+-		case 'W':
+-			rule->smk_access |= MAY_WRITE;
+-			break;
+-		case 'x':
+-		case 'X':
+-			rule->smk_access |= MAY_EXEC;
+-			break;
+-		case 'a':
+-		case 'A':
+-			rule->smk_access |= MAY_APPEND;
+-			break;
+-		case 't':
+-		case 'T':
+-			rule->smk_access |= MAY_TRANSMUTE;
+-			break;
+-		default:
+-			return 0;
+-		}
+-	}
++	if (access_remove) {
++		rule->smk_access |= smk_perm_from_str(access);
++		rule->smk_access &= ~smk_perm_from_str(access_remove);
++	} else
++		rule->smk_access = smk_perm_from_str(access);
+ 
+ 	return 0;
+ }
+@@ -302,8 +320,8 @@ static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
+ 	int rc;
+ 
+ 	rc = smk_fill_rule(data, data + SMK_LABELLEN,
+-			   data + SMK_LABELLEN + SMK_LABELLEN, rule, import,
+-			   SMK_LABELLEN);
++			   data + SMK_LABELLEN + SMK_LABELLEN, NULL, rule,
++			   import, SMK_LABELLEN);
+ 	return rc;
+ }
+ 
+@@ -312,15 +330,17 @@ static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
+  * @data: string to be parsed, null terminated
+  * @rule: Smack rule
+  * @import: if non-zero, import labels
++ * @change: if non-zero, data is from /smack/change-rule
+  *
+  * Returns 0 on success, -1 on failure
+  */
+ static int smk_parse_long_rule(const char *data, struct smack_rule *rule,
+-				int import)
++				int import, int change)
+ {
+ 	char *subject;
+ 	char *object;
+ 	char *access;
++	char *access_remove;
+ 	int datalen;
+ 	int rc = -1;
+ 
+@@ -337,10 +357,23 @@ static int smk_parse_long_rule(const char *data, struct smack_rule *rule,
+ 	access = kzalloc(datalen, GFP_KERNEL);
+ 	if (access == NULL)
+ 		goto free_out_o;
++	access_remove = kzalloc(datalen, GFP_KERNEL);
++	if (access_remove == NULL)
++		goto free_out_a;
++
++	if (change) {
++		if (sscanf(data, "%s %s %s %s",
++			subject, object, access, access_remove) == 4)
++			rc = smk_fill_rule(subject, object, access,
++				access_remove, rule, import, 0);
++	} else {
++		if (sscanf(data, "%s %s %s", subject, object, access) == 3)
++			rc = smk_fill_rule(subject, object, access,
++				NULL, rule, import, 0);
++	}
+ 
+-	if (sscanf(data, "%s %s %s", subject, object, access) == 3)
+-		rc = smk_fill_rule(subject, object, access, rule, import, 0);
+-
++	kfree(access_remove);
++free_out_a:
+ 	kfree(access);
+ free_out_o:
+ 	kfree(object);
+@@ -351,6 +384,7 @@ free_out_s:
+ 
+ #define SMK_FIXED24_FMT	0	/* Fixed 24byte label format */
+ #define SMK_LONG_FMT	1	/* Variable long label format */
++#define SMK_CHANGE_FMT	2	/* Rule modification format */
+ /**
+  * smk_write_rules_list - write() for any /smack rule file
+  * @file: file pointer, not actually used
+@@ -359,13 +393,16 @@ free_out_s:
+  * @ppos: where to start - must be 0
+  * @rule_list: the list of rules to write to
+  * @rule_lock: lock for the rule list
+- * @format: /smack/load or /smack/load2 format.
++ * @format: /smack/load or /smack/load2 or /smack/change-rule format.
+  *
+  * Get one smack access rule from above.
+  * The format for SMK_LONG_FMT is:
+  *	"subject<whitespace>object<whitespace>access[<whitespace>...]"
+  * The format for SMK_FIXED24_FMT is exactly:
+  *	"subject                 object                  rwxat"
++ * The format for SMK_CHANGE_FMT is:
++ *	"subject<whitespace>object<whitespace>
++ *	 acc_enable<whitespace>acc_disable[<whitespace>...]"
+  */
+ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
+ 					size_t count, loff_t *ppos,
+@@ -417,7 +454,11 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
+ 		 * Be sure the data string is terminated.
+ 		 */
+ 		data[count] = '\0';
+-		if (smk_parse_long_rule(data, rule, 1))
++		if (smk_parse_long_rule(data, rule, 1, 0))
++			goto out_free_rule;
++	} else if (format == SMK_CHANGE_FMT) {
++		data[count] = '\0';
++		if (smk_parse_long_rule(data, rule, 1, 1))
+ 			goto out_free_rule;
+ 	} else {
+ 		/*
+@@ -1796,7 +1837,7 @@ static ssize_t smk_user_access(struct file *file, const char __user *buf,
+ 			return -ENOMEM;
+ 		memcpy(cod, data, count);
+ 		cod[count] = '\0';
+-		res = smk_parse_long_rule(cod, &rule, 0);
++		res = smk_parse_long_rule(cod, &rule, 0, 0);
+ 		kfree(cod);
+ 	}
+ 
+@@ -2064,6 +2105,33 @@ static const struct file_operations smk_revoke_subj_ops = {
+ };
+ 
+ /**
++ * smk_write_change_rule - write() for /smack/change-rule
++ * @file: file pointer
++ * @buf: data from user space
++ * @count: bytes sent
++ * @ppos: where to start - must be 0
++ */
++static ssize_t smk_write_change_rule(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	/*
++	 * Must have privilege.
++	 */
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	return smk_write_rules_list(file, buf, count, ppos, NULL, NULL,
++				    SMK_CHANGE_FMT);
++}
++
++static const struct file_operations smk_change_rule_ops = {
++	.write		= smk_write_change_rule,
++	.read		= simple_transaction_read,
++	.release	= simple_transaction_release,
++	.llseek		= generic_file_llseek,
++};
++
++/**
+  * smk_fill_super - fill the /smackfs superblock
+  * @sb: the empty superblock
+  * @data: unused
+@@ -2112,6 +2180,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+ 		[SMK_REVOKE_SUBJ] = {
+ 			"revoke-subject", &smk_revoke_subj_ops,
+ 			S_IRUGO|S_IWUSR},
++		[SMK_CHANGE_RULE] = {
++			"change-rule", &smk_change_rule_ops, S_IRUGO|S_IWUSR},
+ 		/* last one */
+ 			{""}
+ 	};
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+1.7.10.4
 
