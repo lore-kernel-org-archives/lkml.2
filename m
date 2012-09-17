@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2IQRbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:31:32 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58500 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab2IQRba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:31:30 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: rusty@rustcorp.com.au
-Cc: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH] drivers/virtio/virtio_pci.c: fix error return code
-Date: Mon, 17 Sep 2012 19:31:17 +0200
-Message-Id: <1347903077-19906-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1756865Ab2IQRcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:32:10 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:54375 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754774Ab2IQRcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 13:32:07 -0400
+Date: Mon, 17 Sep 2012 19:32:04 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, mce: Enable MCA support by default
+Message-ID: <20120917173204.GJ13879@aftab.osrc.amd.com>
+References: <1347900723-17490-1-git-send-email-bp@amd64.org>
+ <1347900723-17490-2-git-send-email-bp@amd64.org>
+ <3908561D78D1C84285E8C5FCA982C28F19D41BC2@ORSMSX108.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D41BC2@ORSMSX108.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+On Mon, Sep 17, 2012 at 05:30:00PM +0000, Luck, Tony wrote:
+> > MCA is the basic support for hardware error logging and reporting, and
+> > it is majorly unwise to run without it so enable machine check software
+> > support by default on x86.
+> 
+> Acked-by: Tony Luck <tony.luck@intel.com>
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+Thanks Tony.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Will send a pull request shortly.
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/virtio/virtio_pci.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 42b2076..c33aea3 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -719,8 +719,10 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
- 		goto out_enable_device;
- 
- 	vp_dev->ioaddr = pci_iomap(pci_dev, 0, 0);
--	if (vp_dev->ioaddr == NULL)
-+	if (vp_dev->ioaddr == NULL) {
-+		err = -ENOMEM;
- 		goto out_req_regions;
-+	}
- 
- 	pci_set_drvdata(pci_dev, vp_dev);
- 	pci_set_master(pci_dev);
 -- 
-1.7.11.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
