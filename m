@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab2IQAvL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:51:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33469 "EHLO
+	id S1754810Ab2IQAvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33956 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753159Ab2IQAtw (ORCPT
+	by vger.kernel.org with ESMTP id S1754459Ab2IQAvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:52 -0400
-Message-Id: <20120917003638.675589484@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:32 -0400
+Message-Id: <20120917003630.961458095@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:55 +0100
+Date: Mon, 17 Sep 2012 01:36:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
-        =?ISO-8859-15?q?Dominik=20K=C3=B6ppl?= <dominik@devwork.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 090/135] drm/i915: only enable sdvo hotplug irq if needed
+        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 034/135] mmc: sdhci-esdhc: break out early if clock is 0
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,70 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit fcbc50da7753b210b4442ca9abc4efbd4e481f6e upstream.
+commit 74f330bceaa7b88d06062e1cac3d519a3dfc041e upstream.
 
-Avoid constant wakeups caused by noisy irq lines when we don't even care
-about the irq. This should be particularly useful for i945g/gm where the
-hotplug has been disabled:
+Since commit 30832ab56 ("mmc: sdhci: Always pass clock request value
+zero to set_clock host op") was merged, esdhc_set_clock starts hitting
+"if (clock == 0)" where ESDHC_SYSTEM_CONTROL has been operated.  This
+causes SDHCI card-detection function being broken.  Fix the regression
+by moving "if (clock == 0)" above ESDHC_SYSTEM_CONTROL operation.
 
-commit 768b107e4b3be0acf6f58e914afe4f337c00932b
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri May 4 11:29:56 2012 +0200
-
-    drm/i915: disable sdvo hotplug on i945g/gm
-
-v2: While at it, remove the bogus hotplug_active read, and do not mask
-hotplug_active[0] before checking whether the irq is needed, per discussion
-with Daniel on IRC.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=38442
-Tested-by: Dominik Köppl <dominik@devwork.org>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/mmc/host/sdhci-esdhc.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -2556,7 +2556,6 @@ bool intel_sdvo_init(struct drm_device *
- 		hotplug_mask = IS_SDVOB(sdvo_reg) ?
- 			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
- 	}
--	dev_priv->hotplug_supported_mask |= hotplug_mask;
+diff --git a/drivers/mmc/host/sdhci-esdhc.h b/drivers/mmc/host/sdhci-esdhc.h
+index b97b2f5..d25f9ab 100644
+--- a/drivers/mmc/host/sdhci-esdhc.h
++++ b/drivers/mmc/host/sdhci-esdhc.h
+@@ -48,14 +48,14 @@ static inline void esdhc_set_clock(struct sdhci_host *host, unsigned int clock)
+ 	int div = 1;
+ 	u32 temp;
  
- 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
- 
-@@ -2564,14 +2563,6 @@ bool intel_sdvo_init(struct drm_device *
- 	if (!intel_sdvo_get_capabilities(intel_sdvo, &intel_sdvo->caps))
- 		goto err;
- 
--	/* Set up hotplug command - note paranoia about contents of reply.
--	 * We assume that the hardware is in a sane state, and only touch
--	 * the bits we think we understand.
--	 */
--	intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ACTIVE_HOT_PLUG,
--			     &intel_sdvo->hotplug_active, 2);
--	intel_sdvo->hotplug_active[0] &= ~0x3;
--
- 	if (intel_sdvo_output_setup(intel_sdvo,
- 				    intel_sdvo->caps.output_flags) != true) {
- 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
-@@ -2579,6 +2570,12 @@ bool intel_sdvo_init(struct drm_device *
- 		goto err;
- 	}
- 
-+	/* Only enable the hotplug irq if we need it, to work around noisy
-+	 * hotplug lines.
-+	 */
-+	if (intel_sdvo->hotplug_active[0])
-+		dev_priv->hotplug_supported_mask |= hotplug_mask;
++	if (clock == 0)
++		goto out;
 +
- 	intel_sdvo_select_ddc_bus(dev_priv, intel_sdvo, sdvo_reg);
+ 	temp = sdhci_readl(host, ESDHC_SYSTEM_CONTROL);
+ 	temp &= ~(ESDHC_CLOCK_IPGEN | ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN
+ 		| ESDHC_CLOCK_MASK);
+ 	sdhci_writel(host, temp, ESDHC_SYSTEM_CONTROL);
  
- 	/* Set the input timing to the screen. Assume always input 0. */
+-	if (clock == 0)
+-		goto out;
+-
+ 	while (host->max_clk / pre_div / 16 > clock && pre_div < 256)
+ 		pre_div *= 2;
+ 
 
 
