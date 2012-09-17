@@ -1,83 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2IQHQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:16:10 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:54990 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751462Ab2IQHQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:16:07 -0400
-Message-ID: <5056CE65.9080401@ti.com>
-Date: Mon, 17 Sep 2012 10:16:53 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Barry Song <baohua.song@csr.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vista Silicon <javier.martin@vista-silicon.com>,
-        Zhangfei Gao <zhangfei.gao@marvell.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via device_prep_dma_cyclic()
- callback
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com> <20120917063451.GB6413@S2101-09.ap.freescale.net>
-In-Reply-To: <20120917063451.GB6413@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1753515Ab2IQHTI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:19:08 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36875 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab2IQHTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 03:19:03 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, cmm@us.ibm.com, tytso@mit.edu,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v1 00/11] vfs: hot data tracking
+Date: Mon, 17 Sep 2012 15:18:34 +0800
+Message-Id: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+x-cbid: 12091707-7182-0000-0000-000002A40DDE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 09:34 AM, Shawn Guo wrote:
-> On Thu, Sep 13, 2012 at 04:37:54PM +0300, Peter Ujfalusi wrote:
->> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
->> can receive the no_wakeup request coming from client drivers.
->> This feature can be used during audio operation to disable all audio
->> related interrupts.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
->> CC: Barry Song <baohua.song@csr.com>
->> CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
->> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
->> CC: Vista Silicon <javier.martin@vista-silicon.com>
->> CC: Zhangfei Gao <zhangfei.gao@marvell.com>
->> CC: Shawn Guo <shawn.guo@linaro.org>
->> CC: Laxman Dewangan <ldewangan@nvidia.com>
->> ---
->>  drivers/dma/at_hdmac.c        | 3 ++-
->>  drivers/dma/ep93xx_dma.c      | 4 +++-
->>  drivers/dma/imx-dma.c         | 2 +-
->>  drivers/dma/imx-sdma.c        | 2 +-
->>  drivers/dma/mmp_tdma.c        | 2 +-
->>  drivers/dma/mxs-dma.c         | 2 +-
->>  drivers/dma/omap-dma.c        | 3 ++-
->>  drivers/dma/pl330.c           | 2 +-
->>  drivers/dma/sa11x0-dma.c      | 2 +-
->>  drivers/dma/sirf-dma.c        | 2 +-
->>  drivers/dma/ste_dma40.c       | 3 ++-
->>  drivers/dma/tegra20-apb-dma.c | 2 +-
->>  include/linux/dmaengine.h     | 5 +++--
->>  13 files changed, 20 insertions(+), 14 deletions(-)
->>
-> API changes without updating users?
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-All users of this callback is updated with this patch.
-The public API (dmaengine_prep_dma_cyclic) is only used by ASoC, which has
-been updated by the previous patch.
-Note: this part has been updated for v3.
+NOTE:
+
+  The patchset is currently post out mainly to make sure
+it is going in the correct direction and hope to get some
+helpful comments from other guys.
+
+TODO List:
+
+ 1.) Need to do scalability or performance tests.
+ 2.) Turn some Micro into tunables
+       TIME_TO_KICK, and HEAT_UPDATE_DELAY
+ 3.) Rafactor hot_hash_is_aging()
+       If you just made the timeout value a timespec and compared
+     the _timespecs_, you would be doing a lot fewer conversions.
+ 4.) Cleanup some unnecessary lock protect
+ 5.) Add more comments to explain how to calc temperature
+
+Ben Chociej, Matt Lupfer and Conor Scott originally wrote this code to
+ be very btrfs-specific.  I've taken their code and attempted to
+make it more generic and integrate it at the VFS level.
+
+INTRODUCTION:
+
+  Essentially, this means maintaining some key stats
+(like number of reads/writes, last read/write time, frequency of
+reads/writes), then distilling those numbers down to a single
+"temperature" value that reflects what data is "hot," and using that
+temperature to move data to SSDs.
+
+  The long-term goal of these patches is to allow some FSs,
+e.g. Btrfs to intelligently utilize SSDs in a heterogenous volume.
+Incidentally, this project has been motivated by
+the Project Ideas page on the Btrfs wiki.
+
+  Of course, users are warned not to run this code outside of development
+environments. These patches are EXPERIMENTAL, and as such they might eat
+your data and/or memory. That said, the code should be relatively safe
+when the hottrack mount option are disabled.
+
+MOTIVATION:
+
+  The overall goal of enabling hot data relocation to SSD has been
+motivated by the Project Ideas page on the Btrfs wiki at
+<https://btrfs.wiki.kernel.org/index.php/Project_ideas>.
+It will divide into two steps. VFS provide hot data tracking function
+while specific FS will provide hot data relocation function.
+So as the first step of this goal, it is hoped that the patchset
+for hot data tracking will eventually mature into VFS.
+
+  This is essentially the traditional cache argument: SSD is fast and
+expensive; HDD is cheap but slow. ZFS, for example, can already take
+advantage of SSD caching. Btrfs should also be able to take advantage of
+hybrid storage without many broad, sweeping changes to existing code.
+
+SUMMARY:
+
+- Hooks in existing vfs functions to track data access frequency
+
+- New rbtrees for tracking access frequency of inodes and sub-file
+ranges (hot_rb.c)
+    The relationship between super_block and rbtree is as below:
+  super_block->s_hotinfo.hot_inode_tree
+    In include/linux/fs.h, one struct hot_info s_hotinfo is added to
+  super_block struct. Each FS instance can find hot tracking info
+  s_hotinfo via its super_block. In this hot_info, it store a lot of hot
+  tracking info such as hot_inode_tree, inode and range hash list, etc.
+
+- A hash list for indexing data by its temperature (hot_hash.c)
+
+- A debugfs interface for dumping data from the rbtrees (hot_debugfs.c)
+
+- A background kthread for updating inode heat info
+
+- Mount options for enabling temperature tracking(-o hottrack, default mean disabled)
+  (hot_track.c)
+
+- An ioctl to retrieve the frequency information collected for a certain
+file
+
+- Ioctls to enable/disable frequency tracking per inode.
+
+Usage syntax:
+
+root@debian-i386:~# mount -o hottrack /dev/sdb /mnt
+[ 1505.894078] device label test devid 1 transid 29 /dev/sdb
+[ 1505.952977] btrfs: disk space caching is enabled
+[ 1506.069678] vfs: turning on hot data tracking
+root@debian-i386:~# mount -t debugfs none /sys/kernel/debug
+root@debian-i386:~# ls -l /sys/kernel/debug/vfs_hotdata/
+total 0
+drwxr-xr-x 2 root root 0 Aug  8 04:40 sdb
+root@debian-i386:~# ls -l /sys/kernel/debug/vfs_hotdata/sdb
+total 0
+-rw-r--r-- 1 root root 0 Aug  8 04:40 inode_data
+-rw-r--r-- 1 root root 0 Aug  8 04:40 range_data
+root@debian-i386:~# vi /mnt/file
+root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/inode_data
+inode #279, reads 0, writes 1, avg read time 18446744073709551615,
+avg write time 5251566408153596, temp 109
+root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/range_data
+inode #279, range start 0 (range len 1048576) reads 0, writes 1,
+avg read time 18446744073709551615, avg write time 1128690176623144209, temp 64
+root@debian-i386:~# echo "hot data tracking test" >> /mnt/file
+root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/inode_data
+inode #279, reads 0, writes 2, avg read time 18446744073709551615,
+avg write time 4923343766042451, temp 109
+root@debian-i386:~# cat /sys/kernel/debug/hot_track/sdb/range_data
+inode #279, range start 0 (range len 1048576) reads 0, writes 2,
+avg read time 18446744073709551615, avg write time 1058147040842596150, temp 64
+root@debian-i386:~#
+
+Changelog from v2:
+  1.) Adjust the code based on Ram's comments. [Ram Pai]
+v2:
+  1.) refactor the code based on Dave, Mingming and Ram's sugestions.
+                                  [Dave Hansen, Mingming Cao, and Ram Pai]
+v1:
+  1.) refactor the code based on Dave's sugestions. [Dave Hansen]
+  2.) fix up some bugs.
+
+Zhi Yong Wu (11):
+  vfs: introduce one structure hot_info
+  vfs: introduce one rb tree - hot_inode_tree
+  vfs: introduce 2 rb tree items - inode and range
+  vfs: add support for updating access frequency
+  vfs: add one new mount option '-o hottrack'
+  vfs: add init and exit support
+  vfs: introduce one hash table
+  vfs: enable hot data tracking
+  vfs: fork one private kthread to update temperature info
+  vfs: add 3 new ioctl interfaces
+  vfs: add debugfs support
+
+ fs/Makefile               |    3 +-
+ fs/compat_ioctl.c         |    8 +
+ fs/dcache.c               |    2 +
+ fs/direct-io.c            |   10 +
+ fs/hot_debugfs.c          |  487 ++++++++++++++++++++++++++++++++++
+ fs/hot_debugfs.h          |   60 +++++
+ fs/hot_hash.c             |  369 ++++++++++++++++++++++++++
+ fs/hot_hash.h             |  108 ++++++++
+ fs/hot_rb.c               |  648 +++++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_rb.h               |   70 +++++
+ fs/hot_track.c            |  113 ++++++++
+ fs/hot_track.h            |   23 ++
+ fs/ioctl.c                |  132 +++++++++
+ fs/namespace.c            |   10 +
+ fs/super.c                |   11 +
+ include/linux/fs.h        |   15 +
+ include/linux/hot_track.h |  169 ++++++++++++
+ mm/filemap.c              |    8 +
+ mm/page-writeback.c       |   21 ++
+ mm/readahead.c            |    9 +
+ 20 files changed, 2275 insertions(+), 1 deletions(-)
+ create mode 100644 fs/hot_debugfs.c
+ create mode 100644 fs/hot_debugfs.h
+ create mode 100644 fs/hot_hash.c
+ create mode 100644 fs/hot_hash.h
+ create mode 100644 fs/hot_rb.c
+ create mode 100644 fs/hot_rb.h
+ create mode 100644 fs/hot_track.c
+ create mode 100644 fs/hot_track.h
+ create mode 100644 include/linux/hot_track.h
 
 -- 
-Péter
+1.7.6.5
+
