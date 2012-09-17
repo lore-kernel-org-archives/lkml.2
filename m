@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab2IQMUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 08:20:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35554 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab2IQMUC (ORCPT
+	id S1756168Ab2IQMUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 08:20:30 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45802 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab2IQMU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 08:20:02 -0400
-Date: Mon, 17 Sep 2012 05:19:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: navin patidar <navinp@cdac.in>
-Cc: mfm@muteddisk.com, linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
- usbip_host
-Message-ID: <20120917121957.GA23142@kroah.com>
-References: <1347616403-3413-1-git-send-email-navinp@cdac.in>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347616403-3413-1-git-send-email-navinp@cdac.in>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Sep 2012 08:20:28 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: cjb@laptop.org
+Cc: will.newton@imgtec.com, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        kyungmin.park@samsung.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH v2 1/4] drivers/mmc/host/dw_mmc.c: fix error return code
+Date: Mon, 17 Sep 2012 14:20:17 +0200
+Message-Id: <1347884417-26754-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
+References: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 03:23:23PM +0530, navin patidar wrote:
-> -------------------------------------------------------------------------------------------------------------------------------
-> 
-> This e-mail is for the sole use of the intended recipient(s) and may
-> contain confidential and privileged information. If you are not the
-> intended recipient, please contact the sender by reply e-mail and destroy
-> all copies and the original message. Any unauthorized review, use,
-> disclosure, dissemination, forwarding, printing or copying of this email
-> is strictly prohibited and appropriate legal action will be taken.
-> -------------------------------------------------------------------------------------------------------------------------------
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-As others have pointed out, I can not accept patches sent with this type
-of wording in them, sorry.  Please fix your email system and try again.
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-greg k-h
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ drivers/mmc/host/dw_mmc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 36f98c0..43a2663 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2039,8 +2039,10 @@ int dw_mci_probe(struct dw_mci *host)
+ 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+ 	host->card_workqueue = alloc_workqueue("dw-mci-card",
+ 			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+-	if (!host->card_workqueue)
++	if (!host->card_workqueue) {
++		ret = -ENOMEM;
+ 		goto err_dmaunmap;
++	}
+ 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+ 	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags, "dw-mci", host);
+ 	if (ret)
+-- 
+1.7.11.4
+
