@@ -1,49 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab2IQXOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 19:14:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40897 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975Ab2IQXOs convert rfc822-to-8bit (ORCPT
+	id S1757506Ab2IQXWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 19:22:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58133 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab2IQXWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 19:14:48 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Bryan Wu <bryan.wu@canonical.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Question about cleaning up the LP5521/5523 LED driver
-Thread-Topic: Question about cleaning up the LP5521/5523 LED driver
-Thread-Index: Ac2Ux5p32LFQ6BkaSD2YmDg6N4ig1v//n6oA//7a3gA=
-Date: Mon, 17 Sep 2012 23:14:41 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF52A7@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
- <CACRpkdYQ8X7iwvHoecwYs1TZG_yP281FR-ZN7JCO=HUVp-05Ew@mail.gmail.com>
-In-Reply-To: <CACRpkdYQ8X7iwvHoecwYs1TZG_yP281FR-ZN7JCO=HUVp-05Ew@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 17 Sep 2012 19:22:49 -0400
+Date: Mon, 17 Sep 2012 16:22:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: axboe@kernel.dk, Tejun Heo <tj@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: blk, mm: lockdep irq lock inversion in linux-next
+Message-Id: <20120917162248.d998afe3.akpm@linux-foundation.org>
+In-Reply-To: <5054878F.1030908@gmail.com>
+References: <5054878F.1030908@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Should I keep the sysfs layout of LP5521 and LP5523?
-> > When we change the device attributes, do we have to consider the
-> backward compatibility?
-> 
-> The ABI is a contract so basically yes, you need real good reasons
-> (like security concerns) to change the ABI.
-> 
-> That said, the lm3533 is the only LED driver that has actually
-> documented
-> its ABI: Documentation/ABI/testing/sysfs-class-led-driver-lm3533
+On Sat, 15 Sep 2012 15:50:07 +0200
+Sasha Levin <levinsasha928@gmail.com> wrote:
 
-OK, thanks for your great help !
+> Hi all,
+> 
+> While fuzzing with trinity within a KVM tools guest on a linux-next kernel, I
+> got the lockdep warning at the bottom of this mail.
+> 
+> I've tried figuring out where it was introduced, but haven't found any sign that
+> any of the code in that area changed recently, so I'm probably missing something...
+> 
+> 
+> [ 157.966399] =========================================================
+> [ 157.968523] [ INFO: possible irq lock inversion dependency detected ]
+> [ 157.970029] 3.6.0-rc5-next-20120914-sasha-00001-g802bf6c-dirty #340 Tainted: G W
+> [ 157.970029] ---------------------------------------------------------
+> [ 157.970029] trinity-child38/6642 just changed the state of lock:
+> [ 157.970029] (&(&mapping->tree_lock)->rlock){+.+...}, at: [<ffffffff8120cafc>]
+> invalidate_inode_pages2_range+0x20c/0x3c0
+> [ 157.970029] but this lock was taken by another, SOFTIRQ-safe lock in the past:
+> [ 157.970029] (&(&new->queue_lock)->rlock){..-...}
+> 
+> [snippage]
 
-Best Regards,
-Milo
+gack, what a mess.  Thanks for the report.  AFAICT, what has happened is:
+
+invalidate_complete_page2()
+->spin_lock_irq(&mapping->tree_lock)
+->clear_page_mlock()
+  __clear_page_mlock()
+  ->isolate_lru_page()
+    ->spin_lock_irq(&zone->lru_lock)
+    ->spin_unlock_irq(&zone->lru_lock)
+
+whoops.  isolate_lru_page() just enabled local interrupts while we're
+holding ->tree_lock, which is supposed to be an irq-save lock.  And in
+a rather obscure way, lockdep caught it.
+
+Problem is, I cannot find any recent change which might have triggered
+this.
+
+I don't know how repeatable this is for you (not very at all, I
+suspect).  This?
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm: isolate_lru_page(): don't enable local interrupts
+
+isolate_lru_page() is called with local interrupts disabled, via
+
+invalidate_complete_page2()
+->spin_lock_irq(&mapping->tree_lock)
+->clear_page_mlock()
+  __clear_page_mlock()
+  ->isolate_lru_page()
+
+so it should not unconditionally enable local interrupts.
+
+Sasha hit a lockdep warning when running Trinity as a result of this.
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/vmscan.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff -puN mm/vmscan.c~mm-isolate_lru_page-dont-enable-local-interrupts mm/vmscan.c
+--- a/mm/vmscan.c~mm-isolate_lru_page-dont-enable-local-interrupts
++++ a/mm/vmscan.c
+@@ -1161,8 +1161,9 @@ int isolate_lru_page(struct page *page)
+ 	if (PageLRU(page)) {
+ 		struct zone *zone = page_zone(page);
+ 		struct lruvec *lruvec;
++		unsigned long flags;
+ 
+-		spin_lock_irq(&zone->lru_lock);
++		spin_lock_irqsave(&zone->lru_lock, flags);
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
+ 		if (PageLRU(page)) {
+ 			int lru = page_lru(page);
+@@ -1171,7 +1172,7 @@ int isolate_lru_page(struct page *page)
+ 			del_page_from_lru_list(page, lruvec, lru);
+ 			ret = 0;
+ 		}
+-		spin_unlock_irq(&zone->lru_lock);
++		spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 	}
+ 	return ret;
+ }
+_
+
