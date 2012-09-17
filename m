@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2IQAuj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33386 "EHLO
+	id S1754453Ab2IQAvL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33469 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753052Ab2IQAtj (ORCPT
+	by vger.kernel.org with ESMTP id S1753159Ab2IQAtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:39 -0400
-Message-Id: <20120917003638.813933543@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:52 -0400
+Message-Id: <20120917003638.675589484@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:56 +0100
+Date: Mon, 17 Sep 2012 01:37:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Beno=C3=AEt=20Locher?= <Benoit.Locher@skf.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 091/135] can: mcp251x: avoid repeated frame bug
+        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
+        =?ISO-8859-15?q?Dominik=20K=C3=B6ppl?= <dominik@devwork.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 090/135] drm/i915: only enable sdvo hotplug irq if needed
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,59 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benoît Locher <Benoit.Locher@skf.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit cab32f39dcc5b35db96497dc0a026b5dea76e4e7 upstream.
+commit fcbc50da7753b210b4442ca9abc4efbd4e481f6e upstream.
 
-The MCP2515 has a silicon bug causing repeated frame transmission, see section
-5 of MCP2515 Rev. B Silicon Errata Revision G (March 2007).
+Avoid constant wakeups caused by noisy irq lines when we don't even care
+about the irq. This should be particularly useful for i945g/gm where the
+hotplug has been disabled:
 
-Basically, setting TXBnCTRL.TXREQ in either SPI mode (00 or 11) will eventually
-cause the bug. The workaround proposed by Microchip is to use mode 00 and send
-a RTS command on the SPI bus to initiate the transmission.
+commit 768b107e4b3be0acf6f58e914afe4f337c00932b
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri May 4 11:29:56 2012 +0200
 
-Signed-off-by: Benoît Locher <Benoit.Locher@skf.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+    drm/i915: disable sdvo hotplug on i945g/gm
+
+v2: While at it, remove the bogus hotplug_active read, and do not mask
+hotplug_active[0] before checking whether the irq is needed, per discussion
+with Daniel on IRC.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=38442
+Tested-by: Dominik Köppl <dominik@devwork.org>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/mcp251x.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/can/mcp251x.c b/drivers/net/can/mcp251x.c
-index a580db2..26e7129 100644
---- a/drivers/net/can/mcp251x.c
-+++ b/drivers/net/can/mcp251x.c
-@@ -83,6 +83,11 @@
- #define INSTRUCTION_LOAD_TXB(n)	(0x40 + 2 * (n))
- #define INSTRUCTION_READ_RXB(n)	(((n) == 0) ? 0x90 : 0x94)
- #define INSTRUCTION_RESET	0xC0
-+#define RTS_TXB0		0x01
-+#define RTS_TXB1		0x02
-+#define RTS_TXB2		0x04
-+#define INSTRUCTION_RTS(n)	(0x80 | ((n) & 0x07))
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -2556,7 +2556,6 @@ bool intel_sdvo_init(struct drm_device *
+ 		hotplug_mask = IS_SDVOB(sdvo_reg) ?
+ 			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
+ 	}
+-	dev_priv->hotplug_supported_mask |= hotplug_mask;
+ 
+ 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
+ 
+@@ -2564,14 +2563,6 @@ bool intel_sdvo_init(struct drm_device *
+ 	if (!intel_sdvo_get_capabilities(intel_sdvo, &intel_sdvo->caps))
+ 		goto err;
+ 
+-	/* Set up hotplug command - note paranoia about contents of reply.
+-	 * We assume that the hardware is in a sane state, and only touch
+-	 * the bits we think we understand.
+-	 */
+-	intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ACTIVE_HOT_PLUG,
+-			     &intel_sdvo->hotplug_active, 2);
+-	intel_sdvo->hotplug_active[0] &= ~0x3;
+-
+ 	if (intel_sdvo_output_setup(intel_sdvo,
+ 				    intel_sdvo->caps.output_flags) != true) {
+ 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
+@@ -2579,6 +2570,12 @@ bool intel_sdvo_init(struct drm_device *
+ 		goto err;
+ 	}
+ 
++	/* Only enable the hotplug irq if we need it, to work around noisy
++	 * hotplug lines.
++	 */
++	if (intel_sdvo->hotplug_active[0])
++		dev_priv->hotplug_supported_mask |= hotplug_mask;
 +
+ 	intel_sdvo_select_ddc_bus(dev_priv, intel_sdvo, sdvo_reg);
  
- /* MPC251x registers */
- #define CANSTAT	      0x0e
-@@ -397,6 +402,7 @@ static void mcp251x_hw_tx_frame(struct spi_device *spi, u8 *buf,
- static void mcp251x_hw_tx(struct spi_device *spi, struct can_frame *frame,
- 			  int tx_buf_idx)
- {
-+	struct mcp251x_priv *priv = dev_get_drvdata(&spi->dev);
- 	u32 sid, eid, exide, rtr;
- 	u8 buf[SPI_TRANSFER_BUF_LEN];
- 
-@@ -418,7 +424,10 @@ static void mcp251x_hw_tx(struct spi_device *spi, struct can_frame *frame,
- 	buf[TXBDLC_OFF] = (rtr << DLC_RTR_SHIFT) | frame->can_dlc;
- 	memcpy(buf + TXBDAT_OFF, frame->data, frame->can_dlc);
- 	mcp251x_hw_tx_frame(spi, buf, frame->can_dlc, tx_buf_idx);
--	mcp251x_write_reg(spi, TXBCTRL(tx_buf_idx), TXBCTRL_TXREQ);
-+
-+	/* use INSTRUCTION_RTS, to avoid "repeated frame problem" */
-+	priv->spi_tx_buf[0] = INSTRUCTION_RTS(1 << tx_buf_idx);
-+	mcp251x_spi_trans(priv->spi, 1);
- }
- 
- static void mcp251x_hw_rx_frame(struct spi_device *spi, u8 *buf,
+ 	/* Set the input timing to the screen. Assume always input 0. */
 
 
