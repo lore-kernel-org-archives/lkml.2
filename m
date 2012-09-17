@@ -1,34 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab2IQLd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:33:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46913 "EHLO
+	id S1755982Ab2IQLec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:34:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35779 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755786Ab2IQLd0 (ORCPT
+	with ESMTP id S1755845Ab2IQLe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:33:26 -0400
-Date: Mon, 17 Sep 2012 19:33:49 +0800
-From: "Jianpeng Ma" <majianpeng@gmail.com>
-To: rostedt <rostedt@goodmis.org>
-Cc: fweisbec <fweisbec@gmail.com>, mingo <mingo@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Why blktrace didn't trace requests merge?
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201209171933464847623@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Mon, 17 Sep 2012 07:34:29 -0400
+Date: Mon, 17 Sep 2012 04:34:23 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] PCI: Keep pci_fixup_irqs() around after init
+Message-ID: <20120917113423.GA28759@kroah.com>
+References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8HBXUU1019841
 
-Hi all:
-	I used blktrace to trace some io.But i can't find requests merge. I searched the code and did't not find.
-	Why? 
-									
-Thanks!
-Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Mon, Sep 17, 2012 at 01:22:53PM +0200, Thierry Reding wrote:
+> Remove the __init annotations in order to keep pci_fixup_irqs() around
+> after init (e.g. for hotplug). This requires the same change for the
+> implementation of pcibios_update_irq() on all architectures. While at
+> it, all __devinit annotations are removed as well, since they will be
+> useless now that HOTPLUG is always on.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+> Changes in v2:
+> - remove __init and __devinit annotations altogether
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
