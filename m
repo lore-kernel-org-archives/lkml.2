@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab2IQUKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:10:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45116 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755612Ab2IQUKJ (ORCPT
+	id S1757285Ab2IQUKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:10:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46748 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755759Ab2IQUK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:10:09 -0400
-Message-ID: <5057839D.5020908@gmail.com>
-Date: Mon, 17 Sep 2012 14:10:05 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 17 Sep 2012 16:10:28 -0400
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <srostedt@redhat.com>
-CC: Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        tzanussi@gmail.com
-Subject: Re: perf script: rwtop: SIGALRM and pipe read race
-References: <20120914153952.GA8834@turtle.usersys.redhat.com> <505355AF.7000006@gmail.com> <20120914181049.GA16618@turtle.usersys.redhat.com> <505739EF.5010000@gmail.com> <50573EC3.6020209@gmail.com> <20120917160211.GC31375@ghostprotocols.net> <505750A4.9080207@gmail.com> <20120917171257.GD31375@ghostprotocols.net>
-In-Reply-To: <20120917171257.GD31375@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <505754EB.8060907@oracle.com>
+References: <20120917215938.11c456c113ac3b015cb2d5ae@canb.auug.org.au>
+	<505745CF.8040202@xenotime.net>
+	<505754EB.8060907@oracle.com>
+Date: Mon, 17 Sep 2012 22:10:27 +0200
+X-Google-Sender-Auth: LbBGneDXz2u_ryfXzPDdCCt6AYM
+Message-ID: <CAMuHMdWSTNb+YAyHR5F0kkHjDM8iVgRV352OcZ-epvNTcx+pBA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Sept 17 (jfs)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tino Reichardt <list-jfs@mcmilk.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/17/12 11:12 AM, Arnaldo Carvalho de Melo wrote:
+Hi Dave.
+
+On Mon, Sep 17, 2012 at 6:50 PM, Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
+>> modular build:
+>> ERROR: "__divdi3" [fs/jfs/jfs.ko] undefined!
+>>
+>> or builtin:
+>> fs/built-in.o: In function `dbDiscardAG':
+>> (.text+0x12988b): undefined reference to `__divdi3'
 >
-> Its possible that changes made to support non tracepoint events
-> introduced this problem, so perhaps bisecting it, as this wasn't present
-> some time ago, i.e. those big numbers :-\
+> Thanks Randy.
+>
+> This should fix it. I'll integrate it back into the proper patch in the
+> jfs tree for the next pull.
+>
+> jfs: fix i386 build error. Replace 64-bit division with do_div()
+>
+> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-git bisect failed miserably for me. But, pondering a bit on changes to 
-the tracepoint processing and it's rather obvious - libtraceevent.
+Thx, same issue on m68k, and your patch fixed it, so
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit before libtraceevent - 44d1a3e -- works fine
-first usable commit after libtraveevent - 8784eb7 -- fails
+Gr{oetje,eeting}s,
 
+                        Geert
 
-David
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
