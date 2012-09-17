@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2IQUn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:43:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63630 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab2IQUn5 (ORCPT
+	id S932276Ab2IQUrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:47:31 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65179 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756030Ab2IQUr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:43:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] mfd: Fix compile for twl-core.c by removing cpu_is_omap usage
-Date: Mon, 17 Sep 2012 20:43:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Walmsley <paul@pwsan.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>, Felipe Balbi <balbi@ti.com>
-References: <20120917202943.GV4521@atomide.com>
-In-Reply-To: <20120917202943.GV4521@atomide.com>
+	Mon, 17 Sep 2012 16:47:29 -0400
+Date: Mon, 17 Sep 2012 22:47:24 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, mlindner@marvell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch net] sky2: fix rx filter setup on link up
+Message-ID: <20120917204724.GA1749@minipsycho.orion>
+References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+ <20120917091214.5cd9b0f5@nehalam.linuxnetplumber.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209172043.45461.arnd@arndb.de>
-X-Provags-ID: V02:K0:28dKumlM6ubHSfSw7gzzUeEhDgLHNisWwOEVpg2o0L6
- ppRx4rbPw8DLR/+hgBsNvEzsgp7KdJBVaS8TlVp51Gf/FUEouj
- 9DQARbI5XDgMaL9E0uJnZBg+/WuTPLhbtt+erUlFaLD1LOppYX
- V7UYOKnxroBMlasw72J7O6wRMIxSQv1sJ6dVFTOL2XefgqYw+7
- tR8QXWoiMhPziOrYvLviBjaZeCsDDjFJlvwGNOBrTCAP4R0FmF
- /8tAGChzfgrAam0pDui4TlZOWC5+/0azLAl536jccGvmtsOw+8
- iNM/YNXsaKMtAwomFe9OhQneXgCAOVFoP4Rg6wtrKku8lM+LLi
- oJjQLcqhl5S5z/yMthbI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917091214.5cd9b0f5@nehalam.linuxnetplumber.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 September 2012, Tony Lindgren wrote:
-> Commit 7d7e1eba (ARM: OMAP2+: Prepare for irqs.h removal) broke
-> compile for non-omap as include plat/cpu.h was added:
-> 
-> drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
-> 
-> This header was indirectly included earlier when SPARSE_IRQ was not
-> set, but does not exist on most platforms.
-> 
-> Fix the problem by removing the cpu_is_omap usage that should
-> not exist in drivers at all. We can do this by adding proper
-> clock aliases for the twl-core.c drivers, and drop separate
-> handling for cases when clock framework is not available as
-> the behaviour will stay the same.
-> 
-> Note that we need to add a platform device to avoid using the
-> i2c provided names that may be different on various omaps.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
+Mon, Sep 17, 2012 at 06:12:14PM CEST, shemminger@vyatta.com wrote:
+>On Mon, 17 Sep 2012 17:10:17 +0200
+>Jiri Pirko <jiri@resnulli.us> wrote:
+>
+>> In my case I have following problem. sky2_set_multicast() sets registers
+>> GM_MC_ADDR_H[1-4] correctly to:
+>> 0000 0800 0001 0410
+>> However, when adapter gets link and sky2_link_up() is called, the values
+>> are for some reason different:
+>> 0000 0800 0016 0410
+>
+>Rather than papering over the problem, it would be better to
+>trace back what is setting those registers and fix that code.
 
+Yes, I did that. No code at sky2.[ch] is writing to this registers other
+than sky2_set_multicast() and sky2_gmac_reset() (I hooked on sky2_write*()).
+So I strongly believe this is a HW issue (maybe only issue of my revision
+"Yukon-2 EC chip revision 2")
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+>> This in my case prevents iface to be able to receive packets with dst mac
+>> 01:80:C2:00:00:02 (LACPDU dst mac), which I set up previously by
+>> SIOCADDMULTI.
+>> 
+>> So remember computed rx_filter data and write it to GM_MC_ADDR_H[1-4] on
+>> link_up.
+>>
+>
+>Please do some more root cause analysis. Just save/restoring the
+>registers is just a temporary workaround.
