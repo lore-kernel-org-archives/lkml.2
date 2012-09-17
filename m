@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab2IQBTa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:19:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33609 "EHLO
+	id S1752657Ab2IQAuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752922Ab2IQAuL (ORCPT
+	by vger.kernel.org with ESMTP id S1752922Ab2IQAtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:11 -0400
-Message-Id: <20120917003643.221879833@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:22 -0400
+Message-Id: <20120917003626.612267462@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:28 +0100
+Date: Mon, 17 Sep 2012 01:36:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 123/135] staging: r8712u: fix bug in r8712_recv_indicatepkt()
+        alan@lxorguk.ukuu.org.uk, Jon Hunter <jon-hunter@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [ 003/135] ARM: OMAP2+: Fix dmtimer set source clock failure
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,44 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jon Hunter <jon-hunter@ti.com>
 
-commit abf02cfc179bb4bd30d05f582d61b3b8f429b813 upstream.
+commit 54f32a35f4d3a653a18a2c8c239f19ae060bd803 upstream.
 
-64bit arches have a buggy r8712u driver, let's fix it.
+Calling the dmtimer function omap_dm_timer_set_source() fails if following a
+call to pm_runtime_put() to disable the timer. For example the following
+sequence would fail to set the parent clock ...
 
-skb->tail must be set properly or network stack behavior is undefined.
+	omap_dm_timer_stop(gptimer);
+	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_32_KHZ);
 
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=847525
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=45071
+The following error message would be seen ...
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+omap_dm_timer_set_source: failed to set timer_32k_ck as parent
+
+The problem is that, by design, pm_runtime_put() simply decrements the usage
+count and returns before the timer has actually been disabled. Therefore,
+setting the parent clock failed because the timer was still active when the
+trying to set the parent clock. Setting a parent clock will fail if the clock
+you are setting the parent of has a non-zero usage count. To ensure that this
+does not fail use pm_runtime_put_sync() when disabling the timer.
+
+Note that this will not be seen on OMAP1 devices, because these devices do
+not use the clock framework for dmtimers.
+
+Signed-off-by: Jon Hunter <jon-hunter@ti.com>
+Acked-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/rtl8712/recv_linux.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/arm/plat-omap/dmtimer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/rtl8712/recv_linux.c b/drivers/staging/rtl8712/recv_linux.c
-index 0e26d5f..495ee12 100644
---- a/drivers/staging/rtl8712/recv_linux.c
-+++ b/drivers/staging/rtl8712/recv_linux.c
-@@ -117,13 +117,8 @@ void r8712_recv_indicatepkt(struct _adapter *padapter,
- 	if (skb == NULL)
- 		goto _recv_indicatepkt_drop;
- 	skb->data = precv_frame->u.hdr.rx_data;
--#ifdef NET_SKBUFF_DATA_USES_OFFSET
--	skb->tail = (sk_buff_data_t)(precv_frame->u.hdr.rx_tail -
--		     precv_frame->u.hdr.rx_head);
--#else
--	skb->tail = (sk_buff_data_t)precv_frame->u.hdr.rx_tail;
--#endif
- 	skb->len = precv_frame->u.hdr.len;
-+	skb_set_tail_pointer(skb, skb->len);
- 	if ((pattrib->tcpchk_valid == 1) && (pattrib->tcp_chkrpt == 1))
- 		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 	else
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index 626ad8c..7b6689a 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -258,7 +258,7 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
+ 
+ void omap_dm_timer_disable(struct omap_dm_timer *timer)
+ {
+-	pm_runtime_put(&timer->pdev->dev);
++	pm_runtime_put_sync(&timer->pdev->dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_dm_timer_disable);
+ 
 
 
