@@ -1,196 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2IQQkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:40:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab2IQQi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:38:59 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, aquini@redhat.com
-Subject: [PATCH v10 2/5] mm: introduce compaction and migration for ballooned pages
-Date: Mon, 17 Sep 2012 13:38:17 -0300
-Message-Id: <e4544f09967e5b133cff647e9d4826baa7c3d7c8.1347897793.git.aquini@redhat.com>
-In-Reply-To: <cover.1347897793.git.aquini@redhat.com>
-References: <cover.1347897793.git.aquini@redhat.com>
-In-Reply-To: <cover.1347897793.git.aquini@redhat.com>
-References: <cover.1347897793.git.aquini@redhat.com>
+	id S1755136Ab2IQQkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:40:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65039 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab2IQQkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 12:40:07 -0400
+Date: Mon, 17 Sep 2012 09:40:02 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Re: [RFC] cgroup TODOs
+Message-ID: <20120917164002.GA18677@google.com>
+References: <20120913205827.GO7677@google.com>
+ <20120914142539.GC6221@redhat.com>
+ <20120914213938.GV17747@google.com>
+ <20120917150518.GB5094@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917150518.GB5094@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory fragmentation introduced by ballooning might reduce significantly
-the number of 2MB contiguous memory blocks that can be used within a guest,
-thus imposing performance penalties associated with the reduced number of
-transparent huge pages that could be used by the guest workload.
+Hello,
 
-This patch introduces the helper functions as well as the necessary changes
-to teach compaction and migration bits how to cope with pages which are
-part of a guest memory balloon, in order to make them movable by memory
-compaction procedures.
+On Mon, Sep 17, 2012 at 11:05:18AM -0400, Vivek Goyal wrote:
+> As a developer, I will be happy to support only one model and keep code
+> simple. I am only concerned that for blkcg we have still not charted
+> out a clear migration path. The warning message your patch is giving
+> out will work only if we decide to not treat task and groups at same
+> level.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- mm/compaction.c | 47 ++++++++++++++++++++++++++++-------------------
- mm/migrate.c    | 36 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 62 insertions(+), 21 deletions(-)
+It may not be enough but it still is in the right direction.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 7fcd3a5..e50836b 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -14,6 +14,7 @@
- #include <linux/backing-dev.h>
- #include <linux/sysctl.h>
- #include <linux/sysfs.h>
-+#include <linux/balloon_compaction.h>
- #include "internal.h"
- 
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-@@ -358,32 +359,40 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			continue;
- 		}
- 
--		if (!PageLRU(page))
--			continue;
--
- 		/*
--		 * PageLRU is set, and lru_lock excludes isolation,
--		 * splitting and collapsing (collapsing has already
--		 * happened if PageLRU is set).
-+		 * It is possible to migrate LRU pages and balloon pages.
-+		 * Skip any other type of page.
- 		 */
--		if (PageTransHuge(page)) {
--			low_pfn += (1 << compound_order(page)) - 1;
--			continue;
--		}
-+		if (PageLRU(page)) {
-+			/*
-+			 * PageLRU is set, and lru_lock excludes isolation,
-+			 * splitting and collapsing (collapsing has already
-+			 * happened if PageLRU is set).
-+			 */
-+			if (PageTransHuge(page)) {
-+				low_pfn += (1 << compound_order(page)) - 1;
-+				continue;
-+			}
- 
--		if (!cc->sync)
--			mode |= ISOLATE_ASYNC_MIGRATE;
-+			if (!cc->sync)
-+				mode |= ISOLATE_ASYNC_MIGRATE;
- 
--		lruvec = mem_cgroup_page_lruvec(page, zone);
-+			lruvec = mem_cgroup_page_lruvec(page, zone);
- 
--		/* Try isolate the page */
--		if (__isolate_lru_page(page, mode) != 0)
--			continue;
-+			/* Try isolate the page */
-+			if (__isolate_lru_page(page, mode) != 0)
-+				continue;
- 
--		VM_BUG_ON(PageTransCompound(page));
-+			VM_BUG_ON(PageTransCompound(page));
-+
-+			/* Successfully isolated */
-+			del_page_from_lru_list(page, lruvec, page_lru(page));
-+		} else if (unlikely(movable_balloon_page(page))) {
-+			if (!isolate_balloon_page(page))
-+				continue;
-+		} else
-+			continue;
- 
--		/* Successfully isolated */
--		del_page_from_lru_list(page, lruvec, page_lru(page));
- 		list_add(&page->lru, migratelist);
- 		cc->nr_migratepages++;
- 		nr_isolated++;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..ec439f8 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -35,6 +35,7 @@
- #include <linux/hugetlb.h>
- #include <linux/hugetlb_cgroup.h>
- #include <linux/gfp.h>
-+#include <linux/balloon_compaction.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -79,7 +80,10 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--		putback_lru_page(page);
-+		if (unlikely(movable_balloon_page(page)))
-+			putback_balloon_page(page);
-+		else
-+			putback_lru_page(page);
- 	}
- }
- 
-@@ -799,6 +803,18 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		goto skip_unmap;
- 	}
- 
-+	if (unlikely(movable_balloon_page(page))) {
-+		/*
-+		 * A ballooned page does not need any special attention from
-+		 * physical to virtual reverse mapping procedures.
-+		 * Skip any attempt to unmap PTEs or to remap swap cache,
-+		 * in order to avoid burning cycles at rmap level, and perform
-+		 * the page migration right away (proteced by page lock).
-+		 */
-+		rc = migrate_balloon_page(newpage, page, mode);
-+		goto uncharge;
-+	}
-+
- 	/* Establish migration ptes or remove ptes */
- 	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
- 
-@@ -814,7 +830,8 @@ skip_unmap:
- 		put_anon_vma(anon_vma);
- 
- uncharge:
--	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-+	mem_cgroup_end_migration(mem, page, newpage,
-+				 (rc == 0 || rc == BALLOON_MIGRATION_RETURN));
- unlock:
- 	unlock_page(page);
- out:
-@@ -846,6 +863,21 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 			goto out;
- 
- 	rc = __unmap_and_move(page, newpage, force, offlining, mode);
-+
-+	if (unlikely(rc == BALLOON_MIGRATION_RETURN)) {
-+		/*
-+		 * A ballooned page has been migrated already.
-+		 * Now, it's the time to remove the old page from the isolated
-+		 * pageset list and handle it back to Buddy, wrap-up counters
-+		 * and return.
-+		 */
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				    page_is_file_cache(page));
-+		list_del(&page->lru);
-+		put_page(page);
-+		__free_page(page);
-+		return 0;
-+	}
- out:
- 	if (rc != -EAGAIN) {
- 		/*
+> > Another problem is that configuration isn't contained in cgroup
+> > proper.  We need a way to assign weights to individual tasks which can
+> > be somehow directly compared against group weights.  cpu cooks
+> > priority for this and blkcg may be able to cook ioprio but it's nasty
+> > and unobvious.  Also, let's say we grow network bandwidth controller
+> > for whatever reason.  What value are we gonna use?
+> 
+> So if somebody cares about settting SO_PRIORITY for traffic originating
+> from a tasks, move it into a cgroup. Otherwise they all get default
+> priority.
+
+I don't know.  Do we wanna add, say, prctl for memory weight too?
+
+> So to me, leaving this decision to userspace based on their requirement
+> makes sense.
+
+Leaving too many decisions to userland is one of the reasons that got
+us into this mess, so I'm not sold on flexibility for flexibility's
+sake.
+
+> Yes, creating a hidden group for tasks in current group should not be
+> hard from implementation point of view. But again, I am concerned about
+> configuration of hidden group and I also don't like the idea of taking
+> flexibility away from user to treat tasks and group at same level.
+
+I don't know.  Create a reserved directory for it?  I do like the idea
+of taking flexibility away form user unless it's actually useful but
+am a bit worried we might be too late for that. :(
+
+Thanks.
+
 -- 
-1.7.11.4
-
+tejun
