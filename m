@@ -1,47 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab2IQRcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:32:10 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:54375 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754774Ab2IQRcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:32:07 -0400
-Date: Mon, 17 Sep 2012 19:32:04 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, mce: Enable MCA support by default
-Message-ID: <20120917173204.GJ13879@aftab.osrc.amd.com>
-References: <1347900723-17490-1-git-send-email-bp@amd64.org>
- <1347900723-17490-2-git-send-email-bp@amd64.org>
- <3908561D78D1C84285E8C5FCA982C28F19D41BC2@ORSMSX108.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D41BC2@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756893Ab2IQRdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:33:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28191 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855Ab2IQRdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 13:33:45 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=ZR3YOHGToBoX_bF5fUcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347903223.13080.22.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.0.42-rt64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 17 Sep 2012 13:33:43 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 05:30:00PM +0000, Luck, Tony wrote:
-> > MCA is the basic support for hardware error logging and reporting, and
-> > it is majorly unwise to run without it so enable machine check software
-> > support by default on x86.
-> 
-> Acked-by: Tony Luck <tony.luck@intel.com>
 
-Thanks Tony.
+Dear RT Folks,
 
-Will send a pull request shortly.
+I'm pleased to announce the 3.0.42-rt64 stable release.
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 7b682c62b958de42ec7fad108929e1dc10841758
+
+
+Or to build 3.0.42-rt64 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.42.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.42-rt64.patch.xz
+
+
+You can also build from 3.0.42-rt63 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.42-rt63-rt64.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from 3.0.42-rt63:
+
+---
+
+Frank Rowand (1):
+      fix printk flush of messages
+
+Steven Rostedt (1):
+      Linux 3.0.42-rt64
+
+----
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 +-
+ drivers/tty/sysrq.c                         |   23 -----------------------
+ include/linux/sysrq.h                       |    5 -----
+ kernel/printk.c                             |    5 ++---
+ lib/Kconfig.debug                           |   22 ----------------------
+ localversion-rt                             |    2 +-
+ 6 files changed, 4 insertions(+), 55 deletions(-)
+---------------------------
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index 2a75c84..9488da7 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -1225,7 +1225,7 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ {
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
+ 	unsigned long flags;
+-	int nolock = oops_in_progress || sysrq_in_progress;
++	int nolock = oops_in_progress;
+ 
+ 	if (unlikely(nolock)) {
+ 		local_irq_save(flags);
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 5219738..43db715 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -492,23 +492,6 @@ static void __sysrq_put_key_op(int key, struct sysrq_key_op *op_p)
+                 sysrq_key_table[i] = op_p;
+ }
+ 
+-#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
+-
+-int sysrq_in_progress;
+-
+-static void set_sysrq_in_progress(int value)
+-{
+-	sysrq_in_progress = value;
+-}
+-
+-#else
+-
+-static void set_sysrq_in_progress(int value)
+-{
+-}
+-
+-#endif
+-
+ void __handle_sysrq(int key, bool check_mask)
+ {
+ 	struct sysrq_key_op *op_p;
+@@ -517,9 +500,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+-
+-	set_sysrq_in_progress(1);
+-
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -561,9 +541,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-
+-	set_sysrq_in_progress(0);
+-
+ 	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index d224c0b..7faf933 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -38,11 +38,6 @@ struct sysrq_key_op {
+ 	int enable_mask;
+ };
+ 
+-#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
+-extern int sysrq_in_progress;
+-#else
+-#define sysrq_in_progress 0
+-#endif
+ #ifdef CONFIG_MAGIC_SYSRQ
+ 
+ /* Generic SysRq interface -- you may call it from any device driver, supplying
+diff --git a/kernel/printk.c b/kernel/printk.c
+index f2c459f..ea71fae 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -21,7 +21,6 @@
+ #include <linux/tty.h>
+ #include <linux/tty_driver.h>
+ #include <linux/console.h>
+-#include <linux/sysrq.h>
+ #include <linux/init.h>
+ #include <linux/jiffies.h>
+ #include <linux/nmi.h>
+@@ -834,8 +833,8 @@ static int console_trylock_for_printk(unsigned int cpu, unsigned long flags)
+ 	__releases(&logbuf_lock)
+ {
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
+-		(preempt_count() <= 1)) || sysrq_in_progress;
++	int lock = !early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
++		(preempt_count() <= 1);
+ #else
+ 	int lock = 1;
+ #endif
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 383b565..1685473 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -62,28 +62,6 @@ config MAGIC_SYSRQ
+ 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+ 	  unless you really know what this hack does.
+ 
+-config MAGIC_SYSRQ_FORCE_PRINTK
+-	bool "Force printk from Magic SysRq"
+-	depends on MAGIC_SYSRQ && PREEMPT_RT_FULL
+-	default n
+-	help
+-	  Allow the output from Magic SysRq to be output immediately, even if
+-	  this causes large latencies.  This can cause performance problems
+-	  for real-time processes.
+-
+-	  If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
+-	  when interrupts or preemption are disabled.  If the console lock is
+-	  not acquired the printk() output will be buffered, but will not be
+-	  output immediately.  Some drivers call into the Magic SysRq code
+-	  with interrupts or preemption disabled, so the output of Magic SysRq
+-	  will be buffered instead of printing immediately if this option is
+-	  not selected.
+-
+-	  Even with this option selected, Magic SysRq output will be delayed
+-	  if the attempt to acquire the console lock fails.
+-
+-	  Don't say Y unless you really know what this hack does.
+-
+ config STRIP_ASM_SYMS
+ 	bool "Strip assembler-generated symbols during link"
+ 	default n
+diff --git a/localversion-rt b/localversion-rt
+index b0e8dd7..1047404 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt63
++-rt64
+
+
