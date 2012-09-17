@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2IQIPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:15:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42545 "EHLO
+	id S1754904Ab2IQIQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:16:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39088 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab2IQIPk (ORCPT
+	with ESMTP id S1750819Ab2IQIPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:15:40 -0400
+	Mon, 17 Sep 2012 04:15:42 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jarkko.lavinen@nokia.com
-Cc: cjb@laptop.org, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
+To: cjb@laptop.org
+Cc: shawn.guo@linaro.org, marex@denx.de, broonie@opensource.wolfsonmicro.com,
+        vinod.koul@linux.intel.com, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 2/4] drivers/mmc/host/omap.c: fix error return code
-Date: Mon, 17 Sep 2012 10:15:26 +0200
-Message-Id: <1347869728-2696-2-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 4/4] drivers/mmc/host/mxs-mmc.c: fix error return code
+Date: Mon, 17 Sep 2012 10:15:28 +0200
+Message-Id: <1347869728-2696-4-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
 References: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
@@ -49,37 +50,21 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/mmc/host/omap.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/mmc/host/mxs-mmc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mmc/host/omap.c b/drivers/mmc/host/omap.c
-index 48ad361..d468f51 100644
---- a/drivers/mmc/host/omap.c
-+++ b/drivers/mmc/host/omap.c
-@@ -1369,8 +1369,10 @@ static int __devinit mmc_omap_probe(struct platform_device *pdev)
- 	host->irq = irq;
- 	host->phys_base = host->mem_res->start;
- 	host->virt_base = ioremap(res->start, resource_size(res));
--	if (!host->virt_base)
-+	if (!host->virt_base) {
-+		ret = -ENOMEM;
- 		goto err_ioremap;
-+	}
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 80d1e6d..afd8fdd 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -674,6 +674,7 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+ 	if (!ssp->dmach) {
+ 		dev_err(mmc_dev(host->mmc),
+ 			"%s: failed to request dma\n", __func__);
++		ret = -ENODEV;
+ 		goto out_clk_put;
+ 	}
  
- 	host->iclk = clk_get(&pdev->dev, "ick");
- 	if (IS_ERR(host->iclk)) {
-@@ -1438,8 +1440,10 @@ static int __devinit mmc_omap_probe(struct platform_device *pdev)
- 	host->reg_shift = (cpu_is_omap7xx() ? 1 : 2);
- 
- 	host->mmc_omap_wq = alloc_workqueue("mmc_omap", 0, 0);
--	if (!host->mmc_omap_wq)
-+	if (!host->mmc_omap_wq) {
-+		err = -ENOMEM;
- 		goto err_plat_cleanup;
-+	}
- 
- 	for (i = 0; i < pdata->nr_slots; i++) {
- 		ret = mmc_omap_new_slot(host, i);
 -- 
 1.7.11.4
 
