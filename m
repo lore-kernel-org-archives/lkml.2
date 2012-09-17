@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab2IQBVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:21:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33554 "EHLO
+	id S1753360Ab2IQBVo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:21:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33585 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753294Ab2IQAuF (ORCPT
+	by vger.kernel.org with ESMTP id S1753304Ab2IQAuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:05 -0400
-Message-Id: <20120917003643.891603544@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:04 -0400
+Message-Id: <20120917003643.356037114@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:33 +0100
+Date: Mon, 17 Sep 2012 01:38:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 128/135] ahci: Add alternate identifier for the 88SE9172
+        alan@lxorguk.ukuu.org.uk, Pavankumar Kondeti <pkondeti@codeaurora.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 124/135] EHCI: Update qTD next pointer in QH overlay region during unlink
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,33 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Pavankumar Kondeti <pkondeti@codeaurora.org>
 
-commit 17c60c6b763cb5b83b0185e7d38d01d18e55a05a upstream.
+commit 3d037774b42ed677f699b1dce7d548d55f4e4c2b upstream.
 
-This can also appear as 0x9192. Reported in bugzilla and confirmed with the
-board documentation for these boards.
+There is a possibility of QH overlay region having reference to a stale
+qTD pointer during unlink.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42970
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Consider an endpoint having two pending qTD before unlink process begins.
+The endpoint's QH queue looks like this.
+
+qTD1 --> qTD2 --> Dummy
+
+To unlink qTD2, QH is removed from asynchronous list and Asynchronous
+Advance Doorbell is programmed.  The qTD1's next qTD pointer is set to
+qTD2'2 next qTD pointer and qTD2 is retired upon controller's doorbell
+interrupt.  If QH's current qTD pointer points to qTD1, transfer overlay
+region still have reference to qTD2. But qtD2 is just unlinked and freed.
+This may cause EHCI system error.  Fix this by updating qTD next pointer
+in QH overlay region with the qTD next pointer of the current qTD.
+
+Signed-off-by: Pavankumar Kondeti <pkondeti@codeaurora.org>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ehci-q.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index c3f52eb..51548dd 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -396,6 +396,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
- 	{ PCI_DEVICE(0x1b4b, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
-+	{ PCI_DEVICE(0x1b4b, 0x9192),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index 9bc39ca..4b66374 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -128,9 +128,17 @@ qh_refresh (struct ehci_hcd *ehci, struct ehci_qh *qh)
+ 	else {
+ 		qtd = list_entry (qh->qtd_list.next,
+ 				struct ehci_qtd, qtd_list);
+-		/* first qtd may already be partially processed */
+-		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current)
++		/*
++		 * first qtd may already be partially processed.
++		 * If we come here during unlink, the QH overlay region
++		 * might have reference to the just unlinked qtd. The
++		 * qtd is updated in qh_completions(). Update the QH
++		 * overlay here.
++		 */
++		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
++			qh->hw->hw_qtd_next = qtd->hw_next;
+ 			qtd = NULL;
++		}
+ 	}
  
+ 	if (qtd)
 
 
