@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab2IQOqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:46:34 -0400
-Received: from smtp.uz.ac.zw ([196.4.80.17]:35374 "EHLO smtp.uz.ac.zw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab2IQOqd convert rfc822-to-8bit (ORCPT
+	id S1756647Ab2IQOsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:48:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33064 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab2IQOsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:46:33 -0400
-Message-ID: <20120917151316.cow1oat5sgswskg4@webmail.uz.ac.zw>
-Date: Mon, 17 Sep 2012 15:13:16 +0200
-From: Webmail Account Upgrade <webmail@mail.uz.ac.zw>
-To: undisclosed-recipients:;
-Subject: Warning! Your mailbox is almost full.
+	Mon, 17 Sep 2012 10:48:10 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+In-Reply-To: <20120917135215.GA26919@thunk.org>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org> <87fw6get5z.fsf@openvz.org> <20120917135215.GA26919@thunk.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 17 Sep 2012 18:48:06 +0400
+Message-ID: <87d31keme1.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1)
-X-Copyrighted-Material: Please visit http://www.company.com/privacy.htm
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded your email limit quota of 450MB. You need to upgrade  
-your email limit quota to 2GB within the next 48 hours. Use the below  
-web link to upgrade your email account:
-
-click link below:
-   http://www.formchamp.com/goform.php?id=38467
-
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+On Mon, 17 Sep 2012 09:52:15 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Mon, Sep 17, 2012 at 04:21:44PM +0400, Dmitry Monakhov wrote:
+> > On Wed, 15 Aug 2012 22:46:54 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
+> > > On Wed, Aug 15, 2012 at 09:33:29PM +0300, Marti Raudsepp wrote:
+> > > > I was moving and deleting some files between two of my ext4 partitions
+> > > > when it suddenly crashed and dropped me into an kernel oops screen
+> > > > (below). I'm using ext4 on kernel 3.5.1 (Arch Linux). 
+> > Ohh, I've missed that gigantic topic, but still i've found the bug.
+> > patch is available here http://patchwork.ozlabs.org/patch/183649/
+> 
+> Dmitry, we have a patch in mainline already which addresses this, and
+> it's already backported to v3.5.3 or later.
+> 
+> What version was your patch series based against?
+patch-set was prepared against d0f56971992a0bcc7 (old ext4.git's HEAD)
+And you right your patch fixed the issue. So you can ignore my version.
+but other patches from the 'Bunch of DIO/AIO fixes V2' queue are still
+valid an applies to recent git tree w/o problems.
+Should i resend whole series or you'll pick original one?
+> 
+> 						- Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
