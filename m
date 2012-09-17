@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2IQBMj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:12:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33709 "EHLO
+	id S1753721Ab2IQAua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33375 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753758Ab2IQAud (ORCPT
+	by vger.kernel.org with ESMTP id S1753033Ab2IQAth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:33 -0400
-Message-Id: <20120917003636.588561236@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:37 -0400
+Message-Id: <20120917003628.725374376@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:40 +0100
+Date: Mon, 17 Sep 2012 01:36:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yuval Mintz <yuvalmin@broadcom.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 075/135] bnx2x: fix 57840_MF pci id
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Yong Shen <yong.shen@linaro.org>
+Subject: [ 018/135] ARM: imx: select CPU_FREQ_TABLE when needed
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,35 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuval Mintz <yuvalmin@broadcom.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-[ Upstream commit 5c879d2094946081af934739850c7260e8b25d3c ]
+commit f637c4c9405e21f44cf0045eaf77eddd3a79ca5a upstream.
 
-Commit c3def943c7117d42caaed3478731ea7c3c87190e have added support for
-new pci ids of the 57840 board, while failing to change the obsolete value
-in 'pci_ids.h'.
-This patch does so, allowing the probe of such devices.
+The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
+so it needs to select that code to be built. This problem has
+apparently existed since the i.MX cpufreq code was first merged
+in v2.6.37.
 
-Signed-off-by: Yuval Mintz <yuvalmin@broadcom.com>
-Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Building IMX without CPU_FREQ_TABLE results in:
+
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
+arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
+arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
+arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
+arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
+arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
+arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
+arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
+arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Yong Shen <yong.shen@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/pci_ids.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 2aaee0c..67cc215 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2124,7 +2124,7 @@
- #define PCI_DEVICE_ID_TIGON3_5704S	0x16a8
- #define PCI_DEVICE_ID_NX2_57800_VF	0x16a9
- #define PCI_DEVICE_ID_NX2_5706S		0x16aa
--#define PCI_DEVICE_ID_NX2_57840_MF	0x16ab
-+#define PCI_DEVICE_ID_NX2_57840_MF	0x16a4
- #define PCI_DEVICE_ID_NX2_5708S		0x16ac
- #define PCI_DEVICE_ID_NX2_57840_VF	0x16ad
- #define PCI_DEVICE_ID_NX2_57810_MF	0x16ae
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e91c7cd..84b5a0c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2150,6 +2150,7 @@ source "drivers/cpufreq/Kconfig"
+ config CPU_FREQ_IMX
+ 	tristate "CPUfreq driver for i.MX CPUs"
+ 	depends on ARCH_MXC && CPU_FREQ
++	select CPU_FREQ_TABLE
+ 	help
+ 	  This enables the CPUfreq driver for i.MX CPUs.
+ 
 
 
