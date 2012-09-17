@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2IQA47 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:56:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33928 "EHLO
+	id S1754762Ab2IQA46 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:56:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33934 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957Ab2IQAv2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754351Ab2IQAv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:28 -0400
-Message-Id: <20120917003631.247940408@decadent.org.uk>
+Message-Id: <20120917003631.095425761@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:01 +0100
+Date: Mon, 17 Sep 2012 01:37:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 036/135] powerpc: Update DSCR on all CPUs when writing sysfs dscr_default
+        alan@lxorguk.ukuu.org.uk, Ian Chen <ian.cy.chen@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 035/135] mmc: card: Skip secure erase on MoviNAND; causes unrecoverable
+ corruption.
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +31,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Ian Chen <ian.cy.chen@samsung.com>
 
-commit 1b6ca2a6fe56e7697d57348646e07df08f43b1bb upstream.
+commit 3550ccdb9d8d350e526b809bf3dd92b550a74fe1 upstream.
 
-Writing to dscr_default in sysfs doesn't actually change the DSCR -
-we rely on a context switch on each CPU to do the work. There is no
-guarantee we will get a context switch in a reasonable amount of time
-so fire off an IPI to force an immediate change.
+For several MoviNAND eMMC parts, there are known issues with secure
+erase and secure trim.  For these specific MoviNAND devices, we skip
+these operations.
 
-This issue was found with the following test case:
+Specifically, there is a bug in the eMMC firmware that causes
+unrecoverable corruption when the MMC is erased with MMC_CAP_ERASE
+enabled.
 
-http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+References:
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+http://forum.xda-developers.com/showthread.php?t=1644364
+https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+
+Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/sysfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mmc/card/block.c |   26 +++++++++++++++++++++++++-
+ include/linux/mmc/card.h |    1 +
+ 2 files changed, 26 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -192,6 +192,12 @@ static ssize_t show_dscr_default(struct
- 	return sprintf(buf, "%lx\n", dscr_default);
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1339,7 +1339,8 @@ static int mmc_blk_issue_rq(struct mmc_q
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+-		if (req->cmd_flags & REQ_SECURE)
++		if (req->cmd_flags & REQ_SECURE &&
++			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
+ 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
+ 		else
+ 			ret = mmc_blk_issue_discard_rq(mq, req);
+@@ -1614,6 +1615,8 @@ static int mmc_add_disk(struct mmc_blk_d
+ 	return ret;
  }
  
-+static void update_dscr(void *dummy)
-+{
-+	if (!current->thread.dscr_inherit)
-+		mtspr(SPRN_DSCR, dscr_default);
-+}
++#define CID_MANFID_SAMSUNG	0x15
 +
- static ssize_t __used store_dscr_default(struct sysdev_class *class,
- 		struct sysdev_class_attribute *attr, const char *buf,
- 		size_t count)
-@@ -204,6 +210,8 @@ static ssize_t __used store_dscr_default
- 		return -EINVAL;
- 	dscr_default = val;
+ static const struct mmc_fixup blk_fixups[] =
+ {
+ 	MMC_FIXUP("SEM02G", 0x2, 0x100, add_quirk, MMC_QUIRK_INAND_CMD38),
+@@ -1644,6 +1647,28 @@ static const struct mmc_fixup blk_fixups
+ 	MMC_FIXUP(CID_NAME_ANY, 0x13, 0x200, add_quirk_mmc,
+ 		  MMC_QUIRK_LONG_READ_TIME),
  
-+	on_each_cpu(update_dscr, NULL, 1);
++	/*
++	 * On these Samsung MoviNAND parts, performing secure erase or
++	 * secure trim can result in unrecoverable corruption due to a
++	 * firmware bug.
++	 */
++	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
 +
- 	return count;
- }
+ 	END_FIXUP
+ };
  
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -219,6 +219,7 @@ struct mmc_card {
+ #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular multiblock */
+ #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512 bytes in */
+ #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
++#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for erase/trim */
+ 						/* byte mode */
+ 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
+ #define MMC_NO_POWER_NOTIFICATION	0
 
 
