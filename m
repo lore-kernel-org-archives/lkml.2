@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab2IQPYC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:24:02 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40780 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797Ab2IQPXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:23:00 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-media@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH 6/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Mon, 17 Sep 2012 20:52:33 +0530
-Message-ID: <1347895353-18090-7-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347895353-18090-1-git-send-email-shubhrajyoti@ti.com>
-References: <1347895353-18090-1-git-send-email-shubhrajyoti@ti.com>
+	id S1756904Ab2IQPYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:24:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39693 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab2IQPYD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:24:03 -0400
+Message-ID: <50574085.90104@parallels.com>
+Date: Mon, 17 Sep 2012 19:23:49 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Chuck Lever <chuck.lever@oracle.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
+References: <20120914140811.10835.81465.stgit@localhost.localdomain> <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com> <DA466953-BF79-44F7-8870-AC2FD5E3FEC2@oracle.com> <50570052.8050205@parallels.com> <D4B752F3-1883-490E-AA5D-B9666472FFF3@oracle.com>
+In-Reply-To: <D4B752F3-1883-490E-AA5D-B9666472FFF3@oracle.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-        Convert the struct i2c_msg initialization to C99 format. This makes
-        maintaining and editing the code simpler. Also helps once other fields
-        like transferred are added in future.
+17.09.2012 19:10, Chuck Lever пишет:
+>
+> On Sep 17, 2012, at 6:49 AM, Stanislav Kinsbursky wrote:
+>
+>> 14.09.2012 23:10, Chuck Lever пишет:
+>>>
+>>> On Sep 14, 2012, at 1:38 PM, Myklebust, Trond wrote:
+>>>
+>>>> On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
+>>>>> What happens if statd is restarted?
+>>>>
+>>>> Nothing unusual. Why?
+>>>
+>>> The NSM upcall transport is a potential application for TCP + softconn, now that a persistent rpc_clnt is used.  It just depends on what failure mode we'd like to optimize for.
+>>>
+>>
+>> I don't understand, where the problem is.
+>> Could you be more specific, please?
+>
+> I'm suggesting an enhancement.
+>
+> The change is to use TCP for the NSM upcall transport, and set RPC_TASK_SOFTCONN on the individual RPCs.  The advantage of this is that the kernel could discover when statd is not running and fail the upcall immediately, rather than waiting possibly many seconds for each upcall RPC to time out.
+>
+> The client already has a check in the mount.nfs command to see that statd is running, likely to avoid this lengthly timeout.  Since the client already has long-standing logic to avoid it, I think the benefit would be mostly on the server side.
+>
+> But this change can be done at some later point.
+>
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/media/radio/si470x/radio-si470x-i2c.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Ok, thanks.
+Sounds reasonable to me.
+I'll do so.
 
-diff --git a/drivers/media/radio/si470x/radio-si470x-i2c.c b/drivers/media/radio/si470x/radio-si470x-i2c.c
-index f867f04..949885e 100644
---- a/drivers/media/radio/si470x/radio-si470x-i2c.c
-+++ b/drivers/media/radio/si470x/radio-si470x-i2c.c
-@@ -98,8 +98,8 @@ int si470x_get_register(struct si470x_device *radio, int regnr)
- {
- 	u16 buf[READ_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{ .addr = radio->client->addr, .flags = I2C_M_RD, .len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf },
- 	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
-@@ -119,8 +119,8 @@ int si470x_set_register(struct si470x_device *radio, int regnr)
- 	int i;
- 	u16 buf[WRITE_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, 0, sizeof(u16) * WRITE_REG_NUM,
--			(void *)buf },
-+		{ .addr = radio->client->addr, .flags = 0, .len = sizeof(u16) * WRITE_REG_NUM,
-+			.buf = (void *)buf },
- 	};
- 
- 	for (i = 0; i < WRITE_REG_NUM; i++)
-@@ -146,8 +146,8 @@ static int si470x_get_all_registers(struct si470x_device *radio)
- 	int i;
- 	u16 buf[READ_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{ .addr = radio->client->addr, .flags = I2C_M_RD, .len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf },
- 	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
 -- 
-1.7.5.4
-
+Best regards,
+Stanislav Kinsbursky
