@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab2IQAyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:54:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33980 "EHLO
+	id S1755159Ab2IQAyw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:54:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33983 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754459Ab2IQAvi (ORCPT
+	by vger.kernel.org with ESMTP id S1754819Ab2IQAvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:38 -0400
-Message-Id: <20120917003630.823814408@decadent.org.uk>
+Message-Id: <20120917003630.287836054@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:58 +0100
+Date: Mon, 17 Sep 2012 01:36:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lauri Hintsala <lauri.hintsala@bluegiga.com>,
-        Attila Kinali <attila@kinali.ch>, Shawn Guo <shawn.guo@linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 033/135] mmc: mxs-mmc: fix deadlock caused by recursion loop
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Kristian Nielsen <knielsen@knielsen-hq.org>
+Subject: [ 029/135] ext3: Fix fdatasync() for files with only i_size changes
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,93 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+From: Jan Kara <jack@suse.cz>
 
-commit fc108d24d3a6da63576a460e122fa1df0cbdea20 upstream.
+commit 156bddd8e505b295540f3ca0e27dda68cb0d49aa upstream.
 
-Release the lock before mmc_signal_sdio_irq is called by
-mxs_mmc_enable_sdio_irq.
+Code tracking when transaction needs to be committed on fdatasync(2) forgets
+to handle a situation when only inode's i_size is changed. Thus in such
+situations fdatasync(2) doesn't force transaction with new i_size to disk
+and that can result in wrong i_size after a crash.
 
-Backtrace:
-[   65.470000] =============================================
-[   65.470000] [ INFO: possible recursive locking detected ]
-[   65.470000] 3.5.0-rc5 #2 Not tainted
-[   65.470000] ---------------------------------------------
-[   65.470000] ksdioirqd/mmc0/73 is trying to acquire lock:
-[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] but task is already holding lock:
-[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] other info that might help us debug this:
-[   65.470000]  Possible unsafe locking scenario:
-[   65.470000]
-[   65.470000]        CPU0
-[   65.470000]        ----
-[   65.470000]   lock(&(&host->lock)->rlock#2);
-[   65.470000]   lock(&(&host->lock)->rlock#2);
-[   65.470000]
-[   65.470000]  *** DEADLOCK ***
-[   65.470000]
-[   65.470000]  May be due to missing lock nesting notation
-[   65.470000]
-[   65.470000] 1 lock held by ksdioirqd/mmc0/73:
-[   65.470000]  #0:  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] stack backtrace:
-[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98)
-[   65.470000] [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98) from [<c005d3f8>] (lock_acquire+0xa0/0x108)
-[   65.470000] [<c005d3f8>] (lock_acquire+0xa0/0x108) from [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c)
-[   65.470000] [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
-[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
-[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
-[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
-[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
-[   65.470000] BUG: spinlock lockup suspected on CPU#0, ksdioirqd/mmc0/73
-[   65.470000]  lock: 0xc3358724, .magic: dead4ead, .owner: ksdioirqd/mmc0/73, .owner_cpu: 0
-[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c01b46b0>] (do_raw_spin_lock+0x100/0x144)
-[   65.470000] [<c01b46b0>] (do_raw_spin_lock+0x100/0x144) from [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c)
-[   65.470000] [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
-[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
-[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
-[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
-[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
+Fix the issue by updating inode's i_datasync_tid whenever its size is
+updated.
 
-Reported-by: Attila Kinali <attila@kinali.ch>
-Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - HW_SSP_STATUS is a simple rather than function-like macro]
+Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/mxs-mmc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/ext3/inode.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -628,10 +628,6 @@ static void mxs_mmc_enable_sdio_irq(stru
- 		       host->base + HW_SSP_CTRL0 + MXS_SET_ADDR);
- 		writel(BM_SSP_CTRL1_SDIO_IRQ_EN,
- 		       host->base + HW_SSP_CTRL1 + MXS_SET_ADDR);
--
--		if (readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
--			mmc_signal_sdio_irq(host->mmc);
--
- 	} else {
- 		writel(BM_SSP_CTRL0_SDIO_IRQ_CHECK,
- 		       host->base + HW_SSP_CTRL0 + MXS_CLR_ADDR);
-@@ -640,6 +636,10 @@ static void mxs_mmc_enable_sdio_irq(stru
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -3072,6 +3072,8 @@ static int ext3_do_update_inode(handle_t
+ 	struct ext3_inode_info *ei = EXT3_I(inode);
+ 	struct buffer_head *bh = iloc->bh;
+ 	int err = 0, rc, block;
++	int need_datasync = 0;
++	__le32 disksize;
+ 
+ again:
+ 	/* we can't allow multiple procs in here at once, its a bit racey */
+@@ -3109,7 +3111,11 @@ again:
+ 		raw_inode->i_gid_high = 0;
  	}
+ 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
+-	raw_inode->i_size = cpu_to_le32(ei->i_disksize);
++	disksize = cpu_to_le32(ei->i_disksize);
++	if (disksize != raw_inode->i_size) {
++		need_datasync = 1;
++		raw_inode->i_size = disksize;
++	}
+ 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
+ 	raw_inode->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
+ 	raw_inode->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
+@@ -3125,8 +3131,11 @@ again:
+ 	if (!S_ISREG(inode->i_mode)) {
+ 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
+ 	} else {
+-		raw_inode->i_size_high =
+-			cpu_to_le32(ei->i_disksize >> 32);
++		disksize = cpu_to_le32(ei->i_disksize >> 32);
++		if (disksize != raw_inode->i_size_high) {
++			raw_inode->i_size_high = disksize;
++			need_datasync = 1;
++		}
+ 		if (ei->i_disksize > 0x7fffffffULL) {
+ 			struct super_block *sb = inode->i_sb;
+ 			if (!EXT3_HAS_RO_COMPAT_FEATURE(sb,
+@@ -3179,6 +3188,8 @@ again:
+ 	ext3_clear_inode_state(inode, EXT3_STATE_NEW);
  
- 	spin_unlock_irqrestore(&host->lock, flags);
-+
-+	if (enable && readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
-+		mmc_signal_sdio_irq(host->mmc);
-+
- }
- 
- static const struct mmc_host_ops mxs_mmc_ops = {
+ 	atomic_set(&ei->i_sync_tid, handle->h_transaction->t_tid);
++	if (need_datasync)
++		atomic_set(&ei->i_datasync_tid, handle->h_transaction->t_tid);
+ out_brelse:
+ 	brelse (bh);
+ 	ext3_std_error(inode->i_sb, err);
 
 
