@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab2IQA6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:58:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33915 "EHLO
+	id S1754945Ab2IQA6M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:58:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33917 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754642Ab2IQAvZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754651Ab2IQAvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:25 -0400
-Message-Id: <20120917003631.781222120@decadent.org.uk>
+Message-Id: <20120917003631.647906145@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:05 +0100
+Date: Mon, 17 Sep 2012 01:37:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 040/135] powerpc/xics: Harden xics hypervisor backend
+Subject: [ 039/135] powerpc: Restore correct DSCR in context switch
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,89 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-commit 3ce21cdfe93efffa4ffba9cf3ca2576d3d60d6dc upstream.
+commit 714332858bfd40dcf8f741498336d93875c23aa7 upstream.
 
-During kdump stress testing I sometimes see the kdump kernel panic
-with:
+During a context switch we always restore the per thread DSCR value.
+If we aren't doing explicit DSCR management
+(ie thread.dscr_inherit == 0) and the default DSCR changed while
+the process has been sleeping we end up with the wrong value.
 
-  Interrupt 0x306 (real) is invalid, disabling it.
-  Kernel panic - not syncing: bad return code EOI - rc = -4, value=ff000306
+Check thread.dscr_inherit and select the default DSCR or per thread
+DSCR as required.
 
-Instead of panicing print the error message, dump the stack the first
-time it happens and continue on. Add some more information to the
-debug messages as well.
+This was found with the following test case, when running with
+more threads than CPUs (ie forcing context switching):
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+
+With the four patches applied I can run a combination of all
+test cases successfully at the same time:
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+http://ozlabs.org/~anton/junkcode/dscr_inherit_test.c
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/sysdev/xics/icp-hv.c |   38 ++++++++++++++++++++++++++-----------
- 1 file changed, 27 insertions(+), 11 deletions(-)
+ arch/powerpc/kernel/asm-offsets.c |    1 +
+ arch/powerpc/kernel/entry_64.S    |   23 +++++++++++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/xics/icp-hv.c b/arch/powerpc/sysdev/xics/icp-hv.c
-index 9518d36..784b3fc 100644
---- a/arch/powerpc/sysdev/xics/icp-hv.c
-+++ b/arch/powerpc/sysdev/xics/icp-hv.c
-@@ -27,33 +27,49 @@ static inline unsigned int icp_hv_get_xirr(unsigned char cppr)
- {
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
- 	long rc;
-+	unsigned int ret = XICS_IRQ_SPURIOUS;
+diff --git a/arch/powerpc/kernel/asm-offsets.c b/arch/powerpc/kernel/asm-offsets.c
+index 85b05c4..e899572 100644
+--- a/arch/powerpc/kernel/asm-offsets.c
++++ b/arch/powerpc/kernel/asm-offsets.c
+@@ -76,6 +76,7 @@ int main(void)
+ 	DEFINE(SIGSEGV, SIGSEGV);
+ 	DEFINE(NMI_MASK, NMI_MASK);
+ 	DEFINE(THREAD_DSCR, offsetof(struct thread_struct, dscr));
++	DEFINE(THREAD_DSCR_INHERIT, offsetof(struct thread_struct, dscr_inherit));
+ #else
+ 	DEFINE(THREAD_INFO, offsetof(struct task_struct, stack));
+ #endif /* CONFIG_PPC64 */
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index 4b01a25..b40e0b4 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -370,6 +370,12 @@ _GLOBAL(ret_from_fork)
+ 	li	r3,0
+ 	b	syscall_exit
  
- 	rc = plpar_hcall(H_XIRR, retbuf, cppr);
--	if (rc != H_SUCCESS)
--		panic(" bad return code xirr - rc = %lx\n", rc);
--	return (unsigned int)retbuf[0];
-+	if (rc == H_SUCCESS) {
-+		ret = (unsigned int)retbuf[0];
-+	} else {
-+		pr_err("%s: bad return code xirr cppr=0x%x returned %ld\n",
-+			__func__, cppr, rc);
-+		WARN_ON_ONCE(1);
-+	}
++	.section	".toc","aw"
++DSCR_DEFAULT:
++	.tc dscr_default[TC],dscr_default
 +
-+	return ret;
- }
++	.section	".text"
++
+ /*
+  * This routine switches between two different tasks.  The process
+  * state of one is saved on its kernel stack.  Then the state
+@@ -509,9 +515,6 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_1T_SEGMENT)
+ 	mr	r1,r8		/* start using new stack pointer */
+ 	std	r7,PACAKSAVE(r13)
  
- static inline void icp_hv_set_xirr(unsigned int value)
- {
- 	long rc = plpar_hcall_norets(H_EOI, value);
--	if (rc != H_SUCCESS)
--		panic("bad return code EOI - rc = %ld, value=%x\n", rc, value);
-+	if (rc != H_SUCCESS) {
-+		pr_err("%s: bad return code eoi xirr=0x%x returned %ld\n",
-+			__func__, value, rc);
-+		WARN_ON_ONCE(1);
-+	}
- }
+-	ld	r6,_CCR(r1)
+-	mtcrf	0xFF,r6
+-
+ #ifdef CONFIG_ALTIVEC
+ BEGIN_FTR_SECTION
+ 	ld	r0,THREAD_VRSAVE(r4)
+@@ -520,14 +523,22 @@ END_FTR_SECTION_IFSET(CPU_FTR_ALTIVEC)
+ #endif /* CONFIG_ALTIVEC */
+ #ifdef CONFIG_PPC64
+ BEGIN_FTR_SECTION
++	lwz	r6,THREAD_DSCR_INHERIT(r4)
++	ld	r7,DSCR_DEFAULT@toc(2)
+ 	ld	r0,THREAD_DSCR(r4)
+-	cmpd	r0,r25
+-	beq	1f
++	cmpwi	r6,0
++	bne	1f
++	ld	r0,0(r7)
++1:	cmpd	r0,r25
++	beq	2f
+ 	mtspr	SPRN_DSCR,r0
+-1:	
++2:
+ END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
+ #endif
  
- static inline void icp_hv_set_cppr(u8 value)
- {
- 	long rc = plpar_hcall_norets(H_CPPR, value);
--	if (rc != H_SUCCESS)
--		panic("bad return code cppr - rc = %lx\n", rc);
-+	if (rc != H_SUCCESS) {
-+		pr_err("%s: bad return code cppr cppr=0x%x returned %ld\n",
-+			__func__, value, rc);
-+		WARN_ON_ONCE(1);
-+	}
- }
- 
- static inline void icp_hv_set_qirr(int n_cpu , u8 value)
- {
--	long rc = plpar_hcall_norets(H_IPI, get_hard_smp_processor_id(n_cpu),
--				     value);
--	if (rc != H_SUCCESS)
--		panic("bad return code qirr - rc = %lx\n", rc);
-+	int hw_cpu = get_hard_smp_processor_id(n_cpu);
-+	long rc = plpar_hcall_norets(H_IPI, hw_cpu, value);
-+	if (rc != H_SUCCESS) {
-+		pr_err("%s: bad return code qirr cpu=%d hw_cpu=%d mfrr=0x%x "
-+			"returned %ld\n", __func__, n_cpu, hw_cpu, value, rc);
-+		WARN_ON_ONCE(1);
-+	}
- }
- 
- static void icp_hv_eoi(struct irq_data *d)
++	ld	r6,_CCR(r1)
++	mtcrf	0xFF,r6
++
+ 	/* r3-r13 are destroyed -- Cort */
+ 	REST_8GPRS(14, r1)
+ 	REST_10GPRS(22, r1)
 
 
