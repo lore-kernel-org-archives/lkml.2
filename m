@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2IQDfp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 23:35:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57373 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab2IQDfo (ORCPT
+	id S1753646Ab2IQDlw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 23:41:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38129 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab2IQDlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 23:35:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANEcBPQnsV26UkyGxms0vKM9wK1NxfKjN4Z0qGipQtV4UPZgGA@mail.gmail.com>
-References: <CANEcBPSEamgOiGqNUSwB+hYCo1k2OTXDA=qsrw0Co8_F7treWw@mail.gmail.com>
-	<CANEcBPQnsV26UkyGxms0vKM9wK1NxfKjN4Z0qGipQtV4UPZgGA@mail.gmail.com>
-Date: Mon, 17 Sep 2012 11:35:43 +0800
-Message-ID: <CAM_iQpUkcgHtOvyqBPE4==nHegW_3oC+38Ka5OrK5+9WK6G=eQ@mail.gmail.com>
-Subject: Re: [PATCH] fix ZOMBIE state bug in PPPOE driver
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Xiaodong Xu <stid.smth@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 16 Sep 2012 23:41:50 -0400
+Date: Mon, 17 Sep 2012 13:41:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the target-updates tree
+Message-Id: <20120917134142.c7948ae04bdeabe1a863e464@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Sep_2012_13_41_42_+1000_mEB.XR++DIlGUmy6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 10:30 AM, Xiaodong Xu <stid.smth@gmail.com> wrote:
-> Hi All,
->
-> I found a bug in kernel PPPOE driver.
-> When PPPOE is running over a virtual ethernet interface (e.g., a
-> bonding interface) and the user tries to delete the interface in case
-> the PPPOE state is ZOMBIE, the kernel will loop infinitely while
-> unregistering net_device for the reference count is not reset to zero
-> which should be done by dev_put().
->
-> The following patch could fix this issue:
+--Signature=_Mon__17_Sep_2012_13_41_42_+1000_mEB.XR++DIlGUmy6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You missed your Signed-off-by, please read
-Documentation/SubmittingPatches and check your patch with
-scripts/checkpatch.pl before sending.
+Hi Nicholas,
+
+After merging the target-updates tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+drivers/target/target_core_transport.c: In function 'transport_get_sense_bu=
+ffer':
+drivers/target/target_core_transport.c:582:22: error: 'struct target_core_f=
+abric_ops' has no member named 'set_fabric_sense_len'
+
+I can only assume that this has been caused by the (largish) changes that
+went into Linus' tree recently conflicting with changes in the
+target-updates tree.
+
+I have dropped the target-updates tree for today.  Please sort the mess out.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__17_Sep_2012_13_41_42_+1000_mEB.XR++DIlGUmy6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQVpv2AAoJEECxmPOUX5FEoAUQAIR7A1MTTrtKc2nqRry/XGz7
+NWZnWIZ4+UVTZ41+npLyBCSg1SKq2GNU/33AD3cz2W9fm2G4ZiubeuZyyvXOQ0DK
+dBTYqNtvBV4z8zRmaO8yPAB7sJNOsaBbzdWvLeiwQLKw0OXpYh3iYyMFlC/DXM8E
+H73EbmR6ZtxrFAIr39MzS+xgoQ2p+Hr2DJypWNCpggmJBMcq/Qt6LgP47d8jll0V
+eAdrmURNBZR0KIIBj4iUa4GWijl66wEixgyxvqDxbVTMeYi/+J4XtoRYQ8+VTGpP
+hzZ8pAq4BdIWmbeDj9K1ecbTgoO1WxDH06ZhUXzfxWIX6HSoYIrJTPyxxucsG652
+0sAKRHMH+5GsEZT5GnYo9MGk8KxOzOyqIA6UTj76JZ21zQS0M63qS7C2UaQbEvRH
+y8MOiCHFkD+D+PC2V0E4rEoR7A3RgcvFVI3F+6xQQ+0PfZAxTLveHrD0A/COtrQ8
+1MD+8P6nr2RqozlEONNWCA50gk1Lh5CKFmDMcWlkBoptjNDGj5mY5+YDQLcREJI0
+P7l9+SPIbvpIpk7XOKdYcC9hfHG4EpTOSPiRWQn5DuBO40CimkxsgAAhkxPZ03HE
+x1F71rn6QWxNs9e7/rl12SkHPysIPyHVrYT96re3mLN6xztzJ6egwbSWfKsfhaPf
+GGK4JG86n5buwfvO0/zS
+=ulPg
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Sep_2012_13_41_42_+1000_mEB.XR++DIlGUmy6--
