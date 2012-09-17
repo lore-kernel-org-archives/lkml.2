@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab2IQAv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:51:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33809 "EHLO
+	id S1754794Ab2IQA5e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:57:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33920 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754351Ab2IQAvI (ORCPT
+	by vger.kernel.org with ESMTP id S1754645Ab2IQAv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:08 -0400
-Message-Id: <20120917003634.410422940@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:26 -0400
+Message-Id: <20120917003631.514835802@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:24 +0100
+Date: Mon, 17 Sep 2012 01:37:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 059/135] Bluetooth: HCI - Fix info leak in  getsockopt(HCI_FILTER)
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 038/135] powerpc: Fix DSCR inheritance in copy_thread()
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,36 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Anton Blanchard <anton@samba.org>
 
-[ Upstream commit e15ca9a0ef9a86f0477530b0f44a725d67f889ee ]
+commit 1021cb268b3025573c4811f1dee4a11260c4507b upstream.
 
-The HCI code fails to initialize the two padding bytes of struct
-hci_ufilter before copying it to userland -- that for leaking two
-bytes kernel stack. Add an explicit memset(0) before filling the
-structure to avoid the info leak.
+If the default DSCR is non zero we set thread.dscr_inherit in
+copy_thread() meaning the new thread and all its children will ignore
+future updates to the default DSCR. This is not intended and is
+a change in behaviour that a number of our users have hit.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+We just need to inherit thread.dscr and thread.dscr_inherit from
+the parent which ends up being much simpler.
+
+This was found with the following test case:
+
+http://ozlabs.org/~anton/junkcode/dscr_default_test.c
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/hci_sock.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/process.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
-index f6afe3d..e4c8bc0 100644
---- a/net/bluetooth/hci_sock.c
-+++ b/net/bluetooth/hci_sock.c
-@@ -671,6 +671,7 @@ static int hci_sock_getsockopt(struct socket *sock, int level, int optname, char
- 		{
- 			struct hci_filter *f = &hci_pi(sk)->filter;
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 710f400..1a1f2dd 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -802,16 +802,8 @@ int copy_thread(unsigned long clone_flags, unsigned long usp,
+ #endif /* CONFIG_PPC_STD_MMU_64 */
+ #ifdef CONFIG_PPC64 
+ 	if (cpu_has_feature(CPU_FTR_DSCR)) {
+-		if (current->thread.dscr_inherit) {
+-			p->thread.dscr_inherit = 1;
+-			p->thread.dscr = current->thread.dscr;
+-		} else if (0 != dscr_default) {
+-			p->thread.dscr_inherit = 1;
+-			p->thread.dscr = dscr_default;
+-		} else {
+-			p->thread.dscr_inherit = 0;
+-			p->thread.dscr = 0;
+-		}
++		p->thread.dscr_inherit = current->thread.dscr_inherit;
++		p->thread.dscr = current->thread.dscr;
+ 	}
+ #endif
  
-+			memset(&uf, 0, sizeof(uf));
- 			uf.type_mask = f->type_mask;
- 			uf.opcode    = f->opcode;
- 			uf.event_mask[0] = *((u32 *) f->event_mask + 0);
 
 
