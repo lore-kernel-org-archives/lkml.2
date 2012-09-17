@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2IQBV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:21:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33581 "EHLO
+	id S1755229Ab2IQBWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:22:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33565 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753289Ab2IQAuE (ORCPT
+	by vger.kernel.org with ESMTP id S1753271Ab2IQAuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:04 -0400
-Message-Id: <20120917003643.618819414@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:01 -0400
+Message-Id: <20120917003643.489170104@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:31 +0100
+Date: Mon, 17 Sep 2012 01:38:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matteo Frigo <athena@fftw.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 126/135] ALSA: ice1724: Use linear scale for AK4396 volume control.
+        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
+        Keerthy <j-keerthy@ti.com>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 125/135] hwmon: (twl4030-madc-hwmon) Initialize uninitialized structure
+ elements
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matteo Frigo <athena@fftw.org>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 3737e2be505d872bf2b3c1cd4151b2d2b413d7b5 upstream.
+commit 73d7c119255615a26070f9d6cdb722a166a29015 upstream.
 
-The AK4396 DAC has a linear-scale attentuator, but
-sound/pci/ice1712/prodigy_hifi.c used a log scale instead, which is
-not quite right.  This patch restores the correct scale, borrowing
-from the ak4396 code in sound/pci/oxygen/oxygen.c.
+twl4030_madc_conversion uses do_avg and type structure elements of
+twl4030_madc_request. Initialize structure to avoid random operation.
 
-Signed-off-by: Matteo Frigo <athena@fftw.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix for: Coverity CID 200794 Uninitialized scalar variable.
+
+Cc: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Keerthy <j-keerthy@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/ice1712/prodigy_hifi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hwmon/twl4030-madc-hwmon.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/sound/pci/ice1712/prodigy_hifi.c b/sound/pci/ice1712/prodigy_hifi.c
-index 764cc93..075d5aa 100644
---- a/sound/pci/ice1712/prodigy_hifi.c
-+++ b/sound/pci/ice1712/prodigy_hifi.c
-@@ -297,6 +297,7 @@ static int ak4396_dac_vol_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
- }
+diff --git a/drivers/hwmon/twl4030-madc-hwmon.c b/drivers/hwmon/twl4030-madc-hwmon.c
+index 0018c7d..1a174f0 100644
+--- a/drivers/hwmon/twl4030-madc-hwmon.c
++++ b/drivers/hwmon/twl4030-madc-hwmon.c
+@@ -44,12 +44,13 @@ static ssize_t madc_read(struct device *dev,
+ 			 struct device_attribute *devattr, char *buf)
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+-	struct twl4030_madc_request req;
++	struct twl4030_madc_request req = {
++		.channels = 1 << attr->index,
++		.method = TWL4030_MADC_SW2,
++		.type = TWL4030_MADC_WAIT,
++	};
+ 	long val;
  
- static const DECLARE_TLV_DB_SCALE(db_scale_wm_dac, -12700, 100, 1);
-+static const DECLARE_TLV_DB_LINEAR(ak4396_db_scale, TLV_DB_GAIN_MUTE, 0);
- 
- static struct snd_kcontrol_new prodigy_hd2_controls[] __devinitdata = {
-     {
-@@ -307,7 +308,7 @@ static struct snd_kcontrol_new prodigy_hd2_controls[] __devinitdata = {
- 	.info = ak4396_dac_vol_info,
- 	.get = ak4396_dac_vol_get,
- 	.put = ak4396_dac_vol_put,
--	.tlv = { .p = db_scale_wm_dac },
-+	.tlv = { .p = ak4396_db_scale },
-     },
- };
- 
+-	req.channels = (1 << attr->index);
+-	req.method = TWL4030_MADC_SW2;
+-	req.func_cb = NULL;
+ 	val = twl4030_madc_conversion(&req);
+ 	if (val < 0)
+ 		return val;
 
 
