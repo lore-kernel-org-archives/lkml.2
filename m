@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab2IQBCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:02:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33824 "EHLO
+	id S1754371Ab2IQAvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33482 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753150Ab2IQAvK (ORCPT
+	by vger.kernel.org with ESMTP id S1753151Ab2IQAtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:10 -0400
-Message-Id: <20120917003633.724171988@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:50 -0400
+Message-Id: <20120917003642.413673073@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:19 +0100
+Date: Mon, 17 Sep 2012 01:38:22 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 054/135] net/core: Fix potential memory leak in dev_set_alias()
+        alan@lxorguk.ukuu.org.uk, Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 117/135] NFS: return error from decode_getfh in decode open
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,48 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
+I'm not sure whether my expansion of the fix is correct here.
+
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Weston Andros Adamson <dros@netapp.com>
 
-[ Upstream commit 7364e445f62825758fa61195d237a5b8ecdd06ec ]
+commit 01913b49cf1dc6409a07dd2a4cc6af2e77f3c410 upstream.
 
-Do not leak memory by updating pointer with potentially NULL realloc return value.
+If decode_getfh failed, nfs4_xdr_dec_open would return 0 since the last
+decode_* call must have succeeded.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: this function makes two more function calls
+ (no longer present in mainline) with the same issue, so fix them up
+ similarly.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4xdr.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index e6f2635..75da76d 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1059,6 +1059,8 @@ rollback:
-  */
- int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- {
-+	char *new_ifalias;
-+
- 	ASSERT_RTNL();
- 
- 	if (len >= IFALIASZ)
-@@ -1072,9 +1074,10 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- 		return 0;
- 	}
- 
--	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
--	if (!dev->ifalias)
-+	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
-+	if (!new_ifalias)
- 		return -ENOMEM;
-+	dev->ifalias = new_ifalias;
- 
- 	strlcpy(dev->ifalias, alias, len+1);
- 	return len;
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -6113,12 +6113,15 @@ static int nfs4_xdr_dec_open(struct rpc_
+ 	status = decode_open(xdr, res);
+ 	if (status)
+ 		goto out;
+-	if (decode_getfh(xdr, &res->fh) != 0)
++	status = decode_getfh(xdr, &res->fh);
++	if (status)
+ 		goto out;
+-	if (decode_getfattr(xdr, res->f_attr, res->server,
+-				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
++	status = decode_getfattr(xdr, res->f_attr, res->server,
++				 !RPC_IS_ASYNC(rqstp->rq_task));
++	if (status)
+ 		goto out;
+-	if (decode_restorefh(xdr) != 0)
++	status = decode_restorefh(xdr);
++	if (status)
+ 		goto out;
+ 	decode_getfattr(xdr, res->dir_attr, res->server,
+ 			!RPC_IS_ASYNC(rqstp->rq_task));
 
 
