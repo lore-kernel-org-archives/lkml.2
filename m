@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab2IQSQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 14:16:51 -0400
-Received: from bosmailout03.eigbox.net ([66.96.189.3]:36535 "EHLO
-	bosmailout03.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198Ab2IQSQt (ORCPT
+	id S1757198Ab2IQSSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 14:18:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46615 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757121Ab2IQSSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 14:16:49 -0400
-X-Greylist: delayed 5143 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Sep 2012 14:16:49 EDT
-X-Authority-Analysis: v=2.0 cv=V8rKJ5bi c=1 sm=1
- a=+IiCBqF6PVcGMu4tpe0iLA==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=Vei7A3t7nWYA:10 a=8nJEP1OIZ-IA:10 a=uZyhaqkQpUgA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=DQF_6Zp4IKdTROBCDEUA:9 a=wPNLvfGTeEIA:10
- a=wx0GOVZTcu8EuaXTIXj3VQ==:117
-X-EN-OrigOutIP: 10.20.18.12
-X-EN-IMPSID: 0Gr21k02W0FdZ9W01Gr27Z
-Message-ID: <505754DB.2030801@yahoo.es>
-Date: Tue, 18 Sep 2012 00:50:35 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 17 Sep 2012 14:18:16 -0400
+Date: Mon, 17 Sep 2012 22:18:10 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 1/7] procfs: Add ability to plug in auxiliary fdinfo
+ providers
+Message-ID: <20120917181810.GH22360@moon>
+References: <20120912212906.407242774@openvz.org>
+ <20120912213507.272670512@openvz.org>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] dw_dmac: introduce autoconfiguration
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.61.7
-X-EN-OrigHost: unknown
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120912213507.272670512@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/17/2012 3:39 PM, Andy Shevchenko wrote:
-> Here is a patchset that allows to adapt the driver to the hardware
-> configuration during probe time. The hardware should have the specific optional
-> parameters enabled. Otherwise the driver will consider values stored in the
-> platform data.
->
-> Additionally it brings support of the software LLP transfers. It means that
-> normal linked list transfer is substituted by set of single block transfers
-> transparently to the user.
->
-> Comments are welcome.
->
-> Andy Shevchenko (7):
->   dw_dmac: mark dwc_dump_chan_regs as inline
->   dw_dmac: fill optional encoded parameters in register structure
->   dw_dmac: get number of channels from hardware if possible
->   dw_dmac: autoconfigure block_size or use platform data
->   dw_dmac: autoconfigure data_width or get it via platform data
->   dw_dmac: check if controller supports LLP
->   dw_dmac: introduce software emulation of LLP transfers
->
->  arch/arm/mach-spear13xx/spear13xx.c |    3 +
->  arch/avr32/mach-at32ap/at32ap700x.c |    3 +
->  drivers/dma/dw_dmac.c               |  207 +++++++++++++++++++++++++++++------
->  drivers/dma/dw_dmac_regs.h          |   48 ++++++++
->  include/linux/dw_dmac.h             |    7 ++
->  5 files changed, 235 insertions(+), 33 deletions(-)
-Thanks a lot Andy,
+On Thu, Sep 13, 2012 at 01:29:07AM +0400, Cyrill Gorcunov wrote:
+> This patch brings ability to print out auxiliary data associated
+> with file in procfs interface /proc/pid/fdinfo/fd.
+> 
+> In particular further patches make eventfd, evenpoll, signalfd
+> and fsnotify to print additional information complete enough
+> to restore these objects after checkpoint.
+> 
+> To simplify the code we add show_fdinfo callback inside
+> struct file_operations (as Al and Pavel are proposing).
+> 
 
-I will soon test these patches on my avr32 platform and make a separate
-patch for the 'configurable' endianness. I'm sure this can also be detected
-automatically but at the cost of performance
+Hi, sorry for bothering but is there some opinions on this series?
 
-Hein
+(I've found that epoll change log has not been well refreshed and
+ says that this fdinfo feature is config-checkpoint-restore dependant,
+ but in real this config entry was ripped off during conversation).
 
+So, at moment I somehow confused since it's a bit unclear where to
+move, either this series is more-less acceptible or not. I could
+bring back all config-checkpoint-restore dependency (since I still
+believe this feature better to be enabled not by default but iif
+user has asked fo it).
