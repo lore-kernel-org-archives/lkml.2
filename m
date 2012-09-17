@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab2IQAu0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33342 "EHLO
+	id S1754829Ab2IQBP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:15:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33663 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752990Ab2IQAt1 (ORCPT
+	by vger.kernel.org with ESMTP id S1753586Ab2IQAuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:27 -0400
-Message-Id: <20120917003628.590020709@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:25 -0400
+Message-Id: <20120917003640.226414068@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:42 +0100
+Date: Mon, 17 Sep 2012 01:38:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 017/135] xen/setup: Fix one-off error when adding for-balloon PFNs to the
- P2M.
+        alan@lxorguk.ukuu.org.uk, Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo Van Doorn <ivdoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 101/135] rt2x00: Fix word size of rt2500usb MAC_CSR19 register.
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,58 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Gertjan van Wingerde <gwingerde@gmail.com>
 
-commit c96aae1f7f393387d160211f60398d58463a7e65 upstream.
+commit 6ced58a5dbb94dbfbea1b33ca3c56d1e929cd548 upstream.
 
-When we are finished with return PFNs to the hypervisor, then
-populate it back, and also mark the E820 MMIO and E820 gaps
-as IDENTITY_FRAMEs, we then call P2M to set areas that can
-be used for ballooning. We were off by one, and ended up
-over-writting a P2M entry that most likely was an IDENTITY_FRAME.
-For example:
+The register is 16 bits wide, not 32.
 
-1-1 mapping on 40000->40200
-1-1 mapping on bc558->bc5ac
-1-1 mapping on bc5b4->bc8c5
-1-1 mapping on bc8c6->bcb7c
-1-1 mapping on bcd00->100000
-Released 614 pages of unused memory
-Set 277889 page(s) to 1-1 mapping
-Populating 40200-40466 pfn range: 614 pages added
-
-=> here we set from 40466 up to bc559 P2M tree to be
-INVALID_P2M_ENTRY. We should have done it up to bc558.
-
-The end result is that if anybody is trying to construct
-a PTE for PFN bc558 they end up with ~PAGE_PRESENT.
-
-Reported-by-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/setup.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2500usb.c |    2 +-
+ drivers/net/wireless/rt2x00/rt2500usb.h |   16 ++++++++--------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -78,9 +78,16 @@ static void __init xen_add_extra_mem(u64
- 	memblock_x86_reserve_range(start, start + size, "XEN EXTRA");
+diff --git a/drivers/net/wireless/rt2x00/rt2500usb.c b/drivers/net/wireless/rt2x00/rt2500usb.c
+index 3aae36b..b3a1d73 100644
+--- a/drivers/net/wireless/rt2x00/rt2500usb.c
++++ b/drivers/net/wireless/rt2x00/rt2500usb.c
+@@ -283,7 +283,7 @@ static int rt2500usb_rfkill_poll(struct rt2x00_dev *rt2x00dev)
+ 	u16 reg;
  
- 	xen_max_p2m_pfn = PFN_DOWN(start + size);
-+	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
-+		unsigned long mfn = pfn_to_mfn(pfn);
-+
-+		if (WARN(mfn == pfn, "Trying to over-write 1-1 mapping (pfn: %lx)\n", pfn))
-+			continue;
-+		WARN(mfn != INVALID_P2M_ENTRY, "Trying to remove %lx which has %lx mfn!\n",
-+			pfn, mfn);
- 
--	for (pfn = PFN_DOWN(start); pfn <= xen_max_p2m_pfn; pfn++)
- 		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
-+	}
+ 	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
+-	return rt2x00_get_field32(reg, MAC_CSR19_BIT7);
++	return rt2x00_get_field16(reg, MAC_CSR19_BIT7);
  }
  
- static unsigned long __init xen_release_chunk(unsigned long start,
+ #ifdef CONFIG_RT2X00_LIB_LEDS
+diff --git a/drivers/net/wireless/rt2x00/rt2500usb.h b/drivers/net/wireless/rt2x00/rt2500usb.h
+index b493306..192531d 100644
+--- a/drivers/net/wireless/rt2x00/rt2500usb.h
++++ b/drivers/net/wireless/rt2x00/rt2500usb.h
+@@ -189,14 +189,14 @@
+  * MAC_CSR19: GPIO control register.
+  */
+ #define MAC_CSR19			0x0426
+-#define MAC_CSR19_BIT0			FIELD32(0x0001)
+-#define MAC_CSR19_BIT1			FIELD32(0x0002)
+-#define MAC_CSR19_BIT2			FIELD32(0x0004)
+-#define MAC_CSR19_BIT3			FIELD32(0x0008)
+-#define MAC_CSR19_BIT4			FIELD32(0x0010)
+-#define MAC_CSR19_BIT5			FIELD32(0x0020)
+-#define MAC_CSR19_BIT6			FIELD32(0x0040)
+-#define MAC_CSR19_BIT7			FIELD32(0x0080)
++#define MAC_CSR19_BIT0			FIELD16(0x0001)
++#define MAC_CSR19_BIT1			FIELD16(0x0002)
++#define MAC_CSR19_BIT2			FIELD16(0x0004)
++#define MAC_CSR19_BIT3			FIELD16(0x0008)
++#define MAC_CSR19_BIT4			FIELD16(0x0010)
++#define MAC_CSR19_BIT5			FIELD16(0x0020)
++#define MAC_CSR19_BIT6			FIELD16(0x0040)
++#define MAC_CSR19_BIT7			FIELD16(0x0080)
+ 
+ /*
+  * MAC_CSR20: LED control register.
 
 
