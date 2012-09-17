@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2IQVm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 17:42:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50276 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab2IQVm6 (ORCPT
+	id S1755957Ab2IQVqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 17:46:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56821 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab2IQVqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 17:42:58 -0400
-Message-ID: <50579954.7030009@oracle.com>
-Date: Mon, 17 Sep 2012 16:42:44 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
+	Mon, 17 Sep 2012 17:46:00 -0400
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: yongjun_wei@trendmicro.com.cn, jfs-discussion@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] JFS: use list_move instead of list_del/list_add
-References: <CAPgLHd-TqJzoPYcE8b=g=_v9fyc+7wtBJ3FtbWns_3Q1GUPm1Q@mail.gmail.com>
-In-Reply-To: <CAPgLHd-TqJzoPYcE8b=g=_v9fyc+7wtBJ3FtbWns_3Q1GUPm1Q@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
+In-Reply-To: <20120917214136.GO18677@google.com>
+References: <20120823213529.GH14962@google.com> <CAErSpo7p_fx9oCNFXdP7JVN_2ZPWN=t4Gsx9M7JLy8hpSn0dYQ@mail.gmail.com>
+ <20120917214136.GO18677@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 17 Sep 2012 15:45:38 -0600
+Message-ID: <CAErSpo4NLi8-aDByFjDPsL-KnK2HXrvWQiYVKEcFwcv=_n_k7A@mail.gmail.com>
+Subject: Re: [PATCH] pci: rewrite pci_call_probe() to use workqueue instead of work_on_cpu()
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Meant to reply earlier. I've sent this to linux-next and will target for
-the next mainline merge window.
+On Mon, Sep 17, 2012 at 3:41 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Sep 14, 2012 at 12:13:21PM -0600, Bjorn Helgaas wrote:
+>> On Thu, Aug 23, 2012 at 3:35 PM, Tejun Heo <tj@kernel.org> wrote:
+>> > pci_call_probe() uses work_on_cpu(), which creates and tears down a
+>> > full kthread on each call, to invoke ->probe() on node local CPU for
+>> > allocation affinity.
+>> >
+>> > The same goal can easily be achieved using a work item.  This patch
+>> > rewrites pci_call_probe() so that it uses a work item instead of
+>> > work_on_cpu().
+>> >
+>> > Note that the function is restructured for simplicity.  This adds
+>> > get/put_online_cpus() pair for devices without node but the overhead
+>> > of doing so isn't anything material at this level.
+>> >
+>> > Signed-off-by: Tejun Heo <tj@kernel.org>
+>>
+>> I applied this to my "next" branch and pushed it.  Thanks!
+>
+> Can you please drop / revert this one?  It seems we need work_on_cpu()
+> after all and I'm gonna reimplement it in sane way.
 
-Thanks,
-Shaggy
-
-On 09/06/2012 02:33 AM, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Using list_move() instead of list_del() + list_add().
-> 
-> spatch with a semantic match is used to found this problem.
-> (http://coccinelle.lip6.fr/)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  fs/jfs/jfs_txnmgr.c | 9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/jfs/jfs_txnmgr.c b/fs/jfs/jfs_txnmgr.c
-> index bb8b661..5fcc02e 100644
-> --- a/fs/jfs/jfs_txnmgr.c
-> +++ b/fs/jfs/jfs_txnmgr.c
-> @@ -2977,12 +2977,9 @@ int jfs_sync(void *arg)
->  				 * put back on the anon_list.
->  				 */
->  
-> -				/* Take off anon_list */
-> -				list_del(&jfs_ip->anon_inode_list);
-> -
-> -				/* Put on anon_list2 */
-> -				list_add(&jfs_ip->anon_inode_list,
-> -					 &TxAnchor.anon_list2);
-> +				/* Move from anon_list to anon_list2 */
-> +				list_move(&jfs_ip->anon_inode_list,
-> +					  &TxAnchor.anon_list2);
->  
->  				TXN_UNLOCK();
->  				iput(ip);
-> 
+I dropped it.  Thanks for the heads-up.
