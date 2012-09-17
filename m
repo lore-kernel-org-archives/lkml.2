@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab2IQAu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33362 "EHLO
+	id S1753821Ab2IQBOK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:14:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33677 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753015Ab2IQAtd (ORCPT
+	by vger.kernel.org with ESMTP id S1753630Ab2IQAu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:33 -0400
-Message-Id: <20120917003628.860292301@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:28 -0400
+Message-Id: <20120917003640.476447677@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:44 +0100
+Date: Mon, 17 Sep 2012 01:38:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 019/135] drm: remove some potentially dangerous DRM_ERRORs
+        alan@lxorguk.ukuu.org.uk, Sergei Poselenov <sposelenov@emcraft.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 103/135] rt2800usb: Added rx packet length validity check
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,104 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Sergei Poselenov <sposelenov@emcraft.com>
 
-commit acb4b992d8a13728044f430b47b9199aa45993e9 upstream.
+commit efd5d6b03bd9c9e0df646c56fb5f4f3e25e5c1ac upstream.
 
-Each of these error messages can be caused by a broken or malicious
-userspace wanting to spam the dmesg with useless info.  They're really
-not worthy of DRM_DEBUG statements either; those are generally only
-useful during bringup of new hardware or versions, and ought to be
-removed before going upstream anyway.
+On our system (ARM Cortex-M3 SOC running linux-2.6.33)
+frequent crashes were observed in the rt2800usb module
+because of the invalid length of the received packet (3392,
+46920...). This patch adds the sanity check on the packet
+legth. Also, changed WARNING to ERROR in rt2x00lib_rxdone()
+so that the bad packet condition would be noticed.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[bwh: Backported to 3.2: s/r\./r->/ in drm_mode_addfb()]
+The fix was tested on the latest compat-wireless-3.5.1-1-snpc.
+
+Signed-off-by: Sergei Poselenov <sposelenov@emcraft.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_crtc.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   10 +++++++++-
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    2 +-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1625,10 +1625,8 @@ int drm_mode_cursor_ioctl(struct drm_dev
- 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
- 		return -EINVAL;
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index 52a32b5..6b4226b 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -667,8 +667,16 @@ static void rt2800usb_fill_rxdone(struct queue_entry *entry,
+ 	skb_pull(entry->skb, RXINFO_DESC_SIZE);
  
--	if (!req->flags) {
--		DRM_ERROR("no operation set\n");
-+	if (!req->flags)
- 		return -EINVAL;
--	}
- 
- 	mutex_lock(&dev->mode_config.mutex);
- 	obj = drm_mode_object_find(dev, req->crtc_id, DRM_MODE_OBJECT_CRTC);
-@@ -1641,7 +1639,6 @@ int drm_mode_cursor_ioctl(struct drm_dev
- 
- 	if (req->flags & DRM_MODE_CURSOR_BO) {
- 		if (!crtc->funcs->cursor_set) {
--			DRM_ERROR("crtc does not support cursor\n");
- 			ret = -ENXIO;
- 			goto out;
- 		}
-@@ -1654,7 +1651,6 @@ int drm_mode_cursor_ioctl(struct drm_dev
- 		if (crtc->funcs->cursor_move) {
- 			ret = crtc->funcs->cursor_move(crtc, req->x, req->y);
- 		} else {
--			DRM_ERROR("crtc does not support cursor\n");
- 			ret = -EFAULT;
- 			goto out;
- 		}
-@@ -1692,14 +1688,11 @@ int drm_mode_addfb(struct drm_device *de
- 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
- 		return -EINVAL;
- 
--	if ((config->min_width > r->width) || (r->width > config->max_width)) {
--		DRM_ERROR("mode new framebuffer width not within limits\n");
-+	if ((config->min_width > r->width) || (r->width > config->max_width))
- 		return -EINVAL;
--	}
--	if ((config->min_height > r->height) || (r->height > config->max_height)) {
--		DRM_ERROR("mode new framebuffer height not within limits\n");
+ 	/*
+-	 * FIXME: we need to check for rx_pkt_len validity
++	 * Check for rx_pkt_len validity. Return if invalid, leaving
++	 * rxdesc->size zeroed out by the upper level.
+ 	 */
++	if (unlikely(rx_pkt_len == 0 ||
++			rx_pkt_len > entry->queue->data_size)) {
++		ERROR(entry->queue->rt2x00dev,
++			"Bad frame size %d, forcing to 0\n", rx_pkt_len);
++		return;
++	}
 +
-+	if ((config->min_height > r->height) || (r->height > config->max_height))
- 		return -EINVAL;
--	}
+ 	rxd = (__le32 *)(entry->skb->data + rx_pkt_len);
  
- 	mutex_lock(&dev->mode_config.mutex);
- 
-@@ -1756,7 +1749,6 @@ int drm_mode_rmfb(struct drm_device *dev
- 	obj = drm_mode_object_find(dev, *id, DRM_MODE_OBJECT_FB);
- 	/* TODO check that we really get a framebuffer back. */
- 	if (!obj) {
--		DRM_ERROR("mode invalid framebuffer id\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
-@@ -1767,7 +1759,6 @@ int drm_mode_rmfb(struct drm_device *dev
- 			found = 1;
- 
- 	if (!found) {
--		DRM_ERROR("tried to remove a fb that we didn't own\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
-@@ -1814,7 +1805,6 @@ int drm_mode_getfb(struct drm_device *de
- 	mutex_lock(&dev->mode_config.mutex);
- 	obj = drm_mode_object_find(dev, r->fb_id, DRM_MODE_OBJECT_FB);
- 	if (!obj) {
--		DRM_ERROR("invalid framebuffer id\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
-@@ -1850,7 +1840,6 @@ int drm_mode_dirtyfb_ioctl(struct drm_de
- 	mutex_lock(&dev->mode_config.mutex);
- 	obj = drm_mode_object_find(dev, r->fb_id, DRM_MODE_OBJECT_FB);
- 	if (!obj) {
--		DRM_ERROR("invalid framebuffer id\n");
- 		ret = -EINVAL;
- 		goto out_err1;
- 	}
+ 	/*
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index a6b88bd..3f07e36 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -629,7 +629,7 @@ void rt2x00lib_rxdone(struct queue_entry *entry, gfp_t gfp)
+ 	 */
+ 	if (unlikely(rxdesc.size == 0 ||
+ 		     rxdesc.size > entry->queue->data_size)) {
+-		WARNING(rt2x00dev, "Wrong frame size %d max %d.\n",
++		ERROR(rt2x00dev, "Wrong frame size %d max %d.\n",
+ 			rxdesc.size, entry->queue->data_size);
+ 		dev_kfree_skb(entry->skb);
+ 		goto renew_skb;
 
 
