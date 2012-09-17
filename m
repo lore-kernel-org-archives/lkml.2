@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab2IQBQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:16:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34279 "EHLO
+	id S1755208Ab2IQBQb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:16:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34281 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753717Ab2IQBQL (ORCPT
+	by vger.kernel.org with ESMTP id S1753847Ab2IQBQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 21:16:11 -0400
-Message-Id: <20120917003638.406242660@decadent.org.uk>
+	Sun, 16 Sep 2012 21:16:12 -0400
+Message-Id: <20120917003636.998948618@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:53 +0100
+Date: Mon, 17 Sep 2012 01:37:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 088/135] ARM: 7496/1: hw_breakpoint: dont rely on dfsr to show watchpoint
- access type
+        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
+        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 078/135] time: Improve sanity checking of timekeeping inputs
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,108 +31,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit bf8801145c01ab600f8df66e8c879ac642fa5846 upstream.
+This is a -stable backport of 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b
 
->From ARM debug architecture v7.1 onwards, a watchpoint exception causes
-the DFAR to be updated with the faulting data address. However, DFSR.WnR
-takes an UNKNOWN value and therefore cannot be used in general to
-determine the access type that triggered the watchpoint.
+Unexpected behavior could occur if the time is set to a value large
+enough to overflow a 64bit ktime_t (which is something larger then the
+year 2262).
 
-This patch forbids watchpoints without an overflow handler from
-specifying a specific access type (load/store). Those with overflow
-handlers must be able to handle false positives potentially triggered by
-a watchpoint of a different access type on the same address. For
-SIGTRAP-based handlers (i.e. ptrace), this should have no impact.
+Also unexpected behavior could occur if large negative offsets are
+injected via adjtimex.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+So this patch improves the sanity check timekeeping inputs by
+improving the timespec_valid() check, and then makes better use of
+timespec_valid() to make sure we don't set the time to an invalid
+negative value or one that overflows ktime_t.
+
+Note: This does not protect from setting the time close to overflowing
+ktime_t and then letting natural accumulation cause the overflow.
+
+Reported-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm/kernel/hw_breakpoint.c |   55 ++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 15 deletions(-)
+ include/linux/ktime.h     |    7 -------
+ include/linux/time.h      |   22 ++++++++++++++++++++--
+ kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
+ 3 files changed, 44 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index ba386bd..18d39ea 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -159,6 +159,12 @@ static int debug_arch_supported(void)
- 		arch >= ARM_DEBUG_ARCH_V7_1;
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -58,13 +58,6 @@ union ktime {
+ 
+ typedef union ktime ktime_t;		/* Kill this */
+ 
+-#define KTIME_MAX			((s64)~((u64)1 << 63))
+-#if (BITS_PER_LONG == 64)
+-# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
+-#else
+-# define KTIME_SEC_MAX			LONG_MAX
+-#endif
+-
+ /*
+  * ktime_t definitions when using the 64-bit scalar representation:
+  */
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
+ 	return ts_delta;
  }
  
-+/* Can we determine the watchpoint access type from the fsr? */
-+static int debug_exception_updates_fsr(void)
++#define KTIME_MAX			((s64)~((u64)1 << 63))
++#if (BITS_PER_LONG == 64)
++# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
++#else
++# define KTIME_SEC_MAX			LONG_MAX
++#endif
++
+ /*
+  * Returns true if the timespec is norm, false if denorm:
+  */
+-#define timespec_valid(ts) \
+-	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
++static inline bool timespec_valid(const struct timespec *ts)
 +{
-+	return 0;
++	/* Dates before 1970 are bogus */
++	if (ts->tv_sec < 0)
++		return false;
++	/* Can't have more nanoseconds then a second */
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return false;
++	/* Disallow values that could overflow ktime_t */
++	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
++		return false;
++	return true;
 +}
-+
- /* Determine number of WRP registers available. */
- static int get_num_wrp_resources(void)
+ 
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespe
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
+ 
+-	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
++	if (!timespec_valid(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -417,6 +417,8 @@ EXPORT_SYMBOL(do_settimeofday);
+ int timekeeping_inject_offset(struct timespec *ts)
  {
-@@ -619,18 +625,35 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 	info->address &= ~alignment_mask;
- 	info->ctrl.len <<= offset;
+ 	unsigned long flags;
++	struct timespec tmp;
++	int ret = 0;
  
--	/*
--	 * Currently we rely on an overflow handler to take
--	 * care of single-stepping the breakpoint when it fires.
--	 * In the case of userspace breakpoints on a core with V7 debug,
--	 * we can use the mismatch feature as a poor-man's hardware
--	 * single-step, but this only works for per-task breakpoints.
--	 */
--	if (!bp->overflow_handler && (arch_check_bp_in_kernelspace(bp) ||
--	    !core_has_mismatch_brps() || !bp->hw.bp_target)) {
--		pr_warning("overflow handler required but none found\n");
--		ret = -EINVAL;
-+	if (!bp->overflow_handler) {
-+		/*
-+		 * Mismatch breakpoints are required for single-stepping
-+		 * breakpoints.
-+		 */
-+		if (!core_has_mismatch_brps())
-+			return -EINVAL;
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return -EINVAL;
+@@ -425,9 +427,16 @@ int timekeeping_inject_offset(struct tim
+ 
+ 	timekeeping_forward_now();
+ 
++	tmp = timespec_add(xtime,  *ts);
++	if (!timespec_valid(&tmp)) {
++		ret = -EINVAL;
++		goto error;
++	}
 +
-+		/* We don't allow mismatch breakpoints in kernel space. */
-+		if (arch_check_bp_in_kernelspace(bp))
-+			return -EPERM;
-+
-+		/*
-+		 * Per-cpu breakpoints are not supported by our stepping
-+		 * mechanism.
-+		 */
-+		if (!bp->hw.bp_target)
-+			return -EINVAL;
-+
-+		/*
-+		 * We only support specific access types if the fsr
-+		 * reports them.
-+		 */
-+		if (!debug_exception_updates_fsr() &&
-+		    (info->ctrl.type == ARM_BREAKPOINT_LOAD ||
-+		     info->ctrl.type == ARM_BREAKPOINT_STORE))
-+			return -EINVAL;
- 	}
-+
- out:
- 	return ret;
+ 	xtime = timespec_add(xtime, *ts);
+ 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
+ 
++error: /* even if we error out, we forwarded the time, so call update */
+ 	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -435,7 +444,7 @@ int timekeeping_inject_offset(struct tim
+ 	/* signal hrtimers about time change */
+ 	clock_was_set();
+ 
+-	return 0;
++	return ret;
  }
-@@ -706,10 +729,12 @@ static void watchpoint_handler(unsigned long addr, unsigned int fsr,
- 				goto unlock;
+ EXPORT_SYMBOL(timekeeping_inject_offset);
  
- 			/* Check that the access type matches. */
--			access = (fsr & ARM_FSR_ACCESS_MASK) ? HW_BREAKPOINT_W :
--				 HW_BREAKPOINT_R;
--			if (!(access & hw_breakpoint_type(wp)))
--				goto unlock;
-+			if (debug_exception_updates_fsr()) {
-+				access = (fsr & ARM_FSR_ACCESS_MASK) ?
-+					  HW_BREAKPOINT_W : HW_BREAKPOINT_R;
-+				if (!(access & hw_breakpoint_type(wp)))
-+					goto unlock;
-+			}
+@@ -582,7 +591,20 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
  
- 			/* We have a winner. */
- 			info->trigger = addr;
+ 	read_persistent_clock(&now);
++	if (!timespec_valid(&now)) {
++		pr_warn("WARNING: Persistent clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		now.tv_sec = 0;
++		now.tv_nsec = 0;
++	}
++
+ 	read_boot_clock(&boot);
++	if (!timespec_valid(&boot)) {
++		pr_warn("WARNING: Boot clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		boot.tv_sec = 0;
++		boot.tv_nsec = 0;
++	}
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+ 
 
 
