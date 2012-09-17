@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab2IQH7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:59:33 -0400
-Received: from hotel311.server4you.de ([85.25.146.15]:38261 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab2IQH7c (ORCPT
+	id S1754641Ab2IQICP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:02:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47277 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab2IQICL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:59:32 -0400
-Message-ID: <5056D861.7010404@monom.org>
-Date: Mon, 17 Sep 2012 09:59:29 +0200
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
- hierarchy support and whine if cgroups are nested for them
-References: <20120910223125.GC7677@google.com> <505055E5.90903@parallels.com> <20120912170357.GN7677@google.com> <5051C954.2080600@parallels.com> <20120913174817.GA7677@google.com> <5052E9BC.2020908@parallels.com>
-In-Reply-To: <5052E9BC.2020908@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Sep 2012 04:02:11 -0400
+Date: Mon, 17 Sep 2012 18:01:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Tony Lindgren <tony@atomide.com>, Venkatraman S <svenkatr@ti.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: linux-next: manual merge of the arm-soc tree with the mmc tree
+Message-Id: <20120917180157.dada1de4e34b3dcf59971ccd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Sep_2012_18_01_57_+1000_VOv8N4m/pENAP=rn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.09.2012 10:24, Glauber Costa wrote:
-> On 09/13/2012 09:48 PM, Tejun Heo wrote:
->> Hello, Glauber.
->>
->> On Thu, Sep 13, 2012 at 03:53:56PM +0400, Glauber Costa wrote:
->>> Here is where the Kconfig option comes to play. If we do it in the
->>> kernel, userspace doesn't have to do anything. I spoke with Lennart and
->>> Kay, and at least from a systemd PoV, they would much rather not provide
->>> a hack in userspace for a file that is scheduled to go away in any case
->>> - which I personally believe is a fair request.
->>>
->>> It is a default, so the effect for the user is the same: After the
->>> machine boots, use_hierarchy = 1, and he can still flip to 0 for some time.
->>
->> Alright, let's go Kconfig.  Let's just make sure that the transitional
->> nature is clearly labeled and the fact that the default config will
->> generate a warning when nested cgroups are created in memcg.  We can
->> then coordinate the flip with distros.  Can you please repost the
->> Kconfig patch?
->>
->
-> Just wait a bit. If you are merging your earlier patch, I'd like to take
-> that in consideration. In that case, I'd rebase.
->
->>>> Setting mark on a parent should be reflected on all its children w/o
->>>> their own explicit settings.
->>>
->>> That is clear, and better behavior than we have today. What I mean, is
->>> that by setting its own marking, the child can pretty much "escape" the
->>> group.
+--Signature=_Mon__17_Sep_2012_18_01_57_+1000_VOv8N4m/pENAP=rn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To escape net_prio the process needs CAP_NET_ADMIN to overwrite 
-SO_PRIORITY. net_cls has already its own marking.
+Hi all,
 
->>> The ideal solution - from this point of view only - would be to have
->>> more than one marking, and mark with all the way down to the root. So if
->>> you have an iptables rule to match one marking, it still applies to the
->>> kids. And you can still have extra markings.
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/mmc/host/omap.c between commit 2976837c6ea8 ("mmc: omap: remove
+unused variables and includes") from the mmc tree and commit cf3a6ec2c0a4
+("ARM: OMAP: remove plat/board.h file") from the arm-soc tree.
 
-I think what you are describing is something like a generic socket 
-marker which and a cgroup matcher for iptables, no? What about SO_MARK. 
-As noted above it would be nice if the processes could not escape with 
-setting SO_MARK (it also need SO_NET_ADMIN).
+The latter is a subset of the former.
 
->>> I am not sure this is feasible, though, in which case your solution
->>> could be a good compromise. But please let's aim for it.
->>
->> I don't think it supports multiple tags.  If that's possible, it would
->> be nice but I don't think it's a must.
->>
->
-> It is not about "it supports", but more about "can it support?"
-> But I honestly can't answer this question. net_cls people need to
-> come and tell us about it.
+I fixed it up and can carry the fix as necessary (no action is required).
 
-I struggle to understand for what the multiple tags are good for. Any 
-examples?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Another question on hierarchies on the networking controllers: Are there 
-any real dependencies between a cgroup and its children. For resources 
-like CPU cycles or memory it makes perfectly sense.
+--Signature=_Mon__17_Sep_2012_18_01_57_+1000_VOv8N4m/pENAP=rn
+Content-Type: application/pgp-signature
 
-I don't see a *direct* relation ship between the parent cgroup and it's 
-children for the networking controllers. There seems to be some sort of 
-relation ship for SO_PRIORITY. As the current net_prio implementation 
-does not allow hierarchies it avoids to answer this question.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-net_cls allows hierarchies but has no restriction on setting the classid 
-for TC. The traffic shaping happens completely independent of the cgroup 
-hierarchies and there is no relation ship at all.
+iQIcBAEBCAAGBQJQVtj1AAoJEECxmPOUX5FEttsQAJTgY0N/1xA1zQ0e9RlbvAll
+FowZuHqBX2YPjrfLqillii75gcP2PQLOsADCr7IZBgT2jCmfyHwHqJKSZGP0uyvL
+KWMTRfjBj9e+qbvFd9e2+yr+p59QRYzUKbl6xReiCDpEkQrf8dTKSqqzezxFYkoi
+a/Dddg0qnyZiI/bwjFOCbj1EJIo3xOWLhaQA7QMgMRueOVDBwECfQDTOdcwBhDWh
+1f/HoEd+mlA2EdMl6ROCbW72zfLwTJbWyZC/od+S1fbw704YrpK67XUp4nfUntvQ
+G2IyuDP5mRG3Nf3Kj8FfVz8bG5rch/Yh2+eiObEiUYh6txtdkCnQjymlNmtM5LHt
+ZCaEqKUQXX3FLkXq4SaHO16OCrnYWaxBLHTAtSSca7sGxJ4NZz1QcSO51+i6aQDo
+T9UOU9m52p/u2U7vpBwIsvZQrU8ZbxY34dXAM4RA83BV1H/0SJV+f9XjpaEinNmk
+ZfrMXbDTOffuLC4NccsGKNEBkQOOQyqiL1XkAyUvLE9irj1vqiAeg7SoQNwYyhKQ
+e/0Upc24rp9z2IP7/tvc6GqaVwewzt4qqew5lvRa9ezCpWtmDBUtjmys+xS6j02Y
+FO0PCRMrd8nNr2SftTyR/iQMsTSbUHeXMzwIJjgzdGD2R/l5O6qMlYdXSnPBEBtt
+pZxrlCs9WzYoCfp9EBWS
+=zIWY
+-----END PGP SIGNATURE-----
 
-Do we need any sort of formal definition for hierarchal dependencies for 
-the networking controlllers?
-
-
+--Signature=_Mon__17_Sep_2012_18_01_57_+1000_VOv8N4m/pENAP=rn--
