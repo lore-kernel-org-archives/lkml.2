@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2IQBXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:23:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33546 "EHLO
+	id S1755259Ab2IQBXy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:23:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33545 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753227Ab2IQAt7 (ORCPT
+	by vger.kernel.org with ESMTP id S1753229Ab2IQAt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:49:59 -0400
-Message-Id: <20120917003642.680653744@decadent.org.uk>
+Message-Id: <20120917003644.155904821@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:24 +0100
+Date: Mon, 17 Sep 2012 01:38:35 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Brown <davidb@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 119/135] ARM: 7513/1: Make sure dtc is built before running it
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 130/135] drm/radeon: fix ordering in pll picking on dce4+
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Brown <davidb@codeaurora.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 70b0476a2394de4f4e32e0b67288d80ff71ca963 upstream.
+commit ecd67955fd4c8e66e4df312098989d5fa7da624c upstream.
 
-'make dtbs' in a clean tree will try running the dtc before actually
-building it.  Make these rules depend upon the scripts to build it.
+No functional change, but re-order the cases so they
+evaluate properly due to the way the DCE macros work.
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Noticed by kallisti5 on IRC.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[bwh: Backported to 3.2: drop the DCE6 case]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/Makefile |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 30eae87..a051dfb 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -284,10 +284,10 @@ zImage Image xipImage bootpImage uImage: vmlinux
- zinstall uinstall install: vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
- 
--%.dtb:
-+%.dtb: scripts
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
- 
--dtbs:
-+dtbs: scripts
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
- 
- # We use MRPROPER_FILES and CLEAN_FILES now
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1468,10 +1468,10 @@ static int radeon_atom_pick_pll(struct d
+ 				 * crtc virtual pixel clock.
+ 				 */
+ 				if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
+-					if (ASIC_IS_DCE5(rdev))
+-						return ATOM_DCPLL;
+-					else if (rdev->clock.dp_extclk)
++					if (rdev->clock.dp_extclk)
+ 						return ATOM_PPLL_INVALID;
++					else if (ASIC_IS_DCE5(rdev))
++						return ATOM_DCPLL;
+ 				}
+ 			}
+ 		}
 
 
