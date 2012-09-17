@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2IQBO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:14:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33666 "EHLO
+	id S1754168Ab2IQBPW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:15:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33669 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753602Ab2IQAu1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752990Ab2IQAu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:27 -0400
-Message-Id: <20120917003640.339795943@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:26 -0400
+Message-Id: <20120917003637.437735422@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:07 +0100
+Date: Mon, 17 Sep 2012 01:37:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 102/135] rt2x00: Fix rfkill polling prior to interface start.
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Timo Aaltonen <timo.aaltonen@canonical.com>
+Subject: [ 081/135] drm/i915: Wait for all pending operations to the fb before  disabling the pipe
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,273 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit a396e10019eaf3809b0219c966865aaafec12630 upstream.
+During modeset we have to disable the pipe to reconfigure its timings
+and maybe its size. Userspace may have queued up command buffers that
+depend upon the pipe running in a certain configuration and so the
+commands may become confused across the modeset. At the moment, we use a
+less than satisfactory kick-scanline-waits should the GPU hang during
+the modeset. It should be more reliable to wait for the pending
+operations to complete first, even though we still have a window for
+userspace to submit a broken command buffer during the modeset.
 
-We need to program the rfkill switch GPIO pin direction to input at
-device initialization time, not only when the interface is brought up.
-Doing this only when the interface is brought up could lead to rfkill
-detecting the switch is turned on erroneously and inability to create
-the interface and bringing it up.
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+(cherry picked from commit 0f91128d88bbb8b0a8e7bb93df2c40680871d45a)
 
-Reported-and-tested-by: Andreas Messer <andi@bastelmap.de>
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Timo Aaltonen <timo.aaltonen@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2400pci.c |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2400pci.h |    1 +
- drivers/net/wireless/rt2x00/rt2500pci.c |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2500usb.c |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2500usb.h |    1 +
- drivers/net/wireless/rt2x00/rt2800pci.c |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2800usb.c |    9 +++++++++
- drivers/net/wireless/rt2x00/rt61pci.c   |    9 +++++++++
- drivers/net/wireless/rt2x00/rt61pci.h   |    1 +
- drivers/net/wireless/rt2x00/rt73usb.c   |    9 +++++++++
- drivers/net/wireless/rt2x00/rt73usb.h   |    3 +++
- 11 files changed, 69 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |   27 ++++-----------------------
+ 1 file changed, 4 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2400pci.c b/drivers/net/wireless/rt2x00/rt2400pci.c
-index 8b9dbd7..64328af 100644
---- a/drivers/net/wireless/rt2x00/rt2400pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2400pci.c
-@@ -1611,6 +1611,7 @@ static int rt2400pci_probe_hw_mode(struct rt2x00_dev *rt2x00dev)
- static int rt2400pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index cc75c4b..ae74df7 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2852,16 +2852,14 @@ static void intel_clear_scanline_wait(struct drm_device *dev)
+ 
+ static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
  {
- 	int retval;
-+	u32 reg;
+-	struct drm_i915_gem_object *obj;
+-	struct drm_i915_private *dev_priv;
++	struct drm_device *dev = crtc->dev;
  
- 	/*
- 	 * Allocate eeprom data.
-@@ -1624,6 +1625,14 @@ static int rt2400pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
+ 	if (crtc->fb == NULL)
+ 		return;
  
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00pci_register_read(rt2x00dev, GPIOCSR, &reg);
-+	rt2x00_set_field32(&reg, GPIOCSR_BIT8, 1);
-+	rt2x00pci_register_write(rt2x00dev, GPIOCSR, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt2400pci_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt2400pci.h b/drivers/net/wireless/rt2x00/rt2400pci.h
-index d3a4a68..7564ae9 100644
---- a/drivers/net/wireless/rt2x00/rt2400pci.h
-+++ b/drivers/net/wireless/rt2x00/rt2400pci.h
-@@ -670,6 +670,7 @@
- #define GPIOCSR_BIT5			FIELD32(0x00000020)
- #define GPIOCSR_BIT6			FIELD32(0x00000040)
- #define GPIOCSR_BIT7			FIELD32(0x00000080)
-+#define GPIOCSR_BIT8			FIELD32(0x00000100)
+-	obj = to_intel_framebuffer(crtc->fb)->obj;
+-	dev_priv = crtc->dev->dev_private;
+-	wait_event(dev_priv->pending_flip_queue,
+-		   atomic_read(&obj->pending_flip) == 0);
++	mutex_lock(&dev->struct_mutex);
++	intel_finish_fb(crtc->fb);
++	mutex_unlock(&dev->struct_mutex);
+ }
  
- /*
-  * BBPPCSR: BBP Pin control register.
-diff --git a/drivers/net/wireless/rt2x00/rt2500pci.c b/drivers/net/wireless/rt2x00/rt2500pci.c
-index d2cf8a4..3de0406 100644
---- a/drivers/net/wireless/rt2x00/rt2500pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2500pci.c
-@@ -1929,6 +1929,7 @@ static int rt2500pci_probe_hw_mode(struct rt2x00_dev *rt2x00dev)
- static int rt2500pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u32 reg;
+ static bool intel_crtc_driving_pch(struct drm_crtc *crtc)
+@@ -3322,23 +3320,6 @@ static void intel_crtc_disable(struct drm_crtc *crtc)
+ 	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
+ 	struct drm_device *dev = crtc->dev;
  
- 	/*
- 	 * Allocate eeprom data.
-@@ -1942,6 +1943,14 @@ static int rt2500pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
+-	/* Flush any pending WAITs before we disable the pipe. Note that
+-	 * we need to drop the struct_mutex in order to acquire it again
+-	 * during the lowlevel dpms routines around a couple of the
+-	 * operations. It does not look trivial nor desirable to move
+-	 * that locking higher. So instead we leave a window for the
+-	 * submission of further commands on the fb before we can actually
+-	 * disable it. This race with userspace exists anyway, and we can
+-	 * only rely on the pipe being disabled by userspace after it
+-	 * receives the hotplug notification and has flushed any pending
+-	 * batches.
+-	 */
+-	if (crtc->fb) {
+-		mutex_lock(&dev->struct_mutex);
+-		intel_finish_fb(crtc->fb);
+-		mutex_unlock(&dev->struct_mutex);
+-	}
+-
+ 	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
  
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00pci_register_read(rt2x00dev, GPIOCSR, &reg);
-+	rt2x00_set_field32(&reg, GPIOCSR_DIR0, 1);
-+	rt2x00pci_register_write(rt2x00dev, GPIOCSR, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt2500pci_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt2500usb.c b/drivers/net/wireless/rt2x00/rt2500usb.c
-index b3a1d73..89fee31 100644
---- a/drivers/net/wireless/rt2x00/rt2500usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.c
-@@ -1768,6 +1768,7 @@ static int rt2500usb_probe_hw_mode(struct rt2x00_dev *rt2x00dev)
- static int rt2500usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u16 reg;
- 
- 	/*
- 	 * Allocate eeprom data.
-@@ -1781,6 +1782,14 @@ static int rt2500usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
- 
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
-+	rt2x00_set_field16(&reg, MAC_CSR19_BIT8, 0);
-+	rt2500usb_register_write(rt2x00dev, MAC_CSR19, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt2500usb_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt2500usb.h b/drivers/net/wireless/rt2x00/rt2500usb.h
-index 192531d..196bd51 100644
---- a/drivers/net/wireless/rt2x00/rt2500usb.h
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.h
-@@ -197,6 +197,7 @@
- #define MAC_CSR19_BIT5			FIELD16(0x0020)
- #define MAC_CSR19_BIT6			FIELD16(0x0040)
- #define MAC_CSR19_BIT7			FIELD16(0x0080)
-+#define MAC_CSR19_BIT8			FIELD16(0x0100)
- 
- /*
-  * MAC_CSR20: LED control register.
-diff --git a/drivers/net/wireless/rt2x00/rt2800pci.c b/drivers/net/wireless/rt2x00/rt2800pci.c
-index 98aa426..4765bbd 100644
---- a/drivers/net/wireless/rt2x00/rt2800pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2800pci.c
-@@ -983,6 +983,7 @@ static int rt2800pci_validate_eeprom(struct rt2x00_dev *rt2x00dev)
- static int rt2800pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u32 reg;
- 
- 	/*
- 	 * Allocate eeprom data.
-@@ -996,6 +997,14 @@ static int rt2800pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
- 
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00pci_register_read(rt2x00dev, GPIO_CTRL_CFG, &reg);
-+	rt2x00_set_field32(&reg, GPIO_CTRL_CFG_GPIOD_BIT2, 1);
-+	rt2x00pci_register_write(rt2x00dev, GPIO_CTRL_CFG, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt2800_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 6681bfc..52a32b5 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -736,6 +736,7 @@ static int rt2800usb_validate_eeprom(struct rt2x00_dev *rt2x00dev)
- static int rt2800usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u32 reg;
- 
- 	/*
- 	 * Allocate eeprom data.
-@@ -749,6 +750,14 @@ static int rt2800usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
- 
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00usb_register_read(rt2x00dev, GPIO_CTRL_CFG, &reg);
-+	rt2x00_set_field32(&reg, GPIO_CTRL_CFG_GPIOD_BIT2, 1);
-+	rt2x00usb_register_write(rt2x00dev, GPIO_CTRL_CFG, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt2800_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt61pci.c b/drivers/net/wireless/rt2x00/rt61pci.c
-index 3f7bc5c..b8ec961 100644
---- a/drivers/net/wireless/rt2x00/rt61pci.c
-+++ b/drivers/net/wireless/rt2x00/rt61pci.c
-@@ -2832,6 +2832,7 @@ static int rt61pci_probe_hw_mode(struct rt2x00_dev *rt2x00dev)
- static int rt61pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u32 reg;
- 
- 	/*
- 	 * Disable power saving.
-@@ -2850,6 +2851,14 @@ static int rt61pci_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
- 
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00pci_register_read(rt2x00dev, MAC_CSR13, &reg);
-+	rt2x00_set_field32(&reg, MAC_CSR13_BIT13, 1);
-+	rt2x00pci_register_write(rt2x00dev, MAC_CSR13, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt61pci_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt61pci.h b/drivers/net/wireless/rt2x00/rt61pci.h
-index e3cd6db..8f3da5a 100644
---- a/drivers/net/wireless/rt2x00/rt61pci.h
-+++ b/drivers/net/wireless/rt2x00/rt61pci.h
-@@ -372,6 +372,7 @@ struct hw_pairwise_ta_entry {
- #define MAC_CSR13_BIT10			FIELD32(0x00000400)
- #define MAC_CSR13_BIT11			FIELD32(0x00000800)
- #define MAC_CSR13_BIT12			FIELD32(0x00001000)
-+#define MAC_CSR13_BIT13			FIELD32(0x00002000)
- 
- /*
-  * MAC_CSR14: LED control register.
-diff --git a/drivers/net/wireless/rt2x00/rt73usb.c b/drivers/net/wireless/rt2x00/rt73usb.c
-index ba6e434..248436c 100644
---- a/drivers/net/wireless/rt2x00/rt73usb.c
-+++ b/drivers/net/wireless/rt2x00/rt73usb.c
-@@ -2177,6 +2177,7 @@ static int rt73usb_probe_hw_mode(struct rt2x00_dev *rt2x00dev)
- static int rt73usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- {
- 	int retval;
-+	u32 reg;
- 
- 	/*
- 	 * Allocate eeprom data.
-@@ -2190,6 +2191,14 @@ static int rt73usb_probe_hw(struct rt2x00_dev *rt2x00dev)
- 		return retval;
- 
- 	/*
-+	 * Enable rfkill polling by setting GPIO direction of the
-+	 * rfkill switch GPIO pin correctly.
-+	 */
-+	rt2x00usb_register_read(rt2x00dev, MAC_CSR13, &reg);
-+	rt2x00_set_field32(&reg, MAC_CSR13_BIT15, 0);
-+	rt2x00usb_register_write(rt2x00dev, MAC_CSR13, reg);
-+
-+	/*
- 	 * Initialize hw specifications.
- 	 */
- 	retval = rt73usb_probe_hw_mode(rt2x00dev);
-diff --git a/drivers/net/wireless/rt2x00/rt73usb.h b/drivers/net/wireless/rt2x00/rt73usb.h
-index 9f6b470..df1cc11 100644
---- a/drivers/net/wireless/rt2x00/rt73usb.h
-+++ b/drivers/net/wireless/rt2x00/rt73usb.h
-@@ -282,6 +282,9 @@ struct hw_pairwise_ta_entry {
- #define MAC_CSR13_BIT10			FIELD32(0x00000400)
- #define MAC_CSR13_BIT11			FIELD32(0x00000800)
- #define MAC_CSR13_BIT12			FIELD32(0x00001000)
-+#define MAC_CSR13_BIT13			FIELD32(0x00002000)
-+#define MAC_CSR13_BIT14			FIELD32(0x00004000)
-+#define MAC_CSR13_BIT15			FIELD32(0x00008000)
- 
- /*
-  * MAC_CSR14: LED control register.
+ 	if (crtc->fb) {
+-- 
+1.7.9.5
+
+--
+To unsubscribe from this list: send the line "unsubscribe stable" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 
