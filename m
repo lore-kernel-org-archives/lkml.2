@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab2IQWYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 18:24:30 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:52630 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab2IQWY2 (ORCPT
+	id S1757427Ab2IQW0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 18:26:43 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51133 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754864Ab2IQW0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 18:24:28 -0400
-Date: Mon, 17 Sep 2012 22:24:27 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Mon, 17 Sep 2012 18:26:42 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+ect8iBx5VTh4vdypbzTfS
+Date: Mon, 17 Sep 2012 15:26:36 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-omap@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Olof Johansson <olof@lixom.net>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] mfd: Fix compile for twl-core.c by removing cpu_is_omap
- usage
-In-Reply-To: <20120917221406.GG11762@atomide.com>
-Message-ID: <alpine.DEB.2.00.1209172222570.18885@utopia.booyaka.com>
-References: <20120917202943.GV4521@atomide.com> <alpine.DEB.2.00.1209172207480.16117@utopia.booyaka.com> <20120917221406.GG11762@atomide.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: Re: [PATCH] mfd: Fix compile for twl-core.c by removing
+ cpu_is_omap usage
+Message-ID: <20120917222635.GI11762@atomide.com>
+References: <20120917202943.GV4521@atomide.com>
+ <alpine.DEB.2.00.1209172207480.16117@utopia.booyaka.com>
+ <20120917221406.GG11762@atomide.com>
+ <alpine.DEB.2.00.1209172222570.18885@utopia.booyaka.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209172222570.18885@utopia.booyaka.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Tony Lindgren wrote:
+* Paul Walmsley <paul@pwsan.com> [120917 15:25]:
+> On Mon, 17 Sep 2012, Tony Lindgren wrote:
+> 
+> > We need to queue this ASAP and before other patches to fix the
+> > build breakage in linux next. Then you can merge in that commit
+> > too, does that work for you?
+> 
+> That's fine, we'll just need a stable commit then that the CCF patches can 
+> be based on.
 
-> We need to queue this ASAP and before other patches to fix the
-> build breakage in linux next. Then you can merge in that commit
-> too, does that work for you?
+OK cool, will let you know that once we hear from Samuel. Care to
+ack the clock related changes?
 
-That's fine, we'll just need a stable commit then that the CCF patches can 
-be based on.
+There's pm24xx.c at least using osc_ck naming, so I added a new
+alias to keep it generic for the driver instead of using omap
+specific names.
 
+Regards,
 
-- Paul
+Tony 
