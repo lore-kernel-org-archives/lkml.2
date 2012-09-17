@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067Ab2IQR6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:58:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7037 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043Ab2IQR6O (ORCPT
+	id S1757063Ab2IQSAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 14:00:10 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:41036
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756043Ab2IQSAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:58:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6838"; a="237695960"
-Message-ID: <505764A7.901@codeaurora.org>
-Date: Mon, 17 Sep 2012 10:57:59 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 17 Sep 2012 14:00:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zz936eId6f1izz1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAIA00-01-K4Z-02
+X-M-MSG: 
+Date: Mon, 17 Sep 2012 19:59:55 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] RAS changes for 3.7
+Message-ID: <20120917175955.GK13879@aftab.osrc.amd.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC][PATCH] fs/buffer.c: Revoke LRU when trying to drop buffers
-References: <1347384529-5862-1-git-send-email-lauraa@codeaurora.org> <alpine.LSU.2.00.1209141821310.2138@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1209141821310.2138@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi guys,
 
-On 9/14/2012 6:41 PM, Hugh Dickins wrote:
-> On Tue, 11 Sep 2012, Laura Abbott wrote:
->> When a buffer is added to the LRU list, a reference is taken which is
->> not dropped until the buffer is evicted from the LRU list. This is the
->> correct behavior, however this LRU reference will prevent the buffer
->> from being dropped. This means that the buffer can't actually be dropped
->> until it is selected for eviction. There's no bound on the time spent
->> on the LRU list, which means that the buffer may be undroppable for
->> very long periods of time. Given that migration involves dropping
->> buffers, the associated page is now unmigratible for long periods of
->> time as well.
->
-> Disclaimer: I'm no expert on buffer_heads, and haven't studied your
-> patch.  But it seems to me that this is an issue with the (unnamed)
-> filesystem you use, rather than a problem to be solved in drop_buffers().
->
+just a "enable MCE by default" patch and a trivial cleanup.
 
-We are using ext4
+Please pull,
+Thanks.
 
-> extN, gfs2, ntfs, ocfs2 and xfs set .migratepage = buffer_migrate_page,
-> and I cannot see that page migration involves drop_buffers() at all in
-> that case: it transfers the buffer_heads from the old page to the new,
-> whether they're busy or not, with no attempt to free them.
->
+The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
 
-That's true for most of the address spaces EXCEPT for the journaled 
-address space operations; ext4_ordered_aops, ext4_writeback_aops, 
-ext4_da_aops all set migratepage but ext4_journalled_aops does not set 
-migratepage at all. This seems to be true all the way back to when the 
-migratepage was added for ext3.
+  Linux 3.6-rc6 (2012-09-16 14:58:51 -0700)
 
-> Maybe your filesystem can be converted, with or without some extra help,
-> to buffer_migrate_page() instead of the default fallback_migrate_page():
-> which indeed has to play safe, doing the try_to_release_page() you see.
-> Maybe ask on the mailing list for your filesystem?
->
+are available in the git repository at:
 
-I could ask on the ext mailing list for the historical reasons why the 
-journalled ops don't have migrate pages, but I'm still going to assert 
-this is still a problem with fallback_migrate_page. It's still possible 
-to have drop_buffers fail unnecessarily because the buffer is stuck on 
-the LRU list and I don't see why the problem shouldn't be fixed there as 
-well.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_queue_for_3.7
 
-> Hugh
->
+for you to fetch changes up to 57639bedd2b8268daa791efcfd0367b9031b057d:
 
-Thanks,
-Laura
+  x86, MCE: Remove unused defines (2012-09-17 19:33:38 +0200)
+
+----------------------------------------------------------------
+Patch 1/2 which enables MCA by default because I still see bugreports
+where CONFIG_X86_MCE is disabled and this is a bad idea so turning it on
+by default makes sense to me. The second one is a trivial cleanup.
+
+----------------------------------------------------------------
+Borislav Petkov (2):
+      x86, mce: Enable MCA support by default
+      x86, MCE: Remove unused defines
+
+ arch/x86/Kconfig           |  1 +
+ arch/x86/include/asm/mce.h | 12 +-----------
+ 2 files changed, 2 insertions(+), 11 deletions(-)
+
+
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
+
