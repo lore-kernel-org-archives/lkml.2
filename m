@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2IQAui (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33383 "EHLO
+	id S1753808Ab2IQAug (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33393 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753044Ab2IQAtj (ORCPT
+	by vger.kernel.org with ESMTP id S1753059Ab2IQAtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:39 -0400
-Message-Id: <20120917003639.785803707@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:40 -0400
+Message-Id: <20120917003639.920151096@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:03 +0100
+Date: Mon, 17 Sep 2012 01:38:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Manoj Iyer <manoj.iyer@canonical.com>,
+        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 098/135] xhci: Recognize USB 3.0 devices as superspeed at powerup
+Subject: [ 099/135] Intel xhci: Only switch the switchable ports
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,43 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Keng-Yu Lin <kengyu@canonical.com>
 
-commit 29d214576f936db627ff62afb9ef438eea18bcd2 upstream.
+commit a96874a2a92feaef607ddd3137277a788cb927a6 upstream.
 
-On Intel Panther Point chipset USB 3.0 devices show up as
-high-speed devices on powerup, but after an s3 cycle they are
-correctly recognized as SuperSpeed. At powerup switch the port
-to xHCI so that USB 3.0 devices are correctly recognized.
+With a previous patch to enable the EHCI/XHCI port switching, it switches
+all the available ports.
 
-BugLink: http://bugs.launchpad.net/bugs/1000424
+The assumption is not correct because the BIOS may expect some ports
+not switchable by the OS.
+
+There are two more registers that contains the information of the switchable
+and non-switchable ports.
+
+This patch adds the checking code for the two register so that only the
+switchable ports are altered.
 
 This patch should be backported to kernels as old as 3.0, that contain
 commit ID 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
 EHCI/xHCI port switching."
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/pci-quirks.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/pci-quirks.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index c5e9e4a..486e812 100644
+index 486e812..20b9f45 100644
 --- a/drivers/usb/host/pci-quirks.c
 +++ b/drivers/usb/host/pci-quirks.c
-@@ -870,9 +870,10 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
- 	/* Disable any BIOS SMIs and clear all SMI events*/
- 	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
+@@ -75,7 +75,9 @@
+ #define	NB_PIF0_PWRDOWN_1	0x01100013
  
-+hc_init:
- 	if (usb_is_intel_switchable_xhci(pdev))
- 		usb_enable_xhci_ports(pdev);
--hc_init:
+ #define USB_INTEL_XUSB2PR      0xD0
++#define USB_INTEL_USB2PRM      0xD4
+ #define USB_INTEL_USB3_PSSEN   0xD8
++#define USB_INTEL_USB3PRM      0xDC
+ 
+ static struct amd_chipset_info {
+ 	struct pci_dev	*nb_dev;
+@@ -772,10 +774,18 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ 		return;
+ 	}
+ 
+-	ports_available = 0xffffffff;
++	/* Read USB3PRM, the USB 3.0 Port Routing Mask Register
++	 * Indicate the ports that can be changed from OS.
++	 */
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB3PRM,
++			&ports_available);
 +
- 	op_reg_base = base + XHCI_HC_LENGTH(readl(base));
++	dev_dbg(&xhci_pdev->dev, "Configurable ports to enable SuperSpeed: 0x%x\n",
++			ports_available);
++
+ 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
+-	 * Register, to turn on SuperSpeed terminations for all
+-	 * available ports.
++	 * Register, to turn on SuperSpeed terminations for the
++	 * switchable ports.
+ 	 */
+ 	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
+ 			cpu_to_le32(ports_available));
+@@ -785,7 +795,16 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ 	dev_dbg(&xhci_pdev->dev, "USB 3.0 ports that are now enabled "
+ 			"under xHCI: 0x%x\n", ports_available);
  
- 	/* Wait for the host controller to be ready before writing any
+-	ports_available = 0xffffffff;
++	/* Read XUSB2PRM, xHCI USB 2.0 Port Routing Mask Register
++	 * Indicate the USB 2.0 ports to be controlled by the xHCI host.
++	 */
++
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB2PRM,
++			&ports_available);
++
++	dev_dbg(&xhci_pdev->dev, "Configurable USB 2.0 ports to hand over to xCHI: 0x%x\n",
++			ports_available);
++
+ 	/* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
+ 	 * switch the USB 2.0 power and data lines over to the xHCI
+ 	 * host.
 
 
