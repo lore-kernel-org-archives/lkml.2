@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2IQA6z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:58:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33910 "EHLO
+	id S1754629Ab2IQAvX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33750 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754617Ab2IQAvY (ORCPT
+	by vger.kernel.org with ESMTP id S1753975Ab2IQAuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:24 -0400
-Message-Id: <20120917003632.755440140@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:46 -0400
+Message-Id: <20120917003635.754869046@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:12 +0100
+Date: Mon, 17 Sep 2012 01:37:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 047/135] i2c-designware: Fix build error if CONFIG_I2C_DESIGNWARE_PLATFORM=y
- && CONFIG_I2C_DESIGNWARE_PCI=y
+        alan@lxorguk.ukuu.org.uk, Eric Leblond <eric@regit.org>,
+        Aleksandr Kotov <a1k@mail.ru>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 069/135] af_packet: dont emit packet on orig fanout group
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,190 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Eric Leblond <eric@regit.org>
 
-commit e68bb91baa0bb9817567bd45d560919e8e26373b upstream.
+[ Upstream commit c0de08d04215031d68fa13af36f347a6cfa252ca ]
 
-This patch adds config I2C_DESIGNWARE_CORE in Kconfig, and let
-I2C_DESIGNWARE_PLATFORM and I2C_DESIGNWARE_PCI select I2C_DESIGNWARE_CORE.
+If a packet is emitted on one socket in one group of fanout sockets,
+it is transmitted again. It is thus read again on one of the sockets
+of the fanout group. This result in a loop for software which
+generate packets when receiving one.
+This retransmission is not the intended behavior: a fanout group
+must behave like a single socket. The packet should not be
+transmitted on a socket if it originates from a socket belonging
+to the same fanout group.
 
-Because both I2C_DESIGNWARE_PLATFORM and I2C_DESIGNWARE_PCI can be built as
-built-in or module, we also need to export the functions in i2c-designware-core.
+This patch fixes the issue by changing the transmission check to
+take fanout group info account.
 
-This fixes below build error when CONFIG_I2C_DESIGNWARE_PLATFORM=y &&
-CONFIG_I2C_DESIGNWARE_PCI=y:
-
-  LD      drivers/i2c/busses/built-in.o
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_clear_int':
-i2c-designware-core.c:(.text+0xa10): multiple definition of `i2c_dw_clear_int'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x928): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_init':
-i2c-designware-core.c:(.text+0x178): multiple definition of `i2c_dw_init'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x90): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `dw_readl':
-i2c-designware-core.c:(.text+0xe8): multiple definition of `dw_readl'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x0): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_isr':
-i2c-designware-core.c:(.text+0x724): multiple definition of `i2c_dw_isr'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x63c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer':
-i2c-designware-core.c:(.text+0x4b0): multiple definition of `i2c_dw_xfer'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x3c8): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_is_enabled':
-i2c-designware-core.c:(.text+0x9d4): multiple definition of `i2c_dw_is_enabled'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8ec): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `dw_writel':
-i2c-designware-core.c:(.text+0x124): multiple definition of `dw_writel'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x3c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer_msg':
-i2c-designware-core.c:(.text+0x2e8): multiple definition of `i2c_dw_xfer_msg'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x200): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_enable':
-i2c-designware-core.c:(.text+0x9c8): multiple definition of `i2c_dw_enable'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8e0): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_read_comp_param':
-i2c-designware-core.c:(.text+0xa24): multiple definition of `i2c_dw_read_comp_param'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x93c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable':
-i2c-designware-core.c:(.text+0x9dc): multiple definition of `i2c_dw_disable'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8f4): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_func':
-i2c-designware-core.c:(.text+0x710): multiple definition of `i2c_dw_func'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x628): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable_int':
-i2c-designware-core.c:(.text+0xa18): multiple definition of `i2c_dw_disable_int'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x930): first defined here
-make[3]: *** [drivers/i2c/busses/built-in.o] Error 1
-make[2]: *** [drivers/i2c/busses] Error 2
-make[1]: *** [drivers/i2c] Error 2
-make: *** [drivers] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Tested-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Aleksandr Kotov <a1k@mail.ru>
+Signed-off-by: Eric Leblond <eric@regit.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/Kconfig               |    5 +++++
- drivers/i2c/busses/Makefile              |    5 +++--
- drivers/i2c/busses/i2c-designware-core.c |   11 +++++++++++
- 3 files changed, 19 insertions(+), 2 deletions(-)
+ include/linux/netdevice.h |  2 ++
+ net/core/dev.c            | 16 ++++++++++++++--
+ net/packet/af_packet.c    |  9 +++++++++
+ 3 files changed, 25 insertions(+), 2 deletions(-)
 
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -349,9 +349,13 @@ config I2C_DAVINCI
- 	  devices such as DaVinci NIC.
- 	  For details please see http://www.ti.com/davinci
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index d178fb8..00ca32b 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1513,6 +1513,8 @@ struct packet_type {
+ 	struct sk_buff		**(*gro_receive)(struct sk_buff **head,
+ 					       struct sk_buff *skb);
+ 	int			(*gro_complete)(struct sk_buff *skb);
++	bool			(*id_match)(struct packet_type *ptype,
++					    struct sock *sk);
+ 	void			*af_packet_priv;
+ 	struct list_head	list;
+ };
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 75da76d..832ba6d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1631,6 +1631,19 @@ static inline int deliver_skb(struct sk_buff *skb,
+ 	return pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
+ }
  
-+config I2C_DESIGNWARE_CORE
-+	tristate
++static inline bool skb_loop_sk(struct packet_type *ptype, struct sk_buff *skb)
++{
++	if (ptype->af_packet_priv == NULL)
++		return false;
 +
- config I2C_DESIGNWARE_PLATFORM
- 	tristate "Synopsys DesignWare Platfrom"
- 	depends on HAVE_CLK
-+	select I2C_DESIGNWARE_CORE
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  Synopsys DesignWare I2C adapter. Only master mode is supported.
-@@ -362,6 +366,7 @@ config I2C_DESIGNWARE_PLATFORM
- config I2C_DESIGNWARE_PCI
- 	tristate "Synopsys DesignWare PCI"
- 	depends on PCI
-+	select I2C_DESIGNWARE_CORE
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  Synopsys DesignWare I2C adapter. Only master mode is supported.
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -33,10 +33,11 @@ obj-$(CONFIG_I2C_AU1550)	+= i2c-au1550.o
- obj-$(CONFIG_I2C_BLACKFIN_TWI)	+= i2c-bfin-twi.o
- obj-$(CONFIG_I2C_CPM)		+= i2c-cpm.o
- obj-$(CONFIG_I2C_DAVINCI)	+= i2c-davinci.o
-+obj-$(CONFIG_I2C_DESIGNWARE_CORE)	+= i2c-designware-core.o
- obj-$(CONFIG_I2C_DESIGNWARE_PLATFORM)	+= i2c-designware-platform.o
--i2c-designware-platform-objs := i2c-designware-platdrv.o i2c-designware-core.o
-+i2c-designware-platform-objs := i2c-designware-platdrv.o
- obj-$(CONFIG_I2C_DESIGNWARE_PCI)	+= i2c-designware-pci.o
--i2c-designware-pci-objs := i2c-designware-pcidrv.o i2c-designware-core.o
-+i2c-designware-pci-objs := i2c-designware-pcidrv.o
- obj-$(CONFIG_I2C_GPIO)		+= i2c-gpio.o
- obj-$(CONFIG_I2C_HIGHLANDER)	+= i2c-highlander.o
- obj-$(CONFIG_I2C_IBM_IIC)	+= i2c-ibm_iic.o
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -25,6 +25,7 @@
-  * ----------------------------------------------------------------------------
-  *
-  */
-+#include <linux/export.h>
- #include <linux/clk.h>
- #include <linux/errno.h>
- #include <linux/err.h>
-@@ -305,6 +306,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	dw_writel(dev, dev->master_cfg , DW_IC_CON);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_init);
- 
++	if (ptype->id_match)
++		return ptype->id_match(ptype, skb->sk);
++	else if ((struct sock *)ptype->af_packet_priv == skb->sk)
++		return true;
++
++	return false;
++}
++
  /*
-  * Waiting for bus not busy
-@@ -557,12 +559,14 @@ done:
- 
- 	return ret;
+  *	Support routine. Sends outgoing frames to any network
+  *	taps currently in use.
+@@ -1648,8 +1661,7 @@ static void dev_queue_xmit_nit(struct sk_buff *skb, struct net_device *dev)
+ 		 * they originated from - MvS (miquels@drinkel.ow.org)
+ 		 */
+ 		if ((ptype->dev == dev || !ptype->dev) &&
+-		    (ptype->af_packet_priv == NULL ||
+-		     (struct sock *)ptype->af_packet_priv != skb->sk)) {
++		    (!skb_loop_sk(ptype, skb))) {
+ 			if (pt_prev) {
+ 				deliver_skb(skb2, pt_prev, skb->dev);
+ 				pt_prev = ptype;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 13b14dc..85afc13 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -1281,6 +1281,14 @@ static void __fanout_unlink(struct sock *sk, struct packet_sock *po)
+ 	spin_unlock(&f->lock);
  }
-+EXPORT_SYMBOL_GPL(i2c_dw_xfer);
  
- u32 i2c_dw_func(struct i2c_adapter *adap)
++bool match_fanout_group(struct packet_type *ptype, struct sock * sk)
++{
++	if (ptype->af_packet_priv == (void*)((struct packet_sock *)sk)->fanout)
++		return true;
++
++	return false;
++}
++
+ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
  {
- 	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
- 	return dev->functionality;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_func);
- 
- static u32 i2c_dw_read_clear_intrbits(struct dw_i2c_dev *dev)
- {
-@@ -667,17 +671,20 @@ tx_aborted:
- 
- 	return IRQ_HANDLED;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_isr);
- 
- void i2c_dw_enable(struct dw_i2c_dev *dev)
- {
-        /* Enable the adapter */
- 	dw_writel(dev, 1, DW_IC_ENABLE);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_enable);
- 
- u32 i2c_dw_is_enabled(struct dw_i2c_dev *dev)
- {
- 	return dw_readl(dev, DW_IC_ENABLE);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_is_enabled);
- 
- void i2c_dw_disable(struct dw_i2c_dev *dev)
- {
-@@ -688,18 +695,22 @@ void i2c_dw_disable(struct dw_i2c_dev *d
- 	dw_writel(dev, 0, DW_IC_INTR_MASK);
- 	dw_readl(dev, DW_IC_CLR_INTR);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_disable);
- 
- void i2c_dw_clear_int(struct dw_i2c_dev *dev)
- {
- 	dw_readl(dev, DW_IC_CLR_INTR);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_clear_int);
- 
- void i2c_dw_disable_int(struct dw_i2c_dev *dev)
- {
- 	dw_writel(dev, 0, DW_IC_INTR_MASK);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_disable_int);
- 
- u32 i2c_dw_read_comp_param(struct dw_i2c_dev *dev)
- {
- 	return dw_readl(dev, DW_IC_COMP_PARAM_1);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_read_comp_param);
+ 	struct packet_sock *po = pkt_sk(sk);
+@@ -1333,6 +1341,7 @@ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
+ 		match->prot_hook.dev = po->prot_hook.dev;
+ 		match->prot_hook.func = packet_rcv_fanout;
+ 		match->prot_hook.af_packet_priv = match;
++		match->prot_hook.id_match = match_fanout_group;
+ 		dev_add_pack(&match->prot_hook);
+ 		list_add(&match->list, &fanout_list);
+ 	}
 
 
