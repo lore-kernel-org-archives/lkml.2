@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2IQA46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:56:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33934 "EHLO
+	id S1754676Ab2IQAv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33809 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754351Ab2IQAv2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754351Ab2IQAvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:28 -0400
-Message-Id: <20120917003631.095425761@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:08 -0400
+Message-Id: <20120917003634.410422940@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:00 +0100
+Date: Mon, 17 Sep 2012 01:37:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Chen <ian.cy.chen@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 035/135] mmc: card: Skip secure erase on MoviNAND; causes unrecoverable
- corruption.
+        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 059/135] Bluetooth: HCI - Fix info leak in  getsockopt(HCI_FILTER)
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,94 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Chen <ian.cy.chen@samsung.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 3550ccdb9d8d350e526b809bf3dd92b550a74fe1 upstream.
+[ Upstream commit e15ca9a0ef9a86f0477530b0f44a725d67f889ee ]
 
-For several MoviNAND eMMC parts, there are known issues with secure
-erase and secure trim.  For these specific MoviNAND devices, we skip
-these operations.
+The HCI code fails to initialize the two padding bytes of struct
+hci_ufilter before copying it to userland -- that for leaking two
+bytes kernel stack. Add an explicit memset(0) before filling the
+structure to avoid the info leak.
 
-Specifically, there is a bug in the eMMC firmware that causes
-unrecoverable corruption when the MMC is erased with MMC_CAP_ERASE
-enabled.
-
-References:
-
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
-
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/card/block.c |   26 +++++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 26 insertions(+), 1 deletion(-)
+ net/bluetooth/hci_sock.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1339,7 +1339,8 @@ static int mmc_blk_issue_rq(struct mmc_q
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1614,6 +1615,8 @@ static int mmc_add_disk(struct mmc_blk_d
- 	return ret;
- }
+diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
+index f6afe3d..e4c8bc0 100644
+--- a/net/bluetooth/hci_sock.c
++++ b/net/bluetooth/hci_sock.c
+@@ -671,6 +671,7 @@ static int hci_sock_getsockopt(struct socket *sock, int level, int optname, char
+ 		{
+ 			struct hci_filter *f = &hci_pi(sk)->filter;
  
-+#define CID_MANFID_SAMSUNG	0x15
-+
- static const struct mmc_fixup blk_fixups[] =
- {
- 	MMC_FIXUP("SEM02G", 0x2, 0x100, add_quirk, MMC_QUIRK_INAND_CMD38),
-@@ -1644,6 +1647,28 @@ static const struct mmc_fixup blk_fixups
- 	MMC_FIXUP(CID_NAME_ANY, 0x13, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
- 
-+	/*
-+	 * On these Samsung MoviNAND parts, performing secure erase or
-+	 * secure trim can result in unrecoverable corruption due to a
-+	 * firmware bug.
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+
- 	END_FIXUP
- };
- 
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -219,6 +219,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512 bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
++			memset(&uf, 0, sizeof(uf));
+ 			uf.type_mask = f->type_mask;
+ 			uf.opcode    = f->opcode;
+ 			uf.event_mask[0] = *((u32 *) f->event_mask + 0);
 
 
