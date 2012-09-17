@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab2IQOsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:48:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33064 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab2IQOsK (ORCPT
+	id S1756652Ab2IQOwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:52:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50161 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab2IQOwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:48:10 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-In-Reply-To: <20120917135215.GA26919@thunk.org>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org> <87fw6get5z.fsf@openvz.org> <20120917135215.GA26919@thunk.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 17 Sep 2012 18:48:06 +0400
-Message-ID: <87d31keme1.fsf@openvz.org>
+	Mon, 17 Sep 2012 10:52:41 -0400
+Message-ID: <50573934.4030102@linaro.org>
+Date: Mon, 17 Sep 2012 16:52:36 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Youquan Song <youquan.song@intel.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        arjan@linux.intel.com, lenb@kernel.org, Rik van Riel <riel@redhat.com>,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH V2 0/3] x86,idle: Enhance cpuidle prediction to handle
+ its failure
+References: <1347933209-25939-1-git-send-email-youquan.song@intel.com>
+In-Reply-To: <1347933209-25939-1-git-send-email-youquan.song@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012 09:52:15 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Mon, Sep 17, 2012 at 04:21:44PM +0400, Dmitry Monakhov wrote:
-> > On Wed, 15 Aug 2012 22:46:54 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
-> > > On Wed, Aug 15, 2012 at 09:33:29PM +0300, Marti Raudsepp wrote:
-> > > > I was moving and deleting some files between two of my ext4 partitions
-> > > > when it suddenly crashed and dropped me into an kernel oops screen
-> > > > (below). I'm using ext4 on kernel 3.5.1 (Arch Linux). 
-> > Ohh, I've missed that gigantic topic, but still i've found the bug.
-> > patch is available here http://patchwork.ozlabs.org/patch/183649/
+On 09/18/2012 03:53 AM, Youquan Song wrote:
+> The prediction for future is difficult and when the cpuidle governor prediction 
+> fails and govenor possibly choose the shallower C-state than it should. How to 
+> quickly notice and find the failure becomes important for power saving.    
 > 
-> Dmitry, we have a patch in mainline already which addresses this, and
-> it's already backported to v3.5.3 or later.
+> cpuidle menu governor has a method to predict the repeat pattern if there are 8
+> C-states residency which are continuous and the same or very close, so it will
+> predict the next C-states residency will keep same residency time.
 > 
-> What version was your patch series based against?
-patch-set was prepared against d0f56971992a0bcc7 (old ext4.git's HEAD)
-And you right your patch fixed the issue. So you can ignore my version.
-but other patches from the 'Bunch of DIO/AIO fixes V2' queue are still
-valid an applies to recent git tree w/o problems.
-Should i resend whole series or you'll pick original one?
+> This patchset adds a timer when menu governor choose a non-deepest C-state in
+> order to wake up quickly from shallow C-state to avoid staying too long at 
+> shallow C-state for prediction failure. The timer is set to a time out value 
+> that is greater than predicted time and if the timer with the value is triggered 
+> , we can confidently conclude prediction is failure. When prediction
+> succeeds, CPU is waken up from C-states in predicted time and the timer is not 
+> triggered and will be cancelled right after CPU waken up. When prediction fails,
+> the timer is triggered to wake up CPU from shallow C-states, so menu governor 
+> will quickly notice that prediction fails and then re-evaluates deeper C-states
+>  possibility. This patchset can improves cpuidle prediction process for both 
+> repeat mode and general mode.
 > 
-> 						- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> There are 2 cases will clear show this patchset benefit.
+> 
+> One case is turbostat utility (tools/power/x86/turbostat) at kernel 3.3 or early
+> . turbostat utility will read 10 registers one by one at Sandybridge, so it will
+> generate 10 IPIs to wake up idle CPUs. So cpuidle menu governor will predict it
+>  is repeat mode and there is another IPI wake up idle CPU soon, so it keeps idle
+>  CPU stay at C1 state even though CPU is totally idle. However, in the turbostat
+> , following 10 registers reading is sleep 5 seconds by default, so the idle CPU
+>  will keep at C1 for a long time though it is idle until break event occurs.
+> In a idle Sandybridge system, run "./turbostat -v", we will notice that deep 
+> C-state dangles between "70% ~ 99%". After patched the kernel, we will notice
+> deep C-state stays at >99.98%.
+
+Is there an impact on performances ?
+
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
