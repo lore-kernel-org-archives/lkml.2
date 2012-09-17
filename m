@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2IQAuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33325 "EHLO
+	id S1753449Ab2IQAuO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33317 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752941Ab2IQAtY (ORCPT
+	by vger.kernel.org with ESMTP id S1752924Ab2IQAtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:24 -0400
-Message-Id: <20120917003628.314911353@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:23 -0400
+Message-Id: <20120917003627.321569181@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:40 +0100
+Date: Mon, 17 Sep 2012 01:36:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 015/135] ARM: imx6: spin the cpu until hardware takes it down
+        alan@lxorguk.ukuu.org.uk,
+        "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 008/135] [SCSI] mpt2sas: Fix for Driver oops, when loading driver with
+ max_queue_depth command line option to a very small value
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,67 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
 
-commit c944b0b9354ea06ffb0c8a7178949f1185f9f499 upstream.
+commit 338b131a3269881c7431234855c93c219b0979b6 upstream.
 
-Though commit 602bf40 (ARM: imx6: exit coherency when shutting down
-a cpu) improves the stability of imx6q cpu hotplug a lot, there are
-still hangs seen with a more stressful hotplug testing.
+If the specified max_queue_depth setting is less than the
+expected number of internal commands, then driver will calculate
+the queue depth size to a negitive number. This negitive number
+is actually a very large number because variable is unsigned
+16bit integer. So, the driver will ask for a very large amount of
+memory for message frames and resulting into oops as memory
+allocation routines will not able to handle such a large request.
 
-It's expected that once imx_enable_cpu(cpu, false) is called, the cpu
-will be taken down by hardware immediately, and the code after that
-will not get any chance to execute.  However, this is not always the
-case from the testing.  The cpu could possibly be alive for a few
-cycles before hardware actually takes it down.  So rather than letting
-cpu execute some code that could cause a hang in these cycles, let's
-make the cpu spin there and wait for hardware to take it down.
+So, in order to limit this kind of oops, The driver need to set
+the max_queue_depth to a scsi mid layer's can_queue value. Then
+the overall message frames required for IO is minimum of either
+(max_queue_depth plus internal commands) or the IOC global
+credits.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-imx/hotplug.c |   23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mach-imx/hotplug.c
-+++ b/arch/arm/mach-imx/hotplug.c
-@@ -42,22 +42,6 @@ static inline void cpu_enter_lowpower(vo
- 	  : "cc");
- }
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 9d46fcb..b25757d 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2424,10 +2424,13 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
+ 	}
  
--static inline void cpu_leave_lowpower(void)
--{
--	unsigned int v;
--
--	asm volatile(
--		"mrc	p15, 0, %0, c1, c0, 0\n"
--	"	orr	%0, %0, %1\n"
--	"	mcr	p15, 0, %0, c1, c0, 0\n"
--	"	mrc	p15, 0, %0, c1, c0, 1\n"
--	"	orr	%0, %0, %2\n"
--	"	mcr	p15, 0, %0, c1, c0, 1\n"
--	  : "=&r" (v)
--	  : "Ir" (CR_C), "Ir" (0x40)
--	  : "cc");
--}
--
- /*
-  * platform-specific code to shutdown a CPU
-  *
-@@ -67,11 +51,10 @@ void platform_cpu_die(unsigned int cpu)
- {
- 	cpu_enter_lowpower();
- 	imx_enable_cpu(cpu, false);
--	cpu_do_idle();
--	cpu_leave_lowpower();
+ 	/* command line tunables  for max controller queue depth */
+-	if (max_queue_depth != -1)
+-		max_request_credit = (max_queue_depth < facts->RequestCredit)
+-		    ? max_queue_depth : facts->RequestCredit;
+-	else
++	if (max_queue_depth != -1 && max_queue_depth != 0) {
++		max_request_credit = min_t(u16, max_queue_depth +
++			ioc->hi_priority_depth + ioc->internal_depth,
++			facts->RequestCredit);
++		if (max_request_credit > MAX_HBA_QUEUE_DEPTH)
++			max_request_credit =  MAX_HBA_QUEUE_DEPTH;
++	} else
+ 		max_request_credit = min_t(u16, facts->RequestCredit,
+ 		    MAX_HBA_QUEUE_DEPTH);
  
--	/* We should never return from idle */
--	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
-+	/* spin here until hardware takes it down */
-+	while (1)
-+		;
- }
+@@ -2502,7 +2505,7 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
+ 	/* set the scsi host can_queue depth
+ 	 * with some internal commands that could be outstanding
+ 	 */
+-	ioc->shost->can_queue = ioc->scsiio_depth - (2);
++	ioc->shost->can_queue = ioc->scsiio_depth;
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "scsi host: "
+ 	    "can_queue depth (%d)\n", ioc->name, ioc->shost->can_queue));
  
- int platform_cpu_disable(unsigned int cpu)
 
 
