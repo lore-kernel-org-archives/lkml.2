@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab2IQBUL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:20:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33599 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753356Ab2IQAuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:09 -0400
-Message-Id: <20120917003642.279358860@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:21 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 116/135] kobject: fix oops with "input0: bad kobj_uevent_env content in
- show_uevent()"
-In-Reply-To: <20120917003625.784119135@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755181Ab2IQBU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:20:27 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:52458
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752564Ab2IQBUW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 21:20:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VS7(z1039oz1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdhbe9i1155h)
+From: Chen Peter-B29397 <B29397@freescale.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Zhao Richard-B20223 <B20223@freescale.com>,
+        "alexander.shishkin@linux.intel.com" 
+	<alexander.shishkin@linux.intel.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>,
+        "marex@denx.de" <marex@denx.de>
+Subject: RE: [RFC PATCH] drivers: phy: add generic PHY framework
+Thread-Topic: [RFC PATCH] drivers: phy: add generic PHY framework
+Thread-Index: AQHNknBkSgyuwBX0D0+wZXIOeXdiZpeNv1rw
+Date: Mon, 17 Sep 2012 01:20:19 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A649803C82462@039-SN2MPN1-022.039d.mgd.msft.net>
+References: <1347623899-14485-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1347623899-14485-1-git-send-email-kishon@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.66]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Bjørn Mork <bjorn@mork.no>
-
-commit 60e233a56609fd963c59e99bd75c663d63fa91b6 upstream.
-
-Fengguang Wu <fengguang.wu@intel.com> writes:
-
-> After the __devinit* removal series, I can still get kernel panic in
-> show_uevent(). So there are more sources of bug..
->
-> Debug patch:
->
-> @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
->                 goto out;
->
->         /* copy keys to file */
-> -       for (i = 0; i < env->envp_idx; i++)
-> +       dev_err(dev, "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
-> +       for (i = 0; i < env->envp_idx; i++) {
-> +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
->                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
-> +       }
->
-> Oops message, the env[] is again not properly initilized:
->
-> [   44.068623] input input0: uevent 61 env[805306368]: input0/.../input0
-> [   44.069552] uevent 0 env[0]: (null)
-
-This is a completely different CONFIG_HOTPLUG problem, only
-demonstrating another reason why CONFIG_HOTPLUG should go away.  I had a
-hard time trying to disable it anyway ;-)
-
-The problem this time is lots of code assuming that a call to
-add_uevent_var() will guarantee that env->buflen > 0.  This is not true
-if CONFIG_HOTPLUG is unset.  So things like this end up overwriting
-env->envp_idx because the array index is -1:
-
-	if (add_uevent_var(env, "MODALIAS="))
-		return -ENOMEM;
-        len = input_print_modalias(&env->buf[env->buflen - 1],
-				   sizeof(env->buf) - env->buflen,
-				   dev, 0);
-
-Don't know what the best action is, given that there seem to be a *lot*
-of this around the kernel.  This patch "fixes" the problem for me, but I
-don't know if it can be considered an appropriate fix.
-
-[ It is the correct fix for now, for 3.7 forcing CONFIG_HOTPLUG to
-always be on is the longterm fix, but it's too late for 3.6 and older
-kernels to resolve this that way - gregkh ]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- include/linux/kobject.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index fc615a9..1e57449 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -224,7 +224,7 @@ static inline int kobject_uevent_env(struct kobject *kobj,
  
- static inline __printf(2, 3)
- int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
--{ return 0; }
-+{ return -ENOMEM; }
+> 
+> The PHY framework provides a set of API's for the PHY drivers to
+> create/remove a PHY and the PHY users to obtain a reference to the PHY
+> using or without using phandle. If the PHY users has to obtain a
+> reference to
+> the PHY without using phandle, the platform specfic intialization code
+> (say
+> from board file) should have already called phy_bind with the binding
+> information. The binding information consists of phy's device name, phy
+> user device name and an index. The index is used when the same phy user
+> binds to mulitple phys.
+> 
+
+What's an example of "the same phy user binds to multiple phys"?
+I only remembered that Felipe said there are two phy users for one single phy at 
+omap5 that is both usb3 and sata uses the same phy.
+
+
  
- static inline int kobject_action_type(const char *buf, size_t count,
- 				      enum kobject_action *type)
 
 
