@@ -1,50 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab2IQXpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 19:45:53 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:43017 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab2IQXpi convert rfc822-to-8bit (ORCPT
+	id S932614Ab2IQXq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 19:46:26 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53505 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757513Ab2IQXqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 19:45:38 -0400
+	Mon, 17 Sep 2012 19:46:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYFDkV99m=MFc_sHDzUYz2hdbGgUUhf=pYBRB6b3eyjEg@mail.gmail.com>
-References: <20120916165331.GA7285@Super-MAGI>
-	<CACRpkdYFDkV99m=MFc_sHDzUYz2hdbGgUUhf=pYBRB6b3eyjEg@mail.gmail.com>
-Date: Tue, 18 Sep 2012 07:45:37 +0800
-Message-ID: <CAD+1EGPcoLGwCVyzceYcUw3-iFPvYfD0E_4v=ey+DUA8O3Jx_g@mail.gmail.com>
-Subject: Re: [PATCH]Documentation:Fixes some translation error in Documentation/zh_CN/gpio.txt
-From: harryxiyou <harryxiyou@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tekkaman Ninja <tekkamanninja@gmail.com>,
-        Dong Aisheng <b29396@freescale.com>,
-        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, kernel@vger.linux-kernel.cn
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <e5d08804-a542-4778-a103-b14b553b0747@default>
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<e33a2c0e-3b51-4d89-a2b2-c1ed9c8f862c@default>
+	<20120907143751.GB4670@phenom.dumpdata.com>
+	<504C1100.2050300@vflare.org>
+	<e5d08804-a542-4778-a103-b14b553b0747@default>
+Date: Mon, 17 Sep 2012 16:46:23 -0700
+Message-ID: <CAPkvG_cqcrsokD20T0cn=K6X=Ynd0oGbRDXCKseeiuvAZByJ3Q@mail.gmail.com>
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+From: Nitin Gupta <ngupta@vflare.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 6:41 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 2012/9/16 Tekkaman Ninja <tekkamanninja@gmail.com>:
->
->> Fixes some translation error in Documentation/zh_CN/gpio.txt
->> The modification is based on Dong Aisheng <b29396@freescale.com>'s
->> corrections:
->>     1.Two "OUTPUT" is incorrectly translated as "输入";
->>     2.five improvement of translation;
->>     3.Delete a redundant paragraph,
+On Mon, Sep 17, 2012 at 1:42 PM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+>> From: Nitin Gupta [mailto:ngupta@vflare.org]
+>> Subject: Re: [RFC] mm: add support for zsmalloc and zcache
 >>
->> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
->> Acked-by: Harry Wei <harryxiyou@gmail.com>
->> Acked-by: Dong Aisheng <b29396@freescale.com>
+>> The problem is that zbud performs well only when a (compressed) page is
+>> either PAGE_SIZE/2 - e or PAGE_SIZE - e, where e is small. So, even if
+>> the average compression ratio is 2x (which is hard to believe), a
+>> majority of sizes can actually end up in PAGE_SIZE/2 + e bucket and zbud
+>> will still give bad performance.  For instance, consider these histograms:
 >
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Whoa whoa whoa.  This is very wrong.  Zbud handles compressed pages
+> of any range that fits in a pageframe (same, almost, as zsmalloc).
+> Unless there is some horrible bug you found...
 >
-Acked-by: Harry Wei <harryxiyou@gmail.com>
+> Zbud _does_ require the _distribution_ of zsize to be roughly
+> centered around PAGE_SIZE/2 (or less).  Is that what you meant?
+
+Yes, I meant this only: though zbud can handle any size, it isn't
+efficient for any size not centered around PAGESIZE/2.
+
+> If so, the following numbers you posted don't make sense to me.
+> Could you be more explicit on what the numbers mean?
+>
+
+This is a histogram of the compressed sizes when files were
+compressed in 4K chunks. The first number is the lower limit of
+bin size, second number of upper limit and third number is the
+number of pages that fall in that bin.
+
+> Also, as you know, unlike zram, the architecture of tmem/frontswap
+> allows zcache to reject any page, so if the distribution of zsize
+> exceeds PAGE_SIZE/2, some pages can be rejected (and thus passed
+> through to swap).  This safety valve already exists in zcache (and zcache2)
+> to avoid situations where zpages would otherwise significantly
+> exceed half of total pageframes allocated.  IMHO this is a
+> better policy than accepting a large number of poorly-compressed pages,
+
+Long time back zram had the ability of forwarding poorly compressed
+pages to a backing swap device but that was removed to cleanup the
+code and help with upstream promotion.  Once zram goes out of staging,
+I will try getting that functionality back if there is enough demand.
 
 
-Thanks
-Harry Wei
+> i.e. if every data page compresses down from 4096 bytes to 4032
+> bytes, zsmalloc stores them all (thus using very nearly one pageframe
+> per zpage), whereas zbud avoids the anomalous page sequence altogether.
+>
+
+This ability to letting pages go to physical device is not really
+highlighting anything
+of zbud vs zsmalloc.  That ability is really zram vs frontswap stuff
+which is a different
+thing.
+
+
+>> # Created tar of /usr/lib (2GB) on a fairly loaded Linux system and
+>> compressed page-by-page using LZO:
+>>
+>> # first two fields: bin start, end.  Third field: compressed size
+>> 32 286 7644
+>> :
+>> 3842 4096 3482
+>>
+>> The only (approx) sweetspots for zbud are 1810-2064 and 3842-4096 which
+>> covers only a small fraction of pages.
+>>
+>> # same page-by-page compression for 220MB ISO from project Gutenberg:
+>> 32 286 70
+>> :
+>> 3842 4096 804
+>>
+>> Again very few pages in zbud favoring bins.
+>>
+>> So, we really need zsmalloc style allocator which handles sizes all over
+>> the spectrum. But yes, compaction remains far easier to implement on zbud.
+>
+> So it remains to be seen if a third choice exists (which might be either
+> an enhanced zbud or an enhanced zsmalloc), right?
+>
+
+Yes, definitely. At least for non-ephemeral pages (zram), zsmalloc seems to be
+a better choice even without compaction. As for zcache, I don't understand its
+codebase anyways so not sure how exactly compaction would interact with it,
+so I think zcache should stay with zbud.
+
+Thanks,
+Nitin
