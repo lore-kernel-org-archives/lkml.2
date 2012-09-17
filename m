@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2IQA70 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:59:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33906 "EHLO
+	id S1754595Ab2IQAvV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33649 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753515Ab2IQAvW (ORCPT
+	by vger.kernel.org with ESMTP id S1753515Ab2IQAuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:22 -0400
-Message-Id: <20120917003632.487583174@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:20 -0400
+Message-Id: <20120917003640.882461251@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:10 +0100
+Date: Mon, 17 Sep 2012 01:38:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <pshilovsky@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 045/135] CIFS: Fix error handling in cifs_push_mandatory_locks
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 106/135] xhci: Fix a logical vs bitwise AND bug
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,28 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@etersoft.ru>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e2f2886a824ff0a56da1eaa13019fde86aa89fa6 upstream.
+commit 052c7f9ffb0e95843e75448d02664459253f9ff8 upstream.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@etersoft.ru>
-Signed-off-by: Steve French <smfrench@gmail.com>
-[bwh: Backported to 3.2: adjust context]
+The intent was to test whether the flag was set.
+
+This patch should be backported to stable kernels as old as 3.0, since
+it fixes a bug in commit e95829f474f0db3a4d940cae1423783edd966027 "xhci:
+Switch PPT ports to EHCI on shutdown.", which was marked for stable.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/file.c |    2 +-
+ drivers/usb/host/xhci.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -882,7 +882,7 @@ cifs_push_mandatory_locks(struct cifsFil
- 	if (!buf) {
- 		mutex_unlock(&cinode->lock_mutex);
- 		FreeXid(xid);
--		return rc;
-+		return -ENOMEM;
- 	}
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index c59d5b5..617b0a7 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -659,7 +659,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
  
- 	for (i = 0; i < 2; i++) {
+-	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
++	if (xhci->quirks & XHCI_SPURIOUS_REBOOT)
+ 		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
+ 
+ 	spin_lock_irq(&xhci->lock);
 
 
