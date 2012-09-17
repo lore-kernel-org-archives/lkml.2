@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab2IQRXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:23:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57909 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab2IQRSa (ORCPT
+	id S1756258Ab2IQRXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:23:54 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:17364 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756042Ab2IQRXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:18:30 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/18] perf tools: Add sort__has_sym
-Date: Mon, 17 Sep 2012 14:18:01 -0300
-Message-Id: <1347902292-14536-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1347902292-14536-1-git-send-email-acme@infradead.org>
-References: <1347902292-14536-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Sep 2012 13:23:51 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19MQ+AD1Mv+8O2wM2KN+gQo
+Date: Mon, 17 Sep 2012 10:23:44 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (arm-soc tree related)
+Message-ID: <20120917172344.GO4521@atomide.com>
+References: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
+ <20120917141119.GA18715@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917141119.GA18715@quad.lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+* Olof Johansson <olof@lixom.net> [120917 07:12]:
+> Hi,
+> 
+> On Mon, Sep 17, 2012 at 09:26:15PM +1000, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
+> > 
+> > Caused by commit 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal").
+> > 
+> > I have added the following patch to restrict this driver to ARM until it
+> > is fixed:
+> > 
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 17 Sep 2012 21:18:21 +1000
+> > Subject: [PATCH] ARM: retrict TWL4030_CORE to ARM while it is broken
+> > 
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  drivers/mfd/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index df850c4..af5e5b7 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -257,6 +257,7 @@ config MENELAUS
+> >  config TWL4030_CORE
+> >  	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
+> >  	depends on I2C=y && GENERIC_HARDIRQS
+> > +	depends on ARM
+> >  	select IRQ_DOMAIN
+> >  	help
+> >  	  Say yes here if you have TWL4030 / TWL6030 family chip on your board.
+> 
+> Gack. This will break on non-OMAP ARM platforms now too, so it needs to be
+> depends on ARCH_OMAP instead of ARM.
+> 
+> Tony, can I get an Acked-by so I can apply this to next/cleanup? Sam, if
+> you prefer to apply it yourself, let me know.
 
-The sort__has_sym variable is for checking whether the sort_list
-includes 'symbol' as a sort key.  It will be used for later patch.
+Sorry about this, this driver should work with other SoCs too, not just
+ARM. I'll post a better fix until the cpu_is_omap usage is removed.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1347611729-16994-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/sort.c |    5 +++++
- tools/perf/util/sort.h |    1 +
- 2 files changed, 6 insertions(+), 0 deletions(-)
+Regards,
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 0981bc7..b5b1b92 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -8,6 +8,7 @@ const char	default_sort_order[] = "comm,dso,symbol";
- const char	*sort_order = default_sort_order;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
-+int		sort__has_sym = 0;
- int		sort__branch_mode = -1; /* -1 = means not set */
- 
- enum sort_type	sort__first_dimension;
-@@ -511,6 +512,10 @@ int sort_dimension__add(const char *tok)
- 				return -EINVAL;
- 			}
- 			sort__has_parent = 1;
-+		} else if (sd->entry == &sort_sym ||
-+			   sd->entry == &sort_sym_from ||
-+			   sd->entry == &sort_sym_to) {
-+			sort__has_sym = 1;
- 		}
- 
- 		if (sd->taken)
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index e459c98..12d6347 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -31,6 +31,7 @@ extern const char *parent_pattern;
- extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
-+extern int sort__has_sym;
- extern int sort__branch_mode;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
--- 
-1.7.1
-
+Tony
