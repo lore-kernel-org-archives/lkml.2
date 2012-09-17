@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab2IQLYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:24:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54499 "EHLO
+	id S1755952Ab2IQLYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:24:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55429 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab2IQLX6 (ORCPT
+	with ESMTP id S1755845Ab2IQLYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:23:58 -0400
+	Mon, 17 Sep 2012 07:24:10 -0400
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Richard Henderson <rth@twiddle.net>,
@@ -27,214 +27,313 @@ Cc: Richard Henderson <rth@twiddle.net>,
         linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH v2 1/2] PCI: Keep pci_fixup_irqs() around after init
-Date: Mon, 17 Sep 2012 13:22:53 +0200
-Message-Id: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+Subject: [PATCH v2 2/2] PCI: Provide a default pcibios_update_irq()
+Date: Mon, 17 Sep 2012 13:22:54 +0200
+Message-Id: <1347880974-13615-2-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.7.12
-X-Provags-ID: V02:K0:UNn0Y9Uxpibd86Z8HLmLW1v1HhxUZwWTQQydDy8lfMW
- RPzJEAlPkuH/B384PhRysvdLiElSbxmn3chQ6bs2amUuGMdMjG
- sho+YaOZXH5/F87wiJT5Om3fGGEWd5/Zrj5lM+98XEf1BZEHMs
- 2gUZSZlSn1giVHfmSrjAzBODog/uS+PmQWTe++rqUwcEZgoc6c
- ngDyo0LlTCzHdkFjCPspIbadCUj3Y4udWy+I7k7L0LI30vwUBZ
- Ufb6mqb87nKvFYN70okAnoNwKw9ixkWV7AA4tLTakR7FjpnOCq
- uRypqZONIM4KYXgu4iacR1xBJuQhK6Fu8a9GxLWfMfE+nkHCqY
- AmqgtDhyGle3koRwVvdb2d8CgZ87oJbB4V9tkKHUECGhnY9wxR
- Q5qA/X5/g7QJqq/BaORdmmKVB0vzbddkNQTOgawD0sKo1mUudn
- 2gfXz
+In-Reply-To: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:NUiyNRXCLpLU54zzRebEnGKZG334sFWr2heirloIyGn
+ Iu/D32iAzingKJNjwkboqkHyLx/q4UjhwRLei8PZhxVnSa7mdR
+ FIhVLgLooTM9240izmpG034vA3w6HQDtmWqUfZ2k7St4EZh4BN
+ cBxDyWAGjWlzuFDG5hp6ifHvwly5juS7NuJQQB9oVGMFt4abFb
+ 6eExTi2vbZfVxqTRFhdO1lXq2JohO62n80Njb59PxNRcM7mzeg
+ 6FjJpjGwe3dtUVGouJuhy6lvZldEmmXLbs5xb/38ctNzy//vyh
+ nnji7uK1UxT9aQaIro5x9FwGsC9UogE60IfU6wkaa2sWOf57AA
+ eA9VfG72wLOYte1Jj9evl3eMIb62x9/jfF2ba4n8ipPJ47GteN
+ U/Mtm37aLQyy5jlKghZFhfA0vDm95eFVoLaRYx6G1gN9j2B0PY
+ LvvlU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the __init annotations in order to keep pci_fixup_irqs() around
-after init (e.g. for hotplug). This requires the same change for the
-implementation of pcibios_update_irq() on all architectures. While at
-it, all __devinit annotations are removed as well, since they will be
-useless now that HOTPLUG is always on.
+Most architectures implement this in exactly the same way. Instead of
+having each architecture duplicate this function, provide a single
+implementation in the core and make it a weak symbol so that it can be
+overridden on architectures where it is required.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
-Changes in v2:
-- remove __init and __devinit annotations altogether
+Note: ARM and Unicore32 did use a debug_pci variable to check whether or
+not to output a debug message in pcibios_update_irq(). SPARC/LEON checks
+for CONFIG_PCI_DEBUG instead. I've adopted the SPARC variant in this
+patch. I assumed that in the interest of unification this would be a
+good compromise. If not, please let me know.
 
- arch/alpha/kernel/pci.c      | 2 +-
- arch/arm/kernel/bios32.c     | 2 +-
- arch/ia64/pci/pci.c          | 2 +-
- arch/mips/pci/pci.c          | 2 +-
- arch/sh/drivers/pci/pci.c    | 2 +-
- arch/sparc/kernel/leon_pci.c | 2 +-
- arch/tile/kernel/pci.c       | 2 +-
- arch/tile/kernel/pci_gx.c    | 2 +-
- arch/unicore32/kernel/pci.c  | 2 +-
- arch/x86/pci/visws.c         | 2 +-
- arch/xtensa/kernel/pci.c     | 2 +-
- drivers/pci/setup-irq.c      | 4 ++--
- 12 files changed, 13 insertions(+), 13 deletions(-)
+Also, SPARC64 had an empty pcibios_update_irq(). I've opted to drop it
+in favour of the default implementation, which just writes a single byte
+in the device's configuration space. I assumed that this should still
+work but perhaps was just not used on SPARC64. If this is known to break
+SPARC64 I can keep the noop implementation.
+
+Changes in v2:
+- drop __devinit annotation
+- use dev_dbg()
+
+ arch/alpha/kernel/pci.c      | 6 ------
+ arch/arm/kernel/bios32.c     | 9 ---------
+ arch/ia64/pci/pci.c          | 8 --------
+ arch/m68k/kernel/pcibios.c   | 5 -----
+ arch/mips/pci/pci.c          | 6 ------
+ arch/sh/drivers/pci/pci.c    | 5 -----
+ arch/sparc/kernel/leon_pci.c | 9 ---------
+ arch/sparc/kernel/pci.c      | 4 ----
+ arch/tile/kernel/pci.c       | 8 --------
+ arch/tile/kernel/pci_gx.c    | 8 --------
+ arch/unicore32/kernel/pci.c  | 8 --------
+ arch/x86/pci/visws.c         | 5 -----
+ arch/xtensa/kernel/pci.c     | 8 --------
+ drivers/pci/setup-irq.c      | 5 +++++
+ 14 files changed, 5 insertions(+), 89 deletions(-)
 
 diff --git a/arch/alpha/kernel/pci.c b/arch/alpha/kernel/pci.c
-index 9816d5a..920392f 100644
+index 920392f..ef75714 100644
 --- a/arch/alpha/kernel/pci.c
 +++ b/arch/alpha/kernel/pci.c
-@@ -256,7 +256,7 @@ pcibios_fixup_bus(struct pci_bus *bus)
+@@ -256,12 +256,6 @@ pcibios_fixup_bus(struct pci_bus *bus)
  	}
  }
  
--void __init
-+void
- pcibios_update_irq(struct pci_dev *dev, int irq)
+-void
+-pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ int
+ pcibios_enable_device(struct pci_dev *dev, int mask)
  {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
 diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 2b2f25e..0174fe6 100644
+index 0174fe6..9cf16b8 100644
 --- a/arch/arm/kernel/bios32.c
 +++ b/arch/arm/kernel/bios32.c
-@@ -272,7 +272,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ITE, PCI_DEVICE_ID_ITE_8152, pci_fixup_it
+@@ -270,15 +270,6 @@ static void __devinit pci_fixup_it8152(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ITE, PCI_DEVICE_ID_ITE_8152, pci_fixup_it8152);
  
- 
- 
--void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	if (debug_pci)
- 		printk("PCI: Assigning IRQ %02d to %s\n", irq, pci_name(dev));
+-
+-
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	if (debug_pci)
+-		printk("PCI: Assigning IRQ %02d to %s\n", irq, pci_name(dev));
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ /*
+  * If the bus contains any of these devices, then we must not turn on
+  * parity checking of any kind.  Currently this is CyberPro 20x0 only.
 diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 81acc7a..27db6a8 100644
+index 27db6a8..a7ebe94 100644
 --- a/arch/ia64/pci/pci.c
 +++ b/arch/ia64/pci/pci.c
-@@ -461,7 +461,7 @@ void pcibios_set_master (struct pci_dev *dev)
+@@ -461,14 +461,6 @@ void pcibios_set_master (struct pci_dev *dev)
  	/* No special bus mastering setup handling */
  }
  
--void __devinit
-+void
- pcibios_update_irq (struct pci_dev *dev, int irq)
+-void
+-pcibios_update_irq (struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-
+-	/* ??? FIXME -- record old value for shutdown.  */
+-}
+-
+ int
+ pcibios_enable_device (struct pci_dev *dev, int mask)
  {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+diff --git a/arch/m68k/kernel/pcibios.c b/arch/m68k/kernel/pcibios.c
+index b2988aa..73fa0b5 100644
+--- a/arch/m68k/kernel/pcibios.c
++++ b/arch/m68k/kernel/pcibios.c
+@@ -87,11 +87,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 	return 0;
+ }
+ 
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
 diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-index 6903568..64f0419 100644
+index 64f0419..04e35bc 100644
 --- a/arch/mips/pci/pci.c
 +++ b/arch/mips/pci/pci.c
-@@ -313,7 +313,7 @@ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
+@@ -313,12 +313,6 @@ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
  	}
  }
  
--void __init
-+void
- pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-void
+-pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ #ifdef CONFIG_HOTPLUG
+ EXPORT_SYMBOL(PCIBIOS_MIN_IO);
+ EXPORT_SYMBOL(PCIBIOS_MIN_MEM);
 diff --git a/arch/sh/drivers/pci/pci.c b/arch/sh/drivers/pci/pci.c
-index 40db2d0..1bd3e08 100644
+index 1bd3e08..a7e078f 100644
 --- a/arch/sh/drivers/pci/pci.c
 +++ b/arch/sh/drivers/pci/pci.c
-@@ -192,7 +192,7 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+@@ -192,11 +192,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
  	return pci_enable_resources(dev, mask);
  }
  
--void __init pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
- }
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ static void __init
+ pcibios_bus_report_status_early(struct pci_channel *hose,
+ 				int top_bus, int current_bus,
 diff --git a/arch/sparc/kernel/leon_pci.c b/arch/sparc/kernel/leon_pci.c
-index 21dcda7..404621b 100644
+index 404621b..fc05211 100644
 --- a/arch/sparc/kernel/leon_pci.c
 +++ b/arch/sparc/kernel/leon_pci.c
-@@ -102,7 +102,7 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+@@ -102,15 +102,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
  	return pci_enable_resources(dev, mask);
  }
  
--void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-#ifdef CONFIG_PCI_DEBUG
+-	printk(KERN_DEBUG "LEONPCI: Assigning IRQ %02d to %s\n", irq,
+-		pci_name(dev));
+-#endif
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ /* in/out routines taken from pcic.c
+  *
+  * This probably belongs here rather than ioport.c because
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 065b88c..acc8c83 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -622,10 +622,6 @@ void __devinit pcibios_fixup_bus(struct pci_bus *pbus)
  {
- #ifdef CONFIG_PCI_DEBUG
- 	printk(KERN_DEBUG "LEONPCI: Assigning IRQ %02d to %s\n", irq,
+ }
+ 
+-void pcibios_update_irq(struct pci_dev *pdev, int irq)
+-{
+-}
+-
+ resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+ 				resource_size_t size, resource_size_t align)
+ {
 diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
-index 33c1086..6245bba 100644
+index 6245bba..dbdab34 100644
 --- a/arch/tile/kernel/pci.c
 +++ b/arch/tile/kernel/pci.c
-@@ -406,7 +406,7 @@ void pcibios_set_master(struct pci_dev *dev)
- /*
-  * This is called from the generic Linux layer.
-  */
--void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+@@ -404,14 +404,6 @@ void pcibios_set_master(struct pci_dev *dev)
  }
+ 
+ /*
+- * This is called from the generic Linux layer.
+- */
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+-/*
+  * Enable memory and/or address decoding, as appropriate, for the
+  * device described by the 'dev' struct.
+  *
 diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
-index 0e213e3..5faad0b 100644
+index 5faad0b..2ba6d05 100644
 --- a/arch/tile/kernel/pci_gx.c
 +++ b/arch/tile/kernel/pci_gx.c
-@@ -1036,7 +1036,7 @@ char __devinit *pcibios_setup(char *str)
- /*
-  * This is called from the generic Linux layer.
-  */
--void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+@@ -1034,14 +1034,6 @@ char __devinit *pcibios_setup(char *str)
  }
+ 
+ /*
+- * This is called from the generic Linux layer.
+- */
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+-/*
+  * Enable memory address decoding, as appropriate, for the
+  * device described by the 'dev' struct. The I/O decoding
+  * is disabled, though the TILE-Gx supports I/O addressing.
 diff --git a/arch/unicore32/kernel/pci.c b/arch/unicore32/kernel/pci.c
-index 46cb6c9..c07ecc5 100644
+index c07ecc5..b0056f6 100644
 --- a/arch/unicore32/kernel/pci.c
 +++ b/arch/unicore32/kernel/pci.c
-@@ -154,7 +154,7 @@ void __init puv3_pci_adjust_zones(unsigned long *zone_size,
+@@ -154,14 +154,6 @@ void __init puv3_pci_adjust_zones(unsigned long *zone_size,
  	zhole_size[0] = 0;
  }
  
--void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	if (debug_pci)
- 		printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n",
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	if (debug_pci)
+-		printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n",
+-				irq, pci_name(dev));
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ /*
+  * If the bus contains any of these devices, then we must not turn on
+  * parity checking of any kind.
 diff --git a/arch/x86/pci/visws.c b/arch/x86/pci/visws.c
-index 6f2f8ee..9d736e7 100644
+index 9d736e7..3e6d2a6 100644
 --- a/arch/x86/pci/visws.c
 +++ b/arch/x86/pci/visws.c
-@@ -62,7 +62,7 @@ out:
+@@ -62,11 +62,6 @@ out:
  	return irq;
  }
  
--void __init pcibios_update_irq(struct pci_dev *dev, int irq)
-+void pcibios_update_irq(struct pci_dev *dev, int irq)
+-void pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ int __init pci_visws_init(void)
  {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
- }
+ 	pcibios_enable_irq = &pci_visws_enable_irq;
 diff --git a/arch/xtensa/kernel/pci.c b/arch/xtensa/kernel/pci.c
-index 69759e9..6f9b40c 100644
+index 6f9b40c..54354de 100644
 --- a/arch/xtensa/kernel/pci.c
 +++ b/arch/xtensa/kernel/pci.c
-@@ -212,7 +212,7 @@ void pcibios_set_master(struct pci_dev *dev)
- 
- /* the next one is stolen from the alpha port... */
- 
--void __init
-+void
- pcibios_update_irq(struct pci_dev *dev, int irq)
- {
- 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
-diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
-index eb219a1..270ae7b 100644
---- a/drivers/pci/setup-irq.c
-+++ b/drivers/pci/setup-irq.c
-@@ -18,7 +18,7 @@
- #include <linux/cache.h>
- 
- 
--static void __init
-+static void
- pdev_fixup_irq(struct pci_dev *dev,
- 	       u8 (*swizzle)(struct pci_dev *, u8 *),
- 	       int (*map_irq)(const struct pci_dev *, u8, u8))
-@@ -54,7 +54,7 @@ pdev_fixup_irq(struct pci_dev *dev,
- 	pcibios_update_irq(dev, irq);
+@@ -210,14 +210,6 @@ void pcibios_set_master(struct pci_dev *dev)
+ 	/* No special bus mastering setup handling */
  }
  
--void __init
-+void
- pci_fixup_irqs(u8 (*swizzle)(struct pci_dev *, u8 *),
- 	       int (*map_irq)(const struct pci_dev *, u8, u8))
+-/* the next one is stolen from the alpha port... */
+-
+-void
+-pcibios_update_irq(struct pci_dev *dev, int irq)
+-{
+-	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+-}
+-
+ int pcibios_enable_device(struct pci_dev *dev, int mask)
  {
+ 	u16 cmd, old_cmd;
+diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
+index 270ae7b..3d61ce3 100644
+--- a/drivers/pci/setup-irq.c
++++ b/drivers/pci/setup-irq.c
+@@ -17,6 +17,11 @@
+ #include <linux/ioport.h>
+ #include <linux/cache.h>
+ 
++void __weak pcibios_update_irq(struct pci_dev *dev, int irq)
++{
++	dev_dbg(&dev->dev, "Assigning IRQ %02d\n", irq);
++	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
++}
+ 
+ static void
+ pdev_fixup_irq(struct pci_dev *dev,
 -- 
 1.7.12
 
