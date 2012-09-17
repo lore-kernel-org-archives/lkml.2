@@ -1,67 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2IQH7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:59:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14412 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754066Ab2IQH7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:59:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,434,1344236400"; 
-   d="scan'208";a="145803247"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] i915: Quirk out disconnected backlight
-In-Reply-To: <CACxGe6szLVwsdNOvpB9v8pGDrygu+Go5Vf3bvpE19v3+Hkv4ww@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1347627426-3813-1-git-send-email-grant.likely@secretlab.ca> <84c8a8$5o3dgr@orsmga001.jf.intel.com> <CACxGe6u0+LC4G-87PsEK3ys7qqeJ2WnqnCdaegMK7=M9xpA8ug@mail.gmail.com> <1347628339.21322.16.camel@shinybook.infradead.org> <CACxGe6szLVwsdNOvpB9v8pGDrygu+Go5Vf3bvpE19v3+Hkv4ww@mail.gmail.com>
-User-Agent: Notmuch/0.13.2+113~gc6f17a0 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 17 Sep 2012 11:03:30 +0300
-Message-ID: <87a9wp84a5.fsf@intel.com>
+	id S1754631Ab2IQH7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:59:33 -0400
+Received: from hotel311.server4you.de ([85.25.146.15]:38261 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516Ab2IQH7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 03:59:32 -0400
+Message-ID: <5056D861.7010404@monom.org>
+Date: Mon, 17 Sep 2012 09:59:29 +0200
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH RFC cgroup/for-3.7] cgroup: mark subsystems with broken
+ hierarchy support and whine if cgroups are nested for them
+References: <20120910223125.GC7677@google.com> <505055E5.90903@parallels.com> <20120912170357.GN7677@google.com> <5051C954.2080600@parallels.com> <20120913174817.GA7677@google.com> <5052E9BC.2020908@parallels.com>
+In-Reply-To: <5052E9BC.2020908@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, Sep 14, 2012 at 2:12 PM, David Woodhouse <dwmw2@infradead.org> wrote:
->> See https://bugzilla.redhat.com/show_bug.cgi?id=752595
+On 14.09.2012 10:24, Glauber Costa wrote:
+> On 09/13/2012 09:48 PM, Tejun Heo wrote:
+>> Hello, Glauber.
+>>
+>> On Thu, Sep 13, 2012 at 03:53:56PM +0400, Glauber Costa wrote:
+>>> Here is where the Kconfig option comes to play. If we do it in the
+>>> kernel, userspace doesn't have to do anything. I spoke with Lennart and
+>>> Kay, and at least from a systemd PoV, they would much rather not provide
+>>> a hack in userspace for a file that is scheduled to go away in any case
+>>> - which I personally believe is a fair request.
+>>>
+>>> It is a default, so the effect for the user is the same: After the
+>>> machine boots, use_hierarchy = 1, and he can still flip to 0 for some time.
+>>
+>> Alright, let's go Kconfig.  Let's just make sure that the transitional
+>> nature is clearly labeled and the fact that the default config will
+>> generate a warning when nested cgroups are created in memcg.  We can
+>> then coordinate the flip with distros.  Can you please repost the
+>> Kconfig patch?
+>>
 >
-> In that bug you mention that the intel backlight sets a bogus max of
-> '1' when a backlight isn't present. I saw that too here. Here's the
-> offending code:
+> Just wait a bit. If you are merging your earlier patch, I'd like to take
+> that in consideration. In that case, I'd rebase.
 >
-> u32 intel_panel_get_max_backlight(struct drm_device *dev)
-> {
->         struct drm_i915_private *dev_priv = dev->dev_private;
->         u32 max;
+>>>> Setting mark on a parent should be reflected on all its children w/o
+>>>> their own explicit settings.
+>>>
+>>> That is clear, and better behavior than we have today. What I mean, is
+>>> that by setting its own marking, the child can pretty much "escape" the
+>>> group.
+
+To escape net_prio the process needs CAP_NET_ADMIN to overwrite 
+SO_PRIORITY. net_cls has already its own marking.
+
+>>> The ideal solution - from this point of view only - would be to have
+>>> more than one marking, and mark with all the way down to the root. So if
+>>> you have an iptables rule to match one marking, it still applies to the
+>>> kids. And you can still have extra markings.
+
+I think what you are describing is something like a generic socket 
+marker which and a cgroup matcher for iptables, no? What about SO_MARK. 
+As noted above it would be nice if the processes could not escape with 
+setting SO_MARK (it also need SO_NET_ADMIN).
+
+>>> I am not sure this is feasible, though, in which case your solution
+>>> could be a good compromise. But please let's aim for it.
+>>
+>> I don't think it supports multiple tags.  If that's possible, it would
+>> be nice but I don't think it's a must.
+>>
 >
->         max = i915_read_blc_pwm_ctl(dev_priv);
->         if (max == 0) {
->                 /* XXX add code here to query mode clock or hardware clock
->                  * and program max PWM appropriately.
->                  */
->                 pr_warn_once("fixme: max PWM is zero\n");
->                 return 1;
->         }
->
-> I used a quirk in my patch, but I could instead change the driver to
-> bail here instead of trying to limp along.
+> It is not about "it supports", but more about "can it support?"
+> But I honestly can't answer this question. net_cls people need to
+> come and tell us about it.
 
-Hi Grant, please try v3.6-rc6 that does exactly that with:
+I struggle to understand for what the multiple tags are good for. Any 
+examples?
 
-commit 28dcc2d60cb570d9f549c329b2f51400553412a1
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Mon Sep 3 16:25:12 2012 +0300
+Another question on hierarchies on the networking controllers: Are there 
+any real dependencies between a cgroup and its children. For resources 
+like CPU cycles or memory it makes perfectly sense.
 
-    drm/i915: do not expose a dysfunctional backlight interface to userspace
+I don't see a *direct* relation ship between the parent cgroup and it's 
+children for the networking controllers. There seems to be some sort of 
+relation ship for SO_PRIORITY. As the current net_prio implementation 
+does not allow hierarchies it avoids to answer this question.
 
-Does that fix it for you?
+net_cls allows hierarchies but has no restriction on setting the classid 
+for TC. The traffic shaping happens completely independent of the cgroup 
+hierarchies and there is no relation ship at all.
+
+Do we need any sort of formal definition for hierarchal dependencies for 
+the networking controlllers?
 
 
-BR,
-Jani.
