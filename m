@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2IQRV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:21:29 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39717 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2IQRUx (ORCPT
+	id S1756444Ab2IQRVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:21:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41066 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab2IQRV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:20:53 -0400
-From: Matt Porter <mporter@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        AnilKumar <anilkumar@ti.com>
-Subject: [PATCH v2 2/2] ARM: OMAP2+: Enable pinctrl dummy states
-Date: Mon, 17 Sep 2012 13:22:18 -0400
-Message-Id: <1347902538-21208-3-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347902538-21208-1-git-send-email-mporter@ti.com>
-References: <1347902538-21208-1-git-send-email-mporter@ti.com>
+	Mon, 17 Sep 2012 13:21:29 -0400
+Date: Mon, 17 Sep 2012 10:21:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Graf <tgraf@suug.ch>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [RFC] cgroup TODOs
+Message-ID: <20120917172123.GB18677@google.com>
+References: <20120913205827.GO7677@google.com>
+ <5052E7DF.7040000@parallels.com>
+ <20120914174329.GD17747@google.com>
+ <5056E467.2090108@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5056E467.2090108@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable pinctrl dummy states for all OMAP platforms that don't
-populate DT. This allows drivers to be converted to pinctrl
-and not generate new warnings on platforms that do not provide
-pinctrl data. These platforms already have pinmuxes configured
-before the drivers probe.
+Hello, Glauber.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- arch/arm/mach-omap2/devices.c |    5 +++++
- 1 file changed, 5 insertions(+)
+On Mon, Sep 17, 2012 at 12:50:47PM +0400, Glauber Costa wrote:
+> > Can you be a bit more specific?
+>
+> What I mean is that if some operation needs to operate locked, they will
+> have to lock. Whether or not the locking is called from cgroup core or
+> not. If the lock is not available outside, people will end up calling a
+> core function that locks.
 
-diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-index 1efa984..6ef4010 100644
---- a/arch/arm/mach-omap2/devices.c
-+++ b/arch/arm/mach-omap2/devices.c
-@@ -17,6 +17,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/of.h>
-+#include <linux/pinctrl/machine.h>
- #include <linux/platform_data/omap4-keypad.h>
- 
- #include <asm/mach-types.h>
-@@ -628,6 +629,10 @@ static inline void omap_init_vout(void) {}
- 
- static int __init omap2_init_devices(void)
- {
-+	/* Enable dummy states for those platforms without pinctrl support */
-+	if (!of_have_populated_dt())
-+		pinctrl_provide_dummies();
-+
- 	/*
- 	 * please keep these calls, and their implementations above,
- 	 * in alphabetical order so they're easier to sort through.
+I was asking whether you have certain specific operations on mind.
+
+> >> And the problem is that people need to lock. cgroup_lock is needed
+> >> because the data you are accessing is protected by it. The way I see it,
+> >> it is incredible how we were able to revive the BKL in the form of
+> >> cgroup_lock after we finally manage to successfully get rid of it!
+> > 
+> > I wouldn't go as far as comparing it to BKL.
+>
+> Of course not, since it is not system-wide. But I think the comparison
+> still holds in spirit...
+
+Subsystem-wide locks covering non-hot paths aren't evil things.  We
+have a lot of them and they work fine.  BKL was a completely different
+beast initially with implicit locking on kernel entry and unlocking on
+sleeping and then got morphed into some chimera inbetween afterwards.
+
+Simple locking is a good thing.  If finer-grained locking is
+necessary, we sure do that but please stop throwing over-generalized
+half-arguments at it.  It doesn't help anything.
+
+> you seem to hear "comount", and think of unified vision, and that is the
+> reason for this discussion to still be going on. Mounting is all about
+> the root. And if you comount, hierarchies have the same root.
+>
+> In your example, the different controllers are comounted. They have not
+> the same view, but the possible views are restricted to be a subset of
+> the underlying tree - because they are mounted in the same place, forced
+> or not.
+
+Heh, I can't really tell whether you understand it or not.  Here and
+in the previous thread too.  You seem to understand that there are
+different views upto this point.
+
+> In a situation like this, it makes all the sense in the world to use the
+> css_id as a primary identifier, because it will be guaranteed to be the
+
+And then you say something like this (or that this would remove
+walking different hierarchies in the previous thread - yes, to a
+certain point but not completely).  css_id is a per-css attribute.
+How can that be the "primariy" identifier when there can be multiple
+views?  For each userland-visible cgroup, there must be a css_set
+which points to the css's belonging to it, which may not be at the
+same level - multiple nodes in the userland visible tree may point to
+the same css.
+
+If you mean that css_id would be the primary identifier for that
+specific controller's css, why even say that?  That's true now and
+won't ever change.
+
+> same. What makes the tree overly flexible, is that you can have multiple
+> roots, starting in multiple places, with arbitrary topologies downwards.
+
+And now you seem to be on the same page again.  But then again, you're
+asserting that incorporating forced co-mounts *now* is a gradual step
+towards the goal, which is utterly bonkers.  I don't know.  I just
+can't understand what you're thinking at all.
+
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
