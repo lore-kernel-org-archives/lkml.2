@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2IQAy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:54:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33995 "EHLO
+	id S1754841Ab2IQAvj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33977 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754849Ab2IQAvk (ORCPT
+	by vger.kernel.org with ESMTP id S1754809Ab2IQAvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:40 -0400
-Message-Id: <20120917003629.711906671@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:37 -0400
+Message-Id: <20120917003630.419920585@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:50 +0100
+Date: Mon, 17 Sep 2012 01:36:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 025/135] drm/radeon: force dma32 to fix regression rs4xx,rs6xx,rs740
+        alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [ 030/135] UBI: fix a horrible memory deallocation bug
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 4a2b6662c3632176b4fdf012243dd3751367bf1f upstream.
+commit 78b495c39add820ab66ab897af9bd77a5f2e91f6 upstream.
 
-It seems some of those IGP dislike non dma32 page despite what
-documentation says. Fix regression since we allowed non dma32
-pages. It seems it only affect some revision of those IGP chips
-as we don't know which one just force dma32 for all of them.
+UBI was mistakingly using 'kfree()' instead of 'kmem_cache_free()' when
+freeing "attach eraseblock" structures in vtbl.c. Thankfully, this happened
+only when we were doing auto-format, so many systems were unaffected. However,
+there are still many users affected.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=785375
+It is strange, but the system did not crash and nothing bad happened when
+the SLUB memory allocator was used. However, in case of SLOB we observed an
+crash right away.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This problem was introduced in 2.6.39 by commit
+"6c1e875 UBI: add slab cache for ubi_scan_leb objects"
+
+A note for stable trees:
+  Because variable were renamed, this won't cleanly apply to older kernels.
+  Changing names like this should help:
+	1. ai -> si
+	2. aeb_slab_cache -> seb_slab_cache
+	3. new_aeb -> new_seb
+
+Reported-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+[bwh: Backported to 3.2: aeb_slab_cache was actually named scan_leb_slab]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/ubi/vtbl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index d2e2438..33da8bf 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -1051,7 +1051,7 @@ int radeon_device_init(struct radeon_device *rdev,
- 	if (rdev->flags & RADEON_IS_AGP)
- 		rdev->need_dma32 = true;
- 	if ((rdev->flags & RADEON_IS_PCI) &&
--	    (rdev->family < CHIP_RS400))
-+	    (rdev->family <= CHIP_RS740))
- 		rdev->need_dma32 = true;
+--- a/drivers/mtd/ubi/vtbl.c
++++ b/drivers/mtd/ubi/vtbl.c
+@@ -346,7 +346,7 @@ retry:
+ 	 */
+ 	err = ubi_scan_add_used(ubi, si, new_seb->pnum, new_seb->ec,
+ 				vid_hdr, 0);
+-	kfree(new_seb);
++	kmem_cache_free(si->scan_leb_slab, new_seb);
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	return err;
  
- 	dma_bits = rdev->need_dma32 ? 32 : 40;
+@@ -359,7 +359,7 @@ write_error:
+ 		list_add(&new_seb->u.list, &si->erase);
+ 		goto retry;
+ 	}
+-	kfree(new_seb);
++	kmem_cache_free(si->scan_leb_slab, new_seb);
+ out_free:
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	return err;
 
 
