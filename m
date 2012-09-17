@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2IQBX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:23:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33539 "EHLO
+	id S1754449Ab2IQBXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:23:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33538 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752921Ab2IQAt7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752889Ab2IQAt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:49:59 -0400
-Message-Id: <20120917003641.451592910@decadent.org.uk>
+Message-Id: <20120917003644.313771473@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:15 +0100
+Date: Mon, 17 Sep 2012 01:38:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xinyu Chen <xinyu.chen@freescale.com>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 110/135] tty: serial: imx: console write routing is unsafe on SMP
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 131/135] drm/radeon: rework pll selection (v3)
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,103 +27,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xinyu Chen <xinyu.chen@freescale.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9ec1882df244c4ee1baa692676fef5e8b0f5487d upstream.
+commit 985f61f7ee647ad570c05eab0b74915da2ac8e19 upstream.
 
-The console feature's write routing is unsafe on SMP with
-the startup/shutdown call.
+For DP we can use the same PPLL for all active DP
+encoders.  Take advantage of that to prevent cases
+where we may end up sharing a PPLL between DP and
+non-DP which won't work.  Also clean up the code
+a bit.
 
-There could be several consumers of the console
-* the kernel printk
-* the init process using /dev/kmsg to call printk to show log
-* shell, which open /dev/console and write with sys_write()
+v2: - fix missing pll_id assignment in crtc init
+v3: - fix DP PPLL check
+    - document functions
+    - break in main encoder search loop after matching.
+      no need to keep checking additional encoders.
 
-The shell goes into the normal uart open/write routing,
-but the other two go into the console operations.
-The open routing calls imx serial startup, which will write USR1/2
-register without any lock and critical with imx_console_write call.
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=54471
 
-Add a spin_lock for startup/shutdown/console_write routing.
-
-This patch is a port from Freescale's Android kernel.
-
-Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
-Tested-by: Dirk Behme <dirk.behme@de.bosch.com>
-CC: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[bwh: Backported to 3.2: drop the DCE6 case]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/imx.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |  163 +++++++++++++++++++++++++-------
+ 1 file changed, 129 insertions(+), 34 deletions(-)
 
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -725,6 +725,7 @@ static int imx_startup(struct uart_port
- 		}
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1446,14 +1446,98 @@ static void radeon_legacy_atom_fixup(str
  	}
- 
-+	spin_lock_irqsave(&sport->port.lock, flags);
- 	/*
- 	 * Finally, clear and enable interrupts
- 	 */
-@@ -778,7 +779,6 @@ static int imx_startup(struct uart_port
- 	/*
- 	 * Enable modem status interrupts
- 	 */
--	spin_lock_irqsave(&sport->port.lock,flags);
- 	imx_enable_ms(&sport->port);
- 	spin_unlock_irqrestore(&sport->port.lock,flags);
- 
-@@ -808,10 +808,13 @@ static void imx_shutdown(struct uart_por
- {
- 	struct imx_port *sport = (struct imx_port *)port;
- 	unsigned long temp;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&sport->port.lock, flags);
- 	temp = readl(sport->port.membase + UCR2);
- 	temp &= ~(UCR2_TXEN);
- 	writel(temp, sport->port.membase + UCR2);
-+	spin_unlock_irqrestore(&sport->port.lock, flags);
- 
- 	if (USE_IRDA(sport)) {
- 		struct imxuart_platform_data *pdata;
-@@ -840,12 +843,14 @@ static void imx_shutdown(struct uart_por
- 	 * Disable all interrupts, port and break condition.
- 	 */
- 
-+	spin_lock_irqsave(&sport->port.lock, flags);
- 	temp = readl(sport->port.membase + UCR1);
- 	temp &= ~(UCR1_TXMPTYEN | UCR1_RRDYEN | UCR1_RTSDEN | UCR1_UARTEN);
- 	if (USE_IRDA(sport))
- 		temp &= ~(UCR1_IREN);
- 
- 	writel(temp, sport->port.membase + UCR1);
-+	spin_unlock_irqrestore(&sport->port.lock, flags);
  }
  
- static void
-@@ -1119,6 +1124,9 @@ imx_console_write(struct console *co, co
++/**
++ * radeon_get_pll_use_mask - look up a mask of which pplls are in use
++ *
++ * @crtc: drm crtc
++ *
++ * Returns the mask of which PPLLs (Pixel PLLs) are in use.
++ */
++static u32 radeon_get_pll_use_mask(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_crtc *test_crtc;
++	struct radeon_crtc *radeon_test_crtc;
++	u32 pll_in_use = 0;
++
++	list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
++		if (crtc == test_crtc)
++			continue;
++
++		radeon_test_crtc = to_radeon_crtc(test_crtc);
++		if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
++			pll_in_use |= (1 << radeon_test_crtc->pll_id);
++	}
++	return pll_in_use;
++}
++
++/**
++ * radeon_get_shared_dp_ppll - return the PPLL used by another crtc for DP
++ *
++ * @crtc: drm crtc
++ *
++ * Returns the PPLL (Pixel PLL) used by another crtc/encoder which is
++ * also in DP mode.  For DP, a single PPLL can be used for all DP
++ * crtcs/encoders.
++ */
++static int radeon_get_shared_dp_ppll(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_encoder *test_encoder;
++	struct radeon_crtc *radeon_test_crtc;
++
++	list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
++		if (test_encoder->crtc && (test_encoder->crtc != crtc)) {
++			if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
++				/* for DP use the same PLL for all */
++				radeon_test_crtc = to_radeon_crtc(test_encoder->crtc);
++				if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
++					return radeon_test_crtc->pll_id;
++			}
++		}
++	}
++	return ATOM_PPLL_INVALID;
++}
++
++/**
++ * radeon_atom_pick_pll - Allocate a PPLL for use by the crtc.
++ *
++ * @crtc: drm crtc
++ *
++ * Returns the PPLL (Pixel PLL) to be used by the crtc.  For DP monitors
++ * a single PPLL can be used for all DP crtcs/encoders.  For non-DP
++ * monitors a dedicated PPLL must be used.  If a particular board has
++ * an external DP PLL, return ATOM_PPLL_INVALID to skip PLL programming
++ * as there is no need to program the PLL itself.  If we are not able to
++ * allocate a PLL, return ATOM_PPLL_INVALID to skip PLL programming to
++ * avoid messing up an existing monitor.
++ *
++ * Asic specific PLL information
++ *
++ * DCE 6.1
++ * - PPLL2 is only available to UNIPHYA (both DP and non-DP)
++ * - PPLL0, PPLL1 are available for UNIPHYB/C/D/E/F (both DP and non-DP)
++ *
++ * DCE 6.0
++ * - PPLL0 is available to all UNIPHY (DP only)
++ * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
++ *
++ * DCE 5.0
++ * - DCPLL is available to all UNIPHY (DP only)
++ * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
++ *
++ * DCE 3.0/4.0/4.1
++ * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
++ *
++ */
+ static int radeon_atom_pick_pll(struct drm_crtc *crtc)
  {
- 	struct imx_port *sport = imx_ports[co->index];
- 	unsigned int old_ucr1, old_ucr2, ucr1;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&sport->port.lock, flags);
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	struct drm_encoder *test_encoder;
+-	struct drm_crtc *test_crtc;
+-	uint32_t pll_in_use = 0;
++	u32 pll_in_use;
++	int pll;
  
- 	/*
- 	 *	First, save UCR1/2 and then disable interrupts
-@@ -1145,6 +1153,8 @@ imx_console_write(struct console *co, co
+ 	if (ASIC_IS_DCE4(rdev)) {
+ 		list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
+@@ -1461,7 +1545,7 @@ static int radeon_atom_pick_pll(struct d
+ 				/* in DP mode, the DP ref clock can come from PPLL, DCPLL, or ext clock,
+ 				 * depending on the asic:
+ 				 * DCE4: PPLL or ext clock
+-				 * DCE5: DCPLL or ext clock
++				 * DCE5: PPLL, DCPLL, or ext clock
+ 				 *
+ 				 * Setting ATOM_PPLL_INVALID will cause SetPixelClock to skip
+ 				 * PPLL/DCPLL programming and only program the DP DTO for the
+@@ -1469,29 +1553,31 @@ static int radeon_atom_pick_pll(struct d
+ 				 */
+ 				if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
+ 					if (rdev->clock.dp_extclk)
++						/* skip PPLL programming if using ext clock */
+ 						return ATOM_PPLL_INVALID;
+ 					else if (ASIC_IS_DCE5(rdev))
++						/* use DCPLL for all DP */
+ 						return ATOM_DCPLL;
++					else {
++						/* use the same PPLL for all DP monitors */
++						pll = radeon_get_shared_dp_ppll(crtc);
++						if (pll != ATOM_PPLL_INVALID)
++							return pll;
++					}
+ 				}
++				break;
+ 			}
+ 		}
+-
+-		/* otherwise, pick one of the plls */
+-		list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
+-			struct radeon_crtc *radeon_test_crtc;
+-
+-			if (crtc == test_crtc)
+-				continue;
+-
+-			radeon_test_crtc = to_radeon_crtc(test_crtc);
+-			if ((radeon_test_crtc->pll_id >= ATOM_PPLL1) &&
+-			    (radeon_test_crtc->pll_id <= ATOM_PPLL2))
+-				pll_in_use |= (1 << radeon_test_crtc->pll_id);
+-		}
+-		if (!(pll_in_use & 1))
++		/* all other cases */
++		pll_in_use = radeon_get_pll_use_mask(crtc);
++		if (!(pll_in_use & (1 << ATOM_PPLL2)))
++			return ATOM_PPLL2;
++		if (!(pll_in_use & (1 << ATOM_PPLL1)))
+ 			return ATOM_PPLL1;
+-		return ATOM_PPLL2;
++		DRM_ERROR("unable to allocate a PPLL\n");
++		return ATOM_PPLL_INVALID;
+ 	} else
++		/* use PPLL1 or PPLL2 */
+ 		return radeon_crtc->crtc_id;
  
- 	writel(old_ucr1, sport->port.membase + UCR1);
- 	writel(old_ucr2, sport->port.membase + UCR2);
-+
-+	spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+@@ -1610,7 +1696,7 @@ static void atombios_crtc_disable(struct
+ 		break;
+ 	}
+ done:
+-	radeon_crtc->pll_id = -1;
++	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
  }
  
- /*
+ static const struct drm_crtc_helper_funcs atombios_helper_funcs = {
+@@ -1659,6 +1745,6 @@ void radeon_atombios_init_crtc(struct dr
+ 		else
+ 			radeon_crtc->crtc_offset = 0;
+ 	}
+-	radeon_crtc->pll_id = -1;
++	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
+ 	drm_crtc_helper_add(&radeon_crtc->base, &atombios_helper_funcs);
+ }
 
 
