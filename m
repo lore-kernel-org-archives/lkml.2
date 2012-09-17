@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab2IQAu3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33369 "EHLO
+	id S1753830Ab2IQBNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:13:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33691 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753017Ab2IQAte (ORCPT
+	by vger.kernel.org with ESMTP id S1753674Ab2IQAua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:34 -0400
-Message-Id: <20120917003627.763652634@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:30 -0400
+Message-Id: <20120917003636.724493257@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:36 +0100
+Date: Mon, 17 Sep 2012 01:37:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Luca Tettamanti <kronos.it@gmail.com>,
-        =?ISO-8859-15?q?G=C3=B6ran=20Uddeborg?= <goeran@uddeborg.se>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 011/135] hwmon: (asus_atk0110) Add quirk for Asus M5A78L
+        alan@lxorguk.ukuu.org.uk, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 076/135] workqueue: UNBOUND -> REBIND morphing in  rebind_workers() should be atomic
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,39 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luca Tettamanti <kronos.it@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 43ca6cb28c871f2fbad10117b0648e5ae3b0f638 upstream.
+commit 96e65306b81351b656835c15931d1d237b252f27 upstream.
 
-The old interface is bugged and reads the wrong sensor when retrieving
-the reading for the chassis fan (it reads the CPU sensor); the new
-interface works fine.
+The compiler may compile the following code into TWO write/modify
+instructions.
 
-Reported-by: Göran Uddeborg <goeran@uddeborg.se>
-Tested-by: Göran Uddeborg <goeran@uddeborg.se>
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+	worker->flags &= ~WORKER_UNBOUND;
+	worker->flags |= WORKER_REBIND;
+
+so the other CPU may temporarily see worker->flags which doesn't have
+either WORKER_UNBOUND or WORKER_REBIND set and perform local wakeup
+prematurely.
+
+Fix it by using single explicit assignment via ACCESS_ONCE().
+
+Because idle workers have another WORKER_NOT_RUNNING flag, this bug
+doesn't exist for them; however, update it to use the same pattern for
+consistency.
+
+tj: Applied the change to idle workers too and updated comments and
+    patch description a bit.
+
+stable: Idle worker rebinding doesn't apply for -stable and
+        WORKER_UNBOUND used to be WORKER_ROGUE.  Updated accordingly.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/hwmon/asus_atk0110.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/workqueue.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hwmon/asus_atk0110.c b/drivers/hwmon/asus_atk0110.c
-index 351d1f4..4ee5789 100644
---- a/drivers/hwmon/asus_atk0110.c
-+++ b/drivers/hwmon/asus_atk0110.c
-@@ -34,6 +34,12 @@ static const struct dmi_system_id __initconst atk_force_new_if[] = {
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_NAME, "SABERTOOTH X58")
- 		}
-+	}, {
-+		/* Old interface reads the same sensor for fan0 and fan1 */
-+		.ident = "Asus M5A78L",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_NAME, "M5A78L")
-+		}
- 	},
- 	{ }
- };
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 9a3128d..d7eb05a 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3441,14 +3441,17 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 
+ 	for_each_busy_worker(worker, i, pos, gcwq) {
+ 		struct work_struct *rebind_work = &worker->rebind_work;
++		unsigned long worker_flags = worker->flags;
+ 
+ 		/*
+ 		 * Rebind_work may race with future cpu hotplug
+ 		 * operations.  Use a separate flag to mark that
+-		 * rebinding is scheduled.
++		 * rebinding is scheduled.  The morphing should
++		 * be atomic.
+ 		 */
+-		worker->flags |= WORKER_REBIND;
+-		worker->flags &= ~WORKER_ROGUE;
++		worker_flags |= WORKER_REBIND;
++		worker_flags &= ~WORKER_ROGUE;
++		ACCESS_ONCE(worker->flags) = worker_flags;
+ 
+ 		/* queue rebind_work, wq doesn't matter, use the default one */
+ 		if (test_and_set_bit(WORK_STRUCT_PENDING_BIT,
 
 
