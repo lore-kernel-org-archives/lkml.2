@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2IQIoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:44:01 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:44532 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755105Ab2IQIn7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:43:59 -0400
-Message-ID: <5056E300.809@ti.com>
-Date: Mon, 17 Sep 2012 11:44:48 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	id S1755298Ab2IQIoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:44:14 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:47757 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755257Ab2IQIoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 04:44:10 -0400
+Message-ID: <5056E1FC.1090508@parallels.com>
+Date: Mon, 17 Sep 2012 12:40:28 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>, Ricardo Neri <ricardo.neri@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Dan Williams <djbw@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: Re: [alsa-devel] [PATCH v3 00/15] ASoC: OMAP: Convert to use dmaengine
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com> <1347851866.1943.126.camel@vkoul-udesk3>
-In-Reply-To: <1347851866.1943.126.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Tejun Heo <tj@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: Re: [RFC] cgroup TODOs
+References: <20120913205827.GO7677@google.com> <20120914180754.GF6221@redhat.com> <20120914185324.GI17747@google.com> <20120914192840.GG6221@redhat.com> <20120914194439.GP17747@google.com> <20120914194950.GQ17747@google.com> <20120914203925.GR17747@google.com>
+In-Reply-To: <20120914203925.GR17747@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
-
-On 09/17/2012 06:17 AM, Vinod Koul wrote:
-> On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
->> Hello,
+On 09/15/2012 12:39 AM, Tejun Heo wrote:
+> Hello, again.
 > 
-> dmaengine parts look good to me. How do you want to get this merged,
-> dmaengine or ASoC tree?
+> On Fri, Sep 14, 2012 at 12:49:50PM -0700, Tejun Heo wrote:
+>> That said, if someone can think of a better solution, I'm all ears.
+>> One thing that *has* to be maintained is that it should be able to tag
+>> a resource in such way that its associated controllers are
+>> identifiable regardless of which task is looking at it.
+> 
+> So, I thought about it more.  How about we do "consider / ignore this
+> node" instead of "(don't) nest beyond this level".  For example, let's
+> assume a tree like the following.
+> 
+>         R
+>      /  |  \
+>     A   B   C
+>    / \
+>   AA AB
+> 
+> If we want to differentiate between AA and AB, we'll have to consider
+> the whole tree with the previous sheme - A needs to nest, so R needs
+> to nest and we end up with the whole tree.  Instead, if we have honor
+> / ignore this node.  We can set the honor bit on A, AA and AB and see
+> the tree as
+> 
+>         R
+>      /
+>     A
+>    / \
+>   AA AB
+> 
+> We still see the intermediate A node but can ignore the other
+> branches.  Implementation and concept-wise, it's fairly simple too.
+> For any given node and controller, you travel upwards until you meet a
+> node which has the controller enabled and that's the cgroup the
+> controller considers.
+> 
+> Thanks.
+> 
 
-Thank you, I would prefer it to go via ASoC if it is not a problem. It is
-possible to separate the dmaengine core related patches and the patches for
-the OMAP drivers but I think it is better to keep them together so we can have
-them in a same tree for testing it further.
+That is exactly what I proposed in our previous discussions around
+memcg, with files like "available_controllers" , "current_controllers".
+Name chosen to match what other subsystems already do.
 
-Regards,
-Péter
+if memcg is not in "available_controllers" for a node, it cannot be seen
+by anyone bellow that level.
+
+
