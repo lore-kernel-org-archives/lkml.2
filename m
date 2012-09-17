@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2IQKrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:47:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56393 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754440Ab2IQKrc (ORCPT
+	id S1755345Ab2IQKsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:48:20 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35269 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab2IQKsS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:47:32 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18TpkgQCXQTOiWgR+MCGj9YD+9wRT7Jz5D1EJdUWI
-	77+Td1Q2oUV4oU
-Message-ID: <1347878845.6955.203.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 17 Sep 2012 12:47:25 +0200
-In-Reply-To: <20120917100759.GB32463@gmail.com>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic>
-	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	 <1347680006.4340.142.camel@marge.simpson.net>
-	 <m24nmzz2f8.fsf@firstfloor.org>
-	 <1347727001.7029.37.camel@marge.simpson.net>
-	 <20120915223212.4174a314@pyramind.ukuu.org.uk>
-	 <1347770100.6952.31.camel@marge.simpson.net>
-	 <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com>
-	 <1347869299.6955.156.camel@marge.simpson.net>
-	 <20120917100759.GB32463@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Mon, 17 Sep 2012 06:48:18 -0400
+Message-ID: <5056FFE5.7030205@parallels.com>
+Date: Mon, 17 Sep 2012 14:48:05 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Chuck Lever <chuck.lever@oracle.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Subject: Re: [PATCH 1/3] lockd: use rpc client's cl_nodename for id encoding
+References: <20120914140811.10835.81465.stgit@localhost.localdomain> <20120914142555.10835.53544.stgit@localhost.localdomain> <1800C13C-A771-4CA6-B241-4B4DEA207684@oracle.com>
+In-Reply-To: <1800C13C-A771-4CA6-B241-4B4DEA207684@oracle.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-17 at 12:07 +0200, Ingo Molnar wrote: 
-> * Mike Galbraith <efault@gmx.de> wrote:
-> 
+14.09.2012 23:08, Chuck Lever пишет:
+> Hi-
+>
+> On Sep 14, 2012, at 10:25 AM, Stanislav Kinsbursky wrote:
+>
+>> Taking hostname from uts namespace if not safe, because this cuold be
+>> performind during umount operation on child reaper death. And in this case
+>> current->nsproxy is NULL already.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> Cc: <stable@vger.kernel.org>
+>> ---
+>> fs/lockd/mon.c |   14 ++++++++------
+>> 1 files changed, 8 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+>> index 7ef14b3..c6186fb 100644
+>> --- a/fs/lockd/mon.c
+>> +++ b/fs/lockd/mon.c
+>> @@ -426,11 +426,12 @@ static void encode_mon_name(struct xdr_stream *xdr, const struct nsm_args *argp)
+>>   * (via the NLMPROC_SM_NOTIFY call) that the state of host "mon_name"
+>>   * has changed.
+>>   */
+>> -static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+>> +static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp,
+>> +			 char *nodename)
+>> {
+>> 	__be32 *p;
+>>
+>> -	encode_nsm_string(xdr, utsname()->nodename);
+>> +	encode_nsm_string(xdr, nodename);
+>> 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+>> 	*p++ = cpu_to_be32(argp->prog);
+>> 	*p++ = cpu_to_be32(argp->vers);
+>> @@ -441,10 +442,11 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+>>   * The "mon_id" argument specifies the non-private arguments
+>>   * of an NSMPROC_MON or NSMPROC_UNMON call.
+>>   */
+>> -static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+>> +static void encode_mon_id(struct xdr_stream *xdr, const struct nsm_args *argp,
+>> +			  char *nodename)
+>> {
+>> 	encode_mon_name(xdr, argp);
+>> -	encode_my_id(xdr, argp);
+>> +	encode_my_id(xdr, argp, nodename);
+>> }
+>>
+>> /*
+>> @@ -463,14 +465,14 @@ static void encode_priv(struct xdr_stream *xdr, const struct nsm_args *argp)
+>> static void nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
+>> 			    const struct nsm_args *argp)
+>> {
+>> -	encode_mon_id(xdr, argp);
+>> +	encode_mon_id(xdr, argp, req->rq_task->tk_client->cl_nodename);
+>
+> IMO you should get the cl_nodename in nsm_mon_unmon() from clnt->cl_nodename, and pass it in as part of *argp .  The choice of which nodename to use is clearly a decision for an "upper layer" not a choice for the XDR functions.
+>
+> Long ago I had patches which fixed this layering violation for a very similar purpose as yours, but they were never applied.
+>
 
-> >     4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
-> >     
-> >      clients     1       2       4        8       16       32       64      128
-> >      ..........................................................................
-> >      pre        30      41     118      645     3769     6214    12233    14312
-> >      post      299     603    1211     2418     4697     6847    11606    14557
-> 
-> That's a very tempting speedup for a simpler and more 
-> fundamental workload than postgresql's somewhat weird
-> user-space spinlocks that burn CPU time in user-space
-> instead of blocking/waiting on a futex.
-> 
-> IIRC mysql does this properly and outperforms postgresql
-> on this benchmark, in an apples-to-apples configuration?
+I like it. Thanks.
 
-It's been a while since I fiddled with oltp (lost my fast mysql db,
-every attempt to re-create produced a complete slug), but postgress was
-always the throughput winner at that here.
-
-> > 10x at 1 pair shouldn't be traversal, the whole box is 
-> > otherwise idle. We'll do a lot more (ever more futile) 
-> > traversal as load increases, but at the same time, our futile 
-> > attempts fail more frequently, so we shoot ourselves in the 
-> > foot less frequently.
-> > 
-> > The down side is (appears to be) that I also shut down some 
-> > ~odd case preemption salvation, salvation that only large 
-> > packages will receive.
-> > 
-> > The problem as I see it is that we're making light tasks _too_ 
-> > mobile, turning an optimization into a pessimization for light 
-> > tasks.  For longer running tasks this mobility within a large 
-> > package isn't such a big deal, but for fast movers, it hurts a 
-> > lot.
-> 
-> There's not enough time to resolve this for v3.6, so I agree 
-> with the revert - would you be willing to post a v2 of your 
-> original patch? I really think we want your tbench speedups, 
-> quite a few real-world messaging applications use the tbench 
-> patterns of scheduling.
-
-I don't know what a v2 would look like, but I can keep thinking about
-this irritating little <naughty words elided>.  Peter's a lot hairier
-chested, not to mention having a sense of _taste_ :) so it might be
-better to just consider my patch a diagnostic, and let him fix it up in
-a (likely lots) less tummy distressing manner.
-
--Mike
-
+-- 
+Best regards,
+Stanislav Kinsbursky
