@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab2IQAuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33311 "EHLO
+	id S1753884Ab2IQBUL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:20:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33599 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752922Ab2IQAtW (ORCPT
+	by vger.kernel.org with ESMTP id S1753356Ab2IQAuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:22 -0400
-Message-Id: <20120917003626.612267462@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:09 -0400
+Message-Id: <20120917003642.279358860@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:28 +0100
+Date: Mon, 17 Sep 2012 01:38:21 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jon Hunter <jon-hunter@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [ 003/135] ARM: OMAP2+: Fix dmtimer set source clock failure
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 116/135] kobject: fix oops with "input0: bad kobj_uevent_env content in
+ show_uevent()"
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Hunter <jon-hunter@ti.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 54f32a35f4d3a653a18a2c8c239f19ae060bd803 upstream.
+commit 60e233a56609fd963c59e99bd75c663d63fa91b6 upstream.
 
-Calling the dmtimer function omap_dm_timer_set_source() fails if following a
-call to pm_runtime_put() to disable the timer. For example the following
-sequence would fail to set the parent clock ...
+Fengguang Wu <fengguang.wu@intel.com> writes:
 
-	omap_dm_timer_stop(gptimer);
-	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_32_KHZ);
+> After the __devinit* removal series, I can still get kernel panic in
+> show_uevent(). So there are more sources of bug..
+>
+> Debug patch:
+>
+> @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
+>                 goto out;
+>
+>         /* copy keys to file */
+> -       for (i = 0; i < env->envp_idx; i++)
+> +       dev_err(dev, "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
+> +       for (i = 0; i < env->envp_idx; i++) {
+> +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
+>                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
+> +       }
+>
+> Oops message, the env[] is again not properly initilized:
+>
+> [   44.068623] input input0: uevent 61 env[805306368]: input0/.../input0
+> [   44.069552] uevent 0 env[0]: (null)
 
-The following error message would be seen ...
+This is a completely different CONFIG_HOTPLUG problem, only
+demonstrating another reason why CONFIG_HOTPLUG should go away.  I had a
+hard time trying to disable it anyway ;-)
 
-omap_dm_timer_set_source: failed to set timer_32k_ck as parent
+The problem this time is lots of code assuming that a call to
+add_uevent_var() will guarantee that env->buflen > 0.  This is not true
+if CONFIG_HOTPLUG is unset.  So things like this end up overwriting
+env->envp_idx because the array index is -1:
 
-The problem is that, by design, pm_runtime_put() simply decrements the usage
-count and returns before the timer has actually been disabled. Therefore,
-setting the parent clock failed because the timer was still active when the
-trying to set the parent clock. Setting a parent clock will fail if the clock
-you are setting the parent of has a non-zero usage count. To ensure that this
-does not fail use pm_runtime_put_sync() when disabling the timer.
+	if (add_uevent_var(env, "MODALIAS="))
+		return -ENOMEM;
+        len = input_print_modalias(&env->buf[env->buflen - 1],
+				   sizeof(env->buf) - env->buflen,
+				   dev, 0);
 
-Note that this will not be seen on OMAP1 devices, because these devices do
-not use the clock framework for dmtimers.
+Don't know what the best action is, given that there seem to be a *lot*
+of this around the kernel.  This patch "fixes" the problem for me, but I
+don't know if it can be considered an appropriate fix.
 
-Signed-off-by: Jon Hunter <jon-hunter@ti.com>
-Acked-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+[ It is the correct fix for now, for 3.7 forcing CONFIG_HOTPLUG to
+always be on is the longterm fix, but it's too late for 3.6 and older
+kernels to resolve this that way - gregkh ]
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/plat-omap/dmtimer.c |    2 +-
+ include/linux/kobject.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index 626ad8c..7b6689a 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -258,7 +258,7 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
+diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+index fc615a9..1e57449 100644
+--- a/include/linux/kobject.h
++++ b/include/linux/kobject.h
+@@ -224,7 +224,7 @@ static inline int kobject_uevent_env(struct kobject *kobj,
  
- void omap_dm_timer_disable(struct omap_dm_timer *timer)
- {
--	pm_runtime_put(&timer->pdev->dev);
-+	pm_runtime_put_sync(&timer->pdev->dev);
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_disable);
+ static inline __printf(2, 3)
+ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
+-{ return 0; }
++{ return -ENOMEM; }
  
+ static inline int kobject_action_type(const char *buf, size_t count,
+ 				      enum kobject_action *type)
 
 
