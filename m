@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab2IQNnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 09:43:49 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46160 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab2IQNnr (ORCPT
+	id S1755391Ab2IQNoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 09:44:05 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52952 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab2IQNoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 09:43:47 -0400
-Date: Mon, 17 Sep 2012 09:32:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>, davem@davemloft.net
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Xen backend support for paged out grant targets V4.
-Message-ID: <20120917133234.GB11553@phenom.dumpdata.com>
-References: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
- <1347869865.14977.15.camel@zakaz.uk.xensource.com>
- <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
+	Mon, 17 Sep 2012 09:44:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B5132A4-93B2-41D0-B1A6-048810565DB5@gridcentric.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
+Date: Mon, 17 Sep 2012 15:44:00 +0200
+Message-ID: <CACRpkdYQ8X7iwvHoecwYs1TZG_yP281FR-ZN7JCO=HUVp-05Ew@mail.gmail.com>
+Subject: Re: Question about cleaning up the LP5521/5523 LED driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-> > 
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > Since this is more about grant tables than netback this should probably
-> > go via Konrad rather than Dave, is that OK with you Dave?
-> 
-> If that is the case hopefully Konrad can deal with the two typos? Otherwise happy to re-spin the patch.
+On Mon, Sep 17, 2012 at 1:28 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
 
-Sure. Just waiting for an Ack from David.
+> Should I keep the sysfs layout of LP5521 and LP5523?
+> When we change the device attributes, do we have to consider the backward compatibility?
+
+The ABI is a contract so basically yes, you need real good reasons
+(like security concerns) to change the ABI.
+
+That said, the lm3533 is the only LED driver that has actually documented
+its ABI: Documentation/ABI/testing/sysfs-class-led-driver-lm3533
+
+Yours,
+Linus Walleij
