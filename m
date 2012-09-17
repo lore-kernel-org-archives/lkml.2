@@ -1,189 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2IQIId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:08:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:43350 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754492Ab2IQII2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:08:28 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/y6SVibHvyaYLF5QdbsyDjsGs9yP0+9txUE1Sp8b
-	Kqckjw8FFG78F7
-Message-ID: <1347869299.6955.156.camel@marge.simpson.net>
-Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
- 3.6-rc5 on AMD chipsets - bisected
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Date: Mon, 17 Sep 2012 10:08:19 +0200
-In-Reply-To: <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com>
-References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
-	 <20120914212717.GA29307@liondog.tnic>
-	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
-	 <1347680006.4340.142.camel@marge.simpson.net>
-	 <m24nmzz2f8.fsf@firstfloor.org>
-	 <1347727001.7029.37.camel@marge.simpson.net>
-	 <20120915223212.4174a314@pyramind.ukuu.org.uk>
-	 <1347770100.6952.31.camel@marge.simpson.net>
-	 <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1754782Ab2IQILE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:11:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492Ab2IQIK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 04:10:58 -0400
+Date: Mon, 17 Sep 2012 10:10:43 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: habanero@linux.vnet.ibm.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
+Message-ID: <20120917081043.GB2104@turtle.usersys.redhat.com>
+References: <1347283005.10325.55.camel@oc6622382223.ibm.com>
+ <1347293035.2124.22.camel@twins>
+ <20120910165653.GA28033@linux.vnet.ibm.com>
+ <1347297124.2124.42.camel@twins>
+ <1347307972.7332.78.camel@oc2024037011.ibm.com>
+ <504ED54E.6040608@linux.vnet.ibm.com>
+ <1347388061.19098.20.camel@oc2024037011.ibm.com>
+ <20120913114813.GA11797@linux.vnet.ibm.com>
+ <1347571858.5586.44.camel@oc2024037011.ibm.com>
+ <50559400.8030203@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50559400.8030203@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-09-16 at 12:57 -0700, Linus Torvalds wrote: 
-> On Sat, Sep 15, 2012 at 9:35 PM, Mike Galbraith <efault@gmx.de> wrote:
-> >
-> > Oh, while I'm thinking about it, there's another scenario that could
-> > cause the select_idle_sibling() change to affect pgbench on largeish
-> > packages, but it boils down to preemption odds as well.
+On Sun, Sep 16, 2012 at 11:55:28AM +0300, Avi Kivity wrote:
+> On 09/14/2012 12:30 AM, Andrew Theurer wrote:
 > 
-> So here's a possible suggestion..
+> > The concern I have is that even though we have gone through changes to
+> > help reduce the candidate vcpus we yield to, we still have a very poor
+> > idea of which vcpu really needs to run.  The result is high cpu usage in
+> > the get_pid_task and still some contention in the double runqueue lock.
+> > To make this scalable, we either need to significantly reduce the
+> > occurrence of the lock-holder preemption, or do a much better job of
+> > knowing which vcpu needs to run (and not unnecessarily yielding to vcpus
+> > which do not need to run).
+> > 
+> > On reducing the occurrence:  The worst case for lock-holder preemption
+> > is having vcpus of same VM on the same runqueue.  This guarantees the
+> > situation of 1 vcpu running while another [of the same VM] is not.  To
+> > prove the point, I ran the same test, but with vcpus restricted to a
+> > range of host cpus, such that any single VM's vcpus can never be on the
+> > same runqueue.  In this case, all 10 VMs' vcpu-0's are on host cpus 0-4,
+> > vcpu-1's are on host cpus 5-9, and so on.  Here is the result:
+> > 
+> > kvm_cpu_spin, and all
+> > yield_to changes, plus
+> > restricted vcpu placement:  8823 +/- 3.20%   much, much better
+> > 
+> > On picking a better vcpu to yield to:  I really hesitate to rely on
+> > paravirt hint [telling us which vcpu is holding a lock], but I am not
+> > sure how else to reduce the candidate vcpus to yield to.  I suspect we
+> > are yielding to way more vcpus than are prempted lock-holders, and that
+> > IMO is just work accomplishing nothing.  Trying to think of way to
+> > further reduce candidate vcpus....
 > 
-> Let's assume that the scheduler code to find the next idle CPU on the
-> package is actually a good idea, and we shouldn't mess with the idea.
-
-We should definitely mess with the idea, as it causes some problems.
-
-> But at the same time, it's clearly an *expensive* idea, which is why
-> you introduced the "only test a single CPU buddy" approach instead.
-> But that didn't work, and you can come up with multiple reasons why it
-> wouldn't work. Plus, quite fundamentally, it's rather understandable
-> that "try to find an idle CPU on the same package" really would be a
-> good idea, right?
-
-I would argue that it did work, it shut down the primary source of pain,
-which I do not believe to be the traversal cost, rather the bouncing.
-
-    4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
-    
-     clients     1       2       4        8       16       32       64      128
-     ..........................................................................
-     pre        30      41     118      645     3769     6214    12233    14312
-     post      299     603    1211     2418     4697     6847    11606    14557
-
-10x at 1 pair shouldn't be traversal, the whole box is otherwise idle.
-We'll do a lot more (ever more futile) traversal as load increases, but
-at the same time, our futile attempts fail more frequently, so we shoot
-ourselves in the foot less frequently.
-
-The down side is (appears to be) that I also shut down some ~odd case
-preemption salvation, salvation that only large packages will receive.
-
-The problem as I see it is that we're making light tasks _too_ mobile,
-turning an optimization into a pessimization for light tasks.  For
-longer running tasks this mobility within a large package isn't such a
-big deal, but for fast movers, it hurts a lot.
-
-> So instead of limiting the "try to find an idle CPU on the same
-> package" to "pick *one* idle CPU on the same package to try", how
-> about just trying to make the whole "find another idle CPU" much
-> cheaper, and much more scalable that way?
-
-I'm all for anything that makes the fastpath lighter.  We're too fat.
-
-> Quite frankly, the loop in select_idle_sibling() is insanely expensive
-> for what it really wants to do. All it really wants to do is:
->  - iterate over idle processors on this package
->  - make sure that idle processor is in the cpu's allowed.
+> I wouldn't say that yielding to the "wrong" vcpu accomplishes nothing.
+> That other vcpu gets work done (unless it is in pause loop itself) and
+> the yielding vcpu gets put to sleep for a while, so it doesn't spend
+> cycles spinning.  While we haven't fixed the problem at least the guest
+> is accomplishing work, and meanwhile the real lock holder may get
+> naturally scheduled and clear the lock.
 > 
-> Right?
-
-For longish running tasks, yeah.  For the problematic loads mentioned,
-you'd be better off killing select_idle_sibling() entirely, and turning
-WAKE_BALANCE on methinks, that would buy them more preemption salvation.
-
-> But the whole use of "cpumask_intersects()" etc is quite expensive,
-> and there's that crazy double loop to do the above. So no wonder that
-> it's expensive and causes scalability problems. That would be
-> *especially* true if nr_cpumask_bits is big, and we have
-> CONFIG_CPUMASK_OFFSTACK defined.
+> The main problem with this theory is that the experiments don't seem to
+> bear it out.  So maybe one of the assumptions is wrong - the yielding
+> vcpu gets scheduled early.  That could be the case if the two vcpus are
+> on different runqueues - you could be changing the relative priority of
+> vcpus on the target runqueue, but still remain on top yourself.  Is this
+> possible with the current code?
 > 
-> So I would suggest:
->  (a) revert the original commit (already done in my tree)
->  (b) look at just making the loop *much* cheaper.
+> Maybe we should prefer vcpus on the same runqueue as yield_to targets,
+> and only fall back to remote vcpus when we see it didn't help.
+
+I thought about this a bit recently too, but didn't pursue it, because I
+figured it would actually increase the get_pid_task and double_rq_lock
+contention time if we have to hunt too long for a vcpu that matches a more
+strict criteria. But, I guess if we can implement a special "reschedule"
+to run on the current cpu which prioritizes runnable/non-running vcpus,
+then it should be just as fast or faster for it to look through the
+runqueue first, than it is to look through all the vcpus first.
+
+Drew
+
 > 
-> For example, all those "cpumask_intersects()" and "cpumask_first()"
-> things are *really* expensive, and expand to tons of code especially
-> for the OFFSTACK case (and aren't exactly free even for the smaller
-> case). And it really is all stupidly and badly done. I bet we can make
-> that code faster without really changing the  end result at all, just
-> changing the algorithm.
+> Let's examine a few cases:
 > 
-> For example, what if we got rid of all the crazy "sd groups" crap at
-> run-time, and just built a single linked circular list of CPU's on the
-> same package?
+> 1. spinner on cpu 0, lock holder on cpu 0
 > 
-> Then we'd replace that crazy-expensive double loop over sd->groups and
-> for_each_cpu() crap (not to mention cpumask_first_and() etc) with just
-> a simple loop over that (and pick the *next* idle cpu, instead of
-> doing that crazy "pick first one in a bitmask after and'ing").
-
-Agreed, cheaper traversal should be doable, and would be nice.
-
-> In fact, looking at select_idle_sibling(), I just want to puke. The
-> thing is crazy.
+> win!
 > 
-> Why the hell isn't the *very* first thing that function does just a simple
+> 2. spinner on cpu 0, random vcpu(s) (or normal processes) on cpu 0
 > 
->     if (idle_cpu(target))
->         return target;
+> Spinner gets put to sleep, random vcpus get to work, low lock contention
+> (no double_rq_lock), by the time spinner gets scheduled we might have won
 > 
-> instead it does totally f*cking insane things, and checks whether
-> "target == cpu && idle_cpu(cpu)".
-
-Hm, in the current incarnation, target is either this_cpu or task_cpu()
-if wake_affine() said "no", so yeah, seems you're right.
-
-> The code is shit. Just fix the shit, instead of trying to come up with
-> some totally different model. Ok? I bet just fixing it to not have
-> insane double loops would already get 90% of the speedup that Mike's
-> original patch did, but without the downsides of having to pick just a
-> single idle-buddy.
-
-I'm skeptical, but would love to be wrong about that.
-
-> We might also possibly add a "look at SMT buddy first" case, because
-> Mike is probably right that bouncing all over the package isn't
-> necessarily a good idea unless we really need to. But that would be a
-> different thing.
-
-The code used to do that, was recently modified to look for an idle core
-first.  Testing that in enterprise, because I desperately needed to
-combat throughput loss 2.6.32->3.0 is how I landed here.  What I found
-while integrating was Dr. Jekyll and Mr. Hyde.  Less balancing is more..
-until it's not enough.  Damn.  I beat up select_idle_sibling() to turn
-regression into the needed progression.
-
-Box _regressed_ only in that finding an idle SMT sibling could save us
-from ourselves before if box _had_ SMT, but the bounce problem was lying
-there from day one.  I didn't see it before, because I didn't go looking
-for evilness on enterprise hardware, used to have no access to sexy
-hardware, and didn't know things like "opterons suck" and "L3 is not
-nearly as wonderful as shared L2".
-
-On an opteron, best thing you can do for fast mover loads is to turn
-select_idle_sibling() off, you need a lot of overlap to win.  On Intel
-hardware otoh, 3.0 kernel now kicks the snot out of 2.6.32 at fast mover
-localhost _and_ aim7 compute.  Opterons don't respond to much of
-anything other than "if load is fast mover, turn it the hell off", but
-large Intel packages much appreciated Mr. Hyde having his fangs pulled.
-
-You're welcome to keep the fully fanged version of Mr. Hyde ;-) but I
-now know beyond doubt that he's one evil SOB, so I will keep this patch
-until better psychopath therapy kit comes along, and already have knobs
-set such that LAST_BUDDY provides preemption salvation.
-
--Mike
-
+> 3. spinner on cpu 0, another spinner on cpu 0
+> 
+> Worst case, we'll just spin some more.  Need to detect this case and
+> migrate something in.
+> 
+> 4. spinner on cpu 0, alone
+> 
+> Similar
+> 
+> 
+> It seems we need to tie in to the load balancer.
+> 
+> Would changing the priority of the task while it is spinning help the
+> load balancer?
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
