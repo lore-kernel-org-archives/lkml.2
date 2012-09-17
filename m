@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab2IQLSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:18:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:24870 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab2IQLSX (ORCPT
+	id S1755862Ab2IQLUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:20:06 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33583 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755732Ab2IQLUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:18:23 -0400
-Date: Mon, 17 Sep 2012 14:18:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>
-Subject: [static analysis] memory corruption in tty/synclink.c on 64bit
-Message-ID: <20120917111819.GA5769@elgon.mountain>
+	Mon, 17 Sep 2012 07:20:04 -0400
+X-Sasl-enc: aVkX/C3ocLKQa5j9p/T5aPp+5WtAyhn59L0QS0mnuQvd 1347880803
+Date: Mon, 17 Sep 2012 04:20:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: linux-next: manual merge of the usb tree with the tty tree
+Message-ID: <20120917112002.GA28478@kroah.com>
+References: <20120917173103.9805531382847454e2d59bb8@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120917173103.9805531382847454e2d59bb8@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think anyone really cares about this but just for laughs here
-is the warning:
+On Mon, Sep 17, 2012 at 05:31:03PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/serial/digi_acceleport.c between commit adc8d746caa6 ("tty:
+> move the termios object into the tty") from the tty tree and commit
+> f9dfbebb8b39 ("USB: serial: digi_acceleport.c: remove dbg() usage") from
+> the usb tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-drivers/tty/synclink.c:5418 usc_process_rxoverrun_sync() warn: potential memory corrupting cast 8 vs 2 bytes
-drivers/tty/synclink.c:6414 mgsl_reset_tx_dma_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
-drivers/tty/synclink.c:6455 mgsl_reset_rx_dma_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
-drivers/tty/synclink.c:6500 mgsl_free_rx_frame_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
+This fix, and the other usb->tty tree issues, all look good to me,
+thanks for doing them, and sorry for the problems.
 
-  6489                  /* reset current buffer for reuse */
-  6490  //              pBufEntry->status = 0;
-  6491  //              pBufEntry->count = DMABUFFERSIZE;
-  6492                  *((unsigned long *)&(pBufEntry->count)) = DMABUFFERSIZE;
-
-It looks like the commented out code is the correct code and the code
-on line 6492 is the "faster" version?  My static checker complains that
-it would corrupt the next struct elements on 64 bit.  Also it only works
-on little endian systems.
-
-typedef struct _DMABUFFERENTRY
-{
-        u32 phys_addr;  /* 32-bit flat physical address of data buffer */
-        volatile u16 count;     /* buffer size/data count */
-        volatile u16 status;    /* Control/status field */
-        volatile u16 rcc;       /* character count field */
-        u16 reserved;   /* padding required by 16C32 */
-
-This was there in the original code when it was merged in 2.2.5pre1.
-
-regards,
-dan carpenter
+greg k-h
