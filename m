@@ -1,166 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2IQPGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:06:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30971 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819Ab2IQPGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:06:08 -0400
-Date: Mon, 17 Sep 2012 11:05:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120917150518.GB5094@redhat.com>
-References: <20120913205827.GO7677@google.com>
- <20120914142539.GC6221@redhat.com>
- <20120914213938.GV17747@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120914213938.GV17747@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756719Ab2IQPK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:10:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54710 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab2IQPKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:10:24 -0400
+From: Jiri Pirko <jiri@resnulli.us>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, mlindner@marvell.com, shemminger@vyatta.com,
+        linux-kernel@vger.kernel.org
+Subject: [patch net] sky2: fix rx filter setup on link up
+Date: Mon, 17 Sep 2012 17:10:17 +0200
+Message-Id: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 02:39:38PM -0700, Tejun Heo wrote:
-[..]
-> > I am still little concerned about changing the blkio behavior
-> > unexpectedly. Can we have some kind of mount time flag which retains
-> > the old flat behavior and we warn user that this mode is deprecated
-> > and will soon be removed. Move over to hierarchical mode. Then after
-> > few release we can drop the flag and cleanup any extra code which
-> > supports flat mode in CFQ. This will atleast make transition smooth.
-> 
-> I don't know.  That essentially is what we're doing with memcg now and
-> it doesn't seem any less messy.  Given the already scary complexity,
-> do we really want to support both flat and hierarchy models at the
-> same time?
+In my case I have following problem. sky2_set_multicast() sets registers
+GM_MC_ADDR_H[1-4] correctly to:
+0000 0800 0001 0410
+However, when adapter gets link and sky2_link_up() is called, the values
+are for some reason different:
+0000 0800 0016 0410
+This in my case prevents iface to be able to receive packets with dst mac
+01:80:C2:00:00:02 (LACPDU dst mac), which I set up previously by
+SIOCADDMULTI.
 
-As a developer, I will be happy to support only one model and keep code
-simple. I am only concerned that for blkcg we have still not charted
-out a clear migration path. The warning message your patch is giving
-out will work only if we decide to not treat task and groups at same
-level.
+So remember computed rx_filter data and write it to GM_MC_ADDR_H[1-4] on
+link_up.
 
-I guess first we need to decide task vs groups issue and then look
-into this issue again.
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+---
+ drivers/net/ethernet/marvell/sky2.c | 30 ++++++++++++++++++++++--------
+ drivers/net/ethernet/marvell/sky2.h |  2 ++
+ 2 files changed, 24 insertions(+), 8 deletions(-)
 
-> 
-> > >   memcg can be handled by memcg people and I can handle cgroup_freezer
-> > >   and others with help from the authors.  The problematic one is
-> > >   blkio.  If anyone is interested in working on blkio, please be my
-> > >   guest.  Vivek?  Glauber?
-> > 
-> > I will try to spend some time on this. Doing changes in blk-throttle
-> > should be relatively easy. Painful part if CFQ. It does so much that
-> > it is not clear whether a particular change will bite us badly or
-> > not. So doing changes becomes hard. There are heuristics, preemptions,
-> > queue selection logic, service tree and bringing it all together
-> > for full hierarchy becomes interesting.
-> > 
-> > I think first thing which needs to be done is merge group scheduling
-> > and cfqq scheduling. Because of flat hierarchy currently we use two
-> > scheduling algorithm. Old logic for queue selection and new logic
-> > for group scheduling. If we treat task and group at same level then
-> > we have to merge two and come up with single logic.
-> 
-> I think this depends on how we decide to handle tasks vs. groups,
-> right?
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 2b0748d..5293ff4 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -2186,6 +2186,8 @@ static u16 sky2_phy_speed(const struct sky2_hw *hw, u16 aux)
+ 	}
+ }
+ 
++static void sky2_write_rx_filter(struct sky2_port *sky2, u8 *filter);
++
+ static void sky2_link_up(struct sky2_port *sky2)
+ {
+ 	struct sky2_hw *hw = sky2->hw;
+@@ -2211,6 +2213,9 @@ static void sky2_link_up(struct sky2_port *sky2)
+ 	sky2_write8(hw, SK_REG(port, LNK_LED_REG),
+ 		    LINKLED_ON | LINKLED_BLINK_OFF | LINKLED_LINKSYNC_OFF);
+ 
++	/* Refresh RX filter */
++	sky2_write_rx_filter(sky2, sky2->rx_filter);
++
+ 	netif_info(sky2, link, sky2->netdev,
+ 		   "Link is up at %d Mbps, %s duplex, flow control %s\n",
+ 		   sky2->speed,
+@@ -3849,6 +3854,21 @@ static inline void sky2_add_filter(u8 filter[8], const u8 *addr)
+ 	filter[bit >> 3] |= 1 << (bit & 7);
+ }
+ 
++static void sky2_write_rx_filter(struct sky2_port *sky2, u8 *filter)
++{
++	struct sky2_hw *hw = sky2->hw;
++	unsigned port = sky2->port;
++
++	gma_write16(hw, port, GM_MC_ADDR_H1,
++		    (u16) filter[0] | ((u16) filter[1] << 8));
++	gma_write16(hw, port, GM_MC_ADDR_H2,
++		    (u16) filter[2] | ((u16) filter[3] << 8));
++	gma_write16(hw, port, GM_MC_ADDR_H3,
++		    (u16) filter[4] | ((u16) filter[5] << 8));
++	gma_write16(hw, port, GM_MC_ADDR_H4,
++		    (u16) filter[6] | ((u16) filter[7] << 8));
++}
++
+ static void sky2_set_multicast(struct net_device *dev)
+ {
+ 	struct sky2_port *sky2 = netdev_priv(dev);
+@@ -3882,14 +3902,8 @@ static void sky2_set_multicast(struct net_device *dev)
+ 			sky2_add_filter(filter, ha->addr);
+ 	}
+ 
+-	gma_write16(hw, port, GM_MC_ADDR_H1,
+-		    (u16) filter[0] | ((u16) filter[1] << 8));
+-	gma_write16(hw, port, GM_MC_ADDR_H2,
+-		    (u16) filter[2] | ((u16) filter[3] << 8));
+-	gma_write16(hw, port, GM_MC_ADDR_H3,
+-		    (u16) filter[4] | ((u16) filter[5] << 8));
+-	gma_write16(hw, port, GM_MC_ADDR_H4,
+-		    (u16) filter[6] | ((u16) filter[7] << 8));
++	sky2_write_rx_filter(sky2, filter);
++	memcpy(sky2->rx_filter, filter, sizeof(sky2->rx_filter));
+ 
+ 	gma_write16(hw, port, GM_RX_CTRL, reg);
+ }
+diff --git a/drivers/net/ethernet/marvell/sky2.h b/drivers/net/ethernet/marvell/sky2.h
+index 615ac63..513c266 100644
+--- a/drivers/net/ethernet/marvell/sky2.h
++++ b/drivers/net/ethernet/marvell/sky2.h
+@@ -2272,6 +2272,8 @@ struct sky2_port {
+ #ifdef CONFIG_SKY2_DEBUG
+ 	struct dentry	     *debugfs;
+ #endif
++
++	u8		     rx_filter[8];
+ };
+ 
+ struct sky2_hw {
+-- 
+1.7.11.4
 
-Yes. If we decide to account all the tasks of a group into a hidden
-group which completes with other group children, then there is no
-way one can create hiearchy where tasks and groups are competing at
-same level. So we can still continue to retain the existing logic.
-
-> 
-> > [..]
-> > >   * Vivek brought up the issue of distributing resources to tasks and
-> > >     groups in the same cgroup.  I don't know.  Need to think more
-> > >     about it.
-> > 
-> > This one will require some thought. I have heard arguments for both the
-> > models. Treating tasks and groups at same level seem to have one
-> > disadvantange and that is that people can't think of system resources
-> > in terms of %. People often say, give 20% of disk resources to a
-> > particular cgroup. But it is not possible as there are all kernel
-> > threads running in root cgroup and tasks come and go and that means
-> > % share of a group is variable and not fixed.
-> 
-> Another problem is that configuration isn't contained in cgroup
-> proper.  We need a way to assign weights to individual tasks which can
-> be somehow directly compared against group weights.  cpu cooks
-> priority for this and blkcg may be able to cook ioprio but it's nasty
-> and unobvious.  Also, let's say we grow network bandwidth controller
-> for whatever reason.  What value are we gonna use?
-
-So if somebody cares about settting SO_PRIORITY for traffic originating
-from a tasks, move it into a cgroup. Otherwise they all get default
-priority.
-
-I think question here is that why do you want to provide a hidden group
-as default mechianism from kernel. If a user does not like the idea of
-tasks and groups competing at same level, he can always create a cgroups
-and move all the tasks there. Only thing we need to provide is reliable
-ways of migrating group of tasks into other cgroups at run time.
-
-By creating a hidden group for tasks, there also comes an issue for
-configuration of that hidden group (group weight, stats etc). By forcing
-user space to create a new group for tasks, it is an explicit cgroup
-and user space already knows how to handle it.
-
-So to me, leaving this decision to userspace based on their requirement
-makes sense.
-
-Also, I think cpu controller has already discussed this in the past
-(the possibility of a hidden group for tasks). Peter will have
-more details about it, I think.
-
-> 
-> > To make it fixed, we will need to make sure that number of entities
-> > fighting for resources are not variable. That means only group fight
-> > for resources at a level and tasks with-in groups. 
-> > 
-> > Now the question is should kernel enforce it or should it be left to 
-> > user space. I think doing it in user space is also messy as different
-> > agents control different part of hiearchy. For example, if somebody says
-> > that give a particular virtual machine a x% of system resource, libvirt
-> > has no way to do that. At max it can ensure x% of parent group but above
-> > that hierarchy is controlled by systemd and libvirtd has no control
-> > over that.
-> >
-> > Only possible way to do this will seem to be that systemd creates libvirt
-> > group at top level with a minimum fixed % of quota and then libvirt can
-> > figure out % share of each virtual machine. But it is hard to do.
-> > 
-> > So while % model is more intutive to users, it is hard to implement. So
-> > an easier way is to stick to the model of relative weights/share and
-> > let user specify relative importance of a virtual machine and actual
-> > quota or % will vary dynamically depending on other tasks/components
-> > in the system.
-> 
-> Why is it hard to implement?  You just need to treat tasks in the
-> current node as another group competing with other cgroups on equal
-> terms.  If anything, isn't that simpler than treating scheduling
-> "entities"?
-
-I meant "hard to implement" in the sense of if kernel has to keep track of
-% and enforce it across hiearchy etc.
-
-Yes, creating a hidden group for tasks in current group should not be
-hard from implementation point of view. But again, I am concerned about
-configuration of hidden group and I also don't like the idea of taking
-flexibility away from user to treat tasks and group at same level.
-
-Thanks
-Vivek
