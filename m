@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab2IQOHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:07:46 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37292 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab2IQOHo (ORCPT
+	id S1756324Ab2IQOLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:11:21 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52111 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755556Ab2IQOLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:07:44 -0400
-Date: Mon, 17 Sep 2012 09:56:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 10/24] xen/arm: compile and run xenbus
-Message-ID: <20120917135637.GG11553@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
- <1347621207-11294-10-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120914130308.GI25249@phenom.dumpdata.com>
- <alpine.DEB.2.02.1209171205470.29232@kaball.uk.xensource.com>
+	Mon, 17 Sep 2012 10:11:19 -0400
+Date: Mon, 17 Sep 2012 15:11:07 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 15/19] mfd: Don't convert just one IRQ using irqdomain if
+ a range is provided
+Message-ID: <20120917141105.GE6777@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <201209071337.26587.arnd@arndb.de>
+ <20120907134259.GJ29601@gmail.com>
+ <201209071357.27779.arnd@arndb.de>
+ <20120917134550.GU3647@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1209171205470.29232@kaball.uk.xensource.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120917134550.GU3647@sortiz-mobl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 12:05:59PM +0100, Stefano Stabellini wrote:
-> On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Sep 14, 2012 at 12:13:12PM +0100, Stefano Stabellini wrote:
-> > > bind_evtchn_to_irqhandler can legitimately return 0 (irq 0): it is not
-> > > an error.
-> > > 
-> > > If Linux is running as an HVM domain and is running as Dom0, use
-> > > xenstored_local_init to initialize the xenstore page and event channel.
-> > 
-> > Let me stick it in my tree and see how it works overnight with HVM and PV guests.
+On Mon, Sep 17, 2012 at 03:45:50PM +0200, Samuel Ortiz wrote:
+> Hi Lee, Arnd,
 > 
-> Did it work?
+> On Fri, Sep 07, 2012 at 01:57:27PM +0000, Arnd Bergmann wrote:
+> > On Friday 07 September 2012, Lee Jones wrote:
+> > > On Fri, Sep 07, 2012 at 01:37:26PM +0000, Arnd Bergmann wrote:
+> > > > On Friday 07 September 2012, Lee Jones wrote:
+> > > > > On Fri, Sep 07, 2012 at 12:35:41PM +0000, Arnd Bergmann wrote:
+> > > >
+> > > > The examples I had seen before were all just ranges of two interrupts,
+> > > > and in those cases it was clear that splitting them would be best.
+> > > > 
+> > > > In the exampled of the ab8500-gpio driver, it looks like the resource is
+> > > > not actually being used, and the gpio driver implements its own irq_chip,
+> > > > so maybe we can get away with not solving this problem for now.
+> > > 
+> > > Understood. I'd still feel more comfortable if we didn't trash the
+> > > range. I think it would be best to show the warning, and leave the
+> > > range for its target driver to take care - hence the patch.
+> > > 
+> > > ... but it's your call.
+> > 
+> > I'm fine with whatever Samuel sees fit here.  My personal opinion is
+> > that leaving the range alone for the child driver to do the conversion
+> > would be too inconsistent and only lead to confusion with driver authors.
+> Although I agree modifying the range is not very nice from the MFD core, I
+> also think that the actual mapping should always be handled by MFD and not
+> depend on wether the range is a singleton or not. Moreover the semantics of
+> leaving the range untouched meaning that we haven't done the mappings is
+> obscure.
+> So I'm not taking this patch, sorry Lee.
 
-Yes!
+No problem.
+
+Would it be better if we _did_ support ranges, and map all of the
+IRQs in the range instead?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
