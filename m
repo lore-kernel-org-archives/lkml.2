@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab2IQBRv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:17:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33639 "EHLO
+	id S1753477Ab2IQAuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33325 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753482Ab2IQAuS (ORCPT
+	by vger.kernel.org with ESMTP id S1752941Ab2IQAtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:18 -0400
-Message-Id: <20120917003641.015842457@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:24 -0400
+Message-Id: <20120917003628.314911353@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:12 +0100
+Date: Mon, 17 Sep 2012 01:36:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 107/135] xhci: Make handover code more robust
+        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 015/135] ARM: imx6: spin the cpu until hardware takes it down
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,68 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit e955a1cd086de4d165ae0f4c7be7289d84b63bdc upstream.
+commit c944b0b9354ea06ffb0c8a7178949f1185f9f499 upstream.
 
-My test platform (Intel DX79SI) boots reliably under BIOS, but frequently
-crashes when booting via UEFI. I finally tracked this down to the xhci
-handoff code. It seems that reads from the device occasionally just return
-0xff, resulting in xhci_find_next_cap_offset generating a value that's
-larger than the resource region. We then oops when attempting to read the
-value. Sanity checking that value lets us avoid the crash.
+Though commit 602bf40 (ARM: imx6: exit coherency when shutting down
+a cpu) improves the stability of imx6q cpu hotplug a lot, there are
+still hangs seen with a more stressful hotplug testing.
 
-I've no idea what's causing the underlying problem, and xhci still doesn't
-actually *work* even with this, but the machine at least boots which will
-probably make further debugging easier.
+It's expected that once imx_enable_cpu(cpu, false) is called, the cpu
+will be taken down by hardware immediately, and the code after that
+will not get any chance to execute.  However, this is not always the
+case from the testing.  The cpu could possibly be alive for a few
+cycles before hardware actually takes it down.  So rather than letting
+cpu execute some code that could cause a hang in these cycles, let's
+make the cpu spin there and wait for hardware to take it down.
 
-This should be backported to kernels as old as 2.6.31, that contain the
-commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci: BIOS handoff
-and HW initialization."
-
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/pci-quirks.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/arm/mach-imx/hotplug.c |   23 +++--------------------
+ 1 file changed, 3 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 20b9f45..966d148 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -841,12 +841,12 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
- 	void __iomem *op_reg_base;
- 	u32 val;
- 	int timeout;
-+	int len = pci_resource_len(pdev, 0);
+--- a/arch/arm/mach-imx/hotplug.c
++++ b/arch/arm/mach-imx/hotplug.c
+@@ -42,22 +42,6 @@ static inline void cpu_enter_lowpower(vo
+ 	  : "cc");
+ }
  
- 	if (!mmio_resource_enabled(pdev, 0))
- 		return;
+-static inline void cpu_leave_lowpower(void)
+-{
+-	unsigned int v;
+-
+-	asm volatile(
+-		"mrc	p15, 0, %0, c1, c0, 0\n"
+-	"	orr	%0, %0, %1\n"
+-	"	mcr	p15, 0, %0, c1, c0, 0\n"
+-	"	mrc	p15, 0, %0, c1, c0, 1\n"
+-	"	orr	%0, %0, %2\n"
+-	"	mcr	p15, 0, %0, c1, c0, 1\n"
+-	  : "=&r" (v)
+-	  : "Ir" (CR_C), "Ir" (0x40)
+-	  : "cc");
+-}
+-
+ /*
+  * platform-specific code to shutdown a CPU
+  *
+@@ -67,11 +51,10 @@ void platform_cpu_die(unsigned int cpu)
+ {
+ 	cpu_enter_lowpower();
+ 	imx_enable_cpu(cpu, false);
+-	cpu_do_idle();
+-	cpu_leave_lowpower();
  
--	base = ioremap_nocache(pci_resource_start(pdev, 0),
--				pci_resource_len(pdev, 0));
-+	base = ioremap_nocache(pci_resource_start(pdev, 0), len);
- 	if (base == NULL)
- 		return;
+-	/* We should never return from idle */
+-	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
++	/* spin here until hardware takes it down */
++	while (1)
++		;
+ }
  
-@@ -856,9 +856,17 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
- 	 */
- 	ext_cap_offset = xhci_find_next_cap_offset(base, XHCI_HCC_PARAMS_OFFSET);
- 	do {
-+		if ((ext_cap_offset + sizeof(val)) > len) {
-+			/* We're reading garbage from the controller */
-+			dev_warn(&pdev->dev,
-+				 "xHCI controller failing to respond");
-+			return;
-+		}
-+
- 		if (!ext_cap_offset)
- 			/* We've reached the end of the extended capabilities */
- 			goto hc_init;
-+
- 		val = readl(base + ext_cap_offset);
- 		if (XHCI_EXT_CAPS_ID(val) == XHCI_EXT_CAPS_LEGACY)
- 			break;
+ int platform_cpu_disable(unsigned int cpu)
 
 
