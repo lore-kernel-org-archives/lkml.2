@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab2IQOGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:06:06 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:10871 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254Ab2IQOGE (ORCPT
+	id S1756340Ab2IQOHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:07:46 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:37292 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756293Ab2IQOHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:06:04 -0400
-X-IronPort-AV: E=Sophos;i="4.80,435,1344211200"; 
-   d="scan'208";a="14582532"
-Date: Mon, 17 Sep 2012 15:05:16 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 17 Sep 2012 10:07:44 -0400
+Date: Mon, 17 Sep 2012 09:56:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
         "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
-In-Reply-To: <50571289.3040509@mvista.com>
-Message-ID: <alpine.DEB.2.02.1209171454480.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com> <505374E2.5080308@mvista.com> <alpine.DEB.2.02.1209171155010.29232@kaball.uk.xensource.com>
- <50571289.3040509@mvista.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 10/24] xen/arm: compile and run xenbus
+Message-ID: <20120917135637.GG11553@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>
+ <1347621207-11294-10-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120914130308.GI25249@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1209171205470.29232@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1209171205470.29232@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Sergei Shtylyov wrote:
-> Hello.
+On Mon, Sep 17, 2012 at 12:05:59PM +0100, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Sep 14, 2012 at 12:13:12PM +0100, Stefano Stabellini wrote:
+> > > bind_evtchn_to_irqhandler can legitimately return 0 (irq 0): it is not
+> > > an error.
+> > > 
+> > > If Linux is running as an HVM domain and is running as Dom0, use
+> > > xenstored_local_init to initialize the xenstore page and event channel.
+> > 
+> > Let me stick it in my tree and see how it works overnight with HVM and PV guests.
 > 
-> On 17-09-2012 14:57, Stefano Stabellini wrote:
-> 
-> >>> Changes in v2:
-> 
-> >>> - mark Xen guest support on ARM as EXPERIMENTAL.
-> 
-> >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>> ---
-> >>>   arch/arm/Kconfig |   10 ++++++++++
-> >>>   1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> >>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> >>> index 2f88d8d..e92518d 100644
-> >>> --- a/arch/arm/Kconfig
-> >>> +++ b/arch/arm/Kconfig
-> >>> @@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
-> >>>   	  This was deprecated in 2001 and announced to live on for 5 years.
-> >>>   	  Some old boot loaders still use this way.
-> >>>
-> >>> +config XEN_DOM0
-> >>> +	def_bool y
-> >>> +
-> >>> +config XEN
-> >>> +	bool "Xen guest support on ARM (EXPERIMENTAL)"
-> >>> +	depends on EXPERIMENTAL && ARM && OF
-> >>> +	select XEN_DOM0
-> 
-> >>     What's the point of selecting it if it's always "y"?
-> 
-> > That's because on X86 is not always "y": there are things under
-> > drivers/xen that compile on both platforms and depend on XEN_DOM0.
-> 
->     But we're not on x86. On ARM this select is pointless.
+> Did it work?
 
-We need some common code (under drivers/xen) that compiles only if
-XEN_DOM0 is selected, so it is not pointless after all.
-
-XEN_DOM0 is not the only symbol that is conditionally compiled on one
-architectuire and always "y" on another...
+Yes!
