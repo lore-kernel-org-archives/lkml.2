@@ -1,84 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2IQR0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:26:37 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:23374 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752658Ab2IQR0e (ORCPT
+	id S1756599Ab2IQR1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:27:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22463 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab2IQR1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:26:34 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19qQT65nS7cWV67HrgaUcRI
-Date: Mon, 17 Sep 2012 10:26:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        AnilKumar <anilkumar@ti.com>
-Subject: Re: [PATCH v2 1/2] spi: omap2-mcspi: add pinctrl support
-Message-ID: <20120917172630.GP4521@atomide.com>
-References: <1347902538-21208-1-git-send-email-mporter@ti.com>
- <1347902538-21208-2-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347902538-21208-2-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 17 Sep 2012 13:27:20 -0400
+X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=ZR3YOHGToBoX_bF5fUcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1347902836.13080.21.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.2.28-rt43
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 17 Sep 2012 13:27:16 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matt Porter <mporter@ti.com> [120917 10:21]:
-> Adds pinctrl support to support OMAP platforms that boot from DT
-> and rely on pinctrl support to set pinmuxes.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Dear RT Folks,
 
-> ---
->  drivers/spi/spi-omap2-mcspi.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index b2fb141..9502566 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -38,6 +38,8 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> +#include <linux/pinctrl/consumer.h>
-> +#include <linux/err.h>
->  
->  #include <linux/spi/spi.h>
->  
-> @@ -1124,6 +1126,7 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
->  	static int		bus_num = 1;
->  	struct device_node	*node = pdev->dev.of_node;
->  	const struct of_device_id *match;
-> +	struct pinctrl *pinctrl;
->  
->  	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
->  	if (master == NULL) {
-> @@ -1219,6 +1222,11 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
->  	if (status < 0)
->  		goto dma_chnl_free;
->  
-> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl))
-> +		dev_warn(&pdev->dev,
-> +			"pins are not configured from the driver\n");
-> +
->  	pm_runtime_use_autosuspend(&pdev->dev);
->  	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
->  	pm_runtime_enable(&pdev->dev);
-> -- 
-> 1.7.9.5
-> 
+I'm pleased to announce the 3.2.28-rt43 stable release.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 46186fd78b95d2a02232485597ec03771527710d
+
+
+Or to build 3.2.28-rt43 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.28.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.28-rt43.patch.xz
+
+
+You can also build from 3.2.28-rt42 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.28-rt42-rt43.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from 3.2.28-rt42:
+
+---
+
+Frank Rowand (1):
+      fix printk flush of messages
+
+Steven Rostedt (1):
+      Linux 3.2.28-rt43
+
+----
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |    2 +-
+ drivers/tty/sysrq.c                         |   23 -----------------------
+ include/linux/sysrq.h                       |    5 -----
+ kernel/printk.c                             |    5 ++---
+ lib/Kconfig.debug                           |   22 ----------------------
+ localversion-rt                             |    2 +-
+ 6 files changed, 4 insertions(+), 55 deletions(-)
+---------------------------
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index a8b0559..b418947 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -1226,7 +1226,7 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ {
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
+ 	unsigned long flags;
+-	int nolock = oops_in_progress || sysrq_in_progress;
++	int nolock = oops_in_progress;
+ 
+ 	if (unlikely(nolock)) {
+ 		local_irq_save(flags);
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 5219738..43db715 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -492,23 +492,6 @@ static void __sysrq_put_key_op(int key, struct sysrq_key_op *op_p)
+                 sysrq_key_table[i] = op_p;
+ }
+ 
+-#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
+-
+-int sysrq_in_progress;
+-
+-static void set_sysrq_in_progress(int value)
+-{
+-	sysrq_in_progress = value;
+-}
+-
+-#else
+-
+-static void set_sysrq_in_progress(int value)
+-{
+-}
+-
+-#endif
+-
+ void __handle_sysrq(int key, bool check_mask)
+ {
+ 	struct sysrq_key_op *op_p;
+@@ -517,9 +500,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+-
+-	set_sysrq_in_progress(1);
+-
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -561,9 +541,6 @@ void __handle_sysrq(int key, bool check_mask)
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-
+-	set_sysrq_in_progress(0);
+-
+ 	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+ }
+ 
+diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
+index d224c0b..7faf933 100644
+--- a/include/linux/sysrq.h
++++ b/include/linux/sysrq.h
+@@ -38,11 +38,6 @@ struct sysrq_key_op {
+ 	int enable_mask;
+ };
+ 
+-#ifdef CONFIG_MAGIC_SYSRQ_FORCE_PRINTK
+-extern int sysrq_in_progress;
+-#else
+-#define sysrq_in_progress 0
+-#endif
+ #ifdef CONFIG_MAGIC_SYSRQ
+ 
+ /* Generic SysRq interface -- you may call it from any device driver, supplying
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 66e83e5..85d8795 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -21,7 +21,6 @@
+ #include <linux/tty.h>
+ #include <linux/tty_driver.h>
+ #include <linux/console.h>
+-#include <linux/sysrq.h>
+ #include <linux/init.h>
+ #include <linux/jiffies.h>
+ #include <linux/nmi.h>
+@@ -835,8 +834,8 @@ static int console_trylock_for_printk(unsigned int cpu, unsigned long flags)
+ {
+ 	int retval = 0, wake = 0;
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
+-		(preempt_count() <= 1)) || sysrq_in_progress;
++	int lock = !early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
++		(preempt_count() <= 1);
+ #else
+ 	int lock = 1;
+ #endif
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 13a937b..c347db3 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -62,28 +62,6 @@ config MAGIC_SYSRQ
+ 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
+ 	  unless you really know what this hack does.
+ 
+-config MAGIC_SYSRQ_FORCE_PRINTK
+-	bool "Force printk from Magic SysRq"
+-	depends on MAGIC_SYSRQ && PREEMPT_RT_FULL
+-	default n
+-	help
+-	  Allow the output from Magic SysRq to be output immediately, even if
+-	  this causes large latencies.  This can cause performance problems
+-	  for real-time processes.
+-
+-	  If PREEMPT_RT_FULL, printk() will not try to acquire the console lock
+-	  when interrupts or preemption are disabled.  If the console lock is
+-	  not acquired the printk() output will be buffered, but will not be
+-	  output immediately.  Some drivers call into the Magic SysRq code
+-	  with interrupts or preemption disabled, so the output of Magic SysRq
+-	  will be buffered instead of printing immediately if this option is
+-	  not selected.
+-
+-	  Even with this option selected, Magic SysRq output will be delayed
+-	  if the attempt to acquire the console lock fails.
+-
+-	  Don't say Y unless you really know what this hack does.
+-
+ config STRIP_ASM_SYMS
+ 	bool "Strip assembler-generated symbols during link"
+ 	default n
+diff --git a/localversion-rt b/localversion-rt
+index 8bdfb9a..41f7b99 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt42
++-rt43
+
+
