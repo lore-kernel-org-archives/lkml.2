@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2IQL25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:28:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46555 "EHLO arroyo.ext.ti.com"
+	id S1755966Ab2IQL31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:29:27 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:42808 "EHLO mail.anarazel.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837Ab2IQL24 convert rfc822-to-8bit (ORCPT
+	id S1755887Ab2IQL3Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:28:56 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Question about cleaning up the LP5521/5523 LED driver
-Thread-Topic: Question about cleaning up the LP5521/5523 LED driver
-Thread-Index: Ac2Ux5p32LFQ6BkaSD2YmDg6N4ig1g==
-Date: Mon, 17 Sep 2012 11:28:47 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Sep 2012 07:29:25 -0400
+From: Andres Freund <andres@anarazel.de>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: radeon: Regression between v3.6-rc4 and v3.6-rc6: unable to allocate a PPLL
+Date: Mon, 17 Sep 2012 13:29:15 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc6-andres-dirty; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201209171329.15699.andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+Hi,
 
-I would like to have your opinion about cleaning up 
-LP5521 and LP5523/LP55231 drivers.
+While debugging another issue I upgraded from v3.6-rc4 to latest git (which 
+exactly is v3.6-rc6). After X started up one of my three monitors blacked out. 
+A look into the kernel log revealed:
+[drm:radeon_atom_pick_pll] *ERROR* unable to allocate a PPLL
 
-Three devices have similar features such like multi channels,
-register access via the I2C and internal RAM usage for loading
-various LED patterns.
-Moreover upcoming IC has also similar layout and interface.
+During that first start I tried to correct that using xrand, which failed. 
+After restarting X (gdm) once more the monitor was still blank, the error was 
+still logged, but could be enabled by using xrandr. A bit strange.
 
-So I would re-design the driver architecture as below.
+A quick look into git revealed:
 
-- Common code which supports shared features.
-- Chip code which enables specific features.
+$ git log --pretty=short v3.6-rc4.. drivers/gpu/drm/radeon/
+commit f492c171a38d77fc13a8998a0721f2da50835224
+Author: Christian König <deathsimple@vodafone.de>
 
-For example, leds-lp55xx-common.c is common code.
-Chip specific configurations are leds-lp5521.c, leds-lp5523.c and something like that.
-Then Makefile will be as following.
+    drm/radeon: make 64bit fences more robust v3
 
-obj-$(CONFIG_LEDS_LP5521) 	+= leds-lp5521.o leds-lp55xx-common.o
-obj-$(CONFIG_LEDS_LP5523)	+= leds-lp5523.o leds-lp55xx-common.o
-obj-$(CONFIG_LEDS_LP55AB)	+= leds-lp55ab.o leds-lp55xx-common.o
+commit 985f61f7ee647ad570c05eab0b74915da2ac8e19
+Author: Alex Deucher <alexander.deucher@amd.com>
 
-Then many duplicated lines can be joined into one file - common code.
-Only IC specific code exists each chip dependant file.
+    drm/radeon: rework pll selection (v3)
 
-But I'm hesitating that some *device attributes* should be kept or not.
-For example, The drivers have each 'engine_load' file for loading LED pattern.
-LED pattern means blinking LED or ramping up/down the brightness.
-To load pattern simply, LP5521/5523/55231 provide programmable memory.
+The latter seems to be a probably cause. Anything I can do to diagnose the 
+issue?
 
-I'll replace these attributes with the firmware interfaces for simplicity.
-To load a pattern, hex byte stream is put into the sysfs node.
-Then this data is transferred to the internal RAM area of the device.
-This is same concept as the firmware interface.
-Moreover hex code is dependent on the application or platform.
+$ xrandr|grep -E 'connected|Screen'
+Screen 0: minimum 320 x 200, current 4960 x 1920, maximum 16384 x 16384
+DVI-1 connected 2560x1600+1200+0 (normal left inverted right x axis y axis) 
+641mm x 401mm
+DisplayPort-0 connected 1200x1920+0+0 left (normal left inverted right x axis y 
+axis) 518mm x 324mm
+HDMI-0 disconnected (normal left inverted right x axis y axis)
+DVI-0 connected 1200x1920+3760+0 left (normal left inverted right x axis y 
+axis) 518mm x 324mm
 
-But it has a problem, point of view of user-space interface.
-An application needs to be changed also with the driver version.
-The application will failed to run because 'engine_mode' and
-'engine_load' don't exist anymore.
+# lspci -v -s 08:00.0
+08:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee ATI Barts 
+XT [Radeon HD 6800 Series] (prog-if 00 [VGA controller])
+	Subsystem: PC Partner Limited Device 174b
+	Flags: bus master, fast devsel, latency 0, IRQ 76
+	Memory at d0000000 (64-bit, prefetchable) [size=256M]
+	Memory at fbec0000 (64-bit, non-prefetchable) [size=128K]
+	I/O ports at e000 [size=256]
+	Expansion ROM at fbea0000 [disabled] [size=128K]
+	Capabilities: [50] Power Management version 3
+	Capabilities: [58] Express Legacy Endpoint, MSI 00
+	Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [100] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
+	Capabilities: [150] Advanced Error Reporting
+	Kernel driver in use: radeon
 
-Should I keep the sysfs layout of LP5521 and LP5523?
-When we change the device attributes, do we have to consider the backward compatibility?
+Greetings,
 
-Thank you.
-
-Best Regards,
-Milo
-
-
+Andres
