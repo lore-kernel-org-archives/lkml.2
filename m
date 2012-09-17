@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2IQBLW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:11:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33722 "EHLO
+	id S1753840Ab2IQAui (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33383 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753694Ab2IQAuj (ORCPT
+	by vger.kernel.org with ESMTP id S1753044Ab2IQAtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:39 -0400
-Message-Id: <20120917003636.451514899@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:39 -0400
+Message-Id: <20120917003639.785803707@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:39 +0100
+Date: Mon, 17 Sep 2012 01:38:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 074/135] net: ipv4: ipmr_expire_timer causes crash when  removing net namespace
+        alan@lxorguk.ukuu.org.uk, Manoj Iyer <manoj.iyer@canonical.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 098/135] xhci: Recognize USB 3.0 devices as superspeed at powerup
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,85 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-[ Upstream commit acbb219d5f53821b2d0080d047800410c0420ea1 ]
+commit 29d214576f936db627ff62afb9ef438eea18bcd2 upstream.
 
-When tearing down a net namespace, ipv4 mr_table structures are freed
-without first deactivating their timers. This can result in a crash in
-run_timer_softirq.
-This patch mimics the corresponding behaviour in ipv6.
-Locking and synchronization seem to be adequate.
-We are about to kfree mrt, so existing code should already make sure that
-no other references to mrt are pending or can be created by incoming traffic.
-The functions invoked here do not cause new references to mrt or other
-race conditions to be created.
-Invoking del_timer_sync guarantees that ipmr_expire_timer is inactive.
-Both ipmr_expire_process (whose completion we may have to wait in
-del_timer_sync) and mroute_clean_tables internally use mfc_unres_lock
-or other synchronizations when needed, and they both only modify mrt.
+On Intel Panther Point chipset USB 3.0 devices show up as
+high-speed devices on powerup, but after an s3 cycle they are
+correctly recognized as SuperSpeed. At powerup switch the port
+to xHCI so that USB 3.0 devices are correctly recognized.
 
-Tested in Linux 3.4.8.
+BugLink: http://bugs.launchpad.net/bugs/1000424
 
-Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch should be backported to kernels as old as 3.0, that contain
+commit ID 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
+
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/ipmr.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index d2aae27..0064394 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -125,6 +125,8 @@ static DEFINE_SPINLOCK(mfc_unres_lock);
- static struct kmem_cache *mrt_cachep __read_mostly;
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index c5e9e4a..486e812 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -870,9 +870,10 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
+ 	/* Disable any BIOS SMIs and clear all SMI events*/
+ 	writel(val, base + ext_cap_offset + XHCI_LEGACY_CONTROL_OFFSET);
  
- static struct mr_table *ipmr_new_table(struct net *net, u32 id);
-+static void ipmr_free_table(struct mr_table *mrt);
++hc_init:
+ 	if (usb_is_intel_switchable_xhci(pdev))
+ 		usb_enable_xhci_ports(pdev);
+-hc_init:
 +
- static int ip_mr_forward(struct net *net, struct mr_table *mrt,
- 			 struct sk_buff *skb, struct mfc_cache *cache,
- 			 int local);
-@@ -132,6 +134,7 @@ static int ipmr_cache_report(struct mr_table *mrt,
- 			     struct sk_buff *pkt, vifi_t vifi, int assert);
- static int __ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
- 			      struct mfc_cache *c, struct rtmsg *rtm);
-+static void mroute_clean_tables(struct mr_table *mrt);
- static void ipmr_expire_process(unsigned long arg);
+ 	op_reg_base = base + XHCI_HC_LENGTH(readl(base));
  
- #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
-@@ -272,7 +275,7 @@ static void __net_exit ipmr_rules_exit(struct net *net)
- 
- 	list_for_each_entry_safe(mrt, next, &net->ipv4.mr_tables, list) {
- 		list_del(&mrt->list);
--		kfree(mrt);
-+		ipmr_free_table(mrt);
- 	}
- 	fib_rules_unregister(net->ipv4.mr_rules_ops);
- }
-@@ -300,7 +303,7 @@ static int __net_init ipmr_rules_init(struct net *net)
- 
- static void __net_exit ipmr_rules_exit(struct net *net)
- {
--	kfree(net->ipv4.mrt);
-+	ipmr_free_table(net->ipv4.mrt);
- }
- #endif
- 
-@@ -337,6 +340,13 @@ static struct mr_table *ipmr_new_table(struct net *net, u32 id)
- 	return mrt;
- }
- 
-+static void ipmr_free_table(struct mr_table *mrt)
-+{
-+	del_timer_sync(&mrt->ipmr_expire_timer);
-+	mroute_clean_tables(mrt);
-+	kfree(mrt);
-+}
-+
- /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
- 
- static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
+ 	/* Wait for the host controller to be ready before writing any
 
 
