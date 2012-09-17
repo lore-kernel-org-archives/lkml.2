@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2IQJ3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:29:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53803 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab2IQJ3J (ORCPT
+	id S1754866Ab2IQJ3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:29:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46391 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab2IQJ3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:29:09 -0400
-Date: Mon, 17 Sep 2012 19:29:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the arm-soc tree with the char-misc
- tree
-Message-Id: <20120917192906.48f46e8743de9924f26c782f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Sep_2012_19_29_06_+1000_0VR02xv/ZmO7Mknq"
+	Mon, 17 Sep 2012 05:29:13 -0400
+Message-ID: <5056ED66.30203@monstr.eu>
+Date: Mon, 17 Sep 2012 11:29:10 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] status of execve() work - per-architecture patches solicited
+References: <20120907182004.GE13973@ZenIV.linux.org.uk>
+In-Reply-To: <20120907182004.GE13973@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Sep_2012_19_29_06_+1000_0VR02xv/ZmO7Mknq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Al,
 
-Hi all,
+On 09/07/2012 08:20 PM, Al Viro wrote:
+> 	To architecture maintainers: please, review the current
+> situation in git.kernel.org/pub/scm/linux/kernel/git/viro/signal #execve2
+> and consider sending the corresponding patches for missing architectures.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/w1/masters/omap_hdq.c between commit 19afea50f12b ("w1: omap-hdq:
-convert to devm_* functions") from the char-misc tree and commits
-aefaf7be498b ("W1: OMAP HDQ1W: Remove dependencies to mach/hardware.h")
-and 73f2989d37a3 ("w1: omap-hdq: drop ARCH dependency") from the arm-soc
-tree.
+I have sent two patches. Please apply them to your tree.
 
-The former patches removed some of the code fixed up by the latter and
-the same include line, so I did that and can carry the fix as necessary
-(no action is required).
+Michal Simek (2):
+       microblaze: Move restart allowed out of block
+       microblaze: Remove compilation failure
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+  arch/microblaze/kernel/entry.S |    6 +++---
+  1 files changed, 3 insertions(+), 3 deletions(-)
 
---Signature=_Mon__17_Sep_2012_19_29_06_+1000_0VR02xv/ZmO7Mknq
-Content-Type: application/pgp-signature
+I have seen the compilation problem in June on linux-next but
+have never got any response from you.
+http://www.spinics.net/lists/linux-next/msg20848.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Can you please apply these two patches to your tree?
 
-iQIcBAEBCAAGBQJQVu1iAAoJEECxmPOUX5FEMJsP/i5hLiEIfMkHoqMNqXqltloz
-7bT7BmwbLP7l/1zJ7hZ7hoETqdU/Xsnq2TYhdmRg+ZsMF1Y9/KWw7h4gtkEMFDlY
-2Sbb9NUjozpOkUqFT0Nh7TpibrFAmxVBVctwqgxcnzft99iNhw2FmoVWfRo2kqEy
-jcAv3DJRYQUYBoejPOk2QqwpNvS7/9sqE5urpVxSPEUifbMIISRBbsjmrBmalEhp
-MqXUBJdlfYIGXr9PNiq6VMOQ85s51YShB9T2Hx9CKCYoqMNQbXCUUZY669cETwL2
-ohBiSYAeYABteWRd18yLyIzp4EaIrkl020IVjjKsKy7RmNirUXC99ldBGNTOeKZA
-Xi/43Z6fmdsPaY5LjAbtLTTQx/B7yAM7896gU8RQf4XOlRN4lHeFSeGFjPXj4CuJ
-cc6jdyLc91ztuSJJ1v7Az3qRrhmNipmHgqY2iudUF89AnHlVJWGXOu75fOSlEvjo
-X54y9DnGdlPehglRY+Kzvhg5f3/X3r7WoxSFtzEcor2enaape5y9OIf+bhpJ5gp2
-pLhZncGIxyVXLLeq8dD2iV7WubjvoxwgDPnpYAxTon27mnzK48lhmW2S7m6CCZKo
-/Lnveqw1X7Q42eHQ6bea2SaFllg80t7fxf5oDwDDB+9mjkdIPYVWoLV7ymC1XxBX
-MFPvyX4m3tpOlIC+pvxU
-=ZMi6
------END PGP SIGNATURE-----
+Thanks,
+Michal
 
---Signature=_Mon__17_Sep_2012_19_29_06_+1000_0VR02xv/ZmO7Mknq--
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
