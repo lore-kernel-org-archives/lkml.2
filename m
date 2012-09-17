@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2IQDEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 23:04:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46830 "EHLO
+	id S1753297Ab2IQDGx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 23:06:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64004 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab2IQDDu (ORCPT
+	with ESMTP id S1753161Ab2IQDGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 23:03:50 -0400
+	Sun, 16 Sep 2012 23:06:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
-References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
-	<1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
-Date: Sun, 16 Sep 2012 20:03:48 -0700
-X-Google-Sender-Auth: taneM17uS6Usj-KMGJGg-9_ow_A
-Message-ID: <CAE9FiQX2hgxQo3GC3_0h5D5uo9coRZqcpPCKGtzF7jYbUfvxUw@mail.gmail.com>
-Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
+In-Reply-To: <CAE9FiQU4tNDot3J9EEwhd=YUfTSoojtreb2JFVn-=KUsq=W+ow@mail.gmail.com>
+References: <CAE9FiQWBYmRj5--pg8eAwH_RKZsCWo+CVGN_KpeGXeE_3cSq9g@mail.gmail.com>
+	<1347804577-23015-1-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQUC9OyPQYDTC1xR45qd1an63H13LBKGaPueqihwq=yhSw@mail.gmail.com>
+	<CAE9FiQU4tNDot3J9EEwhd=YUfTSoojtreb2JFVn-=KUsq=W+ow@mail.gmail.com>
+Date: Sun, 16 Sep 2012 20:06:50 -0700
+X-Google-Sender-Auth: Z3lGjXoVOmg4DhhN0sfh1oD6uio
+Message-ID: <CAE9FiQXWzq+oA72pFAwkXwFAdnfJSwaMs0wtzOpKQU_xxNB=dg@mail.gmail.com>
+Subject: Re: [PATCH v3] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=bcaec555517ac78a2704c9dd0559
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec555517ac78a2704c9dd0559
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Sat, Sep 15, 2012 at 4:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
->>  From: Jiang Liu <jiang.liu@huawei.com>
+On Sun, Sep 16, 2012 at 11:02 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sun, Sep 16, 2012 at 9:49 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Sun, Sep 16, 2012 at 7:09 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>> @@ -160,10 +160,13 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
+>>>         }
+>>>         dev->archdata.acpi_handle = handle;
+>>>
+>>> -       acpi_pci_bind_notify(dev->archdata.acpi_handle, dev, true);
+>>> -
+>>>         status = acpi_bus_get_device(handle, &acpi_dev);
+>>> -       if (!ACPI_FAILURE(status)) {
+>>> +       if (!ACPI_FAILURE(status))
+>>> +               acpi_dev = NULL;
+>>> +
+>>> +       acpi_pci_bind_notify(dev->archdata.acpi_handle, acpi_dev, dev, true);
 >>
->> Now ACPI devices are created before/destroyed after corresponding PCI
->> devices, and acpi_platform_notify/acpi_platform_notify_remove will
->> update PCI<->ACPI binding relationship when creating/destroying PCI
->> devices, there's no need to invoke bind/unbind callbacks from ACPI
->> device probe/destroy routines anymore. So remove bind/unbind callbacks
->> from acpi_device_ops.
-> for pci root bus, acpi_bus_trim() is used to remove acpi_device.
+>> It seems you can do
+>>     acpi_pci_bind_notify(acpi_dev, dev, true);
+>> instead.
+>>
+>> aka:
+>> Do you have test case acpi_dev is not created before pci device?
+>>
 >
-> and later in acpi_pci_root_remove to stop pci drivers/ioapic driver,
-> iommu driver then remove pci devices.
->
-> if call back is removed there, then could some functions in
-> acpi_pci_unbind() will be skipped.
->
-> I really do not want to add pci_stop_bus_devices() in
-> pci_root_hp.c::handle_root_bridge_removal before
-> calling acpi_bus_trim...
+> updated your patch, and retrieve handle if needed from acpi_dev->handle or
+> pci_dev->dev.archdata.acpi_handle.
 
-FYI, I solved the problem.  will call apci_bus_remove() two times. it
-will make sure pci devices
-get removed at first before acpi devices...
+please use this updated version.
+
+Also you could add
+Reviewed-by: Yinghai Lu <yinghai@kernel.org>
+
+for your patch 1, 2, 4, 5.
 
 Thanks
 
 Yinghai
-
---bcaec555517ac78a2704c9dd0559
-Content-Type: application/octet-stream; name="pci_root_hp_1.patch"
-Content-Disposition: attachment; filename="pci_root_hp_1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h76zoini0
-
-U3ViamVjdDogW1BBVENIXSBQQ0ksIEFDUEk6IEFkZCBwY2lfcm9vdF9ocCBob3QgcmVtb3ZhbCBu
-b3RpZmljYXRpb24gc3VwcG9ydC4KCkFkZCBtaXNzaW5nIGhvdF9yZW1vdmUgc3VwcG9ydCBmb3Ig
-cm9vdCBkZXZpY2UuCgpIb3cgdG8gdXNlIGl0PwpGaW5kIG91dCByb290IGJ1cyBudW1iZXIgdG8g
-YWNwaSByb290IG5hbWUgbWFwcGluZyBmcm9tIGRtZXNnIG9yIC9zeXMKCiAgZWNobyAiXF9TQi5Q
-Q0lCIDMiID4gL3N5cy9rZXJuZWwvZGVidWcvYWNwaS9zY2lfbm90aWZ5CnRvIHJlbW92ZSByb290
-IGJ1cwoKLXYyOiBzZXBhcmF0ZSBzdG9wIGFuZCByZW1vdmUsIHNvIGNvdWxkIHVzZSBhY3BpX3Bj
-aV9iaW5kX25vdGlmeSgpLi4uCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtl
-cm5lbC5vcmc+CkNjOiBMZW4gQnJvd24gPGxlbmJAa2VybmVsLm9yZz4KQ2M6IGxpbnV4LWFjcGlA
-dmdlci5rZXJuZWwub3JnCgotLS0KIGRyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jIHwgICA2NyAr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysKIGRyaXZlcnMvYWNw
-aS9zY2FuLmMgICAgICAgIHwgICAgNSAtLS0KIDIgZmlsZXMgY2hhbmdlZCwgNjggaW5zZXJ0aW9u
-cygrKSwgNCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9y
-b290X2hwLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3BpL3BjaV9y
-b290X2hwLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL2FjcGkvcGNpX3Jvb3RfaHAuYwpAQCAtNzMs
-NiArNzMsMTIgQEAgc3RhdGljIHZvaWQgYWRkX2FjcGlfcm9vdF9icmlkZ2UoYWNwaV9oYQogCWxp
-c3RfYWRkKCZicmlkZ2UtPmxpc3QsICZhY3BpX3Jvb3RfYnJpZGdlX2xpc3QpOwogfQogCitzdGF0
-aWMgdm9pZCByZW1vdmVfYWNwaV9yb290X2JyaWRnZShzdHJ1Y3QgYWNwaV9yb290X2JyaWRnZSAq
-YnJpZGdlKQoreworCWxpc3RfZGVsKCZicmlkZ2UtPmxpc3QpOworCWtmcmVlKGJyaWRnZSk7Cit9
-CisKIHN0cnVjdCBhY3BpX3Jvb3RfaHBfd29yayB7CiAJc3RydWN0IHdvcmtfc3RydWN0IHdvcms7
-CiAJYWNwaV9oYW5kbGUgaGFuZGxlOwpAQCAtMTQzLDYgKzE0OSw2MSBAQCBzdGF0aWMgdm9pZCBo
-YW5kbGVfcm9vdF9icmlkZ2VfaW5zZXJ0aW9uCiAJCXByaW50ayhLRVJOX0VSUiAiY2Fubm90IHN0
-YXJ0IGJyaWRnZVxuIik7CiB9CiAKK3N0YXRpYyBpbnQgYWNwaV9yb290X2V2YWx1YXRlX29iamVj
-dChhY3BpX2hhbmRsZSBoYW5kbGUsIGNoYXIgKmNtZCwgaW50IHZhbCkKK3sKKwlhY3BpX3N0YXR1
-cyBzdGF0dXM7CisJc3RydWN0IGFjcGlfb2JqZWN0X2xpc3QgYXJnX2xpc3Q7CisJdW5pb24gYWNw
-aV9vYmplY3QgYXJnOworCisJYXJnX2xpc3QuY291bnQgPSAxOworCWFyZ19saXN0LnBvaW50ZXIg
-PSAmYXJnOworCWFyZy50eXBlID0gQUNQSV9UWVBFX0lOVEVHRVI7CisJYXJnLmludGVnZXIudmFs
-dWUgPSB2YWw7CisKKwlzdGF0dXMgPSBhY3BpX2V2YWx1YXRlX29iamVjdChoYW5kbGUsIGNtZCwg
-JmFyZ19saXN0LCBOVUxMKTsKKwlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpIHsKKwkJcHJpbnRr
-KEtFUk5fV0FSTklORyAiJXM6ICVzIHRvICVkIGZhaWxlZFxuIiwKKwkJCQkgX19mdW5jX18sIGNt
-ZCwgdmFsKTsKKwkJcmV0dXJuIC0xOworCX0KKworCXJldHVybiAwOworfQorCitzdGF0aWMgdm9p
-ZCBoYW5kbGVfcm9vdF9icmlkZ2VfcmVtb3ZhbChhY3BpX2hhbmRsZSBoYW5kbGUsCisJCSBzdHJ1
-Y3QgYWNwaV9yb290X2JyaWRnZSAqYnJpZGdlKQoreworCXUzMiBmbGFncyA9IDA7CisJc3RydWN0
-IGFjcGlfZGV2aWNlICpkZXZpY2U7CisKKwlpZiAoYnJpZGdlKSB7CisJCWZsYWdzID0gYnJpZGdl
-LT5mbGFnczsKKwkJcmVtb3ZlX2FjcGlfcm9vdF9icmlkZ2UoYnJpZGdlKTsKKwl9CisKKwlpZiAo
-IWFjcGlfYnVzX2dldF9kZXZpY2UoaGFuZGxlLCAmZGV2aWNlKSkgeworCQlpbnQgcmV0X3ZhbDsK
-KworCQkvKiByZW1vdmUgcGNpIGRldmljZXMgYXQgZmlyc3QgKi8KKwkJcmV0X3ZhbCA9IGFjcGlf
-YnVzX3RyaW0oZGV2aWNlLCAwKTsKKwkJcHJpbnRrKEtFUk5fREVCVUcgImFjcGlfYnVzX3RyaW0g
-c3RvcCByZXR1cm4gJXhcbiIsIHJldF92YWwpOworCisJCS8qIHJlbW92ZSBhY3BpIGRldmljZXMg
-Ki8KKwkJcmV0X3ZhbCA9IGFjcGlfYnVzX3RyaW0oZGV2aWNlLCAxKTsKKwkJcHJpbnRrKEtFUk5f
-REVCVUcgImFjcGlfYnVzX3RyaW0gcmVtb3ZlIHJldHVybiAleFxuIiwgcmV0X3ZhbCk7CisJfQor
-CisJaWYgKGZsYWdzICYgUk9PVF9CUklER0VfSEFTX1BTMykgeworCQlhY3BpX3N0YXR1cyBzdGF0
-dXM7CisKKwkJc3RhdHVzID0gYWNwaV9ldmFsdWF0ZV9vYmplY3QoaGFuZGxlLCAiX1BTMyIsIE5V
-TEwsIE5VTEwpOworCQlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpCisJCQlwcmludGsoS0VSTl9X
-QVJOSU5HICIlczogX1BTMyBmYWlsZWRcbiIsIF9fZnVuY19fKTsKKwl9CisJaWYgKGZsYWdzICYg
-Uk9PVF9CUklER0VfSEFTX0VKMCkKKwkJYWNwaV9yb290X2V2YWx1YXRlX29iamVjdChoYW5kbGUs
-ICJfRUowIiwgMSk7Cit9CisKIHN0YXRpYyB2b2lkIF9oYW5kbGVfaG90cGx1Z19ldmVudF9yb290
-KHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykKIHsKIAlzdHJ1Y3QgYWNwaV9yb290X2JyaWRnZSAq
-YnJpZGdlOwpAQCAtMTgzLDYgKzI0NCwxMiBAQCBzdGF0aWMgdm9pZCBfaGFuZGxlX2hvdHBsdWdf
-ZXZlbnRfcm9vdChzCiAJCX0KIAkJYnJlYWs7CiAKKwljYXNlIEFDUElfTk9USUZZX0VKRUNUX1JF
-UVVFU1Q6CisJCS8qIHJlcXVlc3QgZGV2aWNlIGVqZWN0ICovCisJCXByaW50ayhLRVJOX0RFQlVH
-ICIlczogRGV2aWNlIGVqZWN0IG5vdGlmeSBvbiAlc1xuIiwgX19mdW5jX18sCisJCQkJIG9iam5h
-bWUpOworCQloYW5kbGVfcm9vdF9icmlkZ2VfcmVtb3ZhbChoYW5kbGUsIGJyaWRnZSk7CisJCWJy
-ZWFrOwogCWRlZmF1bHQ6CiAJCXByaW50ayhLRVJOX1dBUk5JTkcgIm5vdGlmeV9oYW5kbGVyOiB1
-bmtub3duIGV2ZW50IHR5cGUgMHgleCBmb3IgJXNcbiIsCiAJCQkJIHR5cGUsIG9iam5hbWUpOwpJ
-bmRleDogbGludXgtMi42L2RyaXZlcnMvYWNwaS9zY2FuLmMKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvZHJpdmVycy9hY3BpL3NjYW4uYworKysgbGludXgtMi42L2RyaXZlcnMvYWNwaS9z
-Y2FuLmMKQEAgLTE1MjIsMTAgKzE1MjIsNyBAQCBpbnQgYWNwaV9idXNfdHJpbShzdHJ1Y3QgYWNw
-aV9kZXZpY2UgKnN0CiAJCQljaGlsZCA9IHBhcmVudDsKIAkJCXBhcmVudCA9IHBhcmVudC0+cGFy
-ZW50OwogCi0JCQlpZiAobGV2ZWwgPT0gMCkKLQkJCQllcnIgPSBhY3BpX2J1c19yZW1vdmUoY2hp
-bGQsIHJtZGV2aWNlKTsKLQkJCWVsc2UKLQkJCQllcnIgPSBhY3BpX2J1c19yZW1vdmUoY2hpbGQs
-IDEpOworCQkJZXJyID0gYWNwaV9idXNfcmVtb3ZlKGNoaWxkLCBybWRldmljZSk7CiAKIAkJCWNv
-bnRpbnVlOwogCQl9Cg==
---bcaec555517ac78a2704c9dd0559--
