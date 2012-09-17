@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2IQIOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:14:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38060 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2IQION (ORCPT
+	id S1754912Ab2IQIPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:15:46 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54610 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab2IQIPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:14:13 -0400
+	Mon, 17 Sep 2012 04:15:39 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: mporter@kernel.crashing.org
-Cc: alexandre.bounine@idt.com, akpm@linux-foundation.org, chul.kim@idt.com,
-        jiang.liu@huawei.com, bhelgaas@google.com,
+To: cjb@laptop.org
+Cc: will.newton@imgtec.com, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        kyungmin.park@samsung.com, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH] drivers/rapidio/devices/tsi721.c: fix error return code
-Date: Mon, 17 Sep 2012 10:14:04 +0200
-Message-Id: <1347869644-2569-1-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 1/4] drivers/mmc/host/dw_mmc.c: fix error return code
+Date: Mon, 17 Sep 2012 10:15:25 +0200
+Message-Id: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,23 +48,25 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/rapidio/devices/tsi721.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mmc/host/dw_mmc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-index 1974359..78dff6f 100644
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2316,7 +2316,8 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
- 
- 	/* Configure DMA attributes. */
- 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
--		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-+		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+		if (err) {
- 			dev_info(&pdev->dev, "Unable to set DMA mask\n");
- 			goto err_unmap_bars;
- 		}
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 36f98c0..7ad5176 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2039,8 +2039,10 @@ int dw_mci_probe(struct dw_mci *host)
+ 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+ 	host->card_workqueue = alloc_workqueue("dw-mci-card",
+ 			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+-	if (!host->card_workqueue)
++	if (!host->card_workqueue) {
++		err = -ENOMEM;
+ 		goto err_dmaunmap;
++	}
+ 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+ 	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags, "dw-mci", host);
+ 	if (ret)
 -- 
 1.7.11.4
 
