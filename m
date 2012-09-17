@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab2IQSVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 14:21:47 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57484 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343Ab2IQSVq (ORCPT
+	id S932500Ab2IQSWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 14:22:07 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:53784 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2IQSWE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 14:21:46 -0400
-Message-ID: <50576A36.3050202@kernel.org>
-Date: Mon, 17 Sep 2012 19:21:42 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] iio: inkern: add error case in iio_channel_get()
-References: <A874F61F95741C4A9BA573A70FE3998F41EF509D@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF509D@DQHE02.ent.ti.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Sep 2012 14:22:04 -0400
+Date: Mon, 17 Sep 2012 20:21:08 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 6/7 v2] HID: picoLCD: drop version check during probe
+Message-ID: <20120917202108.3e39dedb@neptune.home>
+In-Reply-To: <20120819185631.3a984aa4@neptune.home>
+References: <20120730213656.0a9f6d30@neptune.home>
+	<20120730213859.063173c1@neptune.home>
+	<alpine.LNX.2.00.1208151015220.7026@pobox.suse.cz>
+	<20120819185631.3a984aa4@neptune.home>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 09:44 AM, Kim, Milo wrote:
->  The datasheet name is defined in the IIO driver.
->  On the other hand, the adc_channel_label is configured in
->  the platform side.
->  If the datasheet name is not matched with any adc_channel_label,
->  the iio_channel_get() should be returned as error for preventing
->  invalid channel data access.
-> 
->  This can be handled either way.
->  (a) checking null data when using it : in the xxx_read_raw()
->  or
->  (b) error returns when the channel is requested : this patch
-> 
->  The IIO consumer can't use the channel with invalid channel spec.
->  Therefore case (b) is more reasonable.
-> 
-Nicely patch, thanks.
+Jiri,
 
-Merged to togreg branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+You seem not to have applied this one yet (it doesn't show up in picolcd
+branch).
 
+Could you please apply it?
+(or did I miss locking changes making it obsolete?)
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Thanks,
+Bruno
+
+On Sun, 19 August 2012 Bruno Prémont <bonbons@linux-vserver.org> wrote:
+> Commit 4ea5454203d991ec85264f64f89ca8855fce69b0
+> [HID: Fix race condition between driver core and ll-driver] introduced
+> new locking around probe/remove functions that prevents any report/reply
+> from hardware to reach driver until it returned from probe.
+> 
+> As such, the ask-reply way to checking picoLCD firmware version during
+> probe is bound to timeout and let probe fail.
+> 
+> Drop the check to let driver successfully probe again (until locking issues
+> are resolved allowing to reinstate the check).
+> 
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
 > ---
->  drivers/iio/inkern.c |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> index 1faa240..13748c0 100644
-> --- a/drivers/iio/inkern.c
-> +++ b/drivers/iio/inkern.c
-> @@ -136,12 +136,21 @@ struct iio_channel *iio_channel_get(const char *name, const char *channel_name)
->  
->  	channel->indio_dev = c->indio_dev;
->  
-> -	if (c->map->adc_channel_label)
-> +	if (c->map->adc_channel_label) {
->  		channel->channel =
->  			iio_chan_spec_from_name(channel->indio_dev,
->  						c->map->adc_channel_label);
->  
-> +		if (channel->channel == NULL)
-> +			goto error_no_chan;
-> +	}
-> +
->  	return channel;
-> +
-> +error_no_chan:
-> +	iio_device_put(c->indio_dev);
-> +	kfree(channel);
-> +	return ERR_PTR(-EINVAL);
->  }
->  EXPORT_SYMBOL_GPL(iio_channel_get);
->  
+> Changes since v1:
+> - drop version check during probe instead of commenting it out.
 > 
+> 
+>  drivers/hid/hid-picolcd_core.c |   18 ------------------
+>  1 files changed, 0 insertions(+), 18 deletions(-)
