@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab2IQKbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:31:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:32909 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2IQKbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:31:01 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] proc: fix unterminated string
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 17 Sep 2012 11:49:30 +0100
-Message-ID: <20120917104901.29914.81645.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1753522Ab2IQKdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:33:08 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2322
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752313Ab2IQKdF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 06:33:05 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zz98dI9371I103dK1b0bI542M1432Izz1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdhbe9i1155h)
+From: Xie Shaohui-B21989 <B21989@freescale.com>
+To: Shaun Ruffell <sruffell@digium.com>
+CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "avorontsov@mvista.com" <avorontsov@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: RE: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+Thread-Topic: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+Thread-Index: AQHNkaMM7ec3MtYj5keBzMlX2iUaRpeKfBmAgAPeSnA=
+Date: Mon, 17 Sep 2012 10:32:59 +0000
+Message-ID: <ED492CCEAF882048BC2237DE806547C9079E171E@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
+ <20120914182137.GD18672@digium.com>
+In-Reply-To: <20120914182137.GD18672@digium.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.41]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+> -----Original Message-----
+> From: Shaun Ruffell [mailto:sruffell@digium.com]
+> Sent: Saturday, September 15, 2012 2:22 AM
+> To: Xie Shaohui-B21989
+> Cc: linux-edac@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
+> akpm@linux-foundation.org; avorontsov@mvista.com; linux-
+> kernel@vger.kernel.org; grant.likely@secretlab.ca
+> Subject: Re: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+> 
+> On Thu, Sep 13, 2012 at 06:55:29PM +0800, Shaohui Xie wrote:
+> > Error handle in case of DDR ECC off is wrong, sysfs entries have not
+> > been created, so edac_mc_free which frees a mci instance should not be
+> called.
+> > Also, free mci's memory in this case.
+> 
+> Jus FYI: I ran into the same error in edac_mc_free() which I resolved in
+> a slightly different way in some patches I sent previously. [1]
+> 
+> [1] https://lkml.org/lkml/2012/9/14/475
+[S.H] Thanks! I did not aware of this patch when one of my colleague asked me to have a look at the issue,
+It could save me some time if I saw this patch earlier. :(
 
-oom_score_adj_write doesn't terminate the string as it should. Also fix
-sched_autogroup_write and other copy/pastes of the bug.
+BTW: seems you are using a different kernel tree with mine.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Horses <stable@vger.kernel.org>
-
----
-
- fs/proc/base.c     |    2 ++
- fs/proc/task_mmu.c |    1 +
- 2 files changed, 3 insertions(+)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 21fb230..4d42cf18 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -910,6 +910,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
- 		err = -EFAULT;
- 		goto out;
- 	}
-+	buffer[count] = '\0';
- 
- 	err = kstrtoint(strstrip(buffer), 0, &oom_score_adj);
- 	if (err)
-@@ -1192,6 +1193,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
- 		count = sizeof(buffer) - 1;
- 	if (copy_from_user(buffer, buf, count))
- 		return -EFAULT;
-+	buffer[count] = '\0';
- 
- 	err = kstrtoint(strstrip(buffer), 0, &nice);
- 	if (err < 0)
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 79827ce..a1dae68 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -639,6 +639,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 		count = sizeof(buffer) - 1;
- 	if (copy_from_user(buffer, buf, count))
- 		return -EFAULT;
-+	buffer[count] = '\0';
- 	rv = kstrtoint(strstrip(buffer), 10, &type);
- 	if (rv < 0)
- 		return rv;
+Best Regards, 
+Shaohui Xie
 
