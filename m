@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab2IQLP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:15:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38352 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755837Ab2IQLPy (ORCPT
+	id S1755867Ab2IQLSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:18:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:24870 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab2IQLSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:15:54 -0400
-Date: Mon, 17 Sep 2012 07:15:51 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: Liam Girdwood <lrg@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
-Message-ID: <20120917111550.GE5401@opensource.wolfsonmicro.com>
-References: <201208151518.q7FFILAM011604@latitude.olech.com>
- <20120827165057.GK4339@opensource.wolfsonmicro.com>
- <24DF37198A1E704D9811D8F72B87EB51032CC96A@NB-EX-MBX02.diasemi.com>
- <20120917104017.GB5401@opensource.wolfsonmicro.com>
- <24DF37198A1E704D9811D8F72B87EB51032CC993@NB-EX-MBX02.diasemi.com>
+	Mon, 17 Sep 2012 07:18:23 -0400
+Date: Mon, 17 Sep 2012 14:18:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Slaby <jslaby@suse.cz>
+Subject: [static analysis] memory corruption in tty/synclink.c on 64bit
+Message-ID: <20120917111819.GA5769@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51032CC993@NB-EX-MBX02.diasemi.com>
-X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 10:49:22AM +0000, Opensource [Anthony Olech] wrote:
+I don't think anyone really cares about this but just for laughs here
+is the warning:
 
-> I thought that the set_voltage_sel = regulator_set_voltage_sel_regmap callback first
-> set the target voltage, and that the set_voltage_time_sel = da9058_buck_ramp_voltage
-> callback was called afterwards?
+drivers/tty/synclink.c:5418 usc_process_rxoverrun_sync() warn: potential memory corrupting cast 8 vs 2 bytes
+drivers/tty/synclink.c:6414 mgsl_reset_tx_dma_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
+drivers/tty/synclink.c:6455 mgsl_reset_rx_dma_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
+drivers/tty/synclink.c:6500 mgsl_free_rx_frame_buffers() warn: potential memory corrupting cast 8 vs 2 bytes
 
-> was I wrong?
+  6489                  /* reset current buffer for reuse */
+  6490  //              pBufEntry->status = 0;
+  6491  //              pBufEntry->count = DMABUFFERSIZE;
+  6492                  *((unsigned long *)&(pBufEntry->count)) = DMABUFFERSIZE;
 
-That will currently happen but we might also decide to query the ramp
-time first, or we might decide to query the ramp time totally separately
-to actually changing the voltage (to decide when we will want to change
-the voltage in DVFS situations for example).
+It looks like the commented out code is the correct code and the code
+on line 6492 is the "faster" version?  My static checker complains that
+it would corrupt the next struct elements on 64 bit.  Also it only works
+on little endian systems.
+
+typedef struct _DMABUFFERENTRY
+{
+        u32 phys_addr;  /* 32-bit flat physical address of data buffer */
+        volatile u16 count;     /* buffer size/data count */
+        volatile u16 status;    /* Control/status field */
+        volatile u16 rcc;       /* character count field */
+        u16 reserved;   /* padding required by 16C32 */
+
+This was there in the original code when it was merged in 2.2.5pre1.
+
+regards,
+dan carpenter
