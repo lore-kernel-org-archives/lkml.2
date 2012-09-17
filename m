@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2IQANa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:13:30 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:45504
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752068Ab2IQAN2 (ORCPT
+	id S1752416Ab2IQAid (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:38:33 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46387 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751960Ab2IQAib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:13:28 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.228;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail01v.am.sony.com;RD:mail01.sonyusa.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z21eIzbb2dI98dI1432Izz1202h1d1ah1d2ahzzz2fh2a8h668h839hd25hf0ah107ah10d2h1288h12a5h12a9h12bdh1155h)
-Message-ID: <50566B21.3090907@am.sony.com>
-Date: Sun, 16 Sep 2012 17:13:21 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Sun, 16 Sep 2012 20:38:31 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH RT 0/2] [ANNOUNCE] 3.2.28-rt43-rc1 stable review
-References: <20120913185721.264108744@goodmis.org>
-In-Reply-To: <20120913185721.264108744@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <1347469140-25069-25-git-send-email-davidb@codeaurora.org>
+References: <1347469140-25069-1-git-send-email-davidb@codeaurora.org>
+	<1347469140-25069-25-git-send-email-davidb@codeaurora.org>
+Date: Sun, 16 Sep 2012 17:38:29 -0700
+Message-ID: <CAOesGMis=ztd3yomGMppJArp_HP4xOKfkGxFDSYj-MFvoh0AOg@mail.gmail.com>
+Subject: Re: [PATCH 24/24] ARM: msm: Allow 8960 and 8660 to compile together
+From: Olof Johansson <olof@lixom.net>
+To: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/12 11:57, Steven Rostedt wrote:
-> 
-> Dear RT Folks,
-> 
-> This is the RT stable review cycle of patch 3.2.28-rt43-rc1.
+Hi,
 
-Tested on:
+On Wed, Sep 12, 2012 at 9:59 AM, David Brown <davidb@codeaurora.org> wrote:
+> From: Stephen Boyd <sboyd@codeaurora.org>
+>
+> Modify the Kconfig to allow the MSM 8660 and MSM 8960 targets to
+> compile together in the same build. As long as one of these two
+> targets is selected the choice menu used to select which SoC to
+> support will be hidden. Deselecting both of these targets will
+> reintroduce the choice menu, and allow users to select targets
+> that must be compiled in isolation.
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Signed-off-by: David Brown <davidb@codeaurora.org>
+> ---
+>  arch/arm/mach-msm/Kconfig | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> index b2740c8..7902de15 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -1,8 +1,12 @@
+>  if ARCH_MSM
+>
+> +comment "Qualcomm MSM SoC Type"
+> +       depends on (ARCH_MSM8X60 || ARCH_MSM8960)
 
-  - ARM mpcore
-  - ARM panda
+This OK for now but will stop scaling pretty quickly.
 
-For configurations:
-
-  - SMP CONFIG_PREEMPT_NONE
-  - UP  CONFIG_PREEMPT_NONE
-  - SMP CONFIG_PREEMPT_RT_FULL
-  - UP  CONFIG_PREEMPT_RT_FULL
-
-Tests:
-
-  - build
-  - boot
-  - magic SYSRQ prints on serial console
-
-As expected, panda SMP CONFIG_PREEMPT_RT_FULL still has the
-lock warning on boot.  (tglx is looking into this.)
-
--Frank
+When you introduce the next SoC to this, please add a new silent
+option instead, that the multi-soc-capable configs select and switch
+the depends over to that option.
 
 
+-Olof
