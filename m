@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab2IQAuX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33340 "EHLO
+	id S1753529Ab2IQAuV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33336 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752976Ab2IQAt1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752970Ab2IQAt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:27 -0400
-Message-Id: <20120917003628.454370011@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:26 -0400
+Message-Id: <20120917003627.027819750@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:41 +0100
+Date: Mon, 17 Sep 2012 01:36:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 016/135] ARM: dts: imx51-babbage: fix esdhc cd/wp properties
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 006/135] iwlwifi: protect SRAM debugfs
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,59 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a46d2619d7180bda12bad2bf15bbd0731dfc2dcf upstream.
+commit 4fc79db178f0a0ede479b4713e00df2d106028b3 upstream.
 
-The binding doc and dts use properties "fsl,{cd,wp}-internal" while
-esdhc driver uses "fsl,{cd,wp}-controller".  Fix binding doc and dts
-to get them match driver code.
+If the device is not started, we can't read its
+SRAM and attempting to do so will cause issues.
+Protect the debugfs read.
 
-Reported-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Pass iwl_shared not iwl_priv pointer to iwl_is_ready_rf()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/devicetree/bindings/mmc/fsl-imx-esdhc.txt |    8 ++++----
- arch/arm/boot/dts/imx51-babbage.dts                     |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
-
---- a/Documentation/devicetree/bindings/mmc/fsl-imx-esdhc.txt
-+++ b/Documentation/devicetree/bindings/mmc/fsl-imx-esdhc.txt
-@@ -10,8 +10,8 @@ Required properties:
+--- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
+@@ -232,6 +232,9 @@ static ssize_t iwl_dbgfs_sram_read(struc
+ 	struct iwl_priv *priv = file->private_data;
+ 	size_t bufsz;
  
- Optional properties:
- - fsl,card-wired : Indicate the card is wired to host permanently
--- fsl,cd-internal : Indicate to use controller internal card detection
--- fsl,wp-internal : Indicate to use controller internal write protection
-+- fsl,cd-controller : Indicate to use controller internal card detection
-+- fsl,wp-controller : Indicate to use controller internal write protection
- - cd-gpios : Specify GPIOs for card detection
- - wp-gpios : Specify GPIOs for write protection
- 
-@@ -21,8 +21,8 @@ esdhc@70004000 {
- 	compatible = "fsl,imx51-esdhc";
- 	reg = <0x70004000 0x4000>;
- 	interrupts = <1>;
--	fsl,cd-internal;
--	fsl,wp-internal;
-+	fsl,cd-controller;
-+	fsl,wp-controller;
- };
- 
- esdhc@70008000 {
---- a/arch/arm/boot/dts/imx51-babbage.dts
-+++ b/arch/arm/boot/dts/imx51-babbage.dts
-@@ -29,8 +29,8 @@
- 		aips@70000000 { /* aips-1 */
- 			spba@70000000 {
- 				esdhc@70004000 { /* ESDHC1 */
--					fsl,cd-internal;
--					fsl,wp-internal;
-+					fsl,cd-controller;
-+					fsl,wp-controller;
- 					status = "okay";
- 				};
- 
++	if (!iwl_is_ready_rf(priv->shrd))
++		return -EAGAIN;
++
+ 	/* default is to dump the entire data segment */
+ 	if (!priv->dbgfs_sram_offset && !priv->dbgfs_sram_len) {
+ 		priv->dbgfs_sram_offset = 0x800000;
 
 
