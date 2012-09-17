@@ -1,446 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab2IQHTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:19:25 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46283 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab2IQHTU (ORCPT
+	id S1753788Ab2IQHTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:19:30 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36848 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab2IQHT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:19:20 -0400
+	Mon, 17 Sep 2012 03:19:26 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, cmm@us.ibm.com, tytso@mit.edu,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v1 04/11] vfs: add support for updating access frequency
-Date: Mon, 17 Sep 2012 15:18:38 +0800
-Message-Id: <1347866325-25979-5-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v1 05/11] vfs: add one new mount option '-o hottrack'
+Date: Mon, 17 Sep 2012 15:18:39 +0800
+Message-Id: <1347866325-25979-6-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
 References: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091707-5406-0000-0000-0000005AC457
+x-cbid: 12091707-2876-0000-0000-0000003C4369
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Add some utils helpers to update access frequencies
-for one file or its range.
+  Introduce one new mount option '-o hottrack',
+and add its parsing support.
+  Its usage looks like:
+   mount -o hottrack
+   mount -o nouser,hottrack
+   mount -o nouser,hottrack,loop
+   mount -o hottrack,nouser
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_rb.c |  359 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/hot_rb.h |   22 ++++
- 2 files changed, 381 insertions(+), 0 deletions(-)
+ fs/hot_track.c            |   34 ++++++++++++++++++++++++++++++++++
+ fs/hot_track.h            |    1 +
+ fs/super.c                |    5 +++++
+ include/linux/hot_track.h |    6 ++++++
+ 4 files changed, 46 insertions(+), 0 deletions(-)
 
-diff --git a/fs/hot_rb.c b/fs/hot_rb.c
-index e2bee75..6622104 100644
---- a/fs/hot_rb.c
-+++ b/fs/hot_rb.c
-@@ -102,3 +102,362 @@ void hot_rb_range_item_init(void *_item)
- 	hr->hot_freq_data.avg_delta_writes = (u64) -1;
- 	hr->hot_freq_data.flags = FREQ_DATA_TYPE_RANGE;
- }
-+
-+/*
-+ * Drops the reference out on hot_inode_item by one and free the structure
-+ * if the reference count hits zero
+diff --git a/fs/hot_track.c b/fs/hot_track.c
+index 064c7dc..b3f01a1 100644
+--- a/fs/hot_track.c
++++ b/fs/hot_track.c
+@@ -16,6 +16,40 @@
+ #include "hot_track.h"
+ 
+ /*
++ * Regular mount options parser for -hottrack option.
++ * return false if no -hottrack is specified;
++ * otherwise return true. And the -hottrack will be
++ * removed from options.
 + */
-+void hot_rb_free_hot_inode_item(struct hot_inode_item *he)
++bool hot_track_parse_options(char *options)
 +{
-+	if (!he)
-+		return;
++	long len;
++	char *p;
++	static char opts_hot[] = "hottrack";
 +
-+	if (atomic_dec_and_test(&he->refs.refcount)) {
-+		WARN_ON(he->in_tree);
-+		kmem_cache_free(hot_inode_item_cache, he);
-+	}
-+}
-+
-+/*
-+ * Drops the reference out on hot_range_item by one and free the structure
-+ * if the reference count hits zero
-+ */
-+static void hot_rb_free_hot_range_item(struct hot_range_item *hr)
-+{
-+	if (!hr)
-+		return;
-+
-+	if (atomic_dec_and_test(&hr->refs.refcount)) {
-+		WARN_ON(hr->in_tree);
-+		kmem_cache_free(hot_range_item_cache, hr);
-+	}
-+}
-+
-+static struct rb_node *hot_rb_insert_hot_inode_item(struct rb_root *root,
-+						unsigned long inode_num,
-+						struct rb_node *node)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct hot_inode_item *entry;
-+
-+	/* walk tree to find insertion point */
-+	while (*p) {
-+		parent = *p;
-+		entry = rb_entry(parent, struct hot_inode_item, rb_node);
-+
-+		if (inode_num < entry->i_ino)
-+			p = &(*p)->rb_left;
-+		else if (inode_num > entry->i_ino)
-+			p = &(*p)->rb_right;
-+		else
-+			return parent;
-+	}
-+
-+	entry = rb_entry(node, struct hot_inode_item, rb_node);
-+	entry->in_tree = 1;
-+	rb_link_node(node, parent, p);
-+	rb_insert_color(node, root);
-+
-+	return NULL;
-+}
-+
-+static u64 hot_rb_range_end(struct hot_range_item *hr)
-+{
-+	if (hr->start + hr->len < hr->start)
-+		return (u64)-1;
-+
-+	return hr->start + hr->len - 1;
-+}
-+
-+static struct rb_node *hot_rb_insert_hot_range_item(struct rb_root *root,
-+						u64 start,
-+						struct rb_node *node)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct hot_range_item *entry;
-+
-+	/* ensure start is on a range boundary */
-+	start = start & RANGE_SIZE_MASK;
-+	/* walk tree to find insertion point */
-+	while (*p) {
-+		parent = *p;
-+		entry = rb_entry(parent, struct hot_range_item, rb_node);
-+
-+		if (start < entry->start)
-+			p = &(*p)->rb_left;
-+		else if (start >= hot_rb_range_end(entry))
-+			p = &(*p)->rb_right;
-+		else
-+			return parent;
-+	}
-+
-+	entry = rb_entry(node, struct hot_range_item, rb_node);
-+	entry->in_tree = 1;
-+	rb_link_node(node, parent, p);
-+	rb_insert_color(node, root);
-+
-+	return NULL;
-+}
-+
-+/*
-+ * Add a hot_inode_item to a hot_inode_tree. If the tree already contains
-+ * an item with the index given, return -EEXIST
-+ */
-+static int hot_rb_add_hot_inode_item(struct hot_inode_tree *tree,
-+				struct hot_inode_item *he)
-+{
-+	int ret = 0;
-+	struct rb_node *rb;
-+
-+	rb = hot_rb_insert_hot_inode_item(
-+			&tree->map, he->i_ino, &he->rb_node);
-+	if (rb) {
-+		ret = -EEXIST;
-+		goto out;
-+	}
-+
-+	kref_get(&he->refs);
-+
-+out:
-+	return ret;
-+}
-+
-+/*
-+ * Add a hot_range_item to a hot_range_tree. If the tree already contains
-+ * an item with the index given, return -EEXIST
-+ *
-+ * Also optionally aggresively merge ranges (currently disabled)
-+ */
-+static int hot_rb_add_hot_range_item(struct hot_range_tree *tree,
-+			struct hot_range_item *hr)
-+{
-+	int ret = 0;
-+	struct rb_node *rb;
-+
-+	rb = hot_rb_insert_hot_range_item(
-+				&tree->map, hr->start, &hr->rb_node);
-+	if (rb) {
-+		ret = -EEXIST;
-+		goto out;
-+	}
-+
-+	kref_get(&hr->refs);
-+
-+out:
-+	return ret;
-+}
-+
-+/*
-+ * Lookup a hot_inode_item in the hot_inode_tree with the given index
-+ * (inode_num)
-+ */
-+struct hot_inode_item
-+*hot_rb_lookup_hot_inode_item(struct hot_inode_tree *tree,
-+				unsigned long inode_num)
-+{
-+	struct rb_node **p = &(tree->map.rb_node);
-+	struct rb_node *parent = NULL;
-+	struct hot_inode_item *entry;
-+
-+	while (*p) {
-+		parent = *p;
-+		entry = rb_entry(parent, struct hot_inode_item, rb_node);
-+
-+		if (inode_num < entry->i_ino)
-+			p = &(*p)->rb_left;
-+		else if (inode_num > entry->i_ino)
-+			p = &(*p)->rb_right;
-+		else {
-+			kref_get(&entry->refs);
-+			return entry;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+/*
-+ * Lookup a hot_range_item in a hot_range_tree with the given index
-+ * (start, offset)
-+ */
-+struct hot_range_item
-+*hot_rb_lookup_hot_range_item(struct hot_range_tree *tree,
-+				u64 start)
-+{
-+	struct rb_node **p = &(tree->map.rb_node);
-+	struct rb_node *parent = NULL;
-+	struct hot_range_item *entry;
-+
-+	/* ensure start is on a range boundary */
-+	start = start & RANGE_SIZE_MASK;
-+	while (*p) {
-+		parent = *p;
-+		entry = rb_entry(parent, struct hot_range_item, rb_node);
-+
-+		if (start < entry->start)
-+			p = &(*p)->rb_left;
-+		else if (start > hot_rb_range_end(entry))
-+			p = &(*p)->rb_right;
-+		else {
-+			kref_get(&entry->refs);
-+			return entry;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+/* Update inode frequency struct */
-+static struct hot_inode_item *hot_rb_update_inode_freq(struct inode *inode,
-+							int rw)
-+{
-+	struct hot_info *root = &(inode->i_sb->s_hotinfo);
-+	struct hot_inode_tree *hitree = &(root->hot_inode_tree);
-+	struct hot_inode_item *he;
-+
-+	read_lock(&hitree->lock);
-+	he = hot_rb_lookup_hot_inode_item(hitree, inode->i_ino);
-+	read_unlock(&hitree->lock);
-+
-+	if (!he) {
-+		he = kmem_cache_alloc(hot_inode_item_cache,
-+					GFP_KERNEL | GFP_NOFS);
-+		if (!he)
-+			goto out;
-+
-+		write_lock(&hitree->lock);
-+		hot_rb_inode_item_init(he);
-+		he->i_ino = inode->i_ino;
-+		hot_rb_add_hot_inode_item(hitree, he);
-+		write_unlock(&hitree->lock);
-+	}
-+
-+	spin_lock(&he->lock);
-+	hot_rb_update_freq(&he->hot_freq_data, rw);
-+	spin_unlock(&he->lock);
-+
-+out:
-+	return he;
-+}
-+
-+/* Update range frequency struct */
-+static bool hot_rb_update_range_freq(struct hot_inode_item *he,
-+				u64 off, u64 len, int rw,
-+				struct hot_info *root)
-+{
-+	struct hot_range_tree *hrtree = &(he->hot_range_tree);
-+	struct hot_range_item *hr = NULL;
-+	u64 start_off = off & RANGE_SIZE_MASK;
-+	u64 end_off = (off + len - 1) & RANGE_SIZE_MASK;
-+	u64 cur;
-+	int ret = true;
-+
-+	if (len == 0)
++	if (!options)
 +		return false;
 +
-+	/*
-+	 * Align ranges on RANGE_SIZE boundary to prevent proliferation
-+	 * of range structs
-+	 */
-+	for (cur = start_off; cur <= end_off; cur += RANGE_SIZE) {
-+		read_lock(&hrtree->lock);
-+		hr = hot_rb_lookup_hot_range_item(hrtree, cur);
-+		read_unlock(&hrtree->lock);
++	p = strstr(options, opts_hot);
++	if (!p)
++		return false;
 +
-+		if (!hr) {
-+			hr = kmem_cache_alloc(hot_range_item_cache,
-+						GFP_KERNEL | GFP_NOFS);
-+			if (!hr) {
-+				ret = false;
-+				goto out;
-+			}
-+
-+			write_lock(&hrtree->lock);
-+			hot_rb_range_item_init(hr);
-+			hr->start = cur & RANGE_SIZE_MASK;
-+			hr->len = RANGE_SIZE;
-+			hr->hot_inode = he;
-+			hot_rb_add_hot_range_item(hrtree, hr);
-+			write_unlock(&hrtree->lock);
++	while (p) {
++		len = options + strlen(options) - (p + strlen(opts_hot));
++		if (len == 0) {
++			options[0] = '\0';
++			break;
 +		}
 +
-+		spin_lock(&hr->lock);
-+		hot_rb_update_freq(&hr->hot_freq_data, rw);
-+		spin_unlock(&hr->lock);
-+		hot_rb_free_hot_range_item(hr);
++		memmove(p, p + strlen(opts_hot) + 1, len);
++		p = strstr(options, opts_hot);
 +	}
 +
-+out:
-+	return ret;
++	printk(KERN_INFO "vfs: turning on hot data tracking\n");
++	return true;
 +}
 +
 +/*
-+ * This function does the actual work of updating the frequency numbers,
-+ * whatever they turn out to be. FREQ_POWER determines how many atime
-+ * deltas we keep track of (as a power of 2). So, setting it to anything above
-+ * 16ish is probably overkill. Also, the higher the power, the more bits get
-+ * right shifted out of the timestamp, reducing precision, so take note of that
-+ * as well.
-+ *
-+ * The caller should have already locked freq_data's parent's spinlock.
-+ *
-+ * FREQ_POWER, defined immediately below, determines how heavily to weight
-+ * the current frequency numbers against the newest access. For example, a value
-+ * of 4 means that the new access information will be weighted 1/16th (ie 2^-4)
-+ * as heavily as the existing frequency info. In essence, this is a kludged-
-+ * together version of a weighted average, since we can't afford to keep all of
-+ * the information that it would take to get a _real_ weighted average.
+  * Initialize kmem cache for hot_inode_item
+  * and hot_range_item
+  */
+diff --git a/fs/hot_track.h b/fs/hot_track.h
+index 9a52945..a099b43 100644
+--- a/fs/hot_track.h
++++ b/fs/hot_track.h
+@@ -15,6 +15,7 @@
+ 
+ #include "hot_rb.h"
+ 
++bool hot_track_parse_options(char *options);
+ void __init hot_track_kmem_cache_init(void);
+ 
+ #endif /* __HOT_TRACK__ */
+diff --git a/fs/super.c b/fs/super.c
+index 0902cfa..d5bc781 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -35,6 +35,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/lockdep.h>
+ #include "internal.h"
++#include "hot_track.h"
+ 
+ 
+ LIST_HEAD(super_blocks);
+@@ -1125,6 +1126,7 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 	struct dentry *root;
+ 	struct super_block *sb;
+ 	char *secdata = NULL;
++	bool hottrack = false;
+ 	int error = -ENOMEM;
+ 
+ 	if (data && !(type->fs_flags & FS_BINARY_MOUNTDATA)) {
+@@ -1137,6 +1139,9 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 			goto out_free_secdata;
+ 	}
+ 
++	if (data && hot_track_parse_options(data))
++		hottrack = true;
++
+ 	root = type->mount(type, flags, name, data);
+ 	if (IS_ERR(root)) {
+ 		error = PTR_ERR(root);
+diff --git a/include/linux/hot_track.h b/include/linux/hot_track.h
+index 2256496..b56a467 100644
+--- a/include/linux/hot_track.h
++++ b/include/linux/hot_track.h
+@@ -20,6 +20,11 @@
+ #include <linux/rbtree.h>
+ #include <linux/kref.h>
+ 
++/*
++ * Flags for hot data tracking mount options.
 + */
-+void hot_rb_update_freq(struct hot_freq_data *freq_data, int rw)
-+{
-+	struct timespec old_atime;
-+	struct timespec current_time;
-+	struct timespec delta_ts;
-+	u64 new_avg;
-+	u64 new_delta;
++#define HOT_MOUNT_HOT_TRACK		(1 << 0)
 +
-+	if (unlikely(rw)) {
-+		old_atime = freq_data->last_write_time;
-+		freq_data->nr_writes += 1;
-+		new_avg = freq_data->avg_delta_writes;
-+	} else {
-+		old_atime = freq_data->last_read_time;
-+		freq_data->nr_reads += 1;
-+		new_avg = freq_data->avg_delta_reads;
-+	}
-+
-+	current_time = current_kernel_time();
-+	delta_ts = timespec_sub(current_time, old_atime);
-+	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
-+
-+	new_avg = (new_avg << FREQ_POWER) - new_avg + new_delta;
-+	new_avg = new_avg >> FREQ_POWER;
-+
-+	if (unlikely(rw)) {
-+		freq_data->last_write_time = current_time;
-+		freq_data->avg_delta_writes = new_avg;
-+	} else {
-+		freq_data->last_read_time = current_time;
-+		freq_data->avg_delta_reads = new_avg;
-+	}
-+}
-+
-+/* main function to update access frequency from read/writepage(s) hooks */
-+void hot_rb_update_freqs(struct inode *inode, u64 start,
-+			u64 len, int rw)
-+{
-+	struct hot_inode_item *he;
-+
-+	he = hot_rb_update_inode_freq(inode, rw);
-+
-+	WARN_ON(!he);
-+
-+	if (he) {
-+		hot_rb_update_range_freq(he, start, len,
-+			rw, &(inode->i_sb->s_hotinfo));
-+
-+		hot_rb_free_hot_inode_item(he);
-+	}
-+}
-diff --git a/fs/hot_rb.h b/fs/hot_rb.h
-index 71c51e0..126160e 100644
---- a/fs/hot_rb.h
-+++ b/fs/hot_rb.h
-@@ -19,12 +19,34 @@
- /* values for hot_freq_data flags */
- #define FREQ_DATA_TYPE_INODE (1 << 0) /* freq data struct is for an inode */
- #define FREQ_DATA_TYPE_RANGE (1 << 1) /* freq data struct is for a range */
-+/* size of sub-file ranges */
-+#define RANGE_SIZE (1<<20)
-+#define RANGE_SIZE_MASK (~((u64)(RANGE_SIZE - 1)))
-+
-+#define FREQ_POWER 4
-+
-+struct hot_info;
-+struct inode;
+ /* A tree that sits on the hot_info */
+ struct hot_inode_tree {
+ 	struct rb_root map;
+@@ -89,6 +94,7 @@ struct hot_range_item {
+ };
  
- void hot_rb_inode_tree_init(struct hot_inode_tree *tree);
+ struct hot_info {
++	unsigned long mount_opt;
  
- void hot_rb_inode_item_init(void *_item);
- void hot_rb_range_item_init(void *_item);
- 
-+struct hot_range_item
-+*hot_rb_lookup_hot_range_item(struct hot_range_tree *tree,
-+				u64 start);
-+
-+struct hot_inode_item
-+*hot_rb_lookup_hot_inode_item(struct hot_inode_tree *tree,
-+				unsigned long inode_num);
-+
-+void hot_rb_free_hot_inode_item(struct hot_inode_item *he);
-+
- int __init hot_rb_item_cache_init(void);
- 
-+void hot_rb_update_freq(struct hot_freq_data *freq_data, int rw);
-+void hot_rb_update_freqs(struct inode *inode, u64 start, u64 len,
-+			int rw);
-+
- #endif /* __HOT_MAP__ */
+ 	/* red-black tree that keeps track of fs-wide hot data */
+ 	struct hot_inode_tree hot_inode_tree;
 -- 
 1.7.6.5
 
