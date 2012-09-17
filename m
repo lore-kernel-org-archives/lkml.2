@@ -1,52 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2IQReF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:34:05 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:45167 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756031Ab2IQReC (ORCPT
+	id S932302Ab2IQReu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:34:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25544 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab2IQRes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:34:02 -0400
-Message-ID: <50575EDE.5040207@xenotime.net>
-Date: Mon, 17 Sep 2012 10:33:18 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 17 Sep 2012 13:34:48 -0400
+Date: Mon, 17 Sep 2012 13:23:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: Greg KH <greg@kroah.com>, joerg.roedel@amd.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        akpm@linux-foundation.org, bhelgaas@google.com,
+        stern@rowland.harvard.edu, LKML <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH] dma-debug: New interfaces to debug dma mapping errors
+Message-ID: <20120917172317.GB15783@phenom.dumpdata.com>
+References: <1347843171.4370.13.camel@lorien2>
+ <20120917133937.GC11553@phenom.dumpdata.com>
+ <1347897172.3227.61.camel@lorien2>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH -next] staging: fix csr printk format warning
-References: <20120917215938.11c456c113ac3b015cb2d5ae@canb.auug.org.au>
-In-Reply-To: <20120917215938.11c456c113ac3b015cb2d5ae@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347897172.3227.61.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon, Sep 17, 2012 at 09:52:52AM -0600, Shuah Khan wrote:
+> On Mon, 2012-09-17 at 09:39 -0400, Konrad Rzeszutek Wilk wrote:
+> 
+> > > check_unmap():
+> > > 	This is an existing internal routines that checks for unmap errors,
+> > > 	changed to increment dma_unmap_errors for the current device, as well
+> > > 	as the dma_unmap_errors counter for the system, dma-debug api keeps
+> > > 	track of, when a device requests an invalid address to be unmapped.
+> > > 	Please note that this routine can no longer call dma_mapping_error(),
+> > > 	because of the newly added debug_dma_mapping_error() interface. Calling
+> > > 	dma_mapping_error() from this routine will decrement
+> > > 	dma_map_errors_not_checked counter incorrectly.
+> > 
+> > 
+> > I like the direction of this patch. That said I am wondering why you
+> > choose to do it this way? Was there no way to have all of the logic within
+> > debug dma file, and within check_unmap?
+> 
+> > What is the extra complexity? Can you explain as if I was a newbie to debug DMA
+> > API - perhaps there is still some hope in doing it there?
+> > 
+> > > struct device eliminates the need for maintaining failed mappings in dma-debug
+> > > infrastructure and is cleaner and simpler without impacting the existing
+> > > dma-debug infrastructure.
+> > 
+> > Could you explain please why it would be more difficult to do it in the existing
+> > dma-debug infrastructure?
+> 
+> I started out with a goal to provide a debug infrastructure to track all
+> the cases where dma mapping errors go unchecked.
+> 
+> I could have gone the route to track system wide counts and not be
+> concerned about per device counts. In which case, it would be a sub-set
+> of the functionality in this pacth.  i.e debug_dma_map_page() increments
+> dma_map_errors and dma_map_errors_not_checked. The new interface
+> debug_dma_mapping_error() simply decrements dma_map_errors_not_checked.
+> 
+> check_unmap() can increment the third system wide counter,
+> dma_unmap_errors.
+> 
+> However, system wide counters are of limited use, per device counters
+> wil gine us the ability to identify the drivers that need fixing and
+> fix them and have a way to regression test old drivers and sanity check
+> the new in the future.
+> 
+> Having decided on per device counters, my first approach was looking
+> into enhancing dma-debug infrastructure and contain this logic within
+> that module by enhancing the existing dma_debug_entry to track these
+> errors. 
+> 
+> One issue with this approach is that the current dma-debug
+> infrastructure tracks only the successful mappings. Entries are added to
+> the dma_debug_entry able from mapping interfaces for good maps. This
+> table is hashed using the mapped address (dma_addr). When dma mapping
+> error is detected by the debug interfaces debug_dma_map_page() namely,
+> nothing gets added to the dma_debug_entry table.
 
-Fix printk format warning on i386/X86_32 by using 't' for ptrdiff_t.
-Also builds cleanly on x86_64.
+The check for the violations you are trying to find is to find that
+during the life-time of 'map_page' -> 'unmap_page' that 'dma_mapping_error'
+has been called. Presumarily part of that are good maps?
 
-drivers/staging/csr/csr_wifi_hip_udi.c: In function 'unifi_print_status':
-drivers/staging/csr/csr_wifi_hip_udi.c:151:27: warning: format '%ld' expects type 'long int', but argument 5 has type 'int'
+So what would it take to keep that state for that scenario? Could you
+use the existing system of lookup?
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/staging/csr/csr_wifi_hip_udi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+For the scenario where the result of 'map_page' is invalid it seems
+that you would need to use a completely different hash key anyway, as:
 
---- linux-next-20120917.orig/drivers/staging/csr/csr_wifi_hip_udi.c
-+++ linux-next-20120917/drivers/staging/csr/csr_wifi_hip_udi.c
-@@ -146,7 +146,7 @@ s32 unifi_print_status(card_t *card, cha
-                           (u16)card->to_host_signals_w);
-     UNIFI_SNPRINTF_RET(p, remaining, written);
-     written = scnprintf(p, remaining,
--                          "fh buffer contains: %d signals, %ld bytes\n",
-+                          "fh buffer contains: %d signals, %td bytes\n",
-                           card->fh_buffer.count,
-                           card->fh_buffer.ptr - card->fh_buffer.buf);
-     UNIFI_SNPRINTF_RET(p, remaining, written);
+extern dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+                                   unsigned long offset, size_t size,
+                                   enum dma_data_direction dir,
+                                   struct dma_attrs *attrs);
+
+on the input side you get 'struct device','struct page'... and that is it.
+The DMA API is responsible for providing you with the 'dma_addr' which
+is going to be zero or -1, or some valid DMA scratch address, depending on the IOMMU.
+
+On the later invocation, so 'unmap_page', you have:
+
+extern void swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
+                               size_t size, enum dma_data_direction dir,
+                               struct dma_attrs *attrs);
+
+you are feed the 'dev_addr' that 'map_page' came up with (-1 or 0) and the
+'struct device'.
+
+Perhaps you could use just 'struct device' and 'dma_addr' and life with
+the possiblity of the device doing multiple of these map_page where it gets
+a invalid address and does nothing about it. If it does the 'dma_mapping_error'
+you could deduct the count of invalid DMA address?
+
+
+> 
+> Tracking failed mappings would require either changing the current table
+> usage to include failed maps and change the hash function to use some
+> other key instead of the mapped address. I didn't want to go that route.
+> One option I considered was to maintain device list with dma-debug
+> module and at that point adding fields to struct device sounded like one
+> way to go instead of adding another set of parallel data structures to
+> maintain the association between these counts and devices.
+> 
+> But from what I am hearing as feedback "changing struct device for this
+> purpose is not a desirable." :)
+
+Yup.
+> 
+> I will go back and take a look at another approach to not disturb the
+> existing dma_debug_entry usage, still provide per device counts
+> contained within the dma-debug module. I have couple of ideas to pursue
+> further and see if they work.
+
+OK. Would it help if we suggested some ideas or do you want to try to
+mull some of your ideas first?
+> 
+> -- Shuah
+> 
+> 
+> 
+> 
+> 
