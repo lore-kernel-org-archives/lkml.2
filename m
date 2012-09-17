@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2IQQC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:02:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56869 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236Ab2IQQCZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:02:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <87a9wp84a5.fsf@intel.com>
-References: <1347627426-3813-1-git-send-email-grant.likely@secretlab.ca>
- <84c8a8$5o3dgr@orsmga001.jf.intel.com> <CACxGe6u0+LC4G-87PsEK3ys7qqeJ2WnqnCdaegMK7=M9xpA8ug@mail.gmail.com>
- <1347628339.21322.16.camel@shinybook.infradead.org> <CACxGe6szLVwsdNOvpB9v8pGDrygu+Go5Vf3bvpE19v3+Hkv4ww@mail.gmail.com>
- <87a9wp84a5.fsf@intel.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 17 Sep 2012 17:02:03 +0100
-X-Google-Sender-Auth: qQwaZOy930vWh3lrqeB5uVRHawY
-Message-ID: <CACxGe6sFibn9b+oMWTFbYEno8xJvw6S2d8RM9juaCHPStaSnOQ@mail.gmail.com>
-Subject: Re: [PATCH] i915: Quirk out disconnected backlight
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932386Ab2IQQMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:12:46 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:56885 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325Ab2IQQMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 12:12:45 -0400
+Date: Mon, 17 Sep 2012 09:12:14 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, mlindner@marvell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch net] sky2: fix rx filter setup on link up
+Message-ID: <20120917091214.5cd9b0f5@nehalam.linuxnetplumber.net>
+In-Reply-To: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 9:03 AM, Jani Nikula
-<jani.nikula@linux.intel.com> wrote:
-> Hi Grant, please try v3.6-rc6 that does exactly that with:
->
-> commit 28dcc2d60cb570d9f549c329b2f51400553412a1
-> Author: Jani Nikula <jani.nikula@intel.com>
-> Date:   Mon Sep 3 16:25:12 2012 +0300
->
->     drm/i915: do not expose a dysfunctional backlight interface to userspace
->
-> Does that fix it for you?
+On Mon, 17 Sep 2012 17:10:17 +0200
+Jiri Pirko <jiri@resnulli.us> wrote:
 
-Yes, thanks.
+> In my case I have following problem. sky2_set_multicast() sets registers
+> GM_MC_ADDR_H[1-4] correctly to:
+> 0000 0800 0001 0410
+> However, when adapter gets link and sky2_link_up() is called, the values
+> are for some reason different:
+> 0000 0800 0016 0410
 
-g.
+Rather than papering over the problem, it would be better to
+trace back what is setting those registers and fix that code.
+
+> This in my case prevents iface to be able to receive packets with dst mac
+> 01:80:C2:00:00:02 (LACPDU dst mac), which I set up previously by
+> SIOCADDMULTI.
+> 
+> So remember computed rx_filter data and write it to GM_MC_ADDR_H[1-4] on
+> link_up.
+>
+
+Please do some more root cause analysis. Just save/restoring the
+registers is just a temporary workaround.
