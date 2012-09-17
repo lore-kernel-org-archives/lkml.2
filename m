@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2IQAtS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:49:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33293 "EHLO
+	id S1753399Ab2IQAuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33308 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752304Ab2IQAtJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752913Ab2IQAtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:09 -0400
-Message-Id: <20120917003626.469953833@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:21 -0400
+Message-Id: <20120917003626.743993154@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:27 +0100
+Date: Mon, 17 Sep 2012 01:36:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Heiko Stuebner <heiko@sntech.de>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 002/135] ARM: S3C24XX: Fix s3c2410_dma_enqueue parameters
+        alan@lxorguk.ukuu.org.uk,
+        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 004/135] ARM: Orion: Set eth packet size csum offload limit
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +29,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Stuebner <heiko@sntech.de>
+From: "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>
 
-commit b01858c7806e7e6f6121da2e51c9222fc4d21dc6 upstream.
+commit 58569aee5a1a5dcc25c34a0a2ed9a377874e6b05 upstream.
 
-Commit d670ac019f60 (ARM: SAMSUNG: DMA Cleanup as per sparse) changed the
-prototype of the s3c2410_dma_* functions to use the enum dma_ch instead
-of an generic unsigned int.
+The mv643xx ethernet controller limits the packet size for the TX
+checksum offloading. This patch sets this limits for Kirkwood and
+Dove which have smaller limits that the default.
 
-In the s3c24xx dma.c s3c2410_dma_enqueue seems to have been forgotten,
-the other functions there were changed correctly.
+As a side note, this patch is an updated version of a patch sent some years
+ago: http://lists.infradead.org/pipermail/linux-arm-kernel/2010-June/017320.html
+which seems to have been lost.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Arnaud Patard <arnaud.patard@rtp-net.org>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+[bwh: Backported to 3.2: adjust for the extra two parameters of
+ orion_ge0{0,1}_init()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/plat-s3c24xx/dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/plat-s3c24xx/dma.c b/arch/arm/plat-s3c24xx/dma.c
-index 28f898f..db98e70 100644
---- a/arch/arm/plat-s3c24xx/dma.c
-+++ b/arch/arm/plat-s3c24xx/dma.c
-@@ -430,7 +430,7 @@ s3c2410_dma_canload(struct s3c2410_dma_chan *chan)
-  * when necessary.
- */
- 
--int s3c2410_dma_enqueue(unsigned int channel, void *id,
-+int s3c2410_dma_enqueue(enum dma_ch channel, void *id,
- 			dma_addr_t data, int size)
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -92,7 +92,7 @@ void __init dove_ge00_init(struct mv643x
  {
- 	struct s3c2410_dma_chan *chan = s3c_dma_lookup_channel(channel);
+ 	orion_ge00_init(eth_data, &dove_mbus_dram_info,
+ 			DOVE_GE00_PHYS_BASE, IRQ_DOVE_GE00_SUM,
+-			0, get_tclk());
++			0, get_tclk(), 1600);
+ }
+ 
+ /*****************************************************************************
+--- a/arch/arm/mach-kirkwood/common.c
++++ b/arch/arm/mach-kirkwood/common.c
+@@ -88,7 +88,7 @@ void __init kirkwood_ge00_init(struct mv
+ 
+ 	orion_ge00_init(eth_data, &kirkwood_mbus_dram_info,
+ 			GE00_PHYS_BASE, IRQ_KIRKWOOD_GE00_SUM,
+-			IRQ_KIRKWOOD_GE00_ERR, kirkwood_tclk);
++			IRQ_KIRKWOOD_GE00_ERR, kirkwood_tclk, 1600);
+ }
+ 
+ 
+@@ -102,7 +102,7 @@ void __init kirkwood_ge01_init(struct mv
+ 
+ 	orion_ge01_init(eth_data, &kirkwood_mbus_dram_info,
+ 			GE01_PHYS_BASE, IRQ_KIRKWOOD_GE01_SUM,
+-			IRQ_KIRKWOOD_GE01_ERR, kirkwood_tclk);
++			IRQ_KIRKWOOD_GE01_ERR, kirkwood_tclk, 1600);
+ }
+ 
+ 
+--- a/arch/arm/mach-mv78xx0/common.c
++++ b/arch/arm/mach-mv78xx0/common.c
+@@ -202,7 +202,8 @@ void __init mv78xx0_ge00_init(struct mv6
+ {
+ 	orion_ge00_init(eth_data, &mv78xx0_mbus_dram_info,
+ 			GE00_PHYS_BASE, IRQ_MV78XX0_GE00_SUM,
+-			IRQ_MV78XX0_GE_ERR, get_tclk());
++			IRQ_MV78XX0_GE_ERR, get_tclk(),
++			MV643XX_TX_CSUM_DEFAULT_LIMIT);
+ }
+ 
+ 
+@@ -213,7 +214,8 @@ void __init mv78xx0_ge01_init(struct mv6
+ {
+ 	orion_ge01_init(eth_data, &mv78xx0_mbus_dram_info,
+ 			GE01_PHYS_BASE, IRQ_MV78XX0_GE01_SUM,
+-			NO_IRQ, get_tclk());
++			NO_IRQ, get_tclk(),
++			MV643XX_TX_CSUM_DEFAULT_LIMIT);
+ }
+ 
+ 
+--- a/arch/arm/mach-orion5x/common.c
++++ b/arch/arm/mach-orion5x/common.c
+@@ -95,7 +95,8 @@ void __init orion5x_eth_init(struct mv64
+ {
+ 	orion_ge00_init(eth_data, &orion5x_mbus_dram_info,
+ 			ORION5X_ETH_PHYS_BASE, IRQ_ORION5X_ETH_SUM,
+-			IRQ_ORION5X_ETH_ERR, orion5x_tclk);
++			IRQ_ORION5X_ETH_ERR, orion5x_tclk,
++			MV643XX_TX_CSUM_DEFAULT_LIMIT);
+ }
+ 
+ 
+--- a/arch/arm/plat-orion/common.c
++++ b/arch/arm/plat-orion/common.c
+@@ -263,10 +263,12 @@ void __init orion_ge00_init(struct mv643
+ 			    unsigned long mapbase,
+ 			    unsigned long irq,
+ 			    unsigned long irq_err,
+-			    int tclk)
++			    int tclk,
++			    unsigned int tx_csum_limit)
+ {
+ 	fill_resources(&orion_ge00_shared, orion_ge00_shared_resources,
+ 		       mapbase + 0x2000, SZ_16K - 1, irq_err);
++	orion_ge00_shared_data.tx_csum_limit = tx_csum_limit;
+ 	ge_complete(&orion_ge00_shared_data, mbus_dram_info, tclk,
+ 		    orion_ge00_resources, irq, &orion_ge00_shared,
+ 		    eth_data, &orion_ge00);
+@@ -317,10 +319,12 @@ void __init orion_ge01_init(struct mv643
+ 			    unsigned long mapbase,
+ 			    unsigned long irq,
+ 			    unsigned long irq_err,
+-			    int tclk)
++			    int tclk,
++			    unsigned int tx_csum_limit)
+ {
+ 	fill_resources(&orion_ge01_shared, orion_ge01_shared_resources,
+ 		       mapbase + 0x2000, SZ_16K - 1, irq_err);
++	orion_ge01_shared_data.tx_csum_limit = tx_csum_limit;
+ 	ge_complete(&orion_ge01_shared_data, mbus_dram_info, tclk,
+ 		    orion_ge01_resources, irq, &orion_ge01_shared,
+ 		    eth_data, &orion_ge01);
+--- a/arch/arm/plat-orion/include/plat/common.h
++++ b/arch/arm/plat-orion/include/plat/common.h
+@@ -41,14 +41,16 @@ void __init orion_ge00_init(struct mv643
+ 			    unsigned long mapbase,
+ 			    unsigned long irq,
+ 			    unsigned long irq_err,
+-			    int tclk);
++			    int tclk,
++			    unsigned int tx_csum_limit);
+ 
+ void __init orion_ge01_init(struct mv643xx_eth_platform_data *eth_data,
+ 			    struct mbus_dram_target_info *mbus_dram_info,
+ 			    unsigned long mapbase,
+ 			    unsigned long irq,
+ 			    unsigned long irq_err,
+-			    int tclk);
++			    int tclk,
++			    unsigned int tx_csum_limit);
+ 
+ void __init orion_ge10_init(struct mv643xx_eth_platform_data *eth_data,
+ 			    struct mbus_dram_target_info *mbus_dram_info,
+--- a/include/linux/mv643xx_eth.h
++++ b/include/linux/mv643xx_eth.h
+@@ -15,6 +15,8 @@
+ #define MV643XX_ETH_SIZE_REG_4		0x2224
+ #define MV643XX_ETH_BASE_ADDR_ENABLE_REG	0x2290
+ 
++#define MV643XX_TX_CSUM_DEFAULT_LIMIT	0
++
+ struct mv643xx_eth_shared_platform_data {
+ 	struct mbus_dram_target_info	*dram;
+ 	struct platform_device	*shared_smi;
 
 
