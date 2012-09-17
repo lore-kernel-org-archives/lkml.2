@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab2IQPgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:36:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:38729 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2IQPgS (ORCPT
+	id S1756598Ab2IQPjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:39:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63809 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab2IQPjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:36:18 -0400
-Date: Mon, 17 Sep 2012 08:36:08 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] perf tool: Allow wildcard in PMU name
-Message-ID: <20120917153608.GB31375@ghostprotocols.net>
-References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
- <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
- <20120911142717.GD3800@krava.brq.redhat.com>
+	Mon, 17 Sep 2012 11:39:35 -0400
+Message-ID: <50574432.5040005@suse.cz>
+Date: Mon, 17 Sep 2012 17:39:30 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120911142717.GD3800@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: BUG at mm/huge_memory.c:1428!
+References: <50522275.7090709@suse.cz> <CANN689E0SaT9vaBb+snwYrP728GjZhRj7o7T4GoNfQVY7sBr7Q@mail.gmail.com> <50538561.8030505@suse.cz>
+In-Reply-To: <50538561.8030505@suse.cz>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 11, 2012 at 04:27:17PM +0200, Jiri Olsa escreveu:
-> On Mon, Sep 10, 2012 at 03:53:51PM +0800, Yan, Zheng wrote:
+On 09/14/2012 09:28 PM, Jiri Slaby wrote:
+> On 09/14/2012 12:46 AM, Michel Lespinasse wrote:
+>> On Thu, Sep 13, 2012 at 11:14 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>> Hi,
+>>>
+>>> I've just get the following BUG with today's -next. It happens every
+>>> time I try to update packages.
+>>>
+>>> kernel BUG at mm/huge_memory.c:1428!
+>>
+>> That is very likely my bug.
+>>
+>> Do you have the message that should be printed right above the bug ?
+>> (                printk(KERN_ERR "mapcount %d page_mapcount %d\n",
+>>                        mapcount, page_mapcount(page));
+>> )
 > 
-> Would it be possible to have all '*add_event' more obvious for usage.
-> Also following code is duplicated after each call of __add_event:
-> 
->       evsel = __add_event(idx, &attr, pmu_event_name(head_config),
->                           pmu->cpus);
->       if (!evsel) {
->               *idx = orig_idx;
->               free_event_list(list);
->               return -ENOMEM;
->       }
->       list_add_tail(&evsel->node, list);
+> Unfortunately no. And I cannot reproduce anymore :(...
 
-Any update here? Yan, did you look at folding Jiri's patch? I'm merging
-the first bit, the kernel part, that was Acked by Ingo and Peter,
-waiting on this part, looking at 2/3 now
+FWIW: mapcount 0 page_mapcount 1
 
-- Arnaldo
+It happened today. Now I'm going to apply your patch.
+
+> thanks,
+-- 
+js
+suse labs
