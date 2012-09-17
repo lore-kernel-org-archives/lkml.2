@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab2IQBQb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:16:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34281 "EHLO
+	id S1753578Ab2IQAuY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33355 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab2IQBQM (ORCPT
+	by vger.kernel.org with ESMTP id S1752996Ab2IQAt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 21:16:12 -0400
-Message-Id: <20120917003636.998948618@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:29 -0400
+Message-Id: <20120917003628.165734909@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:43 +0100
+Date: Mon, 17 Sep 2012 01:36:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
-        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 078/135] time: Improve sanity checking of timekeeping inputs
+        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 014/135] OMAPFB: fix framebuffer console colors
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,158 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-This is a -stable backport of 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b
+commit c1c52848cef52e157468b8879fc3cae23b6f3a99 upstream.
 
-Unexpected behavior could occur if the time is set to a value large
-enough to overflow a 64bit ktime_t (which is something larger then the
-year 2262).
+omapfb does not currently set pseudo palette correctly for color depths
+above 16bpp, making red text invisible, command like
+  echo -e '\e[0;31mRED' > /dev/tty1
+will display nothing on framebuffer console in 24bpp mode.
+This is because temporary variable is declared incorrectly, fix it.
 
-Also unexpected behavior could occur if large negative offsets are
-injected via adjtimex.
-
-So this patch improves the sanity check timekeeping inputs by
-improving the timespec_valid() check, and then makes better use of
-timespec_valid() to make sure we don't set the time to an invalid
-negative value or one that overflows ktime_t.
-
-Note: This does not protect from setting the time close to overflowing
-ktime_t and then letting natural accumulation cause the overflow.
-
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   22 ++++++++++++++++++++--
- kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
- 3 files changed, 44 insertions(+), 11 deletions(-)
+ drivers/video/omap2/omapfb/omapfb-main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -58,13 +58,6 @@ union ktime {
+diff --git a/drivers/video/omap2/omapfb/omapfb-main.c b/drivers/video/omap2/omapfb/omapfb-main.c
+index 08ec1a7..fc671d3 100644
+--- a/drivers/video/omap2/omapfb/omapfb-main.c
++++ b/drivers/video/omap2/omapfb/omapfb-main.c
+@@ -1192,7 +1192,7 @@ static int _setcolreg(struct fb_info *fbi, u_int regno, u_int red, u_int green,
+ 			break;
  
- typedef union ktime ktime_t;		/* Kill this */
- 
--#define KTIME_MAX			((s64)~((u64)1 << 63))
--#if (BITS_PER_LONG == 64)
--# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
--#else
--# define KTIME_SEC_MAX			LONG_MAX
--#endif
--
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -107,11 +107,29 @@ static inline struct timespec timespec_s
- 	return ts_delta;
- }
- 
-+#define KTIME_MAX			((s64)~((u64)1 << 63))
-+#if (BITS_PER_LONG == 64)
-+# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
-+#else
-+# define KTIME_SEC_MAX			LONG_MAX
-+#endif
-+
- /*
-  * Returns true if the timespec is norm, false if denorm:
-  */
--#define timespec_valid(ts) \
--	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
-+static inline bool timespec_valid(const struct timespec *ts)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (ts->tv_sec < 0)
-+		return false;
-+	/* Can't have more nanoseconds then a second */
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return false;
-+	/* Disallow values that could overflow ktime_t */
-+	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
-+		return false;
-+	return true;
-+}
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespe
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
-+	if (!timespec_valid(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
-@@ -417,6 +417,8 @@ EXPORT_SYMBOL(do_settimeofday);
- int timekeeping_inject_offset(struct timespec *ts)
- {
- 	unsigned long flags;
-+	struct timespec tmp;
-+	int ret = 0;
- 
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
-@@ -425,9 +427,16 @@ int timekeeping_inject_offset(struct tim
- 
- 	timekeeping_forward_now();
- 
-+	tmp = timespec_add(xtime,  *ts);
-+	if (!timespec_valid(&tmp)) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-+
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
-+error: /* even if we error out, we forwarded the time, so call update */
- 	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -435,7 +444,7 @@ int timekeeping_inject_offset(struct tim
- 	/* signal hrtimers about time change */
- 	clock_was_set();
- 
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(timekeeping_inject_offset);
- 
-@@ -582,7 +591,20 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
-+	if (!timespec_valid(&now)) {
-+		pr_warn("WARNING: Persistent clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		now.tv_sec = 0;
-+		now.tv_nsec = 0;
-+	}
-+
- 	read_boot_clock(&boot);
-+	if (!timespec_valid(&boot)) {
-+		pr_warn("WARNING: Boot clock returned invalid value!\n"
-+			"         Check your CMOS/BIOS settings.\n");
-+		boot.tv_sec = 0;
-+		boot.tv_nsec = 0;
-+	}
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
- 
+ 		if (regno < 16) {
+-			u16 pal;
++			u32 pal;
+ 			pal = ((red >> (16 - var->red.length)) <<
+ 					var->red.offset) |
+ 				((green >> (16 - var->green.length)) <<
 
 
