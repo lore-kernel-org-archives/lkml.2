@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab2IQAyt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:54:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33981 "EHLO
+	id S1754790Ab2IQAvf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33941 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754813Ab2IQAvi (ORCPT
+	by vger.kernel.org with ESMTP id S1754690Ab2IQAva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:38 -0400
-Message-Id: <20120917003630.687695143@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:30 -0400
+Message-Id: <20120917003632.215097822@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:57 +0100
+Date: Mon, 17 Sep 2012 01:37:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lauri Hintsala <lauri.hintsala@bluegiga.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 032/135] mmc: mxs-mmc: fix deadlock in SDIO IRQ case
+        alan@lxorguk.ukuu.org.uk, Ronny Hegewald <ronny.hegewald@online.de>,
+        Stefano Panella <stefano.panella@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 043/135] xen: Use correct masking in xen_swiotlb_alloc_coherent.
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,93 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+From: Ronny Hegewald <ronny.hegewald@online.de>
 
-commit 1af36b2a993dddfa3d6860ec4879c9e8abc9b976 upstream.
+commit b5031ed1be0aa419250557123633453753181643 upstream.
 
-Release the lock before mmc_signal_sdio_irq is called by mxs_mmc_irq_handler.
+When running 32-bit pvops-dom0 and a driver tries to allocate a coherent
+DMA-memory the xen swiotlb-implementation returned memory beyond 4GB.
 
-Backtrace:
-[   79.660000] =============================================
-[   79.660000] [ INFO: possible recursive locking detected ]
-[   79.660000] 3.4.0-00009-g3e96082-dirty #11 Not tainted
-[   79.660000] ---------------------------------------------
-[   79.660000] swapper/0 is trying to acquire lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026ea3c>] mxs_mmc_enable_sdio_irq+0x18/0xd4
-[   79.660000]
-[   79.660000] but task is already holding lock:
-[   79.660000]  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] other info that might help us debug this:
-[   79.660000]  Possible unsafe locking scenario:
-[   79.660000]
-[   79.660000]        CPU0
-[   79.660000]        ----
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]   lock(&(&host->lock)->rlock#2);
-[   79.660000]
-[   79.660000]  *** DEADLOCK ***
-[   79.660000]
-[   79.660000]  May be due to missing lock nesting notation
-[   79.660000]
-[   79.660000] 1 lock held by swapper/0:
-[   79.660000]  #0:  (&(&host->lock)->rlock#2){-.....}, at: [<c026f744>] mxs_mmc_irq_handler+0x1c/0xe8
-[   79.660000]
-[   79.660000] stack backtrace:
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c005f9c0>] (__lock_acquire+0x1948/0x1d48)
-[   79.660000] [<c005f9c0>] (__lock_acquire+0x1948/0x1d48) from [<c005fea0>] (lock_acquire+0xe0/0xf8)
-[   79.660000] [<c005fea0>] (lock_acquire+0xe0/0xf8) from [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58)
-[   79.660000] [<c03a8460>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
-[   79.660000] BUG: spinlock lockup on CPU#0, swapper/0
-[   79.660000]  lock: c398cb2c, .magic: dead4ead, .owner: swapper/0, .owner_cpu: 0
-[   79.660000] [<c0014bd0>] (unwind_backtrace+0x0/0xf4) from [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144)
-[   79.660000] [<c01ddb1c>] (do_raw_spin_lock+0xf0/0x144) from [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58)
-[   79.660000] [<c03a8468>] (_raw_spin_lock_irqsave+0x4c/0x58) from [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4)
-[   79.660000] [<c026ea3c>] (mxs_mmc_enable_sdio_irq+0x18/0xd4) from [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8)
-[   79.660000] [<c026f7fc>] (mxs_mmc_irq_handler+0xd4/0xe8) from [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254)
-[   79.660000] [<c006bdd8>] (handle_irq_event_percpu+0x70/0x254) from [<c006bff8>] (handle_irq_event+0x3c/0x5c)
-[   79.660000] [<c006bff8>] (handle_irq_event+0x3c/0x5c) from [<c006e6d0>] (handle_level_irq+0x90/0x110)
-[   79.660000] [<c006e6d0>] (handle_level_irq+0x90/0x110) from [<c006b930>] (generic_handle_irq+0x38/0x50)
-[   79.660000] [<c006b930>] (generic_handle_irq+0x38/0x50) from [<c00102fc>] (handle_IRQ+0x30/0x84)
-[   79.660000] [<c00102fc>] (handle_IRQ+0x30/0x84) from [<c000f058>] (__irq_svc+0x38/0x60)
-[   79.660000] [<c000f058>] (__irq_svc+0x38/0x60) from [<c0010520>] (default_idle+0x2c/0x40)
-[   79.660000] [<c0010520>] (default_idle+0x2c/0x40) from [<c0010a90>] (cpu_idle+0x64/0xcc)
-[   79.660000] [<c0010a90>] (cpu_idle+0x64/0xcc) from [<c04ff858>] (start_kernel+0x244/0x2c8)
+The underlaying reason is that if the supplied driver passes in a
+DMA_BIT_MASK(64) ( hwdev->coherent_dma_mask is set to 0xffffffffffffffff)
+our dma_mask will be u64 set to 0xffffffffffffffff even if we set it to
+DMA_BIT_MASK(32) previously. Meaning we do not reset the upper bits.
+By using the dma_alloc_coherent_mask function - it does the proper casting
+and we get 0xfffffffff.
 
-Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2: adjust context]
+This caused not working sound on a system with 4 GB and a 64-bit
+compatible sound-card with sets the DMA-mask to 64bit.
+
+On bare-metal and the forward-ported xen-dom0 patches from OpenSuse a coherent
+DMA-memory is always allocated inside the 32-bit address-range by calling
+dma_alloc_coherent_mask.
+
+This patch adds the same functionality to xen swiotlb and is a rebase of the
+original patch from Ronny Hegewald which never got upstream b/c the
+underlaying reason was not understood until now.
+
+The original email with the original patch is in:
+http://old-list-archives.xen.org/archives/html/xen-devel/2010-02/msg00038.html
+the original thread from where the discussion started is in:
+http://old-list-archives.xen.org/archives/html/xen-devel/2010-01/msg00928.html
+
+Signed-off-by: Ronny Hegewald <ronny.hegewald@online.de>
+Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+Acked-By: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/mxs-mmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -279,11 +279,11 @@ static irqreturn_t mxs_mmc_irq_handler(i
- 	writel(stat & MXS_MMC_IRQ_BITS,
- 	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 1afb4fb..4d51948 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -232,7 +232,7 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		return ret;
  
-+	spin_unlock(&host->lock);
-+
- 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
- 		mmc_signal_sdio_irq(host->mmc);
+ 	if (hwdev && hwdev->coherent_dma_mask)
+-		dma_mask = hwdev->coherent_dma_mask;
++		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
  
--	spin_unlock(&host->lock);
--
- 	if (stat & BM_SSP_CTRL1_RESP_TIMEOUT_IRQ)
- 		cmd->error = -ETIMEDOUT;
- 	else if (stat & BM_SSP_CTRL1_RESP_ERR_IRQ)
+ 	phys = virt_to_phys(ret);
+ 	dev_addr = xen_phys_to_bus(phys);
 
 
