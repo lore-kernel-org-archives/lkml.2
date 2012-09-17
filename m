@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab2IQDKK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 23:10:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63758 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab2IQDKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 23:10:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,432,1344236400"; 
-   d="scan'208";a="193738560"
-Subject: Re: [PATCH 1/8] DMA: PL330: use prefix in reg names to build under
- x86
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Davide Ciminaghi <dciminaghi@mail.gnudd.com>
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, rubini@gnudd.com, wim@iguana.be,
-        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        gregkh@linuxfoundation.org, ben-linux@fluff.org,
-        viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        giancarlo.asnaghi@st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1347639843-32119-2-git-send-email-dciminaghi@mail.gnudd.com>
-References: <1347639843-32119-1-git-send-email-dciminaghi@mail.gnudd.com>
-	 <1347639843-32119-2-git-send-email-dciminaghi@mail.gnudd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Sep 2012 08:36:06 +0530
-Message-ID: <1347851166.1943.122.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753362Ab2IQDPv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 23:15:51 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56714 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab2IQDPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 23:15:50 -0400
+Message-ID: <505695E3.7040603@gmail.com>
+Date: Sun, 16 Sep 2012 22:15:47 -0500
+From: Bruce Dubbs <bruce.dubbs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120628 Firefox/13.0.1 SeaMonkey/2.10.1
+MIME-Version: 1.0
+To: Jan Engelhardt <jengelh@inai.de>
+CC: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-modules <linux-modules@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-hotplug <linux-hotplug@vger.kernel.org>
+Subject: Re: [ANNOUNCE] kmod 10
+References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com> <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
+In-Reply-To: <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 18:23 +0200, Davide Ciminaghi wrote:
-> From: Alessandro Rubini <rubini@gnudd.com>
-> 
-> This driver would not compile if ARM_AMBA is selected under x86,
-> because "CS" and "DS" are already defined there.  But AMBA
-> is used in the x86 world by a PCI-to-AMBA bridge, to be submitted.
-> 
-> The patch adds the "PL330_" prefix to all register and bit fields,
-> so it can be built by randomconfig after ARM_AMBA appears within x86.
-> 
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> ---
-Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+Jan Engelhardt wrote:
+>
+> On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
+>>
+>> kmod 10 is out:
+>>
+>> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
+>> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
+>
+> make check fails here with glibc-2.15, gcc-4.7, x86_64,
+> due to what seems to be duplicated symbols(?)
 
--- 
-~Vinod
+On my LFS system, glibc-2.16, gcc-4.7.1, x86_64, I do not see these errors:
+
+./configure --prefix=/usr --bindir=/bin --libdir=/lib \
+             --sysconfdir=/etc --with-xz --with-zlib
+make
+make check
+
+==================
+All 9 tests passed
+==================
+
+What is interesting is that if I run the checks again:
+
+make check
+
+I get:
+
+TESTSUITE: running modprobe_softdep_loop, in forked context
+TESTSUITE: ERR: rootfs 
+/usr/src/kmod/kmod-10/testsuite/rootfs/test-modprobe/softdep-loop is 
+dirty, please run 'make rootfs' before runnning this test
+TESTSUITE: ERR: 'modprobe_softdep_loop' [16407] exited with return code 1
+TESTSUITE: ERR: FAILED: modprobe_softdep_loop
+FAIL: testsuite/test-modprobe
+
+TESTSUITE: running test_insert, in forked context
+TESTSUITE: ERR: rootfs /usr/src/kmod/kmod-10/testsuite/rootfs/test-init/ 
+is dirty, please run 'make rootfs' before runnning this test
+TESTSUITE: ERR: 'test_insert' [16373] exited with return code 1
+TESTSUITE: ERR: FAILED: test_insert
+FAIL: testsuite/test-init
+
+==============================================
+2 of 9 tests failed
+Please report to linux-modules@vger.kernel.org
+==============================================
+
+'make rootfs' does not do anything but make distclean && configure && 
+make && make check is clean for me.
+
+   -- Bruce
 
