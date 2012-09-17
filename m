@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2IQBBL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:01:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33883 "EHLO
+	id S1754501Ab2IQAvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33509 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753168Ab2IQAvR (ORCPT
+	by vger.kernel.org with ESMTP id S1753168Ab2IQAtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:17 -0400
-Message-Id: <20120917003632.891910775@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:53 -0400
+Message-Id: <20120917003642.945121034@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:13 +0100
+Date: Mon, 17 Sep 2012 01:38:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 048/135] net: Allow driver to limit number of GSO segments per  skb
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Daniel J Blueman <daniel@quora.org>
+Subject: [ 121/135] ALSA: hda - Fix Oops at codec reset/reconfig
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,72 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 30b678d844af3305cda5953467005cebb5d7b687 ]
+commit 07dc59f0988cb54fd87bd373b3b27eb2401dd811 upstream.
 
-A peer (or local user) may cause TCP to use a nominal MSS of as little
-as 88 (actual MSS of 76 with timestamps).  Given that we have a
-sufficiently prodigious local sender and the peer ACKs quickly enough,
-it is nevertheless possible to grow the window for such a connection
-to the point that we will try to send just under 64K at once.  This
-results in a single skb that expands to 861 segments.
+snd_hda_codec_reset() calls restore_pincfgs() where the codec is
+powered up again, which eventually tries to resume and initialize via
+the callbacks of the codec.  However, it's the place just after codec
+free callback, thus no codec callbacks should be called after that.
+On a codec like CS4206, it results in Oops due to the access in init
+callback.
 
-In some drivers with TSO support, such an skb will require hundreds of
-DMA descriptors; a substantial fraction of a TX ring or even more than
-a full ring.  The TX queue selected for the skb may stall and trigger
-the TX watchdog repeatedly (since the problem skb will be retried
-after the TX reset).  This particularly affects sfc, for which the
-issue is designated as CVE-2012-3412.
+This patch fixes the issue by clearing the codec callbacks properly
+after freeing codec.
 
-Therefore:
-1. Add the field net_device::gso_max_segs holding the device-specific
-   limit.
-2. In netif_skb_features(), if the number of segments is too high then
-   mask out GSO features to force fall back to software GSO.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/netdevice.h | 2 ++
- net/core/dev.c            | 4 ++++
- 2 files changed, 6 insertions(+)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index cb52340..d178fb8 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1299,6 +1299,8 @@ struct net_device {
- 	/* for setting kernel sock attribute on TCP connection setup */
- #define GSO_MAX_SIZE		65536
- 	unsigned int		gso_max_size;
-+#define GSO_MAX_SEGS		65535
-+	u16			gso_max_segs;
- 
- #ifdef CONFIG_DCB
- 	/* Data Center Bridging netlink ops */
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 4b18703..e6f2635 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2108,6 +2108,9 @@ u32 netif_skb_features(struct sk_buff *skb)
- 	__be16 protocol = skb->protocol;
- 	u32 features = skb->dev->features;
- 
-+	if (skb_shinfo(skb)->gso_segs > skb->dev->gso_max_segs)
-+		features &= ~NETIF_F_GSO_MASK;
-+
- 	if (protocol == htons(ETH_P_8021Q)) {
- 		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
- 		protocol = veh->h_vlan_encapsulated_proto;
-@@ -5990,6 +5993,7 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
- 	dev_net_set(dev, &init_net);
- 
- 	dev->gso_max_size = GSO_MAX_SIZE;
-+	dev->gso_max_segs = GSO_MAX_SEGS;
- 
- 	INIT_LIST_HEAD(&dev->napi_list);
- 	INIT_LIST_HEAD(&dev->unreg_list);
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2312,6 +2312,7 @@ int snd_hda_codec_reset(struct hda_codec
+ 	}
+ 	if (codec->patch_ops.free)
+ 		codec->patch_ops.free(codec);
++	memset(&codec->patch_ops, 0, sizeof(codec->patch_ops));
+ 	codec->proc_widget_hook = NULL;
+ 	codec->spec = NULL;
+ 	free_hda_cache(&codec->amp_cache);
+@@ -2324,7 +2325,6 @@ int snd_hda_codec_reset(struct hda_codec
+ 	codec->num_pcms = 0;
+ 	codec->pcm_info = NULL;
+ 	codec->preset = NULL;
+-	memset(&codec->patch_ops, 0, sizeof(codec->patch_ops));
+ 	codec->slave_dig_outs = NULL;
+ 	codec->spdif_status_reset = 0;
+ 	module_put(codec->owner);
 
 
