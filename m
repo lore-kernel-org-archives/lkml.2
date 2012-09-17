@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab2IQIkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:40:37 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:58413 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755067Ab2IQIkf (ORCPT
+	id S1755206Ab2IQIly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:41:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62435 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755016Ab2IQIlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:40:35 -0400
-Message-ID: <5056E233.6010900@ti.com>
-Date: Mon, 17 Sep 2012 11:41:23 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
+	Mon, 17 Sep 2012 04:41:53 -0400
+Date: Mon, 17 Sep 2012 09:41:08 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the arm64 tree
+Message-ID: <20120917084108.GA23549@arm.com>
+References: <20120917112405.4f7b7555209ad024e0531b21@canb.auug.org.au>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH v3 02/15] dmaengine: omap: Add support for pause/resume
- in cyclic dma mode
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>  <1347624358-25582-3-git-send-email-peter.ujfalusi@ti.com> <1347851637.1943.125.camel@vkoul-udesk3>
-In-Reply-To: <1347851637.1943.125.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917112405.4f7b7555209ad024e0531b21@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+Hi Stephen,
 
-On 09/17/2012 06:13 AM, Vinod Koul wrote:
-> On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
->> -       /* FIXME: not supported by platform private API */
->> -       return -EINVAL;
->> +       /* Pause/Resume only allowed with cyclic mode */
->> +       if (!c->cyclic)
->> +               return -EINVAL; 
-> This is not a dma restriction right?
+On Mon, Sep 17, 2012 at 02:24:05AM +0100, Stephen Rothwell wrote:
+> After merging the arm64 tree, today's linux-next build ()
+> failed like this:
+> 
+> arch/powerpc/kernel/sys_ppc32.c:146:17: error: conflicting types for 'compat_sys_sendfile'
+> include/linux/compat.h:593:16: note: previous declaration of 'compat_sys_sendfile' was here
+> arch/powerpc/kernel/sys_ppc32.c:231:17: error: conflicting types for 'compat_sys_sched_rr_get_interval'
+> include/linux/compat.h:596:16: note: previous declaration of 'compat_sys_sched_rr_get_interval' was here
+> 
+> Caused by commits 2a23f0dba0c6 ("fs: Add generic compat_sys_sendfile
+> implementation") and a0c6fc489bf6 ("compat: Add generic
+> compat_sys_sched_rr_get_interval implementation").  Grep is your friend.
 
-The pause/resume operation has been only used by audio. This might work with
-non cyclic modes as well but it has never been used/tested so to be safe I
-have added this restriction.
+Thanks for this. It was an attempt to add generic compat_sys_sendfile()
+and compat_sys_sched_rr_get_interval() implementations to be shared by
+other architectures (patches for the other architectures to be pushed
+separately). I'll drop them for now as PowerPC has different prototypes
+and push the patches separately.
 
 -- 
-Péter
+Catalin
