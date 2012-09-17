@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2IQAvr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:51:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34015 "EHLO
+	id S1754906Ab2IQAvp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34009 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754874Ab2IQAvm (ORCPT
+	by vger.kernel.org with ESMTP id S1754860Ab2IQAvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:42 -0400
-Message-Id: <20120917003630.011572222@decadent.org.uk>
+Message-Id: <20120917003629.000299486@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:52 +0100
+Date: Mon, 17 Sep 2012 01:36:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        <dri-devel@lists.freedesktop.org>, Adam Jackson <ajax@redhat.com>,
-        Ian Pilcher <arequipeno@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 027/135] drm: Add EDID_QUIRK_FORCE_REDUCED_BLANKING for ASUS VW222S
+        alan@lxorguk.ukuu.org.uk, Jakob Bornecrantz <jakob@vmware.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 020/135] drm: Check for invalid cursor flags
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,56 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Menzel <paulepanter@users.sourceforge.net>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit 6f33814bd4d9cfe76033a31b1c0c76c960cd8e4b upstream.
+commit 7c4eaca4162d0b5ad4fb39f974d7ffd71b9daa09 upstream.
 
-Connecting an ASUS VW222S [1] over VGA a garbled screen is shown with
-vertical stripes in the top half.
-
-In commit bc42aabc [2]
-
-        commit bc42aabc6a01b92b0f961d65671564e0e1cd7592
-        Author: Adam Jackson <ajax@redhat.com>
-        Date:   Wed May 23 16:26:54 2012 -0400
-
-            drm/edid/quirks: ViewSonic VA2026w
-
-Adam Jackson added the quirk `EDID_QUIRK_FORCE_REDUCED_BLANKING` which
-is also needed for this ASUS monitor.
-
-All log files and output from `xrandr` is included in the referenced
-Bugzilla report #17629.
-
-Please note that this monitor only has a VGA (D-Sub) connector [1].
-
-[1] http://www.asus.com/Display/LCD_Monitors/VW222S/
-[2] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=bc42aabc6a01b92b0f961d65671564e0e1cd7592
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=17629
-Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: <dri-devel@lists.freedesktop.org>
-Cc: Adam Jackson <ajax@redhat.com>
-Cc: Ian Pilcher <arequipeno@gmail.com>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_edid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/drm_crtc.c |    2 +-
+ include/drm/drm_mode.h     |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index a8743c3..b7ee230 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -87,6 +87,9 @@ static struct edid_quirk {
- 	int product_id;
- 	u32 quirks;
- } edid_quirk_list[] = {
-+	/* ASUS VW222S */
-+	{ "ACI", 0x22a2, EDID_QUIRK_FORCE_REDUCED_BLANKING },
-+
- 	/* Acer AL1706 */
- 	{ "ACR", 44358, EDID_QUIRK_PREFER_LARGE_60 },
- 	/* Acer F51 */
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 08a7aa7..6fbfc24 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1981,7 +1981,7 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
+ 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+ 		return -EINVAL;
+ 
+-	if (!req->flags)
++	if (!req->flags || (~DRM_MODE_CURSOR_FLAGS & req->flags))
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&dev->mode_config.mutex);
+diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
+index 5581980..3d6301b 100644
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -359,8 +359,9 @@ struct drm_mode_mode_cmd {
+ 	struct drm_mode_modeinfo mode;
+ };
+ 
+-#define DRM_MODE_CURSOR_BO	(1<<0)
+-#define DRM_MODE_CURSOR_MOVE	(1<<1)
++#define DRM_MODE_CURSOR_BO	0x01
++#define DRM_MODE_CURSOR_MOVE	0x02
++#define DRM_MODE_CURSOR_FLAGS	0x03
+ 
+ /*
+  * depending on the value in flags different members are used.
 
 
