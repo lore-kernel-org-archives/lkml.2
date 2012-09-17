@@ -1,135 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab2IQT5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 15:57:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58378 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab2IQT5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 15:57:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: myungjoo.ham@samsung.com
-Subject: Re: [PATCH v2 3/3] devfreq: Add current freq callback in device profile
-Date: Mon, 17 Sep 2012 22:04:08 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        =?euc-kr?q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <23597048.34281347878091187.JavaMail.weblogic@epml25>
-In-Reply-To: <23597048.34281347878091187.JavaMail.weblogic@epml25>
+	id S932536Ab2IQT6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 15:58:18 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58257 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab2IQT6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 15:58:16 -0400
+Message-ID: <505780D6.3020500@kernel.org>
+Date: Mon, 17 Sep 2012 20:58:14 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="euc-kr"
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] iio: inkern: put the IIO device when mem alloc gets
+ failed
+References: <A874F61F95741C4A9BA573A70FE3998F41EF50A5@DQHE02.ent.ti.com> <5056EE95.6050101@metafoo.de> <A874F61F95741C4A9BA573A70FE3998F41EF5120@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF5120@DQHE02.ent.ti.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209172204.09150.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 17, 2012, MyungJoo Ham wrote:
-> > From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> > 
-> > Devfreq returns governor predicted frequency as current frequency
-> > via sysfs interface. But device may not support all frequencies
-> > that governor predicts. So add a callback in device profile to get
-> > current freq from driver. Also add a new sysfs node to expose
-> > governor predicted next target frequency.
-> > 
-> > Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+On 09/17/2012 10:57 AM, Kim, Milo wrote:
+>>>  drivers/iio/inkern.c |    5 ++++-
+>>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+>>> index 13748c0..aff034b 100644
+>>> --- a/drivers/iio/inkern.c
+>>> +++ b/drivers/iio/inkern.c
+>>> @@ -132,7 +132,7 @@ struct iio_channel *iio_channel_get(const char
+>> *name, const char *channel_name)
+>>>
+>>>  	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+>>>  	if (channel == NULL)
+>>> -		return ERR_PTR(-ENOMEM);
+>>> +		goto error_no_mem;
+>>>
+>>>  	channel->indio_dev = c->indio_dev;
+>>>
+>>> @@ -151,6 +151,9 @@ error_no_chan:
+>>>  	iio_device_put(c->indio_dev);
+>>>  	kfree(channel);
+>>>  	return ERR_PTR(-EINVAL);
+>>> +error_no_mem:
+>>> +	iio_device_put(c->indio_dev);
+>>> +	return ERR_PTR(-ENOMEM);
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(iio_channel_get);
+>>>
+>>
+>> If you do it that way, you don't really need the goto, something like
+>>
+>> error_no_chan:
+>>   	kfree(channel);
+>> error_no_mem:
+>> 	iio_device_put(c->indio_dev);
+>> 	return ret
+>>
+>> would be better in my opinion. With ret being initialized in the if
+>> branch
+>> before the goto.
 > 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-OK, I'm taking this as an acked-by (signed-off-by would be appropriate if
-the patch went through your hands).
-
-Does it apply to [3/3] only or to all of the patches in the series?
-
-Rafael
-
-
-> > ---
-> >  Documentation/ABI/testing/sysfs-class-devfreq | 11 ++++++++++-
-> >  drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
-> >  include/linux/devfreq.h                       |  3 +++
-> >  3 files changed, 27 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-> > index 89283b1..e6cf08e 100644
-> > --- a/Documentation/ABI/testing/sysfs-class-devfreq
-> > +++ b/Documentation/ABI/testing/sysfs-class-devfreq
-> > @@ -19,7 +19,16 @@ Date:		September 2011
-> >  Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-> >  Description:
-> >  		The /sys/class/devfreq/.../cur_freq shows the current
-> > -		frequency of the corresponding devfreq object.
-> > +		frequency of the corresponding devfreq object. Same as
-> > +		target_freq when get_cur_freq() is not implemented by
-> > +		devfreq driver.
-> > +
-> > +What:		/sys/class/devfreq/.../target_freq
-> > +Date:		September 2012
-> > +Contact:	Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> > +Description:
-> > +		The /sys/class/devfreq/.../target_freq shows the next governor
-> > +		predicted target frequency of the corresponding devfreq object.
-> >  
-> >  What:		/sys/class/devfreq/.../polling_interval
-> >  Date:		September 2011
-> > diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> > index 309c46e..049e273 100644
-> > --- a/drivers/devfreq/devfreq.c
-> > +++ b/drivers/devfreq/devfreq.c
-> > @@ -401,6 +401,19 @@ static ssize_t show_governor(struct device *dev,
-> >  static ssize_t show_freq(struct device *dev,
-> >  			 struct device_attribute *attr, char *buf)
-> >  {
-> > +	unsigned long freq;
-> > +	struct devfreq *devfreq = to_devfreq(dev);
-> > +
-> > +	if (devfreq->profile->get_cur_freq &&
-> > +		!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
-> > +			return sprintf(buf, "%lu\n", freq);
-> > +
-> > +	return sprintf(buf, "%lu\n", devfreq->previous_freq);
-> > +}
-> > +
-> > +static ssize_t show_target_freq(struct device *dev,
-> > +			struct device_attribute *attr, char *buf)
-> > +{
-> >  	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
-> >  }
-> >  
-> > @@ -504,6 +517,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
-> >  static struct device_attribute devfreq_attrs[] = {
-> >  	__ATTR(governor, S_IRUGO, show_governor, NULL),
-> >  	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
-> > +	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
-> >  	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
-> >  	       store_polling_interval),
-> >  	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
-> > diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> > index 7c7e179..d12ed41 100644
-> > --- a/include/linux/devfreq.h
-> > +++ b/include/linux/devfreq.h
-> > @@ -66,6 +66,8 @@ struct devfreq_dev_status {
-> >   *			explained above with "DEVFREQ_FLAG_*" macros.
-> >   * @get_dev_status	The device should provide the current performance
-> >   *			status to devfreq, which is used by governors.
-> > + * @get_cur_freq	The device should provide the current frequency
-> > + *			at which it is operating.
-> >   * @exit		An optional callback that is called when devfreq
-> >   *			is removing the devfreq object due to error or
-> >   *			from devfreq_remove_device() call. If the user
-> > @@ -79,6 +81,7 @@ struct devfreq_dev_profile {
-> >  	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
-> >  	int (*get_dev_status)(struct device *dev,
-> >  			      struct devfreq_dev_status *stat);
-> > +	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
-> >  	void (*exit)(struct device *dev);
-> >  };
-> >  
+> Thanks for your opinion. I was hesitating before sending ;) 
 > 
+> The reason why this patch need separate goto statement is as below.
+>  
+> There are two different types when requesting the channel.
+> One is a pointer of iio_channel, the other is the error.
+> So return type will be two - allocated iio_channel and integer.
+> For simplicity, I would use just one return variable when it runs successfully.
+> In error cases, do return as explicit name such like ERR_PTR() rather than
+> saving into local integer.
+> 
+I can see your point, but Lars-Peter's way is the more commonly used approach
+so lets go with the ancient arguement of making it look like what those
+reading the code expect to see ;)
 
+> Just my two cents.
+> But your code has better readability.
+> 
+> Thank you.
+> 
+> Best Regards,
+> Milo
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
