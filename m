@@ -1,122 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2IQHbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:31:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60737 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2IQHbD (ORCPT
+	id S1754078Ab2IQHbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:31:41 -0400
+Received: from nm5-vm1.bullet.mail.ac4.yahoo.com ([98.139.52.69]:23439 "HELO
+	nm5-vm1.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751367Ab2IQHbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:31:03 -0400
-Date: Mon, 17 Sep 2012 17:31:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: manual merge of the usb tree with the tty tree
-Message-Id: <20120917173101.da4643d96b6378c1c9fd1436@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Sep_2012_17_31_01_+1000_kHygcE1qDzCDnIYK"
+	Mon, 17 Sep 2012 03:31:39 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Sep 2012 03:31:39 EDT
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 328385.817.bm@omp1024.access.mail.mud.yahoo.com
+X-YMail-OSG: NRqcxIMVM1mEEvgBP_vk1xvlkhfloP.rRGJ02ymXff8uKxN
+ VDZu3.bnzDDYr7NSMD01Ak_Ta6BEk_6y_j20aqjPDKxHlyhwoM3VKwx52Vio
+ 0eDnwK0NRJB8NsxZAN2EQErv5Mbv6mW1ZZ.JJdBkr0EKRRrNwPFpglnxoSJ3
+ _rcpSs.Tdwnset7ONaKhELjpXm7KjDxxymATwbHyxeWZImzMGLP.jvoDoaYs
+ JrTR4ygV2R6mTRFiFiYZxK.HY.sHQsyxO09HUEPc6yPeHtrvoItkEIlDEYwt
+ V.bWbBiIJcVaypaqnk_E7A6DNczKhzRpaBVBzNogf1SK4o9hmCG3MSzBaJQZ
+ G3HC2QuSezx3MqmHgWRqHYwTCkk5zz3UIzF8WYTibOteZPeYgghMOS9CTfkf
+ tooF2Hfzxjet6KsXIG25KYgMRwtMUbZg3htxi0zEu0Pi3p7b6UQLjxBRj2_A
+ aIKSywieVcKAQ0UgWDhea5Kg7V36r.Jk-
+X-RocketYMMF: webyoka
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.121.416
+Message-ID: <1347866749.23634.YahooMailClassic@web2814.biz.mail.ne1.yahoo.com>
+Date: Mon, 17 Sep 2012 00:25:49 -0700 (PDT)
+From: "\"\"Barclays bank Plc\"\"" 
+	<foreiegnemittanc_department@accountant.com>
+Reply-To: foreignemittanc_department@accountant.com
+Subject: International fund Manager
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="180689402-1418682660-1347866749=:23634"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Sep_2012_17_31_01_+1000_kHygcE1qDzCDnIYK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--180689402-1418682660-1347866749=:23634
+Content-Type: text/plain; charset=us-ascii
 
-Hi Greg,
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/serial/io_ti.c between commit adc8d746caa6 ("tty: move the
-termios object into the tty") from the tty tree and commit 67e6da702753
-("USB: serial: io_ti.c: remove dbg() usage") from the usb tree.
+--180689402-1418682660-1347866749=:23634
+Content-Type: application/pdf; name="Barclays bank.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Barclays bank.pdf"
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+JVBERi0xLjMNJeLjz9MNCjcgMCBvYmoNPDwvTGluZWFyaXplZCAxL0wgNjQz
+NS9PIDkvRSAyMzYzL04gMS9UIDYxNDYvSCBbIDQ0NyAxMzJdPj4NZW5kb2Jq
+DSAgICAgICAgICAgICAgICAgICAgICAgDQoxMiAwIG9iag08PC9EZWNvZGVQ
+YXJtczw8L0NvbHVtbnMgNC9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
+ZWNvZGUvSURbPDhCRkI0NTE3QTgyQTNBMkI1NzJDMzcyMDkyMDA5MzBBPjw5
+OEQ2MEUwRTIwQjIyQTRBOUY0RTE2QTAwNEI5RUVCOT5dL0luZGV4WzcgMTBd
+L0luZm8gNiAwIFIvTGVuZ3RoIDQ4L1ByZXYgNjE0Ny9Sb290IDggMCBSL1Np
+emUgMTcvVHlwZS9YUmVmL1dbMSAyIDFdPj5zdHJlYW0NCmjeYmJkEGBgYmAy
+BhIMNkCCcROI6wQkfjMyMDEyTANJMDBCiP+MW/8BBBgAW4wF1g0KZW5kc3Ry
+ZWFtDWVuZG9iag1zdGFydHhyZWYNCjANCiUlRU9GDQogICAgICAgIA0KMTYg
+MCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0kgNjcvTGVuZ3RoIDUzL1Mg
+Mzg+PnN0cmVhbQ0KaN5iYGBgZmBg/M0ABGx7GFABIxCzMHA0IIsxQzEDwyYG
+LgZJngiooPxmqIZbAAEGAL7/BT4NCmVuZHN0cmVhbQ1lbmRvYmoNOCAwIG9i
+ag08PC9NZXRhZGF0YSAxIDAgUi9QYWdlcyA1IDAgUi9UeXBlL0NhdGFsb2c+
+Pg1lbmRvYmoNOSAwIG9iag08PC9Db250ZW50cyAxMSAwIFIvQ3JvcEJveFsw
+IDAgNjEyIDc5Ml0vTWVkaWFCb3hbMCAwIDYxMiA3OTJdL1BhcmVudCA1IDAg
+Ui9SZXNvdXJjZXM8PC9Gb250PDwvRjE1IDE1IDAgUj4+L1Byb2NTZXRbL1BE
+Ri9UZXh0L0ltYWdlQi9JbWFnZUNdPj4vUm90YXRlIDAvVHlwZS9QYWdlPj4N
+ZW5kb2JqDTEwIDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9GaXJzdCAy
+MC9MZW5ndGggNDgzL04gMy9UeXBlL09ialN0bT4+c3RyZWFtDQpo3pxUbWvc
+MAz+K/oDw2+xnUA5uOtWNtj6oT3aD6Ufsqu5C1xzR+LC+u8rKbYvvW10jPAQ
+S5YeyZYsZUCCqkAZB8qCUrKGiwuxHDehj9BIKy7b49fQbXcRfF2Lz2Ha+aSV
+Flf7djuCwcWhj6vV4deD5A3QzllyfuSd6/Y5iOXQtfsfa/Ettvtus+y3+wBS
+3MbwfIf/9esxsC3xD90xHobFAtn+//N2gvY1w1gL1jpGXTfgnAfVKDDGTECd
+ravJFuXsl30+QrFHjgLUK4nXSsEIXmsGy0qBRweS2VFK1nOCmADbop79kl3x
+S+umqgo36XMShMo1zEWHKYlijHnCZU05IGif/vXcJ4F5pDz54donnwxj8ALd
+9KcLoAKQLReCbBOPkrNEioJOUQRy4aPmOqYUS70SNRufOJNAF8PBE22u6m9V
+c7Lk4A2G9ykvTD7rrNVQEXfVnKITl0c7c+JmOJsKWBXQKUqRzjAdNVd2hnkl
+dap+7ohz8E3PbeZdljrjb21LT2HeFeft/E/PAC/mjzEyr5SPOFNW7RjoiZdR
+8KXfHJ66fivuu37Zj12Rr7phjJe7dsDJ8H4o4JzCt30jvrfJQFsrbl9+Rpof
+6+El8CAp0wSZn+JupAGHXovFmwADACz8DqgNCmVuZHN0cmVhbQ1lbmRvYmoN
+MTEgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCA4OTg+PnN0
+cmVhbQ0KeNqNVUtv2zgQvvtXzKEHGmhUvW3fmgAtkKA9FDDQw2JRMCIlsZFJ
+laLq6t93Zqg43a6LXfhiUuR8j3nw7rh58z6rIINjuzkkhzo9QIq/9e8uh/pw
+SPISjqfNX+Ie5Ak+enjY3uSVkCc9wZ3zZ/sa6AtvgrRgbNDeymCcxb1CyAHa
+2SoYJS4PYtkWqaDTudA2wEla2WkPfPRsQg+h13AnfTPgVibkMsGjtE+8IKRJ
+nmFxM974G44PmxRusiSr6gqOCjka2zpwloM07sSI44yEJnAt7xrL2BeOkpcD
+g+AZXNUCJh3CoE9IcIJee7oFH1hPJRSGf43/9hk6MjiH1IpMaAVK63FY0AIF
+rZujePUPmmW50nRzQDIykOxSsBz26CwnDDMQp51A5WrWENz2pqr3gshHJwgO
+BXGAHuEGBOcYI4eTCxGHs/a8JPL6x6i90bbRivdIT+jNdN3EyflAdnHGCrEA
+0p2Sy9E8KbIinryHBjPe62G8KEGyVS06HSIAyVpzh9WDh5lKAMOhVxYRkHcI
+dYnGk5H3wFbgVR+LKaDW29tbeFzg3ezdqDGktJw1dV3N7QmlN7GYbEwz1RmZ
+WovgRvCaPzbOKyodVp2RlN9Ep9mzaGWmxn3HulCcBGYGv+QnJYO/6yk8J6bl
+csiQIkFT9vFUHhPfODtRvjAlEvhUb7o+tpGeODa2ibN6gdG7zlOrFelekD3X
+e4C6SmmMhoFiQLrZGk7qK8jpfr32oBkG47b4x8I8KWqws2HLhwGmIDEvrfFT
+IL9HviAXYztSxYJl03Di/YxSubV2gnkHeKnqqyxl82025KCaPV8sRUchqX72
+f7Ig9sWzD1whMbEtnowNEUtyjDNquRCN3YittSAksbpez22Mx0MKb57NsI6H
+wTxpIOcLQS1JFBqtYz4ZgMum/G28RT/RSv7GMZiQg06vsh5l80QbFLvG2ByQ
+veNZtkqsxZ9nHhZQkE2AsUeHwM4x0iONiEFjHxFVVoV8X1QXSVnt1gjHPk7Y
+nSDkfxsjHuK09+5st3D8uqFHIgPfrafqLI+BWue16aw+sTgTgrTNF6VHrCNi
+VZEnb7FmcDzip5DQiGa0d8cNvjZlvUvqEvK0SoocbtIE97zetIyXEt7df75Y
+OGPpcnyxXp4ieoU4CVSQH+Ojc4H+huD0zKGQpKoJGBdpUu4J/TPYzaf/c+Qn
+HOEUCw0KZW5kc3RyZWFtDWVuZG9iag0xIDAgb2JqDTw8L0xlbmd0aCAzMzQ5
+L1N1YnR5cGUvWE1ML1R5cGUvTWV0YWRhdGE+PnN0cmVhbQ0KPD94cGFja2V0
+IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4K
+PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0i
+QWRvYmUgWE1QIENvcmUgNS4yLWMwMDEgNjMuMTM5NDM5LCAyMDEwLzA5LzI3
+LTEzOjM3OjI2ICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0
+dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgog
+ICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAg
+ICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iPgog
+ICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAxMi0wOC0yOFQyMzozNDozNC0w
+NzowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6Q3JlYXRvclRv
+b2w+ZWFzeVBERiBTREsgNy4wPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgICAg
+IDx4bXA6TW9kaWZ5RGF0ZT4yMDEyLTA5LTE3VDA4OjE5OjM3KzAyOjAwPC94
+bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcDpNZXRhZGF0YURhdGU+MjAx
+Mi0wOS0xN1QwODoxOTozNyswMjowMDwveG1wOk1ldGFkYXRhRGF0ZT4KICAg
+ICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24g
+cmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnBkZj0iaHR0cDovL25z
+LmFkb2JlLmNvbS9wZGYvMS4zLyI+CiAgICAgICAgIDxwZGY6UHJvZHVjZXI+
+QkNMIGVhc3lQREYgNy4wMCAoMDM1MSk8L3BkZjpQcm9kdWNlcj4KICAgICAg
+PC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRm
+OmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMu
+YWRvYmUuY29tL3hhcC8xLjAvbW0vIj4KICAgICAgICAgPHhtcE1NOkRvY3Vt
+ZW50SUQ+dXVpZDphMjVkZGRkZi1lZDYxLTRiNDYtOTZlOC1kYWQ5MjdjMWI0
+ODQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5j
+ZUlEPnV1aWQ6NWYyMjhmYjQtZmM1Zi00YjQ5LWE2MTItYmZmYjdiYTIyNDRi
+PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4K
+ICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAg
+ICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEv
+Ij4KICAgICAgICAgPGRjOmZvcm1hdD5hcHBsaWNhdGlvbi9wZGY8L2RjOmZv
+cm1hdD4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4K
+PC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAK
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAog
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0
+IGVuZD0idyI/Pg0KZW5kc3RyZWFtDWVuZG9iag0yIDAgb2JqDTw8L0ZpbHRl
+ci9GbGF0ZURlY29kZS9GaXJzdCA0L0xlbmd0aCA0OC9OIDEvVHlwZS9PYmpT
+dG0+PnN0cmVhbQ0KaN4yVTBQsLHRd84vzStRMNT3zkwpjrYEigXF6odUFqTq
+BySmpxbb2QEEGADWdwuADQplbmRzdHJlYW0NZW5kb2JqDTMgMCBvYmoNPDwv
+RmlsdGVyL0ZsYXRlRGVjb2RlL0ZpcnN0IDQvTGVuZ3RoIDEyNS9OIDEvVHlw
+ZS9PYmpTdG0+PnN0cmVhbQ0KaN4yUzBQsLHRdy5KTSzJzM9zSSxJ1XCxMjIw
+NDKwMLIwMjY2MTbRNTBXNzBQ14Soyi/SSE0srgxwcVMIdvFWMNcz0NT3zU9B
+1mlpaG5gYWhpbK5tYATRGVCUn1KanFqk4eTsowDTDtRqoBCjYWBsahijqWln
+BxBgAEAXJKwNCmVuZHN0cmVhbQ1lbmRvYmoNNCAwIG9iag08PC9EZWNvZGVQ
+YXJtczw8L0NvbHVtbnMgMy9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
+ZWNvZGUvSURbPDhCRkI0NTE3QTgyQTNBMkI1NzJDMzcyMDkyMDA5MzBBPjw5
+OEQ2MEUwRTIwQjIyQTRBOUY0RTE2QTAwNEI5RUVCOT5dL0luZm8gNiAwIFIv
+TGVuZ3RoIDM3L1Jvb3QgOCAwIFIvU2l6ZSA3L1R5cGUvWFJlZi9XWzEgMiAw
+XT4+c3RyZWFtDQpo3mJiYGBgYuS0ZmLgTWJiYOwB4ltMjC/+MzEwMAIEGAAn
+bQQUDQplbmRzdHJlYW0NZW5kb2JqDXN0YXJ0eHJlZg0KMTE2DQolJUVPRg0K
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/usb/serial/io_ti.c
-index 765978a,54916d7..0000000
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@@ -2272,9 -2224,8 +2224,8 @@@ static void change_port_settings(struc
- =20
-  	config =3D kmalloc (sizeof (*config), GFP_KERNEL);
-  	if (!config) {
- -		*tty->termios =3D *old_termios;
- +		tty->termios =3D *old_termios;
-- 		dev_err(&edge_port->port->dev, "%s - out of memory\n",
-- 								__func__);
-+ 		dev_err(dev, "%s - out of memory\n", __func__);
-  		return;
-  	}
- =20
-@@@ -2357,12 -2308,12 +2308,12 @@@
-  	/* if we are implementing OUTBOUND XON/XOFF */
-  	if (I_IXON(tty)) {
-  		config->wFlags |=3D UMP_MASK_UART_FLAGS_OUT_X;
-- 		dbg("%s - OUTBOUND XON/XOFF is enabled, XON =3D %2x, XOFF =3D %2x",
-- 		     __func__, config->cXon, config->cXoff);
-+ 		dev_dbg(dev, "%s - OUTBOUND XON/XOFF is enabled, XON =3D %2x, XOFF =3D =
-%2x\n",
-+ 			__func__, config->cXon, config->cXoff);
-  	} else
-- 		dbg("%s - OUTBOUND XON/XOFF is disabled", __func__);
-+ 		dev_dbg(dev, "%s - OUTBOUND XON/XOFF is disabled\n", __func__);
- =20
- -	tty->termios->c_cflag &=3D ~CMSPAR;
- +	tty->termios.c_cflag &=3D ~CMSPAR;
- =20
-  	/* Round the baud rate */
-  	baud =3D tty_get_baud_rate(tty);
-@@@ -2408,13 -2358,13 +2358,13 @@@ static void edge_set_termios(struct tty
-  	struct edgeport_port *edge_port =3D usb_get_serial_port_data(port);
-  	unsigned int cflag;
- =20
- -	cflag =3D tty->termios->c_cflag;
- +	cflag =3D tty->termios.c_cflag;
- =20
-- 	dbg("%s - clfag %08x iflag %08x", __func__,
-- 	    tty->termios.c_cflag, tty->termios.c_iflag);
-- 	dbg("%s - old clfag %08x old iflag %08x", __func__,
-- 	    old_termios->c_cflag, old_termios->c_iflag);
-- 	dbg("%s - port %d", __func__, port->number);
-+ 	dev_dbg(&port->dev, "%s - clfag %08x iflag %08x\n", __func__,
- -		tty->termios->c_cflag, tty->termios->c_iflag);
-++		tty->termios.c_cflag, tty->termios.c_iflag);
-+ 	dev_dbg(&port->dev, "%s - old clfag %08x old iflag %08x\n", __func__,
-+ 		old_termios->c_cflag, old_termios->c_iflag);
-+ 	dev_dbg(&port->dev, "%s - port %d\n", __func__, port->number);
- =20
-  	if (edge_port =3D=3D NULL)
-  		return;
-
---Signature=_Mon__17_Sep_2012_17_31_01_+1000_kHygcE1qDzCDnIYK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQVtG1AAoJEECxmPOUX5FEHBMP/3IK3LUa+FFYfwL+SDdJEp21
-YcGFvUM2DVrXWieROvv2s+zM/6ilulf4fcZrmDaY7cyyggb7/rDfmTfYMyNp1Ygg
-uF6LRCZlcin8LTA1kGrNHT4qmv1dhxaCy5fOFjCaq3g6Qew00w75ti6KCfl9a/V+
-UonytZeHu1epQ8s3SmCorQeo0zIY0jgo1VGP7OnrXfPjCVK5mZ5cB9Ob8XluOXfa
-HL0o9NXKzkDxCgGMlpvfzxNpjl7q7tyW0h8jkQtfuXpjGVC5uRSVr1VialhM7pcD
-bKHLim/TIfjl9HXWakzVX50XQjKHgsymX4yZZFq8VwBNNArMN8b90sjyFXqHB8YA
-XVc38PFJZW1ZggYFVwdU4W7yWJtdnsKqap6wPJQGmhd7ZATk2nEkf5g8ZYEwf+iH
-9rYwH9qmp53G8TBG08R7Dsq6Cc/Ejzzq9C9wBBqEtmxHvvChJT0StvgOGtiiL3Fa
-zig6SNQhqHTIvhScw1e8B5/QMqfMkddr1YdE0lnjCN8juWJdJna4e5AUcrG8bSdh
-88xuJDRJvP0bGEAvNjU9bOxyOyzKmbD4mMk6dTE6WsIL9853NJK5Cj3WIXlLTwFe
-D7dW7lRj7LB7g4ezYIjKAbM/GCEWIuWHlEO8Me3laCzoR21QAHJXS/aPfB81XNp/
-6kAdssa3BpmcV2lFFa6P
-=JX/C
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Sep_2012_17_31_01_+1000_kHygcE1qDzCDnIYK--
+--180689402-1418682660-1347866749=:23634--
