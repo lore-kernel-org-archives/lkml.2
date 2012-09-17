@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab2IQXAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 19:00:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42649 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab2IQXAR (ORCPT
+	id S932596Ab2IQXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 19:03:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42372 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab2IQXDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 19:00:17 -0400
-Date: Mon, 17 Sep 2012 16:00:11 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [GIT PULL] workqueue fixes for v3.6-rc6
-Message-ID: <20120917230011.GP18677@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 17 Sep 2012 19:03:54 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 1/2] [RESEND] console: use might_sleep in console_lock
+Date: Tue, 18 Sep 2012 01:03:31 +0200
+Message-Id: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Instead of BUG_ON(in_interrupt()), since that doesn't check for all
+the newfangled stuff like preempt.
 
-Unfortunately, yet another late fix.  This too is discovered and fixed
-by Lai.  This bug was introduced during v3.6-rc1 by 25511a477
-"workqueue: reimplement CPU online rebinding to handle idle workers"
-which started using WORKER_REBIND flag for idle rebind too.
+Note that this is valid since the console_sem is essentially used like
+a real mutex with only two twists:
+- we allow trylock from hardirq context
+- across suspend/resume we lock the logical console_lock, but drop the
+  semaphore protecting the locking state.
 
-The bug is relatively easy to trigger if the CPU rapidly goes through
-off, on and then off (and stay off).  The fix is on the safer side.
-This hasn't been on linux-next yet but I'm pushing early so that it
-can get more exposure before v3.6 release.
+Now that doesn't guarantee that no one is playing tricks in
+single-thread atomic contexts at suspend/resume/boot time, but
+- I couldn't find anything suspicious with some grepping,
+- might_sleep shouldn't die,
+- and I think the upside of catching more potential issues is worth
+  the risk of getting a might_sleep backtrace that would have been
+  save (and then dealing with that fallout).
 
-If too late, please ignore the pull request.  I'll route it through
--stable afterwards.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.6-fixes
-
-Thanks.
-
-Lai Jiangshan (1):
-      workqueue: always clear WORKER_REBIND in busy_worker_rebind_fn()
-
- kernel/workqueue.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+Cc: Dave Airlie <airlied@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1e1373b..b80065a 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1349,8 +1349,16 @@ static void busy_worker_rebind_fn(struct work_struct *work)
- 	struct worker *worker = container_of(work, struct worker, rebind_work);
- 	struct global_cwq *gcwq = worker->pool->gcwq;
- 
--	if (worker_maybe_bind_and_lock(worker))
--		worker_clr_flags(worker, WORKER_REBIND);
-+	worker_maybe_bind_and_lock(worker);
+ kernel/printk.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 66a2ea3..ed9af6a 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1909,7 +1909,8 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+  */
+ void console_lock(void)
+ {
+-	BUG_ON(in_interrupt());
++	might_sleep();
 +
-+	/*
-+	 * %WORKER_REBIND must be cleared even if the above binding failed;
-+	 * otherwise, we may confuse the next CPU_UP cycle or oops / get
-+	 * stuck by calling idle_worker_rebind() prematurely.  If CPU went
-+	 * down again inbetween, %WORKER_UNBOUND would be set, so clearing
-+	 * %WORKER_REBIND is always safe.
-+	 */
-+	worker_clr_flags(worker, WORKER_REBIND);
- 
- 	spin_unlock_irq(&gcwq->lock);
- }
+ 	down(&console_sem);
+ 	if (console_suspended)
+ 		return;
+-- 
+1.7.10.4
+
