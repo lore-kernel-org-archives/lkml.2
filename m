@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab2IQCiF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 22:38:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:46197 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab2IQCiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 22:38:03 -0400
-X-IronPort-AV: E=Sophos;i="4.80,432,1344182400"; 
-   d="scan'208";a="5854585"
-Message-ID: <50568D85.5030309@cn.fujitsu.com>
-Date: Mon, 17 Sep 2012 10:40:05 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753267Ab2IQDEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 23:04:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46830 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2IQDDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 23:03:50 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] workqueue: fix leak of active
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/17 10:38:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/17 10:38:21,
-	Serialize complete at 2012/09/17 10:38:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
+References: <1347678312-11124-1-git-send-email-jiang.liu@huawei.com>
+	<1347678312-11124-6-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQWk_2gPyVUiLgvRQ=qrFNby_R7Qh-QNruobQnhVFTn21w@mail.gmail.com>
+Date: Sun, 16 Sep 2012 20:03:48 -0700
+X-Google-Sender-Auth: taneM17uS6Usj-KMGJGg-9_ow_A
+Message-ID: <CAE9FiQX2hgxQo3GC3_0h5D5uo9coRZqcpPCKGtzF7jYbUfvxUw@mail.gmail.com>
+Subject: Re: [PATCH v2 5/9] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: multipart/mixed; boundary=bcaec555517ac78a2704c9dd0559
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-try_to_grab_pending() leave LINKED tagalong in delayed queue when
-it deletes a work. This behavior will cause future
-cwq_activate_first_delayed() increase the ->nr_active wrongly,
-and may cause the whole cwq frozen.
+--bcaec555517ac78a2704c9dd0559
+Content-Type: text/plain; charset=ISO-8859-1
 
-example:
+On Sat, Sep 15, 2012 at 4:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Sep 14, 2012 at 8:05 PM, Jiang Liu <liuj97@gmail.com> wrote:
+>>  From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Now ACPI devices are created before/destroyed after corresponding PCI
+>> devices, and acpi_platform_notify/acpi_platform_notify_remove will
+>> update PCI<->ACPI binding relationship when creating/destroying PCI
+>> devices, there's no need to invoke bind/unbind callbacks from ACPI
+>> device probe/destroy routines anymore. So remove bind/unbind callbacks
+>> from acpi_device_ops.
+> for pci root bus, acpi_bus_trim() is used to remove acpi_device.
+>
+> and later in acpi_pci_root_remove to stop pci drivers/ioapic driver,
+> iommu driver then remove pci devices.
+>
+> if call back is removed there, then could some functions in
+> acpi_pci_unbind() will be skipped.
+>
+> I really do not want to add pci_stop_bus_devices() in
+> pci_root_hp.c::handle_root_bridge_removal before
+> calling acpi_bus_trim...
 
-state:	cwq->max_active = 1, cwq->nr_active = 1
-	one work in cwq->pool, many in cwq->delayed_works.
+FYI, I solved the problem.  will call apci_bus_remove() two times. it
+will make sure pci devices
+get removed at first before acpi devices...
 
-step1:	try_to_grab_pending() remove a work from delayed_works but leave tagalong.
-step2:	when the work in cwq->pool is finished, cwq_activate_first_delayed()
-	move the tagalong to cwq->pool and increase the ->nr_active.
+Thanks
 
-current state: cwq->nr_active = 1, but works of the cwq in cwq->pool are all NO_COLOR,
-	so even when these works are finished, cwq->nr_active will not be decreased,
-	and no work will be moved from cwq->delayed_works. the cwq is frozen.
+Yinghai
 
-Fix it by moving the tagalong to cwq->pool in try_to_grab_pending().
+--bcaec555517ac78a2704c9dd0559
+Content-Type: application/octet-stream; name="pci_root_hp_1.patch"
+Content-Disposition: attachment; filename="pci_root_hp_1.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h76zoini0
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 7b91332..1a268b2 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1101,11 +1101,26 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
- 		 */
- 		smp_rmb();
- 		if (gcwq == get_work_gcwq(work)) {
-+			unsigned long delayed;
-+
-+			/*
-+			 * move LINKED tagalong(if exist) out from
-+			 * delayed queue. Otherwise some future
-+			 * cwq_activate_first_delayed() may move
-+			 * works(which are all NO_COLOR) to cwq->pool
-+			 * and increase the ->nr_active. It may
-+			 * cause the whole cwq frozen.
-+			 */
-+			delayed = *work_data_bits(work) & WORK_STRUCT_DELAYED;
-+			if (delayed)
-+				move_linked_works(work,
-+					&get_work_cwq(work)->pool->worklist,
-+					NULL);
-+
- 			debug_work_deactivate(work);
- 			list_del_init(&work->entry);
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
--				get_work_color(work),
--				*work_data_bits(work) & WORK_STRUCT_DELAYED);
-+				get_work_color(work), delayed);
- 
- 			spin_unlock(&gcwq->lock);
- 			return 1;
+U3ViamVjdDogW1BBVENIXSBQQ0ksIEFDUEk6IEFkZCBwY2lfcm9vdF9ocCBob3QgcmVtb3ZhbCBu
+b3RpZmljYXRpb24gc3VwcG9ydC4KCkFkZCBtaXNzaW5nIGhvdF9yZW1vdmUgc3VwcG9ydCBmb3Ig
+cm9vdCBkZXZpY2UuCgpIb3cgdG8gdXNlIGl0PwpGaW5kIG91dCByb290IGJ1cyBudW1iZXIgdG8g
+YWNwaSByb290IG5hbWUgbWFwcGluZyBmcm9tIGRtZXNnIG9yIC9zeXMKCiAgZWNobyAiXF9TQi5Q
+Q0lCIDMiID4gL3N5cy9rZXJuZWwvZGVidWcvYWNwaS9zY2lfbm90aWZ5CnRvIHJlbW92ZSByb290
+IGJ1cwoKLXYyOiBzZXBhcmF0ZSBzdG9wIGFuZCByZW1vdmUsIHNvIGNvdWxkIHVzZSBhY3BpX3Bj
+aV9iaW5kX25vdGlmeSgpLi4uCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtl
+cm5lbC5vcmc+CkNjOiBMZW4gQnJvd24gPGxlbmJAa2VybmVsLm9yZz4KQ2M6IGxpbnV4LWFjcGlA
+dmdlci5rZXJuZWwub3JnCgotLS0KIGRyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jIHwgICA2NyAr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysKIGRyaXZlcnMvYWNw
+aS9zY2FuLmMgICAgICAgIHwgICAgNSAtLS0KIDIgZmlsZXMgY2hhbmdlZCwgNjggaW5zZXJ0aW9u
+cygrKSwgNCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9y
+b290X2hwLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3BpL3BjaV9y
+b290X2hwLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL2FjcGkvcGNpX3Jvb3RfaHAuYwpAQCAtNzMs
+NiArNzMsMTIgQEAgc3RhdGljIHZvaWQgYWRkX2FjcGlfcm9vdF9icmlkZ2UoYWNwaV9oYQogCWxp
+c3RfYWRkKCZicmlkZ2UtPmxpc3QsICZhY3BpX3Jvb3RfYnJpZGdlX2xpc3QpOwogfQogCitzdGF0
+aWMgdm9pZCByZW1vdmVfYWNwaV9yb290X2JyaWRnZShzdHJ1Y3QgYWNwaV9yb290X2JyaWRnZSAq
+YnJpZGdlKQoreworCWxpc3RfZGVsKCZicmlkZ2UtPmxpc3QpOworCWtmcmVlKGJyaWRnZSk7Cit9
+CisKIHN0cnVjdCBhY3BpX3Jvb3RfaHBfd29yayB7CiAJc3RydWN0IHdvcmtfc3RydWN0IHdvcms7
+CiAJYWNwaV9oYW5kbGUgaGFuZGxlOwpAQCAtMTQzLDYgKzE0OSw2MSBAQCBzdGF0aWMgdm9pZCBo
+YW5kbGVfcm9vdF9icmlkZ2VfaW5zZXJ0aW9uCiAJCXByaW50ayhLRVJOX0VSUiAiY2Fubm90IHN0
+YXJ0IGJyaWRnZVxuIik7CiB9CiAKK3N0YXRpYyBpbnQgYWNwaV9yb290X2V2YWx1YXRlX29iamVj
+dChhY3BpX2hhbmRsZSBoYW5kbGUsIGNoYXIgKmNtZCwgaW50IHZhbCkKK3sKKwlhY3BpX3N0YXR1
+cyBzdGF0dXM7CisJc3RydWN0IGFjcGlfb2JqZWN0X2xpc3QgYXJnX2xpc3Q7CisJdW5pb24gYWNw
+aV9vYmplY3QgYXJnOworCisJYXJnX2xpc3QuY291bnQgPSAxOworCWFyZ19saXN0LnBvaW50ZXIg
+PSAmYXJnOworCWFyZy50eXBlID0gQUNQSV9UWVBFX0lOVEVHRVI7CisJYXJnLmludGVnZXIudmFs
+dWUgPSB2YWw7CisKKwlzdGF0dXMgPSBhY3BpX2V2YWx1YXRlX29iamVjdChoYW5kbGUsIGNtZCwg
+JmFyZ19saXN0LCBOVUxMKTsKKwlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpIHsKKwkJcHJpbnRr
+KEtFUk5fV0FSTklORyAiJXM6ICVzIHRvICVkIGZhaWxlZFxuIiwKKwkJCQkgX19mdW5jX18sIGNt
+ZCwgdmFsKTsKKwkJcmV0dXJuIC0xOworCX0KKworCXJldHVybiAwOworfQorCitzdGF0aWMgdm9p
+ZCBoYW5kbGVfcm9vdF9icmlkZ2VfcmVtb3ZhbChhY3BpX2hhbmRsZSBoYW5kbGUsCisJCSBzdHJ1
+Y3QgYWNwaV9yb290X2JyaWRnZSAqYnJpZGdlKQoreworCXUzMiBmbGFncyA9IDA7CisJc3RydWN0
+IGFjcGlfZGV2aWNlICpkZXZpY2U7CisKKwlpZiAoYnJpZGdlKSB7CisJCWZsYWdzID0gYnJpZGdl
+LT5mbGFnczsKKwkJcmVtb3ZlX2FjcGlfcm9vdF9icmlkZ2UoYnJpZGdlKTsKKwl9CisKKwlpZiAo
+IWFjcGlfYnVzX2dldF9kZXZpY2UoaGFuZGxlLCAmZGV2aWNlKSkgeworCQlpbnQgcmV0X3ZhbDsK
+KworCQkvKiByZW1vdmUgcGNpIGRldmljZXMgYXQgZmlyc3QgKi8KKwkJcmV0X3ZhbCA9IGFjcGlf
+YnVzX3RyaW0oZGV2aWNlLCAwKTsKKwkJcHJpbnRrKEtFUk5fREVCVUcgImFjcGlfYnVzX3RyaW0g
+c3RvcCByZXR1cm4gJXhcbiIsIHJldF92YWwpOworCisJCS8qIHJlbW92ZSBhY3BpIGRldmljZXMg
+Ki8KKwkJcmV0X3ZhbCA9IGFjcGlfYnVzX3RyaW0oZGV2aWNlLCAxKTsKKwkJcHJpbnRrKEtFUk5f
+REVCVUcgImFjcGlfYnVzX3RyaW0gcmVtb3ZlIHJldHVybiAleFxuIiwgcmV0X3ZhbCk7CisJfQor
+CisJaWYgKGZsYWdzICYgUk9PVF9CUklER0VfSEFTX1BTMykgeworCQlhY3BpX3N0YXR1cyBzdGF0
+dXM7CisKKwkJc3RhdHVzID0gYWNwaV9ldmFsdWF0ZV9vYmplY3QoaGFuZGxlLCAiX1BTMyIsIE5V
+TEwsIE5VTEwpOworCQlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpCisJCQlwcmludGsoS0VSTl9X
+QVJOSU5HICIlczogX1BTMyBmYWlsZWRcbiIsIF9fZnVuY19fKTsKKwl9CisJaWYgKGZsYWdzICYg
+Uk9PVF9CUklER0VfSEFTX0VKMCkKKwkJYWNwaV9yb290X2V2YWx1YXRlX29iamVjdChoYW5kbGUs
+ICJfRUowIiwgMSk7Cit9CisKIHN0YXRpYyB2b2lkIF9oYW5kbGVfaG90cGx1Z19ldmVudF9yb290
+KHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykKIHsKIAlzdHJ1Y3QgYWNwaV9yb290X2JyaWRnZSAq
+YnJpZGdlOwpAQCAtMTgzLDYgKzI0NCwxMiBAQCBzdGF0aWMgdm9pZCBfaGFuZGxlX2hvdHBsdWdf
+ZXZlbnRfcm9vdChzCiAJCX0KIAkJYnJlYWs7CiAKKwljYXNlIEFDUElfTk9USUZZX0VKRUNUX1JF
+UVVFU1Q6CisJCS8qIHJlcXVlc3QgZGV2aWNlIGVqZWN0ICovCisJCXByaW50ayhLRVJOX0RFQlVH
+ICIlczogRGV2aWNlIGVqZWN0IG5vdGlmeSBvbiAlc1xuIiwgX19mdW5jX18sCisJCQkJIG9iam5h
+bWUpOworCQloYW5kbGVfcm9vdF9icmlkZ2VfcmVtb3ZhbChoYW5kbGUsIGJyaWRnZSk7CisJCWJy
+ZWFrOwogCWRlZmF1bHQ6CiAJCXByaW50ayhLRVJOX1dBUk5JTkcgIm5vdGlmeV9oYW5kbGVyOiB1
+bmtub3duIGV2ZW50IHR5cGUgMHgleCBmb3IgJXNcbiIsCiAJCQkJIHR5cGUsIG9iam5hbWUpOwpJ
+bmRleDogbGludXgtMi42L2RyaXZlcnMvYWNwaS9zY2FuLmMKPT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
+Mi42Lm9yaWcvZHJpdmVycy9hY3BpL3NjYW4uYworKysgbGludXgtMi42L2RyaXZlcnMvYWNwaS9z
+Y2FuLmMKQEAgLTE1MjIsMTAgKzE1MjIsNyBAQCBpbnQgYWNwaV9idXNfdHJpbShzdHJ1Y3QgYWNw
+aV9kZXZpY2UgKnN0CiAJCQljaGlsZCA9IHBhcmVudDsKIAkJCXBhcmVudCA9IHBhcmVudC0+cGFy
+ZW50OwogCi0JCQlpZiAobGV2ZWwgPT0gMCkKLQkJCQllcnIgPSBhY3BpX2J1c19yZW1vdmUoY2hp
+bGQsIHJtZGV2aWNlKTsKLQkJCWVsc2UKLQkJCQllcnIgPSBhY3BpX2J1c19yZW1vdmUoY2hpbGQs
+IDEpOworCQkJZXJyID0gYWNwaV9idXNfcmVtb3ZlKGNoaWxkLCBybWRldmljZSk7CiAKIAkJCWNv
+bnRpbnVlOwogCQl9Cg==
+--bcaec555517ac78a2704c9dd0559--
