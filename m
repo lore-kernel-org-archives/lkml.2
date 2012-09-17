@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab2IQJ41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:56:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37692 "EHLO mx2.suse.de"
+	id S1755453Ab2IQJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:58:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47486 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482Ab2IQJ40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:56:26 -0400
-Date: Mon, 17 Sep 2012 11:56:23 +0200
-From: Jan Kara <jack@suse.cz>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        viro@zeniv.linux.org.uk, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120917095623.GB9150@quack.suse.cz>
-References: <20120914111429.GA19509@localhost>
- <87r4q4n6r1.fsf@devron.myhome.or.jp>
- <20120914131952.GA4952@quack.suse.cz>
- <87ipbgn2gz.fsf@devron.myhome.or.jp>
- <20120914144543.GB4952@quack.suse.cz>
- <878vccmygy.fsf@devron.myhome.or.jp>
- <20120916214912.GA7503@quack.suse.cz>
- <87wqzt7drb.fsf@devron.myhome.or.jp>
- <20120917084853.GA9150@quack.suse.cz>
- <87627d6lae.fsf@devron.myhome.or.jp>
+	id S1751984Ab2IQJ6F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 05:58:05 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] iio: inkern: put the IIO device when mem alloc gets
+ failed
+Thread-Topic: [PATCH 2/2] iio: inkern: put the IIO device when mem alloc
+ gets failed
+Thread-Index: Ac2UsLDnnWGaETPgRrGpn005azMcx///h7OA//95iwA=
+Date: Mon, 17 Sep 2012 09:57:52 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF5120@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF50A5@DQHE02.ent.ti.com>
+ <5056EE95.6050101@metafoo.de>
+In-Reply-To: <5056EE95.6050101@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87627d6lae.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-09-12 18:39:05, OGAWA Hirofumi wrote:
-> Jan Kara <jack@suse.cz> writes:
+> >  drivers/iio/inkern.c |    5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> > index 13748c0..aff034b 100644
+> > --- a/drivers/iio/inkern.c
+> > +++ b/drivers/iio/inkern.c
+> > @@ -132,7 +132,7 @@ struct iio_channel *iio_channel_get(const char
+> *name, const char *channel_name)
+> >
+> >  	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+> >  	if (channel == NULL)
+> > -		return ERR_PTR(-ENOMEM);
+> > +		goto error_no_mem;
+> >
+> >  	channel->indio_dev = c->indio_dev;
+> >
+> > @@ -151,6 +151,9 @@ error_no_chan:
+> >  	iio_device_put(c->indio_dev);
+> >  	kfree(channel);
+> >  	return ERR_PTR(-EINVAL);
+> > +error_no_mem:
+> > +	iio_device_put(c->indio_dev);
+> > +	return ERR_PTR(-ENOMEM);
+> >  }
+> >  EXPORT_SYMBOL_GPL(iio_channel_get);
+> >
 > 
-> >> I think you know how to solve it though. You can add the periodic flush
-> >> in own task. And you can check bdi->dirty_exceeded in any handlers.
-> >   Sure, you can have your private thread. That is possible but you will
-> > have to duplicate flusher logic and you will still get odd behavior e.g.
-> > when your filesystem is on one partition and another filesystem is on a
-> > different partition of the same disk.
+> If you do it that way, you don't really need the goto, something like
 > 
-> Right. But it is what current FSes are doing more or less.
-  It's not. Page writeback is respected by all filesystems in most cases
-AFAIK. Inode writeback is a different issue but that's not so interesting
-from mm point of view...
+> error_no_chan:
+>   	kfree(channel);
+> error_no_mem:
+> 	iio_device_put(c->indio_dev);
+> 	return ret
+> 
+> would be better in my opinion. With ret being initialized in the if
+> branch
+> before the goto.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks for your opinion. I was hesitating before sending ;) 
+
+The reason why this patch need separate goto statement is as below.
+ 
+There are two different types when requesting the channel.
+One is a pointer of iio_channel, the other is the error.
+So return type will be two - allocated iio_channel and integer.
+For simplicity, I would use just one return variable when it runs successfully.
+In error cases, do return as explicit name such like ERR_PTR() rather than
+saving into local integer.
+
+Just my two cents.
+But your code has better readability.
+
+Thank you.
+
+Best Regards,
+Milo
+
+
