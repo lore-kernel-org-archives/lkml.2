@@ -1,163 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2IQKe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:34:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27405 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab2IQKe4 (ORCPT
+	id S1753955Ab2IQKfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:35:53 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:18131
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753189Ab2IQKfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:34:56 -0400
-X-AuditID: cbfee60d-b7f3b6d000000f00-e9-5056fcce45ca
-Date: Mon, 17 Sep 2012 10:34:54 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2 3/3] devfreq: Add current freq callback in device profile
-To: Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>
-Cc: "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120917103411070@myungjoo.ham
-Msgkey: 20120917103411070@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120917103411070@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <23597048.34281347878091187.JavaMail.weblogic@epml25>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tGbrn/oQFGLy/KW5xedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgybjcvYSx4o1PxeusatgbGK9pdjJwcQgLqEouWnGQDsSUETCQO
-	ze1kgbDFJC7cWw8U5wKqmc8o0X17MViCRUBV4ubcNexdjBwcbAJ6EjM/J4OEhQUCJI4tfskI
-	Ui8icJxR4ufmD0wgCWaBZ4wS57Z7QCxTkliz7xXYHF4BQYmTM59ALVOVWN/ezAgRV5Nov9HG
-	CBGXkJg1/QIrhM0rMaP9KVS9nMS0r2uYIWxpifOzNjDCHL34+2OoOL/Esds7mEDuBOl9cj8Y
-	ZszuzV+g/hWQmHrmICNEiZZE32MNiDCfxJqFb1lgpuw6tZwZpvX+lrlQXylKTOl+yA5ha0l8
-	+bGPDd1XvAKOEm+mzWWewCg3C0lqFpL2WUjakdUsYGRZxSiaWpBcUJyUnmqsV5yYW1yal66X
-	nJ+7iREc5c94dzDObbA4xCjAwajEw2syKSxAiDWxrLgy9xCjBAezkgjvgzdAId6UxMqq1KL8
-	+KLSnNTiQ4zSHCxK4ryvPwYGCAmkJ5akZqemFqQWwWSZODilGhgLN55I3fAt7ZOnQVbGhQ+H
-	L+3PnC75c7/rqcVNby9ODd1U9+bzbgblAzV/nr6OqmDctFK9+INZq+YRnfsXv7yYpMTT75+f
-	0X8wQtRE/v/OR89vPHsu/a2qu8Obw57FbcMEzo+mJbOrSnLO6kxew/LablpmFo+a9pmv156G
-	O7646pzCe3XaA/bHSizFGYmGWsxFxYkAYk2u3O4CAAA=
+	Mon, 17 Sep 2012 06:35:52 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI154dM1432Izz1202h1d1ah1d2ah1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
+Date: Mon, 17 Sep 2012 18:10:29 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v6 0/4] add syscon driver based on regmap for general
+ registers access
+Message-ID: <20120917101028.GA13226@shlinux2.ap.freescale.net>
+References: <1346813836-28736-1-git-send-email-b29396@freescale.com>
+ <20120905055410.GZ2362@S2101-09.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120905055410.GZ2362@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8HAZ1IQ019610
 
-> From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> 
-> Devfreq returns governor predicted frequency as current frequency
-> via sysfs interface. But device may not support all frequencies
-> that governor predicts. So add a callback in device profile to get
-> current freq from driver. Also add a new sysfs node to expose
-> governor predicted next target frequency.
-> 
-> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Hi Samuel,
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+On Wed, Sep 05, 2012 at 01:54:12PM +0800, Shawn Guo wrote:
+> Hi Samuel,
+> 
+> The series needs to go via mfd or arm-soc tree as a whole.  In case
+> you want to take it through mfd tree, here is my ack.
+> 
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> Otherwise, I can take it via arm-soc tree with your ack.
+> 
+Ping...
 
-> ---
->  Documentation/ABI/testing/sysfs-class-devfreq | 11 ++++++++++-
->  drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
->  include/linux/devfreq.h                       |  3 +++
->  3 files changed, 27 insertions(+), 1 deletion(-)
+Regards
+Dong Aisheng
+
+> Regards,
+> Shawn
 > 
-> diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-> index 89283b1..e6cf08e 100644
-> --- a/Documentation/ABI/testing/sysfs-class-devfreq
-> +++ b/Documentation/ABI/testing/sysfs-class-devfreq
-> @@ -19,7 +19,16 @@ Date:		September 2011
->  Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
->  Description:
->  		The /sys/class/devfreq/.../cur_freq shows the current
-> -		frequency of the corresponding devfreq object.
-> +		frequency of the corresponding devfreq object. Same as
-> +		target_freq when get_cur_freq() is not implemented by
-> +		devfreq driver.
-> +
-> +What:		/sys/class/devfreq/.../target_freq
-> +Date:		September 2012
-> +Contact:	Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> +Description:
-> +		The /sys/class/devfreq/.../target_freq shows the next governor
-> +		predicted target frequency of the corresponding devfreq object.
->  
->  What:		/sys/class/devfreq/.../polling_interval
->  Date:		September 2011
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index 309c46e..049e273 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -401,6 +401,19 @@ static ssize_t show_governor(struct device *dev,
->  static ssize_t show_freq(struct device *dev,
->  			 struct device_attribute *attr, char *buf)
->  {
-> +	unsigned long freq;
-> +	struct devfreq *devfreq = to_devfreq(dev);
-> +
-> +	if (devfreq->profile->get_cur_freq &&
-> +		!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
-> +			return sprintf(buf, "%lu\n", freq);
-> +
-> +	return sprintf(buf, "%lu\n", devfreq->previous_freq);
-> +}
-> +
-> +static ssize_t show_target_freq(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
->  	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
->  }
->  
-> @@ -504,6 +517,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
->  static struct device_attribute devfreq_attrs[] = {
->  	__ATTR(governor, S_IRUGO, show_governor, NULL),
->  	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
-> +	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
->  	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
->  	       store_polling_interval),
->  	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index 7c7e179..d12ed41 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -66,6 +66,8 @@ struct devfreq_dev_status {
->   *			explained above with "DEVFREQ_FLAG_*" macros.
->   * @get_dev_status	The device should provide the current performance
->   *			status to devfreq, which is used by governors.
-> + * @get_cur_freq	The device should provide the current frequency
-> + *			at which it is operating.
->   * @exit		An optional callback that is called when devfreq
->   *			is removing the devfreq object due to error or
->   *			from devfreq_remove_device() call. If the user
-> @@ -79,6 +81,7 @@ struct devfreq_dev_profile {
->  	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
->  	int (*get_dev_status)(struct device *dev,
->  			      struct devfreq_dev_status *stat);
-> +	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
->  	void (*exit)(struct device *dev);
->  };
->  
-> -- 
-> 1.7.11.3
+> On Wed, Sep 05, 2012 at 10:57:12AM +0800, Dong Aisheng wrote:
+> > This patch series mainly adds an syscon driver which is used to access
+> > general system controller registers like FSL IOMUXC GPR and ANATOP,
+> > after that, we convert all the exist private access general registers code to use
+> > standard API from regmap to access registers.
+> > Finally we remove the old mfd anatop driver which is only for anatop register
+> > access.
+> > 
+> > The patch series is based on linus's tree 3.6-rc4 since commit 5b716ac.
+> > 
+> > ChangeLog v5->v6:
+> >  * put node after call syscon_node_to_regmap in anatop regulator driver
+> >  * using dev instead of &pdev->dev in syscon probe
+> > ChangeLog v4->v5:
+> >  * change syscon driver depends on OF
+> >  * do not call of_node_put in syscon_node_to_regmap
+> >  * renamed: include/linux/fsl/imx6q-iomuxc-gpr.h ->
+> > 	    include/linux/mfd/syscon/imx6q-iomuxc-gpr.h
+> > ChangeLog v3->v4:
+> > Only '[PATCH v4 1/7] mfd: add syscon driver based on regmap' is changed.
+> > 
+> > Dong Aisheng (4):
+> >   mfd: add syscon driver based on regmap
+> >   ARM: imx6q: add iomuxc gpr support into syscon
+> >   regulator: anatop-regulator: convert to use syscon to access anatop
+> >     register
+> >   mfd: anatop-mfd: remove anatop driver
+> > 
+> >  Documentation/devicetree/bindings/mfd/syscon.txt |   20 ++
+> >  arch/arm/boot/dts/imx6q.dtsi                     |    9 +-
+> >  arch/arm/mach-imx/Kconfig                        |    2 +-
+> >  arch/arm/mach-imx/mach-imx6q.c                   |   47 ++--
+> >  drivers/mfd/Kconfig                              |   12 +-
+> >  drivers/mfd/Makefile                             |    2 +-
+> >  drivers/mfd/anatop-mfd.c                         |  124 ---------
+> >  drivers/mfd/syscon.c                             |  176 ++++++++++++
+> >  drivers/regulator/Kconfig                        |    2 +-
+> >  drivers/regulator/anatop-regulator.c             |   31 ++-
+> >  include/linux/mfd/anatop.h                       |   40 ---
+> >  include/linux/mfd/syscon.h                       |   23 ++
+> >  include/linux/mfd/syscon/imx6q-iomuxc-gpr.h      |  319 ++++++++++++++++++++++
+> >  13 files changed, 593 insertions(+), 214 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/syscon.txt
+> >  delete mode 100644 drivers/mfd/anatop-mfd.c
+> >  create mode 100644 drivers/mfd/syscon.c
+> >  delete mode 100644 include/linux/mfd/anatop.h
+> >  create mode 100644 include/linux/mfd/syscon.h
+> >  create mode 100644 include/linux/mfd/syscon/imx6q-iomuxc-gpr.h
+> > 
+> > 
 > 
-> 
-> 
-> 
->        
->   
->          
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
