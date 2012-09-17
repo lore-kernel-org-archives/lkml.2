@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2IQR32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:29:28 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:65518 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756760Ab2IQR3A (ORCPT
+	id S932141Ab2IQR3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:29:52 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37013 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2IQR26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:29:00 -0400
+	Mon, 17 Sep 2012 13:28:58 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: <herbert@gondor.hengli.com.au>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 4/4] drivers/crypto/tegra-aes.c: fix error return code
-Date: Mon, 17 Sep 2012 19:28:28 +0200
-Message-Id: <1347902908-19006-4-git-send-email-peter.senna@gmail.com>
+Cc: davem@davemloft.net, Julia.Lawall@lip6.fr, vzapolskiy@gmail.com,
+        axel.lin@gmail.com, peter.senna@gmail.com,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 3/4] drivers/crypto/amcc/crypto4xx_core.c: fix error return code
+Date: Mon, 17 Sep 2012 19:28:27 +0200
+Message-Id: <1347902908-19006-3-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347902908-19006-1-git-send-email-peter.senna@gmail.com>
 References: <1347902908-19006-1-git-send-email-peter.senna@gmail.com>
@@ -49,19 +50,19 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/crypto/tegra-aes.c | 1 +
+ drivers/crypto/amcc/crypto4xx_core.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/crypto/tegra-aes.c b/drivers/crypto/tegra-aes.c
-index 631149e5..37185e6 100644
---- a/drivers/crypto/tegra-aes.c
-+++ b/drivers/crypto/tegra-aes.c
-@@ -969,6 +969,7 @@ static int tegra_aes_probe(struct platform_device *pdev)
- 	aes_wq = alloc_workqueue("tegra_aes_wq", WQ_HIGHPRI | WQ_UNBOUND, 1);
- 	if (!aes_wq) {
- 		dev_err(dev, "alloc_workqueue failed\n");
-+		err = -ENOMEM;
- 		goto out;
+diff --git a/drivers/crypto/amcc/crypto4xx_core.c b/drivers/crypto/amcc/crypto4xx_core.c
+index 802e851..f88e3d8 100644
+--- a/drivers/crypto/amcc/crypto4xx_core.c
++++ b/drivers/crypto/amcc/crypto4xx_core.c
+@@ -1226,6 +1226,7 @@ static int __init crypto4xx_probe(struct platform_device *ofdev)
+ 	core_dev->dev->ce_base = of_iomap(ofdev->dev.of_node, 0);
+ 	if (!core_dev->dev->ce_base) {
+ 		dev_err(dev, "failed to of_iomap\n");
++		rc = -ENOMEM;
+ 		goto err_iomap;
  	}
  
 -- 
