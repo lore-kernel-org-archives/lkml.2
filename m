@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab2IQBNh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:13:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33686 "EHLO
+	id S1753923Ab2IQBNy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:13:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33672 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753016Ab2IQAu3 (ORCPT
+	by vger.kernel.org with ESMTP id S1753008Ab2IQAu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:29 -0400
-Message-Id: <20120917003636.861951865@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:28 -0400
+Message-Id: <20120917003640.612138396@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:42 +0100
+Date: Mon, 17 Sep 2012 01:38:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marc Gariepy <mgariepy@ubuntu.com>,
-        Adam Jackson <ajax@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 077/135] fixing dmi match for hp t5745 and hp st5747 thin client
+        alan@lxorguk.ukuu.org.uk, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 104/135] staging: zcache: fix cleancache race condition with shrinker
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Gariepy <mgariepy@ubuntu.com>
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-commit 62004978df3898649e152751eb6ac264a323ec36 upstream.
+commit 6d7d9798ad5c97ee4e911dd070dc12dc5ae55bd0 upstream.
 
-Match the correct information which is DMI_PRODUCT_NAME instead of DMI_BOARD_NAME
-See dmidecode information on launchpad for both thin client:
+This patch fixes a race condition that results in memory
+corruption when using cleancache.
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/911920
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/911916
+The race exists between the zcache shrinker handler,
+shrink_zcache_memory() and cleancache_get_page().
 
-Signed-off-by: Marc Gariepy <mgariepy@ubuntu.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+In most cases, the shrinker will both evict a zbpg
+from its buddy list and flush it from tmem before a
+cleancache_get_page() occurs on that page. A subsequent
+cleancache_get_page() will fail in the tmem layer.
+
+In the rare case that two occur together and the
+cleancache_get_page() path gets through the tmem
+layer before the shrinker path can flush tmem,
+zbud_decompress() does a check to see if the zbpg is a
+"zombie", i.e. not on a buddy list, which means the shrinker
+is in the process of reclaiming it. If the zbpg is a zombie,
+zbud_decompress() returns -EINVAL.
+
+However, this return code is being ignored by the caller,
+zcache_pampd_get_data_and_free(), which results in the
+caller of cleancache_get_page() thinking that the page has
+been properly retrieved when it has not.
+
+This patch modifies zcache_pampd_get_data_and_free() to
+convey the failure up the stack so that the caller of
+cleancache_get_page() knows the page retrieval failed.
+
+This needs to be applied to stable trees as well.
+zcache-main.c was named zcache.c before v3.1, so
+I'm not sure how you want to handle trees earlier
+than that.
+
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/zcache/zcache-main.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 30e2c82..9c71183 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -750,7 +750,7 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 		.ident = "Hewlett-Packard t5745",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--			DMI_MATCH(DMI_BOARD_NAME, "hp t5745"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "hp t5745"),
- 		},
- 	},
- 	{
-@@ -758,7 +758,7 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 		.ident = "Hewlett-Packard st5747",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--			DMI_MATCH(DMI_BOARD_NAME, "hp st5747"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "hp st5747"),
- 		},
- 	},
- 	{
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index c214977..52b43b7 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1251,13 +1251,12 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *bufsize, bool raw,
+ 					void *pampd, struct tmem_pool *pool,
+ 					struct tmem_oid *oid, uint32_t index)
+ {
+-	int ret = 0;
+-
+ 	BUG_ON(!is_ephemeral(pool));
+-	zbud_decompress((struct page *)(data), pampd);
++	if (zbud_decompress((struct page *)(data), pampd) < 0)
++		return -EINVAL;
+ 	zbud_free_and_delist((struct zbud_hdr *)pampd);
+ 	atomic_dec(&zcache_curr_eph_pampd_count);
+-	return ret;
++	return 0;
+ }
+ 
+ /*
 
 
