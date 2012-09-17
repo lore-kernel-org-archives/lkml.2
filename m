@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2IQKdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:33:08 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2322
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752313Ab2IQKdF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:33:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zz98dI9371I103dK1b0bI542M1432Izz1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdhbe9i1155h)
-From: Xie Shaohui-B21989 <B21989@freescale.com>
-To: Shaun Ruffell <sruffell@digium.com>
-CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "avorontsov@mvista.com" <avorontsov@mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: RE: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
-Thread-Topic: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
-Thread-Index: AQHNkaMM7ec3MtYj5keBzMlX2iUaRpeKfBmAgAPeSnA=
-Date: Mon, 17 Sep 2012 10:32:59 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C9079E171E@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
- <20120914182137.GD18672@digium.com>
-In-Reply-To: <20120914182137.GD18672@digium.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.41]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753683Ab2IQKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:34:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27405 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab2IQKe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 06:34:56 -0400
+X-AuditID: cbfee60d-b7f3b6d000000f00-e9-5056fcce45ca
+Date: Mon, 17 Sep 2012 10:34:54 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2 3/3] devfreq: Add current freq callback in device profile
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>
+Cc: "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120917103411070@myungjoo.ham
+Msgkey: 20120917103411070@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120917103411070@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <23597048.34281347878091187.JavaMail.weblogic@epml25>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tGbrn/oQFGLy/KW5xedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgybjcvYSx4o1PxeusatgbGK9pdjJwcQgLqEouWnGQDsSUETCQO
+	ze1kgbDFJC7cWw8U5wKqmc8o0X17MViCRUBV4ubcNexdjBwcbAJ6EjM/J4OEhQUCJI4tfskI
+	Ui8icJxR4ufmD0wgCWaBZ4wS57Z7QCxTkliz7xXYHF4BQYmTM59ALVOVWN/ezAgRV5Nov9HG
+	CBGXkJg1/QIrhM0rMaP9KVS9nMS0r2uYIWxpifOzNjDCHL34+2OoOL/Esds7mEDuBOl9cj8Y
+	ZszuzV+g/hWQmHrmICNEiZZE32MNiDCfxJqFb1lgpuw6tZwZpvX+lrlQXylKTOl+yA5ha0l8
+	+bGPDd1XvAKOEm+mzWWewCg3C0lqFpL2WUjakdUsYGRZxSiaWpBcUJyUnmqsV5yYW1yal66X
+	nJ+7iREc5c94dzDObbA4xCjAwajEw2syKSxAiDWxrLgy9xCjBAezkgjvgzdAId6UxMqq1KL8
+	+KLSnNTiQ4zSHCxK4ryvPwYGCAmkJ5akZqemFqQWwWSZODilGhgLN55I3fAt7ZOnQVbGhQ+H
+	L+3PnC75c7/rqcVNby9ODd1U9+bzbgblAzV/nr6OqmDctFK9+INZq+YRnfsXv7yYpMTT75+f
+	0X8wQtRE/v/OR89vPHsu/a2qu8Obw57FbcMEzo+mJbOrSnLO6kxew/LablpmFo+a9pmv156G
+	O7646pzCe3XaA/bHSizFGYmGWsxFxYkAYk2u3O4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8HAZ1IQ019610
 
-> -----Original Message-----
-> From: Shaun Ruffell [mailto:sruffell@digium.com]
-> Sent: Saturday, September 15, 2012 2:22 AM
-> To: Xie Shaohui-B21989
-> Cc: linux-edac@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
-> akpm@linux-foundation.org; avorontsov@mvista.com; linux-
-> kernel@vger.kernel.org; grant.likely@secretlab.ca
-> Subject: Re: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+> From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 > 
-> On Thu, Sep 13, 2012 at 06:55:29PM +0800, Shaohui Xie wrote:
-> > Error handle in case of DDR ECC off is wrong, sysfs entries have not
-> > been created, so edac_mc_free which frees a mci instance should not be
-> called.
-> > Also, free mci's memory in this case.
+> Devfreq returns governor predicted frequency as current frequency
+> via sysfs interface. But device may not support all frequencies
+> that governor predicts. So add a callback in device profile to get
+> current freq from driver. Also add a new sysfs node to expose
+> governor predicted next target frequency.
 > 
-> Jus FYI: I ran into the same error in edac_mc_free() which I resolved in
-> a slightly different way in some patches I sent previously. [1]
+> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+
+> ---
+>  Documentation/ABI/testing/sysfs-class-devfreq | 11 ++++++++++-
+>  drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
+>  include/linux/devfreq.h                       |  3 +++
+>  3 files changed, 27 insertions(+), 1 deletion(-)
 > 
-> [1] https://lkml.org/lkml/2012/9/14/475
-[S.H] Thanks! I did not aware of this patch when one of my colleague asked me to have a look at the issue,
-It could save me some time if I saw this patch earlier. :(
-
-BTW: seems you are using a different kernel tree with mine.
-
-Best Regards, 
-Shaohui Xie
-
+> diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
+> index 89283b1..e6cf08e 100644
+> --- a/Documentation/ABI/testing/sysfs-class-devfreq
+> +++ b/Documentation/ABI/testing/sysfs-class-devfreq
+> @@ -19,7 +19,16 @@ Date:		September 2011
+>  Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+>  Description:
+>  		The /sys/class/devfreq/.../cur_freq shows the current
+> -		frequency of the corresponding devfreq object.
+> +		frequency of the corresponding devfreq object. Same as
+> +		target_freq when get_cur_freq() is not implemented by
+> +		devfreq driver.
+> +
+> +What:		/sys/class/devfreq/.../target_freq
+> +Date:		September 2012
+> +Contact:	Rajagopal Venkat <rajagopal.venkat@linaro.org>
+> +Description:
+> +		The /sys/class/devfreq/.../target_freq shows the next governor
+> +		predicted target frequency of the corresponding devfreq object.
+>  
+>  What:		/sys/class/devfreq/.../polling_interval
+>  Date:		September 2011
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 309c46e..049e273 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -401,6 +401,19 @@ static ssize_t show_governor(struct device *dev,
+>  static ssize_t show_freq(struct device *dev,
+>  			 struct device_attribute *attr, char *buf)
+>  {
+> +	unsigned long freq;
+> +	struct devfreq *devfreq = to_devfreq(dev);
+> +
+> +	if (devfreq->profile->get_cur_freq &&
+> +		!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
+> +			return sprintf(buf, "%lu\n", freq);
+> +
+> +	return sprintf(buf, "%lu\n", devfreq->previous_freq);
+> +}
+> +
+> +static ssize_t show_target_freq(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+>  	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
+>  }
+>  
+> @@ -504,6 +517,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
+>  static struct device_attribute devfreq_attrs[] = {
+>  	__ATTR(governor, S_IRUGO, show_governor, NULL),
+>  	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
+> +	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
+>  	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
+>  	       store_polling_interval),
+>  	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> index 7c7e179..d12ed41 100644
+> --- a/include/linux/devfreq.h
+> +++ b/include/linux/devfreq.h
+> @@ -66,6 +66,8 @@ struct devfreq_dev_status {
+>   *			explained above with "DEVFREQ_FLAG_*" macros.
+>   * @get_dev_status	The device should provide the current performance
+>   *			status to devfreq, which is used by governors.
+> + * @get_cur_freq	The device should provide the current frequency
+> + *			at which it is operating.
+>   * @exit		An optional callback that is called when devfreq
+>   *			is removing the devfreq object due to error or
+>   *			from devfreq_remove_device() call. If the user
+> @@ -79,6 +81,7 @@ struct devfreq_dev_profile {
+>  	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
+>  	int (*get_dev_status)(struct device *dev,
+>  			      struct devfreq_dev_status *stat);
+> +	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
+>  	void (*exit)(struct device *dev);
+>  };
+>  
+> -- 
+> 1.7.11.3
+> 
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
