@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2IQHcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:32:06 -0400
-Received: from void.printf.net ([89.145.121.20]:36176 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870Ab2IQHcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:32:03 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Venkatraman S <svenkatr@ti.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Adrian Hunter <ext-adrian.hunter@nokia.com>,
-        Philip Rakity <prakity@marvell.com>, raphael.andy.lee@gmail.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v6] mmc: core: Remove bounce buffer in mmc_send_cxd_data()
-References: <1343955483-6917-1-git-send-email-kyungsik.lee@lge.com>
-Date: Mon, 17 Sep 2012 03:32:12 -0400
-In-Reply-To: <1343955483-6917-1-git-send-email-kyungsik.lee@lge.com> (Kyungsik
-	Lee's message of "Fri, 3 Aug 2012 09:58:03 +0900")
-Message-ID: <m3txuxyuir.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754068Ab2IQHch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:32:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48344 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab2IQHbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 03:31:00 -0400
+Date: Mon, 17 Sep 2012 17:30:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: manual merge of the usb tree with the tty tree
+Message-Id: <20120917173058.e4d3f65bdc3751283766295c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Sep_2012_17_30_58_+1000_69.pOhoOXKU2aRBi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Mon__17_Sep_2012_17_30_58_+1000_69.pOhoOXKU2aRBi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 02 2012, Kyungsik Lee wrote:
-> It is expected that Extended CSD register(the size of this register
-> is larger than CID/CSD) will be referenced more frequently as more
-> fields have been added to Extended CSD and it seems that it is not
-> a good option to double the memory used.
->
-> This patch is intended to avoid the use of bounce buffer for reading
-> Extended CSD register in mmc_send_cxd_data(). It will provide a better
-> performance gain by removing memcpy() overhead for a half KiB and
-> a redundant bounce buffer allocated repeatedly at the cost of providing
-> DMA-capable buffer from upper caller(but on-stack buffer is allowed
-> with no performance gain).
->
-> Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
-> Reviewed-by: Venkatraman S <svenkatr@ti.com>
+Hi Greg,
 
-Thanks, pushed to mmc-next for 3.7.
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/serial/mos7720.c between commit adc8d746caa6 ("tty: move the
+termios object into the tty") from the tty tree and commit 9eecf8085473
+("USB: serial: mos7720.c: remove dbg() usage") from the usb tree.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/serial/mos7720.c
+index 012f67b,192191c..0000000
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@@ -1751,19 -1708,15 +1708,15 @@@ static void mos7720_set_termios(struct=20
+  		return;
+  	}
+ =20
+- 	dbg("%s\n", "setting termios - ASPIRE");
++ 	dev_dbg(&port->dev, "setting termios - ASPIRE\n");
+ =20
+ -	cflag =3D tty->termios->c_cflag;
+ +	cflag =3D tty->termios.c_cflag;
+ =20
+- 	dbg("%s - cflag %08x iflag %08x", __func__,
+- 	    tty->termios.c_cflag,
+- 	    RELEVANT_IFLAG(tty->termios.c_iflag));
++ 	dev_dbg(&port->dev, "%s - cflag %08x iflag %08x\n", __func__,
+ -		tty->termios->c_cflag, RELEVANT_IFLAG(tty->termios->c_iflag));
+++		tty->termios.c_cflag, RELEVANT_IFLAG(tty->termios.c_iflag));
+ =20
+- 	dbg("%s - old cflag %08x old iflag %08x", __func__,
+- 	    old_termios->c_cflag,
+- 	    RELEVANT_IFLAG(old_termios->c_iflag));
+-=20
+- 	dbg("%s - port %d", __func__, port->number);
++ 	dev_dbg(&port->dev, "%s - old cflag %08x old iflag %08x\n", __func__,
++ 		old_termios->c_cflag, RELEVANT_IFLAG(old_termios->c_iflag));
+ =20
+  	/* change the port settings to the new ones specified */
+  	change_port_settings(tty, mos7720_port, old_termios);
+
+--Signature=_Mon__17_Sep_2012_17_30_58_+1000_69.pOhoOXKU2aRBi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQVtGyAAoJEECxmPOUX5FEkL4P/3rMOnZnWZpJt4FSWOaqwYjH
+ETNmGMrnoi1bpoEfHbYdtoEDk9q2NqIKINRqjJyDfpUC05mtK0awM9lLBwJYBdGG
+DWkB7zwJ41LM/uN5Ho/TqUHvQMNOO0CGaLeBYz3INO98x0C7XLwGUmAbZei0NiXn
+183GKDwyLxphLJW/cGXhPJGXYfTZ+mGmuVALzVCAUS4/nfmDiOXyxD7h/xa2gYZM
+CXkLrliO69VBakPdv3BDgWmkNm67S1JJzBtgAJu5jklR2HbtKkiN/k6J9+kpV1d9
+NZSD1unnqNvmil/R620+z1RGULb49KO3UDI8WVjtqJMfmCi/PrMTa53wDlZPrfSt
+cJzKAG7H2UI0Xvyrum2H2EtJHf63MytaX4W0LO/+Rd3aTZyxaR959ag96ecG1LmY
+EX2RWp3zIal4hWioZ0EjfkGCel1fG4EQACvLYL+yVIgANotnGA7pWqJ85zUPlnsn
+t1B2mK6QSA59hw/cKsRC9/UsSLHtlETqrbpOut4WebB88u6VsS/EeXl38I9IerxO
+QXa73meTrrnQ+XwLpApnxcblU/KrzINcuk8nqYRaOTVhXwjpiSDKNjcQz2I+4OUG
+ISbB96cOrrpGOnploQU+kZItlYwwTxnvqW+k+8AuPdj2By0KsFhPSuW1viHO/fzQ
+ohZSkHCB33jxwgSzs93a
+=NvpF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Sep_2012_17_30_58_+1000_69.pOhoOXKU2aRBi--
