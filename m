@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2IQRUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:20:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57950 "EHLO
+	id S1756228Ab2IQRUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:20:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57937 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab2IQRSh (ORCPT
+	with ESMTP id S1756016Ab2IQRSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:18:37 -0400
+	Mon, 17 Sep 2012 13:18:33 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/18] perf/x86: Add cpumask for uncore pmu
-Date: Mon, 17 Sep 2012 14:18:11 -0300
-Message-Id: <1347902292-14536-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 13/18] perf scripts: Add --symbols option to handle specific symbols
+Date: Mon, 17 Sep 2012 14:18:07 -0300
+Message-Id: <1347902292-14536-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1347902292-14536-1-git-send-email-acme@infradead.org>
 References: <1347902292-14536-1-git-send-email-acme@infradead.org>
@@ -27,100 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yan, Zheng <zheng.z.yan@intel.com>
+From: Feng Tang <feng.tang@intel.com>
 
-This patch adds a cpumask file to the uncore pmu sysfs directory.  The
-cpumask file contains one active cpu for every socket.
+Since perf script no longer only handle the trace points, we can add the
+symbol filter option so that scripts can handle specified samples.
 
-Signed-off-by: "Yan, Zheng" <zheng.z.yan@intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1347263631-23175-2-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1347007349-3102-3-git-send-email-feng.tang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   28 ++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    6 +++-
- 2 files changed, 29 insertions(+), 5 deletions(-)
+ tools/perf/builtin-script.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0a55710..62ec3e6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
- 	return ret;
- }
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 6d98a83..76577e6 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -14,6 +14,7 @@
+ #include "util/util.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
++#include "util/sort.h"
+ #include <linux/bitmap.h>
  
-+static ssize_t uncore_get_attr_cpumask(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
-+
-+	buf[n++] = '\n';
-+	buf[n] = '\0';
-+	return n;
-+}
-+
-+static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
-+
-+static struct attribute *uncore_pmu_attrs[] = {
-+	&dev_attr_cpumask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group uncore_pmu_attr_group = {
-+	.attrs = uncore_pmu_attrs,
-+};
-+
- static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
- {
- 	int ret;
-@@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
- 		free_percpu(type->pmus[i].box);
- 	kfree(type->pmus);
- 	type->pmus = NULL;
--	kfree(type->attr_groups[1]);
--	type->attr_groups[1] = NULL;
-+	kfree(type->events_group);
-+	type->events_group = NULL;
- }
- 
- static void __init uncore_types_exit(struct intel_uncore_type **types)
-@@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
- 
--		type->attr_groups[1] = events_group;
-+		type->events_group = events_group;
- 	}
- 
-+	type->pmu_group = &uncore_pmu_attr_group;
- 	type->pmus = pmus;
- 	return 0;
- fail:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 5b81c18..e68a455 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -369,10 +369,12 @@ struct intel_uncore_type {
- 	struct intel_uncore_pmu *pmus;
- 	struct intel_uncore_ops *ops;
- 	struct uncore_event_desc *event_descs;
--	const struct attribute_group *attr_groups[3];
-+	const struct attribute_group *attr_groups[4];
- };
- 
--#define format_group attr_groups[0]
-+#define pmu_group attr_groups[0]
-+#define format_group attr_groups[1]
-+#define events_group attr_groups[2]
- 
- struct intel_uncore_ops {
- 	void (*init_box)(struct intel_uncore_box *);
+ static char const		*script_name;
+@@ -1143,6 +1144,8 @@ static const struct option options[] = {
+ 		     parse_output_fields),
+ 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
+ 		     "system-wide collection from all CPUs"),
++	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
++		   "only consider these symbols"),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+ 		   "only display events for these comms"),
 -- 
 1.7.1
 
