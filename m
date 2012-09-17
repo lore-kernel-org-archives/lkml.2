@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2IQQsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab2IQQsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:48:36 -0400
-Date: Mon, 17 Sep 2012 18:50:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: MMF_RECALC_UPROBES + single-step fixes
-Message-ID: <20120917165016.GA27952@redhat.com>
+	id S1754704Ab2IQQvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:51:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28184 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753356Ab2IQQvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 12:51:04 -0400
+Message-ID: <505754EB.8060907@oracle.com>
+Date: Mon, 17 Sep 2012 11:50:51 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tino Reichardt <list-jfs@mcmilk.de>
+Subject: Re: linux-next: Tree for Sept 17 (jfs)
+References: <20120917215938.11c456c113ac3b015cb2d5ae@canb.auug.org.au> <505745CF.8040202@xenotime.net>
+In-Reply-To: <505745CF.8040202@xenotime.net>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
+On 09/17/2012 10:46 AM, Randy Dunlap wrote:
+> On 09/17/2012 04:59 AM, Stephen Rothwell wrote:
+> 
+>> Hi all,
+>>
+>> OK, so this was a bad one :-(
+>>
+>> Changes since 201209014:
+>>
+>> New tree: jfs
+>>
+> 
+> 
+> 
+> on i386:
+> 
+> modular build:
+> ERROR: "__divdi3" [fs/jfs/jfs.ko] undefined!
+> 
+> or builtin:
+> fs/built-in.o: In function `dbDiscardAG':
+> (.text+0x12988b): undefined reference to `__divdi3'
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+Thanks Randy.
 
-More recently dicussed and acked patches. Except 95cf00fa
-"ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic",
-nobody wants to ack it explicitly, but nobody objected.
+This should fix it. I'll integrate it back into the proper patch in the
+jfs tree for the next pull.
 
-Oleg Nesterov (9):
-      uprobes: uprobes_treelock should not disable irqs
-      uprobes: Introduce MMF_RECALC_UPROBES
-      uprobes: Teach find_active_uprobe() to clear MMF_HAS_UPROBES
-      ptrace/x86: Introduce set_task_blockstep() helper
-      ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic
-      uprobes/x86: Do not (ab)use TIF_SINGLESTEP/user_*_single_step() for single-stepping
-      uprobes/x86: Xol should send SIGTRAP if X86_EFLAGS_TF was set
-      uprobes/x86: Fix arch_uprobe_disable_step() && UTASK_SSTEP_TRAPPED interaction
-      uprobes: Make arch_uprobe_task->saved_trap_nr "unsigned int"
+jfs: fix i386 build error. Replace 64-bit division with do_div()
 
-Sebastian Andrzej Siewior (3):
-      uprobes: Don't put NULL pointer in uprobe_register()
-      uprobes: Introduce arch_uprobe_enable/disable_step()
-      uprobes/x86: Implement x86 specific arch_uprobe_*_step
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 
- arch/x86/include/asm/processor.h |    2 +
- arch/x86/include/asm/uprobes.h   |    3 +-
- arch/x86/kernel/step.c           |   53 +++++++++++++--------
- arch/x86/kernel/uprobes.c        |   52 +++++++++++++++++++-
- include/linux/sched.h            |    3 +-
- include/linux/uprobes.h          |    2 +
- kernel/events/uprobes.c          |   99 ++++++++++++++++++++++++++++++--------
- 7 files changed, 171 insertions(+), 43 deletions(-)
+diff --git a/fs/jfs/jfs_dmap.c b/fs/jfs/jfs_dmap.c
+index eb988a9..174feb6 100644
+--- a/fs/jfs/jfs_dmap.c
++++ b/fs/jfs/jfs_dmap.c
+@@ -1640,13 +1640,15 @@ s64 dbDiscardAG(struct inode *ip, int agno, s64 minlen)
+ 	} *totrim, *tt;
+ 
+ 	/* max blkno / nblocks pairs to trim */
+-	int count = 0, range_cnt = 32 * 1024;
++	int count = 0, range_cnt;
+ 
+ 	/* prevent others from writing new stuff here, while trimming */
+ 	IWRITE_LOCK(ipbmap, RDWRLOCK_DMAP);
+ 
+ 	nblocks = bmp->db_agfree[agno];
+-	range_cnt = min_t(int, range_cnt, nblocks / minlen + 1);
++	range_cnt = nblocks;
++	do_div(range_cnt, (int)minlen);
++	range_cnt = min(range_cnt + 1, 32 * 1024);
+ 	totrim = kmalloc(sizeof(struct range2trim) * range_cnt, GFP_NOFS);
+ 	if (totrim == NULL) {
+ 		jfs_error(bmp->db_ipbmap->i_sb,
 
