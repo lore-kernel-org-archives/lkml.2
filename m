@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2IQAuq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33387 "EHLO
+	id S1753952Ab2IQAuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33425 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753057Ab2IQAtk (ORCPT
+	by vger.kernel.org with ESMTP id S1753102Ab2IQAtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:40 -0400
-Message-Id: <20120917003639.652036557@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:43 -0400
+Message-Id: <20120917003637.706801413@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:02 +0100
+Date: Mon, 17 Sep 2012 01:37:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 097/135] staging: vt6656: [BUG] - Failed connection, incorrect endian.
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 083/135] ARM: 7487/1: mm: avoid setting nG bit for user mappings that arent
+ present
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,114 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit aa209eef3ce8419ff2926c2fa944dfbfb5afbacb upstream.
+commit 47f1204329237a0f8655f5a9f14a38ac81946ca1 upstream.
 
-Hi,
+Swap entries are encoding in ptes such that !pte_present(pte) and
+pte_file(pte). The remaining bits of the descriptor are used to identify
+the swapfile and offset within it to the swap entry.
 
-This patch fixes a bug with driver failing to negotiate a connection.
+When writing such a pte for a user virtual address, set_pte_at
+unconditionally sets the nG bit, which (in the case of LPAE) will
+corrupt the swapfile offset and lead to a BUG:
 
-The bug was traced to commit
-203e4615ee9d9fa8d3506b9d0ef30095e4d5bc90
-staging: vt6656: removed custom definitions of Ethernet packet types
+[  140.494067] swap_free: Unused swap offset entry 000763b4
+[  140.509989] BUG: Bad page map in process rs:main Q:Reg  pte:0ec76800 pmd:8f92e003
 
-In that patch, definitions in include/linux/if_ether.h replaced ones
-in tether.h which had both big and little endian definitions.
+This patch fixes the problem by only setting the nG bit for user
+mappings that are actually present.
 
-include/linux/if_ether.h only refers to big endian values, cpu_to_be16
-should be used for the correct endian architectures.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6656/dpc.c  |    2 +-
- drivers/staging/vt6656/rxtx.c |   38 +++++++++++++++++++-------------------
- 2 files changed, 20 insertions(+), 20 deletions(-)
+ arch/arm/include/asm/pgtable.h |   34 ++++++++++++++++++----------------
+ arch/arm/mm/flush.c            |    2 --
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
-index e4bdf2a..3aa895e 100644
---- a/drivers/staging/vt6656/dpc.c
-+++ b/drivers/staging/vt6656/dpc.c
-@@ -200,7 +200,7 @@ s_vProcessRxMACHeader (
-     } else if (!compare_ether_addr(pbyRxBuffer, &pDevice->abySNAP_RFC1042[0])) {
-         cbHeaderSize += 6;
-         pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
--	if ((*pwType == cpu_to_le16(ETH_P_IPX)) ||
-+	if ((*pwType == cpu_to_be16(ETH_P_IPX)) ||
- 	    (*pwType == cpu_to_le16(0xF380))) {
- 		cbHeaderSize -= 8;
-             pwType = (PWORD) (pbyRxBufferAddr + cbHeaderSize);
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index bb46452..b6e04e7 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -1699,7 +1699,7 @@ s_bPacketToWirelessUsb(
-     // 802.1H
-     if (ntohs(psEthHeader->wType) > ETH_DATA_LEN) {
- 	if (pDevice->dwDiagRefCount == 0) {
--		if ((psEthHeader->wType == cpu_to_le16(ETH_P_IPX)) ||
-+		if ((psEthHeader->wType == cpu_to_be16(ETH_P_IPX)) ||
- 		    (psEthHeader->wType == cpu_to_le16(0xF380))) {
- 			memcpy((PBYTE) (pbyPayloadHead),
- 			       abySNAP_Bridgetunnel, 6);
-@@ -2838,10 +2838,10 @@ int nsDMA_tx_packet(PSDevice pDevice, unsigned int uDMAIdx, struct sk_buff *skb)
-     Packet_Type = skb->data[ETH_HLEN+1];
-     Descriptor_type = skb->data[ETH_HLEN+1+1+2];
-     Key_info = (skb->data[ETH_HLEN+1+1+2+1] << 8)|(skb->data[ETH_HLEN+1+1+2+2]);
--    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
--	/* 802.1x OR eapol-key challenge frame transfer */
--	if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
--		(Packet_Type == 3)) {
-+	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
-+		/* 802.1x OR eapol-key challenge frame transfer */
-+		if (((Protocol_Version == 1) || (Protocol_Version == 2)) &&
-+			(Packet_Type == 3)) {
-                         bTxeapol_key = TRUE;
-                        if(!(Key_info & BIT3) &&  //WPA or RSN group-key challenge
- 			   (Key_info & BIT8) && (Key_info & BIT9)) {    //send 2/2 key
-@@ -2987,19 +2987,19 @@ int nsDMA_tx_packet(PSDevice pDevice, unsigned int uDMAIdx, struct sk_buff *skb)
-         }
-     }
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -232,6 +232,18 @@ static inline pte_t *pmd_page_vaddr(pmd_
+ #define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
+ #define pte_clear(mm,addr,ptep)	set_pte_ext(ptep, __pte(0), 0)
  
--    if (pDevice->sTxEthHeader.wType == cpu_to_le16(ETH_P_PAE)) {
--        if (pDevice->byBBType != BB_TYPE_11A) {
--            pDevice->wCurrentRate = RATE_1M;
--            pDevice->byACKRate = RATE_1M;
--            pDevice->byTopCCKBasicRate = RATE_1M;
--            pDevice->byTopOFDMBasicRate = RATE_6M;
--        } else {
--            pDevice->wCurrentRate = RATE_6M;
--            pDevice->byACKRate = RATE_6M;
--            pDevice->byTopCCKBasicRate = RATE_1M;
--            pDevice->byTopOFDMBasicRate = RATE_6M;
--        }
--    }
-+	if (pDevice->sTxEthHeader.wType == cpu_to_be16(ETH_P_PAE)) {
-+		if (pDevice->byBBType != BB_TYPE_11A) {
-+			pDevice->wCurrentRate = RATE_1M;
-+			pDevice->byACKRate = RATE_1M;
-+			pDevice->byTopCCKBasicRate = RATE_1M;
-+			pDevice->byTopOFDMBasicRate = RATE_6M;
-+		} else {
-+			pDevice->wCurrentRate = RATE_6M;
-+			pDevice->byACKRate = RATE_6M;
-+			pDevice->byTopCCKBasicRate = RATE_1M;
-+			pDevice->byTopOFDMBasicRate = RATE_6M;
-+		}
-+	}
++#define pte_none(pte)		(!pte_val(pte))
++#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
++#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
++#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
++#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
++#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
++#define pte_special(pte)	(0)
++
++#define pte_present_user(pte) \
++	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
++	 (L_PTE_PRESENT | L_PTE_USER))
++
+ #if __LINUX_ARM_ARCH__ < 6
+ static inline void __sync_icache_dcache(pte_t pteval)
+ {
+@@ -243,25 +255,15 @@ extern void __sync_icache_dcache(pte_t p
+ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 			      pte_t *ptep, pte_t pteval)
+ {
+-	if (addr >= TASK_SIZE)
+-		set_pte_ext(ptep, pteval, 0);
+-	else {
++	unsigned long ext = 0;
++
++	if (addr < TASK_SIZE && pte_present_user(pteval)) {
+ 		__sync_icache_dcache(pteval);
+-		set_pte_ext(ptep, pteval, PTE_EXT_NG);
++		ext |= PTE_EXT_NG;
+ 	}
+-}
  
-     DBG_PRT(MSG_LEVEL_DEBUG,
- 	    KERN_INFO "dma_tx: pDevice->wCurrentRate = %d\n",
-@@ -3015,7 +3015,7 @@ int nsDMA_tx_packet(PSDevice pDevice, unsigned int uDMAIdx, struct sk_buff *skb)
+-#define pte_none(pte)		(!pte_val(pte))
+-#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
+-#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
+-#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
+-#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
+-#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
+-#define pte_special(pte)	(0)
+-
+-#define pte_present_user(pte) \
+-	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
+-	 (L_PTE_PRESENT | L_PTE_USER))
++	set_pte_ext(ptep, pteval, ext);
++}
  
-     if (bNeedEncryption == TRUE) {
-         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"ntohs Pkt Type=%04x\n", ntohs(pDevice->sTxEthHeader.wType));
--	if ((pDevice->sTxEthHeader.wType) == cpu_to_le16(ETH_P_PAE)) {
-+	if ((pDevice->sTxEthHeader.wType) == cpu_to_be16(ETH_P_PAE)) {
- 		bNeedEncryption = FALSE;
-             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Pkt Type=%04x\n", (pDevice->sTxEthHeader.wType));
-             if ((pMgmt->eCurrMode == WMAC_MODE_ESS_STA) && (pMgmt->eCurrState == WMAC_STATE_ASSOC)) {
+ #define PTE_BIT_FUNC(fn,op) \
+ static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -236,8 +236,6 @@ void __sync_icache_dcache(pte_t pteval)
+ 	struct page *page;
+ 	struct address_space *mapping;
+ 
+-	if (!pte_present_user(pteval))
+-		return;
+ 	if (cache_is_vipt_nonaliasing() && !pte_exec(pteval))
+ 		/* only flush non-aliasing VIPT caches for exec mappings */
+ 		return;
 
 
