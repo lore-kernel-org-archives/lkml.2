@@ -1,175 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2IQXD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 19:03:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38590 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348Ab2IQXD4 (ORCPT
+	id S932607Ab2IQXIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 19:08:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42018 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209Ab2IQXId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 19:03:56 -0400
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: LKML <linux-kernel@vger.kernel.org>
+	Mon, 17 Sep 2012 19:08:33 -0400
+Date: Tue, 18 Sep 2012 01:09:09 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
 Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
         DRI Development <dri-devel@lists.freedesktop.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/2] [RESEND] console: implement lockdep support for console_lock
-Date: Tue, 18 Sep 2012 01:03:32 +0200
-Message-Id: <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [pull] drm-intel-next
+Message-ID: <20120917230909.GE5522@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120913141841.GC5693@phenom.ffwll.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120913141841.GC5693@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie recently discovered a locking bug in the fbcon layer,
-where a timer_del_sync (for the blinking cursor) deadlocks with the
-timer itself, since both (want to) hold the console_lock:
+On Thu, Sep 13, 2012 at 04:18:41PM +0200, Daniel Vetter wrote:
+> Hi Dave,
+> 
+> The big ticket item here is the new i915 modeset infrastructure.
+> Shockingly it didn't not blow up all over the place (i.e. I've managed to
+> fix the ugly issues before merging). 1-2 smaller corner cases broke, but
+> we have patches. Also, there's tons of patches on top of this that clean
+> out cruft and fix a few bugs that couldn't be fixed with the crtc helper
+> based stuff. So more stuff to come ;-)
+> 
+> Also a few other things:
+> - Tiny fix in the fb helper to go through the official dpms interface
+>   instead of calling the crtc helper code.
+> - forcewake code frobbery from Ben, code should be more in-line with
+>   what Windows does now.
+> - fixes for the render ring flush on hsw (Paulo)
+> - gpu frequency tracepoint
+> - vlv forcewake changes to better align it with our understanding of the
+>   forcewake magic.
+> - a few smaller cleanups
 
-https://lkml.org/lkml/2012/8/21/36
+Updated pull request with the 2 bugfixers cherry-picked from my -next
+queue on top. Since I'll be travelling around for the next two weeks,
+rebasing things around will take a bit longer.
 
-Unfortunately the console_lock isn't a plain mutex and hence has no
-lockdep support. Which resulted in a few days wasted of tracking down
-this bug (complicated by the fact that printk doesn't show anything
-when the console is locked) instead of noticing the bug much earlier
-with the lockdep splat.
+Cheers, Daniel
+The following changes since commit 85f9e50d815a70780699752c4f2dc1198c2c0b61:
 
-Hence I've figured I need to fix that for the next deadlock involving
-console_lock - and with kms/drm growing ever more complex locking
-that'll eventually happen.
+  drm/i915: move i915_get_extra_insdone out of CONFIG_DEBUG_FS block (2012-09-03 18:06:37 +1000)
 
-Now the console_lock has rather funky semantics, so after a quick irc
-discussion with Thomas Gleixner and Dave Airlie I've quickly ditched
-the original idead of switching to a real mutex (since it won't work)
-and instead opted to annotate the console_lock with lockdep
-information manually.
+are available in the git repository at:
 
-There are a few special cases:
-- The console_lock state is protected by the console_sem, and usually
-  grabbed/dropped at _lock/_unlock time. But the suspend/resume code
-  drops the semaphore without dropping the console_lock (see
-  suspend_console/resume_console). But since the same thread that did
-  the suspend will do the resume, we don't need to fix up anything.
+  git://people.freedesktop.org/~danvet/drm-intel for-airlied
 
-- In the printk code there's a special trylock, only used to kick off
-  the logbuffer printk'ing in console_unlock. But all that happens
-  while lockdep is disable (since printk does a few other evil
-  tricks). So no issue there, either.
+for you to fetch changes up to 3b7a89fce3e3dc96b549d6d829387b4439044d0d:
 
-- The console_lock can also be acquired form irq context (but only
-  with a trylock). lockdep already handles that.
+  drm/i915: fix OOPS in lid_notify (2012-09-18 00:59:37 +0200)
 
-This all leaves us with annotating the normal console_lock, _unlock
-and _trylock functions.
+----------------------------------------------------------------
+Ben Widawsky (5):
+      drm/i915: Extract forcewake ack timeout
+      drm/i915: use cpu_relax() in wait_for_atomic
+      drm/i915: Change forcewake timeout to 2ms
+      drm/i915: Never read FORCEWAKE
+      drm/i915: Enable some sysfs stuff without CONFIG_PM
 
-And yes, it works - simply unloading a drm kms driver resulted in
-lockdep complaining about the deadlock in fbcon_deinit:
+Chris Wilson (1):
+      drm/i915: Convert remaining debugfs iterators over rings to for_each_ring()
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.6.0-rc2+ #552 Not tainted
--------------------------------------------------------
-kms-reload/3577 is trying to acquire lock:
- ((&info->queue)){+.+...}, at: [<ffffffff81058c70>] wait_on_work+0x0/0xa7
+Daniel Vetter (68):
+      drm/ips: move drps/ips/ilk related variables into dev_priv->ips
+      drm/i915: add a tracepoint for gpu frequency changes
+      drm/i915: align vlv forcewake with common lore
+      drm/i915: differ error message between forcwake timeouts
+      drm/i915: add crtc->enable/disable vfuncs insted of dpms
+      drm/i915: rip out crtc prepare/commit indirection
+      drm/i915: add direct encoder disable/enable infrastructure
+      drm/i915/hdmi: convert to encoder->disable/enable
+      drm/i915/tv: convert to encoder enable/disable
+      drm/i915/lvds: convert to encoder disable/enable
+      drm/i915/dp: convert to encoder disable/enable
+      drm/i915/crt: convert to encoder disable/enable
+      drm/i915/sdvo: convert to encoder disable/enable
+      drm/i915/dvo: convert to encoder disable/enable
+      drm/i915: convert dpms functions of dvo/sdvo/crt
+      drm/i915: rip out encoder->disable/enable checks
+      drm/i915: clean up encoder_prepare/commit
+      drm/i915: copy&paste drm_crtc_helper_set_config
+      drm/i915: call set_base directly
+      drm/i915: inline intel_best_encoder
+      drm/i915: copy&paste drm_crtc_helper_set_mode
+      drm/i915: simplify intel_crtc_prepare_encoders
+      drm/i915: rip out encoder->prepare/commit
+      drm/i915: call crtc functions directly
+      drm/i915: WARN when trying to enabled an unused crtc
+      drm/i915: Add interfaces to read out encoder/connector hw state
+      drm/i915/dp: implement get_hw_state
+      drm/i915/hdmi: implement get_hw_state
+      drm/i915/tv: implement get_hw_state
+      drm/i915/lvds: implement get_hw_state
+      drm/i915/crt: implement get_hw_state
+      drm/i915/sdvo: implement get_hw_state
+      drm/i915/dvo: implement get_hw_state
+      drm/i915: read out the modeset hw state at load and resume time
+      drm/i915: check connector hw/sw state
+      drm/i915: rip out intel_crtc->dpms_mode
+      drm/i915: rip out intel_dp->dpms_mode
+      drm/i915: ensure the force pipe A quirk is actually followed
+      drm/i915: introduce struct intel_set_config
+      drm/i915: extract modeset config save/restore code
+      drm/i915: extract intel_set_config_compute_mode_changes
+      drm/i915: extract intel_set_config_update_output_state
+      drm/i915: implement crtc helper semantics relied upon by the fb helper
+      drm/i915: don't update the fb base if there is no fb
+      drm/i915: convert pointless error checks in set_config to BUGs
+      drm/i915: don't save all the encoder/crtc state in set_config
+      drm/i915: stage modeset output changes
+      drm/i915: push crtc->fb update into pipe_set_base
+      drm/i915: remove crtc disabling special case
+      drm/i915: move output commit and crtc disabling into set_mode
+      drm/i915: extract adjusted mode computation
+      drm/i915: use staged outuput config in tv->mode_fixup
+      drm/i915: use staged outuput config in lvds->mode_fixup
+      drm/i915: compute masks of crtcs affected in set_mode
+      drm/i915: implement new set_mode code flow
+      drm/i915: push commit_output_state past crtc disabling
+      drm/i915: s/intel_encoder_disable/intel_encoder_noop
+      drm/i915: WARN if the pipe won't turn off
+      drm/i915: switch the load detect code to the staged modeset config
+      drm/i915: push commit_output_state past the crtc/encoder preparing
+      drm/i915: disable all crtcs at suspend time
+      drm/i915: no longer call drm_helper_resume_force_mode
+      drm/i915: add tons of modeset state checks
+      drm/i915: improve modeset state checking after dpms calls
+      Merge the modeset-rework, basic conversion into drm-intel-next
+      drm/fb helper: don't call drm_helper_connector_dpms directly
+      drm/i915: correctly update crtc->x/y in set_base
+      drm/i915: fix OOPS in lid_notify
 
-but task is already holding lock:
- (console_lock){+.+.+.}, at: [<ffffffff81264686>] bind_con_driver+0x38/0x263
+Jani Nikula (2):
+      drm/i915: only enable sdvo hotplug irq if needed
+      drm/i915: fix sdvo hotplug support check and activation
 
-which lock already depends on the new lock.
+Paulo Zanoni (3):
+      drm/i915: add gen7_render_ring_flush
+      drm/i915: add workarounds directly to gen6_render_ring_flush
+      drm/i915: add workarounds to gen7_render_ring_flush
 
-the existing dependency chain (in reverse order) is:
-
--> #1 (console_lock){+.+.+.}:
-       [<ffffffff81087440>] lock_acquire+0x95/0x105
-       [<ffffffff81040190>] console_lock+0x59/0x5b
-       [<ffffffff81209cb6>] fb_flashcursor+0x2e/0x12c
-       [<ffffffff81057c3e>] process_one_work+0x1d9/0x3b4
-       [<ffffffff810584a2>] worker_thread+0x1a7/0x24b
-       [<ffffffff8105ca29>] kthread+0x7f/0x87
-       [<ffffffff813b1204>] kernel_thread_helper+0x4/0x10
-
--> #0 ((&info->queue)){+.+...}:
-       [<ffffffff81086cb3>] __lock_acquire+0x999/0xcf6
-       [<ffffffff81087440>] lock_acquire+0x95/0x105
-       [<ffffffff81058cab>] wait_on_work+0x3b/0xa7
-       [<ffffffff81058dd6>] __cancel_work_timer+0xbf/0x102
-       [<ffffffff81058e33>] cancel_work_sync+0xb/0xd
-       [<ffffffff8120a3b3>] fbcon_deinit+0x11c/0x1dc
-       [<ffffffff81264793>] bind_con_driver+0x145/0x263
-       [<ffffffff81264a45>] unbind_con_driver+0x14f/0x195
-       [<ffffffff8126540c>] store_bind+0x1ad/0x1c1
-       [<ffffffff8127cbb7>] dev_attr_store+0x13/0x1f
-       [<ffffffff8116d884>] sysfs_write_file+0xe9/0x121
-       [<ffffffff811145b2>] vfs_write+0x9b/0xfd
-       [<ffffffff811147b7>] sys_write+0x3e/0x6b
-       [<ffffffff813b0039>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(console_lock);
-                               lock((&info->queue));
-                               lock(console_lock);
-  lock((&info->queue));
-
- *** DEADLOCK ***
-
-Cc: Dave Airlie <airlied@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- kernel/printk.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index ed9af6a..ab2ab24 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -87,6 +87,12 @@ static DEFINE_SEMAPHORE(console_sem);
- struct console *console_drivers;
- EXPORT_SYMBOL_GPL(console_drivers);
- 
-+#ifdef CONFIG_LOCKDEP
-+struct lockdep_map console_lock_dep_map = {
-+	.name = "console_lock"
-+};
-+#endif
-+
- /*
-  * This is used for debugging the mess that is the VT code by
-  * keeping track if we have the console semaphore held. It's
-@@ -1916,6 +1922,7 @@ void console_lock(void)
- 		return;
- 	console_locked = 1;
- 	console_may_schedule = 1;
-+	mutex_acquire(&console_lock_dep_map, 0, 0, _RET_IP_);
- }
- EXPORT_SYMBOL(console_lock);
- 
-@@ -1937,6 +1944,7 @@ int console_trylock(void)
- 	}
- 	console_locked = 1;
- 	console_may_schedule = 0;
-+	mutex_acquire(&console_lock_dep_map, 0, 1, _RET_IP_);
- 	return 1;
- }
- EXPORT_SYMBOL(console_trylock);
-@@ -2097,6 +2105,7 @@ skip:
- 		local_irq_restore(flags);
- 	}
- 	console_locked = 0;
-+	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
- 
- 	/* Release the exclusive_console once it is used */
- 	if (unlikely(exclusive_console))
+ drivers/gpu/drm/drm_fb_helper.c         |    2 +-
+ drivers/gpu/drm/i915/dvo.h              |    6 +
+ drivers/gpu/drm/i915/dvo_ch7017.c       |   13 +
+ drivers/gpu/drm/i915/dvo_ch7xxx.c       |   13 +
+ drivers/gpu/drm/i915/dvo_ivch.c         |   15 +
+ drivers/gpu/drm/i915/dvo_ns2501.c       |   15 +
+ drivers/gpu/drm/i915/dvo_sil164.c       |   16 +
+ drivers/gpu/drm/i915/dvo_tfp410.c       |   14 +
+ drivers/gpu/drm/i915/i915_debugfs.c     |   54 +-
+ drivers/gpu/drm/i915/i915_drv.c         |    9 +-
+ drivers/gpu/drm/i915/i915_drv.h         |   36 +-
+ drivers/gpu/drm/i915/i915_irq.c         |   20 +-
+ drivers/gpu/drm/i915/i915_reg.h         |    2 +
+ drivers/gpu/drm/i915/i915_sysfs.c       |   15 +-
+ drivers/gpu/drm/i915/i915_trace.h       |   15 +
+ drivers/gpu/drm/i915/intel_crt.c        |  136 ++-
+ drivers/gpu/drm/i915/intel_ddi.c        |   59 +-
+ drivers/gpu/drm/i915/intel_display.c    | 1535 ++++++++++++++++++++++++++-----
+ drivers/gpu/drm/i915/intel_dp.c         |  144 ++-
+ drivers/gpu/drm/i915/intel_drv.h        |   67 +-
+ drivers/gpu/drm/i915/intel_dvo.c        |   94 +-
+ drivers/gpu/drm/i915/intel_hdmi.c       |  151 ++-
+ drivers/gpu/drm/i915/intel_lvds.c       |   97 +-
+ drivers/gpu/drm/i915/intel_pm.c         |  138 +--
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   82 +-
+ drivers/gpu/drm/i915/intel_sdvo.c       |  206 +++--
+ drivers/gpu/drm/i915/intel_tv.c         |   61 +-
+ 27 files changed, 2315 insertions(+), 700 deletions(-)
 -- 
-1.7.10.4
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
