@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2IQMVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 08:21:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45533 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab2IQMVs (ORCPT
+	id S1756192Ab2IQMYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 08:24:33 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61689 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab2IQMYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 08:21:48 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>
-Cc: Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-In-Reply-To: <20120816024654.GB3781@thunk.org>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 17 Sep 2012 16:21:44 +0400
-Message-ID: <87fw6get5z.fsf@openvz.org>
+	Mon, 17 Sep 2012 08:24:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF514F@DQHE02.ent.ti.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Mon, 17 Sep 2012 20:24:09 +0800
+X-Google-Sender-Auth: nSnu28qGiDslx1rv9-8XrAEtG-s
+Message-ID: <CAK5ve-LFvdcy9aHu372PN8uAct+AAMWdWCLG-GqFhfP9Zcy=Kg@mail.gmail.com>
+Subject: Re: Question about cleaning up the LP5521/5523 LED driver
+To: "Kim, Milo" <Milo.Kim@ti.com>, samu.p.onkalo@nokia.com,
+        mathias.nyman@nokia.com
+Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012 22:46:54 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Aug 15, 2012 at 09:33:29PM +0300, Marti Raudsepp wrote:
-> > I was moving and deleting some files between two of my ext4 partitions
-> > when it suddenly crashed and dropped me into an kernel oops screen
-> > (below). I'm using ext4 on kernel 3.5.1 (Arch Linux). 
-Ohh, I've missed that gigantic topic, but still i've found the bug.
-patch is available here http://patchwork.ozlabs.org/patch/183649/
-> 
-> > BUG: unable to handle kernel NULL pointer dereference at 000...00028
-> > IP: [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
-> 
-> Someone else has reported a similar crash, but we don't yet have
-> enough information to narrow it down quite yet.
-> 
-> If you could try applying the following debugging patch, and then try
-> to reproduce the failure, it would be really helpful.
-> 
-> Thanks!!
-> 
-> 					- Ted
-> 
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index 769151d..3394d52 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->  
->  	/* the header must be checked already in ext4_ext_remove_space() */
->  	ext_debug("truncate since %u in leaf to %u\n", start, end);
-> +	if (!path[depth].p_hdr && !path[depth].p_bh) {
-> +		EXT4_ERROR_INODE(inode, "depth %d", depth);
-> +		BUG_ON(1);
-> +	}
->  	if (!path[depth].p_hdr)
->  		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
->  	eh = path[depth].p_hdr;
-> @@ -2730,6 +2734,10 @@ cont:
->  		/* this is index block */
->  		if (!path[i].p_hdr) {
->  			ext_debug("initialize header\n");
-> +			if (!path[i].p_hdr && !path[i].p_bh) {
-> +				EXT4_ERROR_INODE(inode, "i=%d", i);
-> +				BUG_ON(1);
-> +			}
->  			path[i].p_hdr = ext_block_hdr(path[i].p_bh);
->  		}
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Mon, Sep 17, 2012 at 7:28 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> Hi Bryan,
+>
+> I would like to have your opinion about cleaning up
+> LP5521 and LP5523/LP55231 drivers.
+>
+> Three devices have similar features such like multi channels,
+> register access via the I2C and internal RAM usage for loading
+> various LED patterns.
+> Moreover upcoming IC has also similar layout and interface.
+>
+> So I would re-design the driver architecture as below.
+>
+> - Common code which supports shared features.
+> - Chip code which enables specific features.
+>
+> For example, leds-lp55xx-common.c is common code.
+> Chip specific configurations are leds-lp5521.c, leds-lp5523.c and something like that.
+> Then Makefile will be as following.
+>
+> obj-$(CONFIG_LEDS_LP5521)       += leds-lp5521.o leds-lp55xx-common.o
+> obj-$(CONFIG_LEDS_LP5523)       += leds-lp5523.o leds-lp55xx-common.o
+> obj-$(CONFIG_LEDS_LP55AB)       += leds-lp55ab.o leds-lp55xx-common.o
+>
+> Then many duplicated lines can be joined into one file - common code.
+> Only IC specific code exists each chip dependant file.
+>
+
+This is great! I love to remove duplicate code and make life simple.
+
+> But I'm hesitating that some *device attributes* should be kept or not.
+> For example, The drivers have each 'engine_load' file for loading LED pattern.
+> LED pattern means blinking LED or ramping up/down the brightness.
+> To load pattern simply, LP5521/5523/55231 provide programmable memory.
+>
+> I'll replace these attributes with the firmware interfaces for simplicity.
+> To load a pattern, hex byte stream is put into the sysfs node.
+> Then this data is transferred to the internal RAM area of the device.
+> This is same concept as the firmware interface.
+> Moreover hex code is dependent on the application or platform.
+>
+> But it has a problem, point of view of user-space interface.
+> An application needs to be changed also with the driver version.
+> The application will failed to run because 'engine_mode' and
+> 'engine_load' don't exist anymore.
+>
+> Should I keep the sysfs layout of LP5521 and LP5523?
+> When we change the device attributes, do we have to consider the backward compatibility?
+>
+
+Actually, I'm not sure about the impact with changing the sysfs
+interface. I guess we need some input from the driver authors.
+
+Personally I vote for the simple firmware interface there, since it
+looks more reasonable to me.
+
+Thanks,
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
