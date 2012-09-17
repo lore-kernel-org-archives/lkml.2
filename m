@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab2IQR3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:29:52 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37013 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2IQR26 (ORCPT
+	id S932245Ab2IQRaW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:30:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31849 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756361Ab2IQRaU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:28:58 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: <herbert@gondor.hengli.com.au>
-Cc: davem@davemloft.net, Julia.Lawall@lip6.fr, vzapolskiy@gmail.com,
-        axel.lin@gmail.com, peter.senna@gmail.com,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/4] drivers/crypto/amcc/crypto4xx_core.c: fix error return code
-Date: Mon, 17 Sep 2012 19:28:27 +0200
-Message-Id: <1347902908-19006-3-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347902908-19006-1-git-send-email-peter.senna@gmail.com>
-References: <1347902908-19006-1-git-send-email-peter.senna@gmail.com>
+	Mon, 17 Sep 2012 13:30:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,437,1344236400"; 
+   d="scan'208";a="145985350"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: X86-ML <x86@kernel.org>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: RE: [PATCH 1/2] x86, mce: Enable MCA support by default
+Thread-Topic: [PATCH 1/2] x86, mce: Enable MCA support by default
+Thread-Index: AQHNlPTOaUYUlHqu1ECzCZwBUDzTZ5eOw9lA
+Date: Mon, 17 Sep 2012 17:30:00 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D41BC2@ORSMSX108.amr.corp.intel.com>
+References: <1347900723-17490-1-git-send-email-bp@amd64.org>
+ <1347900723-17490-2-git-send-email-bp@amd64.org>
+In-Reply-To: <1347900723-17490-2-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+> MCA is the basic support for hardware error logging and reporting, and
+> it is majorly unwise to run without it so enable machine check software
+> support by default on x86.
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/crypto/amcc/crypto4xx_core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/crypto/amcc/crypto4xx_core.c b/drivers/crypto/amcc/crypto4xx_core.c
-index 802e851..f88e3d8 100644
---- a/drivers/crypto/amcc/crypto4xx_core.c
-+++ b/drivers/crypto/amcc/crypto4xx_core.c
-@@ -1226,6 +1226,7 @@ static int __init crypto4xx_probe(struct platform_device *ofdev)
- 	core_dev->dev->ce_base = of_iomap(ofdev->dev.of_node, 0);
- 	if (!core_dev->dev->ce_base) {
- 		dev_err(dev, "failed to of_iomap\n");
-+		rc = -ENOMEM;
- 		goto err_iomap;
- 	}
- 
--- 
-1.7.11.4
-
+Acked-by: Tony Luck <tony.luck@intel.com>
