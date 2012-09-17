@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab2IQUvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:51:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49213 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab2IQUvD (ORCPT
+	id S1757249Ab2IQUvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:51:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49197 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756727Ab2IQUvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:51:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [RFC 0/4] Some libtraceevent cleanups/simplifications
-Date: Mon, 17 Sep 2012 17:50:45 -0300
-Message-Id: <1347915049-19093-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Sep 2012 16:51:48 -0400
+Date: Mon, 17 Sep 2012 13:51:39 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Hannes Reinecke <hare@suse.de>
+Subject: Re: [dm-devel] [PATCH v10 1/8] block: Generalized bio pool freeing
+Message-ID: <20120917205139.GB14492@google.com>
+References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
+ <1346970902-10931-2-git-send-email-koverstreet@google.com>
+ <20120914182828.GK15728@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120914182828.GK15728@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Fri, Sep 14, 2012 at 07:28:28PM +0100, Alasdair G Kergon wrote:
+> On Thu, Sep 06, 2012 at 03:34:55PM -0700, Kent Overstreet wrote:
+> > With the old code, when you allocate a bio from a bio pool you have to
+> > implement your own destructor that knows how to find the bio pool the
+> > bio was originally allocated from.
+> > 
+> > This adds a new field to struct bio (bi_pool) and changes
+> > bio_alloc_bioset() to use it. This makes various bio destructors
+> > unnecessary, so they're then deleted.
+> > 
+> > v6: Explain the temporary if statement in bio_put
+>  
+> This patch also silently reverts 
+> commit 4d7b38b7d944a79da3793b6c92d38682f3905ac9
+> "dm: clear bi_end_io on remapping failure"
+> 
+> Why?
+> 
+> If it's intentional, please explain it in your patch header and
+> copy Hannes to reconsider the matter.
 
-	Please take a look, while looking at how to do some stuff in 'perf
-test' just for parsing the /format file I ended up with this series, lemme know
-if I can add your Acked-by and push via my perf/core branch.
+Never noticed that was introduced in its own patch until you pointed it
+out.
 
-- Arnaldo
+That isn't a very good patch - it says it's clearing bi_end_io as a
+precaution, but as a precaution to what?
 
-Arnaldo Carvalho de Melo (4):
-  tools lib traceevent: Use asprintf were applicable
-  tools lib traceevent: Use calloc were applicable
-  tools lib traceevent: Fix afterlife gotos
-  tools lib traceevent: Remove some die() calls
+As far as I can tell, it was never necessary. The bio is about to be
+freed - there shouldn't be any other references on it (__bio_map() is
+called on freshly allocated bios, and bio_get() is never called in dm.c)
+Nothing else should've been looking at bi_end_io, certainly the
+destructor didn't.
 
- tools/lib/traceevent/event-parse.c |  357 ++++++++++++++++++++++--------------
- 1 file changed, 223 insertions(+), 134 deletions(-)
-
--- 
-1.7.9.2.358.g22243
-
+Now that there's no destructor, it makes even less sense to have it -
+after that bio_put() that bio isn't being touched by dm code anymore.
