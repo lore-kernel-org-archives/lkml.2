@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab2IQAvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:51:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33850 "EHLO
+	id S1754717Ab2IQAvb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:51:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33845 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754465Ab2IQAvM (ORCPT
+	by vger.kernel.org with ESMTP id S1754459Ab2IQAvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:51:12 -0400
-Message-Id: <20120917003633.203529175@decadent.org.uk>
+Message-Id: <20120917003633.457391272@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:15 +0100
+Date: Mon, 17 Sep 2012 01:37:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
+        alan@lxorguk.ukuu.org.uk, Wu Fengguang <fengguang.wu@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 050/135] tcp: Apply device TSO segment limit earlier
+Subject: [ 052/135] isdnloop: fix and simplify isdnloop_init()
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,139 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-[ Upstream commit 1485348d2424e1131ea42efc033cbd9366462b01 ]
+[ Upstream commit 77f00f6324cb97cf1df6f9c4aaeea6ada23abdb2 ]
 
-Cache the device gso_max_segs in sock::sk_gso_max_segs and use it to
-limit the size of TSO skbs.  This avoids the need to fall back to
-software GSO for local TCP senders.
+Fix a buffer overflow bug by removing the revision and printk.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[   22.016214] isdnloop-ISDN-driver Rev 1.11.6.7
+[   22.097508] isdnloop: (loop0) virtual card added
+[   22.174400] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff83244972
+[   22.174400]
+[   22.436157] Pid: 1, comm: swapper Not tainted 3.5.0-bisect-00018-gfa8bbb1-dirty #129
+[   22.624071] Call Trace:
+[   22.720558]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+[   22.815248]  [<ffffffff8222b623>] panic+0x110/0x329
+[   22.914330]  [<ffffffff83244972>] ? isdnloop_init+0xaf/0xb1
+[   23.014800]  [<ffffffff832448c3>] ? CallcNew+0x56/0x56
+[   23.090763]  [<ffffffff8108e24b>] __stack_chk_fail+0x2b/0x30
+[   23.185748]  [<ffffffff83244972>] isdnloop_init+0xaf/0xb1
+
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/sock.h    |  2 ++
- net/core/sock.c       |  1 +
- net/ipv4/tcp.c        |  4 +++-
- net/ipv4/tcp_cong.c   |  3 ++-
- net/ipv4/tcp_output.c | 21 ++++++++++++---------
- 5 files changed, 20 insertions(+), 11 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c | 12 ------------
+ 1 file changed, 12 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 32e3937..ddf523c 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -194,6 +194,7 @@ struct sock_common {
-   *	@sk_route_nocaps: forbidden route capabilities (e.g NETIF_F_GSO_MASK)
-   *	@sk_gso_type: GSO type (e.g. %SKB_GSO_TCPV4)
-   *	@sk_gso_max_size: Maximum GSO segment size to build
-+  *	@sk_gso_max_segs: Maximum number of GSO segments
-   *	@sk_lingertime: %SO_LINGER l_linger setting
-   *	@sk_backlog: always used with the per-socket spinlock held
-   *	@sk_callback_lock: used with the callbacks in the end of this struct
-@@ -310,6 +311,7 @@ struct sock {
- 	int			sk_route_nocaps;
- 	int			sk_gso_type;
- 	unsigned int		sk_gso_max_size;
-+	u16			sk_gso_max_segs;
- 	int			sk_rcvlowat;
- 	unsigned long	        sk_lingertime;
- 	struct sk_buff_head	sk_error_queue;
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 8d095b9..018fd41 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1308,6 +1308,7 @@ void sk_setup_caps(struct sock *sk, struct dst_entry *dst)
- 		} else {
- 			sk->sk_route_caps |= NETIF_F_SG | NETIF_F_HW_CSUM;
- 			sk->sk_gso_max_size = dst->dev->gso_max_size;
-+			sk->sk_gso_max_segs = dst->dev->gso_max_segs;
- 		}
- 	}
- }
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index ad466a7..043d49b 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -740,7 +740,9 @@ static unsigned int tcp_xmit_size_goal(struct sock *sk, u32 mss_now,
- 			   old_size_goal + mss_now > xmit_size_goal)) {
- 			xmit_size_goal = old_size_goal;
- 		} else {
--			tp->xmit_size_goal_segs = xmit_size_goal / mss_now;
-+			tp->xmit_size_goal_segs =
-+				min_t(u16, xmit_size_goal / mss_now,
-+				      sk->sk_gso_max_segs);
- 			xmit_size_goal = tp->xmit_size_goal_segs * mss_now;
- 		}
- 	}
-diff --git a/net/ipv4/tcp_cong.c b/net/ipv4/tcp_cong.c
-index 850c737..6cebfd2 100644
---- a/net/ipv4/tcp_cong.c
-+++ b/net/ipv4/tcp_cong.c
-@@ -290,7 +290,8 @@ int tcp_is_cwnd_limited(const struct sock *sk, u32 in_flight)
- 	left = tp->snd_cwnd - in_flight;
- 	if (sk_can_gso(sk) &&
- 	    left * sysctl_tcp_tso_win_divisor < tp->snd_cwnd &&
--	    left * tp->mss_cache < sk->sk_gso_max_size)
-+	    left * tp->mss_cache < sk->sk_gso_max_size &&
-+	    left < sk->sk_gso_max_segs)
- 		return 1;
- 	return left <= tcp_max_burst(tp);
- }
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index c51dd5b..921cbac 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1318,21 +1318,21 @@ static void tcp_cwnd_validate(struct sock *sk)
-  * when we would be allowed to send the split-due-to-Nagle skb fully.
-  */
- static unsigned int tcp_mss_split_point(const struct sock *sk, const struct sk_buff *skb,
--					unsigned int mss_now, unsigned int cwnd)
-+					unsigned int mss_now, unsigned int max_segs)
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index d497db0..509135f 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -16,7 +16,6 @@
+ #include <linux/sched.h>
+ #include "isdnloop.h"
+ 
+-static char *revision = "$Revision: 1.11.6.7 $";
+ static char *isdnloop_id = "loop0";
+ 
+ MODULE_DESCRIPTION("ISDN4Linux: Pseudo Driver that simulates an ISDN card");
+@@ -1494,17 +1493,6 @@ isdnloop_addcard(char *id1)
+ static int __init
+ isdnloop_init(void)
  {
- 	const struct tcp_sock *tp = tcp_sk(sk);
--	u32 needed, window, cwnd_len;
-+	u32 needed, window, max_len;
+-	char *p;
+-	char rev[10];
+-
+-	if ((p = strchr(revision, ':'))) {
+-		strcpy(rev, p + 1);
+-		p = strchr(rev, '$');
+-		*p = 0;
+-	} else
+-		strcpy(rev, " ??? ");
+-	printk(KERN_NOTICE "isdnloop-ISDN-driver Rev%s\n", rev);
+-
+ 	if (isdnloop_id)
+ 		return (isdnloop_addcard(isdnloop_id));
  
- 	window = tcp_wnd_end(tp) - TCP_SKB_CB(skb)->seq;
--	cwnd_len = mss_now * cwnd;
-+	max_len = mss_now * max_segs;
- 
--	if (likely(cwnd_len <= window && skb != tcp_write_queue_tail(sk)))
--		return cwnd_len;
-+	if (likely(max_len <= window && skb != tcp_write_queue_tail(sk)))
-+		return max_len;
- 
- 	needed = min(skb->len, window);
- 
--	if (cwnd_len <= needed)
--		return cwnd_len;
-+	if (max_len <= needed)
-+		return max_len;
- 
- 	return needed - needed % mss_now;
- }
-@@ -1560,7 +1560,8 @@ static int tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 	limit = min(send_win, cong_win);
- 
- 	/* If a full-sized TSO skb can be sent, do it. */
--	if (limit >= sk->sk_gso_max_size)
-+	if (limit >= min_t(unsigned int, sk->sk_gso_max_size,
-+			   sk->sk_gso_max_segs * tp->mss_cache))
- 		goto send_now;
- 
- 	/* Middle in queue won't get any more data, full sendable already? */
-@@ -1786,7 +1787,9 @@ static int tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		limit = mss_now;
- 		if (tso_segs > 1 && !tcp_urg_mode(tp))
- 			limit = tcp_mss_split_point(sk, skb, mss_now,
--						    cwnd_quota);
-+						    min_t(unsigned int,
-+							  cwnd_quota,
-+							  sk->sk_gso_max_segs));
- 
- 		if (skb->len > limit &&
- 		    unlikely(tso_fragment(sk, skb, limit, mss_now, gfp)))
 
 
