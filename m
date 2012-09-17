@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2IQIly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:41:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62435 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755016Ab2IQIlx (ORCPT
+	id S1755243Ab2IQIoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:44:01 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:44532 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755105Ab2IQIn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:41:53 -0400
-Date: Mon, 17 Sep 2012 09:41:08 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the arm64 tree
-Message-ID: <20120917084108.GA23549@arm.com>
-References: <20120917112405.4f7b7555209ad024e0531b21@canb.auug.org.au>
+	Mon, 17 Sep 2012 04:43:59 -0400
+Message-ID: <5056E300.809@ti.com>
+Date: Mon, 17 Sep 2012 11:44:48 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120917112405.4f7b7555209ad024e0531b21@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Tony Lindgren <tony@atomide.com>, Ricardo Neri <ricardo.neri@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Dan Williams <djbw@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>
+Subject: Re: [alsa-devel] [PATCH v3 00/15] ASoC: OMAP: Convert to use dmaengine
+References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com> <1347851866.1943.126.camel@vkoul-udesk3>
+In-Reply-To: <1347851866.1943.126.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Vinod,
 
-On Mon, Sep 17, 2012 at 02:24:05AM +0100, Stephen Rothwell wrote:
-> After merging the arm64 tree, today's linux-next build ()
-> failed like this:
+On 09/17/2012 06:17 AM, Vinod Koul wrote:
+> On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
+>> Hello,
 > 
-> arch/powerpc/kernel/sys_ppc32.c:146:17: error: conflicting types for 'compat_sys_sendfile'
-> include/linux/compat.h:593:16: note: previous declaration of 'compat_sys_sendfile' was here
-> arch/powerpc/kernel/sys_ppc32.c:231:17: error: conflicting types for 'compat_sys_sched_rr_get_interval'
-> include/linux/compat.h:596:16: note: previous declaration of 'compat_sys_sched_rr_get_interval' was here
-> 
-> Caused by commits 2a23f0dba0c6 ("fs: Add generic compat_sys_sendfile
-> implementation") and a0c6fc489bf6 ("compat: Add generic
-> compat_sys_sched_rr_get_interval implementation").  Grep is your friend.
+> dmaengine parts look good to me. How do you want to get this merged,
+> dmaengine or ASoC tree?
 
-Thanks for this. It was an attempt to add generic compat_sys_sendfile()
-and compat_sys_sched_rr_get_interval() implementations to be shared by
-other architectures (patches for the other architectures to be pushed
-separately). I'll drop them for now as PowerPC has different prototypes
-and push the patches separately.
+Thank you, I would prefer it to go via ASoC if it is not a problem. It is
+possible to separate the dmaengine core related patches and the patches for
+the OMAP drivers but I think it is better to keep them together so we can have
+them in a same tree for testing it further.
 
--- 
-Catalin
+Regards,
+Péter
