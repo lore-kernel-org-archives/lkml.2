@@ -1,325 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab2IQNb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 09:31:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61914 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab2IQNbY (ORCPT
+	id S1752437Ab2IQNdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 09:33:13 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62291 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2IQNdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 09:31:24 -0400
-Date: Mon, 17 Sep 2012 21:31:16 +0800
-From: Tekkaman Ninja <tekkamanninja@gmail.com>
-To: Harry Wei <harryxiyou@gmail.com>
-Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel@vger.linux-kernel.cn,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, David Cohen <dacohen@gmail.com>
-Subject: [PATCH]Documentation:Chinese translation of
- Documentation/video4linux/omap3isp.txt
-Message-ID: <20120917133116.GA3688@Super-MAGI>
+	Mon, 17 Sep 2012 09:33:11 -0400
+Message-ID: <50572692.1090805@gmail.com>
+Date: Mon, 17 Sep 2012 08:33:06 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Dave Martin <dave.martin@linaro.org>
+Subject: Re: [PATCH v4 06/24] docs: Xen ARM DT bindings
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120914130151.GH25249@phenom.dumpdata.com> <alpine.DEB.2.02.1209141514590.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1209141514590.29232@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a Chinese translated version of Documentation/video4linux/omap3isp.txt
+On 09/14/2012 09:26 AM, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Konrad Rzeszutek Wilk wrote:
+>> On Fri, Sep 14, 2012 at 12:13:08PM +0100, Stefano Stabellini wrote:
+>>> Add a doc to describe the Xen ARM device tree bindings
+>>>
+>>>
+>>> Changes in v4:
+>>>
+>>> - "xen,xen" should be last as it is less specific;
+>>> - update reg property using 2 address-cells and 2 size-cells.
+>>>
+>>>
+>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>> CC: devicetree-discuss@lists.ozlabs.org
+>>> CC: David Vrabel <david.vrabel@citrix.com>
+>>> CC: Rob Herring <robherring2@gmail.com>
+>>> CC: Dave Martin <dave.martin@linaro.org>
+>>> ---
+>>>  Documentation/devicetree/bindings/arm/xen.txt |   22 ++++++++++++++++++++++
+>>>  1 files changed, 22 insertions(+), 0 deletions(-)
+>>>  create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
+>>> new file mode 100644
+>>> index 0000000..1f8f7d4
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/arm/xen.txt
+>>> @@ -0,0 +1,22 @@
+>>> +* Xen hypervisor device tree bindings
+>>> +
+>>> +Xen ARM virtual platforms shall have the following properties:
+>>> +
 
-Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+State that they are part of top-level "hypervisor" node.
 
----
- Documentation/zh_CN/video4linux/omap3isp.txt |  277 ++++++++++++++++++++++++++
- 1 file changed, 277 insertions(+)
- create mode 100644 Documentation/zh_CN/video4linux/omap3isp.txt
+>>> +- compatible:
+>>> +	compatible = "xen,xen-<version>", "xen,xen";
+>>> +  where <version> is the version of the Xen ABI of the platform.
+>>> +
+>>> +- reg: specifies the base physical address and size of a region in
+>>> +  memory where the grant table should be mapped to, using an
+>>> +  HYPERVISOR_memory_op hypercall. 
+>>> +
+>>> +- interrupts: the interrupt used by Xen to inject event notifications.
+>>
+>> Its singular here.. but in the example its plurar. What if you use
+>> multiple of the same number ("16 0xf")?
+> 
+> The "interrupts" property in the example below is a standard property to
+> describe interrupts. We just happen to declare only one interrupt.
+> 
+> From the device tree point of view it would be possible to declare more
+> than one interrupt here, but Xen only supports one really.
+> 
+> Regarding the three cells used in the example (<1 15 0xf08>), they have
+> a specific meaning in the GIC context:
+> 
+> """
+>   The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
+>   interrupts.
+> 
+>   The 2nd cell contains the interrupt number for the interrupt type.
+>   SPI interrupts are in the range [0-987].  PPI interrupts are in the
+>   range [0-15].
+> 
+>   The 3rd cell is the flags, encoded as follows:
+> 	bits[3:0] trigger type and level flags.
+> 		1 = low-to-high edge triggered
+> 		2 = high-to-low edge triggered
+> 		4 = active high level-sensitive
+> 		8 = active low level-sensitive
+> 	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+> 	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+> 	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
+> """
+> 
+> So <1 15 0xf08> means the last PPI.
 
-diff --git a/Documentation/zh_CN/video4linux/omap3isp.txt b/Documentation/zh_CN/video4linux/omap3isp.txt
-new file mode 100644
-index 0000000..67ffbf3
---- /dev/null
-+++ b/Documentation/zh_CN/video4linux/omap3isp.txt
-@@ -0,0 +1,277 @@
-+Chinese translated version of Documentation/video4linux/omap3isp.txt
-+
-+If you have any comment or update to the content, please contact the
-+original document maintainer directly.  However, if you have a problem
-+communicating in English you can also ask the Chinese maintainer for
-+help.  Contact the Chinese maintainer if this translation is outdated
-+or if there is a problem with the translation.
-+
-+Maintainer: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+	  Sakari Ailus <sakari.ailus@iki.fi>
-+	  David Cohen <dacohen@gmail.com>
-+Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
-+---------------------------------------------------------------------
-+Documentation/video4linux/omap3isp.txt 的中文翻译
-+
-+如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
-+交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
-+译存在问题，请联系中文版维护者。
-+英文版维护者： Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+	  Sakari Ailus <sakari.ailus@iki.fi>
-+	  David Cohen <dacohen@gmail.com>
-+中文版维护者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
-+中文版翻译者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
-+中文版校译者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
-+
-+
-+以下为正文
-+---------------------------------------------------------------------
-+OMAP 3 图像信号处理器 (ISP) 驱动
-+
-+Copyright (C) 2010 Nokia Corporation
-+Copyright (C) 2009 Texas Instruments, Inc.
-+
-+联系人: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+	  Sakari Ailus <sakari.ailus@iki.fi>
-+	  David Cohen <dacohen@gmail.com>
-+
-+
-+介绍
-+===
-+
-+本文档介绍了由 drivers/media/video/omap3isp 加载的德州仪器
-+（TI）OMAP 3 图像信号处理器 (ISP) 驱动。原始驱动由德州仪器（TI）
-+编写，但此后由诺基亚重写了两次。
-+
-+驱动已在以下 OMAP 3 系列的芯片中成功使用：
-+
-+	3430
-+	3530
-+	3630
-+
-+驱动实现了 V4L2、媒体控制器和 v4l2_subdev 接口。支持内核中使用
-+v4l2_subdev 接口的传感器、镜头和闪光灯驱动。
-+
-+
-+拆分为子设备
-+==========
-+
-+OMAP 3 ISP 被拆分为 V4L2 子设备，ISP中的每个模块都由一个子设备
-+来表示。每个子设备向用户空间提供一个 V4L2 子设备接口。
-+
-+	OMAP3 ISP CCP2
-+	OMAP3 ISP CSI2a
-+	OMAP3 ISP CCDC
-+	OMAP3 ISP preview
-+	OMAP3 ISP resizer
-+	OMAP3 ISP AEWB
-+	OMAP3 ISP AF
-+	OMAP3 ISP histogram
-+
-+ISP 中每个可能的连接都通过一个链接嵌入到媒体控制器接口中。详见例程 [2]。
-+
-+
-+控制 OMAP 3 ISP
-+==============
-+
-+通常，对 OMAP 3 ISP 的配置会在下一帧起始时生效。在传感器垂直消隐期间，
-+模块变为空闲时完成配置。在内存到内存的操作中，视频管道一次处理一帧。
-+应用配置应在帧间完成。
-+
-+ISP 中的所有模块，除 CSI-2 和 （可能存在的）CCP2 接收器外，都必须
-+接收完整的帧数据。因此，传感器必须保证从不发送部分帧数据给ISP。
-+
-+Autoidle（自动空闲）功能至少在 3430 的 ISP 模块中确实存在一些问题。
-+当 omap3isp 模块参数 autoidle 非零时，autoidle（自动空闲）功能
-+仅在 3630 中启用了。
-+
-+
-+事件机制
-+======
-+
-+OMAP 3 ISP 驱动在 CCDC 和统计（AEWB、AF 和 直方图）子设备中支持
-+V4L2 事件机制接口。
-+
-+CCDC 子设备通过 HS_VS 中断，处理 V4L2_EVENT_FRAME_SYNC 类型
-+事件，用于告知帧起始。早期版本的驱动则使用 V4L2_EVENT_OMAP3ISP_HS_VS。
-+当在 CCDC 模块中接收到起始帧的第一行时，会准确地触发事件。这个事件
-+可以在 CCDC 子设备中“订阅”。
-+
-+（当使用并行接口时，必须注意正确地配置 VS 信号极性。而当使用串行接收时
-+这个会自动校正。）
-+
-+每个统计子设备都可以产生事件。每当一个统计缓冲区可由用户空间应用程序
-+通过 VIDIOC_OMAP3ISP_STAT_REQ IOCTL 操作获取时，就会产生一个
-+事件。当前存在以下事件：
-+
-+	V4L2_EVENT_OMAP3ISP_AEWB
-+	V4L2_EVENT_OMAP3ISP_AF
-+	V4L2_EVENT_OMAP3ISP_HIST
-+
-+这些 ioctl 的事件数据类型为 struct omap3isp_stat_event_status
-+结构体。如果出现计算错误的统计，也同样会产生一个事件，但没有相关的统计
-+数据缓冲区。这种情况下 omap3isp_stat_event_status.buf_err 会被
-+设置为非零值。
-+
-+
-+私有 IOCTL
-+==========
-+
-+OMAP 3 ISP 驱动支持标准的 V4L2 IOCTL 以及可能存在且实用的控制。但
-+ISP 提供的许多功能都不在标准 IOCTL 之列，例如 gamma（伽马）表和统计
-+数据采集配置等。
-+
-+通常，会有一个私有 ioctl 用于配置每个包含硬件依赖功能的模块。
-+
-+支持以下私有 IOCTL：
-+
-+	VIDIOC_OMAP3ISP_CCDC_CFG
-+	VIDIOC_OMAP3ISP_PRV_CFG
-+	VIDIOC_OMAP3ISP_AEWB_CFG
-+	VIDIOC_OMAP3ISP_HIST_CFG
-+	VIDIOC_OMAP3ISP_AF_CFG
-+	VIDIOC_OMAP3ISP_STAT_REQ
-+	VIDIOC_OMAP3ISP_STAT_EN
-+
-+在 include/linux/omap3isp.h 中描述了这些 ioctl 使用的参数结构体。
-+与特定 ISP 模块相关的 ISP 自身的详细功能在技术参考手册 (TRMs)中有
-+描述，详见文档结尾。
-+
-+虽然在不使用任何私有 IOCTL 的情况下使用 ISP 驱动是可能的，但这样无法
-+获得最佳的图像质量。AEWB、AF 和 直方图（译者注：一般用于自动曝光和增益
-+控制，以及图像均衡等）模块无法在未使用适当的私有 IOCTL 配置的情况下使用。
-+
-+
-+CCDC 和 preview（预览）模块 IOCTL
-+===============================
-+
-+VIDIOC_OMAP3ISP_CCDC_CFG 和 VIDIOC_OMAP3ISP_PRV_CFG IOCTL
-+被分别用于配置、启用和禁用 CCDC 和 preview（预览）模块的功能。在它们
-+所控制的模块中，两个 IOCTL 控制多种功能。VIDIOC_OMAP3ISP_CCDC_CFG IOCTL
-+接受一个指向 omap3isp_ccdc_update_config 结构体的指针作为它的参数。
-+同样的，VIDIOC_OMAP3ISP_PRV_CFG 接受一个指向 omap3isp_prev_update_config
-+结构体的指针。以上两个结构体定义位于 [1]。
-+
-+这些结构体中的 update 域标识是否针对指定的功能更新配置，而 flag 域
-+则标识是启用还是禁用此功能。
-+
-+update 和 flag 位接受以下掩码值。CCDC 和 preview（预览）模块的
-+每个单独功能都与一个 flag 关联（禁用或启用；在结构体中 flag 域的
-+一部分）和一个指向功能配置数据的指针。
-+
-+对于 VIDIOC_OMAP3ISP_CCDC_CFG，下面列出了 update 和 flag 域
-+中的有效值。 这些值可能会在同一个 IOCTL 调用中配置多个功能。
-+
-+        OMAP3ISP_CCDC_ALAW
-+        OMAP3ISP_CCDC_LPF
-+        OMAP3ISP_CCDC_BLCLAMP
-+        OMAP3ISP_CCDC_BCOMP
-+        OMAP3ISP_CCDC_FPC
-+        OMAP3ISP_CCDC_CULL
-+        OMAP3ISP_CCDC_CONFIG_LSC
-+        OMAP3ISP_CCDC_TBL_LSC
-+
-+针对 VIDIOC_OMAP3ISP_PRV_CFG 的相应值如下：
-+
-+        OMAP3ISP_PREV_LUMAENH
-+        OMAP3ISP_PREV_INVALAW
-+        OMAP3ISP_PREV_HRZ_MED
-+        OMAP3ISP_PREV_CFA
-+        OMAP3ISP_PREV_CHROMA_SUPP
-+        OMAP3ISP_PREV_WB
-+        OMAP3ISP_PREV_BLKADJ
-+        OMAP3ISP_PREV_RGB2RGB
-+        OMAP3ISP_PREV_COLOR_CONV
-+        OMAP3ISP_PREV_YC_LIMIT
-+        OMAP3ISP_PREV_DEFECT_COR
-+        OMAP3ISP_PREV_GAMMABYPASS
-+        OMAP3ISP_PREV_DRK_FRM_CAPTURE
-+        OMAP3ISP_PREV_DRK_FRM_SUBTRACT
-+        OMAP3ISP_PREV_LENS_SHADING
-+        OMAP3ISP_PREV_NF
-+        OMAP3ISP_PREV_GAMMA
-+
-+在启用某个功能的时候，相关的配置数据指针不可为 NULL。在禁用某个功能时，
-+配置数据指针会被忽略。
-+
-+
-+统计模块 IOCTL
-+=============
-+
-+统计子设备相较于其他子设备提供了更多动态配置选项。在图像处理流水线处于
-+工作状态时，它们可以被启用、禁用和重配。
-+
-+统计模块总是从 CCDC 中获取输入的图像数据（由于直方图内存读取未实现）。
-+统计数据可由用户通过统计子设备节点使用私有 IOCTL 获取。
-+
-+AEWB、AF 和 直方图子设备提供的私有 IOCTL 极大程度上反应了 ISP 硬件
-+提供的寄存器级接口。有些方面纯粹和驱动程序的实现相关，这些将在下面讨论。
-+
-+VIDIOC_OMAP3ISP_STAT_EN
-+-----------------------
-+
-+这个私有 IOCTL 启用/禁用 一个统计模块。如果这个申请在视频流启动前完成，
-+它将在视频流水线开始工作时生效。如果视频流水线已经处于工作状态了，它将在
-+CCDC 变为空闲时生效。
-+
-+VIDIOC_OMAP3ISP_AEWB_CFG, VIDIOC_OMAP3ISP_HIST_CFG and VIDIOC_OMAP3ISP_AF_CFG
-+-----------------------------------------------------------------------------
-+
-+这些 IOCTL 用于配置模块。它们要求用户应用程序对硬件有深入的认识。对
-+大多数域的解释可以在 OMAP 的 TRM 中找到。以下两个域对于以上所有的
-+私有 IOCTL 配置都很常见，由于他们没有在 TRM 中提及，故需要对其有
-+更好的认识。
-+
-+omap3isp_[h3a_af/h3a_aewb/hist]_config.buf_size:
-+
-+模块在内部处理自身缓冲。对模块数据输出所必需的缓存大小依赖于已申请的配置。
-+虽然驱动支持在视频流工作时重新配置，但对于所需缓存量大于模块启用时内部
-+所分配数量的情况，则不支持重新配置。在这种情况下将返回 -EBUSY。为了避免
-+此类状况，无论是禁用/重配/启用模块，还是第一次配置时申请必须的缓存大小，
-+都应在模块禁用的情况下进行。
-+
-+内部缓冲分配的大小需综合考虑所申请配置的最小缓存量以及 buf_size 域中
-+所设的值。如果 buf_size 域在[minimum（最小值）, maximum（最大值）]
-+缓冲大小范围之外，则应该将其调整到其范围中。驱动则会选择最大值。正确的
-+buf_size 值将回写到用户应用程序中。
-+
-+omap3isp_[h3a_af/h3a_aewb/hist]_config.config_counter:
-+
-+由于配置并未在申请之后同步生效，驱动必须提供一个跟踪这类信息的方法，
-+以提供更准确的数据。在一个配置被申请之后，返回到用户空间应用程序的
-+config_counter 是一个与其配置相关的唯一值。当用户应用程序接收到
-+一个缓冲可用或一个新的缓冲申请事件时，这个 config_counter 用于
-+一个缓冲数据和一个配置的匹配。
-+
-+VIDIOC_OMAP3ISP_STAT_REQ
-+------------------------
-+
-+将内部缓冲队列中最早的数据发送到用户空间，然后丢弃此缓冲区。
-+omap3isp_stat_data.frame_number 域与视频缓冲的 field_count
-+域相匹配。
-+
-+
-+技术参考手册 (TRMs) 和其他文档
-+==========================
-+
-+OMAP 3430 TRM:
-+<URL:http://focus.ti.com/pdfs/wtbu/OMAP34xx_ES3.1.x_PUBLIC_TRM_vZM.zip>
-+参考于 2011-03-05.
-+
-+OMAP 35xx TRM:
-+<URL:http://www.ti.com/litv/pdf/spruf98o> 参考于 2011-03-05.
-+
-+OMAP 3630 TRM:
-+<URL:http://focus.ti.com/pdfs/wtbu/OMAP36xx_ES1.x_PUBLIC_TRM_vQ.zip>
-+参考于 2011-03-05.
-+
-+DM 3730 TRM:
-+<URL:http://www.ti.com/litv/pdf/sprugn4h> 参考于 2011-03-06.
-+
-+
-+参考资料
-+=======
-+
-+[1] include/linux/omap3isp.h
-+
-+[2] http://git.ideasonboard.org/?p=media-ctl.git;a=summary
--- 
-1.7.9.5
+Since it is a PPI, it is handled differently than a normal interrupt.
+That is fine, but you should somehow state that a GIC node is also required.
 
+> 
+>>> +
+>>> +
+>>> +Example:
+>>> +
+>>> +hypervisor {
+>>> +	compatible = "xen,xen-4.3", "xen,xen";
+>>> +	reg = <0 0xb0000000 0 0x20000>;
+>>
+>> So two grant tables?
+>>
+>> Hm, physical address is zero, and the size is 0xbignumber?
+>> Or is the '0' denotating a seperator of arguments, so it is
+>> 0xb000.. for physical address and 0x20000 for size?
+> 
+> from http://devicetree.org/Device_Tree_Usage:
+> 
+> "Each addressable device gets a reg which is a list of tuples in the
+> form reg = <address1 length1 [address2 length2] [address3 length3] ...
+> Each tuple represents an address range used by the device. Each address
+> value is a list of one or more 32 bit integers called cells. Similarly,
+> the length value can either be a list of cells, or empty."
+> 
+> In this case the address is: [0 0xb0000000], that means
+> 0x00000000b0000000, and the length is [0 0x20000], that means
+> 0x0000000000020000.
+
+But the size depends on #size-cells and #address-cells. I would expect
+those to be 1 for a 32-bit guest.
+
+Rob
 
