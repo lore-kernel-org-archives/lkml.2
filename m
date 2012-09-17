@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab2IQBCz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:02:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33813 "EHLO
+	id S1754576Ab2IQBDN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:03:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33806 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753151Ab2IQAvJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754337Ab2IQAvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:09 -0400
-Message-Id: <20120917003634.543602867@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:08 -0400
+Message-Id: <20120917003635.487745481@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:25 +0100
+Date: Mon, 17 Sep 2012 01:37:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 060/135] Bluetooth: HCI - Fix info leak via getsockname()
+Subject: [ 067/135] ipvs: fix info leak in  getsockopt(IP_VS_SO_GET_TIMEOUT)
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,34 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 3f68ba07b1da811bf383b4b701b129bfcb2e4988 ]
+[ Upstream commit 2d8a041b7bfe1097af21441cb77d6af95f4f4680 ]
 
-The HCI code fails to initialize the hci_channel member of struct
-sockaddr_hci and that for leaks two bytes kernel stack via the
-getsockname() syscall. Initialize hci_channel with 0 to avoid the
-info leak.
+If at least one of CONFIG_IP_VS_PROTO_TCP or CONFIG_IP_VS_PROTO_UDP is
+not set, __ip_vs_get_timeouts() does not fully initialize the structure
+that gets copied to userland and that for leaks up to 12 bytes of kernel
+stack. Add an explicit memset(0) before passing the structure to
+__ip_vs_get_timeouts() to avoid the info leak.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: Wensong Zhang <wensong@linux-vs.org>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Julian Anastasov <ja@ssi.bg>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/hci_sock.c | 1 +
+ net/netfilter/ipvs/ip_vs_ctl.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
-index e4c8bc0..8361ee4 100644
---- a/net/bluetooth/hci_sock.c
-+++ b/net/bluetooth/hci_sock.c
-@@ -388,6 +388,7 @@ static int hci_sock_getname(struct socket *sock, struct sockaddr *addr, int *add
- 	*addr_len = sizeof(*haddr);
- 	haddr->hci_family = AF_BLUETOOTH;
- 	haddr->hci_dev    = hdev->id;
-+	haddr->hci_channel= 0;
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index e1a66cf..72f4253 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -2713,6 +2713,7 @@ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
+ 	{
+ 		struct ip_vs_timeout_user t;
  
- 	release_sock(sk);
- 	return 0;
++		memset(&t, 0, sizeof(t));
+ 		__ip_vs_get_timeouts(net, &t);
+ 		if (copy_to_user(user, &t, sizeof(t)) != 0)
+ 			ret = -EFAULT;
 
 
