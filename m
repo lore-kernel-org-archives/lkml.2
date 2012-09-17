@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab2IQPK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:10:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54710 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab2IQPKY (ORCPT
+	id S1756730Ab2IQPKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:10:46 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:45876 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab2IQPKo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:10:24 -0400
-From: Jiri Pirko <jiri@resnulli.us>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, mlindner@marvell.com, shemminger@vyatta.com,
-        linux-kernel@vger.kernel.org
-Subject: [patch net] sky2: fix rx filter setup on link up
-Date: Mon, 17 Sep 2012 17:10:17 +0200
-Message-Id: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
-X-Mailer: git-send-email 1.7.11.4
+	Mon, 17 Sep 2012 11:10:44 -0400
+Subject: Re: [PATCH 0/3] lockd: use per-net refrence-counted NSM clients
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=utf-8
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <50570052.8050205@parallels.com>
+Date: Mon, 17 Sep 2012 11:10:30 -0400
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D4B752F3-1883-490E-AA5D-B9666472FFF3@oracle.com>
+References: <20120914140811.10835.81465.stgit@localhost.localdomain> <4030B8F9-5C67-4AE7-826E-B4B6AD4FAD01@oracle.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908FA7F55@SACEXCMBX04-PRD.hq.netapp.com> <DA466953-BF79-44F7-8870-AC2FD5E3FEC2@oracle.com> <50570052.8050205@parallels.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+X-Mailer: Apple Mail (2.1278)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In my case I have following problem. sky2_set_multicast() sets registers
-GM_MC_ADDR_H[1-4] correctly to:
-0000 0800 0001 0410
-However, when adapter gets link and sky2_link_up() is called, the values
-are for some reason different:
-0000 0800 0016 0410
-This in my case prevents iface to be able to receive packets with dst mac
-01:80:C2:00:00:02 (LACPDU dst mac), which I set up previously by
-SIOCADDMULTI.
 
-So remember computed rx_filter data and write it to GM_MC_ADDR_H[1-4] on
-link_up.
+On Sep 17, 2012, at 6:49 AM, Stanislav Kinsbursky wrote:
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
----
- drivers/net/ethernet/marvell/sky2.c | 30 ++++++++++++++++++++++--------
- drivers/net/ethernet/marvell/sky2.h |  2 ++
- 2 files changed, 24 insertions(+), 8 deletions(-)
+> 14.09.2012 23:10, Chuck Lever пишет:
+>> 
+>> On Sep 14, 2012, at 1:38 PM, Myklebust, Trond wrote:
+>> 
+>>> On Fri, 2012-09-14 at 13:01 -0400, Chuck Lever wrote:
+>>>> What happens if statd is restarted?
+>>> 
+>>> Nothing unusual. Why?
+>> 
+>> The NSM upcall transport is a potential application for TCP + softconn, now that a persistent rpc_clnt is used.  It just depends on what failure mode we'd like to optimize for.
+>> 
+> 
+> I don't understand, where the problem is.
+> Could you be more specific, please?
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 2b0748d..5293ff4 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -2186,6 +2186,8 @@ static u16 sky2_phy_speed(const struct sky2_hw *hw, u16 aux)
- 	}
- }
- 
-+static void sky2_write_rx_filter(struct sky2_port *sky2, u8 *filter);
-+
- static void sky2_link_up(struct sky2_port *sky2)
- {
- 	struct sky2_hw *hw = sky2->hw;
-@@ -2211,6 +2213,9 @@ static void sky2_link_up(struct sky2_port *sky2)
- 	sky2_write8(hw, SK_REG(port, LNK_LED_REG),
- 		    LINKLED_ON | LINKLED_BLINK_OFF | LINKLED_LINKSYNC_OFF);
- 
-+	/* Refresh RX filter */
-+	sky2_write_rx_filter(sky2, sky2->rx_filter);
-+
- 	netif_info(sky2, link, sky2->netdev,
- 		   "Link is up at %d Mbps, %s duplex, flow control %s\n",
- 		   sky2->speed,
-@@ -3849,6 +3854,21 @@ static inline void sky2_add_filter(u8 filter[8], const u8 *addr)
- 	filter[bit >> 3] |= 1 << (bit & 7);
- }
- 
-+static void sky2_write_rx_filter(struct sky2_port *sky2, u8 *filter)
-+{
-+	struct sky2_hw *hw = sky2->hw;
-+	unsigned port = sky2->port;
-+
-+	gma_write16(hw, port, GM_MC_ADDR_H1,
-+		    (u16) filter[0] | ((u16) filter[1] << 8));
-+	gma_write16(hw, port, GM_MC_ADDR_H2,
-+		    (u16) filter[2] | ((u16) filter[3] << 8));
-+	gma_write16(hw, port, GM_MC_ADDR_H3,
-+		    (u16) filter[4] | ((u16) filter[5] << 8));
-+	gma_write16(hw, port, GM_MC_ADDR_H4,
-+		    (u16) filter[6] | ((u16) filter[7] << 8));
-+}
-+
- static void sky2_set_multicast(struct net_device *dev)
- {
- 	struct sky2_port *sky2 = netdev_priv(dev);
-@@ -3882,14 +3902,8 @@ static void sky2_set_multicast(struct net_device *dev)
- 			sky2_add_filter(filter, ha->addr);
- 	}
- 
--	gma_write16(hw, port, GM_MC_ADDR_H1,
--		    (u16) filter[0] | ((u16) filter[1] << 8));
--	gma_write16(hw, port, GM_MC_ADDR_H2,
--		    (u16) filter[2] | ((u16) filter[3] << 8));
--	gma_write16(hw, port, GM_MC_ADDR_H3,
--		    (u16) filter[4] | ((u16) filter[5] << 8));
--	gma_write16(hw, port, GM_MC_ADDR_H4,
--		    (u16) filter[6] | ((u16) filter[7] << 8));
-+	sky2_write_rx_filter(sky2, filter);
-+	memcpy(sky2->rx_filter, filter, sizeof(sky2->rx_filter));
- 
- 	gma_write16(hw, port, GM_RX_CTRL, reg);
- }
-diff --git a/drivers/net/ethernet/marvell/sky2.h b/drivers/net/ethernet/marvell/sky2.h
-index 615ac63..513c266 100644
---- a/drivers/net/ethernet/marvell/sky2.h
-+++ b/drivers/net/ethernet/marvell/sky2.h
-@@ -2272,6 +2272,8 @@ struct sky2_port {
- #ifdef CONFIG_SKY2_DEBUG
- 	struct dentry	     *debugfs;
- #endif
-+
-+	u8		     rx_filter[8];
- };
- 
- struct sky2_hw {
+I'm suggesting an enhancement.
+
+The change is to use TCP for the NSM upcall transport, and set RPC_TASK_SOFTCONN on the individual RPCs.  The advantage of this is that the kernel could discover when statd is not running and fail the upcall immediately, rather than waiting possibly many seconds for each upcall RPC to time out.
+
+The client already has a check in the mount.nfs command to see that statd is running, likely to avoid this lengthly timeout.  Since the client already has long-standing logic to avoid it, I think the benefit would be mostly on the server side.
+
+But this change can be done at some later point.
+
 -- 
-1.7.11.4
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
