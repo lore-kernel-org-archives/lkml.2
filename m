@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2IQBBl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:01:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33833 "EHLO
+	id S1754612Ab2IQBBk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:01:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33848 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754440Ab2IQAvK (ORCPT
+	by vger.kernel.org with ESMTP id S1754461Ab2IQAvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:10 -0400
-Message-Id: <20120917003633.856033518@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:14 -0400
+Message-Id: <20120917003633.029375674@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:20 +0100
+Date: Mon, 17 Sep 2012 01:37:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>,
-        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 055/135] af_packet: remove BUG statement in  tpacket_destruct_skb
+Subject: [ 049/135] sfc: Fix maximum number of TSO segments and minimum TX  queue size
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,50 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 7f5c3e3a80e6654cf48dfba7cf94f88c6b505467 ]
+[ Upstream commit 7e6d06f0de3f74ca929441add094518ae332257c ]
 
-Here's a quote of the comment about the BUG macro from asm-generic/bug.h:
+Currently an skb requiring TSO may not fit within a minimum-size TX
+queue.  The TX queue selected for the skb may stall and trigger the TX
+watchdog repeatedly (since the problem skb will be retried after the
+TX reset).  This issue is designated as CVE-2012-3412.
 
- Don't use BUG() or BUG_ON() unless there's really no way out; one
- example might be detecting data structure corruption in the middle
- of an operation that can't be backed out of.  If the (sub)system
- can somehow continue operating, perhaps with reduced functionality,
- it's probably not BUG-worthy.
+Set the maximum number of TSO segments for our devices to 100.  This
+should make no difference to behaviour unless the actual MSS is less
+than about 700.  Increase the minimum TX queue size accordingly to
+allow for 2 worst-case skbs, so that there will definitely be space
+to add an skb after we wake a queue.
 
- If you're tempted to BUG(), think again:  is completely giving up
- really the *only* solution?  There are usually better options, where
- users don't need to reboot ASAP and can mostly shut down cleanly.
+To avoid invalidating existing configurations, change
+efx_ethtool_set_ringparam() to fix up values that are too small rather
+than returning -EINVAL.
 
-In our case, the status flag of a ring buffer slot is managed from both sides,
-the kernel space and the user space. This means that even though the kernel
-side might work as expected, the user space screws up and changes this flag
-right between the send(2) is triggered when the flag is changed to
-TP_STATUS_SENDING and a given skb is destructed after some time. Then, this
-will hit the BUG macro. As David suggested, the best solution is to simply
-remove this statement since it cannot be used for kernel side internal
-consistency checks. I've tested it and the system still behaves /stable/ in
-this case, so in accordance with the above comment, we should rather remove it.
-
-Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/packet/af_packet.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/ethernet/sfc/efx.c     |  6 ++++++
+ drivers/net/ethernet/sfc/efx.h     | 14 ++++++++++----
+ drivers/net/ethernet/sfc/ethtool.c | 16 +++++++++++-----
+ drivers/net/ethernet/sfc/nic.h     |  5 +++++
+ drivers/net/ethernet/sfc/tx.c      | 19 +++++++++++++++++++
+ 5 files changed, 51 insertions(+), 9 deletions(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index d9d4970..13b14dc 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1931,7 +1931,6 @@ static void tpacket_destruct_skb(struct sk_buff *skb)
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -1383,6 +1383,11 @@ static int efx_probe_all(struct efx_nic
+ 		goto fail2;
+ 	}
  
- 	if (likely(po->tx_ring.pg_vec)) {
- 		ph = skb_shinfo(skb)->destructor_arg;
--		BUG_ON(__packet_get_status(po, ph) != TP_STATUS_SENDING);
- 		BUG_ON(atomic_read(&po->tx_ring.pending) == 0);
- 		atomic_dec(&po->tx_ring.pending);
- 		__packet_set_status(po, ph, TP_STATUS_AVAILABLE);
++	BUILD_BUG_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_RXQ_MIN_ENT);
++	if (WARN_ON(EFX_DEFAULT_DMAQ_SIZE < EFX_TXQ_MIN_ENT(efx))) {
++		rc = -EINVAL;
++		goto fail3;
++	}
+ 	efx->rxq_entries = efx->txq_entries = EFX_DEFAULT_DMAQ_SIZE;
+ 	rc = efx_probe_channels(efx);
+ 	if (rc)
+@@ -1973,6 +1978,7 @@ static int efx_register_netdev(struct ef
+ 	net_dev->irq = efx->pci_dev->irq;
+ 	net_dev->netdev_ops = &efx_netdev_ops;
+ 	SET_ETHTOOL_OPS(net_dev, &efx_ethtool_ops);
++	net_dev->gso_max_segs = EFX_TSO_MAX_SEGS;
+ 
+ 	/* Clear MAC statistics */
+ 	efx->mac_op->update_stats(efx);
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -34,6 +34,7 @@ extern netdev_tx_t
+ efx_enqueue_skb(struct efx_tx_queue *tx_queue, struct sk_buff *skb);
+ extern void efx_xmit_done(struct efx_tx_queue *tx_queue, unsigned int index);
+ extern int efx_setup_tc(struct net_device *net_dev, u8 num_tc);
++extern unsigned int efx_tx_max_skb_descs(struct efx_nic *efx);
+ 
+ /* RX */
+ extern int efx_probe_rx_queue(struct efx_rx_queue *rx_queue);
+@@ -56,10 +57,15 @@ extern void efx_schedule_slow_fill(struc
+ #define EFX_MAX_EVQ_SIZE 16384UL
+ #define EFX_MIN_EVQ_SIZE 512UL
+ 
+-/* The smallest [rt]xq_entries that the driver supports. Callers of
+- * efx_wake_queue() assume that they can subsequently send at least one
+- * skb. Falcon/A1 may require up to three descriptors per skb_frag. */
+-#define EFX_MIN_RING_SIZE (roundup_pow_of_two(2 * 3 * MAX_SKB_FRAGS))
++/* Maximum number of TCP segments we support for soft-TSO */
++#define EFX_TSO_MAX_SEGS	100
++
++/* The smallest [rt]xq_entries that the driver supports.  RX minimum
++ * is a bit arbitrary.  For TX, we must have space for at least 2
++ * TSO skbs.
++ */
++#define EFX_RXQ_MIN_ENT		128U
++#define EFX_TXQ_MIN_ENT(efx)	(2 * efx_tx_max_skb_descs(efx))
+ 
+ /* Filters */
+ extern int efx_probe_filters(struct efx_nic *efx);
+--- a/drivers/net/ethernet/sfc/ethtool.c
++++ b/drivers/net/ethernet/sfc/ethtool.c
+@@ -690,21 +690,27 @@ static int efx_ethtool_set_ringparam(str
+ 				     struct ethtool_ringparam *ring)
+ {
+ 	struct efx_nic *efx = netdev_priv(net_dev);
++	u32 txq_entries;
+ 
+ 	if (ring->rx_mini_pending || ring->rx_jumbo_pending ||
+ 	    ring->rx_pending > EFX_MAX_DMAQ_SIZE ||
+ 	    ring->tx_pending > EFX_MAX_DMAQ_SIZE)
+ 		return -EINVAL;
+ 
+-	if (ring->rx_pending < EFX_MIN_RING_SIZE ||
+-	    ring->tx_pending < EFX_MIN_RING_SIZE) {
++	if (ring->rx_pending < EFX_RXQ_MIN_ENT) {
+ 		netif_err(efx, drv, efx->net_dev,
+-			  "TX and RX queues cannot be smaller than %ld\n",
+-			  EFX_MIN_RING_SIZE);
++			  "RX queues cannot be smaller than %u\n",
++			  EFX_RXQ_MIN_ENT);
+ 		return -EINVAL;
+ 	}
+ 
+-	return efx_realloc_channels(efx, ring->rx_pending, ring->tx_pending);
++	txq_entries = max(ring->tx_pending, EFX_TXQ_MIN_ENT(efx));
++	if (txq_entries != ring->tx_pending)
++		netif_warn(efx, drv, efx->net_dev,
++			   "increasing TX queue size to minimum of %u\n",
++			   txq_entries);
++
++	return efx_realloc_channels(efx, ring->rx_pending, txq_entries);
+ }
+ 
+ static int efx_ethtool_set_pauseparam(struct net_device *net_dev,
+--- a/drivers/net/ethernet/sfc/nic.h
++++ b/drivers/net/ethernet/sfc/nic.h
+@@ -65,6 +65,9 @@ enum {
+ #define FALCON_GMAC_LOOPBACKS			\
+ 	(1 << LOOPBACK_GMAC)
+ 
++/* Alignment of PCIe DMA boundaries (4KB) */
++#define EFX_PAGE_SIZE	4096
++
+ /**
+  * struct falcon_board_type - board operations and type information
+  * @id: Board type id, as found in NVRAM
+--- a/drivers/net/ethernet/sfc/tx.c
++++ b/drivers/net/ethernet/sfc/tx.c
+@@ -115,6 +115,25 @@ efx_max_tx_len(struct efx_nic *efx, dma_
+ 	return len;
+ }
+ 
++unsigned int efx_tx_max_skb_descs(struct efx_nic *efx)
++{
++	/* Header and payload descriptor for each output segment, plus
++	 * one for every input fragment boundary within a segment
++	 */
++	unsigned int max_descs = EFX_TSO_MAX_SEGS * 2 + MAX_SKB_FRAGS;
++
++	/* Possibly one more per segment for the alignment workaround */
++	if (EFX_WORKAROUND_5391(efx))
++		max_descs += EFX_TSO_MAX_SEGS;
++
++	/* Possibly more for PCIe page boundaries within input fragments */
++	if (PAGE_SIZE > EFX_PAGE_SIZE)
++		max_descs += max_t(unsigned int, MAX_SKB_FRAGS,
++				   DIV_ROUND_UP(GSO_MAX_SIZE, EFX_PAGE_SIZE));
++
++	return max_descs;
++}
++
+ /*
+  * Add a socket buffer to a TX queue
+  *
 
 
