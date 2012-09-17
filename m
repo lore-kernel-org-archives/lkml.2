@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2IQFt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 01:49:57 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:53003 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751225Ab2IQFtz (ORCPT
+	id S1753430Ab2IQFzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 01:55:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37904 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab2IQFzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 01:49:55 -0400
+	Mon, 17 Sep 2012 01:55:45 -0400
+Date: Sun, 16 Sep 2012 22:53:07 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Colin Cross <ccross@android.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <john.stultz@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH/RFC 0/4] Deferrable timers support for timerfd API
+Message-ID: <20120917055306.GA29081@lizard>
+References: <20120902054335.GA12741@lizard>
 MIME-Version: 1.0
-In-Reply-To: <F281D0F91ED19E4D8E63A7504E8A649803C82462@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1347623899-14485-1-git-send-email-kishon@ti.com>
-	<F281D0F91ED19E4D8E63A7504E8A649803C82462@039-SN2MPN1-022.039d.mgd.msft.net>
-Date: Mon, 17 Sep 2012 11:19:53 +0530
-Message-ID: <CAAe_U6KvnXf7v47tVv4LYFUXjKQip7V_1FU6ujqcpoxu8QfMgw@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: phy: add generic PHY framework
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Chen Peter-B29397 <B29397@freescale.com>
-Cc: "balbi@ti.com" <balbi@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Zhao Richard-B20223 <B20223@freescale.com>,
-        "alexander.shishkin@linux.intel.com" 
-	<alexander.shishkin@linux.intel.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        "marex@denx.de" <marex@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120902054335.GA12741@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-On Mon, Sep 17, 2012 at 6:50 AM, Chen Peter-B29397 <B29397@freescale.com> wrote:
->
->>
->> The PHY framework provides a set of API's for the PHY drivers to
->> create/remove a PHY and the PHY users to obtain a reference to the PHY
->> using or without using phandle. If the PHY users has to obtain a
->> reference to
->> the PHY without using phandle, the platform specfic intialization code
->> (say
->> from board file) should have already called phy_bind with the binding
->> information. The binding information consists of phy's device name, phy
->> user device name and an index. The index is used when the same phy user
->> binds to mulitple phys.
->>
->
-> What's an example of "the same phy user binds to multiple phys"?
+On Sat, Sep 01, 2012 at 10:43:35PM -0700, Anton Vorontsov wrote:
+> This patch set implements a userland-side API for generic deferrable
+> timers, per linux/timer.h:
+> 
+>  * A deferrable timer will work normally when the system is busy, but
+>  * will not cause a CPU to come out of idle just to service it; instead,
+>  * the timer will be serviced when the CPU eventually wakes up with a
+>  * subsequent non-deferrable timer.
+> 
+> These timers are crucial for power saving, i.e. periodic tasks that want
+> to work in background when the system is under use, but don't want to
+> cause wakeups themselves.
 
-Single controller using multiple phys..
-> I only remembered that Felipe said there are two phy users for one single phy at
-> omap5 that is both usb3 and sata uses the same phy.
+Just a friendly ping. Does anyone had a chance to look into this,
+whether the idea bad or good, or whether the implementation is OK?
 
-*index* is used when a single controller uses multiple phys. For
-example it could be used for dwc3 (usb3 controller) where it uses usb2
-phy and usb3 phy.
+Thanks!
 
-Thanks
-Kishon
+Anton.
