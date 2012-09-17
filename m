@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2IQBCQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:02:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33818 "EHLO
+	id S1754952Ab2IQBCO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:02:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33824 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754410Ab2IQAvJ (ORCPT
+	by vger.kernel.org with ESMTP id S1753150Ab2IQAvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:09 -0400
-Message-Id: <20120917003633.988444492@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:10 -0400
+Message-Id: <20120917003633.724171988@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:21 +0100
+Date: Mon, 17 Sep 2012 01:37:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 056/135] ipv6: addrconf: Avoid calling netdevice notifiers with  RCU read-side lock
+        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 054/135] net/core: Fix potential memory leak in dev_set_alias()
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,74 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-[ Upstream commit 4acd4945cd1e1f92b20d14e349c6c6a52acbd42d ]
+[ Upstream commit 7364e445f62825758fa61195d237a5b8ecdd06ec ]
 
-Cong Wang reports that lockdep detected suspicious RCU usage while
-enabling IPV6 forwarding:
+Do not leak memory by updating pointer with potentially NULL realloc return value.
 
- [ 1123.310275] ===============================
- [ 1123.442202] [ INFO: suspicious RCU usage. ]
- [ 1123.558207] 3.6.0-rc1+ #109 Not tainted
- [ 1123.665204] -------------------------------
- [ 1123.768254] include/linux/rcupdate.h:430 Illegal context switch in RCU read-side critical section!
- [ 1123.992320]
- [ 1123.992320] other info that might help us debug this:
- [ 1123.992320]
- [ 1124.307382]
- [ 1124.307382] rcu_scheduler_active = 1, debug_locks = 0
- [ 1124.522220] 2 locks held by sysctl/5710:
- [ 1124.648364]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81768498>] rtnl_trylock+0x15/0x17
- [ 1124.882211]  #1:  (rcu_read_lock){.+.+.+}, at: [<ffffffff81871df8>] rcu_lock_acquire+0x0/0x29
- [ 1125.085209]
- [ 1125.085209] stack backtrace:
- [ 1125.332213] Pid: 5710, comm: sysctl Not tainted 3.6.0-rc1+ #109
- [ 1125.441291] Call Trace:
- [ 1125.545281]  [<ffffffff8109d915>] lockdep_rcu_suspicious+0x109/0x112
- [ 1125.667212]  [<ffffffff8107c240>] rcu_preempt_sleep_check+0x45/0x47
- [ 1125.781838]  [<ffffffff8107c260>] __might_sleep+0x1e/0x19b
-[...]
- [ 1127.445223]  [<ffffffff81757ac5>] call_netdevice_notifiers+0x4a/0x4f
-[...]
- [ 1127.772188]  [<ffffffff8175e125>] dev_disable_lro+0x32/0x6b
- [ 1127.885174]  [<ffffffff81872d26>] dev_forward_change+0x30/0xcb
- [ 1128.013214]  [<ffffffff818738c4>] addrconf_forward_change+0x85/0xc5
-[...]
+Found by Linux Driver Verification project (linuxtesting.org).
 
-addrconf_forward_change() uses RCU iteration over the netdev list,
-which is unnecessary since it already holds the RTNL lock.  We also
-cannot reasonably require netdevice notifier functions not to sleep.
-
-Reported-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/addrconf.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/core/dev.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index a5521c5..aef80d7 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -493,8 +493,7 @@ static void addrconf_forward_change(struct net *net, __s32 newf)
- 	struct net_device *dev;
- 	struct inet6_dev *idev;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e6f2635..75da76d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1059,6 +1059,8 @@ rollback:
+  */
+ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
+ {
++	char *new_ifalias;
++
+ 	ASSERT_RTNL();
  
--	rcu_read_lock();
--	for_each_netdev_rcu(net, dev) {
-+	for_each_netdev(net, dev) {
- 		idev = __in6_dev_get(dev);
- 		if (idev) {
- 			int changed = (!idev->cnf.forwarding) ^ (!newf);
-@@ -503,7 +502,6 @@ static void addrconf_forward_change(struct net *net, __s32 newf)
- 				dev_forward_change(idev);
- 		}
+ 	if (len >= IFALIASZ)
+@@ -1072,9 +1074,10 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
+ 		return 0;
  	}
--	rcu_read_unlock();
- }
  
- static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int old)
+-	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
+-	if (!dev->ifalias)
++	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
++	if (!new_ifalias)
+ 		return -ENOMEM;
++	dev->ifalias = new_ifalias;
+ 
+ 	strlcpy(dev->ifalias, alias, len+1);
+ 	return len;
 
 
