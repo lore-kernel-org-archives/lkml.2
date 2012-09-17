@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2IQAuy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33440 "EHLO
+	id S1754065Ab2IQAux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33414 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753135Ab2IQAto (ORCPT
+	by vger.kernel.org with ESMTP id S1753097Ab2IQAtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:44 -0400
-Message-Id: <20120917003637.839215878@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:42 -0400
+Message-Id: <20120917003638.539650687@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:49 +0100
+Date: Mon, 17 Sep 2012 01:37:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Seth Heasley <seth.heasley@intel.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 084/135] i2c-i801: Add device IDs for Intel Lynx Point
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 089/135] drm/i915: SDVO hotplug have different interrupt status bits for
+ i915/i965/g4x
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,74 +27,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
+I had to make substantial changes to this one, so please review!
+
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 062737fb6d90c632439b1f77ad6a4965cfc84a20 upstream.
+commit 084b612ecf8e59973576b2f644e6949609c79375 upstream.
 
-Add the SMBus controller device IDs for the Intel Lynx Point PCH.
+Note that gen3 is the only platform where we've got the bit
+definitions right, hence the workaround of disabling sdvo hotplug
+support on i945g/gm is not due to misdiagnosis of broken hotplug irq
+handling ...
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: add some blurb about sdvo hotplug fail on i945g/gm I've
+wondered about while reviewing.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Handle all three cases in i915_driver_irq_postinstall() as there
+   are not separate functions for gen3 and gen4+
+ - Carry on using IS_SDVOB() in intel_sdvo_init()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+)
-
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 2871fd5..71f55bb 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -20,6 +20,7 @@ Supported adapters:
-   * Intel Patsburg (PCH)
-   * Intel DH89xxCC (PCH)
-   * Intel Panther Point (PCH)
-+  * Intel Lynx Point (PCH)
-    Datasheets: Publicly available at the Intel website
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -2006,10 +2006,22 @@ static int i915_driver_irq_postinstall(s
+ 			hotplug_en |= HDMIC_HOTPLUG_INT_EN;
+ 		if (dev_priv->hotplug_supported_mask & HDMID_HOTPLUG_INT_STATUS)
+ 			hotplug_en |= HDMID_HOTPLUG_INT_EN;
+-		if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS)
+-			hotplug_en |= SDVOC_HOTPLUG_INT_EN;
+-		if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS)
+-			hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		if (IS_G4X(dev)) {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_G4X)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_G4X)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		} else if (IS_GEN4(dev)) {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_I965)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_I965)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		} else {
++			if (dev_priv->hotplug_supported_mask & SDVOC_HOTPLUG_INT_STATUS_I915)
++				hotplug_en |= SDVOC_HOTPLUG_INT_EN;
++			if (dev_priv->hotplug_supported_mask & SDVOB_HOTPLUG_INT_STATUS_I915)
++				hotplug_en |= SDVOB_HOTPLUG_INT_EN;
++		}
+ 		if (dev_priv->hotplug_supported_mask & CRT_HOTPLUG_INT_STATUS) {
+ 			hotplug_en |= CRT_HOTPLUG_INT_EN;
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 71c1b0a..d2c5095 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -103,6 +103,7 @@ config I2C_I801
- 	    Patsburg (PCH)
- 	    DH89xxCC (PCH)
- 	    Panther Point (PCH)
-+	    Lynx Point (PCH)
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1419,14 +1419,20 @@
+ #define   DPC_HOTPLUG_INT_STATUS		(1 << 28)
+ #define   HDMID_HOTPLUG_INT_STATUS		(1 << 27)
+ #define   DPD_HOTPLUG_INT_STATUS		(1 << 27)
++/* CRT/TV common between gen3+ */
+ #define   CRT_HOTPLUG_INT_STATUS		(1 << 11)
+ #define   TV_HOTPLUG_INT_STATUS			(1 << 10)
+ #define   CRT_HOTPLUG_MONITOR_MASK		(3 << 8)
+ #define   CRT_HOTPLUG_MONITOR_COLOR		(3 << 8)
+ #define   CRT_HOTPLUG_MONITOR_MONO		(2 << 8)
+ #define   CRT_HOTPLUG_MONITOR_NONE		(0 << 8)
+-#define   SDVOC_HOTPLUG_INT_STATUS		(1 << 7)
+-#define   SDVOB_HOTPLUG_INT_STATUS		(1 << 6)
++/* SDVO is different across gen3/4 */
++#define   SDVOC_HOTPLUG_INT_STATUS_G4X		(1 << 3)
++#define   SDVOB_HOTPLUG_INT_STATUS_G4X		(1 << 2)
++#define   SDVOC_HOTPLUG_INT_STATUS_I965		(3 << 4)
++#define   SDVOB_HOTPLUG_INT_STATUS_I965		(3 << 2)
++#define   SDVOC_HOTPLUG_INT_STATUS_I915		(1 << 7)
++#define   SDVOB_HOTPLUG_INT_STATUS_I915		(1 << 6)
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 5d2e281..07d0c95 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -51,6 +51,7 @@
-   Patsburg (PCH) IDF    0x1d72     32     hard     yes     yes     yes
-   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-+  Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
+ /* SDVO port control */
+ #define SDVOB			0x61140
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -2514,6 +2514,7 @@ bool intel_sdvo_init(struct drm_device *
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_encoder *intel_encoder;
+ 	struct intel_sdvo *intel_sdvo;
++	u32 hotplug_mask;
+ 	int i;
  
-   Features supported by this driver:
-   Software PEC                     no
-@@ -145,6 +146,7 @@
- #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
+ 	intel_sdvo = kzalloc(sizeof(struct intel_sdvo), GFP_KERNEL);
+@@ -2544,10 +2545,18 @@ bool intel_sdvo_init(struct drm_device *
+ 		}
+ 	}
  
- struct i801_priv {
- 	struct i2c_adapter adapter;
-@@ -633,6 +635,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
- 	{ 0, }
- };
+-	if (IS_SDVOB(sdvo_reg))
+-		dev_priv->hotplug_supported_mask |= SDVOB_HOTPLUG_INT_STATUS;
+-	else
+-		dev_priv->hotplug_supported_mask |= SDVOC_HOTPLUG_INT_STATUS;
++	hotplug_mask = 0;
++	if (IS_G4X(dev)) {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_G4X : SDVOC_HOTPLUG_INT_STATUS_G4X;
++	} else if (IS_GEN4(dev)) {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_I965 : SDVOC_HOTPLUG_INT_STATUS_I965;
++	} else {
++		hotplug_mask = IS_SDVOB(sdvo_reg) ?
++			SDVOB_HOTPLUG_INT_STATUS_I915 : SDVOC_HOTPLUG_INT_STATUS_I915;
++	}
++	dev_priv->hotplug_supported_mask |= hotplug_mask;
+ 
+ 	drm_encoder_helper_add(&intel_encoder->base, &intel_sdvo_helper_funcs);
  
 
 
