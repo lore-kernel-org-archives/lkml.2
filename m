@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab2IQNmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 09:42:10 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59885 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab2IQNmH (ORCPT
+	id S1754938Ab2IQNnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 09:43:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39588 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2IQNnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 09:42:07 -0400
+	Mon, 17 Sep 2012 09:43:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120917104049.GC5401@opensource.wolfsonmicro.com>
-References: <1347855552-26213-1-git-send-email-haojian.zhuang@gmail.com>
-	<1347855552-26213-4-git-send-email-haojian.zhuang@gmail.com>
-	<20120917101914.GA5401@opensource.wolfsonmicro.com>
-	<CAN1soZzTr-Zm0J41KXjnPei_9DtLF86fQbMpWyZzG9x=CWetiA@mail.gmail.com>
-	<20120917104049.GC5401@opensource.wolfsonmicro.com>
-Date: Mon, 17 Sep 2012 21:42:06 +0800
-Message-ID: <CAN1soZyc0DKQTt6DrQn_REO+_8y8ebiAVN3avDHLTumkSSmAuw@mail.gmail.com>
-Subject: Re: [PATCH 3/9] regulator: 88pm860x: add pre-regulator support for
- 88pm860x regulator
+In-Reply-To: <CACRpkdYAeChEqeLrz0hQxpXrWp477iXoko01swG8Y=SA7tNh5Q@mail.gmail.com>
+References: <CAPgLHd93SqsiFmE7y356VwBJtaac0APE__vk+8dBZnaOyt4org@mail.gmail.com>
+	<CACRpkdYAeChEqeLrz0hQxpXrWp477iXoko01swG8Y=SA7tNh5Q@mail.gmail.com>
+Date: Mon, 17 Sep 2012 21:43:11 +0800
+Message-ID: <CAN1soZzF_GjSOHb3WwbWLHTOWecQih6FYpoX4PS3Kryz4TMWqg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pxa: using for_each_set_bit to simplify the code
 From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, lrg@ti.com, rpurdie@rpsys.net,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        "Jett.Zhou" <jtzhou@marvell.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Wei Yongjun <weiyj.lk@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 6:40 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Sep 17, 2012 at 06:28:18PM +0800, Haojian Zhuang wrote:
+On Mon, Sep 17, 2012 at 6:56 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Sep 14, 2012 at 4:36 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
 >
->> Could this patch be merged into MFD tree? Since the fourth patch in this
->> patch series is depend on this one.
+>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>
+>> Using for_each_set_bit() to simplify the code.
+>>
+>> spatch with a semantic match is used to found this.
+>> (http://coccinelle.lip6.fr/)
+>>
+>> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
-> Why is there a dependency?
-> --
-This patch is picked from Jett's patch on power device of 88pm860x.
-His patch addes the support
-of PREG regulator in 88pm8607 regulator driver. Although this patch
-was submitted for a long time,
-it wasn't merged yet.
+> PXA maintainers: does this look OK?
+>
+> Yours,
+> Linus Walleij
 
-And I have a patch series on updating 88pm860x driver with
-IORESOURCE_REG. One patch in that
-series is used to split regulator subdevs into an array of regulator
-subdevs. It results in 88pm860x
-regulator driver updated and merged into MFD for-next branch.
+It seems good.
 
-Since both Jett's patch and my patch updates code in probe() function
-of 88pm860x regulator driver,
-some code between these two patches conflicts. So I make the fourth
-patch in current series to resolve
-this conflict on MFD for-next branch.
-
-If you agree on merging this patch series into MFD tree without your
-Ack, it would be simple way. Or I
-could rebase it and split them into two different patch series for MFD
-and regulator tree. Which way do
-you like?
-
-Best Regards
-Haojian
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
