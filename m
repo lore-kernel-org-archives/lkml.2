@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2IQRGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:06:21 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42600 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2IQRGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:06:19 -0400
-Date: Mon, 17 Sep 2012 13:07:49 -0400
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>, AnilKumar <anilkumar@ti.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 2/2] ARM: OMAP2+: Enable pinctrl dummy states
-Message-ID: <20120917170749.GQ27758@beef>
-References: <1347385599-27558-1-git-send-email-mporter@ti.com>
- <1347385599-27558-3-git-send-email-mporter@ti.com>
- <20120911180306.GI23092@atomide.com>
- <20120911181540.GO27758@beef>
- <20120911183522.GL23092@atomide.com>
- <20120911190602.GP27758@beef>
- <20120912010307.GP23092@atomide.com>
+	id S1755780Ab2IQRG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:06:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58384 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab2IQRGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 13:06:24 -0400
+Message-ID: <50575855.8040308@zytor.com>
+Date: Mon, 17 Sep 2012 10:05:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120912010307.GP23092@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [tip:x86/asm] x86: Prefer TZCNT over BFS
+References: <504DEA1B020000780009A277@nat28.tlf.novell.com> <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org> <CA+55aFxs3FUETs830p-ow29RDibu9=d77gxqaueX-wZyr8-40A@mail.gmail.com> <5056F04B020000780009BAF9@nat28.tlf.novell.com> <20120917100046.GA32463@gmail.com> <CA+55aFwKkW7+Xv4-36JsbR7rDyorC8xcTsL_XnYCq=XNTZeJFw@mail.gmail.com>
+In-Reply-To: <CA+55aFwKkW7+Xv4-36JsbR7rDyorC8xcTsL_XnYCq=XNTZeJFw@mail.gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 11, 2012 at 06:03:07PM -0700, Tony Lindgren wrote:
-> * Matt Porter <mporter@ti.com> [120911 12:05]:
-> > On Tue, Sep 11, 2012 at 11:35:22AM -0700, Tony Lindgren wrote:
-> > > Added Linus Walleij to Cc as well.
+On 09/17/2012 10:00 AM, Linus Torvalds wrote:
+\>
+> As Jan already pointed out, I really want more than that.
 > 
-> Now I think I really managed to add Linus W to Cc, sent too fast
-> earlier.
-> ...
+> The *conditions* for selecting X86_TZCNT have to be sane too.
 > 
-> > > But do you get an error then if the desired pins are not found?
-> > > If you do get an error, then sounds like it's OK to do.
-> >
-> > Hrm, no. In that case, it will be completely silent (assuming we took
-> > care of the pinmuxing in the bootloader) as it uses the dummy state.
-> > Only with debug on will you see the information that mcspi has used
-> > the dummy state as is the case with !DT.
-> ...
->  
-> > > Well I think we should consider at least the following:
-> > > 
-> > > 1. Always see warnings when device tree is populated with board-generic.
-> > >    If somebody wants to use bootloader only muxing with DT, they can patch
-> > >    in pinctrl_provide_dummies() somewhere. But let's assume we always
-> > >    want to see the warnings with board-generic.c and DT.
-> > 
-> > Ok, this is clear.
-> > 
-> > > 2. For legacy booting without DT, we should not see any warnings
-> > >    from pinctrl-single.c as it's DT based.
-> > 
-> > Right, except anything legacy booting without DT will require that
-> > dummy states be present otherwise it will fail probe.
+> I really think that "32-bit generic kernel" is totally and completely
+> a wrong choice for enabling this. A 32-bit setup has exactly two
+> relevant cases:
 > 
-> But I guess we should enable the dummy states only for other
-> board-*.c files, not board-generic.c? 
+>  - old CPU's that don't support TZCNT anyway
+>  - new CPU's where the user doesn't care about performance (things
+> like HIGHMEM will have killed it much more than TZCNT etc ever will)
 > 
-> > > 3. There may be other non-pinctrl drivers too that are not DT
-> > >    based, and in those cases we should see the warnings as well
-> > >    for in the non-DT case.
-> > 
-> > I'm not sure what you mean here. "non-pinctrl drivers" means any driver
-> > that is not yet pinctrl or DT enabled? It's unclear to me how this
-> > case has a bearing on mcspi and pinctrl enablement across legacy
-> > board-foo.c !DT booting platforms.
+> and in neither case is the TZCNT instruction relevant.
 > 
-> Right, sorry I meant "non DT pinctrl drivers"..
->  
-> > However, I think if the approach was modified by only calling
-> > pinctrl_provide_dummies() when we are booting with DT populated
-> > and using board-generic.c then it will satisfy all of your
-> > concerns. Thoughts?
+> Even for the 64-bit case, I really don't see why "generic" should pick
+> it up either. The fact that we don't have many CPU optimization
+> choices for x86-64 is not an excuse to then overload "generic" with
+> that kind of choice, I think.
 > 
-> Hmm but shouldn't it be call pinctrl_provide_dummies() only
-> for other boards except board-generic.c? And that is assuming
-> we don't have any other "non DT pinctrl drivers" around.
+> So I really objected not only to the ugly and unreadable conditionals,
+> I objected to the criteria for them too.
+> 
 
-Yes, I've addressed this now in v2.
+Honestly, I don't see a reason to not do this unconditionally.  On
+anything but (pre-686-era) extremely old CPUs the cost of the extra
+prefix is zero.  On the really old CPUs the cost of the BSF instruction
+will dwarf the penalty cycle for the extra prefix, so the whole
+mechanism around doing it conditionally seems pointless.
 
-> > i.e. the legacy !DT booting will have dummy states and continue
-> > along through mcspi the way it does today, relying on board-foo level
-> > pinmux calls (or bootloader pinmuxing). Meanwhile DT booting will now
-> > require that a mcspi instance also require pinctrl entry in this dts.
-> 
-> Yes agreed, except let's just produce a warning for the pinctrl
-> errors..
+	-hpa
 
-Sounds good, I changed this in v2 to use the same warning as leds-gpio.
 
-> > The only worrisome thing is the pinctrl requirement on DT booting is
-> > now an implicit requirement.
-> 
-> ..as otherwise not much will work at this point :)
-
-:)
-
-> > > > > For board-generic.c we always want to see the warnings. And some boards
-> > > > > insist on doing all the muxing only in the bootloader.
-> > > > 
-> > > > Which warnings are you saying we should see in the board-generic.c
-> > > > case?  Sure, there's plenty of cases where this will be unused due to
-> > > > somebody setting all the muxes in the bootloader and then not using
-> > > > pinctrl data. I'll have to doublecheck but I believe that case is also
-> > > > fine as the -single driver can't override the dummy state if the DT has
-> > > > no pinctrl data for the spi driver.
-> 
-> I suggest all pinctrl errors should show up as warnings with
-> board-generic.c, but we should not exit out of the driver probe
-> on errors.
-
-Ok, makes sense to me now.
-
-Thanks,
-Matt
