@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab2IQK3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:29:15 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57387 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753260Ab2IQK3M (ORCPT
+	id S1753260Ab2IQK3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:29:49 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:27843 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab2IQK3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:29:12 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Peter Jones <pjones@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] x86: Switch to vga console only if framebuffer details are missing
-Date: Mon, 17 Sep 2012 11:29:08 +0100
-Message-Id: <1347877748-11766-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 17 Sep 2012 06:29:47 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: Liam Girdwood <lrg@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        "Jean Delvare" <khali@linux-fr.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
+Thread-Topic: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
+Thread-Index: AQHNevk4pB6rQXiUMUetWtkXJKtKrJdt4YyAgCCl2oA=
+Date: Mon, 17 Sep 2012 10:29:43 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51032CC96A@NB-EX-MBX02.diasemi.com>
+References: <201208151518.q7FFILAM011604@latitude.olech.com>
+ <20120827165057.GK4339@opensource.wolfsonmicro.com>
+In-Reply-To: <20120827165057.GK4339@opensource.wolfsonmicro.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: 27 August 2012 17:51
+> To: Opensource [Anthony Olech]
+> Cc: Liam Girdwood; Guenter Roeck; Jean Delvare; Randy Dunlap; LKML; David
+> Dajun Chen
+> Subject: Re: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
+> On Wed, Aug 15, 2012 at 04:05:25PM +0100, Anthony Olech wrote:
+> > +static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
+> > +					unsigned int old_selector,
+> > +					unsigned int new_selector)
+> > +{
+> > +	ret = da9058_set_bits(da9058, regulator->ramp_register,
+> > +					regulator->ramp_enable_mask);
+> > +	if (ret)
+> > +		return ret;
+> > +	return 2200; /* micro Seconds needed to ramp to new voltage*/
+> Why is this function writing to the hardware, especially writing the same value
+> every time?
 
-The efi_enabled variable has come to mean "Do we have EFI runtime
-services available?". However, lack of EFI runtime services does not
-mean that we should switch to using the VGA console. Provided that the
-boot loader passed the dimensions of the EFI framebuffer there is no
-reason we can't use efifb.
 
-There's also no reason to check the memory type of 0xa0000 - whether
-or not that memory region is EFI_CONVENTIONAL_MEMORY is immaterial -
-the EFI framebuffer device will still work, and checking the EFI
-memory type of a memory region on a non-EFI machine is illogical.
+the ramp_register is DA9058_SUPPLY_REG and it is marked as volitile.
+Writing to the ramp enable bit starts the voltage change. When the PMIC has
+finished making the change it resets the bit. Thus to make another voltage
+change the bit needs to be set again.
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Peter Jones <pjones@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/kernel/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..29dc30a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1021,7 +1021,7 @@ void __init setup_arch(char **cmdline_p)
  
- #ifdef CONFIG_VT
- #if defined(CONFIG_VGA_CONSOLE)
--	if (!efi_enabled || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
-+	if (!screen_info.lfb_base || !screen_info.lfb_size)
- 		conswitchp = &vga_con;
- #elif defined(CONFIG_DUMMY_CONSOLE)
- 	conswitchp = &dummy_con;
--- 
-1.7.4.4
-
+> > +static int da9058_get_fixed_regulator_voltage(struct regulator_dev
+> > +*rdev) {
+> > +	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
+> > +
+> > +	if (regulator_is_enabled_regmap(rdev))
+> > +		return regulator->fixed_voltage;
+> > +	else
+> > +		return 0;
+> > +}
+> list_voltage_linear()
