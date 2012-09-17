@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2IQDPv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 23:15:51 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56714 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab2IQDPu (ORCPT
+	id S1753421Ab2IQDRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 23:17:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53255 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2IQDRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 23:15:50 -0400
-Message-ID: <505695E3.7040603@gmail.com>
-Date: Sun, 16 Sep 2012 22:15:47 -0500
-From: Bruce Dubbs <bruce.dubbs@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120628 Firefox/13.0.1 SeaMonkey/2.10.1
-MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@inai.de>
-CC: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Subject: Re: [ANNOUNCE] kmod 10
-References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com> <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
-In-Reply-To: <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Sep 2012 23:17:51 -0400
+Date: Mon, 17 Sep 2012 13:17:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Atul Deshmukh <atul.deshmukh@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Subject: linux-next: manual merge of the scsi tree with the pci tree
+Message-Id: <20120917131744.2f646ebfca9806ee5850fe03@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Sep_2012_13_17_44_+1000_VVyLVhEysXjtrb_."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Engelhardt wrote:
->
-> On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
->>
->> kmod 10 is out:
->>
->> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
->> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
->
-> make check fails here with glibc-2.15, gcc-4.7, x86_64,
-> due to what seems to be duplicated symbols(?)
+--Signature=_Mon__17_Sep_2012_13_17_44_+1000_VVyLVhEysXjtrb_.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On my LFS system, glibc-2.16, gcc-4.7.1, x86_64, I do not see these errors:
+Hi James,
 
-./configure --prefix=/usr --bindir=/bin --libdir=/lib \
-             --sysconfdir=/etc --with-xz --with-zlib
-make
-make check
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/scsi/qla2xxx/qla_nx.c between commit 100924388407 ("[SCSI]
+qla4xxx: Use PCI Express Capability accessors") from the pci tree and
+commit 8fbb85e5f4c0 ("[SCSI] qla2xxx: Wrong PCIe(2.5Gb/s x8) speed in the
+kerenel message for ISP82xx") from the scsi tree.
 
-==================
-All 9 tests passed
-==================
+The latter removes one of the functions updated by the former.  So I
+removed it and can carry the fix as necessary (no action is required).
 
-What is interesting is that if I run the checks again:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-make check
+--Signature=_Mon__17_Sep_2012_13_17_44_+1000_VVyLVhEysXjtrb_.
+Content-Type: application/pgp-signature
 
-I get:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-TESTSUITE: running modprobe_softdep_loop, in forked context
-TESTSUITE: ERR: rootfs 
-/usr/src/kmod/kmod-10/testsuite/rootfs/test-modprobe/softdep-loop is 
-dirty, please run 'make rootfs' before runnning this test
-TESTSUITE: ERR: 'modprobe_softdep_loop' [16407] exited with return code 1
-TESTSUITE: ERR: FAILED: modprobe_softdep_loop
-FAIL: testsuite/test-modprobe
+iQIcBAEBCAAGBQJQVpZYAAoJEECxmPOUX5FEf1kQAKFXJYMDuDEsVUNhd7roUjTE
+Wr141pwxzCGhGNbhOcgar/Wq/xxKlRdHgHQhlnQX9vUn/Nspwo9ms+jr427MNu23
+KVC/J+66dhv5eZrBUEbY7fFXZ+pNJlT4B55lfKEFgtFII8OEe/7WhbCzXw/s4yWB
+OaJC2JPT5HdpEywRkoKHF5wiaLcxymJMkHC7/su6Pz7d2Bt/UIsuiHewiCWZePfL
+mfqHE4xSHRu3gCyRFMrzF1OK65+jaIspQOgxVL0p3rmoW2qwefe9R4IPE843Rlnn
+4QeZPbdJoHfFT7+GGhCapjhmkduJl0eaXXJvio4g/bH9vPDQqCoWIfaFrAedeXRY
+DSdjRybdgxNgazBq+EXEKB78dqrFCxTjb67DPOPCGKmGPxtlWjX91sKZgqRFMn1A
+FPHY1zwMe0XAVLInououQpsHx0ql/HQJwWh7Afp1SVVXRJm2Rv7gE2fO2K62nF9w
+tgJQfIa902B+Lc9trfsxyWV7tw2nLw8mL4U5A0XtZoW0CQjcXxRn+3Uy2VYppdRU
+rvIHHJnofxRDjxB9+F+ZA/0yJGQGh0KhWtssg9/xX7jbrbjzLCtNvLs9gu5vxGm1
+v5u+eyoXnBAVhB+94/6p0K5tmWumVxzB7pQC5SXA+MMxm+N0bSQS7zV5r66Ry6Ly
+omanr0NNSJoXI/MA0oas
+=xpXv
+-----END PGP SIGNATURE-----
 
-TESTSUITE: running test_insert, in forked context
-TESTSUITE: ERR: rootfs /usr/src/kmod/kmod-10/testsuite/rootfs/test-init/ 
-is dirty, please run 'make rootfs' before runnning this test
-TESTSUITE: ERR: 'test_insert' [16373] exited with return code 1
-TESTSUITE: ERR: FAILED: test_insert
-FAIL: testsuite/test-init
-
-==============================================
-2 of 9 tests failed
-Please report to linux-modules@vger.kernel.org
-==============================================
-
-'make rootfs' does not do anything but make distclean && configure && 
-make && make check is clean for me.
-
-   -- Bruce
-
+--Signature=_Mon__17_Sep_2012_13_17_44_+1000_VVyLVhEysXjtrb_.--
