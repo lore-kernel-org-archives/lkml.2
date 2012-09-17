@@ -1,417 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2IQJf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:35:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49904 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab2IQJf0 convert rfc822-to-8bit (ORCPT
+	id S1754368Ab2IQJhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:37:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39295 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab2IQJhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:35:26 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6] iio: adc: add new lp8788 adc driver
-Thread-Topic: [PATCH v6] iio: adc: add new lp8788 adc driver
-Thread-Index: Ac2Ut7W2YNnADDLUS6OY8QxtPFo/jw==
-Date: Mon, 17 Sep 2012 09:35:10 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF510C@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: GN9m G5eH LT8i NLBL NwL9 QN/C QsNH TEFm Ulev WVHI XSau
- Z/NO k7up xheu 2MI5
- 4BH5;5;agBpAGMAMgAzAEAAYwBhAG0ALgBhAGMALgB1AGsAOwBqAGkAYwAyADMAQABrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABhAHIAcwBAAG0AZQB0AGEAZgBvAG8ALgBkAGUAOwBsAGkAbgB1AHgALQBpAGkAbwBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{7E3BF5BA-8462-456A-BA44-F07327DAEC8D};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Mon,
- 17 Sep 2012 09:35:01
- GMT;WwBQAEEAVABDAEgAIAB2ADYAXQAgAGkAaQBvADoAIABhAGQAYwA6ACAAYQBkAGQAIABuAGUAdwAgAGwAcAA4ADcAOAA4ACAAYQBkAGMAIABkAHIAaQB2AGUAcgA=
-x-cr-puzzleid: {7E3BF5BA-8462-456A-BA44-F07327DAEC8D}
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 17 Sep 2012 05:37:37 -0400
+Message-ID: <1347874655.21322.145.camel@shinybook.infradead.org>
+Subject: Re: [PATCH] gmux: Fix backlight set function
+From: David Woodhouse <dwmw2@infradead.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Date: Mon, 17 Sep 2012 10:37:35 +0100
+In-Reply-To: <CACxGe6ufKKHEYZGpcrnPJRqKVzKwkH4PEtnMS0RhH8V5ABfWFQ@mail.gmail.com>
+References: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
+	 <1347568514.21322.5.camel@shinybook.infradead.org>
+	 <CACxGe6ufKKHEYZGpcrnPJRqKVzKwkH4PEtnMS0RhH8V5ABfWFQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-pMqZBnYgVdCDdGOS/2e8"
+X-Mailer: Evolution 3.4.4 (3.4.4-1.fc17) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- TI LP8788 PMU provides regulators, battery charger, ADC,
- RTC, backlight driver and current sinks.
 
- This patch enables the LP8788 ADC functions.
+--=-pMqZBnYgVdCDdGOS/2e8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
- The LP8788 ADC has several ADC input selection and supports 12bit resolution.
- Internal operation of getting ADC is access to registers of LP8788.
- The LP8788 ADC uses exported functions for accessing these registers.
- (exported by LP8788 MFD device driver)
+On Fri, 2012-09-14 at 14:06 +0100, Grant Likely wrote:
+> What patches are you running on top of mainline for the mbp8,3? I'm
+> using the radeon blos loading patch and I've got the nasty direct io
+> writes in grub.cfg to disable the radeon before booting into the
+> kernel so that X picks up the i915 instead.=20
 
- This driver supports IIO_CHAN_INFO_RAW and SCALE.
- So the IIO consumer can calculate the value with raw and scale.
- The unit of scale is micro.
+http://david.woodhou.se/mbp/ on top of the Fedora 3.5.3 kernel.
 
- (ADC Input Selection)
+It was working with a similar set of patches on top of 3.5.0. Although
+there was a patch from Matthew to make the i915 driver reprobe the LVDS
+on switch, which I can't see in that list right now. Maybe that's it.
 
- Voltage: battery voltage (MAX 5.0, 5.5 and 6.0V)
-          charger input voltage
-          four general ADC inputs
-          coin cell voltage
- Current: battery charging current
- Temperature: IC temperature
+--=20
+dwmw2
 
- (The IIO map for the IIO consumer)
+--=-pMqZBnYgVdCDdGOS/2e8
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
- The ADC input is configurable in the platform side.
- Even though this platform data is not defined,
- the default IIO map is created for supporting the power supply driver.
- The battery voltage and temperature are used inside this driver.
-
- (History)
-
- Patch v6.
- (a) Fix scale value for each ADC input selection
- Voltage and current type are mili unit and temperature is degree.
- To calculate the IC temperature,
- temp = raw * scaleint + (raw * scalepart)/ 1000000, scaleint is always 0.
-      = raw * 0.061050, raw: 0 ~ 4095
- Then range of IC temperature(ADC result) is 0 ~ 250'C
-
- (b) Reorganization of the IIO channel Spec
- Remove address, scan_type and scan_index and rollback the datasheet name.
- The reason why 'address' field is unnecessary is no relation with each channel.
- Moreover, to get the raw ADC value, the address info is not only one register
- but also several registers.
- Therefore specific function(lp8788_get_adc_result) is called rather than
- using one 'address' field.
-
- (c) Fix coding style
- Remove duplicated checking routine while unregistering the IIO map.
- Fix code for space and parenthesis.
-
- Patch v5.
- Fix default consumer name as 'lp8788-charger'.
- Add mutex for ADC read operation.
- Reorganization on lp8788_adc_read_raw().
-
- Patch v4.
- Fix adc_raw function: support RAW and SCALE channel info.
- Change LP8788 ADC platform data - iio map.
- Enables the default IIO map.
-
- Patch v3.
- Fix wrong size of allocating iio private data.
- Fix coding styles.
-
- Patch v2.
- Support RAW and SCALE interface for IIO consumer.
- Clean up the iio channel spec macro.
-
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/iio/adc/Kconfig      |    6 +
- drivers/iio/adc/Makefile     |    1 +
- drivers/iio/adc/lp8788_adc.c |  264 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 271 insertions(+)
- create mode 100644 drivers/iio/adc/lp8788_adc.c
-
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index 8a78b4f..30c06ed 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -22,4 +22,10 @@ config AT91_ADC
- 	help
- 	  Say yes here to build support for Atmel AT91 ADC.
- 
-+config LP8788_ADC
-+	bool "LP8788 ADC driver"
-+	depends on MFD_LP8788
-+	help
-+	  Say yes here to build support for TI LP8788 ADC.
-+
- endmenu
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index 52eec25..72f9a76 100644
---- a/drivers/iio/adc/Makefile
-+++ b/drivers/iio/adc/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_AD7266) += ad7266.o
- obj-$(CONFIG_AT91_ADC) += at91_adc.o
-+obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
-diff --git a/drivers/iio/adc/lp8788_adc.c b/drivers/iio/adc/lp8788_adc.c
-new file mode 100644
-index 0000000..a93aaf0
---- /dev/null
-+++ b/drivers/iio/adc/lp8788_adc.c
-@@ -0,0 +1,264 @@
-+/*
-+ * TI LP8788 MFD - ADC driver
-+ *
-+ * Copyright 2012 Texas Instruments
-+ *
-+ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/driver.h>
-+#include <linux/iio/machine.h>
-+#include <linux/mfd/lp8788.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+/* register address */
-+#define LP8788_ADC_CONF			0x60
-+#define LP8788_ADC_RAW			0x61
-+#define LP8788_ADC_DONE			0x63
-+
-+#define ADC_CONV_START			1
-+
-+struct lp8788_adc {
-+	struct lp8788 *lp;
-+	struct iio_map *map;
-+	struct mutex lock;
-+};
-+
-+static const int lp8788_scale[LPADC_MAX] = {
-+	[LPADC_VBATT_5P5] = 1343101,
-+	[LPADC_VIN_CHG]   = 3052503,
-+	[LPADC_IBATT]     = 610500,
-+	[LPADC_IC_TEMP]   = 61050,
-+	[LPADC_VBATT_6P0] = 1465201,
-+	[LPADC_VBATT_5P0] = 1221001,
-+	[LPADC_ADC1]      = 610500,
-+	[LPADC_ADC2]      = 610500,
-+	[LPADC_VDD]       = 1025641,
-+	[LPADC_VCOIN]     = 757020,
-+	[LPADC_ADC3]      = 610500,
-+	[LPADC_ADC4]      = 610500,
-+};
-+
-+static int lp8788_get_adc_result(struct lp8788_adc *adc, enum lp8788_adc_id id,
-+				int *val)
-+{
-+	unsigned int msb;
-+	unsigned int lsb;
-+	unsigned int result;
-+	u8 data;
-+	u8 rawdata[2];
-+	int size = ARRAY_SIZE(rawdata);
-+	int retry = 5;
-+	int ret;
-+
-+	data = (id << 1) | ADC_CONV_START;
-+	ret = lp8788_write_byte(adc->lp, LP8788_ADC_CONF, data);
-+	if (ret)
-+		goto err_io;
-+
-+	/* retry until adc conversion is done */
-+	data = 0;
-+	while (retry--) {
-+		usleep_range(100, 200);
-+
-+		ret = lp8788_read_byte(adc->lp, LP8788_ADC_DONE, &data);
-+		if (ret)
-+			goto err_io;
-+
-+		/* conversion done */
-+		if (data)
-+			break;
-+	}
-+
-+	ret = lp8788_read_multi_bytes(adc->lp, LP8788_ADC_RAW, rawdata, size);
-+	if (ret)
-+		goto err_io;
-+
-+	msb = (rawdata[0] << 4) & 0x00000ff0;
-+	lsb = (rawdata[1] >> 4) & 0x0000000f;
-+	result = msb | lsb;
-+	*val = result;
-+
-+	return 0;
-+
-+err_io:
-+	return ret;
-+}
-+
-+static int lp8788_adc_read_raw(struct iio_dev *indio_dev,
-+			struct iio_chan_spec const *chan,
-+			int *val, int *val2, long mask)
-+{
-+	struct lp8788_adc *adc = iio_priv(indio_dev);
-+	enum lp8788_adc_id id = chan->channel;
-+	int ret;
-+
-+	mutex_lock(&adc->lock);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		ret = lp8788_get_adc_result(adc, id, val) ? -EIO : IIO_VAL_INT;
-+		break;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = lp8788_scale[id] / 1000000;
-+		*val2 = lp8788_scale[id] % 1000000;
-+		ret = IIO_VAL_INT_PLUS_MICRO;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	mutex_unlock(&adc->lock);
-+
-+	return ret;
-+}
-+
-+static const struct iio_info lp8788_adc_info = {
-+	.read_raw = &lp8788_adc_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+#define LP8788_CHAN(_id, _type) {				\
-+		.type = _type,					\
-+		.indexed = 1,					\
-+		.channel = LPADC_##_id,				\
-+		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |	\
-+			IIO_CHAN_INFO_SCALE_SEPARATE_BIT,	\
-+		.datasheet_name = #_id,				\
-+}
-+
-+static const struct iio_chan_spec lp8788_adc_channels[] = {
-+	[LPADC_VBATT_5P5] = LP8788_CHAN(VBATT_5P5, IIO_VOLTAGE),
-+	[LPADC_VIN_CHG]   = LP8788_CHAN(VIN_CHG, IIO_VOLTAGE),
-+	[LPADC_IBATT]     = LP8788_CHAN(IBATT, IIO_CURRENT),
-+	[LPADC_IC_TEMP]   = LP8788_CHAN(IC_TEMP, IIO_TEMP),
-+	[LPADC_VBATT_6P0] = LP8788_CHAN(VBATT_6P0, IIO_VOLTAGE),
-+	[LPADC_VBATT_5P0] = LP8788_CHAN(VBATT_5P0, IIO_VOLTAGE),
-+	[LPADC_ADC1]      = LP8788_CHAN(ADC1, IIO_VOLTAGE),
-+	[LPADC_ADC2]      = LP8788_CHAN(ADC2, IIO_VOLTAGE),
-+	[LPADC_VDD]       = LP8788_CHAN(VDD, IIO_VOLTAGE),
-+	[LPADC_VCOIN]     = LP8788_CHAN(VCOIN, IIO_VOLTAGE),
-+	[LPADC_ADC3]      = LP8788_CHAN(ADC3, IIO_VOLTAGE),
-+	[LPADC_ADC4]      = LP8788_CHAN(ADC4, IIO_VOLTAGE),
-+};
-+
-+/* default maps used by iio consumer (lp8788-charger driver) */
-+static struct iio_map lp8788_default_iio_maps[] = {
-+	{
-+		.consumer_dev_name = "lp8788-charger",
-+		.consumer_channel = "lp8788_vbatt_5p0",
-+		.adc_channel_label = "VBATT_5P0",
-+	},
-+	{
-+		.consumer_dev_name = "lp8788-charger",
-+		.consumer_channel = "lp8788_adc1",
-+		.adc_channel_label = "ADC1",
-+	},
-+	{ }
-+};
-+
-+static int lp8788_iio_map_register(struct iio_dev *indio_dev,
-+				struct lp8788_platform_data *pdata,
-+				struct lp8788_adc *adc)
-+{
-+	struct iio_map *map;
-+	int ret;
-+
-+	map = (!pdata || !pdata->adc_pdata) ?
-+		lp8788_default_iio_maps : pdata->adc_pdata;
-+
-+	ret = iio_map_array_register(indio_dev, map);
-+	if (ret) {
-+		dev_err(adc->lp->dev, "iio map err: %d\n", ret);
-+		return ret;
-+	}
-+
-+	adc->map = map;
-+	return 0;
-+}
-+
-+static inline void lp8788_iio_map_unregister(struct iio_dev *indio_dev,
-+				struct lp8788_adc *adc)
-+{
-+	iio_map_array_unregister(indio_dev, adc->map);
-+}
-+
-+static int __devinit lp8788_adc_probe(struct platform_device *pdev)
-+{
-+	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
-+	struct iio_dev *indio_dev;
-+	struct lp8788_adc *adc;
-+	int ret;
-+
-+	indio_dev = iio_device_alloc(sizeof(*adc));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	adc = iio_priv(indio_dev);
-+	adc->lp = lp;
-+	platform_set_drvdata(pdev, indio_dev);
-+
-+	ret = lp8788_iio_map_register(indio_dev, lp->pdata, adc);
-+	if (ret)
-+		goto err_iio_map;
-+
-+	mutex_init(&adc->lock);
-+
-+	indio_dev->dev.parent = lp->dev;
-+	indio_dev->name = pdev->name;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->info = &lp8788_adc_info;
-+	indio_dev->channels = lp8788_adc_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(lp8788_adc_channels);
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret) {
-+		dev_err(lp->dev, "iio dev register err: %d\n", ret);
-+		goto err_iio_device;
-+	}
-+
-+	return 0;
-+
-+err_iio_device:
-+	lp8788_iio_map_unregister(indio_dev, adc);
-+err_iio_map:
-+	iio_device_free(indio_dev);
-+	return ret;
-+}
-+
-+static int __devexit lp8788_adc_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+	struct lp8788_adc *adc = iio_priv(indio_dev);
-+
-+	iio_device_unregister(indio_dev);
-+	lp8788_iio_map_unregister(indio_dev, adc);
-+	iio_device_free(indio_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver lp8788_adc_driver = {
-+	.probe = lp8788_adc_probe,
-+	.remove = __devexit_p(lp8788_adc_remove),
-+	.driver = {
-+		.name = LP8788_DEV_ADC,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+module_platform_driver(lp8788_adc_driver);
-+
-+MODULE_DESCRIPTION("Texas Instruments LP8788 ADC Driver");
-+MODULE_AUTHOR("Milo Kim");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lp8788-adc");
--- 
-1.7.9.5
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwOTE3MDkzNzM1WjAjBgkqhkiG9w0BCQQx
+FgQU2X1XVAMKYMZBx2aTG8fF1zTJw7EwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQAcUD/zt9IIyLHaXVpMX7q0v1mP
+/f8WWJprPZiJbmdPfHibLUrFVQOULfn55DaJ39uLHr0uLfcgmY9AMsMhvqRBCeykdXcEH2XyCFpu
+G08vdfVSaOBLV3XPVYzv+O+MsGI1NYh5JU2rYI2e6BlTmrAu/V/kgSV/g5QuvpMihzed+L1i9Gko
+1nuRdd15UTXhkAjxk7oZodgOKzCtKtBrSD+zojihiR0jLvhOQtQeFA1LpQHQPyFdXxRAK/qdY75M
+/IL/K5Bdbue9aZf5HMDc65yw/b8KyR+qLD1QRK4Fvgg5CWtrVGffBf7VCYLFP7OkqPi0ZwuB8z3I
+hfXbkrADwRT9AAAAAAAA
 
 
-Best Regards,
-Milo
-
+--=-pMqZBnYgVdCDdGOS/2e8--
 
