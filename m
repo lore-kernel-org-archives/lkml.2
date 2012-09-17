@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2IQKAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:00:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63925 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab2IQKAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:00:52 -0400
-Date: Mon, 17 Sep 2012 12:00:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: tglx@linutronix.de, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [tip:x86/asm] x86: Prefer TZCNT over BFS
-Message-ID: <20120917100046.GA32463@gmail.com>
-References: <504DEA1B020000780009A277@nat28.tlf.novell.com>
- <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org>
- <CA+55aFxs3FUETs830p-ow29RDibu9=d77gxqaueX-wZyr8-40A@mail.gmail.com>
- <5056F04B020000780009BAF9@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5056F04B020000780009BAF9@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755517Ab2IQKDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:03:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26391 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753402Ab2IQKDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 06:03:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,434,1344236400"; 
+   d="scan'208";a="222956331"
+Subject: Re: [PATCH v3 03/15] dmaengine: Add flags parameter to
+ dmaengine_prep_dma_cyclic()
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1347624358-25582-4-git-send-email-peter.ujfalusi@ti.com>
+References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
+	 <1347624358-25582-4-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Sep 2012 15:28:59 +0530
+Message-ID: <1347875939.1943.147.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jan Beulich <JBeulich@suse.com> wrote:
-
-> >>> On 14.09.12 at 23:14, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > On Thu, Sep 13, 2012 at 11:23 PM, tip-bot for Jan Beulich
-> > <JBeulich@suse.com> wrote:
-> >>
-> >> x86: Prefer TZCNT over BFS
-> > 
-> > This patch is insane.
+On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
+> With this parameter added to dmaengine_prep_dma_cyclic() the API will
+> be in
+> sync with other dmaengine_prep_*() functions.
+> The dmaengine_prep_dma_cyclic() function primarily used by audio for
+> cyclic
+> transfer required by ALSA, we use the from audio to ask dma drivers to
+> suppress interrupts (if DMA_PREP_INTERRUPT is cleared) when it is
+> supported
+> on the platform.
 > 
-> I'm not going to defend this simple and strait forward a patch 
-> to such a reply, so Ingo, just drop it to please Linus, even 
-> though I can't see what's _this_ bad about it.
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> CC: Lars-Peter Clausen <lars@metafoo.de>
+> --- 
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
 
-Well, the problem is the complication of the dependencies, which 
-obscures the logic and makes it hard to maintain going forward.
 
-Linus's suggestion is to introduce CONFIG_X86_TZCNT as an add-on 
-patch that cleans up and documents what this is all about.
+-- 
+~Vinod
 
-Would you be willing to do such a patch?
-
-Thanks,
-
-	Ingo
