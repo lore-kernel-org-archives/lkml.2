@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2IQQ2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:28:13 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:6286 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751512Ab2IQQ2L (ORCPT
+	id S1753159Ab2IQQcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:32:24 -0400
+Received: from mail.mars-solutions.de ([213.239.212.107]:20860 "EHLO
+	mail.mars-solutions.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab2IQQcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:28:11 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zz98dId6f1izz1202h1d1ah1d2ahzzz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MAI5QR-02-0EQ-02
-X-M-MSG: 
-Date: Mon, 17 Sep 2012 18:28:02 +0200
-From: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v2 1/1] iommu/tegra: smmu: Use debugfs_create_dir for directory
-Message-ID: <20120917162802.GA2505@amd.com>
-References: <20120809155624.b781edae9efa7c51faf6c31c@nvidia.com>
- <1345009652-13408-1-git-send-email-hdoyu@nvidia.com>
- <502BCA9E.5090206@wwwdotorg.org>
- <20120904.095134.292349834288373260.hdoyu@nvidia.com>
- <504E3046.9080103@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <504E3046.9080103@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Mon, 17 Sep 2012 12:32:23 -0400
+X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Sep 2012 12:32:23 EDT
+From: Andreas Pretzsch <apr@cn-eng.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: Use devm_* APIs for mc13xxx: remove leftover kfree
+Date: Mon, 17 Sep 2012 18:17:21 +0200
+Message-Id: <1347898641-17575-1-git-send-email-apr@cn-eng.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Assp-Version: 1.8.1.3(0.0.06) on ASSP.nospam
+X-Assp-Passing: authenticated
+X-Assp-ID: ASSP.nospam id-98661-11188
+X-Assp-Intended-For: axel.lin@gmail.com
+X-Assp-Envelope-From: apr@cn-eng.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 12:24:06PM -0600, Stephen Warren wrote:
+commit e7c706b1e5ccf28eaaf76c7a4613e80b0ca52863 migrated the allocation
+of struct mc13xxx to devm_* functions, but left a kfree(mc13xxx) in the
+mc13xxx_common_init error path. Remove it to prevent memory corruption.
 
-> Joerg, could you please apply this patch ASAP? Currently, Tegra won't
-> boot in linux-next without it. Alternatively, would you like me to take
-> the patch through the Tegra tree? Thanks.
+Signed-off-by: Andreas Pretzsch <apr@cn-eng.de>
+---
+ drivers/mfd/mc13xxx-core.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Sorry, I had some vacation. But I am back now and will apply the patch
-ASAP.
-
-
-	Joerg
-
+diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+index 1ec79b5..1aba023 100644
+--- a/drivers/mfd/mc13xxx-core.c
++++ b/drivers/mfd/mc13xxx-core.c
+@@ -676,7 +676,6 @@ int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+ err_mask:
+ err_revision:
+ 		mc13xxx_unlock(mc13xxx);
+-		kfree(mc13xxx);
+ 		return ret;
+ 	}
+ 
+-- 
+1.7.10.4
 
