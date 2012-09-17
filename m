@@ -1,110 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab2IQIRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:17:54 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:9180 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab2IQIRs (ORCPT
+	id S1754828Ab2IQIb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:31:28 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51801 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2IQIbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:17:48 -0400
-X-IronPort-AV: E=Sophos;i="4.80,434,1344211200"; 
-   d="scan'208";a="14572556"
-Message-ID: <1347869865.14977.15.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] Xen backend support for paged out grant targets V4.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-CC: xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "David Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 17 Sep 2012 09:17:45 +0100
-In-Reply-To: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
-References: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Sep 2012 04:31:25 -0400
+From: Dong Hao <haodong@linux.vnet.ibm.com>
+To: acme@infradead.org, dsahern@gmail.com, mtosatti@redhat.com, avi@redhat.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com
+Subject: [PATCH v8 0/3] KVM: perf: kvm events analysis tool
+Date: Mon, 17 Sep 2012 16:31:12 +0800
+Message-Id: <1347870675-31495-1-git-send-email-haodong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.5
+x-cbid: 12091708-2966-0000-0000-0000054C6D46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I think I forgot to hit send on this on Friday, sorry. Also
-s/xen.lists.org/lists.xen.org in the CC line...)
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-On Fri, 2012-09-14 at 15:26 +0100, Andres Lagar-Cavilla wrote:
-> Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
-> foreign domain (such as dom0) attempts to map these frames, the map will
-> initially fail. The hypervisor returns a suitable errno, and kicks an
-> asynchronous page-in operation carried out by a helper. The foreign domain is
-> expected to retry the mapping operation until it eventually succeeds. The
-> foreign domain is not put to sleep because itself could be the one running the
-> pager assist (typical scenario for dom0).
-> 
-> This patch adds support for this mechanism for backend drivers using grant
-> mapping and copying operations. Specifically, this covers the blkback and
-> gntdev drivers (which map foregin grants), and the netback driver (which copies
+Changelog:
+the changes from Avi's comments:
+- move the definition of x86 fault vector to asm/kvm.h
+- drop the second patch which introduced new tracpoints
 
-                           foreign
+the changes from David's comments:
+- use scnprintf instead of snprintf
+- drop exclusive check for '-a' and '-p', after this, we should
+  append -a to track all guest, -p to track the specified guest
+- improve the help usage
+- fix a possible memory leak
+- some cleanups
 
-> foreign grants).
-> 
-> * Add a retry method for grants that fail with GNTST_eagain (i.e. because the
->   target foregin frame is paged out).
+the changes from Andrew Jones's comments:
+- move stat related code to util/stat.c
 
-          foreign
+Thank you very much for your patience!
 
-> * Insert hooks with appropriate wrappers in the aforementioned drivers.
-> 
-> The retry loop is only invoked if the grant operation status is GNTST_eagain.
-> It guarantees to leave a new status code different from GNTST_eagain. Any other
-> status code results in identical code execution as before.
-> 
-> The retry loop performs 256 attempts with increasing time intervals through a
-> 32 second period. It uses msleep to yield while waiting for the next retry.
-[...]
-> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+This patchset introduces a perf-based tool (perf kvm stat record/report)
+which can analyze kvm events more smartly. Below is the presentation slice
+on 2012 Japan LinuxCon:
+http://events.linuxfoundation.org/images/stories/pdf/lcjp2012_guangrong.pdf
+You can get more details from it. If any questions/comments, please feel free
+to let us know.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+This patchset is based on Arnaldo's git tree perf/core branch.
 
-Since this is more about grant tables than netback this should probably
-go via Konrad rather than Dave, is that OK with you Dave?
+Usage:
+- kvm stat
+  run a command and gather performance counter statistics, it is the alias of
+  perf stat
 
-(there's one more typo below)
+- trace kvm events:
+  perf kvm stat record, or, if other tracepoints are interesting as well, we
+  can append the events like this:
+  perf kvm stat record -e timer:* -a
 
-> ---
->  drivers/net/xen-netback/netback.c  |   11 ++------
->  drivers/xen/grant-table.c          |   53 ++++++++++++++++++++++++++++++++++++
->  drivers/xen/xenbus/xenbus_client.c |    6 ++--
->  include/xen/grant_table.h          |   12 ++++++++
->  4 files changed, 70 insertions(+), 12 deletions(-)
-[...]
-> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-> index 11e27c3..da9386e 100644
-> --- a/include/xen/grant_table.h
-> +++ b/include/xen/grant_table.h
-> @@ -189,4 +189,16 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  		      struct page **pages, unsigned int count, bool clear_pte);
->  
-> +/* Perform a batch of grant map/copy operations. Retry every batch slot
-> + * for which the hypervisor returns GNTST_eagain. This is typically due 
-> + * to paged out target frames.
-> + *
-> + * Will retry for 1, 2, ... 255 ms, i.e. 256 times during 32 seconds.
-> + *
-> + * Return value in each iand every status field of the batch guaranteed
+  If many guests are running, we can track the specified guest by using -p or
+  --pid. -a is used to track events generated by all guests.
 
-                          and
+- show the result:
+  perf kvm stat report
 
-> + * to not be GNTST_eagain. 
-> + */
-> +void gnttab_batch_map(struct gnttab_map_grant_ref *batch, unsigned count);
-> +void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count);
-> +
->  #endif /* __ASM_GNTTAB_H__ */
+The output example is following:
+# pgrep qemu
+13005
+13059
+
+total 2 guests are running on the host
+
+Then, track the guest whose pid is 13059:
+# ./perf kvm stat record -p 13059
+^C[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.253 MB perf.data.guest (~11065 samples) ]
+
+See the vmexit events:
+# ./perf kvm stat report --event=vmexit
 
 
+Analyze events for all VCPUs:
+
+             VM-EXIT    Samples  Samples%     Time%         Avg time
+
+         APIC_ACCESS        460    70.55%     0.01%     22.44us ( +-   1.75% )
+                 HLT         93    14.26%    99.98% 832077.26us ( +-  10.42% )
+  EXTERNAL_INTERRUPT         64     9.82%     0.00%     35.35us ( +-  14.21% )
+   PENDING_INTERRUPT         24     3.68%     0.00%      9.29us ( +-  31.39% )
+           CR_ACCESS          7     1.07%     0.00%      8.12us ( +-   5.76% )
+      IO_INSTRUCTION          3     0.46%     0.00%     18.00us ( +-  11.79% )
+       EXCEPTION_NMI          1     0.15%     0.00%      5.83us ( +-   -nan% )
+
+Total Samples:652, Total events handled time:77396109.80us.
+
+See the mmio events:
+# ./perf kvm stat report --event=mmio
+
+
+Analyze events for all VCPUs:
+
+         MMIO Access    Samples  Samples%     Time%         Avg time
+
+        0xfee00380:W        387    84.31%    79.28%      8.29us ( +-   3.32% )
+        0xfee00300:W         24     5.23%     9.96%     16.79us ( +-   1.97% )
+        0xfee00300:R         24     5.23%     7.83%     13.20us ( +-   3.00% )
+        0xfee00310:W         24     5.23%     2.93%      4.94us ( +-   3.84% )
+
+Total Samples:459, Total events handled time:4044.59us.
+
+See the ioport event:
+# ./perf kvm stat report --event=ioport
+
+
+Analyze events for all VCPUs:
+
+      IO Port Access    Samples  Samples%     Time%         Avg time
+
+         0xc050:POUT          3   100.00%   100.00%     13.75us ( +-  10.83% )
+
+Total Samples:3, Total events handled time:41.26us.
+
+And, --vcpu is used to track the specified vcpu and --key is used to sort the
+result:
+# ./perf kvm stat report --event=vmexit --vcpu=0 --key=time
+
+
+Analyze events for VCPU 0:
+
+             VM-EXIT    Samples  Samples%     Time%         Avg time
+
+                 HLT         27    13.85%    99.97% 405790.24us ( +-  12.70% )
+  EXTERNAL_INTERRUPT         13     6.67%     0.00%     27.94us ( +-  22.26% )
+         APIC_ACCESS        146    74.87%     0.03%     21.69us ( +-   2.91% )
+      IO_INSTRUCTION          2     1.03%     0.00%     17.77us ( +-  20.56% )
+           CR_ACCESS          2     1.03%     0.00%      8.55us ( +-   6.47% )
+   PENDING_INTERRUPT          5     2.56%     0.00%      6.27us ( +-   3.94% )
+
+Total Samples:195, Total events handled time:10959950.90us.
+
+
+Dong Hao (3):
+  KVM: x86: export svm/vmx exit code and vector code to userspace
+  perf: move stat related code to util/stat.c
+  KVM: perf: kvm events analysis tool
+
+ arch/x86/include/asm/kvm.h            |   16 +
+ arch/x86/include/asm/kvm_host.h       |   16 -
+ arch/x86/include/asm/svm.h            |  205 +++++---
+ arch/x86/include/asm/vmx.h            |  127 ++++--
+ arch/x86/kvm/trace.h                  |   89 ----
+ tools/perf/Documentation/perf-kvm.txt |   30 ++-
+ tools/perf/MANIFEST                   |    3 +
+ tools/perf/Makefile                   |    1 +
+ tools/perf/builtin-kvm.c              |  840 ++++++++++++++++++++++++++++++++-
+ tools/perf/builtin-stat.c             |   56 +---
+ tools/perf/util/header.c              |   59 +++-
+ tools/perf/util/header.h              |    1 +
+ tools/perf/util/stat.c                |   57 +++
+ tools/perf/util/stat.h                |   16 +
+ tools/perf/util/thread.h              |    2 +
+ 15 files changed, 1235 insertions(+), 283 deletions(-)
+ create mode 100644 tools/perf/util/stat.c
+ create mode 100644 tools/perf/util/stat.h
+
+-- 
+1.7.2.5
 
