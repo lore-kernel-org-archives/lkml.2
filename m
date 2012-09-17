@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab2IQWON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 18:14:13 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:30473 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753305Ab2IQWOL (ORCPT
+	id S1757377Ab2IQWPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 18:15:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56564 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329Ab2IQWPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 18:14:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+u8bzByAnxnEENo1GZnX1W
-Date: Mon, 17 Sep 2012 15:14:06 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] mfd: Fix compile for twl-core.c by removing
- cpu_is_omap usage
-Message-ID: <20120917221406.GG11762@atomide.com>
-References: <20120917202943.GV4521@atomide.com>
- <alpine.DEB.2.00.1209172207480.16117@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209172207480.16117@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 17 Sep 2012 18:15:33 -0400
+Date: Mon, 17 Sep 2012 15:15:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v10 0/5] make balloon pages movable by compaction
+Message-Id: <20120917151531.e9ac59f2.akpm@linux-foundation.org>
+In-Reply-To: <cover.1347897793.git.aquini@redhat.com>
+References: <cover.1347897793.git.aquini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [120917 15:09]:
-> On Mon, 17 Sep 2012, Tony Lindgren wrote:
-> 
-> > Commit 7d7e1eba (ARM: OMAP2+: Prepare for irqs.h removal) broke
-> > compile for non-omap as include plat/cpu.h was added:
-> > 
-> > drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
-> > 
-> > This header was indirectly included earlier when SPARSE_IRQ was not
-> > set, but does not exist on most platforms.
-> > 
-> > Fix the problem by removing the cpu_is_omap usage that should
-> > not exist in drivers at all. We can do this by adding proper
-> > clock aliases for the twl-core.c drivers, and drop separate
-> > handling for cases when clock framework is not available as
-> > the behaviour will stay the same.
-> > 
-> > Note that we need to add a platform device to avoid using the
-> > i2c provided names that may be different on various omaps.
-> > 
-> > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Olof Johansson <olof@lixom.net>
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
-> > 
-> > ---
-> > 
-> > Samuel, I'd like to queue this via arm-soc as that's where I have
-> > the breaking patch is if this patch is OK with you.
-> 
-> It would be ideal if I could queue this one, due to the clock dependency.  
-> Still hoping that we can get the CCF conversion patches in for 3.7.
+On Mon, 17 Sep 2012 13:38:15 -0300
+Rafael Aquini <aquini@redhat.com> wrote:
 
-We need to queue this ASAP and before other patches to fix the
-build breakage in linux next. Then you can merge in that commit
-too, does that work for you?
+> Memory fragmentation introduced by ballooning might reduce significantly
+> the number of 2MB contiguous memory blocks that can be used within a guest,
+> thus imposing performance penalties associated with the reduced number of
+> transparent huge pages that could be used by the guest workload.
+> 
+> This patch-set follows the main idea discussed at 2012 LSFMMS session:
+> "Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
+> to introduce the required changes to the virtio_balloon driver, as well as
+> the changes to the core compaction & migration bits, in order to make those
+> subsystems aware of ballooned pages and allow memory balloon pages become
+> movable within a guest, thus avoiding the aforementioned fragmentation issue
+> 
+> Following are numbers that prove this patch benefits on allowing compaction
+> to be more effective at memory ballooned guests.
+> 
+> Results for STRESS-HIGHALLOC benchmark, from Mel Gorman's mmtests suite,
+> running on a 4gB RAM KVM guest which was ballooning 1gB RAM in 256mB chunks,
+> at every minute (inflating/deflating), while test was running:
 
-Tony
+How can a patchset reach v10 and have zero Reviewed-by's?
+
+The patchset looks reasonable to me and your empirical results look
+good.  But I don't feel that I'm in a position to decide on its overall
+desirability, either in a standalone sense or in comparison to any
+alternative schemes which anyone has proposed.
+
+IOW, Rusty and KVM folks: please consider thyself poked.
+
+I looked through the code and have some comments which are minor in the
+overall scheme of things.  I'll be more comfortable when a compaction
+expert has had a go over it.  IOW, Mel joins the pokee list ;)
+
+(The question of "overall desirability" is the big one here.  Do we
+actually want to add this to Linux?  The rest is details which we can
+work out).
+
+
