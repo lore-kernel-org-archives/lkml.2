@@ -1,279 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab2IQKG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:06:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:46014 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab2IQKG0 (ORCPT
+	id S1755574Ab2IQKIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:08:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35035 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab2IQKIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:06:26 -0400
-Message-ID: <5056F60E.1080305@atmel.com>
-Date: Mon, 17 Sep 2012 12:06:06 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Mon, 17 Sep 2012 06:08:06 -0400
+Date: Mon, 17 Sep 2012 12:07:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+Message-ID: <20120917100759.GB32463@gmail.com>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+ <20120914212717.GA29307@liondog.tnic>
+ <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+ <1347680006.4340.142.camel@marge.simpson.net>
+ <m24nmzz2f8.fsf@firstfloor.org>
+ <1347727001.7029.37.camel@marge.simpson.net>
+ <20120915223212.4174a314@pyramind.ukuu.org.uk>
+ <1347770100.6952.31.camel@marge.simpson.net>
+ <CA+55aFwTd+Nde=RfthE5XwFqGfZKVKKd9JfAeDUmwed1E634rQ@mail.gmail.com>
+ <1347869299.6955.156.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        <alsa-devel@alsa-project.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Barry Song <baohua.song@csr.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vista Silicon <javier.martin@vista-silicon.com>,
-        Zhangfei Gao <zhangfei.gao@marvell.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH v3 04/15] dmaengine: Pass flags via device_prep_dma_cyclic()
- callback
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com> <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347869299.6955.156.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 02:05 PM, Peter Ujfalusi :
-> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
-> can receive the flags coming from clients.
-> This feature can be used during audio operation to disable all audio
-> related interrupts when the DMA_PREP_INTERRUPT is cleared from the flags.
+
+* Mike Galbraith <efault@gmx.de> wrote:
+
+> On Sun, 2012-09-16 at 12:57 -0700, Linus Torvalds wrote: 
+> > On Sat, Sep 15, 2012 at 9:35 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > >
+> > > Oh, while I'm thinking about it, there's another scenario that could
+> > > cause the select_idle_sibling() change to affect pgbench on largeish
+> > > packages, but it boils down to preemption odds as well.
+> > 
+> > So here's a possible suggestion..
+> > 
+> > Let's assume that the scheduler code to find the next idle CPU on the
+> > package is actually a good idea, and we shouldn't mess with the idea.
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
-> CC: Barry Song <baohua.song@csr.com>
-> CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> CC: Vista Silicon <javier.martin@vista-silicon.com>
-> CC: Zhangfei Gao <zhangfei.gao@marvell.com>
-> CC: Shawn Guo <shawn.guo@linaro.org>
-> CC: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/dma/at_hdmac.c        | 3 ++-
-
-For Atmel's driver:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
->  drivers/dma/ep93xx_dma.c      | 4 +++-
->  drivers/dma/imx-dma.c         | 2 +-
->  drivers/dma/imx-sdma.c        | 2 +-
->  drivers/dma/mmp_tdma.c        | 2 +-
->  drivers/dma/mxs-dma.c         | 2 +-
->  drivers/dma/omap-dma.c        | 3 ++-
->  drivers/dma/pl330.c           | 2 +-
->  drivers/dma/sa11x0-dma.c      | 2 +-
->  drivers/dma/sirf-dma.c        | 2 +-
->  drivers/dma/ste_dma40.c       | 3 ++-
->  drivers/dma/tegra20-apb-dma.c | 2 +-
->  include/linux/dmaengine.h     | 4 ++--
->  13 files changed, 19 insertions(+), 14 deletions(-)
+> We should definitely mess with the idea, as it causes some problems.
 > 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index 3934fcc..7e5f6b6 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -841,12 +841,13 @@ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
->   * @buf_len: total number of bytes for the entire buffer
->   * @period_len: number of bytes for each period
->   * @direction: transfer direction, to or from device
-> + * @flags: tx descriptor status flags
->   * @context: transfer context (ignored)
->   */
->  static struct dma_async_tx_descriptor *
->  atc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
->  	struct at_dma_slave	*atslave = chan->private;
-> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-> index c64917e..493735b 100644
-> --- a/drivers/dma/ep93xx_dma.c
-> +++ b/drivers/dma/ep93xx_dma.c
-> @@ -1120,6 +1120,7 @@ fail:
->   * @buf_len: length of the buffer (in bytes)
->   * @period_len: lenght of a single period
->   * @dir: direction of the operation
-> + * @flags: tx descriptor status flags
->   * @context: operation context (ignored)
->   *
->   * Prepares a descriptor for cyclic DMA operation. This means that once the
-> @@ -1133,7 +1134,8 @@ fail:
->  static struct dma_async_tx_descriptor *
->  ep93xx_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
->  			   size_t buf_len, size_t period_len,
-> -			   enum dma_transfer_direction dir, void *context)
-> +			   enum dma_transfer_direction dir, unsigned long flags,
-> +			   void *context)
->  {
->  	struct ep93xx_dma_chan *edmac = to_ep93xx_dma_chan(chan);
->  	struct ep93xx_dma_desc *desc, *first;
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index 5084975..41b4376 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -801,7 +801,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
->  static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
->  	struct imxdma_engine *imxdma = imxdmac->imxdma;
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 1dc2a4a..2c5fd3e 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -1012,7 +1012,7 @@ err_out:
->  static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct sdma_channel *sdmac = to_sdma_chan(chan);
->  	struct sdma_engine *sdma = sdmac->sdma;
-> diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-> index 8a15cf2..6d52bd4 100644
-> --- a/drivers/dma/mmp_tdma.c
-> +++ b/drivers/dma/mmp_tdma.c
-> @@ -358,7 +358,7 @@ struct mmp_tdma_desc *mmp_tdma_alloc_descriptor(struct mmp_tdma_chan *tdmac)
->  static struct dma_async_tx_descriptor *mmp_tdma_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
->  	struct mmp_tdma_desc *desc;
-> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-> index 7f41b25..734a4eb 100644
-> --- a/drivers/dma/mxs-dma.c
-> +++ b/drivers/dma/mxs-dma.c
-> @@ -531,7 +531,7 @@ err_out:
->  static struct dma_async_tx_descriptor *mxs_dma_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
->  	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index 71d7869..4d2650f 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -366,7 +366,8 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
->  
->  static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
->  	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-> -	size_t period_len, enum dma_transfer_direction dir, void *context)
-> +	size_t period_len, enum dma_transfer_direction dir, unsigned long flags,
-> +	void *context)
->  {
->  	struct omap_chan *c = to_omap_dma_chan(chan);
->  	enum dma_slave_buswidth dev_width;
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index e4feba6..0035645 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2683,7 +2683,7 @@ static inline int get_burst_len(struct dma_pl330_desc *desc, size_t len)
->  static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
->  		struct dma_chan *chan, dma_addr_t dma_addr, size_t len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context)
-> +		unsigned long flags, void *context)
->  {
->  	struct dma_pl330_desc *desc;
->  	struct dma_pl330_chan *pch = to_pchan(chan);
-> diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
-> index f5a7360..b893159 100644
-> --- a/drivers/dma/sa11x0-dma.c
-> +++ b/drivers/dma/sa11x0-dma.c
-> @@ -614,7 +614,7 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_slave_sg(
->  
->  static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
->  	struct dma_chan *chan, dma_addr_t addr, size_t size, size_t period,
-> -	enum dma_transfer_direction dir, void *context)
-> +	enum dma_transfer_direction dir, unsigned long flags, void *context)
->  {
->  	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
->  	struct sa11x0_dma_desc *txd;
-> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
-> index 434ad31..3eed8b3 100644
-> --- a/drivers/dma/sirf-dma.c
-> +++ b/drivers/dma/sirf-dma.c
-> @@ -489,7 +489,7 @@ err_dir:
->  static struct dma_async_tx_descriptor *
->  sirfsoc_dma_prep_cyclic(struct dma_chan *chan, dma_addr_t addr,
->  	size_t buf_len, size_t period_len,
-> -	enum dma_transfer_direction direction, void *context)
-> +	enum dma_transfer_direction direction, unsigned long flags, void *context)
->  {
->  	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
->  	struct sirfsoc_dma_desc *sdesc = NULL;
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 000d309..eee8d9b 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -2347,7 +2347,8 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
->  static struct dma_async_tx_descriptor *
->  dma40_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
->  		     size_t buf_len, size_t period_len,
-> -		     enum dma_transfer_direction direction, void *context)
-> +		     enum dma_transfer_direction direction, unsigned long flags,
-> +		     void *context)
->  {
->  	unsigned int periods = buf_len / period_len;
->  	struct dma_async_tx_descriptor *txd;
-> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-> index 24acd71..b42b6ff 100644
-> --- a/drivers/dma/tegra20-apb-dma.c
-> +++ b/drivers/dma/tegra20-apb-dma.c
-> @@ -990,7 +990,7 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_slave_sg(
->  struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
->  	struct dma_chan *dc, dma_addr_t buf_addr, size_t buf_len,
->  	size_t period_len, enum dma_transfer_direction direction,
-> -	void *context)
-> +	unsigned long flags, void *context)
->  {
->  	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
->  	struct tegra_dma_desc *dma_desc = NULL;
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 2abcac5..d3201e4 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -591,7 +591,7 @@ struct dma_device {
->  	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
->  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->  		size_t period_len, enum dma_transfer_direction direction,
-> -		void *context);
-> +		unsigned long flags, void *context);
->  	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->  		struct dma_chan *chan, struct dma_interleaved_template *xt,
->  		unsigned long flags);
-> @@ -657,7 +657,7 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
->  		unsigned long flags)
->  {
->  	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
-> -						period_len, dir, NULL);
-> +						period_len, dir, flags, NULL);
->  }
->  
->  static inline int dmaengine_terminate_all(struct dma_chan *chan)
+> > But at the same time, it's clearly an *expensive* idea, 
+> > which is why you introduced the "only test a single CPU 
+> > buddy" approach instead. But that didn't work, and you can 
+> > come up with multiple reasons why it wouldn't work. Plus, 
+> > quite fundamentally, it's rather understandable that "try to 
+> > find an idle CPU on the same package" really would be a good 
+> > idea, right?
 > 
+> I would argue that it did work, it shut down the primary 
+> source of pain, which I do not believe to be the traversal 
+> cost, rather the bouncing.
+> 
+>     4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
+>     
+>      clients     1       2       4        8       16       32       64      128
+>      ..........................................................................
+>      pre        30      41     118      645     3769     6214    12233    14312
+>      post      299     603    1211     2418     4697     6847    11606    14557
 
+That's a very tempting speedup for a simpler and more 
+fundamental workload than postgresql's somewhat weird
+user-space spinlocks that burn CPU time in user-space
+instead of blocking/waiting on a futex.
 
--- 
-Nicolas Ferre
+IIRC mysql does this properly and outperforms postgresql
+on this benchmark, in an apples-to-apples configuration?
+
+> 10x at 1 pair shouldn't be traversal, the whole box is 
+> otherwise idle. We'll do a lot more (ever more futile) 
+> traversal as load increases, but at the same time, our futile 
+> attempts fail more frequently, so we shoot ourselves in the 
+> foot less frequently.
+> 
+> The down side is (appears to be) that I also shut down some 
+> ~odd case preemption salvation, salvation that only large 
+> packages will receive.
+> 
+> The problem as I see it is that we're making light tasks _too_ 
+> mobile, turning an optimization into a pessimization for light 
+> tasks.  For longer running tasks this mobility within a large 
+> package isn't such a big deal, but for fast movers, it hurts a 
+> lot.
+
+There's not enough time to resolve this for v3.6, so I agree 
+with the revert - would you be willing to post a v2 of your 
+original patch? I really think we want your tbench speedups, 
+quite a few real-world messaging applications use the tbench 
+patterns of scheduling.
+
+Thanks,
+
+	Ingo
