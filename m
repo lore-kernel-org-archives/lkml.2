@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2IQO2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:28:06 -0400
-Received: from fieldses.org ([174.143.236.118]:59867 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab2IQO2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:28:04 -0400
-Date: Mon, 17 Sep 2012 10:28:00 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 5/5] Documentation: update nfs option in
- filesystem/vfat.txt
-Message-ID: <20120917142800.GH30673@fieldses.org>
-References: <1347798200-2765-1-git-send-email-linkinjeon@gmail.com>
+	id S1756556Ab2IQO3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:29:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49849 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416Ab2IQO3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 10:29:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the final tree (arm-soc tree related)
+Date: Mon, 17 Sep 2012 14:29:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>
+References: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
+In-Reply-To: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347798200-2765-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209171429.31794.arnd@arndb.de>
+X-Provags-ID: V02:K0:B7dEm/yDhUzCPz/kLJwLkcgDZk1sfrGo+6VO4j9CW/L
+ sqEessdc/aGxApeVm0mUl5yzcUcXsaZ7ynLXGVe25wcwN/m5OB
+ 9gRFpqmdapuvzaFi4pM62U105cISzOtykXG0nH/RHUPlqq87lS
+ QgE2E3SsAOV6vTAKV68cVr99jxSrVKg3OrBAqEpve1y+CHAgZu
+ cnHejbfg+SkUGgdTa8HLUjBIo496YqLBCpW0PpUIr0EwcXt4Tw
+ R3TTBtBUuLLBIQ7GJ+SVp8tCxxtqS23DeuK/wJ5Ip4jOVslAx9
+ QoFp107+qMZERw37/51ZUob1dZd0BszydLr42hfk+6yj6IgLXW
+ btE2tttuBoqRC4Skzc/4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 08:23:20AM -0400, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+On Monday 17 September 2012, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> update nfs option in filesystem/vfat.txt
+> drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  Documentation/filesystems/vfat.txt |   19 ++++++++++++++-----
->  1 file changed, 14 insertions(+), 5 deletions(-)
+> Caused by commit 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal").
 > 
-> diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
-> index de1e6c4..3371b8e 100644
-> --- a/Documentation/filesystems/vfat.txt
-> +++ b/Documentation/filesystems/vfat.txt
-> @@ -141,13 +141,22 @@ discard       -- If set, issues discard/TRIM commands to the block
->  		 device when blocks are freed. This is useful for SSD devices
->  		 and sparse/thinly-provisoned LUNs.
->  
-> -nfs           -- This option maintains an index (cache) of directory
-> -		 inodes by i_logstart which is used by the nfs-related code to
-> -		 improve look-ups.
-> -
-> -		 Enable this only if you want to export the FAT filesystem
-> +nfs=full_unstable|limited_stable
-
-You still want to accept just "nfs" (defaulting to "full_unstable"
-behavior), for backwards compatibility.
-
-Also I don't find this full_unstable/limited_stable terminology very
-intuitive.  "stable" and "limited" could mean too many different things.
-
-Maybe "nostale_ro|stale_rw" ?
-
-> +	      -- Enable this only if you want to export the FAT filesystem
->  		 over NFS
->  
-> +		 full_unstable:This option maintains an index (cache) of
-> +		 directory inodes by i_logstart which is used by
-> +		 the nfs-related code to improve look-ups.Full file operations
-> +		 (read/write) over NFS is supported but with cache eviction
-> +		 at NFS server, this could result in ESTALE issues.
-> +
-> +		 limited_stable:This options makes NFS support for FAT as
-> +		 read-only and provides stable inode based on the on-disk
-> +		 location of the MS-DOS directory entry.This helps in
-> +		 reconstruction of the inodes in case of lookup failure,
-> +		 making FAT behaviour stable with respect to ESTALE issues.
-
-This option still scares me a little.  Maybe a little more explanation:
-
-		This option bases the inode number and filehandle on
-		the location of an file in the MS-DOS directory entry.
-		This ensures that ESTALE will not be returned after a
-		file is evicted from the inode cache.  However, it means
-		that operations such as rename, create, and unlink could
-		cause filehandles that previously pointed at one file to
-		point at a different file, potentially causing data
-		corruption.  For this reason, this option also mounts
-		the filesystem readonly.
-
---b.
-
-> +
->  <bool>: 0,1,yes,no,true,false
->  
->  TODO
-> -- 
-> 1.7.9.5
+> I have added the following patch to restrict this driver to ARM until it
+> is fixed:
 > 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 17 Sep 2012 21:18:21 +1000
+> Subject: [PATCH] ARM: retrict TWL4030_CORE to ARM while it is broken
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+Thanks!
+
+If it requires plat/cpu.h, it should actually be limited to CONFIG_ARCH_OMAP,
+otherwise we will get the same problem on non-OMAP ARM builds. From what
+I can tell, the problem is the clocks_init function, which is the only
+part that is not completely generic.
+
+The trivial workaround would be to enclose the "#include <plat/cpu.h>"
+statement in #ifdef CONFIG_ARCH_OMAP, but with the common clock code
+in place, we should probably be able to come up with a better solution
+that works independent of the omap platform.
+
+	Arnd
