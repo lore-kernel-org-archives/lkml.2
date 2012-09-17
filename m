@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab2IQBP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:15:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33663 "EHLO
+	id S1755130Ab2IQBQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:16:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34279 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753586Ab2IQAuZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753717Ab2IQBQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:25 -0400
-Message-Id: <20120917003640.226414068@decadent.org.uk>
+	Sun, 16 Sep 2012 21:16:11 -0400
+Message-Id: <20120917003638.406242660@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:06 +0100
+Date: Mon, 17 Sep 2012 01:37:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 101/135] rt2x00: Fix word size of rt2500usb MAC_CSR19 register.
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 088/135] ARM: 7496/1: hw_breakpoint: dont rely on dfsr to show watchpoint
+ access type
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +29,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 6ced58a5dbb94dbfbea1b33ca3c56d1e929cd548 upstream.
+commit bf8801145c01ab600f8df66e8c879ac642fa5846 upstream.
 
-The register is 16 bits wide, not 32.
+>From ARM debug architecture v7.1 onwards, a watchpoint exception causes
+the DFAR to be updated with the faulting data address. However, DFSR.WnR
+takes an UNKNOWN value and therefore cannot be used in general to
+determine the access type that triggered the watchpoint.
 
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Ivo Van Doorn <ivdoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch forbids watchpoints without an overflow handler from
+specifying a specific access type (load/store). Those with overflow
+handlers must be able to handle false positives potentially triggered by
+a watchpoint of a different access type on the same address. For
+SIGTRAP-based handlers (i.e. ptrace), this should have no impact.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2500usb.c |    2 +-
- drivers/net/wireless/rt2x00/rt2500usb.h |   16 ++++++++--------
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ arch/arm/kernel/hw_breakpoint.c |   55 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2500usb.c b/drivers/net/wireless/rt2x00/rt2500usb.c
-index 3aae36b..b3a1d73 100644
---- a/drivers/net/wireless/rt2x00/rt2500usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.c
-@@ -283,7 +283,7 @@ static int rt2500usb_rfkill_poll(struct rt2x00_dev *rt2x00dev)
- 	u16 reg;
- 
- 	rt2500usb_register_read(rt2x00dev, MAC_CSR19, &reg);
--	return rt2x00_get_field32(reg, MAC_CSR19_BIT7);
-+	return rt2x00_get_field16(reg, MAC_CSR19_BIT7);
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index ba386bd..18d39ea 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -159,6 +159,12 @@ static int debug_arch_supported(void)
+ 		arch >= ARM_DEBUG_ARCH_V7_1;
  }
  
- #ifdef CONFIG_RT2X00_LIB_LEDS
-diff --git a/drivers/net/wireless/rt2x00/rt2500usb.h b/drivers/net/wireless/rt2x00/rt2500usb.h
-index b493306..192531d 100644
---- a/drivers/net/wireless/rt2x00/rt2500usb.h
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.h
-@@ -189,14 +189,14 @@
-  * MAC_CSR19: GPIO control register.
-  */
- #define MAC_CSR19			0x0426
--#define MAC_CSR19_BIT0			FIELD32(0x0001)
--#define MAC_CSR19_BIT1			FIELD32(0x0002)
--#define MAC_CSR19_BIT2			FIELD32(0x0004)
--#define MAC_CSR19_BIT3			FIELD32(0x0008)
--#define MAC_CSR19_BIT4			FIELD32(0x0010)
--#define MAC_CSR19_BIT5			FIELD32(0x0020)
--#define MAC_CSR19_BIT6			FIELD32(0x0040)
--#define MAC_CSR19_BIT7			FIELD32(0x0080)
-+#define MAC_CSR19_BIT0			FIELD16(0x0001)
-+#define MAC_CSR19_BIT1			FIELD16(0x0002)
-+#define MAC_CSR19_BIT2			FIELD16(0x0004)
-+#define MAC_CSR19_BIT3			FIELD16(0x0008)
-+#define MAC_CSR19_BIT4			FIELD16(0x0010)
-+#define MAC_CSR19_BIT5			FIELD16(0x0020)
-+#define MAC_CSR19_BIT6			FIELD16(0x0040)
-+#define MAC_CSR19_BIT7			FIELD16(0x0080)
++/* Can we determine the watchpoint access type from the fsr? */
++static int debug_exception_updates_fsr(void)
++{
++	return 0;
++}
++
+ /* Determine number of WRP registers available. */
+ static int get_num_wrp_resources(void)
+ {
+@@ -619,18 +625,35 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
+ 	info->address &= ~alignment_mask;
+ 	info->ctrl.len <<= offset;
  
- /*
-  * MAC_CSR20: LED control register.
+-	/*
+-	 * Currently we rely on an overflow handler to take
+-	 * care of single-stepping the breakpoint when it fires.
+-	 * In the case of userspace breakpoints on a core with V7 debug,
+-	 * we can use the mismatch feature as a poor-man's hardware
+-	 * single-step, but this only works for per-task breakpoints.
+-	 */
+-	if (!bp->overflow_handler && (arch_check_bp_in_kernelspace(bp) ||
+-	    !core_has_mismatch_brps() || !bp->hw.bp_target)) {
+-		pr_warning("overflow handler required but none found\n");
+-		ret = -EINVAL;
++	if (!bp->overflow_handler) {
++		/*
++		 * Mismatch breakpoints are required for single-stepping
++		 * breakpoints.
++		 */
++		if (!core_has_mismatch_brps())
++			return -EINVAL;
++
++		/* We don't allow mismatch breakpoints in kernel space. */
++		if (arch_check_bp_in_kernelspace(bp))
++			return -EPERM;
++
++		/*
++		 * Per-cpu breakpoints are not supported by our stepping
++		 * mechanism.
++		 */
++		if (!bp->hw.bp_target)
++			return -EINVAL;
++
++		/*
++		 * We only support specific access types if the fsr
++		 * reports them.
++		 */
++		if (!debug_exception_updates_fsr() &&
++		    (info->ctrl.type == ARM_BREAKPOINT_LOAD ||
++		     info->ctrl.type == ARM_BREAKPOINT_STORE))
++			return -EINVAL;
+ 	}
++
+ out:
+ 	return ret;
+ }
+@@ -706,10 +729,12 @@ static void watchpoint_handler(unsigned long addr, unsigned int fsr,
+ 				goto unlock;
+ 
+ 			/* Check that the access type matches. */
+-			access = (fsr & ARM_FSR_ACCESS_MASK) ? HW_BREAKPOINT_W :
+-				 HW_BREAKPOINT_R;
+-			if (!(access & hw_breakpoint_type(wp)))
+-				goto unlock;
++			if (debug_exception_updates_fsr()) {
++				access = (fsr & ARM_FSR_ACCESS_MASK) ?
++					  HW_BREAKPOINT_W : HW_BREAKPOINT_R;
++				if (!(access & hw_breakpoint_type(wp)))
++					goto unlock;
++			}
+ 
+ 			/* We have a winner. */
+ 			info->trigger = addr;
 
 
