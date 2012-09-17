@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2IQMUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 08:20:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45802 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab2IQMU2 (ORCPT
+	id S1756173Ab2IQMVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 08:21:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45533 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969Ab2IQMVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 08:20:28 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: cjb@laptop.org
-Cc: will.newton@imgtec.com, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        kyungmin.park@samsung.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH v2 1/4] drivers/mmc/host/dw_mmc.c: fix error return code
-Date: Mon, 17 Sep 2012 14:20:17 +0200
-Message-Id: <1347884417-26754-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
-References: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
+	Mon, 17 Sep 2012 08:21:48 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>
+Cc: Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+In-Reply-To: <20120816024654.GB3781@thunk.org>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 17 Sep 2012 16:21:44 +0400
+Message-ID: <87fw6get5z.fsf@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/mmc/host/dw_mmc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 36f98c0..43a2663 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2039,8 +2039,10 @@ int dw_mci_probe(struct dw_mci *host)
- 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
- 	host->card_workqueue = alloc_workqueue("dw-mci-card",
- 			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
--	if (!host->card_workqueue)
-+	if (!host->card_workqueue) {
-+		ret = -ENOMEM;
- 		goto err_dmaunmap;
-+	}
- 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
- 	ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags, "dw-mci", host);
- 	if (ret)
--- 
-1.7.11.4
-
+On Wed, 15 Aug 2012 22:46:54 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Wed, Aug 15, 2012 at 09:33:29PM +0300, Marti Raudsepp wrote:
+> > I was moving and deleting some files between two of my ext4 partitions
+> > when it suddenly crashed and dropped me into an kernel oops screen
+> > (below). I'm using ext4 on kernel 3.5.1 (Arch Linux). 
+Ohh, I've missed that gigantic topic, but still i've found the bug.
+patch is available here http://patchwork.ozlabs.org/patch/183649/
+> 
+> > BUG: unable to handle kernel NULL pointer dereference at 000...00028
+> > IP: [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
+> 
+> Someone else has reported a similar crash, but we don't yet have
+> enough information to narrow it down quite yet.
+> 
+> If you could try applying the following debugging patch, and then try
+> to reproduce the failure, it would be really helpful.
+> 
+> Thanks!!
+> 
+> 					- Ted
+> 
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 769151d..3394d52 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+>  
+>  	/* the header must be checked already in ext4_ext_remove_space() */
+>  	ext_debug("truncate since %u in leaf to %u\n", start, end);
+> +	if (!path[depth].p_hdr && !path[depth].p_bh) {
+> +		EXT4_ERROR_INODE(inode, "depth %d", depth);
+> +		BUG_ON(1);
+> +	}
+>  	if (!path[depth].p_hdr)
+>  		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
+>  	eh = path[depth].p_hdr;
+> @@ -2730,6 +2734,10 @@ cont:
+>  		/* this is index block */
+>  		if (!path[i].p_hdr) {
+>  			ext_debug("initialize header\n");
+> +			if (!path[i].p_hdr && !path[i].p_bh) {
+> +				EXT4_ERROR_INODE(inode, "i=%d", i);
+> +				BUG_ON(1);
+> +			}
+>  			path[i].p_hdr = ext_block_hdr(path[i].p_bh);
+>  		}
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
