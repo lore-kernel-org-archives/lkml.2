@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2IQPyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:54:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39377 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab2IQPyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:54:10 -0400
-Date: Mon, 17 Sep 2012 17:54:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        viro@zeniv.linux.org.uk, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix queueing work if !bdi_cap_writeback_dirty()
-Message-ID: <20120917155406.GC9150@quack.suse.cz>
-References: <20120914131952.GA4952@quack.suse.cz>
- <87ipbgn2gz.fsf@devron.myhome.or.jp>
- <20120914144543.GB4952@quack.suse.cz>
- <878vccmygy.fsf@devron.myhome.or.jp>
- <20120916214912.GA7503@quack.suse.cz>
- <87wqzt7drb.fsf@devron.myhome.or.jp>
- <20120917084853.GA9150@quack.suse.cz>
- <87627d6lae.fsf@devron.myhome.or.jp>
- <20120917095623.GB9150@quack.suse.cz>
- <87obl55405.fsf@devron.myhome.or.jp>
+	id S932340Ab2IQPyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:54:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56370 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093Ab2IQPyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:54:16 -0400
+Date: Mon, 17 Sep 2012 08:54:08 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v7 0/11] KGDB/KDB FIQ (NMI) debugger
+Message-ID: <20120917155408.GA302@kroah.com>
+References: <20120913150133.GA16238@lizard>
+ <20120917113750.GA28838@kroah.com>
+ <50571ADF.3000406@windriver.com>
+ <20120917125427.GA23516@kroah.com>
+ <20120917153943.GA7510@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87obl55405.fsf@devron.myhome.or.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120917153943.GA7510@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 17-09-12 19:37:46, OGAWA Hirofumi wrote:
-> Jan Kara <jack@suse.cz> writes:
+On Mon, Sep 17, 2012 at 08:39:43AM -0700, Anton Vorontsov wrote:
+> On Mon, Sep 17, 2012 at 05:54:27AM -0700, Greg Kroah-Hartman wrote:
+> [...]
+> > > > To make it easier, can I just take the tty driver patches now?  Will
+> > > > that break anything?
+> > > 
+> > > I have not made my way through the entire series yet, so I am not sure
+> > > if you need the kdb header changes or not, but so far it looks like
+> > > the tty pieces are separate.  If you add your ack Greg, I'll take the
+> > > whole series and merge it into kgdb-next, or after I finish the review
+> > > we could do it the other way around.
+> > 
+> > Your tree is fine:
+> > 
+> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > Let me know if you have problems merging this due to any tty patches,
+> > and if so, I'll be glad to take them through my tree.
 > 
-> > On Mon 17-09-12 18:39:05, OGAWA Hirofumi wrote:
-> >> Jan Kara <jack@suse.cz> writes:
-> >> 
-> >> >> I think you know how to solve it though. You can add the periodic flush
-> >> >> in own task. And you can check bdi->dirty_exceeded in any handlers.
-> >> >   Sure, you can have your private thread. That is possible but you will
-> >> > have to duplicate flusher logic and you will still get odd behavior e.g.
-> >> > when your filesystem is on one partition and another filesystem is on a
-> >> > different partition of the same disk.
-> >> 
-> >> Right. But it is what current FSes are doing more or less.
-> >   It's not. Page writeback is respected by all filesystems in most cases
-> > AFAIK. Inode writeback is a different issue but that's not so interesting
-> > from mm point of view...
+> Guys, thanks for taking a look into this!
 > 
-> Duplicate flusher - many FSes has own task to flush.  Odd behavior in
-> the case of partition - agree, but I'm not sure why metadata is ok, and
-> it is not odd behavior.
-  Well, because there is much more of data pages then there is metadata. So
-when you do strange things (like refuse to write / reclaim) with metadata,
-it usually ends up in the noise. But when you start doing similar things
-with data pages, people will notice.
+> The patch that adds nmi console driver (i.e. tty/serial/kgdb_nmi.c)
+> depends on the first KDB patches in these series, and it depends on
+> amba-pl1011 and tty_port work, which is in tty-next.
+> 
+> So, the series have to go via tty-next; I believe Jason won't able
+> to take it via his tree.
 
-> Sorry, I'm not sure your point in latest comment. You are just saying FS
-> must flush pages on writepages()?
-  Yes.
+Ok, I'll wait for Jason to review them.  Jason, let me know how it
+goes...
 
-> And if alternative plan is acceptable, maybe I will not have interest to
-> this anymore.
-  Yes, the alternative plan looks better to me. But all in all I don't want
-to stop you from your experiments :) I mostly just wanted to point out that
-disabling flusher thread for a filesystem has a complex consequences which
-IMHO bring more bad than good.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+greg k-h
