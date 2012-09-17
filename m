@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2IQIMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:12:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35621 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab2IQIML (ORCPT
+	id S1754804Ab2IQIOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:14:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38060 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2IQION (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:12:11 -0400
+	Mon, 17 Sep 2012 04:14:13 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: schwidefsky@de.ibm.com
-Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, peter.senna@gmail.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/2] drivers/s390/char/monreader.c: fix error return code
-Date: Mon, 17 Sep 2012 10:12:00 +0200
-Message-Id: <1347869521-2470-1-git-send-email-peter.senna@gmail.com>
+To: mporter@kernel.crashing.org
+Cc: alexandre.bounine@idt.com, akpm@linux-foundation.org, chul.kim@idt.com,
+        jiang.liu@huawei.com, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] drivers/rapidio/devices/tsi721.c: fix error return code
+Date: Mon, 17 Sep 2012 10:14:04 +0200
+Message-Id: <1347869644-2569-1-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,26 +48,23 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/s390/char/monreader.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/s390/char/monreader.c b/drivers/s390/char/monreader.c
-index 5b8b859..f4ff515 100644
---- a/drivers/s390/char/monreader.c
-+++ b/drivers/s390/char/monreader.c
-@@ -571,8 +571,11 @@ static int __init mon_init(void)
- 	if (rc)
- 		goto out_iucv;
- 	monreader_device = kzalloc(sizeof(struct device), GFP_KERNEL);
--	if (!monreader_device)
-+	if (!monreader_device) {
-+		rc = -ENOMEM;
- 		goto out_driver;
-+	}
-+
- 	dev_set_name(monreader_device, "monreader-dev");
- 	monreader_device->bus = &iucv_bus;
- 	monreader_device->parent = iucv_root;
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 1974359..78dff6f 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2316,7 +2316,8 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 
+ 	/* Configure DMA attributes. */
+ 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
+-		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
++		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
++		if (err) {
+ 			dev_info(&pdev->dev, "Unable to set DMA mask\n");
+ 			goto err_unmap_bars;
+ 		}
 -- 
 1.7.11.4
 
