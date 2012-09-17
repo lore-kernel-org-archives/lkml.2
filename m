@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab2IQAv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:51:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33999 "EHLO
+	id S1755005Ab2IQAwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:52:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34022 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754890Ab2IQAvp (ORCPT
+	by vger.kernel.org with ESMTP id S1754735Ab2IQAvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:51:45 -0400
-Message-Id: <20120917003629.574867527@decadent.org.uk>
+	Sun, 16 Sep 2012 20:51:44 -0400
+Message-Id: <20120917003629.133399725@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:49 +0100
+Date: Mon, 17 Sep 2012 01:36:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 024/135] drm/radeon/atom: rework DIG modesetting on DCE3+
+        alan@lxorguk.ukuu.org.uk, Aaron Tian <aaron_tian@pixart.com.tw>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 021/135] HID: multitouch: support PixArt optical touch screen
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,200 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Aaron Tian <aaron_tian@pixart.com.tw>
 
-commit 8d1af57ae3c4458ed0de93ef97f388dd1b3239c7 upstream.
+commit b7ea95ff9baab144dacdc30d752307938c5ab6bf upstream.
 
-The ordering is important and the current drm code
-wasn't cutting it for modern DIG encoders.  We need
-to have information about crtc before setting up
-the encoders so I've shifted the ordering a bit.
-Probably we'll need a full rework akin to danvet's
-recent intel patchs.  This patch fixes numerous
-issues with DP bridge chips and makes link training
-much more reliable.
+This patch modifies hid-multitouch driver for supporting PixArt optical touch
+screen.  Because of the device does not have to set initial report, we apply
+"HID_QUIRK_NO_INIT_REPORTS" quirk and add the device into hid_blacklist[]
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[bwh: Backported to 3.2: drop DCE6 cases]
+Signed-off-by: Aaron Tian <aaron_tian@pixart.com.tw>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
+ drivers/hid/Kconfig             |    1 +
+ drivers/hid/hid-core.c          |    3 +++
+ drivers/hid/hid-ids.h           |    5 +++++
+ drivers/hid/hid-multitouch.c    |   15 +++++++++++++++
+ drivers/hid/usbhid/hid-quirks.c |    3 +++
+ 5 files changed, 27 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1344,6 +1344,8 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 	struct drm_device *dev = encoder->dev;
- 	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
-+	struct drm_encoder *ext_encoder = radeon_get_external_encoder(encoder);
-+	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
- 	struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
- 	struct radeon_connector *radeon_connector = NULL;
- 	struct radeon_connector_atom_dig *radeon_dig_connector = NULL;
-@@ -1355,12 +1357,38 @@ radeon_atom_encoder_dpms_dig(struct drm_
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -350,6 +350,7 @@ config HID_MULTITOUCH
+ 	  - Lumio CrystalTouch panels
+ 	  - MosArt dual-touch panels
+ 	  - PenMount dual touch panels
++	  - PixArt optical touch screen
+ 	  - Pixcir dual touch panels
+ 	  - eGalax dual-touch panels, including the Joojoo and Wetab tablets
+ 	  - Stantum multitouch panels
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1507,6 +1507,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_PCI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -593,6 +593,11 @@
+ #define USB_VENDOR_ID_PI_ENGINEERING	0x05f3
+ #define USB_DEVICE_ID_PI_ENGINEERING_VEC_USB_FOOTPEDAL	0xff
  
- 	switch (mode) {
- 	case DRM_MODE_DPMS_ON:
--		/* some early dce3.2 boards have a bug in their transmitter control table */
--		if ((rdev->family == CHIP_RV710) || (rdev->family == CHIP_RV730) ||
--		    ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev))
-+		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
-+			if (!connector)
-+				dig->panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
-+			else
-+				dig->panel_mode = radeon_dp_get_panel_mode(encoder, connector);
++#define USB_VENDOR_ID_PIXART				0x093a
++#define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN	0x8001
++#define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1	0x8002
++#define USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2	0x8003
 +
-+			/* setup and enable the encoder */
-+			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
-+			atombios_dig_encoder_setup(encoder,
-+						   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
-+						   dig->panel_mode);
-+			if (ext_encoder) {
-+				if (ASIC_IS_DCE41(rdev))
-+					atombios_external_encoder_setup(encoder, ext_encoder,
-+									EXTERNAL_ENCODER_ACTION_V3_ENCODER_SETUP);
-+			}
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
-+		} else if (ASIC_IS_DCE4(rdev)) {
-+			/* setup and enable the encoder */
-+			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
-+			/* enable the transmitter */
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--		else
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
-+		} else {
-+			/* setup and enable the encoder and transmitter */
-+			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
-+			/* some early dce3.2 boards have a bug in their transmitter control table */
-+			if ((rdev->family != CHIP_RV710) || (rdev->family != CHIP_RV730))
-+				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
-+		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
- 			if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
- 				atombios_set_edp_panel_power(connector,
-@@ -1377,10 +1403,19 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 	case DRM_MODE_DPMS_STANDBY:
- 	case DRM_MODE_DPMS_SUSPEND:
- 	case DRM_MODE_DPMS_OFF:
--		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev))
-+		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
-+			/* disable the transmitter */
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
--		else
-+		} else if (ASIC_IS_DCE4(rdev)) {
-+			/* disable the transmitter */
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE_OUTPUT, 0, 0);
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
-+		} else {
-+			/* disable the encoder and transmitter */
- 			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE_OUTPUT, 0, 0);
-+			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
-+			atombios_dig_encoder_setup(encoder, ATOM_DISABLE, 0);
-+		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
- 			if (ASIC_IS_DCE4(rdev))
- 				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_OFF, 0);
-@@ -1805,10 +1840,12 @@ radeon_atom_encoder_mode_set(struct drm_
- 	struct drm_device *dev = encoder->dev;
- 	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
--	struct drm_encoder *ext_encoder = radeon_get_external_encoder(encoder);
+ #define USB_VENDOR_ID_PLAYDOTCOM	0x0b43
+ #define USB_DEVICE_ID_PLAYDOTCOM_EMS_USBII	0x0003
  
- 	radeon_encoder->pixel_clock = adjusted_mode->clock;
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -93,6 +93,7 @@ struct mt_class {
+ #define MT_CLS_DUAL_INRANGE_CONTACTID		0x0005
+ #define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	0x0006
+ #define MT_CLS_DUAL_NSMU_CONTACTID		0x0007
++#define MT_CLS_INRANGE_CONTACTNUMBER		0x0009
  
-+	/* need to call this here rather than in prepare() since we need some crtc info */
-+	radeon_atom_encoder_dpms(encoder, DRM_MODE_DPMS_OFF);
+ /* vendor specific classes */
+ #define MT_CLS_3M				0x0101
+@@ -155,6 +156,9 @@ struct mt_class mt_classes[] = {
+ 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
+ 			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.maxcontacts = 2 },
++	{ .name = MT_CLS_INRANGE_CONTACTNUMBER,
++		.quirks = MT_QUIRK_VALID_IS_INRANGE |
++			MT_QUIRK_SLOT_IS_CONTACTNUMBER },
+ 
+ 	/*
+ 	 * vendor specific classes
+@@ -744,6 +748,17 @@ static const struct hid_device_id mt_dev
+ 		HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
+ 			USB_DEVICE_ID_PENMOUNT_PCI) },
+ 
++	/* PixArt optical touch screen */
++	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
++		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
++			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN) },
++	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
++		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
++			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1) },
++	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
++		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
++			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2) },
 +
- 	if (ASIC_IS_AVIVO(rdev) && !ASIC_IS_DCE4(rdev)) {
- 		if (radeon_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT | ATOM_DEVICE_TV_SUPPORT))
- 			atombios_yuv_setup(encoder, true);
-@@ -1827,38 +1864,7 @@ radeon_atom_encoder_mode_set(struct drm_
- 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
- 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
- 	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
--		if (ASIC_IS_DCE41(rdev) || ASIC_IS_DCE5(rdev)) {
--			struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
--			struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
--
--			if (!connector)
--				dig->panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
--			else
--				dig->panel_mode = radeon_dp_get_panel_mode(encoder, connector);
--
--			/* setup and enable the encoder */
--			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
--			atombios_dig_encoder_setup(encoder,
--						   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
--						   dig->panel_mode);
--		} else if (ASIC_IS_DCE4(rdev)) {
--			/* disable the transmitter */
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
--			/* setup and enable the encoder */
--			atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_SETUP, 0);
--
--			/* enable the transmitter */
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--		} else {
--			/* disable the encoder and transmitter */
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
--			atombios_dig_encoder_setup(encoder, ATOM_DISABLE, 0);
--
--			/* setup and enable the encoder and transmitter */
--			atombios_dig_encoder_setup(encoder, ATOM_ENABLE, 0);
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_SETUP, 0, 0);
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE, 0, 0);
--		}
-+		/* handled in dpms */
- 		break;
- 	case ENCODER_OBJECT_ID_INTERNAL_DDI:
- 	case ENCODER_OBJECT_ID_INTERNAL_DVO1:
-@@ -1879,14 +1885,6 @@ radeon_atom_encoder_mode_set(struct drm_
- 		break;
- 	}
- 
--	if (ext_encoder) {
--		if (ASIC_IS_DCE41(rdev))
--			atombios_external_encoder_setup(encoder, ext_encoder,
--							EXTERNAL_ENCODER_ACTION_V3_ENCODER_SETUP);
--		else
--			atombios_external_encoder_setup(encoder, ext_encoder, ATOM_ENABLE);
--	}
--
- 	atombios_apply_encoder_quirks(encoder, adjusted_mode);
- 
- 	if (atombios_get_encoder_mode(encoder) == ATOM_ENCODER_MODE_HDMI) {
-@@ -2059,7 +2057,6 @@ static void radeon_atom_encoder_prepare(
- 	}
- 
- 	radeon_atom_output_lock(encoder, true);
--	radeon_atom_encoder_dpms(encoder, DRM_MODE_DPMS_OFF);
- 
- 	if (connector) {
- 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
-@@ -2080,6 +2077,7 @@ static void radeon_atom_encoder_prepare(
- 
- static void radeon_atom_encoder_commit(struct drm_encoder *encoder)
- {
-+	/* need to call this here as we need the crtc set up */
- 	radeon_atom_encoder_dpms(encoder, DRM_MODE_DPMS_ON);
- 	radeon_atom_output_lock(encoder, false);
- }
-@@ -2120,14 +2118,7 @@ static void radeon_atom_encoder_disable(
- 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
- 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
- 	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
--		if (ASIC_IS_DCE4(rdev))
--			/* disable the transmitter */
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
--		else {
--			/* disable the encoder and transmitter */
--			atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
--			atombios_dig_encoder_setup(encoder, ATOM_DISABLE, 0);
--		}
-+		/* handled in dpms */
- 		break;
- 	case ENCODER_OBJECT_ID_INTERNAL_DDI:
- 	case ENCODER_OBJECT_ID_INTERNAL_DVO1:
+ 	/* PixCir-based panels */
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -68,6 +68,9 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
 
 
