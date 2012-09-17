@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab2IQVmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 17:42:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60583 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab2IQVmD (ORCPT
+	id S1756227Ab2IQVm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 17:42:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50276 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab2IQVm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 17:42:03 -0400
+	Mon, 17 Sep 2012 17:42:58 -0400
+Message-ID: <50579954.7030009@oracle.com>
+Date: Mon, 17 Sep 2012 16:42:44 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
-References: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 17 Sep 2012 15:41:41 -0600
-Message-ID: <CAErSpo6j==2_HsLrMsJ30SFZkG6q_JqrcKe=XMa1Woy4C_if5Q@mail.gmail.com>
-Subject: Re: [RFC/PATCH] ia64, SR870, EFI bug breaks ata_piix, uninitialized
- ICH4 IDE EXBAR mem resource
-To: Stephan Schreiber <info@fs-driver.org>
-Cc: linux-ia64@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, 679545@bugs.debian.org,
-        jrnieder@gmail.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: yongjun_wei@trendmicro.com.cn, jfs-discussion@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] JFS: use list_move instead of list_del/list_add
+References: <CAPgLHd-TqJzoPYcE8b=g=_v9fyc+7wtBJ3FtbWns_3Q1GUPm1Q@mail.gmail.com>
+In-Reply-To: <CAPgLHd-TqJzoPYcE8b=g=_v9fyc+7wtBJ3FtbWns_3Q1GUPm1Q@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 10:39 AM, Stephan Schreiber <info@fs-driver.org> wrote:
+Meant to reply earlier. I've sent this to linux-next and will target for
+the next mainline merge window.
 
-> [    0.065516] pci 0000:00:1f.1: [8086:24cb] type 0 class 0x000101
-> [    0.065530] pci 0000:00:1f.1: reg 10: [io  0x0000-0x0007]
-> [    0.065541] pci 0000:00:1f.1: reg 14: [io  0x0000-0x0003]
-> [    0.065552] pci 0000:00:1f.1: reg 18: [io  0x0000-0x0007]
-> [    0.065563] pci 0000:00:1f.1: reg 1c: [io  0x0000-0x0003]
-> [    0.065574] pci 0000:00:1f.1: reg 20: [io  0x1000-0x100f]
-> [    0.065585] pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff]
-> ...
-> [    1.640965] libata version 3.00 loaded.
-> [    1.641656] ata_piix 0000:00:1f.1: version 2.13
-> [    1.641671] ata_piix 0000:00:1f.1: device not available (can't reserve
-> [mem 0x00000000-0x000003ff])
-> [    1.641747] ata_piix: probe of 0000:00:1f.1 failed with error -22
-> ...
->
-> lspci -vvxxx reports:
->
-> 00:1f.1 IDE interface: Intel Corporation 82801DB (ICH4) IDE Controller (rev
-> 02) (prog-if 8a [Master SecP PriP])
->         Subsystem: Intel Corporation Device 3404
->         Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
->         Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0
->         Interrupt: pin A routed to IRQ 0
->         Region 0: I/O ports at 01f0 [size=8]
->         Region 1: I/O ports at 03f4 [size=1]
->         Region 2: I/O ports at 0170 [size=8]
->         Region 3: I/O ports at 0374 [size=1]
->         Region 4: I/O ports at 1000 [size=16]
-> 00: 86 80 cb 24 05 00 80 02 02 8a 01 01 00 00 00 00
-> 10: 01 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00
-> 20: 01 10 00 00 00 00 00 00 00 00 00 00 86 80 04 34
-> 30: 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00
+Thanks,
+Shaggy
 
-I agree that we should have a generic way to do this rather than an
-ia64-specific way.  In this case you have EFI, but the same thing
-could happen with BIOS.
-
-The firmware left the memory BAR at 0x24 cleared (0x00000000), but it
-also left the MEM bit in the command register disabled.  So it seems
-like a Linux bug that we're trying to use that zero address from the
-BAR.  If the firmware left the MEM or IO decode enable bit cleared,
-why would we assume it put anything useful in the corresponding BARs?
-
-What would break if we paid attention to the command register enables
-in the PCI core and just cleared the resource flags for MEM BARs if
-the MEM-decode bit was off, and those for IO BARs if the IO-decode bit
-was off?
-
-I don't know much of the ancient history here, so maybe there's a good
-reason why this works the way it currently does.
-
-Bjorn
+On 09/06/2012 02:33 AM, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Using list_move() instead of list_del() + list_add().
+> 
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  fs/jfs/jfs_txnmgr.c | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/jfs/jfs_txnmgr.c b/fs/jfs/jfs_txnmgr.c
+> index bb8b661..5fcc02e 100644
+> --- a/fs/jfs/jfs_txnmgr.c
+> +++ b/fs/jfs/jfs_txnmgr.c
+> @@ -2977,12 +2977,9 @@ int jfs_sync(void *arg)
+>  				 * put back on the anon_list.
+>  				 */
+>  
+> -				/* Take off anon_list */
+> -				list_del(&jfs_ip->anon_inode_list);
+> -
+> -				/* Put on anon_list2 */
+> -				list_add(&jfs_ip->anon_inode_list,
+> -					 &TxAnchor.anon_list2);
+> +				/* Move from anon_list to anon_list2 */
+> +				list_move(&jfs_ip->anon_inode_list,
+> +					  &TxAnchor.anon_list2);
+>  
+>  				TXN_UNLOCK();
+>  				iput(ip);
+> 
