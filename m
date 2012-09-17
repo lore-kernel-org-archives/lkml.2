@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2IQO3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:29:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49849 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab2IQO3q (ORCPT
+	id S1756597Ab2IQObQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:31:16 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:27899 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416Ab2IQObP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:29:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the final tree (arm-soc tree related)
-Date: Mon, 17 Sep 2012 14:29:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-References: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
-In-Reply-To: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
+	Mon, 17 Sep 2012 10:31:15 -0400
+X-IronPort-AV: E=Sophos;i="4.80,435,1344211200"; 
+   d="scan'208";a="14583396"
+Date: Mon, 17 Sep 2012 15:30:28 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 12/24] xen/arm: introduce CONFIG_XEN on ARM
+In-Reply-To: <alpine.DEB.2.02.1209171454480.29232@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1209171527210.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com> <1347621207-11294-12-git-send-email-stefano.stabellini@eu.citrix.com> <505374E2.5080308@mvista.com> <alpine.DEB.2.02.1209171155010.29232@kaball.uk.xensource.com> <50571289.3040509@mvista.com>
+ <alpine.DEB.2.02.1209171454480.29232@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209171429.31794.arnd@arndb.de>
-X-Provags-ID: V02:K0:B7dEm/yDhUzCPz/kLJwLkcgDZk1sfrGo+6VO4j9CW/L
- sqEessdc/aGxApeVm0mUl5yzcUcXsaZ7ynLXGVe25wcwN/m5OB
- 9gRFpqmdapuvzaFi4pM62U105cISzOtykXG0nH/RHUPlqq87lS
- QgE2E3SsAOV6vTAKV68cVr99jxSrVKg3OrBAqEpve1y+CHAgZu
- cnHejbfg+SkUGgdTa8HLUjBIo496YqLBCpW0PpUIr0EwcXt4Tw
- R3TTBtBUuLLBIQ7GJ+SVp8tCxxtqS23DeuK/wJ5Ip4jOVslAx9
- QoFp107+qMZERw37/51ZUob1dZd0BszydLr42hfk+6yj6IgLXW
- btE2tttuBoqRC4Skzc/4=
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 September 2012, Stephen Rothwell wrote:
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+On Mon, 17 Sep 2012, Stefano Stabellini wrote:
+> On Mon, 17 Sep 2012, Sergei Shtylyov wrote:
+> > Hello.
+> > 
+> > On 17-09-2012 14:57, Stefano Stabellini wrote:
+> > 
+> > >>> Changes in v2:
+> > 
+> > >>> - mark Xen guest support on ARM as EXPERIMENTAL.
+> > 
+> > >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > >>> ---
+> > >>>   arch/arm/Kconfig |   10 ++++++++++
+> > >>>   1 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > >>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > >>> index 2f88d8d..e92518d 100644
+> > >>> --- a/arch/arm/Kconfig
+> > >>> +++ b/arch/arm/Kconfig
+> > >>> @@ -1897,6 +1897,16 @@ config DEPRECATED_PARAM_STRUCT
+> > >>>   	  This was deprecated in 2001 and announced to live on for 5 years.
+> > >>>   	  Some old boot loaders still use this way.
+> > >>>
+> > >>> +config XEN_DOM0
+> > >>> +	def_bool y
+> > >>> +
+> > >>> +config XEN
+> > >>> +	bool "Xen guest support on ARM (EXPERIMENTAL)"
+> > >>> +	depends on EXPERIMENTAL && ARM && OF
+> > >>> +	select XEN_DOM0
+> > 
+> > >>     What's the point of selecting it if it's always "y"?
+> > 
+> > > That's because on X86 is not always "y": there are things under
+> > > drivers/xen that compile on both platforms and depend on XEN_DOM0.
+> > 
+> >     But we're not on x86. On ARM this select is pointless.
 > 
-> drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
+> We need some common code (under drivers/xen) that compiles only if
+> XEN_DOM0 is selected, so it is not pointless after all.
 > 
-> Caused by commit 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal").
+> XEN_DOM0 is not the only symbol that is conditionally compiled on one
+> architectuire and always "y" on another...
 > 
-> I have added the following patch to restrict this driver to ARM until it
-> is fixed:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 17 Sep 2012 21:18:21 +1000
-> Subject: [PATCH] ARM: retrict TWL4030_CORE to ARM while it is broken
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Thanks!
+Wait a sec, I have just realized that written this way XEN_DOM0 is
+always "y", even if XEN is not!
+The right way of doing this is:
 
-If it requires plat/cpu.h, it should actually be limited to CONFIG_ARCH_OMAP,
-otherwise we will get the same problem on non-OMAP ARM builds. From what
-I can tell, the problem is the clocks_init function, which is the only
-part that is not completely generic.
 
-The trivial workaround would be to enclose the "#include <plat/cpu.h>"
-statement in #ifdef CONFIG_ARCH_OMAP, but with the common clock code
-in place, we should probably be able to come up with a better solution
-that works independent of the omap platform.
+config XEN_DOM0
+	def_bool y
+	depends on XEN
 
-	Arnd
+config XEN
+	bool "Xen guest support on ARM (EXPERIMENTAL)"
+	depends on EXPERIMENTAL && ARM && OF
+	help
+	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+
+
+I am not sure if this is what you meant, but thanks for making me
+realize this mistake anyway! :)
