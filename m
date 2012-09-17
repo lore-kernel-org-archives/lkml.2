@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2IQHLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 03:11:21 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49912 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab2IQHLU (ORCPT
+	id S1753367Ab2IQHQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 03:16:10 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:54990 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751462Ab2IQHQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 03:11:20 -0400
-Date: Mon, 17 Sep 2012 09:11:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH 3/3 v2] perf tool: give user better message if precise is
- not supported
-Message-ID: <20120917071113.GA31305@gmail.com>
-References: <1347569955-54626-4-git-send-email-dsahern@gmail.com>
- <20120914054344.GB9043@gmail.com>
- <50531151.9020202@gmail.com>
- <20120914113617.GA13299@gmail.com>
- <5053186E.6000302@gmail.com>
- <20120914180013.GA27766@ghostprotocols.net>
- <1347646039.7172.66.camel@twins>
- <20120914200518.GA16872@gmail.com>
- <20120914201138.GA17024@gmail.com>
- <1347657962.7172.82.camel@twins>
+	Mon, 17 Sep 2012 03:16:07 -0400
+Message-ID: <5056CE65.9080401@ti.com>
+Date: Mon, 17 Sep 2012 10:16:53 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120903 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347657962.7172.82.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via device_prep_dma_cyclic()
+ callback
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com> <20120917063451.GB6413@S2101-09.ap.freescale.net>
+In-Reply-To: <20120917063451.GB6413@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/17/2012 09:34 AM, Shawn Guo wrote:
+> On Thu, Sep 13, 2012 at 04:37:54PM +0300, Peter Ujfalusi wrote:
+>> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+>> can receive the no_wakeup request coming from client drivers.
+>> This feature can be used during audio operation to disable all audio
+>> related interrupts.
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> CC: Barry Song <baohua.song@csr.com>
+>> CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+>> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+>> CC: Vista Silicon <javier.martin@vista-silicon.com>
+>> CC: Zhangfei Gao <zhangfei.gao@marvell.com>
+>> CC: Shawn Guo <shawn.guo@linaro.org>
+>> CC: Laxman Dewangan <ldewangan@nvidia.com>
+>> ---
+>>  drivers/dma/at_hdmac.c        | 3 ++-
+>>  drivers/dma/ep93xx_dma.c      | 4 +++-
+>>  drivers/dma/imx-dma.c         | 2 +-
+>>  drivers/dma/imx-sdma.c        | 2 +-
+>>  drivers/dma/mmp_tdma.c        | 2 +-
+>>  drivers/dma/mxs-dma.c         | 2 +-
+>>  drivers/dma/omap-dma.c        | 3 ++-
+>>  drivers/dma/pl330.c           | 2 +-
+>>  drivers/dma/sa11x0-dma.c      | 2 +-
+>>  drivers/dma/sirf-dma.c        | 2 +-
+>>  drivers/dma/ste_dma40.c       | 3 ++-
+>>  drivers/dma/tegra20-apb-dma.c | 2 +-
+>>  include/linux/dmaengine.h     | 5 +++--
+>>  13 files changed, 20 insertions(+), 14 deletions(-)
+>>
+> API changes without updating users?
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+All users of this callback is updated with this patch.
+The public API (dmaengine_prep_dma_cyclic) is only used by ASoC, which has
+been updated by the previous patch.
+Note: this part has been updated for v3.
 
-> On Fri, 2012-09-14 at 22:11 +0200, Ingo Molnar wrote:
-> >   return -EPERF_CPU_PRECISE_EV_NOTSUPP;
-> 
-> I just don't like having to enumerate all possible fails, I'm 
-> too lazy. Can't we be smarter about that? Could we do a 
-> {reason}x{bit-offset} like thing?
-> 
-> Where we limit reason to a few simple things like:
-> 
->  invalid
->  out-of-range
->  not-supported
-> 
-> and have the bit-offset indicate the field we're having the particular
-> problem with?
-> 
-> Then all we need is a smart way to generate and map the bit-offsets
-> without too much manual labour. 
-
-Putting the 'where' into a separate field would do that, and 
-thus we could generate and report such structured errors as well 
-- but nevertheless there will always be special/individual 
-errors as well that won't fit into such a scheme, for which we 
-should include a 'boring' errno range as well ...
-
-I.e. a {where},{what} s32 pair of fields - if 'where' is zero 
-then 'what' is the enumerated errno value I suggested, if it's 
-nonzero then it's the 'where' indication you suggested.
-
-Thanks,
-
-	Ingo
+-- 
+Péter
