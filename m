@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2IQRmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:42:53 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:52014 "EHLO SMTP.CITRIX.COM"
+	id S932462Ab2IQRnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:43:14 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9434 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756971Ab2IQRkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:40:23 -0400
+	id S1756929Ab2IQRkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 13:40:01 -0400
 X-IronPort-AV: E=Sophos;i="4.80,437,1344211200"; 
-   d="scan'208";a="38105083"
+   d="scan'208";a="208319294"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <arnd@arndb.de>
 CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
@@ -15,10 +15,14 @@ CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
         <Ian.Campbell@citrix.com>, <konrad.wilk@oracle.com>,
         <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
         <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 09/17] xen: do not compile manage, balloon, pci, acpi, pcpu and cpu_hotplug on ARM
-Date: Mon, 17 Sep 2012 18:38:55 +0100
-Message-ID: <1347903543-2135-9-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Dave Martin <dave.martin@linaro.org>
+Subject: [PATCH v5 06/17] docs: Xen ARM DT bindings
+Date: Mon, 17 Sep 2012 18:38:52 +0100
+Message-ID: <1347903543-2135-6-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
@@ -28,54 +32,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a doc to describe the Xen ARM device tree bindings
+
+
+Changes in v5:
+
+- add a comment about the size of the grant table memory region;
+- add a comment about the required presence of a GIC node;
+- specify that the described properties are part of a top-level
+"hypervisor" node;
+- specify #address-cells and #size-cells for the example.
+
+
 Changes in v4:
-- compile pcpu only on x86;
-- use "+=" instead of ":=" for dom0- targets.
 
-Changes in v2:
+- "xen,xen" should be last as it is less specific;
+- update reg property using 2 address-cells and 2 size-cells.
 
-- make pci.o depend on CONFIG_PCI and acpi.o depend on CONFIG_ACPI.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: devicetree-discuss@lists.ozlabs.org
+CC: David Vrabel <david.vrabel@citrix.com>
+CC: Rob Herring <robherring2@gmail.com>
+CC: Dave Martin <dave.martin@linaro.org>
 ---
- drivers/xen/Makefile |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ Documentation/devicetree/bindings/arm/xen.txt |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
 
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index d80bea5..cd28aae 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -1,11 +1,18 @@
--obj-y	+= grant-table.o features.o events.o manage.o balloon.o
-+ifneq ($(CONFIG_ARM),y)
-+obj-y	+= manage.o balloon.o
-+obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-+endif
-+obj-y	+= grant-table.o features.o events.o
- obj-y	+= xenbus/
- 
- nostackp := $(call cc-option, -fno-stack-protector)
- CFLAGS_features.o			:= $(nostackp)
- 
-+obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
-+dom0-$(CONFIG_PCI) += pci.o
-+dom0-$(CONFIG_ACPI) += acpi.o
-+dom0-$(CONFIG_X86) += pcpu.o
- obj-$(CONFIG_BLOCK)			+= biomerge.o
--obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
- obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
- obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
-@@ -17,8 +24,6 @@ obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
- obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
- obj-$(CONFIG_XEN_TMEM)			+= tmem.o
- obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
--obj-$(CONFIG_XEN_DOM0)			+= pcpu.o
--obj-$(CONFIG_XEN_DOM0)			+= pci.o acpi.o
- obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
- obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
- obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
+diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
+new file mode 100644
+index 0000000..0f7b9c2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/xen.txt
+@@ -0,0 +1,25 @@
++* Xen hypervisor device tree bindings
++
++Xen ARM virtual platforms shall have a top-level "hypervisor" node with
++the following properties:
++
++- compatible:
++	compatible = "xen,xen-<version>", "xen,xen";
++  where <version> is the version of the Xen ABI of the platform.
++
++- reg: specifies the base physical address and size of a region in
++  memory where the grant table should be mapped to, using an
++  HYPERVISOR_memory_op hypercall. The memory region is large enough to map
++  the whole grant table (it is larger or equal to gnttab_max_grant_frames()).
++
++- interrupts: the interrupt used by Xen to inject event notifications.
++  A GIC node is also required.
++
++
++Example (assuming #address-cells = <2> and #size-cells = <2>):
++
++hypervisor {
++	compatible = "xen,xen-4.3", "xen,xen";
++	reg = <0 0xb0000000 0 0x20000>;
++	interrupts = <1 15 0xf08>;
++};
 -- 
 1.7.2.5
 
