@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2IQJFl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:05:41 -0400
-Received: from antcom.de ([188.40.178.216]:56050 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab2IQJFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:05:40 -0400
-Message-ID: <5056E7E0.5030207@antcom.de>
-Date: Mon, 17 Sep 2012 11:05:36 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1755367Ab2IQJKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:10:33 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43143 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab2IQJKc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 05:10:32 -0400
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: lpc32xx_udc: Fix compatibility with STOTG04
-References: <1347481810-21554-1-git-send-email-aletes.xgr@gmail.com>
-In-Reply-To: <1347481810-21554-1-git-send-email-aletes.xgr@gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120914175322.GI4257@linux.vnet.ibm.com>
+References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
+	<50520E8A.9030408@linaro.org>
+	<20120913165844.GW4257@linux.vnet.ibm.com>
+	<CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
+	<20120914175322.GI4257@linux.vnet.ibm.com>
+Date: Mon, 17 Sep 2012 11:10:30 +0200
+Message-ID: <CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
+Subject: Re: RCU lockup in the SMP idle thread, help...
+From: Linus Walleij <linus.walleij@linaro.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: John Stultz <john.stultz@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2012 10:30 PM, Alexandre Pereira da Silva wrote:
-> The STOTG04 is an replacement for ISP1301.
-> 
-> Most of the registers on STOTG04 are the same as on ISP1301, but the
-> register ISP1301_I2C_OTG_CONTROL_2 (address 0x10) doesn't exist on the
-> ST part.
-> 
-> This is a work around for this by using the interrupt source register that
-> should behave the same on both parts and has the needed information.
-> 
-> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+On Fri, Sep 14, 2012 at 7:53 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
 
-Tested-by: Roland Stigge <stigge@antcom.de>
+> Could you please try reproducing with CONFIG_RCU_CPU_STALL_INFO=y?
 
-> ---
->  drivers/usb/gadget/lpc32xx_udc.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
-> index f696fb9..21a9861 100644
-> --- a/drivers/usb/gadget/lpc32xx_udc.c
-> +++ b/drivers/usb/gadget/lpc32xx_udc.c
-> @@ -2930,10 +2930,10 @@ static void vbus_work(struct work_struct *work)
->  
->  		/* Get the VBUS status from the transceiver */
->  		value = i2c_smbus_read_byte_data(udc->isp1301_i2c_client,
-> -						 ISP1301_I2C_OTG_CONTROL_2);
-> +						 ISP1301_I2C_INTERRUPT_SOURCE);
->  
->  		/* VBUS on or off? */
-> -		if (value & OTG_B_SESS_VLD)
-> +		if (value & INT_SESS_VLD)
->  			udc->vbus = 1;
->  		else
->  			udc->vbus = 0;
+Yep: looks like this:
 
+INFO: rcu_preempt detected stalls on CPUs/tasks:
+        0: (0 ticks this GP) idle=458/0/0
+        (detected by 1, t=29904 jiffies)
+[<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c00687dc>]
+(rcu_check_callbacks+0x6f8/0x730)
+[<c00687dc>] (rcu_check_callbacks+0x6f8/0x730) from [<c0029cbc>]
+(update_process_times+0x38/0x4c)
+[<c0029cbc>] (update_process_times+0x38/0x4c) from [<c0055088>]
+(tick_sched_timer+0x80/0xe4)
+[<c0055088>] (tick_sched_timer+0x80/0xe4) from [<c003c120>]
+(__run_hrtimer.isra.18+0x44/0xd0)
+[<c003c120>] (__run_hrtimer.isra.18+0x44/0xd0) from [<c003cae0>]
+(hrtimer_interrupt+0x118/0x2b4)
+[<c003cae0>] (hrtimer_interrupt+0x118/0x2b4) from [<c0013658>]
+(twd_handler+0x30/0x44)
+[<c0013658>] (twd_handler+0x30/0x44) from [<c00638c8>]
+(handle_percpu_devid_irq+0x80/0xa0)
+[<c00638c8>] (handle_percpu_devid_irq+0x80/0xa0) from [<c00603b8>]
+(generic_handle_irq+0x20/0x30)
+[<c00603b8>] (generic_handle_irq+0x20/0x30) from [<c000ef58>]
+(handle_IRQ+0x4c/0xac)
+[<c000ef58>] (handle_IRQ+0x4c/0xac) from [<c00084bc>] (gic_handle_irq+0x24/0x58)
+[<c00084bc>] (gic_handle_irq+0x24/0x58) from [<c000dc80>] (__irq_svc+0x40/0x70)
+Exception stack(0xcf865f88 to 0xcf865fd0)
+5f80:                   00000020 c05c0a20 00000001 00000000 cf864000 cf864000
+5fa0: c05dfe48 c02de0b4 c05c3e90 412fc091 cf864000 00000000 01000000 cf865fd0
+5fc0: c000f234 c000f238 60000013 ffffffff
+[<c000dc80>] (__irq_svc+0x40/0x70) from [<c000f238>] (default_idle+0x28/0x30)
+[<c000f238>] (default_idle+0x28/0x30) from [<c000f438>] (cpu_idle+0x98/0xe4)
+[<c000f438>] (cpu_idle+0x98/0xe4) from [<002d3114>] (0x2d3114)
+
+Yours,
+Linus Walleij
