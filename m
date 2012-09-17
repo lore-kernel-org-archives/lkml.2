@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab2IQRkC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:40:02 -0400
+	id S1756958Ab2IQRkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:40:08 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:56100 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756191Ab2IQRj6 (ORCPT
+	with ESMTP id S1756383Ab2IQRj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:39:58 -0400
+	Mon, 17 Sep 2012 13:39:59 -0400
 X-IronPort-AV: E=Sophos;i="4.80,437,1344211200"; 
-   d="scan'208";a="208319289"
+   d="scan'208";a="208319290"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <arnd@arndb.de>
 CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
@@ -17,9 +17,9 @@ CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
         <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
         <linux-kernel@vger.kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 03/17] xen/arm: page.h definitions
-Date: Mon, 17 Sep 2012 18:38:49 +0100
-Message-ID: <1347903543-2135-3-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v5 04/17] xen/arm: sync_bitops
+Date: Mon, 17 Sep 2012 18:38:50 +0100
+Message-ID: <1347903543-2135-4-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
@@ -29,108 +29,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM Xen guests always use paging in hardware, like PV on HVM guests in
-the X86 world.
+sync_bitops functions are equivalent to the SMP implementation of the
+original functions, independently from CONFIG_SMP being defined.
 
-Changes in v3:
-
-- improve comments.
+We need them because _set_bit etc are not SMP safe if !CONFIG_SMP. But
+under Xen you might be communicating with a completely external entity
+who might be on another CPU (e.g. two uniprocessor guests communicating
+via event channels and grant tables). So we need a variant of the bit
+ops which are SMP safe even on a UP kernel.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/arm/include/asm/xen/page.h |   82 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 82 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/xen/page.h
+ arch/arm/include/asm/sync_bitops.h |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/include/asm/sync_bitops.h
 
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
 new file mode 100644
-index 0000000..1742023
+index 0000000..63479ee
 --- /dev/null
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -0,0 +1,82 @@
-+#ifndef _ASM_ARM_XEN_PAGE_H
-+#define _ASM_ARM_XEN_PAGE_H
++++ b/arch/arm/include/asm/sync_bitops.h
+@@ -0,0 +1,27 @@
++#ifndef __ASM_SYNC_BITOPS_H__
++#define __ASM_SYNC_BITOPS_H__
 +
-+#include <asm/page.h>
-+#include <asm/pgtable.h>
++#include <asm/bitops.h>
++#include <asm/system.h>
 +
-+#include <linux/pfn.h>
-+#include <linux/types.h>
-+
-+#include <xen/interface/grant_table.h>
-+
-+#define pfn_to_mfn(pfn)			(pfn)
-+#define phys_to_machine_mapping_valid	(1)
-+#define mfn_to_pfn(mfn)			(mfn)
-+#define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
-+
-+#define pte_mfn	    pte_pfn
-+#define mfn_pte	    pfn_pte
-+
-+/* Xen machine address */
-+typedef struct xmaddr {
-+	phys_addr_t maddr;
-+} xmaddr_t;
-+
-+/* Xen pseudo-physical address */
-+typedef struct xpaddr {
-+	phys_addr_t paddr;
-+} xpaddr_t;
-+
-+#define XMADDR(x)	((xmaddr_t) { .maddr = (x) })
-+#define XPADDR(x)	((xpaddr_t) { .paddr = (x) })
-+
-+static inline xmaddr_t phys_to_machine(xpaddr_t phys)
-+{
-+	unsigned offset = phys.paddr & ~PAGE_MASK;
-+	return XMADDR(PFN_PHYS(pfn_to_mfn(PFN_DOWN(phys.paddr))) | offset);
-+}
-+
-+static inline xpaddr_t machine_to_phys(xmaddr_t machine)
-+{
-+	unsigned offset = machine.maddr & ~PAGE_MASK;
-+	return XPADDR(PFN_PHYS(mfn_to_pfn(PFN_DOWN(machine.maddr))) | offset);
-+}
-+/* VIRT <-> MACHINE conversion */
-+#define virt_to_machine(v)	(phys_to_machine(XPADDR(__pa(v))))
-+#define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
-+#define virt_to_mfn(v)		(pfn_to_mfn(virt_to_pfn(v)))
-+#define mfn_to_virt(m)		(__va(mfn_to_pfn(m) << PAGE_SHIFT))
-+
-+static inline xmaddr_t arbitrary_virt_to_machine(void *vaddr)
-+{
-+	/* TODO: assuming it is mapped in the kernel 1:1 */
-+	return virt_to_machine(vaddr);
-+}
-+
-+/* TODO: this shouldn't be here but it is because the frontend drivers
-+ * are using it (its rolled in headers) even though we won't hit the code path.
-+ * So for right now just punt with this.
++/* sync_bitops functions are equivalent to the SMP implementation of the
++ * original functions, independently from CONFIG_SMP being defined.
++ *
++ * We need them because _set_bit etc are not SMP safe if !CONFIG_SMP. But
++ * under Xen you might be communicating with a completely external entity
++ * who might be on another CPU (e.g. two uniprocessor guests communicating
++ * via event channels and grant tables). So we need a variant of the bit
++ * ops which are SMP safe even on a UP kernel.
 + */
-+static inline pte_t *lookup_address(unsigned long address, unsigned int *level)
-+{
-+	BUG();
-+	return NULL;
-+}
 +
-+static inline int m2p_add_override(unsigned long mfn, struct page *page,
-+		struct gnttab_map_grant_ref *kmap_op)
-+{
-+	return 0;
-+}
++#define sync_set_bit(nr, p)		_set_bit(nr, p)
++#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
++#define sync_change_bit(nr, p)		_change_bit(nr, p)
++#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
++#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
++#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
++#define sync_test_bit(nr, addr)		test_bit(nr, addr)
++#define sync_cmpxchg			cmpxchg
 +
-+static inline int m2p_remove_override(struct page *page, bool clear_pte)
-+{
-+	return 0;
-+}
 +
-+static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-+{
-+	BUG();
-+	return false;
-+}
-+#endif /* _ASM_ARM_XEN_PAGE_H */
++#endif
 -- 
 1.7.2.5
 
