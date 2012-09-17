@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab2IQP2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:28:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37251 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932066Ab2IQP17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:27:59 -0400
-Date: Mon, 17 Sep 2012 17:27:51 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] HID: roccat: conditional blacklisting of Roccat
- modules
-In-Reply-To: <1347890659.2398.1.camel@neuromancer.tessier-ashpool>
-Message-ID: <alpine.LNX.2.00.1209171727430.31149@pobox.suse.cz>
-References: <1347890659.2398.1.camel@neuromancer.tessier-ashpool>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932173Ab2IQPgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:36:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:38729 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab2IQPgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:36:18 -0400
+Date: Mon, 17 Sep 2012 08:36:08 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>, Jiri Olsa <jolsa@redhat.com>
+Cc: eranian@google.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] perf tool: Allow wildcard in PMU name
+Message-ID: <20120917153608.GB31375@ghostprotocols.net>
+References: <1347263631-23175-1-git-send-email-zheng.z.yan@intel.com>
+ <1347263631-23175-4-git-send-email-zheng.z.yan@intel.com>
+ <20120911142717.GD3800@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120911142717.GD3800@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Stefan Achatz wrote:
-
-> Roccat devices are standard compatible, specific drivers are only needed
-> for extended functionality.
-> If Roccat drivers are not configured, hid-generic binds these devices now.
+Em Tue, Sep 11, 2012 at 04:27:17PM +0200, Jiri Olsa escreveu:
+> On Mon, Sep 10, 2012 at 03:53:51PM +0800, Yan, Zheng wrote:
 > 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> Would it be possible to have all '*add_event' more obvious for usage.
+> Also following code is duplicated after each call of __add_event:
+> 
+>       evsel = __add_event(idx, &attr, pmu_event_name(head_config),
+>                           pmu->cpus);
+>       if (!evsel) {
+>               *idx = orig_idx;
+>               free_event_list(list);
+>               return -ENOMEM;
+>       }
+>       list_add_tail(&evsel->node, list);
 
-Applied, thanks Stefan.
+Any update here? Yan, did you look at folding Jiri's patch? I'm merging
+the first bit, the kernel part, that was Acked by Ingo and Peter,
+waiting on this part, looking at 2/3 now
 
--- 
-Jiri Kosina
-SUSE Labs
+- Arnaldo
