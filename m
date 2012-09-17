@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab2IQAuV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33336 "EHLO
+	id S1753503Ab2IQAuT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33333 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752970Ab2IQAt0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752966Ab2IQAt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 16 Sep 2012 20:49:26 -0400
-Message-Id: <20120917003627.027819750@decadent.org.uk>
+Message-Id: <20120917003627.453243120@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:36:31 +0100
+Date: Mon, 17 Sep 2012 01:36:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 006/135] iwlwifi: protect SRAM debugfs
+        alan@lxorguk.ukuu.org.uk, Kashyap Desai <Kashyap.Desai@lsi.com>,
+        Adam Radford <aradford@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 009/135] [SCSI] megaraid_sas: Move poll_aen_lock initializer
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Kashyap Desai <Kashyap.Desai@lsi.com>
 
-commit 4fc79db178f0a0ede479b4713e00df2d106028b3 upstream.
+commit bd8d6dd43a77bfd2b8fef5b094b9d6095e169dee upstream.
 
-If the device is not started, we can't read its
-SRAM and attempting to do so will cause issues.
-Protect the debugfs read.
+The following patch moves the poll_aen_lock initializer from
+megasas_probe_one() to megasas_init().  This prevents a crash when a user
+loads the driver and tries to issue a poll() system call on the ioctl
+interface with no adapters present.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Pass iwl_shared not iwl_priv pointer to iwl_is_ready_rf()]
+Signed-off-by: Kashyap Desai <Kashyap.Desai@lsi.com>
+Signed-off-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -232,6 +232,9 @@ static ssize_t iwl_dbgfs_sram_read(struc
- 	struct iwl_priv *priv = file->private_data;
- 	size_t bufsz;
+ drivers/scsi/megaraid/megaraid_sas_base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index dc27598..ed38454 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4066,7 +4066,6 @@ megasas_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	spin_lock_init(&instance->cmd_pool_lock);
+ 	spin_lock_init(&instance->hba_lock);
+ 	spin_lock_init(&instance->completion_lock);
+-	spin_lock_init(&poll_aen_lock);
  
-+	if (!iwl_is_ready_rf(priv->shrd))
-+		return -EAGAIN;
+ 	mutex_init(&instance->aen_mutex);
+ 	mutex_init(&instance->reset_mutex);
+@@ -5392,6 +5391,8 @@ static int __init megasas_init(void)
+ 	printk(KERN_INFO "megasas: %s %s\n", MEGASAS_VERSION,
+ 	       MEGASAS_EXT_VERSION);
+ 
++	spin_lock_init(&poll_aen_lock);
 +
- 	/* default is to dump the entire data segment */
- 	if (!priv->dbgfs_sram_offset && !priv->dbgfs_sram_len) {
- 		priv->dbgfs_sram_offset = 0x800000;
+ 	support_poll_for_event = 2;
+ 	support_device_change = 1;
+ 
 
 
