@@ -1,116 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab2IQQNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:13:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab2IQQNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:13:21 -0400
-Message-ID: <1347898400.486.69.camel@bling.home>
-Subject: Re: [PATCH v9 2/2] kvm: On Ack, De-assert & Notify KVM_IRQFD
- extension
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Sep 2012 10:13:20 -0600
-In-Reply-To: <5047686D.8060606@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
-	 <20120821192911.24958.38609.stgit@bling.home> <5047686D.8060606@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752686Ab2IQQT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:19:28 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:54444 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2IQQT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 12:19:26 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am5RAIBMV1BV5h1yPGdsb2JhbABEhR6FI64Wgz4ZAQEBATc0giABAQQBOhwjBQsIA0YUJQoaiA0Kul4UkRVgA5VhhXCNGg
+X-IronPort-AV: E=Sophos;i="4.80,437,1344204000"; 
+   d="scan'208";a="413603248"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 17 Sep 2012 18:27:05 +0200
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+Message-ID: <20120917162705.GA2854@polaris.bitmath.org>
+References: <alpine.DEB.2.02.1209151834120.2271@ubuntu>
+ <20120915225841.GA3816@roeck-us.net>
+ <alpine.DEB.2.02.1209151918210.2271@ubuntu>
+ <alpine.DEB.2.02.1209152323490.2088@ubuntu>
+ <20120916043116.GA4477@roeck-us.net>
+ <20120916093520.GA5623@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161712070.14838@ubuntu>
+ <20120916223003.GA2160@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161957490.2808@ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1209161957490.2808@ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-05 at 17:57 +0300, Avi Kivity wrote:
-> On 08/21/2012 10:29 PM, Alex Williamson wrote:
-> > For VFIO based device assignment we'd like a mechanism to allow level
-> > triggered interrutps to be directly injected into KVM.  KVM_IRQFD
-> > already allows this for edge triggered interrupts, but for level, we
-> > need to watch for acknowledgement of the interrupt from the guest to
-> > provide us a hint when to test the device and allow it to re-assert
-> > if necessary.  To do this, we create a new KVM_IRQFD mode called
-> > "On Ack, De-assert & Notify", or OADN.  In this mode, an interrupt
-> > injection provides only a gsi assertion.  We then hook into the IRQ
-> > ACK notifier, which when triggered de-asserts the gsi and notifies
-> > via another eventfd.  It's then the responsibility of the user to
-> > re-assert the interrupt is service is still required.
+> > If a), that is very valuable information, and the patch can be
+> > simplified further. If b), just crank up the wait time and be done
+> > with it. If c), well, then we don't have a case for a patch.
 > > 
-> > 
-> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > index bf33aaa..87d7321 100644
-> > --- a/Documentation/virtual/kvm/api.txt
-> > +++ b/Documentation/virtual/kvm/api.txt
-> > @@ -1946,6 +1946,19 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> >  and kvm_irqfd.gsi.
-> >  
-> > +With KVM_CAP_IRQFD_OADN, KVM_IRQFD supports an "On Ack, De-assert &
-> > +Notify" option that allows emulation of level-triggered interrupts.
-> > +When kvm_irqfd.fd is triggered, the requested gsi is asserted and
-> > +remains asserted until interaction with the irqchip indicates the
-> > +VM has acknowledged the interrupt, such as an EOI.  On acknoledgement
-> > +the gsi is automatically de-asserted and the user is notified via
-> > +kvm_irqfd.notifyfd.  The user is then required to re-assert the
-> > +interrupt if the associated device still requires service.  To enable
-> > +this mode, configure the KVM_IRQFD using the KVM_IRQFD_FLAG_OADN flag
-> > +and specify kvm_irqfd.notifyfd.  Note that closing kvm_irqfd.notifyfd
-> > +while configured in this mode does not disable the irqfd.  The
-> > +KVM_IRQFD_FLAG_OADN flag is only necessary on assignment.
+> I initially experimented with different max wait values and came to the 
+> conclusion that 0x20000 was good enough to reduce the errors to zero. But 
+> then Guenter pointed out that the original loop terminated too early - 
+> that means it only waited 16 ms instead of 32.
+
+This is actually by construction; The total wait time after the loop
+is done is roughly 2^MAX_WAIT_TIME.
+
+> I then corrected the loop 
+> termination but kept the original 32ms max wait and used usleep_range() 
+> instead of udelay() - testing with this gave me no errors whereas earlier 
+> the errors were readily reproducible and significant in quanity.
 > 
-> Under my suggested naming, this would be called a "resampling irqfd",
-> with resampling requested via kvm_irqfd.resamplefd.
+> So I guess actually sleeping for 32ms along with the upward variability 
+> introduced by usleep_range() is helping with the fix.
+
+The current patch does exactly the same sleeps, the only difference is
+that the test is also done before the first sleep. Thus, the increased
+delay, if any, comes from the sleep range.
+
+> > Also, it is not enough to test this on one machine, for fairly obvious
+> > reasons. I don't mind testing on a couple of machines close by (MBA3,1
+> > MBP10,1), once the comments have been addressed. However, a machine
+> > from around 2008 should be tested as well, since they behave
+> > differently.
 > 
-> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > index 2245cfa..dfdb5b2 100644
-> > --- a/virt/kvm/eventfd.c
-> > +++ b/virt/kvm/eventfd.c
-> > @@ -43,6 +43,23 @@
-> >   * --------------------------------------------------------------------
-> >   */
-> >  
-> > +/*
-> > + * OADN irqfds (On Ack, De-assert & Notify) are a special variety of
-> > + * irqfds that assert an interrupt to the irqchip on eventfd trigger,
-> > + * receieve notification when userspace acknowledges the interrupt,
-> > + * automatically de-asserts the irqchip level, and notifies userspace
-> > + * via the oadn_eventfd.  This object helps to provide one-to-many
-> > + * deassert-to-notify so we can share a single irq source ID per OADN.
-> > + */
-> > +struct _irqfd_oadn {
-> > +	struct kvm *kvm;
-> > +	int irq_source_id; /* IRQ source ID shared by these irqfds */
-> > +	struct list_head irqfds; /* list of irqfds using this object */
-> > +	struct kvm_irq_ack_notifier notifier; /* IRQ ACK notification */
-> > +	struct kref kref; /* Race-free removal */
-> > +	struct list_head list;
-> > +};
-> 
-> 
-> Why do you need per-gsi irq source IDs?  irq source ids only matter
-> within a gsi.  For example KVM_IRQ_LINE shares one source ID for all
-> lines (with result that userspace is forced to manage the ORing of
-> shared inputs itself).
+> Since we are keeping the changes minimal and using the same 32 ms max wait 
+> as originally intended I think this patch can only make things better. It 
+> sure does make things better on my machine but it will not hurt to test it 
+> on other models.
 
-Right, but locking makes it difficult to tear down a resample irqfd
-without potentially racing creation of a new one, which I tried to
-explain here:
+The MBP10,1 experiences a lot of write errors with this patch.
 
-http://www.spinics.net/lists/kvm/msg78460.html
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 2827088..a168a8f 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -169,12 +169,13 @@ static int wait_read(void)
+>  {
+>  	u8 status;
+>  	int us;
+> -	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+> -		udelay(us);
+> +	for (us = APPLESMC_MIN_WAIT; us <= APPLESMC_MAX_WAIT; us <<= 1) {
+>  		status = inb(APPLESMC_CMD_PORT);
+>  		/* read: wait for smc to settle */
+>  		if (status & 0x01)
+>  			return 0;
+> +		if (us < APPLESMC_MAX_WAIT)
+> +			usleep_range(us, us << 1);
 
-This can cause a de-assert w/o ack as we briefly have multiple resample
-irqfds on the same gsi, irq source id pair.  That can dead lock a vfio
-device.  Using a new irq source ID ensures that the old resample irqfd
-doesn't interfere with the new one.  We count on the final clear or the
-gsi assertion when releasing the irq source id, so we can't share it
-among other resample irqfds on other gsis with different life cycles.
+Net result: new delay function and one more status test.
 
-Michael has suggested re-architecting the locking around some structure,
-but I'm not sure it's worth it.  AFAICT we have more irq source IDs than
-we could consume if resample irqfds on the same gsi share an irq source
-id.  Thanks,
+>  	}
+>  
+>  	pr_warn("wait_read() fail: 0x%02x\n", status);
+> @@ -192,7 +193,7 @@ static int send_byte(u8 cmd, u16 port)
+>  
+>  	outb(cmd, port);
+>  	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+> -		udelay(us);
+> +		usleep_range(us, us << 1);
+>  		status = inb(APPLESMC_CMD_PORT);
+>  		/* write: wait for smc to settle */
+>  		if (status & 0x02)
+> @@ -204,7 +205,7 @@ static int send_byte(u8 cmd, u16 port)
+>  		if (us << 1 == APPLESMC_MAX_WAIT)
+>  			break;
+>  		/* busy: long wait and resend */
+> -		udelay(APPLESMC_RETRY_WAIT);
+> +		usleep_range(APPLESMC_RETRY_WAIT, APPLESMC_RETRY_WAIT << 1);
+>  		outb(cmd, port);
+>  	}
+>  
 
-Alex
+Causes (lots of) write errors on MBP10,1.
 
+Henrik
