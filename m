@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab2IQLec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 07:34:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35779 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845Ab2IQLe3 (ORCPT
+	id S1755988Ab2IQLfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 07:35:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49942 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755845Ab2IQLfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 07:34:29 -0400
-Date: Mon, 17 Sep 2012 04:34:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] PCI: Keep pci_fixup_irqs() around after init
-Message-ID: <20120917113423.GA28759@kroah.com>
-References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+	Mon, 17 Sep 2012 07:35:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <016401cd94ba$733937d0$59aba770$%jun@samsung.com>
+References: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
+	<016401cd94ba$733937d0$59aba770$%jun@samsung.com>
+Date: Mon, 17 Sep 2012 13:35:18 +0200
+Message-ID: <CA+MoWDqR31XWPT+z9tozLpV6_G9yfUHjzReQmQOLvNJNi-pTnQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] drivers/mmc/host/dw_mmc.c: fix error return code
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: cjb@laptop.org, will.newton@imgtec.com, jh80.chung@samsung.com,
+        kyungmin.park@samsung.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 01:22:53PM +0200, Thierry Reding wrote:
-> Remove the __init annotations in order to keep pci_fixup_irqs() around
-> after init (e.g. for hotplug). This requires the same change for the
-> implementation of pcibios_update_irq() on all architectures. While at
-> it, all __devinit annotations are removed as well, since they will be
-> useless now that HOTPLUG is always on.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
-> Changes in v2:
-> - remove __init and __devinit annotations altogether
+On Mon, Sep 17, 2012 at 11:54 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> On Monday, September 17, 2012, Peter Senna Tschudin <peter.senna@gmail.com> wrote:
+>> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>>
+>> Convert a nonnegative error return code to a negative one, as returned
+>> elsewhere in the function.
+>>
+>> A simplified version of the semantic match that finds this problem is as
+>> follows: (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> (
+>> if@p1 (\(ret < 0\|ret != 0\))
+>>  { ... return ret; }
+>> |
+>> ret@p1 = 0
+>> )
+>> ... when != ret = e1
+>>     when != &ret
+>> *if(...)
+>> {
+>>   ... when != ret = e2
+>>       when forall
+>>  return ret;
+>> }
+>> // </smpl>
+>>
+>> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>> ---
+>>  drivers/mmc/host/dw_mmc.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> index 36f98c0..7ad5176 100644
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -2039,8 +2039,10 @@ int dw_mci_probe(struct dw_mci *host)
+>>       tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+>>       host->card_workqueue = alloc_workqueue("dw-mci-card",
+>>                       WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
+>> -     if (!host->card_workqueue)
+>> +     if (!host->card_workqueue) {
+>> +             err = -ENOMEM;
+> ret is expected instead of err.
+> err isn't defined.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I'm sorry. Somehow I did not compile for testing this one before
+sending. I'll fix, test and resend.
+
+>
+> Thanks,
+> Seungwon Jeon
+>
+>>               goto err_dmaunmap;
+>> +     }
+>>       INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+>>       ret = request_irq(host->irq, dw_mci_interrupt, host->irq_flags, "dw-mci", host);
+>>       if (ret)
+>> --
+>> 1.7.11.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Peter
