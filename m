@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2IQBHq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:07:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33767 "EHLO
+	id S1754036Ab2IQAuu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 20:50:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33410 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754046Ab2IQAuw (ORCPT
+	by vger.kernel.org with ESMTP id S1753090Ab2IQAtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:52 -0400
-Message-Id: <20120917003635.355910562@decadent.org.uk>
+	Sun, 16 Sep 2012 20:49:42 -0400
+Message-Id: <20120917003637.135114814@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:31 +0100
+Date: Mon, 17 Sep 2012 01:37:44 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
-        Gerrit Renker <gerrit@erg.abdn.ac.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 066/135] dccp: fix info leak via  getsockopt(DCCP_SOCKOPT_CCID_TX_INFO)
+        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 079/135] time: Avoid making adjustments if we havent accumulated anything
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,35 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: John Stultz <john.stultz@linaro.org>
 
-[ Upstream commit 7b07f8eb75aa3097cdfd4f6eac3da49db787381d ]
+This is a -stable backport of bf2ac312195155511a0f79325515cbb61929898a
 
-The CCID3 code fails to initialize the trailing padding bytes of struct
-tfrc_tx_info added for alignment on 64 bit architectures. It that for
-potentially leaks four bytes kernel stack via the getsockopt() syscall.
-Add an explicit memset(0) before filling the structure to avoid the
-info leak.
+If update_wall_time() is called and the current offset isn't large
+enough to accumulate, avoid re-calling timekeeping_adjust which may
+change the clock freq and can cause 1ns inconsistencies with
+CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Gerrit Renker <gerrit@erg.abdn.ac.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- net/dccp/ccids/ccid3.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/dccp/ccids/ccid3.c b/net/dccp/ccids/ccid3.c
-index 3d604e1..4caf63f 100644
---- a/net/dccp/ccids/ccid3.c
-+++ b/net/dccp/ccids/ccid3.c
-@@ -532,6 +532,7 @@ static int ccid3_hc_tx_getsockopt(struct sock *sk, const int optname, int len,
- 	case DCCP_SOCKOPT_CCID_TX_INFO:
- 		if (len < sizeof(tfrc))
- 			return -EINVAL;
-+		memset(&tfrc, 0, sizeof(tfrc));
- 		tfrc.tfrctx_x	   = hc->tx_x;
- 		tfrc.tfrctx_x_recv = hc->tx_x_recv;
- 		tfrc.tfrctx_x_calc = hc->tx_x_calc;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1033,6 +1033,10 @@ static void update_wall_time(void)
+ #else
+ 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
+ #endif
++	/* Check if there's really nothing to do */
++	if (offset < timekeeper.cycle_interval)
++		return;
++
+ 	timekeeper.xtime_nsec = (s64)xtime.tv_nsec << timekeeper.shift;
+ 
+ 	/*
 
 
