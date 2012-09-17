@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2IQAuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 20:50:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33425 "EHLO
+	id S1754135Ab2IQBIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:08:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33745 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753102Ab2IQAtn (ORCPT
+	by vger.kernel.org with ESMTP id S1753102Ab2IQAup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:49:43 -0400
-Message-Id: <20120917003637.706801413@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:45 -0400
+Message-Id: <20120917003635.622842551@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:48 +0100
+Date: Mon, 17 Sep 2012 01:37:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 083/135] ARM: 7487/1: mm: avoid setting nG bit for user mappings that arent
- present
+        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 068/135] net: fix info leak in compat dev_ifconf()
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,96 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 47f1204329237a0f8655f5a9f14a38ac81946ca1 upstream.
+[ Upstream commit 43da5f2e0d0c69ded3d51907d9552310a6b545e8 ]
 
-Swap entries are encoding in ptes such that !pte_present(pte) and
-pte_file(pte). The remaining bits of the descriptor are used to identify
-the swapfile and offset within it to the swap entry.
+The implementation of dev_ifconf() for the compat ioctl interface uses
+an intermediate ifc structure allocated in userland for the duration of
+the syscall. Though, it fails to initialize the padding bytes inserted
+for alignment and that for leaks four bytes of kernel stack. Add an
+explicit memset(0) before filling the structure to avoid the info leak.
 
-When writing such a pte for a user virtual address, set_pte_at
-unconditionally sets the nG bit, which (in the case of LPAE) will
-corrupt the swapfile offset and lead to a BUG:
-
-[  140.494067] swap_free: Unused swap offset entry 000763b4
-[  140.509989] BUG: Bad page map in process rs:main Q:Reg  pte:0ec76800 pmd:8f92e003
-
-This patch fixes the problem by only setting the nG bit for user
-mappings that are actually present.
-
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/pgtable.h |   34 ++++++++++++++++++----------------
- arch/arm/mm/flush.c            |    2 --
- 2 files changed, 18 insertions(+), 18 deletions(-)
+ net/socket.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -232,6 +232,18 @@ static inline pte_t *pmd_page_vaddr(pmd_
- #define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
- #define pte_clear(mm,addr,ptep)	set_pte_ext(ptep, __pte(0), 0)
+diff --git a/net/socket.c b/net/socket.c
+index 273cbce..68879db 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2645,6 +2645,7 @@ static int dev_ifconf(struct net *net, struct compat_ifconf __user *uifc32)
+ 	if (copy_from_user(&ifc32, uifc32, sizeof(struct compat_ifconf)))
+ 		return -EFAULT;
  
-+#define pte_none(pte)		(!pte_val(pte))
-+#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
-+#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
-+#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
-+#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
-+#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
-+#define pte_special(pte)	(0)
-+
-+#define pte_present_user(pte) \
-+	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
-+	 (L_PTE_PRESENT | L_PTE_USER))
-+
- #if __LINUX_ARM_ARCH__ < 6
- static inline void __sync_icache_dcache(pte_t pteval)
- {
-@@ -243,25 +255,15 @@ extern void __sync_icache_dcache(pte_t p
- static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
- 			      pte_t *ptep, pte_t pteval)
- {
--	if (addr >= TASK_SIZE)
--		set_pte_ext(ptep, pteval, 0);
--	else {
-+	unsigned long ext = 0;
-+
-+	if (addr < TASK_SIZE && pte_present_user(pteval)) {
- 		__sync_icache_dcache(pteval);
--		set_pte_ext(ptep, pteval, PTE_EXT_NG);
-+		ext |= PTE_EXT_NG;
- 	}
--}
- 
--#define pte_none(pte)		(!pte_val(pte))
--#define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
--#define pte_write(pte)		(!(pte_val(pte) & L_PTE_RDONLY))
--#define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
--#define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
--#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_XN))
--#define pte_special(pte)	(0)
--
--#define pte_present_user(pte) \
--	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
--	 (L_PTE_PRESENT | L_PTE_USER))
-+	set_pte_ext(ptep, pteval, ext);
-+}
- 
- #define PTE_BIT_FUNC(fn,op) \
- static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -236,8 +236,6 @@ void __sync_icache_dcache(pte_t pteval)
- 	struct page *page;
- 	struct address_space *mapping;
- 
--	if (!pte_present_user(pteval))
--		return;
- 	if (cache_is_vipt_nonaliasing() && !pte_exec(pteval))
- 		/* only flush non-aliasing VIPT caches for exec mappings */
- 		return;
++	memset(&ifc, 0, sizeof(ifc));
+ 	if (ifc32.ifcbuf == 0) {
+ 		ifc32.ifc_len = 0;
+ 		ifc.ifc_len = 0;
 
 
