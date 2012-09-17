@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2IQQkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 12:40:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65039 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab2IQQkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 12:40:07 -0400
-Date: Mon, 17 Sep 2012 09:40:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: Re: [RFC] cgroup TODOs
-Message-ID: <20120917164002.GA18677@google.com>
-References: <20120913205827.GO7677@google.com>
- <20120914142539.GC6221@redhat.com>
- <20120914213938.GV17747@google.com>
- <20120917150518.GB5094@redhat.com>
+	id S1754044Ab2IQQsh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 12:48:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356Ab2IQQsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 12:48:36 -0400
+Date: Mon, 17 Sep 2012 18:50:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] uprobes: MMF_RECALC_UPROBES + single-step fixes
+Message-ID: <20120917165016.GA27952@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120917150518.GB5094@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ingo, please pull from
 
-On Mon, Sep 17, 2012 at 11:05:18AM -0400, Vivek Goyal wrote:
-> As a developer, I will be happy to support only one model and keep code
-> simple. I am only concerned that for blkcg we have still not charted
-> out a clear migration path. The warning message your patch is giving
-> out will work only if we decide to not treat task and groups at same
-> level.
+  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-It may not be enough but it still is in the right direction.
+More recently dicussed and acked patches. Except 95cf00fa
+"ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic",
+nobody wants to ack it explicitly, but nobody objected.
 
-> > Another problem is that configuration isn't contained in cgroup
-> > proper.  We need a way to assign weights to individual tasks which can
-> > be somehow directly compared against group weights.  cpu cooks
-> > priority for this and blkcg may be able to cook ioprio but it's nasty
-> > and unobvious.  Also, let's say we grow network bandwidth controller
-> > for whatever reason.  What value are we gonna use?
-> 
-> So if somebody cares about settting SO_PRIORITY for traffic originating
-> from a tasks, move it into a cgroup. Otherwise they all get default
-> priority.
+Oleg Nesterov (9):
+      uprobes: uprobes_treelock should not disable irqs
+      uprobes: Introduce MMF_RECALC_UPROBES
+      uprobes: Teach find_active_uprobe() to clear MMF_HAS_UPROBES
+      ptrace/x86: Introduce set_task_blockstep() helper
+      ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic
+      uprobes/x86: Do not (ab)use TIF_SINGLESTEP/user_*_single_step() for single-stepping
+      uprobes/x86: Xol should send SIGTRAP if X86_EFLAGS_TF was set
+      uprobes/x86: Fix arch_uprobe_disable_step() && UTASK_SSTEP_TRAPPED interaction
+      uprobes: Make arch_uprobe_task->saved_trap_nr "unsigned int"
 
-I don't know.  Do we wanna add, say, prctl for memory weight too?
+Sebastian Andrzej Siewior (3):
+      uprobes: Don't put NULL pointer in uprobe_register()
+      uprobes: Introduce arch_uprobe_enable/disable_step()
+      uprobes/x86: Implement x86 specific arch_uprobe_*_step
 
-> So to me, leaving this decision to userspace based on their requirement
-> makes sense.
+ arch/x86/include/asm/processor.h |    2 +
+ arch/x86/include/asm/uprobes.h   |    3 +-
+ arch/x86/kernel/step.c           |   53 +++++++++++++--------
+ arch/x86/kernel/uprobes.c        |   52 +++++++++++++++++++-
+ include/linux/sched.h            |    3 +-
+ include/linux/uprobes.h          |    2 +
+ kernel/events/uprobes.c          |   99 ++++++++++++++++++++++++++++++--------
+ 7 files changed, 171 insertions(+), 43 deletions(-)
 
-Leaving too many decisions to userland is one of the reasons that got
-us into this mess, so I'm not sold on flexibility for flexibility's
-sake.
-
-> Yes, creating a hidden group for tasks in current group should not be
-> hard from implementation point of view. But again, I am concerned about
-> configuration of hidden group and I also don't like the idea of taking
-> flexibility away from user to treat tasks and group at same level.
-
-I don't know.  Create a reserved directory for it?  I do like the idea
-of taking flexibility away form user unless it's actually useful but
-am a bit worried we might be too late for that. :(
-
-Thanks.
-
--- 
-tejun
