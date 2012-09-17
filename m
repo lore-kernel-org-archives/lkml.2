@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab2IQRkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:40:08 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:56100 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab2IQRj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:39:59 -0400
+	id S1757016Ab2IQRk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:40:28 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:52014 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755771Ab2IQRkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 13:40:19 -0400
 X-IronPort-AV: E=Sophos;i="4.80,437,1344211200"; 
-   d="scan'208";a="208319290"
+   d="scan'208";a="38105085"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <arnd@arndb.de>
 CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
@@ -17,9 +16,9 @@ CC: <linux@arm.linux.org.uk>, <linaro-dev@lists.linaro.org>,
         <Stefano.Stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
         <linux-kernel@vger.kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v5 04/17] xen/arm: sync_bitops
-Date: Mon, 17 Sep 2012 18:38:50 +0100
-Message-ID: <1347903543-2135-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v5 07/17] xen/arm: Xen detection and shared_info page mapping
+Date: Mon, 17 Sep 2012 18:38:53 +0100
+Message-ID: <1347903543-2135-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
@@ -29,55 +28,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sync_bitops functions are equivalent to the SMP implementation of the
-original functions, independently from CONFIG_SMP being defined.
+Check for a node in the device tree compatible with "xen,xen", if it is
+present set xen_domain_type to XEN_HVM_DOMAIN and continue
+initialization.
 
-We need them because _set_bit etc are not SMP safe if !CONFIG_SMP. But
-under Xen you might be communicating with a completely external entity
-who might be on another CPU (e.g. two uniprocessor guests communicating
-via event channels and grant tables). So we need a variant of the bit
-ops which are SMP safe even on a UP kernel.
+Map the real shared info page using XENMEM_add_to_physmap with
+XENMAPSPACE_shared_info.
+
+Changes in v4:
+
+- simpler parsing of Xen version in the compatible DT node.
+
+Changes in v3:
+
+- use the "xen,xen" notation rather than "arm,xen";
+- add an additional check on the presence of the Xen version.
+
+Changes in v2:
+
+- replace pr_info with pr_debug.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/arm/include/asm/sync_bitops.h |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/sync_bitops.h
+ arch/arm/xen/enlighten.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 61 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-new file mode 100644
-index 0000000..63479ee
---- /dev/null
-+++ b/arch/arm/include/asm/sync_bitops.h
-@@ -0,0 +1,27 @@
-+#ifndef __ASM_SYNC_BITOPS_H__
-+#define __ASM_SYNC_BITOPS_H__
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index c535540..6a0217d 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -5,6 +5,9 @@
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
+ 
+ struct start_info _xen_start_info;
+ struct start_info *xen_start_info = &_xen_start_info;
+@@ -33,3 +36,61 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 	return -ENOSYS;
+ }
+ EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
 +
-+#include <asm/bitops.h>
-+#include <asm/system.h>
-+
-+/* sync_bitops functions are equivalent to the SMP implementation of the
-+ * original functions, independently from CONFIG_SMP being defined.
-+ *
-+ * We need them because _set_bit etc are not SMP safe if !CONFIG_SMP. But
-+ * under Xen you might be communicating with a completely external entity
-+ * who might be on another CPU (e.g. two uniprocessor guests communicating
-+ * via event channels and grant tables). So we need a variant of the bit
-+ * ops which are SMP safe even on a UP kernel.
++/*
++ * see Documentation/devicetree/bindings/arm/xen.txt for the
++ * documentation of the Xen Device Tree format.
 + */
++static int __init xen_guest_init(void)
++{
++	struct xen_add_to_physmap xatp;
++	static struct shared_info *shared_info_page = 0;
++	struct device_node *node;
++	int len;
++	const char *s = NULL;
++	const char *version = NULL;
++	const char *xen_prefix = "xen,xen-";
 +
-+#define sync_set_bit(nr, p)		_set_bit(nr, p)
-+#define sync_clear_bit(nr, p)		_clear_bit(nr, p)
-+#define sync_change_bit(nr, p)		_change_bit(nr, p)
-+#define sync_test_and_set_bit(nr, p)	_test_and_set_bit(nr, p)
-+#define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
-+#define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
-+#define sync_test_bit(nr, addr)		test_bit(nr, addr)
-+#define sync_cmpxchg			cmpxchg
++	node = of_find_compatible_node(NULL, NULL, "xen,xen");
++	if (!node) {
++		pr_debug("No Xen support\n");
++		return 0;
++	}
++	s = of_get_property(node, "compatible", &len);
++	if (strlen(xen_prefix) + 3  < len &&
++			!strncmp(xen_prefix, s, strlen(xen_prefix)))
++		version = s + strlen(xen_prefix);
++	if (version == NULL) {
++		pr_debug("Xen version not found\n");
++		return 0;
++	}
++	xen_domain_type = XEN_HVM_DOMAIN;
 +
++	if (!shared_info_page)
++		shared_info_page = (struct shared_info *)
++			get_zeroed_page(GFP_KERNEL);
++	if (!shared_info_page) {
++		pr_err("not enough memory\n");
++		return -ENOMEM;
++	}
++	xatp.domid = DOMID_SELF;
++	xatp.idx = 0;
++	xatp.space = XENMAPSPACE_shared_info;
++	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
++	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
++		BUG();
 +
-+#endif
++	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
++
++	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
++	 * page, we use it in the event channel upcall and in some pvclock
++	 * related functions. We don't need the vcpu_info placement
++	 * optimizations because we don't use any pv_mmu or pv_irq op on
++	 * HVM.
++	 * The shared info contains exactly 1 CPU (the boot CPU). The guest
++	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
++	 * for secondary CPUs as they are brought up. */
++	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
++	return 0;
++}
++core_initcall(xen_guest_init);
 -- 
 1.7.2.5
 
