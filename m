@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab2IQICk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:02:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47045 "EHLO
+	id S1754764Ab2IQICx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:02:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34678 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2IQICf (ORCPT
+	with ESMTP id S1754645Ab2IQICr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:02:35 -0400
-Date: Mon, 17 Sep 2012 18:02:28 +1000
+	Mon, 17 Sep 2012 04:02:47 -0400
+Date: Mon, 17 Sep 2012 18:02:43 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         <linux-arm-kernel@lists.infradead.org>
@@ -15,18 +15,18 @@ Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <dwmw2@infradead.org>
-Subject: linux-next: manual merge of the arm-soc tree with the  tree
-Message-Id: <20120917180228.c64369b4586a2a31042d4175@canb.auug.org.au>
+Subject: linux-next: manual merge of the arm-soc tree with the mtd tree
+Message-Id: <20120917180243.ba626fb72dced777cd4e057e@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Sep_2012_18_02_28_+1000_jAcTs=fQM3FyPBQb"
+ boundary="Signature=_Mon__17_Sep_2012_18_02_43_+1000_TZtudnuFXDg9nuh8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Sep_2012_18_02_28_+1000_jAcTs=fQM3FyPBQb
+--Signature=_Mon__17_Sep_2012_18_02_43_+1000_TZtudnuFXDg9nuh8
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -62,25 +62,25 @@ index e81f17a,e5165a8..0000000
   	/* set SDHC root clock to 200MHZ*/
   	clk_set_rate(clk[esdhc_a_podf], 200000000);
 
---Signature=_Mon__17_Sep_2012_18_02_28_+1000_jAcTs=fQM3FyPBQb
+--Signature=_Mon__17_Sep_2012_18_02_43_+1000_TZtudnuFXDg9nuh8
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQVtkUAAoJEECxmPOUX5FEu/EP/2UcwLbo3goJqH7xpKtVnHD/
-VkD4xVxLfz8SVVbbxn9E3VJdoUpDLOLPXk29mdTZlEF8pup/RZKa/F3iLkCyfwC+
-tcZ5CjJREaVQb3mwL+fsLsUAJBXGY2V7nPkUybK+bNzSmDxHTscsAkJWTiH0063e
-U+X/7t1Zr5Y+pS+k8+CtgADIkNAh/MKDIiwfxHK07CfFiNkKkMNKpkLlfhDxP633
-qd1gEZyEX7Nds+UKvT3ZMunDw4mSRuDj7eX11FeLArowN/SrP6pvZjJE555PwON6
-FPkMFoJSGN6YBPewYmKK1kyAafC5foDzRoUHH3Dk1X7Lk9L1Di/MI83KuePb5eVX
-FTKgTFOfe0PBn9GdyVRi4FxbwZTJ13f0Yda0MfuPvmkgP5Y+IGL+RgXDZ7IDUFHo
-2m5eQnw9Npy1jJiAq8N3TR3bqYGibBcFOd3HkPcJ5NTJrfBAxK7AsDO+mMHSWlMp
-fAwRXpefjFe/SCluNhM7RXeddcSZE0HFqV8T1jzl0lCgkcFx2OBI250Acg9+5m/c
-7liVTzaAxtz67kLrcdsCTo+xpwSm4oGBG2J55xVMXtx+P/rX9tWJYTg2d/GT3NiY
-SxUVot765HBm5p9Qm5yhMBn6V3Qys6wAIkp3TuoXPSEm9IVEvNiSd0uHvffn6FK4
-bN8sFaTmkkTxFsFGinl+
-=i4PH
+iQIcBAEBCAAGBQJQVtkjAAoJEECxmPOUX5FEcTcP/iGCtwVUZQdFgmm2+c/vw4sl
+lu1hEz/gXdVvkVaYxTBJYOpKSAx2OXtcIiNXlvY0heQKOs46zOCKVoDx4MLVC5ea
+wtU8cKIkWkR0HCDyTVHFlXiZi7yOkb+tgGShvDX18KNIaRyqx2ap4HBSGwPPWuIP
+lOnOMao/kvD53AyOAuHArdiAsCAdff29+zeNDBrIG4A4AnjRlijJtL+R+amNJDvn
+ww1PVZjIJ0895BkoQn+LmEN9Ok5nvYAx9Im0207UYKneYrHdcL/DoO1Eu1ZQJE4V
+kFi+Y/YkGkumprPw7XAiN0EpXGL4+dlaHQ37OSDD3BhGnGQBXS5WappObzwwSkIO
+LYwVWuqvqJTtgO/FTuLSXtgd4ANRzZCUUUuE0tBopRLCP6/6qdFuMRfB251NB9pL
+XLGqdrLbFyj38wxiZC5+odrzmSed86D//YhL4DMC111yJHWcFMZISzoJDk51AfCe
+CTCVITxgY242lzvs7KOsmVV6VCEmZ3dD/Zt7tV9OKBmWhl9vZzYVN9OkxB9OEUxs
+rN0wmk2RI7+zgrbBx2Jd0E/jw5F4uvtskHQzgvYHuZiNL6+lJ2/zKIN530ugW8P3
+iuieMutMLFImy5i/U+q419MeAdP5fPBjDYTYxaxPExediP+gr9av5cQjL9Yu3RRg
+g6tcJgzWi2Mr5ad3v2Tg
+=ZVCx
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__17_Sep_2012_18_02_28_+1000_jAcTs=fQM3FyPBQb--
+--Signature=_Mon__17_Sep_2012_18_02_43_+1000_TZtudnuFXDg9nuh8--
