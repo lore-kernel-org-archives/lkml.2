@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab2IQJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:58:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47486 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab2IQJ6F convert rfc822-to-8bit (ORCPT
+	id S1755460Ab2IQJ7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:59:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44078 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664Ab2IQJ7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:58:05 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] iio: inkern: put the IIO device when mem alloc gets
- failed
-Thread-Topic: [PATCH 2/2] iio: inkern: put the IIO device when mem alloc
- gets failed
-Thread-Index: Ac2UsLDnnWGaETPgRrGpn005azMcx///h7OA//95iwA=
-Date: Mon, 17 Sep 2012 09:57:52 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF5120@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF50A5@DQHE02.ent.ti.com>
- <5056EE95.6050101@metafoo.de>
-In-Reply-To: <5056EE95.6050101@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Sep 2012 05:59:36 -0400
 MIME-Version: 1.0
+In-Reply-To: <201209171113.45276.andres@anarazel.de>
+References: <201209170118.25955.andres@anarazel.de>
+	<CAH3drwZ-Wc=PViwuj=PgcOrsZBfvozdZRK=Q2Q-uJFktSbGQcw@mail.gmail.com>
+	<201209171113.45276.andres@anarazel.de>
+Date: Mon, 17 Sep 2012 05:59:34 -0400
+Message-ID: <CAH3drwanacWd_b_ZF3eNiDSijuG2tXgjt8BsgYYUb+pjAV09VA@mail.gmail.com>
+Subject: Re: Excessive kernel time inside ttm when scrolling on a r700 in a
+ multimonitor setup
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Andres Freund <andres@anarazel.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  drivers/iio/inkern.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> > index 13748c0..aff034b 100644
-> > --- a/drivers/iio/inkern.c
-> > +++ b/drivers/iio/inkern.c
-> > @@ -132,7 +132,7 @@ struct iio_channel *iio_channel_get(const char
-> *name, const char *channel_name)
-> >
-> >  	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
-> >  	if (channel == NULL)
-> > -		return ERR_PTR(-ENOMEM);
-> > +		goto error_no_mem;
-> >
-> >  	channel->indio_dev = c->indio_dev;
-> >
-> > @@ -151,6 +151,9 @@ error_no_chan:
-> >  	iio_device_put(c->indio_dev);
-> >  	kfree(channel);
-> >  	return ERR_PTR(-EINVAL);
-> > +error_no_mem:
-> > +	iio_device_put(c->indio_dev);
-> > +	return ERR_PTR(-ENOMEM);
-> >  }
-> >  EXPORT_SYMBOL_GPL(iio_channel_get);
-> >
-> 
-> If you do it that way, you don't really need the goto, something like
-> 
-> error_no_chan:
->   	kfree(channel);
-> error_no_mem:
-> 	iio_device_put(c->indio_dev);
-> 	return ret
-> 
-> would be better in my opinion. With ret being initialized in the if
-> branch
-> before the goto.
+On Mon, Sep 17, 2012 at 5:13 AM, Andres Freund <andres@anarazel.de> wrote:
+> On Monday, September 17, 2012 10:47:10 AM Jerome Glisse wrote:
+>> On Sun, Sep 16, 2012 at 7:18 PM, Andres Freund <andres@anarazel.de> wrote:
+>> > Hi everyone,
+>> >
+>> > In several gui programs, most notably and reproducably, I can trivially
+>> > make Xorg spend the whole cpu time in the kernel. It might be an Xorg
+>> > bug, but from my untrained gut feeling it doesn't look that way.
+>> >
+>> > Anything more you need than whats already in the email?
+>>
+>> > Here are some details:
+>> Is it an AGP card ? It looks like it's the PAT update that kills perf
+>> for you, not much we can do, the pool allocator is probably starve.
+> If you mean AGP as in the old strange graphics bus, no. Its a pcie card.
+>
+> If that helps you, more detailedly the card is a: SAPPHIRE Radeon HD6870
+>
+> Unfortunately the manufacturers page is remarkably devoid of details...:
+> http://www.sapphiretech.com/presentation/product/?cid=1&gid=3&sgid=1037&lid=1&pid=1270&leg=0
+>
+> Greetings,
+>
+> Andres
 
-Thanks for your opinion. I was hesitating before sending ;) 
+Well, then the issue is that it tries to allocate write combined pages
+on PCIE which should not happen. I don't see how in the code you endup
+in that path unless drm_pci_device_is_agp return true for some
+reasons.
 
-The reason why this patch need separate goto statement is as below.
- 
-There are two different types when requesting the channel.
-One is a pointer of iio_channel, the other is the error.
-So return type will be two - allocated iio_channel and integer.
-For simplicity, I would use just one return variable when it runs successfully.
-In error cases, do return as explicit name such like ERR_PTR() rather than
-saving into local integer.
-
-Just my two cents.
-But your code has better readability.
-
-Thank you.
-
-Best Regards,
-Milo
-
-
+Cheers,
+Jerome
