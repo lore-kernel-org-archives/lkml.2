@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab2IQRYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:24:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46434 "EHLO
+	id S1756643Ab2IQRYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:24:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46431 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab2IQRS2 (ORCPT
+	with ESMTP id S1755696Ab2IQRS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:18:28 -0400
+	Mon, 17 Sep 2012 13:18:27 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/18] perf report: Enable integrated annotation only if possible
-Date: Mon, 17 Sep 2012 14:18:02 -0300
-Message-Id: <1347902292-14536-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/18] perf hists browser: Fix output for 100.00%
+Date: Mon, 17 Sep 2012 14:17:59 -0300
+Message-Id: <1347902292-14536-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1347902292-14536-1-git-send-email-acme@infradead.org>
 References: <1347902292-14536-1-git-send-email-acme@infradead.org>
@@ -28,80 +28,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The integrated annotation feature is supported only in TUI mode.  Also
-it should be enabled with 'symbol' sort key otherwise resulting hist
-entry doesn't need to have same symbol as of a sample so that it can
-fail on hist_entry__inc_addr_samples with -ERANGE.
-
-You can easily see it when start perf report TUI without symbol* sort
-key.  This patch fixes the problem.
+Current hpp format functions assume that the output will fit to 6
+character including % sign (XX.YY%) so used "%5.2f%%" as a format
+string.  However it might be the case if collapsing resulted in a single
+entry which has 100.00% (7 character) of period. In this case the output
+will be shifted by 1 character.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1347611729-16994-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1347431706-7839-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/ui/browsers/hists.c |    2 +-
+ tools/perf/ui/gtk/browser.c    |    2 +-
+ tools/perf/ui/hist.c           |   28 ++++++++++++++--------------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 97b2e63..b6696dd 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -93,7 +93,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 			struct annotation *notes;
- 			err = -ENOMEM;
- 			bx = he->branch_info;
--			if (bx->from.sym && use_browser > 0) {
-+			if (bx->from.sym && use_browser == 1 && sort__has_sym) {
- 				notes = symbol__annotation(bx->from.sym);
- 				if (!notes->src
- 				    && symbol__alloc_hist(bx->from.sym) < 0)
-@@ -107,7 +107,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 					goto out;
- 			}
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 5a5739b..1178317 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -571,7 +571,7 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+ {									\
+ 	double percent = 100.0 * he->_field / hpp->total_period;	\
+ 	*(double *)hpp->ptr = percent;					\
+-	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);	\
++	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
+ }
  
--			if (bx->to.sym && use_browser > 0) {
-+			if (bx->to.sym && use_browser == 1 && sort__has_sym) {
- 				notes = symbol__annotation(bx->to.sym);
- 				if (!notes->src
- 				    && symbol__alloc_hist(bx->to.sym) < 0)
-@@ -162,7 +162,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	 * so we don't allocated the extra space needed because the stdio
- 	 * code will not use it.
- 	 */
--	if (he->ms.sym != NULL && use_browser > 0) {
-+	if (he->ms.sym != NULL && use_browser == 1 && sort__has_sym) {
- 		struct annotation *notes = symbol__annotation(he->ms.sym);
+ HPP__COLOR_FN(overhead, period)
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 55acba6..7ff99ec 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -56,7 +56,7 @@ static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
+ 	markup = perf_gtk__get_percent_color(percent);				\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%5.2f%%", percent); 	\
++	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
+ 										\
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 407e855..e3f8cd4 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -33,13 +33,13 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 			percent = 0.0;
+ 	}
  
- 		assert(evsel != NULL);
-@@ -692,12 +692,14 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	else
- 		use_browser = 0;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+ }
  
-+	setup_sorting(report_usage, options);
-+
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
- 	 * so don't allocate extra space that won't be used in the stdio
- 	 * implementation.
- 	 */
--	if (use_browser > 0) {
-+	if (use_browser == 1 && sort__has_sym) {
- 		symbol_conf.priv_size = sizeof(struct annotation);
- 		report.annotate_init  = symbol__annotate_init;
- 		/*
-@@ -720,8 +722,6 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (symbol__init() < 0)
- 		goto error;
+ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
  
--	setup_sorting(report_usage, options);
--
- 	if (parent_pattern != default_parent_pattern) {
- 		if (sort_dimension__add("parent") < 0)
- 			goto error;
+ 	if (hpp->ptr) {
+ 		struct hists *old_hists = hpp->ptr;
+@@ -57,52 +57,52 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 
+ static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
+ }
+ 
+ static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_us(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "user");
+ }
+ 
+ static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -121,14 +121,14 @@ static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -147,14 +147,14 @@ static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
 -- 
 1.7.1
 
