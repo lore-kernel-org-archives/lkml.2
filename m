@@ -1,172 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2IQUvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:51:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36466 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab2IQUu6 (ORCPT
+	id S1756811Ab2IQUxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:53:47 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:44139 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754924Ab2IQUxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:50:58 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/4] tools lib traceevent: Use asprintf were applicable
-Date: Mon, 17 Sep 2012 17:50:46 -0300
-Message-Id: <1347915049-19093-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1347915049-19093-1-git-send-email-acme@infradead.org>
-References: <1347915049-19093-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Sep 2012 16:53:46 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19lRxOdn2z3vwF9obDCIVqj
+Date: Mon, 17 Sep 2012 13:53:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
+ tree
+Message-ID: <20120917205338.GA11762@atomide.com>
+References: <20120917192005.ab08c24f98010107fa855edf@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917192005.ab08c24f98010107fa855edf@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+* Stephen Rothwell <sfr@canb.auug.org.au> [120917 02:21]:
+> Hi all,
+> 
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> drivers/staging/tidspbridge/core/wdt.c between commit c37a1747acbf
+> ("staging: tidspbridge: Prepare for irqs.h removal") from the  tree and
+> commit ec2c0825ca31 ("ARM: OMAP2+: Remove hardcoded IRQs and enable
+> SPARSE_IRQ") from the arm-soc tree.
+> 
+> I fixed it up (I guess - see below) and can carry the fix as necessary
+> (no action is required).
 
-Replacing the equivalent open coded malloc + sprintf bits.
+Yes thanks again. This is the right fix for now, eventually
+the numbers should come from platform data or device tree..
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-ghokwtdw2hgmmmn7oa9s03r4@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-parse.c |   58 +++++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 27 deletions(-)
+Regards,
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 77ebeb8..278f989 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -827,9 +827,9 @@ static enum event_type __read_token(char **tok)
- 	switch (type) {
- 	case EVENT_NEWLINE:
- 	case EVENT_DELIM:
--		*tok = malloc_or_die(2);
--		(*tok)[0] = ch;
--		(*tok)[1] = 0;
-+		if (asprintf(tok, "%c", ch) < 0)
-+			return EVENT_ERROR;
-+
- 		return type;
+Tony
  
- 	case EVENT_OP:
-@@ -2769,10 +2769,8 @@ static int event_read_print(struct event_format *event)
- 	if (type == EVENT_DQUOTE) {
- 		char *cat;
- 
--		cat = malloc_or_die(strlen(event->print_fmt.format) +
--				    strlen(token) + 1);
--		strcpy(cat, event->print_fmt.format);
--		strcat(cat, token);
-+		if (asprintf(&cat, "%s%s", event->print_fmt.format, token) < 0)
-+			goto fail;
- 		free_token(token);
- 		free_token(event->print_fmt.format);
- 		event->print_fmt.format = NULL;
-@@ -3516,6 +3514,18 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 	return ret;
- }
- 
-+static void free_args(struct print_arg *args)
-+{
-+	struct print_arg *next;
-+
-+	while (args) {
-+		next = args->next;
-+
-+		free_arg(args);
-+		args = next;
-+	}
-+}
-+
- static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struct event_format *event)
- {
- 	struct pevent *pevent = event->pevent;
-@@ -3551,8 +3561,9 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	next = &arg->next;
- 
- 	arg->type = PRINT_ATOM;
--	arg->atom.atom = malloc_or_die(32);
--	sprintf(arg->atom.atom, "%lld", ip);
-+		
-+	if (asprintf(&arg->atom.atom, "%lld", ip) < 0)
-+		goto out_free;
- 
- 	/* skip the first "%pf : " */
- 	for (ptr = fmt + 6, bptr = data + field->offset;
-@@ -3609,8 +3620,10 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				arg = alloc_arg();
- 				arg->next = NULL;
- 				arg->type = PRINT_ATOM;
--				arg->atom.atom = malloc_or_die(32);
--				sprintf(arg->atom.atom, "%lld", val);
-+				if (asprintf(&arg->atom.atom, "%lld", val) < 0) {
-+					free(arg);
-+					goto out_free;
-+				}
- 				*next = arg;
- 				next = &arg->next;
- 				/*
-@@ -3638,18 +3651,10 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	}
- 
- 	return args;
--}
--
--static void free_args(struct print_arg *args)
--{
--	struct print_arg *next;
--
--	while (args) {
--		next = args->next;
- 
--		free_arg(args);
--		args = next;
--	}
-+out_free:
-+	free_args(args);
-+	return NULL;
- }
- 
- static char *
-@@ -3676,9 +3681,8 @@ get_bprint_format(void *data, int size __maybe_unused,
- 
- 	printk = find_printk(pevent, addr);
- 	if (!printk) {
--		format = malloc_or_die(45);
--		sprintf(format, "%%pf : (NO FORMAT FOUND at %llx)\n",
--			addr);
-+		if (asprintf(&format, "%%pf : (NO FORMAT FOUND at %llx)\n", addr) < 0)
-+			return NULL;
- 		return format;
- 	}
- 
-@@ -3686,8 +3690,8 @@ get_bprint_format(void *data, int size __maybe_unused,
- 	/* Remove any quotes. */
- 	if (*p == '"')
- 		p++;
--	format = malloc_or_die(strlen(p) + 10);
--	sprintf(format, "%s : %s", "%pf", p);
-+	if (asprintf(&format, "%s : %s", "%pf", p) < 0)
-+		return NULL;
- 	/* remove ending quotes and new line since we will add one too */
- 	p = format + strlen(format) - 1;
- 	if (*p == '"')
--- 
-1.7.9.2.358.g22243
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/staging/tidspbridge/core/wdt.c
+> index 1ed1474,453ef74..0000000
+> --- a/drivers/staging/tidspbridge/core/wdt.c
+> +++ b/drivers/staging/tidspbridge/core/wdt.c
+> @@@ -25,8 -25,7 +25,8 @@@
+>   #include <dspbridge/host_os.h>
+>   
+>   
+>  +#define OMAP34XX_WDT3_BASE 		(0x49000000 + 0x30000)
+> - #define INT_34XX_WDT3_IRQ 		36
+> + #define INT_34XX_WDT3_IRQ 		(36 + NR_IRQS)
+>   
+>   static struct dsp_wdt_setting dsp_wdt;
+>   
+
 
