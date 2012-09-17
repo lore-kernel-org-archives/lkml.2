@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2IQJyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 05:54:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53405 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab2IQJxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 05:53:54 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, jassisinghbrar@gmail.com, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH 2/2] DMA: PL330: Check the pointer returned by kzalloc
-Date: Mon, 17 Sep 2012 15:20:23 +0530
-Message-Id: <1347875423-7970-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1347875423-7970-1-git-send-email-sachin.kamat@linaro.org>
-References: <1347875423-7970-1-git-send-email-sachin.kamat@linaro.org>
+	id S1755397Ab2IQJyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 05:54:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37590 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328Ab2IQJys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 05:54:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,434,1344236400"; 
+   d="scan'208";a="145833433"
+Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
+        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20120917083654.GO12245@n2100.arm.linux.org.uk>
+References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+	 <20120914094155.GC12245@n2100.arm.linux.org.uk>
+	 <1347619868.1943.113.camel@vkoul-udesk3>
+	 <20120914111842.GD12245@n2100.arm.linux.org.uk>
+	 <1347853223.1943.136.camel@vkoul-udesk3>
+	 <20120917083654.GO12245@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Sep 2012 15:20:29 +0530
+Message-ID: <1347875429.1943.141.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kzalloc could return NULL. Hence add a check to avoid
-NULL pointer dereference.
+On Mon, 2012-09-17 at 09:36 +0100, Russell King - ARM Linux wrote:
+> > > I'm not saying take the slave_id out of the map.  I'm saying, let the
+> > > DMA engine driver itself figure out what dma_chan to return. 
+> > But wont that assume the dma controller knows which channel to allocate.
+> > And how would it know this information? This can be problematic for hard
+> > wired muxes, but can be easily done for controller which have
+> > programmable mux.
+> 
+> Well, as I have already said, at the moment you're returning the _first_
+> _free_ _channel_ on a DMA device, which almost certainly will always be
+> the wrong one. 
+Yes I overlooked, the continue is wrong. It needs to move to next
+available channel. I have fixed it.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/dma/pl330.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Now on the question if we should allow dmaengine to select channel or
+let dma engine driver do that, I don't see how that helps for hard wired
+muxes where dma engine driver doesn't know anything of mapping.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 018a445..5d3bbcd 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2930,6 +2930,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 		num_chan = max_t(int, pi->pcfg.num_peri, pi->pcfg.num_chan);
- 
- 	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
-+	if (!pdmac->peripherals) {
-+		ret = -ENOMEM;
-+		dev_err(&adev->dev, "unable to allocate pdmac->peripherals\n");
-+		goto probe_err5;
-+	}
- 
- 	for (i = 0; i < num_chan; i++) {
- 		pch = &pdmac->peripherals[i];
+For your OMAP dma this wont matter as I think you have a programmable
+mux so you maybe able to use any channel with rightly programmed mux,
+right?
+
 -- 
-1.7.4.1
+~Vinod
 
