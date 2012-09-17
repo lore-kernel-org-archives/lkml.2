@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab2IQUcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:32:41 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:54939 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752490Ab2IQUck (ORCPT
+	id S1755803Ab2IQUcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:32:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39802 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab2IQUcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:32:40 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+5RsUwUxSWisyFPD0dPQvp
-Date: Mon, 17 Sep 2012 13:32:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (arm-soc tree related)
-Message-ID: <20120917203233.GW4521@atomide.com>
-References: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
- <201209171429.31794.arnd@arndb.de>
- <20120917172208.GN4521@atomide.com>
+	Mon, 17 Sep 2012 16:32:43 -0400
+Message-ID: <505788E5.9080109@linaro.org>
+Date: Mon, 17 Sep 2012 22:32:37 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120917172208.GN4521@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Youquan Song <youquan.song@linux.intel.com>
+CC: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, arjan@linux.intel.com, lenb@kernel.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH V2 0/3] x86,idle: Enhance cpuidle prediction to handle
+ its failure
+References: <1347933209-25939-1-git-send-email-youquan.song@intel.com> <50573934.4030102@linaro.org> <20120918033020.GA20862@linux-youquan.bj.intel.com>
+In-Reply-To: <20120918033020.GA20862@linux-youquan.bj.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [120917 10:25]:
-> * Arnd Bergmann <arnd@arndb.de> [120917 07:30]:
-> > 
-> > If it requires plat/cpu.h, it should actually be limited to CONFIG_ARCH_OMAP,
-> > otherwise we will get the same problem on non-OMAP ARM builds. From what
-> > I can tell, the problem is the clocks_init function, which is the only
-> > part that is not completely generic.
-> > 
-> > The trivial workaround would be to enclose the "#include <plat/cpu.h>"
-> > statement in #ifdef CONFIG_ARCH_OMAP, but with the common clock code
-> > in place, we should probably be able to come up with a better solution
-> > that works independent of the omap platform.
+On 09/18/2012 05:30 AM, Youquan Song wrote:
+>>> One case is turbostat utility (tools/power/x86/turbostat) at kernel 3.3 or early
+>>> . turbostat utility will read 10 registers one by one at Sandybridge, so it will
+>>> generate 10 IPIs to wake up idle CPUs. So cpuidle menu governor will predict it
+>>>  is repeat mode and there is another IPI wake up idle CPU soon, so it keeps idle
+>>>  CPU stay at C1 state even though CPU is totally idle. However, in the turbostat
+>>> , following 10 registers reading is sleep 5 seconds by default, so the idle CPU
+>>>  will keep at C1 for a long time though it is idle until break event occurs.
+>>> In a idle Sandybridge system, run "./turbostat -v", we will notice that deep 
+>>> C-state dangles between "70% ~ 99%". After patched the kernel, we will notice
+>>> deep C-state stays at >99.98%.
+>>
+>> Is there an impact on performances ?
 > 
-> There are patches coming to remove cpu_is_omap usage from drivers,
-> and until then we should just ifdef the plat/cpu.h include.
+> In this case, turbostat is utility to measure cpu idle status and itself
+> also is a workload to system. Its purpose is that show cpu C-state
+> information every 5 seconds. After patched the kernel, it also does
+> the same thing as usual. So I think the performance has no/little impact.
 > 
-> It is possible to use these kind of external PM chips with other
-> SoCs, they're just not omap related and that's why there drivers
-> have not had the Kconfig dependency. I'll post a patch for that.
+> I do not find performance impact in my tests. If you performance impact cases or
+> suggestions, I will be very glad to try. 
 
-Looks like we can just remove the cpu_is_omap code with clock
-aliases, patch posted with Subject:
+There is simple program [1] I wrote specifically for cpuidle.
+It does not do benchmarking. Maybe you can reuse it or modify it to fit
+your needs.
 
-[PATCH] mfd: Fix compile for twl-core.c by removing cpu_is_omap usage
+Hope that helps.
 
-Regards,
+  -- Daniel
 
-Tony
+[1]
+http://git.linaro.org/gitweb?p=people/hongbozhang/pm-qa.git;a=blob;f=cpuidle/cpuidle_killer.c;h=5e7320f1e1679fdf4caa15d9b729534425b49bc6;hb=03e09b72a473032e434c811b2500f63fb65260c4
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
