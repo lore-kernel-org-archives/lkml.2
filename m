@@ -1,44 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab2IQSDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 14:03:12 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38085 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756929Ab2IQSDK (ORCPT
+	id S1757175Ab2IQSFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 14:05:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39692 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab2IQSFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 14:03:10 -0400
-Message-ID: <505765F2.1000707@gmail.com>
-Date: Mon, 17 Sep 2012 14:03:30 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Jianpeng Ma <majianpeng@gmail.com>,
-        fweisbec <fweisbec@gmail.com>, mingo <mingo@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Tao Ma <boyu.mt@taobao.com>,
-        Jens Axboe <axboe@kernel.dk>, kosaki.motohiro@gmail.com
-Subject: Re: Why blktrace didn't trace requests merge?
-References: <201209171933464847623@gmail.com> <1347888148.13080.20.camel@gandalf.local.home> <20120917175534.GG18677@google.com>
-In-Reply-To: <20120917175534.GG18677@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Sep 2012 14:05:42 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: linux-scsi@vger.kernel.org
+Cc: target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] drivers/target/target_core_configfs.c: fix error return code
+Date: Mon, 17 Sep 2012 20:05:33 +0200
+Message-Id: <1347905133-28492-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(9/17/12 1:55 PM), Tejun Heo wrote:
-> (cc'ing Jens)
-> 
-> On Mon, Sep 17, 2012 at 09:22:28AM -0400, Steven Rostedt wrote:
->> On Mon, 2012-09-17 at 19:33 +0800, Jianpeng Ma wrote:
->>> Hi all:
->>> 	I used blktrace to trace some io.But i can't find requests merge. I searched the code and did't not find.
->>> 	Why? 
->>> 									
->>
->> No idea. I don't use blktrace much, but I Cc'd those that understand it
->> better than I.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-backmerge/fronmerge event?
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ drivers/target/target_core_configfs.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index a1b4171..015f5be 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -3124,6 +3124,7 @@ static int __init target_core_init_configfs(void)
+ 				GFP_KERNEL);
+ 	if (!target_cg->default_groups) {
+ 		pr_err("Unable to allocate target_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 
+@@ -3139,6 +3140,7 @@ static int __init target_core_init_configfs(void)
+ 				GFP_KERNEL);
+ 	if (!hba_cg->default_groups) {
+ 		pr_err("Unable to allocate hba_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 	config_group_init_type_name(&alua_group,
+@@ -3154,6 +3156,7 @@ static int __init target_core_init_configfs(void)
+ 			GFP_KERNEL);
+ 	if (!alua_cg->default_groups) {
+ 		pr_err("Unable to allocate alua_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 
+@@ -3165,14 +3168,17 @@ static int __init target_core_init_configfs(void)
+ 	 * Add core/alua/lu_gps/default_lu_gp
+ 	 */
+ 	lu_gp = core_alua_allocate_lu_gp("default_lu_gp", 1);
+-	if (IS_ERR(lu_gp))
++	if (IS_ERR(lu_gp)) {
++		ret = -ENOMEM;
+ 		goto out_global;
++	}
+ 
+ 	lu_gp_cg = &alua_lu_gps_group;
+ 	lu_gp_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
+ 			GFP_KERNEL);
+ 	if (!lu_gp_cg->default_groups) {
+ 		pr_err("Unable to allocate lu_gp_cg->default_groups\n");
++		ret = -ENOMEM;
+ 		goto out_global;
+ 	}
+ 
+-- 
+1.7.11.4
 
