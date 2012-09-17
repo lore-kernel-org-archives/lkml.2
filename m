@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2IQPmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:42:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35896 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232Ab2IQPmV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:42:21 -0400
-Date: Mon, 17 Sep 2012 08:39:43 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v7 0/11] KGDB/KDB FIQ (NMI) debugger
-Message-ID: <20120917153943.GA7510@lizard>
-References: <20120913150133.GA16238@lizard>
- <20120917113750.GA28838@kroah.com>
- <50571ADF.3000406@windriver.com>
- <20120917125427.GA23516@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120917125427.GA23516@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756845Ab2IQPov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:44:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57880 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756672Ab2IQPou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:44:50 -0400
+X-IronPort-AV: E=Sophos;i="4.80,437,1344182400"; 
+   d="scan'208";a="5859715"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [V2 for-next PATCH 0/7] workqueue: async idle rebinding and cleanup for hotplug
+Date: Mon, 17 Sep 2012 23:46:41 +0800
+Message-Id: <1347896808-2398-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/17 23:45:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/17 23:45:06,
+	Serialize complete at 2012/09/17 23:45:06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 05:54:27AM -0700, Greg Kroah-Hartman wrote:
-[...]
-> > > To make it easier, can I just take the tty driver patches now?  Will
-> > > that break anything?
-> > 
-> > I have not made my way through the entire series yet, so I am not sure
-> > if you need the kdb header changes or not, but so far it looks like
-> > the tty pieces are separate.  If you add your ack Greg, I'll take the
-> > whole series and merge it into kgdb-next, or after I finish the review
-> > we could do it the other way around.
-> 
-> Your tree is fine:
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Let me know if you have problems merging this due to any tty patches,
-> and if so, I'll be glad to take them through my tree.
+Patch1 fix new found possible bug.
 
-Guys, thanks for taking a look into this!
+Patch2 use async algorithm to replace the synchronous algorithm to rebind
+idle workers.
 
-The patch that adds nmi console driver (i.e. tty/serial/kgdb_nmi.c)
-depends on the first KDB patches in these series, and it depends on
-amba-pl1011 and tty_port work, which is in tty-next.
+The synchronous algorithm requires 3 hand shakes, it introduces much
+complicated. 
 
-So, the series have to go via tty-next; I believe Jason won't able
-to take it via his tree.
+The new async algorithm does not do any synchronization. it removes
+the idle workers from idle_list to ensure the local-wake-up is correct
+instead.
 
-Thanks,
+Patch3-7 do simple cleanup
 
-Anton.
+Patch2-7 are ready for for-next. I have other devlopment and cleanup for workqueue,
+should I wait this patchset merged or send them at the same time?
+
+Lai Jiangshan (7):
+  workqueue: clear WORKER_REBIND unconditionaly in
+    busy_worker_rebind_fn()
+  workqueue: async idle rebinding
+  workqueue: new day don't need WORKER_REBIND for busy rebinding
+  workqueue: remove WORKER_REBIND
+  workqueue: rename manager_mutex to assoc_mutex
+  workqueue: use __cpuinit instead of __devinit for cpu callback
+  workqueue: use hotcpu_notifier() for workqueue_cpu_down_callback()
+
+ kernel/workqueue.c |  228 ++++++++++++++++++---------------------------------
+ 1 files changed, 81 insertions(+), 147 deletions(-)
+
+-- 
+1.7.4.4
+
