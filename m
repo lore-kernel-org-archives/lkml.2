@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2IQBGg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:06:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33774 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754123Ab2IQAu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754126Ab2IQAu4 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 16 Sep 2012 20:50:56 -0400
-Message-Id: <20120917003635.224233340@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33443 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753140Ab2IQAtp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Sep 2012 20:49:45 -0400
+Message-Id: <20120917003641.319412904@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:37:30 +0100
+Date: Mon, 17 Sep 2012 01:38:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 065/135] llc: fix info leak via getsockname()
+        alan@lxorguk.ukuu.org.uk, Moiz Sonasath <m-sonasath@ti.com>,
+        Ruchika Kharwar <ruchika@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 109/135] usb: host: xhci: fix compilation error for non-PCI based stacks
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,47 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Moiz Sonasath <m-sonasath@ti.com>
 
-[ Upstream commit 3592aaeb80290bda0f2cf0b5456c97bfc638b192 ]
+commit 296365781903226a3fb8758901eaeec09d2798e4 upstream.
 
-The LLC code wrongly returns 0, i.e. "success", when the socket is
-zapped. Together with the uninitialized uaddrlen pointer argument from
-sys_getsockname this leads to an arbitrary memory leak of up to 128
-bytes kernel stack via the getsockname() syscall.
+For non PCI-based stacks, this function call
+usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
+made from xhci_shutdown is not applicable.
 
-Return an error instead when the socket is zapped to prevent the info
-leak. Also remove the unnecessary memset(0). We don't directly write to
-the memory pointed by uaddr but memcpy() a local structure at the end of
-the function that is properly initialized.
+Ideally, we wouldn't have any PCI-specific code on
+a generic driver such as the xHCI stack, but it looks
+like we should just stub usb_disable_xhci_ports() out
+for non-PCI devices.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ balbi@ti.com: slight improvement to commit log ]
+
+This patch should be backported to kernels as old as 3.0, since the
+commit it fixes (e95829f474f0db3a4d940cae1423783edd966027 "xhci: Switch
+PPT ports to EHCI on shutdown.") was marked for stable.
+
+Signed-off-by: Moiz Sonasath<m-sonasath@ti.com>
+Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/llc/af_llc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index a18e6c3..99a60d5 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -966,14 +966,13 @@ static int llc_ui_getname(struct socket *sock, struct sockaddr *uaddr,
- 	struct sockaddr_llc sllc;
- 	struct sock *sk = sock->sk;
- 	struct llc_sock *llc = llc_sk(sk);
--	int rc = 0;
-+	int rc = -EBADF;
+diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
+index ef004a5..7f69a39 100644
+--- a/drivers/usb/host/pci-quirks.h
++++ b/drivers/usb/host/pci-quirks.h
+@@ -15,6 +15,7 @@ void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+ static inline void usb_amd_quirk_pll_disable(void) {}
+ static inline void usb_amd_quirk_pll_enable(void) {}
+ static inline void usb_amd_dev_put(void) {}
++static inline void usb_disable_xhci_ports(struct pci_dev *xhci_pdev) {}
+ #endif  /* CONFIG_PCI */
  
- 	memset(&sllc, 0, sizeof(sllc));
- 	lock_sock(sk);
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 	*uaddrlen = sizeof(sllc);
--	memset(uaddr, 0, *uaddrlen);
- 	if (peer) {
- 		rc = -ENOTCONN;
- 		if (sk->sk_state != TCP_ESTABLISHED)
+ #endif  /*  __LINUX_USB_PCI_QUIRKS_H  */
 
 
