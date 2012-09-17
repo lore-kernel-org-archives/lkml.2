@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab2IQUKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 16:10:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46748 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab2IQUK2 (ORCPT
+	id S1757309Ab2IQUPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 16:15:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35056 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab2IQUPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 16:10:28 -0400
+	Mon, 17 Sep 2012 16:15:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <505754EB.8060907@oracle.com>
-References: <20120917215938.11c456c113ac3b015cb2d5ae@canb.auug.org.au>
-	<505745CF.8040202@xenotime.net>
-	<505754EB.8060907@oracle.com>
-Date: Mon, 17 Sep 2012 22:10:27 +0200
-X-Google-Sender-Auth: LbBGneDXz2u_ryfXzPDdCCt6AYM
-Message-ID: <CAMuHMdWSTNb+YAyHR5F0kkHjDM8iVgRV352OcZ-epvNTcx+pBA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Sept 17 (jfs)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tino Reichardt <list-jfs@mcmilk.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120917071642.GC13023@secunet.com>
+References: <1347572486-1628-1-git-send-email-minipli@googlemail.com>
+	<20120917071642.GC13023@secunet.com>
+Date: Mon, 17 Sep 2012 22:15:33 +0200
+Message-ID: <CA+rthh8D9oZMC9hwQkowMneb-wFG+fUoSnaD9g_auTCG0TBrWg@mail.gmail.com>
+Subject: Re: [PATCH] xfrm_user: return error pointer instead of NULL
+From: Mathias Krause <minipli@googlemail.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave.
-
-On Mon, Sep 17, 2012 at 6:50 PM, Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
->> modular build:
->> ERROR: "__divdi3" [fs/jfs/jfs.ko] undefined!
+On Mon, Sep 17, 2012 at 9:16 AM, Steffen Klassert
+<steffen.klassert@secunet.com> wrote:
+> On Thu, Sep 13, 2012 at 11:41:26PM +0200, Mathias Krause wrote:
+>> When dump_one_state() returns an error, e.g. because of a too small
+>> buffer to dump the whole xfrm state, xfrm_state_netlink() returns NULL
+>> instead of an error pointer. But its callers expect an error pointer
+>> and therefore continue to operate on a NULL skbuff.
 >>
->> or builtin:
->> fs/built-in.o: In function `dbDiscardAG':
->> (.text+0x12988b): undefined reference to `__divdi3'
+>> This could lead to a privilege escalation (execution of user code in
+>> kernel context) if the attacker has CAP_NET_ADMIN and is able to map
+>> address 0.
 >
-> Thanks Randy.
->
-> This should fix it. I'll integrate it back into the proper patch in the
-> jfs tree for the next pull.
->
-> jfs: fix i386 build error. Replace 64-bit division with do_div()
->
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> Or it simply crashes with a NULL pointer dereference.
 
-Thx, same issue on m68k, and your patch fixed it, so
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+..while holding the xfrm_cfg_mutex, therefore effectively disabling
+the XFRM netlink interface. So it's at least a DOS in that case ;)
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Regards,
+Mathias
