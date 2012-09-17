@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab2IQPjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:39:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63809 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab2IQPjf (ORCPT
+	id S1756816Ab2IQPjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:39:43 -0400
+Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:2915 "EHLO
+	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab2IQPjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:39:35 -0400
-Message-ID: <50574432.5040005@suse.cz>
-Date: Mon, 17 Sep 2012 17:39:30 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	Mon, 17 Sep 2012 11:39:40 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: Re: [PATCH 0/6] media: input: convert to c99 format
+Date: Mon, 17 Sep 2012 17:37:51 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+References: <1347895353-18090-1-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1347895353-18090-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: BUG at mm/huge_memory.c:1428!
-References: <50522275.7090709@suse.cz> <CANN689E0SaT9vaBb+snwYrP728GjZhRj7o7T4GoNfQVY7sBr7Q@mail.gmail.com> <50538561.8030505@suse.cz>
-In-Reply-To: <50538561.8030505@suse.cz>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201209171737.51989.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 09:28 PM, Jiri Slaby wrote:
-> On 09/14/2012 12:46 AM, Michel Lespinasse wrote:
->> On Thu, Sep 13, 2012 at 11:14 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>> Hi,
->>>
->>> I've just get the following BUG with today's -next. It happens every
->>> time I try to update packages.
->>>
->>> kernel BUG at mm/huge_memory.c:1428!
->>
->> That is very likely my bug.
->>
->> Do you have the message that should be printed right above the bug ?
->> (                printk(KERN_ERR "mapcount %d page_mapcount %d\n",
->>                        mapcount, page_mapcount(page));
->> )
+On Mon September 17 2012 17:22:27 Shubhrajyoti D wrote:
+> The series tries to convert the i2c_msg to c99 struct.
+> This may avoid issues like below if someone tries to add an
+> element to the structure.
+> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
+
+I'm OK with this provided that these intializations are formatted with
+one field per line. It's rather hard to read otherwise since the lines
+are now a lot longer.
+
+Regards,
+
+	Hans
+
+> Special thanks to Julia Lawall for helping it automate.
+> By the below script.
+> http://www.mail-archive.com/cocci@diku.dk/msg02753.html
 > 
-> Unfortunately no. And I cannot reproduce anymore :(...
-
-FWIW: mapcount 0 page_mapcount 1
-
-It happened today. Now I'm going to apply your patch.
-
-> thanks,
--- 
-js
-suse labs
+> Checkpatch warn of more than 80 chars have been ignored.
+> 
+> Shubhrajyoti D (6):
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+> 
+>  drivers/media/i2c/ks0127.c                    |    4 ++--
+>  drivers/media/i2c/msp3400-driver.c            |   12 ++++++------
+>  drivers/media/i2c/tvaudio.c                   |    4 ++--
+>  drivers/media/radio/radio-tea5764.c           |    6 +++---
+>  drivers/media/radio/saa7706h.c                |    4 ++--
+>  drivers/media/radio/si470x/radio-si470x-i2c.c |   12 ++++++------
+>  6 files changed, 21 insertions(+), 21 deletions(-)
+> 
+> 
