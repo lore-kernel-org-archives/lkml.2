@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab2IQIQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 04:16:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41626 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2IQIPl (ORCPT
+	id S1754999Ab2IQIRy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 04:17:54 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:9180 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab2IQIRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 04:15:41 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: svenkatr@ti.com
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 3/4] drivers/mmc/host/omap_hsmmc.c: fix error return code
-Date: Mon, 17 Sep 2012 10:15:27 +0200
-Message-Id: <1347869728-2696-3-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
-References: <1347869728-2696-1-git-send-email-peter.senna@gmail.com>
+	Mon, 17 Sep 2012 04:17:48 -0400
+X-IronPort-AV: E=Sophos;i="4.80,434,1344211200"; 
+   d="scan'208";a="14572556"
+Message-ID: <1347869865.14977.15.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] Xen backend support for paged out grant targets V4.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+CC: xen-devel <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "David Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 17 Sep 2012 09:17:45 +0100
+In-Reply-To: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
+References: <1347632819-13684-1-git-send-email-andres@lagarcavilla.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+(I think I forgot to hit send on this on Friday, sorry. Also
+s/xen.lists.org/lists.xen.org in the CC line...)
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+On Fri, 2012-09-14 at 15:26 +0100, Andres Lagar-Cavilla wrote:
+> Since Xen-4.2, hvm domains may have portions of their memory paged out. When a
+> foreign domain (such as dom0) attempts to map these frames, the map will
+> initially fail. The hypervisor returns a suitable errno, and kicks an
+> asynchronous page-in operation carried out by a helper. The foreign domain is
+> expected to retry the mapping operation until it eventually succeeds. The
+> foreign domain is not put to sleep because itself could be the one running the
+> pager assist (typical scenario for dom0).
+> 
+> This patch adds support for this mechanism for backend drivers using grant
+> mapping and copying operations. Specifically, this covers the blkback and
+> gntdev drivers (which map foregin grants), and the netback driver (which copies
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+                           foreign
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
+> foreign grants).
+> 
+> * Add a retry method for grants that fail with GNTST_eagain (i.e. because the
+>   target foregin frame is paged out).
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/mmc/host/omap_hsmmc.c | 1 +
- 1 file changed, 1 insertion(+)
+          foreign
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index e59ac62..c8a2b36 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1893,6 +1893,7 @@ static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
- 		if (pdata->init(&pdev->dev) != 0) {
- 			dev_dbg(mmc_dev(host->mmc),
- 				"Unable to configure MMC IRQs\n");
-+			ret = -ENXIO;
- 			goto err_irq_cd_init;
- 		}
- 	}
--- 
-1.7.11.4
+> * Insert hooks with appropriate wrappers in the aforementioned drivers.
+> 
+> The retry loop is only invoked if the grant operation status is GNTST_eagain.
+> It guarantees to leave a new status code different from GNTST_eagain. Any other
+> status code results in identical code execution as before.
+> 
+> The retry loop performs 256 attempts with increasing time intervals through a
+> 32 second period. It uses msleep to yield while waiting for the next retry.
+[...]
+> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+Since this is more about grant tables than netback this should probably
+go via Konrad rather than Dave, is that OK with you Dave?
+
+(there's one more typo below)
+
+> ---
+>  drivers/net/xen-netback/netback.c  |   11 ++------
+>  drivers/xen/grant-table.c          |   53 ++++++++++++++++++++++++++++++++++++
+>  drivers/xen/xenbus/xenbus_client.c |    6 ++--
+>  include/xen/grant_table.h          |   12 ++++++++
+>  4 files changed, 70 insertions(+), 12 deletions(-)
+[...]
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index 11e27c3..da9386e 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -189,4 +189,16 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct page **pages, unsigned int count, bool clear_pte);
+>  
+> +/* Perform a batch of grant map/copy operations. Retry every batch slot
+> + * for which the hypervisor returns GNTST_eagain. This is typically due 
+> + * to paged out target frames.
+> + *
+> + * Will retry for 1, 2, ... 255 ms, i.e. 256 times during 32 seconds.
+> + *
+> + * Return value in each iand every status field of the batch guaranteed
+
+                          and
+
+> + * to not be GNTST_eagain. 
+> + */
+> +void gnttab_batch_map(struct gnttab_map_grant_ref *batch, unsigned count);
+> +void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count);
+> +
+>  #endif /* __ASM_GNTTAB_H__ */
+
+
 
