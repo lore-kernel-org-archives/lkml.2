@@ -1,319 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2IQXvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 19:51:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62178 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379Ab2IQXvM (ORCPT
+	id S932650Ab2IQX7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 19:59:22 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62050 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932616Ab2IQX7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 19:51:12 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Mon, 17 Sep 2012 18:51:07 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH resend] spi core: Provide means to instantiate devices through sysfs
-Date: Mon, 17 Sep 2012 16:51:20 -0700
-Message-Id: <1347925880-13076-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 17 Sep 2012 19:59:21 -0400
+Date: Mon, 17 Sep 2012 16:58:35 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Sasha Levin <levinsasha928@gmail.com>, axboe@kernel.dk,
+        Tejun Heo <tj@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: blk, mm: lockdep irq lock inversion in linux-next
+In-Reply-To: <20120917162248.d998afe3.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1209171634560.6827@eggly.anvils>
+References: <5054878F.1030908@gmail.com> <20120917162248.d998afe3.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C core provides a means to instantiate devices from userspace
-using sysfs attributes. Provide the same mechanism for SPI devices.
+On Mon, 17 Sep 2012, Andrew Morton wrote:
+> On Sat, 15 Sep 2012 15:50:07 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
+> 
+> > Hi all,
+> > 
+> > While fuzzing with trinity within a KVM tools guest on a linux-next kernel, I
+> > got the lockdep warning at the bottom of this mail.
+> > 
+> > I've tried figuring out where it was introduced, but haven't found any sign that
+> > any of the code in that area changed recently, so I'm probably missing something...
+> > 
+> > 
+> > [ 157.966399] =========================================================
+> > [ 157.968523] [ INFO: possible irq lock inversion dependency detected ]
+> > [ 157.970029] 3.6.0-rc5-next-20120914-sasha-00001-g802bf6c-dirty #340 Tainted: G W
+> > [ 157.970029] ---------------------------------------------------------
+> > [ 157.970029] trinity-child38/6642 just changed the state of lock:
+> > [ 157.970029] (&(&mapping->tree_lock)->rlock){+.+...}, at: [<ffffffff8120cafc>]
+> > invalidate_inode_pages2_range+0x20c/0x3c0
+> > [ 157.970029] but this lock was taken by another, SOFTIRQ-safe lock in the past:
+> > [ 157.970029] (&(&new->queue_lock)->rlock){..-...}
+> > 
+> > [snippage]
+> 
+> gack, what a mess.  Thanks for the report.  AFAICT, what has happened is:
+> 
+> invalidate_complete_page2()
+> ->spin_lock_irq(&mapping->tree_lock)
+> ->clear_page_mlock()
+>   __clear_page_mlock()
+>   ->isolate_lru_page()
+>     ->spin_lock_irq(&zone->lru_lock)
+>     ->spin_unlock_irq(&zone->lru_lock)
+> 
+> whoops.  isolate_lru_page() just enabled local interrupts while we're
+> holding ->tree_lock, which is supposed to be an irq-save lock.  And in
+> a rather obscure way, lockdep caught it.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-This helped me tremendously for testing new SPI master and client drivers.
-Maybe it is useful for others as well.
+Congratulations on deciphering the lockdep report, I soon gave up.
 
-ping: Any interest ?
+But it looks like a bigger problem than your patch addresses:
+both filemap.c and rmap.c document tree_lock as nesting within
+lru_lock; and although it's possible that time has changed that,
+I doubt it.
 
- Documentation/spi/spi-summary |   48 +++++++++++++
- drivers/spi/spi.c             |  159 +++++++++++++++++++++++++++++++++++++++++
- include/linux/spi/spi.h       |    3 +
- 3 files changed, 210 insertions(+)
+I think invalidate_complete_page2() is simply wrong to be calling
+clear_page_mlock() while holding mapping->tree_lock (other callsites
+avoid doing so).  Maybe it should do a preliminary PageDirty test,
+then clear_page_mlock(), then take mapping->tree_lock, then repeat
+PageDirty test, without worrying about the odd case when it might
+clear mlock but then decide to back off the page.
 
-diff --git a/Documentation/spi/spi-summary b/Documentation/spi/spi-summary
-index 7312ec1..5b59992 100644
---- a/Documentation/spi/spi-summary
-+++ b/Documentation/spi/spi-summary
-@@ -331,6 +331,54 @@ configurations will also be dynamic.  Fortunately, such devices all support
- basic device identification probes, so they should hotplug normally.
- 
- 
-+DECLARE SLAVE DEVICES FROM USER-SPACE
-+
-+In general, the kernel should know which SPI devices are connected and
-+what addresses they live at. However, in certain cases, it does not, so a
-+sysfs interface was added to let the user provide the information. This
-+interface is made of 2 attribute files which are created in every SPI master
-+directory: new_device and delete_device. Both files are write only and you
-+must write the right parameters to them in order to properly instantiate,
-+respectively delete, a SPI device.
-+
-+File new_device takes several parameters:
-+
-+Primary parameters are the name of the SPI device (a string), the SPI chip
-+select (a number, expressed in decimal or hexadecimal), the SPI bus speed
-+(a number, expressed in decimal or hexadecimal), and the SPI mode (a number,
-+expressed in decimal or hexadecimal). SPI device name, chip select, and speed
-+are mandatory. The mode parameter is optional and will be initialized with 0 if
-+not provided.
-+
-+For at25 type EEPROMs, additional parameters must be provided in < >. Those are
-+the EEPROM name (a string), the EEPROM capacity in bytes (a number, expressed in
-+decimal or hexadecimal), the EEPROM write page size (a number, expressed in
-+decimal or hexadecimal), and the EEPROM flags (a number, expressed in decimal or
-+hexadecimal).
-+
-+File delete_device takes a single parameter: the chip select of the SPI
-+device. As no two devices can live at the same chip select on a given SPI
-+master, the chip select is sufficient to uniquely identify the device to be
-+deleted.
-+
-+Examples:
-+	cd /sys/class/spi_master/spi0
-+		Instantiate devices on SPI master 0
-+
-+	echo "lm70 0 400000" > new_device
-+		Instantiate LM70 on CS0
-+
-+	echo "at25 1 1000000 0 < at25160b 2048 32 0x02 >" > new_device
-+		Instantiate at25 driver with AT25160B on CS1
-+
-+	echo "sst25vf080b 2 1000000 3" > new_device
-+		Instantiate SST25VF080B on CS2, using SPI mode 3
-+
-+While this interface should only be used when in-kernel device declaration
-+can't be done, it can be helpful if you are developing a driver on a test board,
-+where you soldered the SPI device yourself, or in hot-plug situations.
-+
-+
- How do I write an "SPI Protocol Driver"?
- ----------------------------------------
- Most SPI drivers are currently kernel drivers, but there's also support
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 84c2861..da9ea04 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -30,11 +30,13 @@
- #include <linux/slab.h>
- #include <linux/mod_devicetable.h>
- #include <linux/spi/spi.h>
-+#include <linux/spi/eeprom.h>
- #include <linux/pm_runtime.h>
- #include <linux/export.h>
- #include <linux/sched.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
-+#include <linux/stat.h>
- 
- static void spidev_release(struct device *dev)
- {
-@@ -229,6 +231,161 @@ struct bus_type spi_bus_type = {
- };
- EXPORT_SYMBOL_GPL(spi_bus_type);
- 
-+/*
-+ * Let users instantiate SPI devices through sysfs. This can be used when
-+ * platform initialization code doesn't contain the proper data for
-+ * whatever reason, or for testing.
-+ *
-+ * Parameter checking may look overzealous, but we really don't want
-+ * the user to provide incorrect parameters.
-+ */
-+static ssize_t
-+spi_sysfs_new_device(struct device *dev, struct device_attribute *attr,
-+		     const char *buf, size_t count)
-+{
-+	struct spi_master *master = container_of(dev, struct spi_master, dev);
-+	struct spi_board_info info;
-+	struct spi_eeprom eeprom;
-+	struct spi_device *spi;
-+	char end, d1, d2;
-+	unsigned int cs, speed, mode = 0;
-+	unsigned int len, pagesize, flags;
-+	int res;
-+
-+	dev_warn(dev,
-+		 "The new_device interface is still experimental and may change in a near future\n");
-+
-+	memset(&info, 0, sizeof(struct spi_board_info));
-+	memset(&eeprom, 0, sizeof(struct spi_eeprom));
-+
-+	/* Parse parameters, reject extra parameters */
-+	res = sscanf(buf, " %32s %u %u %x %c %10s %u %u %x %c%c",
-+		     info.modalias, &cs, &speed, &mode,
-+		     &d1, eeprom.name, &len, &pagesize, &flags, &d2,
-+		     &end);
-+	/* Must have at least name (modalias), chip select, and frequency */
-+	if (res < 3) {
-+		dev_err(dev, "new_device: Can't parse SPI data\n");
-+		return -EINVAL;
-+	}
-+	if (mode & ~master->mode_bits) {
-+		dev_err(dev, "new_device: Unsupported mode\n");
-+		return -EINVAL;
-+	}
-+	if (cs >= master->num_chipselect) {
-+		dev_err(dev, "new_device: Bad chipselect\n");
-+		return -EINVAL;
-+	}
-+	if (speed == 0) {
-+		dev_err(dev, "new_device: Bad speed\n");
-+		return -EINVAL;
-+	}
-+	if (!strcmp(info.modalias, "at25")) {
-+		/* For EEPROMs, all parameters must be provided and valid */
-+		if (res != 11 || d1 != '<' || d2 != '>' || end != '\n' ||
-+		    !len || !pagesize || !flags || (flags & ~0x1f)) {
-+			dev_err(dev, "new_device: Can't parse EEPROM data\n");
-+			return -EINVAL;
-+		}
-+		eeprom.byte_len = len;
-+		eeprom.page_size = pagesize;
-+		eeprom.flags = flags;
-+		info.platform_data = &eeprom;
-+	} else if (res > 4) {
-+		dev_err(dev, "new_device: Extra parameters\n");
-+		return -EINVAL;
-+	}
-+	info.chip_select = cs;
-+	info.mode = mode;
-+	info.max_speed_hz = speed;
-+
-+	spi = spi_new_device(master, &info);
-+	if (!spi)
-+		return -EINVAL;
-+
-+	/* Keep track of the added device */
-+	mutex_lock(&master->bus_lock_mutex);
-+	list_add_tail(&spi->detected, &master->userspace_devices);
-+	mutex_unlock(&master->bus_lock_mutex);
-+	dev_info(dev,
-+		 "new_device: Instantiated device %s:%u (speed=%u, mode=%u)\n",
-+		 info.modalias, info.chip_select, info.max_speed_hz, info.mode);
-+
-+	return count;
-+}
-+
-+/*
-+ * And of course let the users delete the devices they instantiated, if
-+ * they got it wrong. This interface can only be used to delete devices
-+ * instantiated by spi_sysfs_new_device above. This guarantees that we
-+ * don't delete devices to which some kernel code still has references.
-+ *
-+ * Parameter checking may look overzealous, but we really don't want
-+ * the user to delete the wrong device.
-+ */
-+static ssize_t
-+spi_sysfs_delete_device(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct spi_master *master = container_of(dev, struct spi_master, dev);
-+	struct spi_device *spi, *next;
-+	unsigned int cs;
-+	char end;
-+	int res;
-+
-+	/* Parse parameters, reject extra parameters */
-+	res = sscanf(buf, "%u%c", &cs, &end);
-+	if (res < 1) {
-+		dev_err(dev, "delete_device: Can't parse SPI chip select\n");
-+		return -EINVAL;
-+	}
-+	if (res > 1 && end != '\n') {
-+		dev_err(dev, "delete_device: Extra parameters\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Make sure the device was added through sysfs */
-+	res = -ENOENT;
-+	mutex_lock(&master->bus_lock_mutex);
-+	list_for_each_entry_safe(spi, next, &master->userspace_devices,
-+				 detected) {
-+		if (spi->chip_select == cs) {
-+			dev_info(dev, "delete_device: Deleting device %s:%u\n",
-+				 spi->modalias, spi->chip_select);
-+			list_del(&spi->detected);
-+			spi_unregister_device(spi);
-+			res = count;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&master->bus_lock_mutex);
-+
-+	if (res < 0)
-+		dev_err(dev, "delete_device: Can't find device in list\n");
-+	return res;
-+}
-+
-+static DEVICE_ATTR(new_device, S_IWUSR, NULL, spi_sysfs_new_device);
-+static DEVICE_ATTR(delete_device, S_IWUSR, NULL, spi_sysfs_delete_device);
-+
-+static struct attribute *spi_master_attrs[] = {
-+	&dev_attr_new_device.attr,
-+	&dev_attr_delete_device.attr,
-+	NULL
-+};
-+
-+static struct attribute_group spi_master_attr_group = {
-+	.attrs		= spi_master_attrs,
-+};
-+
-+static const struct attribute_group *spi_master_attr_groups[] = {
-+	&spi_master_attr_group,
-+	NULL
-+};
-+
-+static struct device_type spi_master_type = {
-+	.groups		= spi_master_attr_groups,
-+};
- 
- static int spi_drv_probe(struct device *dev)
- {
-@@ -584,6 +741,7 @@ static int spi_init_queue(struct spi_master *master)
- 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
- 
- 	INIT_LIST_HEAD(&master->queue);
-+	INIT_LIST_HEAD(&master->userspace_devices);
- 	spin_lock_init(&master->queue_lock);
- 
- 	master->running = false;
-@@ -939,6 +1097,7 @@ struct spi_master *spi_alloc_master(struct device *dev, unsigned size)
- 	master->bus_num = -1;
- 	master->num_chipselect = 1;
- 	master->dev.class = &spi_master_class;
-+	master->dev.type = &spi_master_type;
- 	master->dev.parent = get_device(dev);
- 	spi_master_set_devdata(master, &master[1]);
- 
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index fa702ae..dac46bc 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -91,6 +91,8 @@ struct spi_device {
- 	void			*controller_data;
- 	char			modalias[SPI_NAME_SIZE];
- 
-+	struct list_head	detected;
-+
- 	/*
- 	 * likely need more hooks for more protocol options affecting how
- 	 * the controller talks to each chip, like:
-@@ -273,6 +275,7 @@ struct spi_master {
- 	struct device	dev;
- 
- 	struct list_head list;
-+	struct list_head userspace_devices;
- 
- 	/* other than negative (== assign one dynamically), bus_num is fully
- 	 * board-specific.  usually that simplifies to being SOC-specific.
--- 
-1.7.9.7
+Oh, hold on, that reminds me: a few months ago I was putting together
+a tidy-up patch near there, and it seemed to me inappropriate to be
+clearing mlock down in truncate/invalidate, that belongs better to
+when unmapping the page, doesn't it?
 
+I'll look that out and try to finish it off.
+
+Hugh
+
+> 
+> Problem is, I cannot find any recent change which might have triggered
+> this.
+> 
+> I don't know how repeatable this is for you (not very at all, I
+> suspect).  This?
+> 
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm: isolate_lru_page(): don't enable local interrupts
+> 
+> isolate_lru_page() is called with local interrupts disabled, via
+> 
+> invalidate_complete_page2()
+> ->spin_lock_irq(&mapping->tree_lock)
+> ->clear_page_mlock()
+>   __clear_page_mlock()
+>   ->isolate_lru_page()
+> 
+> so it should not unconditionally enable local interrupts.
+> 
+> Sasha hit a lockdep warning when running Trinity as a result of this.
+> 
+> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/vmscan.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff -puN mm/vmscan.c~mm-isolate_lru_page-dont-enable-local-interrupts mm/vmscan.c
+> --- a/mm/vmscan.c~mm-isolate_lru_page-dont-enable-local-interrupts
+> +++ a/mm/vmscan.c
+> @@ -1161,8 +1161,9 @@ int isolate_lru_page(struct page *page)
+>  	if (PageLRU(page)) {
+>  		struct zone *zone = page_zone(page);
+>  		struct lruvec *lruvec;
+> +		unsigned long flags;
+>  
+> -		spin_lock_irq(&zone->lru_lock);
+> +		spin_lock_irqsave(&zone->lru_lock, flags);
+>  		lruvec = mem_cgroup_page_lruvec(page, zone);
+>  		if (PageLRU(page)) {
+>  			int lru = page_lru(page);
+> @@ -1171,7 +1172,7 @@ int isolate_lru_page(struct page *page)
+>  			del_page_from_lru_list(page, lruvec, lru);
+>  			ret = 0;
+>  		}
+> -		spin_unlock_irq(&zone->lru_lock);
+> +		spin_unlock_irqrestore(&zone->lru_lock, flags);
+>  	}
+>  	return ret;
+>  }
+> _
