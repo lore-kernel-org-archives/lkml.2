@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab2IQS4h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 14:56:37 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55876 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab2IQS4g (ORCPT
+	id S1757240Ab2IQTGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 15:06:40 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:53911 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab2IQTGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 14:56:36 -0400
-Date: Mon, 17 Sep 2012 11:56:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] workqueue: fix leak of active
-Message-ID: <20120917185620.GH18677@google.com>
-References: <50568D85.5030309@cn.fujitsu.com>
+	Mon, 17 Sep 2012 15:06:39 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am9RAGxzV1BV5h1yPGdsb2JhbABEhR6FI64ggz8ZAQEBATc0giABAQQBOhwjBQsIAxguFCUKGogNCrpMFIsNhghgA5IxgzCFcI0a
+X-IronPort-AV: E=Sophos;i="4.80,437,1344204000"; 
+   d="scan'208";a="116772648"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 17 Sep 2012 21:14:16 +0200
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, khali@linux-fr.org
+Subject: Re: [PATCH] applesmc: Bump max wait and rearrange udelay
+Message-ID: <20120917191416.GA598@polaris.bitmath.org>
+References: <alpine.DEB.2.02.1209152323490.2088@ubuntu>
+ <20120916043116.GA4477@roeck-us.net>
+ <20120916093520.GA5623@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161712070.14838@ubuntu>
+ <20120916223003.GA2160@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209161957490.2808@ubuntu>
+ <20120917162705.GA2854@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209171356340.3412@ubuntu>
+ <20120917184954.GA349@polaris.bitmath.org>
+ <alpine.DEB.2.02.1209171446390.1963@ubuntu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50568D85.5030309@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1209171446390.1963@ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Mon, Sep 17, 2012 at 10:40:05AM +0800, Lai Jiangshan wrote:
-> try_to_grab_pending() leave LINKED tagalong in delayed queue when
-> it deletes a work. This behavior will cause future
-> cwq_activate_first_delayed() increase the ->nr_active wrongly,
-> and may cause the whole cwq frozen.
+On Mon, Sep 17, 2012 at 02:54:25PM -0400, Parag Warudkar wrote:
 > 
-> example:
 > 
-> state:	cwq->max_active = 1, cwq->nr_active = 1
-> 	one work in cwq->pool, many in cwq->delayed_works.
+> On Mon, 17 Sep 2012, Henrik Rydberg wrote:
 > 
-> step1:	try_to_grab_pending() remove a work from delayed_works but leave tagalong.
-> step2:	when the work in cwq->pool is finished, cwq_activate_first_delayed()
-> 	move the tagalong to cwq->pool and increase the ->nr_active.
+> > So the question is, does this patch work equally well for you?
+> > 
+> > 
+> > diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> > index 2827088..8bf9011 100644
+> > --- a/drivers/hwmon/applesmc.c
+> > +++ b/drivers/hwmon/applesmc.c
+> > @@ -56,7 +56,7 @@
+> >  /* wait up to 32 ms for a status change. */
+> >  #define APPLESMC_MIN_WAIT      0x0010
+> >  #define APPLESMC_RETRY_WAIT    0x0100
+> > -#define APPLESMC_MAX_WAIT      0x8000
+> > +#define APPLESMC_MAX_WAIT      0x10000
+> >  
+> >  #define APPLESMC_READ_CMD      0x10
+> >  #define APPLESMC_WRITE_CMD     0x11
+> > 
 > 
-> current state: cwq->nr_active = 1, but works of the cwq in cwq->pool are all NO_COLOR,
-> 	so even when these works are finished, cwq->nr_active will not be decreased,
-> 	and no work will be moved from cwq->delayed_works. the cwq is frozen.
+> That was something that I tried originally and it still resulted in 
+> failures - albeit lesser in number.
+
+Good, just wanted to touch base here, so we know what we are doing.
+
+> I had to bump it to 0x20000 (effective wait of 65536) with the original 
+> loop termination logic and  udelay() in order to get it to reduce to 
+> zero.
 > 
-> Fix it by moving the tagalong to cwq->pool in try_to_grab_pending().
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Note that with usleep_range - each sleep is potentially more than the 
+> minimum - that's may be why 32ms works with usleep_range but not with 
+> udelay which is precise.
 
-Nice spotting.
+Yes, so if you also change APPLESMC_MIN_WAIT to 0x0020, what happens?
 
-> @@ -1101,11 +1101,26 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
->  		 */
->  		smp_rmb();
->  		if (gcwq == get_work_gcwq(work)) {
-> +			unsigned long delayed;
-> +
-> +			/*
-> +			 * move LINKED tagalong(if exist) out from
-> +			 * delayed queue. Otherwise some future
-> +			 * cwq_activate_first_delayed() may move
-> +			 * works(which are all NO_COLOR) to cwq->pool
-> +			 * and increase the ->nr_active. It may
-> +			 * cause the whole cwq frozen.
-> +			 */
-> +			delayed = *work_data_bits(work) & WORK_STRUCT_DELAYED;
-> +			if (delayed)
-> +				move_linked_works(work,
-> +					&get_work_cwq(work)->pool->worklist,
-> +					NULL);
-> +
->  			debug_work_deactivate(work);
->  			list_del_init(&work->entry);
->  			cwq_dec_nr_in_flight(get_work_cwq(work),
-> -				get_work_color(work),
-> -				*work_data_bits(work) & WORK_STRUCT_DELAYED);
-> +				get_work_color(work), delayed);
+> So bottomline, I suspect we will need to bump to 0x20000 if you want to 
+> keep the current loop termination and udelay().
 
-I'm a bit uneasy about how this introduces something which is on
-active list but not quite active.  Can we first activate it and then
-grab its pending?  IOW, change cwq_activate_first_delayed() to
-cwq_activate_delayed() which takes @work instead and then call it with
-the work item being grabbed in try_to_grab_pending() before dec'ing
-nr_in_flight?
+That is just crazy, since your code works with a 32ms maximum.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Henrik
