@@ -1,47 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2IQKE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 06:04:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11557 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab2IQKEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 06:04:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,434,1344236400"; 
-   d="scan'208";a="222956625"
-Subject: Re: [PATCH v3 05/15] dmaengine: omap-dma: Add support to suppress
- interrupts in cyclic mode
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	id S1755571Ab2IQKG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 06:06:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:46014 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab2IQKG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 06:06:26 -0400
+Message-ID: <5056F60E.1080305@atmel.com>
+Date: Mon, 17 Sep 2012 12:06:06 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        <alsa-devel@alsa-project.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1347624358-25582-6-git-send-email-peter.ujfalusi@ti.com>
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
-	 <1347624358-25582-6-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Sep 2012 15:30:21 +0530
-Message-ID: <1347876021.1943.149.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v3 04/15] dmaengine: Pass flags via device_prep_dma_cyclic()
+ callback
+References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com> <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
-> When requested (DMA_PREP_INTERRUPT is cleared in flags) disable all
-> DMA
-> interrupts for the channel. In this mode user space does not expect
-> periodic reports from kernel about the progress of the audio stream.
-> PulseAudio for example support this type of mode.
-Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+On 09/14/2012 02:05 PM, Peter Ujfalusi :
+> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+> can receive the flags coming from clients.
+> This feature can be used during audio operation to disable all audio
+> related interrupts when the DMA_PREP_INTERRUPT is cleared from the flags.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+> CC: Barry Song <baohua.song@csr.com>
+> CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> CC: Vista Silicon <javier.martin@vista-silicon.com>
+> CC: Zhangfei Gao <zhangfei.gao@marvell.com>
+> CC: Shawn Guo <shawn.guo@linaro.org>
+> CC: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  drivers/dma/at_hdmac.c        | 3 ++-
+
+For Atmel's driver:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+>  drivers/dma/ep93xx_dma.c      | 4 +++-
+>  drivers/dma/imx-dma.c         | 2 +-
+>  drivers/dma/imx-sdma.c        | 2 +-
+>  drivers/dma/mmp_tdma.c        | 2 +-
+>  drivers/dma/mxs-dma.c         | 2 +-
+>  drivers/dma/omap-dma.c        | 3 ++-
+>  drivers/dma/pl330.c           | 2 +-
+>  drivers/dma/sa11x0-dma.c      | 2 +-
+>  drivers/dma/sirf-dma.c        | 2 +-
+>  drivers/dma/ste_dma40.c       | 3 ++-
+>  drivers/dma/tegra20-apb-dma.c | 2 +-
+>  include/linux/dmaengine.h     | 4 ++--
+>  13 files changed, 19 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+> index 3934fcc..7e5f6b6 100644
+> --- a/drivers/dma/at_hdmac.c
+> +++ b/drivers/dma/at_hdmac.c
+> @@ -841,12 +841,13 @@ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
+>   * @buf_len: total number of bytes for the entire buffer
+>   * @period_len: number of bytes for each period
+>   * @direction: transfer direction, to or from device
+> + * @flags: tx descriptor status flags
+>   * @context: transfer context (ignored)
+>   */
+>  static struct dma_async_tx_descriptor *
+>  atc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+>  	struct at_dma_slave	*atslave = chan->private;
+> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+> index c64917e..493735b 100644
+> --- a/drivers/dma/ep93xx_dma.c
+> +++ b/drivers/dma/ep93xx_dma.c
+> @@ -1120,6 +1120,7 @@ fail:
+>   * @buf_len: length of the buffer (in bytes)
+>   * @period_len: lenght of a single period
+>   * @dir: direction of the operation
+> + * @flags: tx descriptor status flags
+>   * @context: operation context (ignored)
+>   *
+>   * Prepares a descriptor for cyclic DMA operation. This means that once the
+> @@ -1133,7 +1134,8 @@ fail:
+>  static struct dma_async_tx_descriptor *
+>  ep93xx_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
+>  			   size_t buf_len, size_t period_len,
+> -			   enum dma_transfer_direction dir, void *context)
+> +			   enum dma_transfer_direction dir, unsigned long flags,
+> +			   void *context)
+>  {
+>  	struct ep93xx_dma_chan *edmac = to_ep93xx_dma_chan(chan);
+>  	struct ep93xx_dma_desc *desc, *first;
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index 5084975..41b4376 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -801,7 +801,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+>  static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>  	struct imxdma_engine *imxdma = imxdmac->imxdma;
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index 1dc2a4a..2c5fd3e 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -1012,7 +1012,7 @@ err_out:
+>  static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+>  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct sdma_channel *sdmac = to_sdma_chan(chan);
+>  	struct sdma_engine *sdma = sdmac->sdma;
+> diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+> index 8a15cf2..6d52bd4 100644
+> --- a/drivers/dma/mmp_tdma.c
+> +++ b/drivers/dma/mmp_tdma.c
+> @@ -358,7 +358,7 @@ struct mmp_tdma_desc *mmp_tdma_alloc_descriptor(struct mmp_tdma_chan *tdmac)
+>  static struct dma_async_tx_descriptor *mmp_tdma_prep_dma_cyclic(
+>  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct mmp_tdma_chan *tdmac = to_mmp_tdma_chan(chan);
+>  	struct mmp_tdma_desc *desc;
+> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+> index 7f41b25..734a4eb 100644
+> --- a/drivers/dma/mxs-dma.c
+> +++ b/drivers/dma/mxs-dma.c
+> @@ -531,7 +531,7 @@ err_out:
+>  static struct dma_async_tx_descriptor *mxs_dma_prep_dma_cyclic(
+>  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+>  	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+> index 71d7869..4d2650f 100644
+> --- a/drivers/dma/omap-dma.c
+> +++ b/drivers/dma/omap-dma.c
+> @@ -366,7 +366,8 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
+>  
+>  static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
+>  	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+> -	size_t period_len, enum dma_transfer_direction dir, void *context)
+> +	size_t period_len, enum dma_transfer_direction dir, unsigned long flags,
+> +	void *context)
+>  {
+>  	struct omap_chan *c = to_omap_dma_chan(chan);
+>  	enum dma_slave_buswidth dev_width;
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index e4feba6..0035645 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -2683,7 +2683,7 @@ static inline int get_burst_len(struct dma_pl330_desc *desc, size_t len)
+>  static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+>  		struct dma_chan *chan, dma_addr_t dma_addr, size_t len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context)
+> +		unsigned long flags, void *context)
+>  {
+>  	struct dma_pl330_desc *desc;
+>  	struct dma_pl330_chan *pch = to_pchan(chan);
+> diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
+> index f5a7360..b893159 100644
+> --- a/drivers/dma/sa11x0-dma.c
+> +++ b/drivers/dma/sa11x0-dma.c
+> @@ -614,7 +614,7 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_slave_sg(
+>  
+>  static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
+>  	struct dma_chan *chan, dma_addr_t addr, size_t size, size_t period,
+> -	enum dma_transfer_direction dir, void *context)
+> +	enum dma_transfer_direction dir, unsigned long flags, void *context)
+>  {
+>  	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
+>  	struct sa11x0_dma_desc *txd;
+> diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+> index 434ad31..3eed8b3 100644
+> --- a/drivers/dma/sirf-dma.c
+> +++ b/drivers/dma/sirf-dma.c
+> @@ -489,7 +489,7 @@ err_dir:
+>  static struct dma_async_tx_descriptor *
+>  sirfsoc_dma_prep_cyclic(struct dma_chan *chan, dma_addr_t addr,
+>  	size_t buf_len, size_t period_len,
+> -	enum dma_transfer_direction direction, void *context)
+> +	enum dma_transfer_direction direction, unsigned long flags, void *context)
+>  {
+>  	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+>  	struct sirfsoc_dma_desc *sdesc = NULL;
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index 000d309..eee8d9b 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -2347,7 +2347,8 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
+>  static struct dma_async_tx_descriptor *
+>  dma40_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
+>  		     size_t buf_len, size_t period_len,
+> -		     enum dma_transfer_direction direction, void *context)
+> +		     enum dma_transfer_direction direction, unsigned long flags,
+> +		     void *context)
+>  {
+>  	unsigned int periods = buf_len / period_len;
+>  	struct dma_async_tx_descriptor *txd;
+> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+> index 24acd71..b42b6ff 100644
+> --- a/drivers/dma/tegra20-apb-dma.c
+> +++ b/drivers/dma/tegra20-apb-dma.c
+> @@ -990,7 +990,7 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_slave_sg(
+>  struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+>  	struct dma_chan *dc, dma_addr_t buf_addr, size_t buf_len,
+>  	size_t period_len, enum dma_transfer_direction direction,
+> -	void *context)
+> +	unsigned long flags, void *context)
+>  {
+>  	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+>  	struct tegra_dma_desc *dma_desc = NULL;
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 2abcac5..d3201e4 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -591,7 +591,7 @@ struct dma_device {
+>  	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_transfer_direction direction,
+> -		void *context);
+> +		unsigned long flags, void *context);
+>  	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>  		struct dma_chan *chan, struct dma_interleaved_template *xt,
+>  		unsigned long flags);
+> @@ -657,7 +657,7 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
+>  		unsigned long flags)
+>  {
+>  	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
+> -						period_len, dir, NULL);
+> +						period_len, dir, flags, NULL);
+>  }
+>  
+>  static inline int dmaengine_terminate_all(struct dma_chan *chan)
+> 
+
 
 -- 
-~Vinod
-
+Nicolas Ferre
