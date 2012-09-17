@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2IQBOK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Sep 2012 21:14:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33677 "EHLO
+	id S1753817Ab2IQBOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Sep 2012 21:14:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33673 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753630Ab2IQAu2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753608Ab2IQAu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Sep 2012 20:50:28 -0400
-Message-Id: <20120917003640.476447677@decadent.org.uk>
+	Sun, 16 Sep 2012 20:50:27 -0400
+Message-Id: <20120917003637.305718423@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Sep 2012 01:38:08 +0100
+Date: Mon, 17 Sep 2012 01:37:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sergei Poselenov <sposelenov@emcraft.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 103/135] rt2800usb: Added rx packet length validity check
+        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
+        Zhouping Liu <zliu@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 080/135] time: Move ktime_t overflow checking into timespec_valid_strict
 In-Reply-To: <20120917003625.784119135@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,62 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Poselenov <sposelenov@emcraft.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit efd5d6b03bd9c9e0df646c56fb5f4f3e25e5c1ac upstream.
+This is a -stable backport of cee58483cf56e0ba355fdd97ff5e8925329aa936
 
-On our system (ARM Cortex-M3 SOC running linux-2.6.33)
-frequent crashes were observed in the rt2800usb module
-because of the invalid length of the received packet (3392,
-46920...). This patch adds the sanity check on the packet
-legth. Also, changed WARNING to ERROR in rt2x00lib_rxdone()
-so that the bad packet condition would be noticed.
+Andreas Bombe reported that the added ktime_t overflow checking added to
+timespec_valid in commit 4e8b14526ca7 ("time: Improve sanity checking of
+timekeeping inputs") was causing problems with X.org because it caused
+timeouts larger then KTIME_T to be invalid.
 
-The fix was tested on the latest compat-wireless-3.5.1-1-snpc.
+Previously, these large timeouts would be clamped to KTIME_MAX and would
+never expire, which is valid.
 
-Signed-off-by: Sergei Poselenov <sposelenov@emcraft.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+This patch splits the ktime_t overflow checking into a new
+timespec_valid_strict function, and converts the timekeeping codes
+internal checking to use this more strict function.
+
+Reported-and-tested-by: Andreas Bombe <aeb@debian.org>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |   10 +++++++++-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    2 +-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ include/linux/time.h      |    7 +++++++
+ kernel/time/timekeeping.c |   10 +++++-----
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 52a32b5..6b4226b 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -667,8 +667,16 @@ static void rt2800usb_fill_rxdone(struct queue_entry *entry,
- 	skb_pull(entry->skb, RXINFO_DESC_SIZE);
- 
- 	/*
--	 * FIXME: we need to check for rx_pkt_len validity
-+	 * Check for rx_pkt_len validity. Return if invalid, leaving
-+	 * rxdesc->size zeroed out by the upper level.
- 	 */
-+	if (unlikely(rx_pkt_len == 0 ||
-+			rx_pkt_len > entry->queue->data_size)) {
-+		ERROR(entry->queue->rt2x00dev,
-+			"Bad frame size %d, forcing to 0\n", rx_pkt_len);
-+		return;
-+	}
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -125,6 +125,13 @@ static inline bool timespec_valid(const
+ 	/* Can't have more nanoseconds then a second */
+ 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
+ 		return false;
++	return true;
++}
 +
- 	rxd = (__le32 *)(entry->skb->data + rx_pkt_len);
++static inline bool timespec_valid_strict(const struct timespec *ts)
++{
++	if (!timespec_valid(ts))
++		return false;
+ 	/* Disallow values that could overflow ktime_t */
+ 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
+ 		return false;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -382,7 +382,7 @@ int do_settimeofday(const struct timespe
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
  
- 	/*
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index a6b88bd..3f07e36 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -629,7 +629,7 @@ void rt2x00lib_rxdone(struct queue_entry *entry, gfp_t gfp)
- 	 */
- 	if (unlikely(rxdesc.size == 0 ||
- 		     rxdesc.size > entry->queue->data_size)) {
--		WARNING(rt2x00dev, "Wrong frame size %d max %d.\n",
-+		ERROR(rt2x00dev, "Wrong frame size %d max %d.\n",
- 			rxdesc.size, entry->queue->data_size);
- 		dev_kfree_skb(entry->skb);
- 		goto renew_skb;
+-	if (!timespec_valid(tv))
++	if (!timespec_valid_strict(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -428,7 +428,7 @@ int timekeeping_inject_offset(struct tim
+ 	timekeeping_forward_now();
+ 
+ 	tmp = timespec_add(xtime,  *ts);
+-	if (!timespec_valid(&tmp)) {
++	if (!timespec_valid_strict(&tmp)) {
+ 		ret = -EINVAL;
+ 		goto error;
+ 	}
+@@ -591,7 +591,7 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
+-	if (!timespec_valid(&now)) {
++	if (!timespec_valid_strict(&now)) {
+ 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		now.tv_sec = 0;
+@@ -599,7 +599,7 @@ void __init timekeeping_init(void)
+ 	}
+ 
+ 	read_boot_clock(&boot);
+-	if (!timespec_valid(&boot)) {
++	if (!timespec_valid_strict(&boot)) {
+ 		pr_warn("WARNING: Boot clock returned invalid value!\n"
+ 			"         Check your CMOS/BIOS settings.\n");
+ 		boot.tv_sec = 0;
+@@ -649,7 +649,7 @@ static void update_sleep_time(struct tim
+  */
+ static void __timekeeping_inject_sleeptime(struct timespec *delta)
+ {
+-	if (!timespec_valid(delta)) {
++	if (!timespec_valid_strict(delta)) {
+ 		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
+ 					"sleep delta value!\n");
+ 		return;
 
 
