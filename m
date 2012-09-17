@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab2IQRWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 13:22:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57927 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2IQRSb (ORCPT
+	id S1756624Ab2IQRWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 13:22:17 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26058 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755297Ab2IQRWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 13:18:31 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, David Daney <david.daney@cavium.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 04/18] tools lib traceevent: Define _GNU_SOURCE in Makefile
-Date: Mon, 17 Sep 2012 14:17:58 -0300
-Message-Id: <1347902292-14536-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1347902292-14536-1-git-send-email-acme@infradead.org>
-References: <1347902292-14536-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Sep 2012 13:22:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18vu3GDRV743CZN3iEaCVUK
+Date: Mon, 17 Sep 2012 10:22:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (arm-soc tree related)
+Message-ID: <20120917172208.GN4521@atomide.com>
+References: <20120917212615.91bc134d237dcd5968f9f549@canb.auug.org.au>
+ <201209171429.31794.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201209171429.31794.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+* Arnd Bergmann <arnd@arndb.de> [120917 07:30]:
+> On Monday 17 September 2012, Stephen Rothwell wrote:
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > drivers/mfd/twl-core.c:49:22: fatal error: plat/cpu.h: No such file or directory
+> > 
+> > Caused by commit 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal").
 
-For the reasons stated on:
-
-  commit 0a84f00
-  Author: David Daney <david.daney@cavium.com>
-
-    perf tools: Fix broken build by defining _GNU_SOURCE in Makefile
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: David Daney <david.daney@cavium.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-e2nofbmj4uf0ykgsytxvt9pu@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/Makefile      |    2 +-
- tools/lib/traceevent/event-parse.c |    1 -
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 14131cb..04d959f 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -129,7 +129,7 @@ CFLAGS ?= -g -Wall
+Oops, sorry I screwed up there. That used to get included indirectly
+earlier if SPARSE_IRQ was not set.
  
- # Append required CFLAGS
- override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
--override CFLAGS += $(udis86-flags)
-+override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
- 
- ifeq ($(VERBOSE),1)
-   Q =
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 2c54cdd..77ebeb8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -24,7 +24,6 @@
-  *  Frederic Weisbecker gave his permission to relicense the code to
-  *  the Lesser General Public License.
-  */
--#define _GNU_SOURCE
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
--- 
-1.7.1
+> > I have added the following patch to restrict this driver to ARM until it
+> > is fixed:
+> > 
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 17 Sep 2012 21:18:21 +1000
+> > Subject: [PATCH] ARM: retrict TWL4030_CORE to ARM while it is broken
+> > 
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> Thanks!
+> 
+> If it requires plat/cpu.h, it should actually be limited to CONFIG_ARCH_OMAP,
+> otherwise we will get the same problem on non-OMAP ARM builds. From what
+> I can tell, the problem is the clocks_init function, which is the only
+> part that is not completely generic.
+> 
+> The trivial workaround would be to enclose the "#include <plat/cpu.h>"
+> statement in #ifdef CONFIG_ARCH_OMAP, but with the common clock code
+> in place, we should probably be able to come up with a better solution
+> that works independent of the omap platform.
 
+There are patches coming to remove cpu_is_omap usage from drivers,
+and until then we should just ifdef the plat/cpu.h include.
+
+It is possible to use these kind of external PM chips with other
+SoCs, they're just not omap related and that's why there drivers
+have not had the Kconfig dependency. I'll post a patch for that.
+
+Regards,
+
+Tony
