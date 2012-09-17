@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2IQOEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 10:04:13 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:46652 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab2IQOEM (ORCPT
+	id S1756313Ab2IQOEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 10:04:24 -0400
+Received: from mail-in-07.arcor-online.net ([151.189.21.47]:56922 "EHLO
+	mail-in-07.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756281Ab2IQOEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 10:04:12 -0400
-Date: Mon, 17 Sep 2012 10:04:05 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: PROBLEM: kernel BUG at fs/nfs/idmap.c:684!
-Message-ID: <20120917140405.GA19032@elliptictech.com>
-References: <20120914192056.GA15530@elliptictech.com>
- <50571F51.9080100@netapp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50571F51.9080100@netapp.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Sep 2012 10:04:21 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-05.arcor-online.net 42DE4E445F
+Subject: [PATCH v2] HID: roccat: conditional blacklisting of Roccat modules
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Sep 2012 16:04:19 +0200
+Message-ID: <1347890659.2398.1.camel@neuromancer.tessier-ashpool>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bryan,
+Roccat devices are standard compatible, specific drivers are only needed
+for extended functionality.
+If Roccat drivers are not configured, hid-generic binds these devices now.
 
-On 2012-09-17 09:02 -0400, Bryan Schumaker wrote:
-> Two questions:
-> 1) How sure are you that you're using v3?  Make sure you're using the
-> 'vers=3' mount option.  I'm not sure which version of nfs-utils Debian
-> uses, but recent versions set v4 as the default.
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+---
+ drivers/hid/hid-core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I looked in /proc/mounts and all of them had vers=3.  But...
-
-> 2) Can you try Linux 3.5.4?  Patches for the idmapper issue have
-> already been accepted.
-
-...indeed, Linux 3.5.4 seems to be working.  Moreover, if I look at
-/proc/mounts now I do in fact see a single line with vers=4.  I guess
-the v4 mount is what crashed so it didn't show up in the list.
-
-Thanks,
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 8bcd168..d5042b8 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1627,6 +1627,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
++#if IS_ENABLED(CONFIG_HID_ROCCAT)
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ARVO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
+@@ -1635,6 +1636,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRED) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_PYRA_WIRELESS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_SAVU) },
++#endif
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.3.4
+
+
 
