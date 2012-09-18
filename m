@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757807Ab2IRJqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:46:07 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43709 "EHLO relay.sw.ru"
+	id S1757759Ab2IRJvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:51:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36301 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754345Ab2IRJpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:45:06 -0400
-Subject: [PATCH v2 2/3] lockd: use rpc client's cl_nodename for id encoding
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 18 Sep 2012 13:37:18 +0400
-Message-ID: <20120918093718.2469.93069.stgit@localhost.localdomain>
-In-Reply-To: <20120918093612.2469.94393.stgit@localhost.localdomain>
-References: <20120918093612.2469.94393.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1754524Ab2IRJvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:51:04 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv2 1/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 15:20:38 +0530
+Message-ID: <1347961843-9376-2-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
+References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taking hostname from uts namespace if not safe, because this cuold be
-performind during umount operation on child reaper death. And in this case
-current->nsproxy is NULL already.
+        Convert the struct i2c_msg initialization to C99 format. This makes
+        maintaining and editing the code simpler. Also helps once other fields
+        like transferred are added in future.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: <stable@vger.kernel.org>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- fs/lockd/mon.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/media/i2c/ks0127.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index 38f240e..e0bc36e 100644
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -42,6 +42,7 @@ struct nsm_args {
- 	u32			proc;
- 
- 	char			*mon_name;
-+	char			*nodename;
- };
- 
- struct nsm_res {
-@@ -141,6 +142,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
- 		.vers		= 3,
- 		.proc		= NLMPROC_NSM_NOTIFY,
- 		.mon_name	= nsm->sm_mon_name,
-+		.nodename	= utsname()->nodename,
+diff --git a/drivers/media/i2c/ks0127.c b/drivers/media/i2c/ks0127.c
+index ee7ca2d..4ede64a 100644
+--- a/drivers/media/i2c/ks0127.c
++++ b/drivers/media/i2c/ks0127.c
+@@ -319,8 +319,18 @@ static u8 ks0127_read(struct v4l2_subdev *sd, u8 reg)
+ 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+ 	char val = 0;
+ 	struct i2c_msg msgs[] = {
+-		{ client->addr, 0, sizeof(reg), &reg },
+-		{ client->addr, I2C_M_RD | I2C_M_NO_RD_ACK, sizeof(val), &val }
++		{
++			.addr = client->addr,
++			.flags = 0,
++			.len = sizeof(reg),
++			.buf = &reg
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD | I2C_M_NO_RD_ACK,
++			.len = sizeof(val),
++			.buf = &val
++		}
  	};
- 	struct rpc_message msg = {
- 		.rpc_argp	= &args,
-@@ -477,7 +479,7 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
- {
- 	__be32 *p;
+ 	int ret;
  
--	encode_nsm_string(xdr, utsname()->nodename);
-+	encode_nsm_string(xdr, argp->nodename);
- 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
- 	*p++ = cpu_to_be32(argp->prog);
- 	*p++ = cpu_to_be32(argp->vers);
+-- 
+1.7.5.4
 
