@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949Ab2IRMYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:24:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52579 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757496Ab2IRMWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:22:52 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-media@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv4 6/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 17:52:36 +0530
-Message-ID: <1347970956-11158-7-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347970956-11158-1-git-send-email-shubhrajyoti@ti.com>
-References: <1347970956-11158-1-git-send-email-shubhrajyoti@ti.com>
+	id S932994Ab2IRMYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:24:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51502 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932952Ab2IRMYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 08:24:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] ARM: ux500: tidy up pin sleep modes
+Date: Tue, 18 Sep 2012 12:24:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1347967598-24691-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1347967598-24691-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209181224.36834.arnd@arndb.de>
+X-Provags-ID: V02:K0:XtJO0BxKg9ALR4N3UJlPOedCQtG/KiVis9QouNDOyZf
+ 3Hv+ZmHDMfc+PKUhyv+xWsZdoxMM4B3n9efebl+h3v0lwWTRd/
+ kIIKvZ81p5FIgaoohUbcvcBjBe/KAvT5W99sYCJNoUIImJiGJx
+ HqWnOJMCrczF4W3/fW22Y6wXukaWm6AnKnqLsoYs7rjmZDXkyz
+ VAaYjU3Wcf1r0vMaAyZB0RXK4puK/iLhP4UKFajVW9EXtz+DiB
+ 4QgQSfi4ehNq+uQsHjYuU7+N0l7Dv9y0MmJoEBgMoqPf0Av3eU
+ Tu1+SPqCR5DXr1uc1KKORoBcwWqJAAeIQHQnN9Gu0dtZC3EVU3
+ q3d4Wi+QAjDqmrrnpkEE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the struct i2c_msg initialization to C99 format. This makes
-maintaining and editing the code simpler. Also helps once other fields
-like transferred are added in future.
+On Tuesday 18 September 2012, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This named the sleep mode pin configurations as slpm rather
+> than sleep to correspond better with the settings from the
+> datasheet. It also defines an optional sleep mode for the SPI
+> controller SPI2.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> Arnd, Olof: again a patch I'd like to take through the pinctrl
+> tree for simplicity.
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/media/radio/si470x/radio-si470x-i2c.c |   23 +++++++++++++++++------
- 1 files changed, 17 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/media/radio/si470x/radio-si470x-i2c.c b/drivers/media/radio/si470x/radio-si470x-i2c.c
-index f867f04..e5024cf 100644
---- a/drivers/media/radio/si470x/radio-si470x-i2c.c
-+++ b/drivers/media/radio/si470x/radio-si470x-i2c.c
-@@ -98,8 +98,12 @@ int si470x_get_register(struct si470x_device *radio, int regnr)
- {
- 	u16 buf[READ_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{
-+			.addr = radio->client->addr,
-+			.flags = I2C_M_RD,
-+			.len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf
-+		},
- 	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
-@@ -119,8 +123,11 @@ int si470x_set_register(struct si470x_device *radio, int regnr)
- 	int i;
- 	u16 buf[WRITE_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, 0, sizeof(u16) * WRITE_REG_NUM,
--			(void *)buf },
-+		{
-+			.addr = radio->client->addr,
-+			.len = sizeof(u16) * WRITE_REG_NUM,
-+			.buf = (void *)buf
-+		},
- 	};
- 
- 	for (i = 0; i < WRITE_REG_NUM; i++)
-@@ -146,8 +153,12 @@ static int si470x_get_all_registers(struct si470x_device *radio)
- 	int i;
- 	u16 buf[READ_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{
-+			.addr = radio->client->addr,
-+			.flags = I2C_M_RD,
-+			.len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf
-+		},
- 	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
--- 
-1.7.5.4
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
