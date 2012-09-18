@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2IRGPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:15:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45259 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab2IRGPN (ORCPT
+	id S1756808Ab2IRGUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:20:32 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:46757 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755379Ab2IRGUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:15:13 -0400
-Date: Tue, 18 Sep 2012 08:15:09 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Mirko Lindner <mlindner@marvell.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch net] sky2: fix rx filter setup on link up
-Message-ID: <20120918061509.GB2294@minipsycho.orion>
-References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
- <20120917091214.5cd9b0f5@nehalam.linuxnetplumber.net>
- <20120917204724.GA1749@minipsycho.orion>
- <175CCF5F49938B4D99B2E3EF7F558EBE1B63898F0B@SC-VEXCH4.marvell.com>
+	Tue, 18 Sep 2012 02:20:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag4KACwSWFB5LJUB/2dsb2JhbABFhR62DwOBAIEIgiABAQU6HCMQCAMYLhQNGAMhEx6HUwMLsRUNiVMUiipjHGqFYgOUDYFUixiFCoJ4gUk
+Date: Tue, 18 Sep 2012 16:20:20 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v1 00/11] vfs: hot data tracking
+Message-ID: <20120918062020.GR11511@dastard>
+References: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
+ <20120917213009.GH13691@dastard>
+ <CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE1B63898F0B@SC-VEXCH4.marvell.com>
+In-Reply-To: <CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tue, Sep 18, 2012 at 02:38:52AM CEST, mlindner@marvell.com wrote:
->>Mon, Sep 17, 2012 at 06:12:14PM CEST, shemminger@vyatta.com wrote:
->>>On Mon, 17 Sep 2012 17:10:17 +0200
->>>Jiri Pirko <jiri@resnulli.us> wrote:
->>>
->>>> In my case I have following problem. sky2_set_multicast() sets registers
->>>> GM_MC_ADDR_H[1-4] correctly to:
->>>> 0000 0800 0001 0410
->>>> However, when adapter gets link and sky2_link_up() is called, the values
->>>> are for some reason different:
->>>> 0000 0800 0016 0410
->>>
->>>Rather than papering over the problem, it would be better to
->>>trace back what is setting those registers and fix that code.
->
->>Yes, I did that. No code at sky2.[ch] is writing to this registers other
->>than sky2_set_multicast() and sky2_gmac_reset() (I hooked on sky2_write*()).
->>So I strongly believe this is a HW issue (maybe only issue of my revision
->>"Yukon-2 EC chip revision 2")
->
->I would like to check the registers as soon as I'm back in my office next week and report my findings.
+On Tue, Sep 18, 2012 at 10:24:55AM +0800, Zhi Yong Wu wrote:
+> On Tue, Sep 18, 2012 at 5:30 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Mon, Sep 17, 2012 at 03:18:34PM +0800, zwu.kernel@gmail.com wrote:
+> >>  20 files changed, 2275 insertions(+), 1 deletions(-)
+> >>  create mode 100644 fs/hot_debugfs.c
+> >>  create mode 100644 fs/hot_debugfs.h
+> >>  create mode 100644 fs/hot_hash.c
+> >>  create mode 100644 fs/hot_hash.h
+> >>  create mode 100644 fs/hot_rb.c
+> >>  create mode 100644 fs/hot_rb.h
+> >>  create mode 100644 fs/hot_track.c
+> >>  create mode 100644 fs/hot_track.h
+> >>  create mode 100644 include/linux/hot_track.h
+> >
+> > So, 9 new files for tracking all of this? I'm not sure that so
+> > many new files are needed - putting it all in fs/hot_tracking.[ch]
+> > might make more sense, or if all 8 fs/hot* files remain, putting
+> > them in their own subdirectory might be an idea (like quota).
+> If all functions are in two files, they will be large and the logic is
+> not so clear. so i prefer the latter. thanks.
 
-Okay, I'll wait for you. If you need more info from my side, please do
-not hesitate to ask. Thanks!
+A single file is much easier to handle when searching and editting,
+though. And realistically:
 
->Could you also please check the hint from Stephen?
+$ wc -l fs/*.c |sort -nr -k 1 |head -10
+  62483 total
+   4000 fs/namei.c
+   3281 fs/buffer.c
+   3169 fs/dcache.c
+   2677 fs/namespace.c
+   2364 fs/locks.c
+   2321 fs/exec.c
+   2120 fs/binfmt_elf.c
+   2053 fs/splice.c
+   1934 fs/eventpoll.c
+$
+
+There are plenty of files for a single function/subsystem of around
+the aggregate size of this code, so everyone is used to dealing with
+this amount of logic for a particular feature in a single file.
+
+I much prefer it that way, to tell the truth, because I find it
+fairly common to have 5-10 files open at once when tracking
+something through, say, the buffered IO path. If I've now got to
+have another 5-10 files open just to track that same code path
+through this index, then that makes it much more difficult to
+manage than if were all in one .c file.
+
+IOWs, splitting code up into multiple files is not a win when the
+resultant files are all small and interdependent and you need to
+look at multiple files at the same time to understand what the code
+does as a whole....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
