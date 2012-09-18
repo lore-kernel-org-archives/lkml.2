@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab2IRQcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 12:32:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992Ab2IRQcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 12:32:14 -0400
-Date: Tue, 18 Sep 2012 17:31:57 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: [dm-devel] [PATCH v10 1/8] block: Generalized bio pool freeing
-Message-ID: <20120918163156.GC17356@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
-	linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dm-devel@redhat.com, Jens Axboe <axboe@kernel.dk>,
-	Lars Ellenberg <lars.ellenberg@linbit.com>,
-	Hannes Reinecke <hare@suse.de>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-2-git-send-email-koverstreet@google.com> <20120914182828.GK15728@agk-dp.fab.redhat.com> <20120917205139.GB14492@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120917205139.GB14492@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751823Ab2IRQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 12:36:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55360 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab2IRQg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 12:36:26 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: linux@maxim.org.za
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] arch/arm/mach-at91/gpio.c: Remove unecessary semicolon
+Date: Tue, 18 Sep 2012 18:36:08 +0200
+Message-Id: <1347986174-30287-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 01:51:39PM -0700, Kent Overstreet wrote:
-> That isn't a very good patch - it says it's clearing bi_end_io as a
-> precaution, but as a precaution to what?
- 
-As a precaution against the endio function being called an extra time by
-mistake if a stray reference remains after the bio has been freed.
-Wipe this field when dm frees it.  Defensive programming, basically,
-in response to a tricky bug he had to deal with.
+Found by http://coccinelle.lip6.fr/
 
-Alasdair
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ arch/arm/mach-at91/gpio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
+index be42cf0..ea31e96 100644
+--- a/arch/arm/mach-at91/gpio.c
++++ b/arch/arm/mach-at91/gpio.c
+@@ -658,7 +658,7 @@ static int at91_gpio_show(struct seq_file *s, void *unused)
+ 	seq_printf(s, "Pin\t");
+ 	for (bank = 0; bank < gpio_banks; bank++) {
+ 		seq_printf(s, "PIO%c\t\t", 'A' + bank);
+-	};
++	}
+ 	seq_printf(s, "\n\n");
+ 
+ 	/* print pin status */
+-- 
+1.7.11.4
 
