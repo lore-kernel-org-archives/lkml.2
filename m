@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab2IRKAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 06:00:05 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59459 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab2IRKAD (ORCPT
+	id S1757895Ab2IRKAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:00:15 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59028 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757868Ab2IRKAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 06:00:03 -0400
+	Tue, 18 Sep 2012 06:00:13 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.116.118.250]
-In-Reply-To: <1346351174-28441-1-git-send-email-fernando.lugo@ti.com>
-References: <1346351174-28441-1-git-send-email-fernando.lugo@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 18 Sep 2012 12:59:42 +0300
-Message-ID: <CAK=WgbaoPMj9OobHuC=VObTjvT--faen2_rfY-s4Jk-+Fqi5iQ@mail.gmail.com>
-Subject: Re: [PATCHv2 0/3] remoteproc: introduce rproc recovery
-To: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDEFB947B@BGMAIL02.nvidia.com>
+References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
+	<1347961843-9376-7-git-send-email-shubhrajyoti@ti.com>
+	<D958900912E20642BCBC71664EFECE3E6DDEFB947B@BGMAIL02.nvidia.com>
+Date: Tue, 18 Sep 2012 15:30:10 +0530
+Message-ID: <CAM=Q2cv8R8QUbV2UqNO+AbwgprAYxBtBjK=4rkHnqegGJWTdog@mail.gmail.com>
+Subject: Re: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99 format
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fernando,
+On Tue, Sep 18, 2012 at 3:26 PM, Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+>> owner@vger.kernel.org] On Behalf Of Shubhrajyoti D
+>> Sent: Tuesday, September 18, 2012 3:21 PM
+>> To: linux-media@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org; julia.lawall@lip6.fr; Shubhrajyoti D
+>> Subject: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99
+>> format
+>>
+>>         Convert the struct i2c_msg initialization to C99 format. This makes
+>>         maintaining and editing the code simpler. Also helps once other fields
+>>         like transferred are added in future.
+>>
+>> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+>> ---
+>>  drivers/media/i2c/msp3400-driver.c |   42
+>> ++++++++++++++++++++++++++++++-----
+>>  1 files changed, 36 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/media/i2c/msp3400-driver.c
+>> b/drivers/media/i2c/msp3400-driver.c
+>> index aeb22be..b8cef8d 100644
+>> --- a/drivers/media/i2c/msp3400-driver.c
+>> +++ b/drivers/media/i2c/msp3400-driver.c
+>> @@ -119,12 +119,32 @@ int msp_reset(struct i2c_client *client)
+>>       static u8 write[3]     = { I2C_MSP_DSP + 1, 0x00, 0x1e };
+>>       u8 read[2];
+>>       struct i2c_msg reset[2] = {
+>> -             { client->addr, I2C_M_IGNORE_NAK, 3, reset_off },
+>> -             { client->addr, I2C_M_IGNORE_NAK, 3, reset_on  },
+>> +             {
+>> +                     .addr = client->addr,
+>> +                     .flags = I2C_M_IGNORE_NAK,
+>> +                     .len = 3,
+>> +                     .buf = reset_off
+>> +             },
+>> +             {
+>> +                     .addr = client->addr,
+>> +                     .flags = I2C_M_IGNORE_NAK,
+>> +                     .len = 3,
+>> +                     .buf = reset_on
+>> +             },
+>>       };
+>>       struct i2c_msg test[2] = {
+>> -             { client->addr, 0,        3, write },
+>> -             { client->addr, I2C_M_RD, 2, read  },
+>> +             {
+>> +                     .addr = client->addr,
+>> +                     .flags = 0,
+>
+> Does flags not contain 0 by default?
+>
 
-On Thu, Aug 30, 2012 at 9:26 PM, Fernando Guzman Lugo
-<fernando.lugo@ti.com> wrote:
-> These set of patches make possible the remoteproc recover after a crash.
-> This is a hard recovery, that means the remoteproc is reset and it will
-> start from the beginning. When a crash happen all the virtio devices are
-> destroyed. Therefore, both rpmsg drivers and devices are gracefully
-> removed which also cause rproc users become 0 and the remoteproc is turned
-> off. After the virtio devices are destroyed the crash handler function
-> will read the virtio information from the firmware in order to recreate
-> the virtio devices that will boot the remoteproc and everything will be
-> functional again.
+It does however I felt that 0 means write so letting it be explicit.
 
-Applied to remoteproc's for-next branch with a few changes (so we
-don't miss the merge window).
-
-The changes are detailed in the commit logs of the patches, please let
-me know if there's any issue.
-
-Thanks!
-Ohad.
+In case a removal is preferred that's doable too however felt it is
+more readable this way.
