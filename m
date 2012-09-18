@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab2IRJvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:51:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36316 "EHLO arroyo.ext.ti.com"
+	id S932657Ab2IRJwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:52:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45066 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757815Ab2IRJvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757800Ab2IRJvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Sep 2012 05:51:15 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 15:20:43 +0530
-Message-ID: <1347961843-9376-7-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 3/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 15:20:40 +0530
+Message-ID: <1347961843-9376-4-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
 References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
@@ -28,71 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/media/i2c/msp3400-driver.c |   42 ++++++++++++++++++++++++++++++-----
- 1 files changed, 36 insertions(+), 6 deletions(-)
+ drivers/media/radio/radio-tea5764.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/i2c/msp3400-driver.c b/drivers/media/i2c/msp3400-driver.c
-index aeb22be..b8cef8d 100644
---- a/drivers/media/i2c/msp3400-driver.c
-+++ b/drivers/media/i2c/msp3400-driver.c
-@@ -119,12 +119,32 @@ int msp_reset(struct i2c_client *client)
- 	static u8 write[3]     = { I2C_MSP_DSP + 1, 0x00, 0x1e };
- 	u8 read[2];
- 	struct i2c_msg reset[2] = {
--		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_off },
--		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_on  },
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_IGNORE_NAK,
-+			.len = 3,
-+			.buf = reset_off
-+		},
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_IGNORE_NAK,
-+			.len = 3,
-+			.buf = reset_on
-+		},
- 	};
- 	struct i2c_msg test[2] = {
--		{ client->addr, 0,        3, write },
--		{ client->addr, I2C_M_RD, 2, read  },
-+		{
-+			.addr = client->addr,
-+			.flags = 0,
-+			.len = 3,
-+			.buf = write
-+		},
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_RD,
-+			.len = 2,
-+			.buf = read
-+		},
- 	};
+diff --git a/drivers/media/radio/radio-tea5764.c b/drivers/media/radio/radio-tea5764.c
+index 6b1fae3..41de676 100644
+--- a/drivers/media/radio/radio-tea5764.c
++++ b/drivers/media/radio/radio-tea5764.c
+@@ -151,8 +151,11 @@ int tea5764_i2c_read(struct tea5764_device *radio)
+ 	u16 *p = (u16 *) &radio->regs;
  
- 	v4l_dbg(3, msp_debug, client, "msp_reset\n");
-@@ -143,8 +163,18 @@ static int msp_read(struct i2c_client *client, int dev, int addr)
- 	u8 write[3];
- 	u8 read[2];
- 	struct i2c_msg msgs[2] = {
--		{ client->addr, 0,        3, write },
--		{ client->addr, I2C_M_RD, 2, read  }
-+		{
-+			.addr = client->addr,
-+			.flags = 0,
-+			.len = 3,
-+			.buf = write
-+		},
-+		{
-+			.addr = client->addr,
+ 	struct i2c_msg msgs[1] = {
+-		{ radio->i2c_client->addr, I2C_M_RD, sizeof(radio->regs),
+-			(void *)&radio->regs },
++		{	.addr = radio->i2c_client->addr,
 +			.flags = I2C_M_RD,
-+			.len = 2,
-+			.buf = read
-+		}
++			.len = sizeof(radio->regs),
++			.buf = (void *)&radio->regs
++		},
  	};
- 
- 	write[0] = dev + 1;
+ 	if (i2c_transfer(radio->i2c_client->adapter, msgs, 1) != 1)
+ 		return -EIO;
+@@ -167,7 +170,12 @@ int tea5764_i2c_write(struct tea5764_device *radio)
+ 	struct tea5764_write_regs wr;
+ 	struct tea5764_regs *r = &radio->regs;
+ 	struct i2c_msg msgs[1] = {
+-		{ radio->i2c_client->addr, 0, sizeof(wr), (void *) &wr },
++		{
++			.addr = radio->i2c_client->addr,
++			.flags = 0,
++			.len = sizeof(wr),
++			.buf = (void *)&wr
++		},
+ 	};
+ 	wr.intreg  = r->intreg & 0xff;
+ 	wr.frqset  = __cpu_to_be16(r->frqset);
 -- 
 1.7.5.4
 
