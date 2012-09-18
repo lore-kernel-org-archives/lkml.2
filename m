@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107Ab2IROQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 10:16:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17202 "EHLO mx1.redhat.com"
+	id S933145Ab2IROQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 10:16:52 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7067 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933045Ab2IROQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 10:16:41 -0400
-Message-ID: <505881F6.3030204@redhat.com>
-Date: Tue, 18 Sep 2012 10:15:18 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+	id S933077Ab2IROQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 10:16:48 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <devel@openvz.org>, Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
         Suleiman Souhlal <suleiman@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-6-git-send-email-glommer@parallels.com>
-In-Reply-To: <1347977050-29476-6-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH v3 01/16] slab/slub: struct memcg_params
+Date: Tue, 18 Sep 2012 18:11:55 +0400
+Message-Id: <1347977530-29755-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347977530-29755-1-git-send-email-glommer@parallels.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2012 10:04 AM, Glauber Costa wrote:
-> This flag is used to indicate to the callees that this allocation is a
-> kernel allocation in process context, and should be accounted to
-> current's memcg. It takes numerical place of the of the recently removed
-> __GFP_NO_KSWAPD.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+For the kmem slab controller, we need to record some extra
+information in the kmem_cache structure.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/slab.h     | 7 +++++++
+ include/linux/slab_def.h | 4 ++++
+ include/linux/slub_def.h | 3 +++
+ 3 files changed, 14 insertions(+)
 
-
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 0dd2dfa..3152bcd 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -177,6 +177,13 @@ unsigned int kmem_cache_size(struct kmem_cache *);
+ #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
+ #endif
+ 
++#ifdef CONFIG_MEMCG_KMEM
++struct mem_cgroup_cache_params {
++	struct mem_cgroup *memcg;
++	int id;
++};
++#endif
++
+ /*
+  * Common kmalloc functions provided by all allocators
+  */
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 0c634fa..39c5e9d 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -83,6 +83,10 @@ struct kmem_cache {
+ 	int obj_offset;
+ #endif /* CONFIG_DEBUG_SLAB */
+ 
++#ifdef CONFIG_MEMCG_KMEM
++	struct mem_cgroup_cache_params memcg_params;
++#endif
++
+ /* 6) per-cpu/per-node data, touched during every alloc/free */
+ 	/*
+ 	 * We put array[] at the end of kmem_cache, because we want to size
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index df448ad..8bb8ad2 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -101,6 +101,9 @@ struct kmem_cache {
+ #ifdef CONFIG_SYSFS
+ 	struct kobject kobj;	/* For sysfs */
+ #endif
++#ifdef CONFIG_MEMCG_KMEM
++	struct mem_cgroup_cache_params memcg_params;
++#endif
+ 
+ #ifdef CONFIG_NUMA
+ 	/*
 -- 
-All rights reversed
+1.7.11.4
+
