@@ -1,157 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab2IRHSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 03:18:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58302 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245Ab2IRHSk (ORCPT
+	id S1757345Ab2IRHSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:18:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43854 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757245Ab2IRHSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 03:18:40 -0400
-Date: Tue, 18 Sep 2012 15:19:03 +0800
-From: "Jianpeng Ma" <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>
-Cc: shli <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Fix problems about handling bio to plug when bio merged failed.
-References: <201208101944375001710@gmail.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <2012091815190182830910@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 18 Sep 2012 03:18:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <50581084.2050007@yahoo.es>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<50581084.2050007@yahoo.es>
+Date: Tue, 18 Sep 2012 12:48:41 +0530
+X-Google-Sender-Auth: RYir3mXGUnsim75jGohp20RQFHE
+Message-ID: <CAOh2x=kL=pB2Hk4qHNUR1zTJUeJRPNihcH4dVP3EKzC3ETF52A@mail.gmail.com>
+Subject: Re: [PATCH 0/7] dw_dmac: introduce autoconfiguration
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8I7IlOK024420
 
-On 2012-08-10 19:44 Jianpeng Ma <majianpeng@gmail.com> Wrote:
->There are some problems about handling bio which merge to plug failed.
->Patch1 will avoid unnecessary plug should_sort test,although it's not a bug.
->Patch2 correct a bug when handle more devices,it leak some devices to trace plug-operation.
+On Tue, Sep 18, 2012 at 11:41 AM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+> The (embedded) dw dma on the AP7000 indeed does not support auto
+> configuration (the register reads as zero) and so it needs the
+> platform data.
 >
->Because the patch2,so it's not necessary to sort when flush plug.Although patch2 has 
->O(n*n) complexity,it's more than list_sort which has O(nlog(n)) complexity.But the plug 
->list is unlikely too long,so i think patch3 can accept.
+> I tested the driver on AVR32 with the atmel-mci driver and it all
+> worked well.
+>
+> I also tested the new software emulation of LLP mode by setting
+> nollp for each channel to true. That also worked as expected.
 >
 >
->Jianpeng Ma (3):
->  block: avoid unnecessary plug should_sort test.
->  block: Fix not tracing all device plug-operation.
->  block: Remove unnecessary requests sort.
->
-> block/blk-core.c |   35 ++++++++++++++++++-----------------
-> 1 file changed, 18 insertions(+), 17 deletions(-)
->
->-- 
->1.7.9.5
-Hi axboe:
-	Sorry for asking you again. But I found a problem which it contained those code. So i asked how those patchset again.
-If you discard those,i will send the patch using the old code. On the other hand,I will wait the patchest release and to continue.
+> Tested-by: Hein Tibosch <hein_tibosch@yahoo.es>
 
-The problem is about blk_plug. 
-My workload is raid5  which had 16 disks. And used our filesystem to write used direct mode.
-I used the blktrace to find those message:
-
-  8,16   0     3570     1.083923979  2519  I   W 144323176 + 24 [md127_raid5]
-  8,16   0        0     1.083926214     0  m   N cfq2519 insert_request
-  8,16   0     3571     1.083926586  2519  I   W 144323072 + 104 [md127_raid5]
-  8,16   0        0     1.083926952     0  m   N cfq2519 insert_request
-  8,16   0     3572     1.083927180  2519  U   N [md127_raid5] 2
-  8,16   0        0     1.083927870     0  m   N cfq2519 Not idling. st->count:1
-  8,16   0        0     1.083928320     0  m   N cfq2519 dispatch_insert
-  8,16   0        0     1.083928951     0  m   N cfq2519 dispatched a request
-  8,16   0        0     1.083929443     0  m   N cfq2519 activate rq, drv=1
-  8,16   0     3573     1.083929530  2519  D   W 144323176 + 24 [md127_raid5]
-  8,16   0        0     1.083933883     0  m   N cfq2519 Not idling. st->count:1
-  8,16   0        0     1.083934189     0  m   N cfq2519 dispatch_insert
-  8,16   0        0     1.083934654     0  m   N cfq2519 dispatched a request
-  8,16   0        0     1.083935014     0  m   N cfq2519 activate rq, drv=2
-  8,16   0     3574     1.083935101  2519  D   W 144323072 + 104 [md127_raid5]
-  8,16   0     3575     1.084196179     0  C   W 144323176 + 24 [0]
-  8,16   0        0     1.084197979     0  m   N cfq2519 complete rqnoidle 0
-  8,16   0     3576     1.084769073     0  C   W 144323072 + 104 [0]
-  ......
-  8,16   1     3596     1.091394357  2519  I   W 144322544 + 16 [md127_raid5]
-  8,16   1        0     1.091396181     0  m   N cfq2519 insert_request
-  8,16   1     3597     1.091396571  2519  I   W 144322520 + 24 [md127_raid5]
-  8,16   1        0     1.091396934     0  m   N cfq2519 insert_request
-  8,16   1     3598     1.091397165  2519  I   W 144322488 + 32 [md127_raid5]
-  8,16   1        0     1.091397477     0  m   N cfq2519 insert_request
-  8,16   1     3599     1.091397708  2519  I   W 144322432 + 56 [md127_raid5]
-  8,16   1        0     1.091398023     0  m   N cfq2519 insert_request
-  8,16   1     3600     1.091398284  2519  U   N [md127_raid5] 4
-  8,16   1        0     1.091398986     0  m   N cfq2519 Not idling. st->count:1
-  8,16   1        0     1.091399511     0  m   N cfq2519 dispatch_insert
-  8,16   1        0     1.091400217     0  m   N cfq2519 dispatched a request
-  8,16   1        0     1.091400688     0  m   N cfq2519 activate rq, drv=1
-  8,16   1     3601     1.091400766  2519  D   W 144322544 + 16 [md127_raid5]
-  8,16   1        0     1.091406151     0  m   N cfq2519 Not idling. st->count:1
-  8,16   1        0     1.091406460     0  m   N cfq2519 dispatch_insert
-  8,16   1        0     1.091406931     0  m   N cfq2519 dispatched a request
-  8,16   1        0     1.091407291     0  m   N cfq2519 activate rq, drv=2
-  8,16   1     3602     1.091407378  2519  D   W 144322520 + 24 [md127_raid5]
-  8,16   1        0     1.091414006     0  m   N cfq2519 Not idling. st->count:1
-  8,16   1        0     1.091414297     0  m   N cfq2519 dispatch_insert
-  8,16   1        0     1.091414702     0  m   N cfq2519 dispatched a request
-  8,16   1        0     1.091415047     0  m   N cfq2519 activate rq, drv=3
-  8,16   1     3603     1.091415125  2519  D   W 144322488 + 32 [md127_raid5]
-  8,16   1        0     1.091416469     0  m   N cfq2519 Not idling. st->count:1
-  8,16   1        0     1.091416754     0  m   N cfq2519 dispatch_insert
-  8,16   1        0     1.091417186     0  m   N cfq2519 dispatched a request
-  8,16   1        0     1.091417535     0  m   N cfq2519 activate rq, drv=4
-  8,16   1     3604     1.091417628  2519  D   W 144322432 + 56 [md127_raid5]
-  8,16   1     3605     1.091857225  4393  C   W 144322544 + 16 [0]
-  8,16   1        0     1.091858753     0  m   N cfq2519 complete rqnoidle 0
-  8,16   1     3606     1.092068456  4393  C   W 144322520 + 24 [0]
-  8,16   1        0     1.092069851     0  m   N cfq2519 complete rqnoidle 0
-  8,16   1     3607     1.092350440  4393  C   W 144322488 + 32 [0]
-  8,16   1        0     1.092351688     0  m   N cfq2519 complete rqnoidle 0
-  8,16   1     3608     1.093629323     0  C   W 144322432 + 56 [0]
-  8,16   1        0     1.093631151     0  m   N cfq2519 complete rqnoidle 0
-  8,16   1        0     1.093631574     0  m   N cfq2519 will busy wait
-  8,16   1        0     1.093631829     0  m   N cfq schedule dispatch
-
-Because in func "elv_attempt_insert_merge", it only to try to backmerge.So the four request can't merge in theory.
-I trace ten minutes and to count those situation, it can count 25%.
-So i think i should do something.
-I diged into and founded elevator only provide backmerge using hash.
-So I think i can sort in func "blk_flush_plug_list".
-At present the requests in blk_plug will sort,but only by request_queue not by start_sector of request.
-So i modified the code:
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 1f61b74..c382abb 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2750,7 +2750,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
-        struct request *rqa = container_of(a, struct request, queuelist);
-        struct request *rqb = container_of(b, struct request, queuelist);
- 
--       return !(rqa->q <= rqb->q);
-+       return !(rqa->q < rqb->q ||
-+               (rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
- }
- 
- /*
-@@ -2822,10 +2823,10 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
- 
-        list_splice_init(&plug->list, &list);
- 
--       if (plug->should_sort) {
-+//     if (plug->should_sort) {
-                list_sort(NULL, &list, plug_rq_cmp);
-                plug->should_sort = 0;
--       }
-+//     }
- 
-        q = NULL;
-        depth = 0;
-
-With those,i tested and not found situation like above.
-So i think i can send a patch to you.But because the early patchset, so I wanted to ask your suggestion how to those.
-
-BTW, why are there only backmerge using hash in elevator?
-
-Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Great. :)
