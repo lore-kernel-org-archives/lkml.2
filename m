@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab2IRKoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 06:44:44 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:21585
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756633Ab2IRKon (ORCPT
+	id S1757985Ab2IRKvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:51:46 -0400
+Received: from mta-1.ms.rz.rwth-aachen.de ([134.130.7.72]:34370 "EHLO
+	mta-1.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756633Ab2IRKvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 06:44:43 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz6d524h17326ah15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MAJKIA-01-7YB-02
-X-M-MSG: 
-Date: Tue, 18 Sep 2012 12:44:26 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: <yongjun_wei@trendmicro.com.cn>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu/exynos: use list_del_init instead of
- list_del/INIT_LIST_HEAD
-Message-ID: <20120918104426.GI2505@amd.com>
-References: <CAPgLHd-QRgrRMCab-Co=dU9a524KGU12LKcRape4hVfiYgRxAA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd-QRgrRMCab-Co=dU9a524KGU12LKcRape4hVfiYgRxAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 18 Sep 2012 06:51:45 -0400
+X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Sep 2012 06:51:44 EDT
+MIME-version: 1.0
+X-IronPort-AV: E=Sophos;i="4.80,442,1344204000";
+ d="asc'?scan'208";a="192143379"
+Date: Tue, 18 Sep 2012 12:21:41 +0200
+From: Carsten Otto <otto@informatik.rwth-aachen.de>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Alex Hung <alex.hung@canonical.com>, corentincj@iksaif.net, mjg@redhat.com,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        679158@bugs.debian.org
+Subject: Re: [PATCH] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
+Message-id: <20120918102141.GB4118@daedalus.informatik.rwth-aachen.de>
+Reply-to: Carsten Otto <otto@informatik.rwth-aachen.de>
+Mail-followup-to: Jonathan Nieder <jrnieder@gmail.com>,
+ Alex Hung <alex.hung@canonical.com>, corentincj@iksaif.net, mjg@redhat.com,
+ acpi4asus-user@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+ linux-kernel@vger.kernel.org, 679158@bugs.debian.org
+References: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
+ <20120626213958.GA17871@burratino> <20120626215806.GM21479@carsten-otto>
+ <4FEABBFC.6090708@canonical.com> <20120627221743.GC13738@burratino>
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary=eJnRUKwClWJh1Khz
+Content-disposition: inline
+In-reply-to: <20120627221743.GC13738@burratino>
+X-GnuGP-Key: http://c-otto.de/pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 06, 2012 at 12:34:09PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Using list_del_init() instead of list_del() + INIT_LIST_HEAD().
-> 
-> spatch with a semantic match is used to found this problem.
-> (http://coccinelle.lip6.fr/)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Applied, thanks.
+--eJnRUKwClWJh1Khz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-AMD Operating System Research Center
+Dear all,
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+the patch seems to be integrated in 3.5.4 (current stable kernel). When
+rebasing using git I see that the patch is not applied on top, most
+likely because it was already included somewhere in the official stable
+Linux itself.
 
+As mentioned in the following Ubuntu bug report, this patch causes
+problems (which I also observe).
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1041883
+
+It takes me about 10 tries to successfully boot my system. In the
+unsuccessful tries the screen is blanked shortly during the boot process
+and nothing happens (the magic keys don't work, network access cannot be
+tested that early).
+
+Bye,
+--=20
+Carsten Otto           otto@informatik.rwth-aachen.de
+LuFG Informatik 2      http://verify.rwth-aachen.de/otto/
+RWTH Aachen            phone: +49 241 80-21211
+
+--eJnRUKwClWJh1Khz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlBYSzUACgkQjUF4jpCSQBQpbgCfSUUvaZbs1krkcRKa8iTcyKxA
+7AQAn1NfXugZ5553+Z9LOB46lJqFcXt8
+=avwS
+-----END PGP SIGNATURE-----
+
+--eJnRUKwClWJh1Khz--
