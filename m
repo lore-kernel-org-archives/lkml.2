@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2IRHDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 03:03:06 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:55136 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab2IRHDD convert rfc822-to-8bit (ORCPT
+	id S1757184Ab2IRHEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:04:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35009 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756422Ab2IRHD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 03:03:03 -0400
-Date: Tue, 18 Sep 2012 09:03:01 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3]: ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
-Message-ID: <0db0a2e2-0a19-42c2-a933-b250125e8425@shmail0>
-In-Reply-To: <bb6a1493-77bc-4d4e-ac2a-92cd8dc2f156@shmail0>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Sep 2012 03:03:59 -0400
+Date: Tue, 18 Sep 2012 00:03:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, numa: reclaim from all nodes within reclaim distance
+Message-ID: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [77.5.123.189]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves drivers/usb/serial/ezusb.c to drivers/usb/misc/and
-adapts Makefiles and Kconfigs
+RECLAIM_DISTANCE represents the distance between nodes at which it is
+deemed too costly to allocate from; it's preferred to try to reclaim from
+a local zone before falling back to allocating on a remote node with such
+a distance.
 
-Signed-off-by: René Bürgel <rene.buergel@sohard.de>
+To do this, zone_reclaim_mode is set if the distance between any two
+nodes on the system is greather than this distance.  This, however, ends
+up causing the page allocator to reclaim from every zone regardless of
+its affinity.
+
+What we really want is to reclaim only from zones that are closer than 
+RECLAIM_DISTANCE.  This patch adds a nodemask to each node that
+represents the set of nodes that are within this distance.  During the
+zone iteration, if the bit for a zone's node is set for the local node,
+then reclaim is attempted; otherwise, the zone is skipped.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
-diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
-index 1bfcd02..1c63b54 100644
---- a/drivers/usb/misc/Kconfig
-+++ b/drivers/usb/misc/Kconfig
-@@ -244,3 +244,7 @@ config USB_YUREX
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called yurex.
+ include/linux/mmzone.h |    1 +
+ mm/page_alloc.c        |   31 ++++++++++++++++++++-----------
+ 2 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -704,6 +704,7 @@ typedef struct pglist_data {
+ 	unsigned long node_spanned_pages; /* total size of physical page
+ 					     range, including holes */
+ 	int node_id;
++	nodemask_t reclaim_nodes;	/* Nodes allowed to reclaim from */
+ 	wait_queue_head_t kswapd_wait;
+ 	wait_queue_head_t pfmemalloc_wait;
+ 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1782,6 +1782,11 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+ 	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
+ }
  
-+config USB_EZUSB
-+	bool "Functions for loading firmware on EZUSB chips"
-+	help
-+	    Say Y here if you need EZUSB device support.
-diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
-index 796ce7e..f1f7815 100644
---- a/drivers/usb/misc/Makefile
-+++ b/drivers/usb/misc/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_USB_CYPRESS_CY7C63)	+= cypress_cy7c63.o
- obj-$(CONFIG_USB_CYTHERM)		+= cytherm.o
- obj-$(CONFIG_USB_EMI26)			+= emi26.o
- obj-$(CONFIG_USB_EMI62)			+= emi62.o
-+obj-$(CONFIG_USB_EZUSB)			+= ezusb.o
- obj-$(CONFIG_USB_FTDI_ELAN)		+= ftdi-elan.o
- obj-$(CONFIG_USB_IDMOUSE)		+= idmouse.o
- obj-$(CONFIG_USB_IOWARRIOR)		+= iowarrior.o
-diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/misc/ezusb.c
-similarity index 100%
-rename from drivers/usb/serial/ezusb.c
-rename to drivers/usb/misc/ezusb.c
-diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-index 325d291..73b5e6f 100644
---- a/drivers/usb/serial/Kconfig
-+++ b/drivers/usb/serial/Kconfig
-@@ -42,11 +42,6 @@ config USB_SERIAL_CONSOLE
++static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
++{
++	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
++}
++
+ #else	/* CONFIG_NUMA */
  
- 	  If unsure, say N.
+ static nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags)
+@@ -1802,6 +1807,11 @@ static void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z)
+ static void zlc_clear_zones_full(struct zonelist *zonelist)
+ {
+ }
++
++static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
++{
++	return true;
++}
+ #endif	/* CONFIG_NUMA */
  
--config USB_EZUSB
--	bool "Functions for loading firmware on EZUSB chips"
--	help
--	    Say Y here if you need EZUSB device support.
+ /*
+@@ -1886,7 +1896,8 @@ zonelist_scan:
+ 				did_zlc_setup = 1;
+ 			}
+ 
+-			if (zone_reclaim_mode == 0)
++			if (zone_reclaim_mode == 0 ||
++			    !zone_allows_reclaim(preferred_zone, zone))
+ 				goto this_zone_full;
+ 
+ 			/*
+@@ -3328,21 +3339,13 @@ static void build_zonelists(pg_data_t *pgdat)
+ 	j = 0;
+ 
+ 	while ((node = find_next_best_node(local_node, &used_mask)) >= 0) {
+-		int distance = node_distance(local_node, node);
 -
- config USB_SERIAL_GENERIC
- 	bool "USB Generic Serial Driver"
- 	help
-diff --git a/drivers/usb/serial/Makefile b/drivers/usb/serial/Makefile
-index 1dc483a..12b56bb 100644
---- a/drivers/usb/serial/Makefile
-+++ b/drivers/usb/serial/Makefile
-@@ -9,7 +9,6 @@ obj-$(CONFIG_USB_SERIAL)			+= usbserial.o
- usbserial-y := usb-serial.o generic.o bus.o
+-		/*
+-		 * If another node is sufficiently far away then it is better
+-		 * to reclaim pages in a zone before going off node.
+-		 */
+-		if (distance > RECLAIM_DISTANCE)
+-			zone_reclaim_mode = 1;
+-
+ 		/*
+ 		 * We don't want to pressure a particular node.
+ 		 * So adding penalty to the first node in same
+ 		 * distance group to make it round-robin.
+ 		 */
+-		if (distance != node_distance(local_node, prev_node))
++		if (node_distance(local_node, node) !=
++		    node_distance(local_node, prev_node))
+ 			node_load[node] = load;
  
- usbserial-$(CONFIG_USB_SERIAL_CONSOLE)	+= console.o
--usbserial-$(CONFIG_USB_EZUSB)		+= ezusb.o
+ 		prev_node = node;
+@@ -4515,12 +4518,18 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+ 		unsigned long node_start_pfn, unsigned long *zholes_size)
+ {
+ 	pg_data_t *pgdat = NODE_DATA(nid);
++	int i;
  
- obj-$(CONFIG_USB_SERIAL_AIRCABLE)		+= aircable.o
- obj-$(CONFIG_USB_SERIAL_ARK3116)		+= ark3116.o
+ 	/* pg_data_t should be reset to zero when it's allocated */
+ 	WARN_ON(pgdat->nr_zones || pgdat->classzone_idx);
+ 
+ 	pgdat->node_id = nid;
+ 	pgdat->node_start_pfn = node_start_pfn;
++	for_each_online_node(i)
++		if (node_distance(nid, i) <= RECLAIM_DISTANCE) {
++			node_set(i, pgdat->reclaim_nodes);
++			zone_reclaim_mode = 1;
++		}
+ 	calculate_node_totalpages(pgdat, zones_size, zholes_size);
+ 
+ 	alloc_node_mem_map(pgdat);
