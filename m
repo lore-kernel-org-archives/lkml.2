@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2IRGk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:40:56 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60456 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab2IRGky convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 18 Sep 2012 02:40:54 -0400
-Message-Id: <50583394020000780009BF8B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 18 Sep 2012 07:40:52 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Ingo Molnar" <mingo@kernel.org>, <tglx@linutronix.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [tip:x86/asm] x86: Prefer TZCNT over BFS
-References: <504DEA1B020000780009A277@nat28.tlf.novell.com>
- <tip-5870661c091e827973674cc3469b50c959008c2b@git.kernel.org>
- <CA+55aFxs3FUETs830p-ow29RDibu9=d77gxqaueX-wZyr8-40A@mail.gmail.com>
- <5056F04B020000780009BAF9@nat28.tlf.novell.com>
- <20120917100046.GA32463@gmail.com>
- <CA+55aFwKkW7+Xv4-36JsbR7rDyorC8xcTsL_XnYCq=XNTZeJFw@mail.gmail.com>
- <50575855.8040308@zytor.com>
-In-Reply-To: <50575855.8040308@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755639Ab2IRGoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:44:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49121 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2IRGoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 02:44:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120918062020.GR11511@dastard>
+References: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
+	<20120917213009.GH13691@dastard>
+	<CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
+	<20120918062020.GR11511@dastard>
+Date: Tue, 18 Sep 2012 14:44:14 +0800
+Message-ID: <CAEH94Ljz+KS9z+mmzTVp2DvPoLgLmtVD_Bv_KP61Ey5KobN=0Q@mail.gmail.com>
+Subject: Re: [RFC v1 00/11] vfs: hot data tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
+        tytso@mit.edu, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.09.12 at 19:05, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> Honestly, I don't see a reason to not do this unconditionally.  On
-> anything but (pre-686-era) extremely old CPUs the cost of the extra
-> prefix is zero.  On the really old CPUs the cost of the BSF instruction
-> will dwarf the penalty cycle for the extra prefix, so the whole
-> mechanism around doing it conditionally seems pointless.
+On Tue, Sep 18, 2012 at 2:20 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Sep 18, 2012 at 10:24:55AM +0800, Zhi Yong Wu wrote:
+>> On Tue, Sep 18, 2012 at 5:30 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Mon, Sep 17, 2012 at 03:18:34PM +0800, zwu.kernel@gmail.com wrote:
+>> >>  20 files changed, 2275 insertions(+), 1 deletions(-)
+>> >>  create mode 100644 fs/hot_debugfs.c
+>> >>  create mode 100644 fs/hot_debugfs.h
+>> >>  create mode 100644 fs/hot_hash.c
+>> >>  create mode 100644 fs/hot_hash.h
+>> >>  create mode 100644 fs/hot_rb.c
+>> >>  create mode 100644 fs/hot_rb.h
+>> >>  create mode 100644 fs/hot_track.c
+>> >>  create mode 100644 fs/hot_track.h
+>> >>  create mode 100644 include/linux/hot_track.h
+>> >
+>> > So, 9 new files for tracking all of this? I'm not sure that so
+>> > many new files are needed - putting it all in fs/hot_tracking.[ch]
+>> > might make more sense, or if all 8 fs/hot* files remain, putting
+>> > them in their own subdirectory might be an idea (like quota).
+>> If all functions are in two files, they will be large and the logic is
+>> not so clear. so i prefer the latter. thanks.
+>
+> A single file is much easier to handle when searching and editting,
+> though. And realistically:
+>
+> $ wc -l fs/*.c |sort -nr -k 1 |head -10
+>   62483 total
+>    4000 fs/namei.c
+>    3281 fs/buffer.c
+>    3169 fs/dcache.c
+>    2677 fs/namespace.c
+>    2364 fs/locks.c
+>    2321 fs/exec.c
+>    2120 fs/binfmt_elf.c
+>    2053 fs/splice.c
+>    1934 fs/eventpoll.c
+> $
+>
+> There are plenty of files for a single function/subsystem of around
+> the aggregate size of this code, so everyone is used to dealing with
+> this amount of logic for a particular feature in a single file.
+>
+> I much prefer it that way, to tell the truth, because I find it
+> fairly common to have 5-10 files open at once when tracking
+> something through, say, the buffered IO path. If I've now got to
+> have another 5-10 files open just to track that same code path
+> through this index, then that makes it much more difficult to
+> manage than if were all in one .c file.
+>
+> IOWs, splitting code up into multiple files is not a win when the
+> resultant files are all small and interdependent and you need to
+> look at multiple files at the same time to understand what the code
+> does as a whole....
+Just completed move them to one separate directory fs/hot_tracking/.
+But what you said makes sense to me, OK, i will adopt your suggestion,
+thanks.
 
-I certainly don't mind re-submitting with the whole thing made
-unconditional (implying that the prior version would be dropped
-in any case).
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-Jan
 
+
+-- 
+Regards,
+
+Zhi Yong Wu
