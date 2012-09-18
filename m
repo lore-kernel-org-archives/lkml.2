@@ -1,198 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2IRTjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 15:39:47 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45702 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab2IRTjp (ORCPT
+	id S1754623Ab2IRTkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 15:40:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48011 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab2IRTkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 15:39:45 -0400
-Date: Tue, 18 Sep 2012 15:23:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: 3.6rc6 slab corruption.
-Message-ID: <20120918192338.GA25845@phenom.dumpdata.com>
-References: <20120918143504.GA30585@redhat.com>
- <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
+	Tue, 18 Sep 2012 15:40:36 -0400
+Message-ID: <5058CE2F.7030302@suse.cz>
+Date: Tue, 18 Sep 2012 21:40:31 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20120904 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Avi Kivity <avi@redhat.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Haggai Eran <haggaie@mellanox.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: qemu-kvm loops after kernel udpate
+References: <504F7ED8.1030702@suse.cz> <20120911190303.GA3626@amt.cnet> <504F93F1.2060005@suse.cz> <50504299.2050205@redhat.com> <50504439.3050700@suse.cz> <5050453B.6040702@redhat.com> <5050D048.4010704@suse.cz> <5051AE8B.7090904@redhat.com>
+In-Reply-To: <5051AE8B.7090904@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 11:38:44AM -0700, Linus Torvalds wrote:
-> Quoting the entire email, since I added Greg to the list of people (as
-> the documented maintainer of debugfs) along with what I think are the
-> guilty parties.
-> 
-> Dave, is trinity perhaps doing read calls on the same file in parallel?
-> 
-> Because it looks to me like debugfs is racy for that case. At least
-> the file->private_data accesses are, for the case of that "u32_array"
-> case.
-> 
-> In fact it is racy in two different ways:
-> 
->  - the whole "file->private_data" access is racy (and this is, I
-> think, the bug you are hitting)
-> 
->    If you have multiple readers on the same file, the whole
-> 
->                 if (file->private_data) {
->                         kfree(file->private_data);
->                         file->private_data = NULL;
->                 }
-> 
->                 file->private_data = format_array_alloc("%u", data->array,
->                                                               data->elements);
-> 
->    thing is just a disaster waiting to happen.
-> 
-> It should be easyish to fix by just adding a lock around those things.
+On 09/13/2012 11:59 AM, Avi Kivity wrote:
+> On 09/12/2012 09:11 PM, Jiri Slaby wrote:
+>> On 09/12/2012 10:18 AM, Avi Kivity wrote:
+>>> On 09/12/2012 11:13 AM, Jiri Slaby wrote:
+>>>>
+>>>>>   Please provide the output of vmxcap
+>>>>> (http://goo.gl/c5lUO),
+>>>>
+>>>>    Unrestricted guest                       no
+>>>
+>>> The big real mode fixes.
+>>>
+>>>
+>>>>
+>>>>> and a snapshot of kvm_stat while the guest is hung.
+>>>>
+>>>> kvm statistics
+>>>>
+>>>>   exits                                      6778198  615942
+>>>>   host_state_reload                             1988     187
+>>>>   irq_exits                                     1523     138
+>>>>   mmu_cache_miss                                   4       0
+>>>>   fpu_reload                                       1       0
+>>>
+>>> Please run this as root so we get the tracepoint based output; and press
+>>> 'x' when it's running so we get more detailed output.
+>>
+>> kvm statistics
+>>
+>>   kvm_exit                                  13798699  330708
+>>   kvm_entry                                 13799110  330708
+>>   kvm_page_fault                            13793650  330604
+>>   kvm_exit(EXCEPTION_NMI)                    6188458  330604
+>>   kvm_exit(EXTERNAL_INTERRUPT)                  2169     105
+>>   kvm_exit(TPR_BELOW_THRESHOLD)                   82       0
+>>   kvm_exit(IO_INSTRUCTION)                         6       0
+>
+> Strange, it's unable to fault in the very first page.
 
-Like this:
+I bisected that. Note the bisection log. I have never seen something 
+like that :D:
+git bisect start
+git bisect bad 3de9d1a1500472bc80478bd75e33fa9c1eba1422
+git bisect good fea7a08acb13524b47711625eebea40a0ede69a0
+git bisect good 95a2fe4baa1ad444df5f94bfc9416fc6b4b34cef
+git bisect good f42c0d57a5a60da03c705bdea9fbba381112dd60
+git bisect good 31a2e241a9e37a133278959044960c229acc5714
+git bisect good f15fb01c5593fa1b58cc7a8a9c59913e2625bf2e
+git bisect good 16d21ff46f5d50e311d07406c31f96916e5e8e1a
+git bisect good 0b84592f458b4e8567aa7d803aff382c1d3b64fd
+git bisect bad b955428e7f14cd29fe9d8059efa3ea4be679c83d
+git bisect bad 20c4da4f68fcade05eda9c9b7dbad0a78cc5efe8
+git bisect bad 31b90ed2a90f80fb528ac55ee357a815e1dedc36
+git bisect bad b273fe14ee5b38cecc7bce94f7777f35a0bf9ee4
+git bisect bad de426dbe9a60706b91b40397f69f819a39a06b6b
+git bisect bad 6b998094ec50248e72b9f251d0607b58b18dba38
+git bisect bad cf9b81d47a89f5d404a0cd8013b461617751e520
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 2340f69..309b235 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -524,6 +524,7 @@ EXPORT_SYMBOL_GPL(debugfs_create_blob);
- struct array_data {
- 	void *array;
- 	u32 elements;
-+	struct mutex lock;
- };
- 
- static int u32_array_open(struct inode *inode, struct file *file)
-@@ -580,6 +581,7 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
- 	struct array_data *data = inode->i_private;
- 	size_t size;
- 
-+	mutex_lock(&data->lock);
- 	if (*ppos == 0) {
- 		if (file->private_data) {
- 			kfree(file->private_data);
-@@ -594,6 +596,7 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
- 	if (file->private_data)
- 		size = strlen(file->private_data);
- 
-+	mutex_unlock(&data->lock);
- 	return simple_read_from_buffer(buf, len, ppos,
- 					file->private_data, size);
- }
-@@ -643,6 +646,7 @@ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
- 
- 	data->array = array;
- 	data->elements = elements;
-+	mutex_init(&data->lock);
- 
- 	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
- }
-> 
-> The other bug is slightly subtler and probably harder to hit (but also
-> harder to fix):
-> 
->  - the whole format_array_alloc() code is one buggy piece of sh*t,
-> since afaik there is nothing that guarantees that the values cannot
-> change. So the notion of "let's format the output once to know how big
-> it is, and then a second time to actually print things into the array
-> we just allocated based on the first time" is pure and utter garbage,
-> afaik.
+=== 8< ===
 
-Yikes. The fix could be to allocate a buffer large enough for the maximum
-that %u could take * array_size and not bother with the first pass.
-> 
-> Anyway, this is all fairly recent, and came in through the Xen tree.
-> See commit 9fe2a7015393 ("debugfs: Add support to print u32 array in
-> debugfs").
-> 
-> Guys?
+Reverting cf9b81d47a89 (mm: wrap calls to set_pte_at_notify with 
+invalidate_range_start and invalidate_range_end) on the top of today's 
+-next fixes the issue.
 
-Let me include Jeremy on this. He was the original author of it and
-perhaps he has some patch stashed away were he re-implemented it..
-
-> 
->               Linus
-> 
-> On Tue, Sep 18, 2012 at 7:35 AM, Dave Jones <davej@redhat.com> wrote:
-> > I was chasing a networking bug, and had trinity reduced to just making read & setsockopt calls,
-> > and let that run overnight.  I woke up to 800mb of traces from a different bug..
-> >
-> > The traces look mostly like this..
-> >
-> >
-> > =============================================================================
-> > BUG kmalloc-64 (Not tainted): Redzone overwritten
-> > -----------------------------------------------------------------------------
-> >
-> > INFO: 0xffff88001f4b4970-0xffff88001f4b4977. First byte 0xbb instead of 0xcc
-> > INFO: Allocated in u32_array_read+0xd1/0x110 age=0 cpu=6 pid=32767
-> >         __slab_alloc+0x516/0x5a5
-> >         __kmalloc+0x213/0x2c0
-> >         u32_array_read+0xd1/0x110
-> >         vfs_read+0xac/0x180
-> >         sys_read+0x4d/0x90
-> >         system_call_fastpath+0x1a/0x1f
-> > INFO: Freed in u32_array_read+0x99/0x110 age=0 cpu=0 pid=32749
-> >         __slab_free+0x3f/0x3bf
-> >         kfree+0x2d5/0x310
-> >         u32_array_read+0x99/0x110
-> >         vfs_read+0xac/0x180
-> >         sys_read+0x4d/0x90
-> >         system_call_fastpath+0x1a/0x1f
-> > INFO: Slab 0xffffea00007d2d00 objects=41 used=14 fp=0xffff88001f4b7410 flags=0x10000000004081
-> > INFO: Object 0xffff88001f4b4930 @offset=2352 fp=0xffff88001f4b7410
-> >
-> > Bytes b4 ffff88001f4b4920: 1b 20 1c 00 01 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  . ......ZZZZZZZZ
-> > Object ffff88001f4b4930: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > Object ffff88001f4b4940: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > Object ffff88001f4b4950: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > Object ffff88001f4b4960: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-> > Redzone ffff88001f4b4970: bb bb bb bb bb bb bb bb                          ........
-> > Padding ffff88001f4b4ab0: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-> > Pid: 32756, comm: trinity-child52 Not tainted 3.6.0-rc6+ #44
-> > Call Trace:
-> >  [<ffffffff811c10ad>] ? print_section+0x3d/0x40
-> >  [<ffffffff811c23fe>] print_trailer+0xfe/0x160
-> >  [<ffffffff811c2592>] check_bytes_and_report+0xe2/0x120
-> >  [<ffffffff81023b79>] ? native_sched_clock+0x19/0x80
-> >  [<ffffffff811c2b5b>] check_object+0x18b/0x250
-> >  [<ffffffff8169b7d7>] free_debug_processing+0xc0/0x1fd
-> >  [<ffffffff812d2e29>] ? u32_array_read+0x99/0x110
-> >  [<ffffffff8169ba5c>] __slab_free+0x3f/0x3bf
-> >  [<ffffffff81365a1c>] ? debug_check_no_obj_freed+0x16c/0x210
-> >  [<ffffffff810db04f>] ? lock_release_holdtime.part.26+0xf/0x180
-> >  [<ffffffff812d2e29>] ? u32_array_read+0x99/0x110
-> >  [<ffffffff811c5725>] kfree+0x2d5/0x310
-> >  [<ffffffff812d2e29>] u32_array_read+0x99/0x110
-> >  [<ffffffff811df88c>] vfs_read+0xac/0x180
-> >  [<ffffffff811df9ad>] sys_read+0x4d/0x90
-> >  [<ffffffff816aea2d>] system_call_fastpath+0x1a/0x1f
-> > FIX kmalloc-64: Restoring 0xffff88001f4b4970-0xffff88001f4b4977=0xcc
-> > =============================================================================
-> >
-> > Which looks like we read some file (probably something in sysfs/procfs) that corrupted some internal state.
-> > Any ideas on what I could do to narrow this down ?
-> >
-> > The full traces are at http://www.codemonkey.org.uk/junk/slab-corrupt.txt
-> > They vary a little later, but it looks like it's probably all the same problem to me.
-> > Sometimes it flip-flops between "First byte 0xbb instead of 0xcc" and "First byte 0xcc instead of 0xbb"
-> >
-> >
-> > The one outlier being this weird message..
-> >
-> > Sep 18 02:00:13 bitcrush kernel: [36617.487681] hrtimer: interrupt took 242337 ns
-> >
-> > Which is weird, but probably unrelated.
-> >
-> >         Dave
-> >
+thanks,
+-- 
+js
+suse labs
