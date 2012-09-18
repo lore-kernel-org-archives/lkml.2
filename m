@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2IRMIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:08:19 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63603 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab2IRMIQ (ORCPT
+	id S932896Ab2IRMIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:08:32 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59700 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932843Ab2IRMIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:08:16 -0400
+	Tue, 18 Sep 2012 08:08:18 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: linux@arm.linux.org.uk
-Cc: FlorianSchandinat@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
+To: jayalk@intworks.biz
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 08/10] drivers/video/cyber2000fb.c: fix error return code
-Date: Tue, 18 Sep 2012 14:07:58 +0200
-Message-Id: <1347970080-25175-8-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 10/10] drivers/video/arcfb.c: fix error return code
+Date: Tue, 18 Sep 2012 14:08:00 +0200
+Message-Id: <1347970080-25175-10-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
 References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
@@ -50,25 +49,21 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/video/cyber2000fb.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/video/arcfb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/video/cyber2000fb.c b/drivers/video/cyber2000fb.c
-index c1527f5..e40125c 100644
---- a/drivers/video/cyber2000fb.c
-+++ b/drivers/video/cyber2000fb.c
-@@ -1804,8 +1804,10 @@ cyberpro_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 
- 	cfb->irq = dev->irq;
- 	cfb->region = pci_ioremap_bar(dev, 0);
--	if (!cfb->region)
-+	if (!cfb->region) {
-+		err = -ENOMEM;
- 		goto failed_ioremap;
-+	}
- 
- 	cfb->regs = cfb->region + MMIO_OFFSET;
- 	cfb->fb.device = &dev->dev;
+diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+index a1d58e9..4659d5d 100644
+--- a/drivers/video/arcfb.c
++++ b/drivers/video/arcfb.c
+@@ -552,6 +552,7 @@ static int __devinit arcfb_probe(struct platform_device *dev)
+ 				"arcfb", info)) {
+ 			printk(KERN_INFO
+ 				"arcfb: Failed req IRQ %d\n", par->irq);
++			retval = -EBUSY;
+ 			goto err1;
+ 		}
+ 	}
 -- 
 1.7.11.4
 
