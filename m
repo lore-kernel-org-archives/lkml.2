@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2IRLuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:50:44 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:38096 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932710Ab2IRLun (ORCPT
+	id S932816Ab2IRLu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:50:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33585 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932710Ab2IRLu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:50:43 -0400
-Date: Tue, 18 Sep 2012 20:50:38 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 01/24] ARM: shmobile: use __iomem pointers for MMIO
-Message-ID: <20120918115038.GB3198@verge.net.au>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
- <1347658492-11608-2-git-send-email-arnd@arndb.de>
- <20120918071131.GB31953@verge.net.au>
- <201209180831.06572.arnd@arndb.de>
+	Tue, 18 Sep 2012 07:50:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201209180831.06572.arnd@arndb.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOh2x==GY6xvyWmLJtpR68x1kiFWO8F85RwS6VfHjJA8YdhgvA@mail.gmail.com>
+References: <1f784b72399e0e96414f00866b209e2e218065af.1347877746.git.vipulkumar.samar@st.com>
+	<CACRpkdbHegZAw+9XXzOb5UPPqJvzoNfPJ5aPDhuwWWhWunuv8w@mail.gmail.com>
+	<CAOh2x==GY6xvyWmLJtpR68x1kiFWO8F85RwS6VfHjJA8YdhgvA@mail.gmail.com>
+Date: Tue, 18 Sep 2012 13:50:56 +0200
+Message-ID: <CACRpkdYnW=VbR1ieF1oicdPF79jV2raX9xkccE_ndrxQQjkUqw@mail.gmail.com>
+Subject: Re: [PATCH] spi: pl022: Add clk_{un}prepare() support in runtime PM
+From: Linus Walleij <linus.walleij@linaro.org>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Vipul Kumar Samar <vipulkumar.samar@st.com>, grant.likely@secretlab.ca,
+        spi-devel-general@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 08:31:06AM +0000, Arnd Bergmann wrote:
-> On Tuesday 18 September 2012, Simon Horman wrote:
-> > On Fri, Sep 14, 2012 at 11:34:29PM +0200, Arnd Bergmann wrote:
-> > > ARM is moving to stricter checks on readl/write functions,
-> > > so we need to use the correct types everywhere.
-> > > 
-> > > This patch is a bit ugly for shmobile, which is the only platform
-> > > that just uses integer literals all over the place, but I can't
-> > > see a better way to do this.
-> > > 
-> > > Cc: Magnus Damm <magnus.damm@gmail.com>
-> > > Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> > > Cc: Simon Horman <horms@verge.net.au>
-> > > Cc: Paul Mundt <lethal@linux-sh.org>
-> > > Cc: linux-sh@vger.kernel.org
-> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Wow, thats a lot of chrun, but if we must
-> > 
-> > Acked-by: Simon Horman <horms@verge.net.au>
-> > 
-> 
-> I agree it's not nice to have to do this, but this is largely because
-> of shmobile doing things differently from all other ARM platforms, on
-> which the respective patches tend to clean up things and reduce the
-> number of type casts.
-> 
-> The only alternative I can see is for shmobile to introduce its own
-> mach/io.h file with the relaxed type checking, but that would only
-> defer the problem until the point where you want shmobile to be part
-> of the common multiplatform kernel binary.
+On Tue, Sep 18, 2012 at 6:09 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
 
-If it is needed in the long term, then I'm happy with it going in now.
-Could you remove the portion that Paul objected to?
+> Yes, we don't need to call prepare() again atleast for SPEAr. You are correct.
+> I saw the driver after a long time :)
+
+I'm asking because it's actually OK to do this, I was more asking whether it
+was really needed by any platforms...
+
+> Can you please elaborate, why can't i see any clk_disable/enable calls anywhere
+> else from probe. If i remember correctly, earlier we used to enable/disable
+> clk after transfers and also during suspend/resume.
+
+We clk_disable() at runtime_suspend() and clk_enable() at runtime resume,
+and the driver gives hints to the runtime PM layer to autosuspend the
+driver whenever it's unused. Check the pm_runtime_* calls.
+
+> The amba layer is taking care of interface clock only and not
+> functional clock. So
+> i believe that's not the magic code. :)
+
+This clock is the one for the external bus. In some designs these two
+clocks are one and the same, and these won't currently get into any clock
+disabled states, sadly. (We need to fix that some day.)
+
+Yours,
+Linus Walleij
