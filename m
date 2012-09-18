@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab2IRWyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 18:54:19 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58753 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755813Ab2IRWyO (ORCPT
+	id S932303Ab2IRW5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 18:57:12 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:55203 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab2IRW5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 18:54:14 -0400
+	Tue, 18 Sep 2012 18:57:09 -0400
+Date: Tue, 18 Sep 2012 22:57:08 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Felipe Balbi <balbi@ti.com>, khilman@ti.com
+cc: Sourav Poddar <sourav.poddar@ti.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, tony@atomide.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com
+Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
+ suspended.
+In-Reply-To: <20120918140213.GA27463@arwen.pp.htv.fi>
+Message-ID: <alpine.DEB.2.00.1209182255500.4747@utopia.booyaka.com>
+References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com> <20120918140213.GA27463@arwen.pp.htv.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1347670122-25824-2-git-send-email-yinghai@kernel.org>
-References: <1347670122-25824-1-git-send-email-yinghai@kernel.org> <1347670122-25824-2-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 18 Sep 2012 16:53:52 -0600
-Message-ID: <CAErSpo4-tGvDHrgmJJG5Q4wxmqWQGYx-rm+m2rV-=B1WOiGGaw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Use correct type when freeing bus resource list
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 6:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Should use struct pci_bus_resource instead of struct pci_host_bridge_window
+On Tue, 18 Sep 2012, Felipe Balbi wrote:
 
-Looks good, and this is all my fault, sorry.  Applied to a
-pci/yinghai-misc branch.
+> On Tue, Sep 18, 2012 at 06:10:50PM +0530, Sourav Poddar wrote:
+> > Greg's tty-next is not booting on 2420 based N800. The failure is
+> > observed at serial init itself. The reason might be that n800 tries to
+> > resume even though it is not suspended before.
+> > 
+> > Reported-by: Paul Walmsley <paul@pwsan.com>
+> > Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> 
+> FWIW:
+> 
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> 
+> Paul does this fix the issue for you ? Note that it depends on a
+> previous patch Sourav sent [1]
+> 
+> [1] http://marc.info/?l=linux-omap&m=134796819607889&w=2
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
-> ---
->  drivers/pci/bus.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> Index: linux-2.6/drivers/pci/bus.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/bus.c
-> +++ linux-2.6/drivers/pci/bus.c
-> @@ -87,11 +87,15 @@ EXPORT_SYMBOL_GPL(pci_bus_resource_n);
->  void pci_bus_remove_resources(struct pci_bus *bus)
->  {
->         int i;
-> +       struct pci_bus_resource *bus_res, *tmp;
->
->         for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++)
->                 bus->resource[i] = NULL;
->
-> -       pci_free_resource_list(&bus->resources);
-> +       list_for_each_entry_safe(bus_res, tmp, &bus->resources, list) {
-> +               list_del(&bus_res->list);
-> +               kfree(bus_res);
-> +       }
->  }
->
->  /**
+Yes, thanks - that fixes it,
+
+Tested-by: Paul Walmsley <paul@pwsan.com>
+
+> There's one thing that gets my attention, though, why only n800 would
+> fail here ?
+> 
+> I wonder if we should be using:
+> 
+> pm_runtime_set_active(dev);
+> pm_runtime_get_enable(dev);
+> 
+> to prevent our runtime_resume() to be called from probe, but Sourav
+> tested and it doesn't work on BeagleBoard, but it works on PandaBoard.
+> 
+> Does it ring any bell ??
+
+Nothing off the top of my head but haven't looked into it -- maybe this 
+rings a bell with Kevin?
+
+
+- Paul
