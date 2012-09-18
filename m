@@ -1,97 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab2IRDTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 23:19:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45938 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283Ab2IRDTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 23:19:11 -0400
-Date: Tue, 18 Sep 2012 13:19:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20120918131904.ded0551cb03d079dc08cecbb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S932732Ab2IRDWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 23:22:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59221 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932283Ab2IRDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 23:22:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,439,1344236400"; 
+   d="scan'208";a="223315869"
+Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
+        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20120917215753.GS12245@n2100.arm.linux.org.uk>
+References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+	 <20120914094155.GC12245@n2100.arm.linux.org.uk>
+	 <1347619868.1943.113.camel@vkoul-udesk3>
+	 <20120914111842.GD12245@n2100.arm.linux.org.uk>
+	 <1347853223.1943.136.camel@vkoul-udesk3>
+	 <20120917083654.GO12245@n2100.arm.linux.org.uk>
+	 <1347875429.1943.141.camel@vkoul-udesk3>
+	 <20120917215753.GS12245@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Sep 2012 08:48:27 +0530
+Message-ID: <1347938307.1943.166.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Sep_2012_13_19_04_+1000_+h0.2NNegDREBO3S"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Sep_2012_13_19_04_+1000_+h0.2NNegDREBO3S
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-09-17 at 22:57 +0100, Russell King - ARM Linux wrote:
+> On Mon, Sep 17, 2012 at 03:20:29PM +0530, Vinod Koul wrote:
+> > On Mon, 2012-09-17 at 09:36 +0100, Russell King - ARM Linux wrote:
+> > > > > I'm not saying take the slave_id out of the map.  I'm saying, let the
+> > > > > DMA engine driver itself figure out what dma_chan to return. 
+> > > > But wont that assume the dma controller knows which channel to allocate.
+> > > > And how would it know this information? This can be problematic for hard
+> > > > wired muxes, but can be easily done for controller which have
+> > > > programmable mux.
+> > > 
+> > > Well, as I have already said, at the moment you're returning the _first_
+> > > _free_ _channel_ on a DMA device, which almost certainly will always be
+> > > the wrong one. 
+> > Yes I overlooked, the continue is wrong. It needs to move to next
+> > available channel. I have fixed it.
+> > 
+> > Now on the question if we should allow dmaengine to select channel or
+> > let dma engine driver do that, I don't see how that helps for hard wired
+> > muxes where dma engine driver doesn't know anything of mapping.
+> > 
+> > For your OMAP dma this wont matter as I think you have a programmable
+> > mux so you maybe able to use any channel with rightly programmed mux,
+> > right?
+> 
+> Except that we expose one 'channel' per mux setting, so as far as DMA
+> engine goes, the mux number _is_ the channel number - which is the same
+> approach taken by the PL08x and sa11x0 DMA engine drivers.  It is the
+> only sane approach to dealing with N hardware channels vs >>N clients.
+Sure that makes things easy in dmaengine code.
 
-Hi Samuel,
+So we allocate channel number given by slave id (if set) or first free
+channel. This would also mean people need to update their drivers to use
+virtual channel which indeed is a good idea :)
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/regulator/anatop-regulator.c between commit 3e2a928472da
-("regulator: anatop: Fix wrong mask used in anatop_get_voltage_sel") from
-Linus' tree and commit baa64151aecc ("regulator: anatop-regulator:
-Convert to use syscon to access anatop register") from the mfd tree.
+-- 
+~Vinod
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/regulator/anatop-regulator.c
-index ce0fe72,596535d..0000000
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@@ -61,18 -64,17 +64,18 @@@ static int anatop_regmap_set_voltage_se
-  	return 0;
-  }
- =20
-- static int anatop_get_voltage_sel(struct regulator_dev *reg)
-+ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
-  {
-  	struct anatop_regulator *anatop_reg =3D rdev_get_drvdata(reg);
- -	u32 val;
- +	u32 val, mask;
- =20
-  	if (!anatop_reg->control_reg)
-  		return -ENOTSUPP;
- =20
-- 	val =3D anatop_read_reg(anatop_reg->mfd, anatop_reg->control_reg);
-+ 	regmap_read(anatop_reg->anatop, anatop_reg->control_reg, &val);
- -	val =3D (val & ((1 << anatop_reg->vol_bit_width) - 1)) >>
- +	mask =3D ((1 << anatop_reg->vol_bit_width) - 1) <<
-  		anatop_reg->vol_bit_shift;
- +	val =3D (val & mask) >> anatop_reg->vol_bit_shift;
- =20
-  	return val - anatop_reg->min_bit_val;
-  }
-
---Signature=_Tue__18_Sep_2012_13_19_04_+1000_+h0.2NNegDREBO3S
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQV+goAAoJEECxmPOUX5FElowP/Rrv6s/Di9YmqxVjPPA1Q6ej
-L2AYPnAW3GXwBOilhpJ0spliTMh1WLcciIA6kF6IXmVnv3RTKS96rDpvWuJn1+nq
-bEl0UlndOo4ZAIS3pUjdlECBAXLKJWzL0jZcGxl8Do/K8RW1kq2XhMtBOZ/EK3Mv
-6A6mkr3+3ZGYLsy6P7IoLOPC/ulkwP8t8Kgp7ckzloMUtLgdQUALZOYy1OHJn82M
-Zve663oYkKLBRWHEBGRNboRZQ7a7+RtSV9Z0IriZvRZyETW8FW74iYG+14nTHFZO
-gJ+OXjt7UZlMK8WnKArbUnmkPh9ChYLgLo13FRNWZEdkwnKZhJDMmQEpx5I+8udt
-4cCqZCSt0VEHbzkIwwq2EcEf5stLCDLqa3RcenLCd6SufjOJTOLDflRcnZ1f27Mx
-74o7juvAwkxir+LrXAjxaCdW857OZtLqCUvQSMqm451daL3YFrbyi6Ymi1f4uEYP
-N2G/vhUOE89Qe4DHZOl+bYtzXCq5BmMoLn6rG15gXgOgfpVqSXtx8/ZGFbIdgtnl
-SSnhegZ26Qgp2nHSbC9jBcnsALm2C4o/1+36dP/d+7wWL+k/1MLJ2LYmp9/cOO4q
-iDFwQGP31aZ+bNryKtnU3sb0yjBt6HmQ9+8P2ClFSqzwknpHHnq9CrQaQ7IzSMyx
-OQqG5y/OvEDmqD/W0ozU
-=FtrC
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Sep_2012_13_19_04_+1000_+h0.2NNegDREBO3S--
