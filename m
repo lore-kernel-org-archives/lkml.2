@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab2IRKCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 06:02:55 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16368 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2IRKCx convert rfc822-to-8bit (ORCPT
+	id S1757740Ab2IRKKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:10:19 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:52414 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754524Ab2IRKKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 06:02:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 18 Sep 2012 03:02:47 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-CC: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>
-Date: Tue, 18 Sep 2012 15:32:42 +0530
-Subject: RE: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to
- C99 format
-Thread-Topic: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to
- C99 format
-Thread-Index: Ac2VhGk8OJLU7rZzRIWJ7fZWpLwqjQAACmyQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDEFB9480@BGMAIL02.nvidia.com>
-References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
-	<1347961843-9376-7-git-send-email-shubhrajyoti@ti.com>
-	<D958900912E20642BCBC71664EFECE3E6DDEFB947B@BGMAIL02.nvidia.com>
- <CAM=Q2cv8R8QUbV2UqNO+AbwgprAYxBtBjK=4rkHnqegGJWTdog@mail.gmail.com>
-In-Reply-To: <CAM=Q2cv8R8QUbV2UqNO+AbwgprAYxBtBjK=4rkHnqegGJWTdog@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 18 Sep 2012 06:10:17 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <arm@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] ARM: ux500: fix spi2 pin group
+Date: Tue, 18 Sep 2012 12:09:46 +0200
+Message-ID: <1347962986-12280-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
-> Sent: Tuesday, September 18, 2012 3:30 PM
-> To: Venu Byravarasu
-> Cc: Shubhrajyoti D; linux-media@vger.kernel.org; linux-
-> kernel@vger.kernel.org; julia.lawall@lip6.fr
-> Subject: Re: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99
-> format
+From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-> >>       struct i2c_msg test[2] = {
-> >> -             { client->addr, 0,        3, write },
-> >> -             { client->addr, I2C_M_RD, 2, read  },
-> >> +             {
-> >> +                     .addr = client->addr,
-> >> +                     .flags = 0,
-> >
-> > Does flags not contain 0 by default?
-> >
-> 
-> It does however I felt that 0 means write so letting it be explicit.
-> 
-> In case a removal is preferred that's doable too however felt it is
-> more readable this way.
+GPIO216_AG12 is configured as a gpio for SPI2, so select
+the spi2_oc1_2 pin group instead of spi2_oc1_1
 
-Though it adds readability, it carries an overhead of one write operation too.
-So, better to remove it.
- 
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Hi Olof, Arnd:
+
+Again I'd prefer to take this through the pinctrl tree if it's
+OK with you. We are deploying pinctrl internally and ironing out
+bugs as we test more and more use cases.
+---
+ arch/arm/mach-ux500/board-mop500-pins.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
+index f0affc3..a96b945 100644
+--- a/arch/arm/mach-ux500/board-mop500-pins.c
++++ b/arch/arm/mach-ux500/board-mop500-pins.c
+@@ -219,7 +219,7 @@ static struct pinctrl_map __initdata mop500_family_pinmap[] = {
+ 	DB8500_MUX("usb_a_1", "usb", "musb-ux500.0"),
+ 	DB8500_PIN("GPIO257_AE29", out_hi, "musb-ux500.0"), /* STP */
+ 	/* Mux in SPI2 pins on the "other C1" altfunction */
+-	DB8500_MUX("spi2_oc1_1", "spi2", "spi2"),
++	DB8500_MUX("spi2_oc1_2", "spi2", "spi2"),
+ 	DB8500_PIN("GPIO216_AG12", gpio_out_hi, "spi2"), /* FRM */
+ 	DB8500_PIN("GPIO218_AH11", in_pd, "spi2"), /* RXD */
+ 	DB8500_PIN("GPIO215_AH13", out_lo, "spi2"), /* TXD */
+-- 
+1.7.11.3
 
