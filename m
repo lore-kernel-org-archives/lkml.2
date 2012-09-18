@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2IRUk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 16:40:59 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:41911 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab2IRUk4 (ORCPT
+	id S1755267Ab2IRUlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 16:41:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35356 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab2IRUlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 16:40:56 -0400
-Message-ID: <5058DC54.1030700@kernel.org>
-Date: Tue, 18 Sep 2012 21:40:52 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 18 Sep 2012 16:41:47 -0400
+Date: Tue, 18 Sep 2012 21:40:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Greg Ungerer <gerg@snapgear.com>,
+        dedekind1@gmail.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH] clk: Make the managed clk functions generically
+	available
+Message-ID: <20120918204014.GY12245@n2100.arm.linux.org.uk>
+References: <20120910002020.GB16249@opensource.wolfsonmicro.com> <20120910003913.GM13739@n2100.arm.linux.org.uk> <504F4E36.20309@metafoo.de> <1347375033.27206.3.camel@sauron.fi.intel.com> <504FE633.2090304@snapgear.com> <5050F3DB.1050202@metafoo.de> <20120915213151.GM12245@n2100.arm.linux.org.uk> <20120918080037.GA15982@avionic-0098.mockup.avionic-design.de> <20120918093536.GV12245@n2100.arm.linux.org.uk> <20120918112555.GA21004@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the staging tree
-References: <20120912160719.4377f041ac76ddfa13be7df1@canb.auug.org.au>
-In-Reply-To: <20120912160719.4377f041ac76ddfa13be7df1@canb.auug.org.au>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120918112555.GA21004@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, Sep 18, 2012 at 01:25:55PM +0200, Thierry Reding wrote:
+> On Tue, Sep 18, 2012 at 10:35:36AM +0100, Russell King - ARM Linux wrote:
+> > On Tue, Sep 18, 2012 at 10:00:37AM +0200, Thierry Reding wrote:
+> > > On Sat, Sep 15, 2012 at 10:31:52PM +0100, Russell King - ARM Linux wrote:
+> > > > On Wed, Sep 12, 2012 at 10:43:07PM +0200, Lars-Peter Clausen wrote:
+> > > > > I wouldn't mind having this merged sooner rather than later, there is at least
+> > > > > one driver in next which is currently broken due to the missing devm_clk_get.
+> > > > > Russell what's your plan for the patch? Maybe under the given circumstances it
+> > > > > makes sense to let it go through the m68k tree.
+> > > > 
+> > > > Ok, I've merged it but there was no indication in the patch that it was
+> > > > supposed to be a fix... there's no cc: to stable.  Does it need to go to
+> > > > stable?  When was this brokenness introduced?  What's the story for the
+> > > > m68k bit?
 
-On 09/12/2012 07:07 AM, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64 allmodconfig) failed like this:
-> 
-> drivers/hid/hid-sensor-hub.c: In function 'sensor_hub_probe': drivers/hid/hid-sensor-hub.c:599:3: error: too few
-> arguments to function 'mfd_add_devices'
-> 
-> Caused by commit 401ca24fb34a ("HID: sensors: introduce sensor framework") interacting with commit 6607bad3d763
-> ("mfd: core: Push irqdomain mapping out into devices") from the mfd tree.
-> 
-> I have added the following merge fix patch and can carry it as necessary (no action is required).
+I said abouve "I've merged it" - that means, I've put it in my
+tree...
 
-Just as a heads up, this issue has now bitten us directly in the staging-next
-tree as the mfd change is now in Linus' tree and that was merged into
-staging-next at rc6.
+> > > What tree is this supposed to go through? I've checked your ARM tree as
+> > > well as Mike's clock tree but neither seem to carry this patch. The
+> > > reason I ask is because I want to take a patch series that converts the
+> > > Unicore32 PWM code to the PWM framework into linux-next but it depends
+> > > on this patch as well.
+> > 
+> > It /is/ in my tree (you'll notice that it is in linux-next.)  You're
+> > probably looking at my Linaro tree instead, which doesn't carry
+> > anything which isn't about to be sent to Linus.
+> 
+> I must be blind then. next-20120918 doesn't have it. And looking at your
+> tree here[0] doesn't show the commit either.
 
-I'll queue up Stephen's patch but might be a few days before I send the pull
-containing it to Greg.
-
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au> Date: Wed, 12 Sep 2012 16:03:55 +1000 Subject: [PATCH] HID: sensors:
-> fix up for mfd_add_devices() API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au> --- drivers/hid/hid-sensor-hub.c |    2 +- 1 file changed, 1
-> insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c index 34a35ba..4ac759c 100644 ---
-> a/drivers/hid/hid-sensor-hub.c +++ b/drivers/hid/hid-sensor-hub.c @@ -596,7 +596,7 @@ static int
-> sensor_hub_probe(struct hid_device *hdev, } } ret = mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs, 
-> -		sd->hid_sensor_client_cnt, NULL, 0); +		sd->hid_sensor_client_cnt, NULL, 0, NULL); if (ret < 0) goto
-> err_free_names;
-> 
-> 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJQWNxTAAoJEFSFNJnE9BaInz4QALIn+9yuYA/I+W7dl8miwb6T
-QN+tEpTO7gdgBkLt6AWC4apjmN1Lk4FXu2qS0U8evKwtCGN+v0IdDjjWq3qloAF+
-I7zdthLnjstOqFIv0wr3dmf2ZiURv7oERdiBtp8h92j6NZHDPAHnoF7xRvn08Tsc
-EWOsUKURIr245hd0ApTfuZdor696SXx8HVCYjDDIPXpP/7yY/yE07ID+QESRwhxh
-znFiGyLvPw3zTQYE2IqRPAMdKQrJbX7wOLY7bAMKniwI43jEU6HHcZRCGSDOHaPq
-4Nxc6WrqqAyWD3zDqurQvM3OgIgL/QC4b88WuUhcyWGZhumK4ivW0evCq8BM10jn
-gJqJnAu/JX8Q/JLMl0z0sPFjmSdfkWmywz0zOQEOPvwoXNENdT5kalYA51sP9vqe
-bCOnGMATrDb+76o4RxkOnwp2CAMoDrDqeSqtH1FM2UJPFZhB9ly0eQvmh1zmeJlV
-FD4iB8tjJnHIUX3ZW12/ylP6vpYSZnoWDH0kSVSfNNJXWYqoaWKXODxsiaMJRwX3
-tFGzR/KrRKkKwowV4VAWyVmO+U7jne0cV3VvWX4CHQRSsrzjAmX3mVm915rCLTkT
-zAed3Svr/LjBeXY5IGU2gY4o4TPvyJwhBh9rRfmIYuLM6qE15itT5q7CQjFu/jrs
-Apz5hKLeGuMepT1EokNb
-=/JJX
------END PGP SIGNATURE-----
+Hmm, it's possible I didn't push the tree out... well, I have done so
+now, so it should be visible from tonight onwards and should be in
+-next sometime during the next couple of days (it seems to take a
+couple of days between me pushing stuff out one evening to stuff
+appearing in -next because of the timezones and timing of sfr's pulls.)
