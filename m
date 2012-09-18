@@ -1,52 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2IRL3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:29:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51872 "EHLO mx2.suse.de"
+	id S1758062Ab2IRLbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:31:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26056 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab2IRL3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:29:37 -0400
-Date: Tue, 18 Sep 2012 13:29:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Input and HID updates for 3.7, version 4
-In-Reply-To: <20120915153323.GA1391@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1209181328500.31149@pobox.suse.cz>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se> <20120910190226.GA877@polaris.bitmath.org> <alpine.LNX.2.00.1209102248250.22683@pobox.suse.cz> <5556929.93aC5q4087@dtor-d630.eng.vmware.com> <20120914192554.GA6498@polaris.bitmath.org>
- <20120915153323.GA1391@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751619Ab2IRLbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 07:31:10 -0400
+Date: Tue, 18 Sep 2012 08:30:28 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
+        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/7] perf ui/browser: Integrate script browser into
+ annotation browser
+Message-ID: <20120918113028.GD13283@infradead.org>
+References: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
+ <1347007349-3102-7-git-send-email-feng.tang@intel.com>
+ <20120917152301.GB16820@infradead.org>
+ <20120918154010.451e5891@feng-i7>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120918154010.451e5891@feng-i7>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Sep 2012, Henrik Rydberg wrote:
-
-> Ok, here is version 4 of the patchset. Rather than sending out all the
-> patches again, the diff to linux-next is given below, and the
-> refreshed tree can be pulled from
+Em Tue, Sep 18, 2012 at 03:40:10PM +0800, Feng Tang escreveu:
+> Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > Em Fri, Sep 07, 2012 at 04:42:28PM +0800, Feng Tang escreveu:
+> > > Integrate the script browser into annotation, users can press function
+> > > key 'r' to list all perf scripts and select one of them to run that
+> > > script, the output will be shown in a separate browser.
+> > 
+> > I think this needs a bit more work... i.e. I tried it with your script,
+> > event_analyzing_sample and I kinda get meaningful output when pressing
+> > 'r' + that script from the top and hists browser.
 > 
->   git://github.com/rydberg/linux.git maybe
-> 
-> All Dmitry's comments are addressed. Changes in short:
-> 
-> * Also move 'slot' to input_mt
-> * Oops fix amended
-> * New patch to allow driver pressure handling
-> * Keep the synaptics specials in bcm5974
-> 
-> Needless to say, I want to move this tree to linux-next soonish, so if
-> there are more comments coming, I would appreciate a heads-up.
+> I would answer you question about "elllaborate on the assumptions" first
+> here, that the main purpose of this script browser is not to replace the
+> normal "perf script" command, but to:
+> 1. Provide a convenient way for user to directly run scripts while they
 
-So if Dmitry has Acked all the input patches and I am going to take it, 
-could you please send me either a proper pull request, or the patch series 
-via e-mail, so that I could apply it?
+I think this is what confused me, you say "directly run scripts", but
+that only means "directly run the report phase of scripts, not the
+record phase". Ok, that is clear now.
 
-Thanks Henrik,
+> are browsing through the hists or annotation browser, and provide some
+> option for run script with samples from specific thread or symbol
 
--- 
-Jiri Kosina
-SUSE Labs
+> 2. Prepare for some advance feature, like inside the annotation browser,
+> analyze some specific hot line of code with samples containing precise
+> information, like the register values, store/load latency stuff. But I
+> have no idea how to implement it now, I guess after Stefan work out the
+> general perf latency tool, we may be able to revisit it.   
+
+I'm ok with adding infrastructure for later improvements, but I think we
+should try to do it in a way that doesn't confuses users too much,
+otherwise they may get annoyed and not try the feature when it becomes
+useful, worse, tell others that it is cumbersome, don't bother trying
+it.
+
+So we should try to do it in a way that is useful for the constraints
+you explained here, more on that later in this message.
+ 
+> And when I started to code, I assumed user will mainly use this feature
+> for running scripts for general samples other than the existing scripts
+> for tracepoints. And yes, some user cases you mentioned are not covered.
+
+Ok, so we need to filter out some more, like you did for the top script.
+ 
+> > But with other scripts, and you filtered the -top suffixed ones, that
+> > require special handling, I get things like "Press Control+C to get a
+> > summary", and when I press that, the browser exits, going back to
+> > annotate or report/top browser.
+> 
+> That's right, 4 current perf python scripts will print that line in its
+> "trace_begin" function, as some of the scripts may run for quiet some
+> time if the perf.data is huge. And what you see in the script browser 
+> is just some static text of the script output. 
+
+Ok, so one thing I think we can do is to look at the record script:
+
+[acme@sandy linux]$ cat
+tools/perf/scripts/python/bin/syscall-counts-by-pid-record 
+#!/bin/bash
+perf record -e raw_syscalls:sys_enter $@
+
+and also at the perf.data file:
+
+[root@sandy linux]# perf evlist
+cycles
+
+See? we can't offer the syscall-counts-by-pid script to analyse this
+perf.data file, one is made for the raw_syscalls:sys_enter tracepoint
+while the other has only cpu cycles.
+
+While the script you provided:
+
+[acme@sandy linux]$ cat
+tools/perf/scripts/python/bin/event_analyzing_sample-record 
+#!/bin/bash
+
+#
+# event_analyzing_sample.py can cover all type of perf samples including
+# the tracepoints, so no special record requirements, just record what
+# you want to analyze.
+#
+perf record $@
+[acme@sandy linux]$ 
+
+-----------------------
+
+You made it general purpose, so yeah, we can offer that script to the
+user analysing that perf.data file.
+
+So this is one possible way of matching scripts to perf.data files,
+another would be for us to somehow annotate the scripts, in the first
+few lines, with markers that would help do this matching, but I'd start
+with what we have: parse the line that has the 'perf record' command in
+the tools/perf/scripts/python/bin/*-record file, look at the event it
+handles and match to what 'perf evlist' reports.
+
+Not necessarily running 'perf evlist', just doing what it does to figure
+out the needed information. 
+
+> > I.e. this only works if we are processing a perf.data file made
+> > specially for that specific script, right? I.e. the record phase is not
+> > integrated at all, just running specific scripts in specific perf.data
+> > files.
+> 
+> No, the record phase is not added, it just handle the recorded data. And
+> there is something missed in current implementation, that the script in
+> browser mode is only run for the "perf.data" even if the perf report/annotate
+> is run for data with another name.
+
+Ok, so that needs to be handled, using the filtering I suggested above.
+
+> > How to allow the user to chose appropriate scripts to run each perf.data
+> > file is an aspect of usability that is missing...
+> 
+> Do we need to run script for another perf.data when we run report/annotation
+> for one perf.data? or should we add a option for script browser to make it
+> work in browser mode, this is something Numhyung has mentioned in his review
+
+Well, it would be great to be able to press some key in the main hists
+browser and then switch to a different perf.data file, the tool could
+just look at the current directory, looking at the magic number in the
+first few bytes of all files, looking for perf.data files to offer.
+
+That, done in the 'top' tool would make it stop doing continuous
+profiling, stopping the thread it uses to read the counters and instead
+switch to static profiling, i.e. just reading a perf.data file.
+
+This is something that is a nice new feature and one that would pave the
+way for a better top/report/script/annotate integration.
+
+- Arnaldo
+
+> > Can you ellaborate on the assumptions you made while working on this, do
+> > they match what I described above as how to use this scripts browser?
+> > 
+> > So I merged part of this patchset, but will wait till more discussion
+> > happens on the browsing part,
+> > 
+> > Thanks,
+> > 
+> > - Arnaldo
