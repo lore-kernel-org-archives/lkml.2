@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab2IRLl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:41:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:54652 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932696Ab2IRLlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:41:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v10 0/5] make balloon pages movable by compaction
-In-Reply-To: <20120917151531.e9ac59f2.akpm@linux-foundation.org>
-References: <cover.1347897793.git.aquini@redhat.com> <20120917151531.e9ac59f2.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 18 Sep 2012 10:15:59 +0930
-Message-ID: <87boh4qhtk.fsf@rustcorp.com.au>
+	id S932785Ab2IRLoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:44:44 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38642 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab2IRLon (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 07:44:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120918093619.GO13767@mwanda>
+References: <1347940806-4653-1-git-send-email-navinp@cdac.in>
+	<20120918074053.GL4587@mwanda>
+	<CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
+	<20120918093619.GO13767@mwanda>
+Date: Tue, 18 Sep 2012 17:14:41 +0530
+X-Google-Sender-Auth: sDhNUa5YNmaKY12G1cNUi1X5a6g
+Message-ID: <CAPV97yfRd_1Ak+DniNyg+vhg1bkOPqzGwRu-LSKXkpW2=_xw+Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of usbip_host
+From: navin patidar <navinp@cdac.in>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, mfm@muteddisk.com, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
-> On Mon, 17 Sep 2012 13:38:15 -0300
-> Rafael Aquini <aquini@redhat.com> wrote:
->> Results for STRESS-HIGHALLOC benchmark, from Mel Gorman's mmtests suite,
->> running on a 4gB RAM KVM guest which was ballooning 1gB RAM in 256mB chunks,
->> at every minute (inflating/deflating), while test was running:
+for usbip_host  event_handler()   handles following events.  defined
+in "usbip_common.h"
+
+ 1. SDEV_EVENT_REMOVED   (USBIP_EH_SHUTDOWN | USBIP_EH_RESET | USBIP_EH_BYE)
+ 2. SDEV_EVENT_DOWN		(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+ 3. SDEV_EVENT_ERROR_TCP	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+ 4. SDEV_EVENT_ERROR_SUBMIT	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+ 5. VDEV_EVENT_ERROR_MALLOC (USBIP_EH_SHUTDOWN | USBIP_EH_UNUSABLE)
+
+In case of events(1,2,3,4),  stub_shoutdown_connection() gets executed
+first and than stub_device_reset() .
+
+In case of event 5, stub_shoutdown_connection()  kills kernel threads
+and stub_device_unusable()   changes devices status to
+"SDEV_ST_ERROR"(fatal error).
+
+ thus stub_device_reset() can't  be called without
+stub_shutdown_connection(), so there is no problem of resource leak .
+you are also right, i could have set pointers to  NULL in
+stub_shutdown_connection() but i used  stub_device_reset() which is
+intended to reset usbip_device stuct member variables.
+
+i'll resend patches, if maintainer ask for that.
+thanks
+
+--navin-patidar
+
+
+On Tue, Sep 18, 2012 at 3:06 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Tue, Sep 18, 2012 at 03:02:15PM +0530, navin patidar wrote:
+>> On Tue, Sep 18, 2012 at 1:10 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> > On Tue, Sep 18, 2012 at 09:30:06AM +0530, navin patidar wrote:
+>> >> stub_device_reset should set kernel thread pointers to NULL.
+>> >> so that at the time of usbip_host removal stub_shoutdown_connection
+>> >> doesn't try to kill kernel threads which are already killed.
+>> >>
+>> >
+>> > If you have the Oops output, that's always nice to put in the commit
+>> > message.
+>>
+>> i'll surely keep this in mind  before submitting further patches.
+>>
+>> > Why don't you set the pointers to NULL in stub_shutdown_connection()
+>> > since that's where you actually kill the threads.  Setting them to
+>> > NULL in stub_device_reset() will (sometimes) solve the problem but
+>> > it gives you a new problem of a resource leak.
+>>
+>>  stub_device_reset() always gets executed after
+>> stub_shutdown_connection() , never before.
+>>
 >
-> How can a patchset reach v10 and have zero Reviewed-by's?
-
-The virtio_balloon changes are fairly trivial compared to the mm parts,
-and Michael Tsirkin provided feedback on the last round.
-
-However, the real trick is figuring out what the locking rules are when
-the mm core calls in to ask us about a page.  And that requires someone
-who really knows the mm stuff.
-
-> The patchset looks reasonable to me and your empirical results look
-> good.  But I don't feel that I'm in a position to decide on its overall
-> desirability, either in a standalone sense or in comparison to any
-> alternative schemes which anyone has proposed.
-
-It's definitely nice to have, though it's far more complicated than I
-would have thought.
-
-Cheers,
-Rusty.
+> No it isn't.  Read event_handler() more carefully.  They can be
+> executed independently.
+>
+> In other words, stub_shutdown_connection() can be called without
+> calling stub_device_reset() and stub_device_reset() can be called
+> without stub_shutdown_connection().  If either of those happen then
+> it causes a problem with the patch you have just sent.
+>
+> regards,
+> dan carpenter
+>
