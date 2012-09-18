@@ -1,34 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2IRUTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 16:19:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39539 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2IRUTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 16:19:37 -0400
-Date: Tue, 18 Sep 2012 13:19:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: Taint kernel when we detect a corrupted slab.
-In-Reply-To: <20120918195412.GB27689@redhat.com>
-Message-ID: <alpine.DEB.2.00.1209181319191.25146@chino.kir.corp.google.com>
-References: <20120918150543.GA14718@redhat.com> <00000139da509650-e5756e3f-f538-4735-afcd-c3c8ac9035b7-000000@email.amazonses.com> <alpine.DEB.2.00.1209181227190.25146@chino.kir.corp.google.com> <20120918195412.GB27689@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755025Ab2IRUXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 16:23:53 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:60539 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754583Ab2IRUXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 16:23:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 3.6-rc6] cpufreq/powernow-k8: workqueue user shouldn't migrate the kworker to another CPU
+Date: Tue, 18 Sep 2012 22:30:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Duncan <1i5t5.duncan@cox.net>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <20120917201721.GJ18677@google.com> <20120918201231.GF8474@google.com>
+In-Reply-To: <20120918201231.GF8474@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209182230.15715.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Dave Jones wrote:
+On Tuesday, September 18, 2012, Tejun Heo wrote:
+> So, with work_on_cpu() reimplementation just posted[1], we can do the
+> following instead.  Functionally it's about the same but less ugly.
+> Ugly as it may be, I think the previous open coded version is better
+> suited as a fix and for -stable.  Thoughts?
 
-> It doesn't seem worth adding a new taint flag for this, so just re-use
-> the one from 'bad page'
+I'd prefer this one to go into v3.7 along with the work_on_cpu() patch
+and then the open-coded version to go to -stable after the mainline one
+has got some testing coverage.
+
+Thanks,
+Rafael
+
+
+> [1] https://lkml.org/lkml/2012/9/18/430
 > 
-> Signed-off-by: Dave Jones <davej@redhat.com>
+>  drivers/cpufreq/powernow-k8.c |   63 ++++++++++++++++++++++--------------------
+>  1 file changed, 34 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index c0e8164..1a40935 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -35,7 +35,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/string.h>
+>  #include <linux/cpumask.h>
+> -#include <linux/sched.h>	/* for current / set_cpus_allowed() */
+>  #include <linux/io.h>
+>  #include <linux/delay.h>
+>  
+> @@ -1139,16 +1138,23 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+>  	return res;
+>  }
+>  
+> -/* Driver entry point to switch to the target frequency */
+> -static int powernowk8_target(struct cpufreq_policy *pol,
+> -		unsigned targfreq, unsigned relation)
+> +struct powernowk8_target_arg {
+> +	struct cpufreq_policy		*pol;
+> +	unsigned			targfreq;
+> +	unsigned			relation;
+> +};
+> +
+> +static long powernowk8_target_fn(void *arg)
+>  {
+> -	cpumask_var_t oldmask;
+> +	struct powernowk8_target_arg *pta = arg;
+> +	struct cpufreq_policy *pol = pta->pol;
+> +	unsigned targfreq = pta->targfreq;
+> +	unsigned relation = pta->relation;
+>  	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
+>  	u32 checkfid;
+>  	u32 checkvid;
+>  	unsigned int newstate;
+> -	int ret = -EIO;
+> +	int ret;
+>  
+>  	if (!data)
+>  		return -EINVAL;
+> @@ -1156,29 +1162,16 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+>  	checkfid = data->currfid;
+>  	checkvid = data->currvid;
+>  
+> -	/* only run on specific CPU from here on. */
+> -	/* This is poor form: use a workqueue or smp_call_function_single */
+> -	if (!alloc_cpumask_var(&oldmask, GFP_KERNEL))
+> -		return -ENOMEM;
+> -
+> -	cpumask_copy(oldmask, tsk_cpus_allowed(current));
+> -	set_cpus_allowed_ptr(current, cpumask_of(pol->cpu));
+> -
+> -	if (smp_processor_id() != pol->cpu) {
+> -		printk(KERN_ERR PFX "limiting to cpu %u failed\n", pol->cpu);
+> -		goto err_out;
+> -	}
+> -
+>  	if (pending_bit_stuck()) {
+>  		printk(KERN_ERR PFX "failing targ, change pending bit set\n");
+> -		goto err_out;
+> +		return -EIO;
+>  	}
+>  
+>  	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
+>  		pol->cpu, targfreq, pol->min, pol->max, relation);
+>  
+>  	if (query_current_values_with_pending_wait(data))
+> -		goto err_out;
+> +		return -EIO;
+>  
+>  	if (cpu_family != CPU_HW_PSTATE) {
+>  		pr_debug("targ: curr fid 0x%x, vid 0x%x\n",
+> @@ -1196,7 +1189,7 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+>  
+>  	if (cpufreq_frequency_table_target(pol, data->powernow_table,
+>  				targfreq, relation, &newstate))
+> -		goto err_out;
+> +		return -EIO;
+>  
+>  	mutex_lock(&fidvid_mutex);
+>  
+> @@ -1209,9 +1202,8 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+>  		ret = transition_frequency_fidvid(data, newstate);
+>  	if (ret) {
+>  		printk(KERN_ERR PFX "transition frequency failed\n");
+> -		ret = 1;
+>  		mutex_unlock(&fidvid_mutex);
+> -		goto err_out;
+> +		return 1;
+>  	}
+>  	mutex_unlock(&fidvid_mutex);
+>  
+> @@ -1220,12 +1212,25 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+>  				data->powernow_table[newstate].index);
+>  	else
+>  		pol->cur = find_khz_freq_from_fid(data->currfid);
+> -	ret = 0;
+>  
+> -err_out:
+> -	set_cpus_allowed_ptr(current, oldmask);
+> -	free_cpumask_var(oldmask);
+> -	return ret;
+> +	return 0;
+> +}
+> +
+> +/* Driver entry point to switch to the target frequency */
+> +static int powernowk8_target(struct cpufreq_policy *pol,
+> +		unsigned targfreq, unsigned relation)
+> +{
+> +	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
+> +					     .relation = relation };
+> +
+> +	/*
+> +	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
+> +	 * that we're bound to the current CPU and pol->cpu stays online.
+> +	 */
+> +	if (smp_processor_id() == pol->cpu)
+> +		return powernowk8_target_fn(&pta);
+> +	else
+> +		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+>  }
+>  
+>  /* Driver entry point to verify the policy and range of frequencies */
+> 
+> 
 
-Acked-by: David Rientjes <rientjes@google.com>
