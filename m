@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab2IRSNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:13:33 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:56256 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752082Ab2IRSMH (ORCPT
+	id S1753352Ab2IRSOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:14:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49375 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab2IRSOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:12:07 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 2/3] OMAP i2c: pinctrl-ify i2c-omap.c
-Date: Wed, 19 Sep 2012 19:07:20 +0300
-Message-Id: <1348070841-23354-3-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com>
-References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 18 Sep 2012 14:14:51 -0400
+Date: Tue, 18 Sep 2012 20:14:39 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: pci: Keep pci_common_init() around after init
+Message-ID: <20120918181439.GB29360@avionic-0098.mockup.avionic-design.de>
+References: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
+ <1347657078-32230-2-git-send-email-thierry.reding@avionic-design.de>
+ <CAErSpo7bix_4bayh2ha_yogwNiLACU7Bymd_H5ur1wxF-tmTNw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NDin8bjvE/0mNLFQ"
+Content-Disposition: inline
+In-Reply-To: <CAErSpo7bix_4bayh2ha_yogwNiLACU7Bymd_H5ur1wxF-tmTNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:4BlVzCH8wukh/GAklKM9l5GlVGC/EcPCG2y/cSlHLfd
+ miF/CwyeHo20Eb+Fj+2KnrYgF9r70P62c5KTWurR0mR9emRFgo
+ d9m/N6/K9L//hid7kDntsi6U2KbOnZIzxJX2quKMKktFgMFPey
+ PbGqsyjQGGa2TynTQ5FQeglO3V17r6rOiVB0zD7ptpRYlK0cWA
+ 3TwPGFpT3FxU6jEAfT9RlAlzDT3MdmR1/gh1cPpmQVrU+bOcQ9
+ yxrcy3Keibbc6xXaixBWccZr4NjKfm/vlxBVSLTghJFpAqaTSz
+ 6Sdgv7rRiRG6y4ORiuCe029fiRthLfrR05phZA+3ztOHwq5hOk
+ tDedgeVXYkj9iVGXjQcqWx2Y7hRWA/N1pSRRKB/nXi9gUiQi6S
+ /3yg8FtiwLu2FapE/0MgFoIxr0BHdvARco=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for pinctrl mux settings in the OMAP I2C driver.
-If no such pinctl bindings are found a warning message is printed.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- drivers/i2c/busses/i2c-omap.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+--NDin8bjvE/0mNLFQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index b149e32..f722478 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -43,6 +43,8 @@
- #include <linux/slab.h>
- #include <linux/i2c-omap.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/err.h>
- 
- /* I2C controller revisions */
- #define OMAP_I2C_OMAP1_REV_2		0x20
-@@ -1057,6 +1059,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	const struct of_device_id *match;
- 	int irq;
- 	int r;
-+	struct pinctrl *pinctrl;
- 
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -1197,6 +1200,10 @@ omap_i2c_probe(struct platform_device *pdev)
- 
- 	of_i2c_register_devices(adap);
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(dev->dev, "pins are not configured from the driver\n");
-+
- 	pm_runtime_mark_last_busy(dev->dev);
- 	pm_runtime_put_autosuspend(dev->dev);
- 
--- 
-1.7.12
+On Tue, Sep 18, 2012 at 11:13:23AM -0600, Bjorn Helgaas wrote:
+> On Fri, Sep 14, 2012 at 3:11 PM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > When using deferred driver probing, PCI host controller drivers may
+> > actually require this function after the init stage.
+> >
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> > ---
+> >  arch/arm/kernel/bios32.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> > index 2b2f25e..7288093 100644
+> > --- a/arch/arm/kernel/bios32.c
+> > +++ b/arch/arm/kernel/bios32.c
+> > @@ -423,7 +423,7 @@ static int pcibios_map_irq(const struct pci_dev *de=
+v, u8 slot, u8 pin)
+> >         return irq;
+> >  }
+> >
+> > -static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head=
+ *head)
+> > +static void __devinit pcibios_init_hw(struct hw_pci *hw, struct list_h=
+ead *head)
+>=20
+> Shouldn't we just remove __init completely, since Greg KH is in the
+> process of removing __devinit?
 
+Yes, we probably should. In fact I have a patch on top of this marked
+work-in-progress that I forgot to squash into this. That patch includes
+the removal of __devinit for pcibios_update_irq() that should be covered
+by a different patch I sent a few days ago as well as pcibios_swizzle()
+and pcibios_init_resources(). I'll squash it into this patch and will
+resend.
+
+Thierry
+
+--NDin8bjvE/0mNLFQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQWLoPAAoJEN0jrNd/PrOhynsP/AlWw3ExzFeHXqxVsqO8sl4y
+brzglGkAo50rBNMWG/Cuvry+g2GKGmKRN8DN+v78EafaemLHZb9ZqwOajMyxs45T
+rP6TCwsPDs4MIinrLl+wby3Q9pKZu8AgJR4V209+0ou+wW8sRjWSig33Cg2KBAGQ
+UsFa4LzX+WJtoYYgcYGp/JG3u5DwayGcJyN9Gu1AGnB227o7E2/0xs4BzGty5r8P
+xLKXqCXgvxJNXvfgyMz3zhTlxFdzmQ0L0uL3wbeJPvzSFq2Z8ZxDqISjxRVzEuLN
+a8RnbfyLF9k9UOZMldO9OTuuGKl9MThaZ/cfARFkP0Exrn/7Q3nSW2/cRHredTix
+tOW+LjOfp10ATQH3H/ViKIyJvfVW4nRV+sywQCYvU4BmlSDWFmurQiPm+OI469ey
+ZFnG5N8Y7tfF+mDauWS25QjsmoPtbOukNb9tshn/4r1OdVQZOWiAtsCcikXUBzXf
+Qii/74vU/ZrNbEBOZaU2dtUOAMEoPgeCDXojLY7YP5gJeDtRRibd4DLdSm5bm1DU
+rryThQ0AAtMV1DDwDuIyYdcVbltw3Pv1X01pDy4f951EuD7Nmz3kq+pZGS9E0dim
+SmnFfgXkltFXK97JxVor2TiEPHUY1ZJUjaHO8bd2Y5VZd/QJ4X9EvRBYeaH8BKc+
+zRfLzzXrrcnou1DBxAmD
+=opLy
+-----END PGP SIGNATURE-----
+
+--NDin8bjvE/0mNLFQ--
