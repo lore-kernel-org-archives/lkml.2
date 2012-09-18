@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab2IRMJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:09:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33307 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932509Ab2IRMIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932572Ab2IRMIO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Sep 2012 08:08:14 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: kernel@pengutronix.de
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 06/10] drivers/video/imxfb.c: fix error return code
-Date: Tue, 18 Sep 2012 14:07:56 +0200
-Message-Id: <1347970080-25175-6-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
-References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:44672 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757225Ab2IRMIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 08:08:11 -0400
+Message-ID: <50586424.9040601@ti.com>
+Date: Tue, 18 Sep 2012 17:38:04 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Matt Porter <mporter@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        AnilKumar <anilkumar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [REPOST PATCH v2 1/2] spi: omap2-mcspi: add pinctrl support
+References: <1347969685-15571-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1347969685-15571-1-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+On Tuesday 18 September 2012 05:31 PM, Matt Porter wrote:
+> Adds pinctrl support to support OMAP platforms that boot from DT
+> and rely on pinctrl support to set pinmuxes.
+looks good
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+Acked-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/video/imxfb.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
-index caad368..469b07c 100644
---- a/drivers/video/imxfb.c
-+++ b/drivers/video/imxfb.c
-@@ -803,6 +803,7 @@ static int __init imxfb_probe(struct platform_device *pdev)
- 	fbi->regs = ioremap(res->start, resource_size(res));
- 	if (fbi->regs == NULL) {
- 		dev_err(&pdev->dev, "Cannot map frame buffer registers\n");
-+		ret = -ENOMEM;
- 		goto failed_ioremap;
- 	}
- 
--- 
-1.7.11.4
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  drivers/spi/spi-omap2-mcspi.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+> index b2fb141..9502566 100644
+> --- a/drivers/spi/spi-omap2-mcspi.c
+> +++ b/drivers/spi/spi-omap2-mcspi.c
+> @@ -38,6 +38,8 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/err.h>
+>  
+>  #include <linux/spi/spi.h>
+>  
+> @@ -1124,6 +1126,7 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+>  	static int		bus_num = 1;
+>  	struct device_node	*node = pdev->dev.of_node;
+>  	const struct of_device_id *match;
+> +	struct pinctrl *pinctrl;
+>  
+>  	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
+>  	if (master == NULL) {
+> @@ -1219,6 +1222,11 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+>  	if (status < 0)
+>  		goto dma_chnl_free;
+>  
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev,
+> +			"pins are not configured from the driver\n");
+> +
+>  	pm_runtime_use_autosuspend(&pdev->dev);
+>  	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+>  	pm_runtime_enable(&pdev->dev);
 
