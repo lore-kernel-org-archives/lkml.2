@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2IRF4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 01:56:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44802 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab2IRF4a (ORCPT
+	id S1756259Ab2IRGFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:05:51 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:36332 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755353Ab2IRGFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 01:56:30 -0400
+	Tue, 18 Sep 2012 02:05:50 -0400
+Message-ID: <50580F38.5040801@ti.com>
+Date: Tue, 18 Sep 2012 11:35:44 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAMPhdO_XJ2+=yrkLXVFTR4ykf8QnON7mBXQ2+2xiTor=wY5S+w@mail.gmail.com>
-References: <CAPgLHd93SqsiFmE7y356VwBJtaac0APE__vk+8dBZnaOyt4org@mail.gmail.com>
-	<CACRpkdYAeChEqeLrz0hQxpXrWp477iXoko01swG8Y=SA7tNh5Q@mail.gmail.com>
-	<CAMPhdO_XJ2+=yrkLXVFTR4ykf8QnON7mBXQ2+2xiTor=wY5S+w@mail.gmail.com>
-Date: Tue, 18 Sep 2012 13:56:28 +0800
-Message-ID: <CAN1soZzFmRxWUh9Og31O8XoXKwPcNPszCseJDkt_6oNPx7gD-g@mail.gmail.com>
-Subject: Re: [PATCH] gpio: pxa: using for_each_set_bit to simplify the code
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Wei Yongjun <weiyj.lk@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
+To: Ryan Mallon <rmallon@gmail.com>
+CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH 1/7] rtc: Convert struct i2c_msg initialization to C99
+ format
+References: <1347890294-28467-1-git-send-email-shubhrajyoti@ti.com> <1347890294-28467-2-git-send-email-shubhrajyoti@ti.com> <5057D1E1.60507@gmail.com>
+In-Reply-To: <5057D1E1.60507@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 1:43 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
-> On Mon, Sep 17, 2012 at 6:56 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Fri, Sep 14, 2012 at 4:36 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+On Tuesday 18 September 2012 07:14 AM, Ryan Mallon wrote:
+> On 17/09/12 23:58, Shubhrajyoti D wrote:
+>>     Convert the struct i2c_msg initialization to C99 format. This makes
+>>     maintaining and editing the code simpler. Also helps once other fields
+>>     like transferred are added in future.
 >>
->>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->>>
->>> Using for_each_set_bit() to simplify the code.
->>>
->>> spatch with a semantic match is used to found this.
->>> (http://coccinelle.lip6.fr/)
->>>
->>> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+>> ---
+>>  drivers/rtc/rtc-ds1672.c |   26 ++++++++++++++++++++++----
+>>  1 files changed, 22 insertions(+), 4 deletions(-)
 >>
->> PXA maintainers: does this look OK?
+>> diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
+>> index 7fa67d0..b44b2a1 100644
+>> --- a/drivers/rtc/rtc-ds1672.c
+>> +++ b/drivers/rtc/rtc-ds1672.c
+>> @@ -37,8 +37,18 @@ static int ds1672_get_datetime(struct i2c_client *client, struct rtc_time *tm)
+>>  	unsigned char buf[4];
+>>  
+>>  	struct i2c_msg msgs[] = {
+>> -		{client->addr, 0, 1, &addr},	/* setup read ptr */
+>> -		{client->addr, I2C_M_RD, 4, buf},	/* read date */
+>> +		{
+>> +			.addr = client->addr,
+>> +			.flags = 0,
+>> +			.len = 1,
+>> +			.buf = &addr
+>> +		},	/* setup read ptr */
+> It would be nice to tabify the fields, and put the comments on their own
+> lines while you are here. With the C99 format you can also omit fields
+> which are initialised to zero. Like this:
+For local structures also?
 >
-> I seem to have Acked this already in another mail, if that got lost, here
-> it is:
+> 		{
+> 			/* Setup read pointer */
+> 			.addr	= client->addr,
+> 			.len	= 1,
+> 			.buf	= &addr,
+> 		},
 >
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> ~Ryan
 >
-The another mail thread is for irq, not gpio. I'll apply it today. :)
+>
+
