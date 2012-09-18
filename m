@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab2IRMel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:34:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53911 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495Ab2IRMek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:34:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH v5 00/17] Introduce Xen support on ARM (based on 3.6-rc5)
-Date: Tue, 18 Sep 2012 12:34:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>
-References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
+	id S933004Ab2IRMl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:41:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53583 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932928Ab2IRMl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 08:41:27 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <alan@linux.intel.com>, <tony@atomide.com>, <khilman@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <santosh.shilimkar@ti.com>, <balbi@ti.com>, <paul@pwsan.com>,
+        Sourav Poddar <sourav.poddar@ti.com>
+Subject: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
+Date: Tue, 18 Sep 2012 18:10:50 +0530
+Message-ID: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209181234.29557.arnd@arndb.de>
-X-Provags-ID: V02:K0:bcMTw+7UhK/ACDTwV5qA3ZZHptjq/o/6VKOclcPohqU
- HQ4eEYiFzFJ6Vcclkk0ycZj9Ft2OdkfJdHKm60IHK8mDDj4HSl
- JL4CpovXoiZh8Chskt0Ejt1hF+8BX0Jxh6k+ZriO5WJke3NdJc
- tCQZf1bK/Q+sAdVVQY/HGxvPdPk6KBLWy/qhled3PwdLBrFRud
- 89miQ7zCprpkSLwa9HHKG/XtUoFAAv7fwPJ6n9K+QylLEdtRgt
- tglroBjozQqLkIYAA1AqsZNIp02JcUSFEgaWTJp6E/SqCE/Zau
- 1IlmJGTAQx+Qtx6DLKbV/xLK2/kU21tUpEf5bwz8OORHspFJre
- FQ5LMtfZRuLGLcXORCW4=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 September 2012, Stefano Stabellini wrote:
+Greg's tty-next is not booting on 2420 based N800. The failure is
+observed at serial init itself. The reason might be that n800 tries to
+resume even though it is not suspended before.
 
-> I am also attaching to this email the dts'es that I am currently using
-> for dom0 and domU: vexpress-v2p-ca15-tc1.dts (that includes
-> vexpress-v2m-rs1-rtsm.dtsi) is the dts used for dom0 and it is passed to
-> Linux by Xen, while vexpress-virt.dts is the dts used for other domUs
-> and it is appended in binary form to the guest kernel image. I am not
-> sure where they are supposed to live yet, so I am just attaching them
-> here so that people can actually try out this series if they want to.
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+This patch is developed on top of greg's tty-next branch
+CommitId: e740d8f tty: serial: Samsung: Fix return value +
+the following patch which I have already posted to the mailing list.
+http://comments.gmane.org/gmane.linux.ports.arm.omap/84729
 
-You can submit the dts files separately so we can include them in
-the arm-soc tree. Pawel Moll is handling vexpress related changes these
-days, so it would be reasonable if he included them in a pull request.
+ drivers/tty/serial/omap-serial.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 3c05c5e..bc355f2 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -110,6 +110,7 @@ struct uart_omap_port {
+ 	u32			calc_latency;
+ 	struct work_struct	qos_work;
+ 	struct pinctrl		*pins;
++	unsigned int		suspended:1;
+ };
  
-> The patch series has been rebased on Konrad's stable/for-linus-3.7
-> branch.
-> 
-> Arnd, Russell, what do you think about this series? If you are OK with
-> it, to whom should I submit it?
+ #define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
+@@ -1545,14 +1546,20 @@ static int serial_omap_runtime_suspend(struct device *dev)
+ 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+ 	schedule_work(&up->qos_work);
+ 
++	up->suspended = true;
++
+ 	return 0;
+ }
+ 
+ static int serial_omap_runtime_resume(struct device *dev)
+ {
+ 	struct uart_omap_port *up = dev_get_drvdata(dev);
++	u32 loss_cnt;
++
++	if (!up->suspended)
++		return 0;
+ 
+-	u32 loss_cnt = serial_omap_get_context_loss_count(up);
++	loss_cnt = serial_omap_get_context_loss_count(up);
+ 
+ 	if (up->context_loss_cnt != loss_cnt)
+ 		serial_omap_restore_context(up);
+@@ -1560,6 +1567,8 @@ static int serial_omap_runtime_resume(struct device *dev)
+ 	up->latency = up->calc_latency;
+ 	schedule_work(&up->qos_work);
+ 
++	up->suspended = false;
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.7.1
 
-I have no objections to your patches from this series. IMHO they should
-be submitted through the Xen tree, but it would be good to have an Ack
-from Russell.
-
-	Arnd
