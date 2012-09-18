@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2IRSVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:21:55 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:38154 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752932Ab2IRSVx (ORCPT
+	id S1753647Ab2IRSWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:22:12 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:46773 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab2IRSWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:21:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/sJ1Q5Tsn+YhDQMmngzM3E
-Date: Tue, 18 Sep 2012 11:21:50 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: Re: [PATCH 1/3] pinctrl: pinctrl-single must be initialized early.
-Message-ID: <20120918182150.GY11762@atomide.com>
-References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com>
- <1348070841-23354-2-git-send-email-panto@antoniou-consulting.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348070841-23354-2-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 18 Sep 2012 14:22:10 -0400
+From: Simon Glass <sjg@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
+Cc: "kgene.kim" <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Simon Glass <sjg@chromium.org>
+Subject: [PATCH 0/7] Add support for Exynos5 ISP SPI ports
+Date: Tue, 18 Sep 2012 11:21:52 -0700
+Message-Id: <1347992519-6904-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This series adds support for the two additional SPI ports on exynos,
+attached to the ISP.
 
-* Pantelis Antoniou <panto@antoniou-consulting.com> [120918 11:13]:
-> When using pinctrl-single to handle i2c initialization, it has
-> to be done early.
-> On the beaglebone the regulator is connected to the i2c0 bus,
-> and for sure that's the case for many other am33xx boards.
+I have included a required PM patch as well, so that it compiles.
 
-Usually it's better to initialize things later than earlier as
-that cuts down nasty dependencies and let's us have a proper
-debug console before we start initializing things beyond
-interrupts and drivers.
+This has been tested using flashrom on SPI1, and a chip to chip SPI
+interface (with an STM32 micro) on ISP SPI1.
 
-Maybe just fix up the i2c-omap.c not to use subsys_initcall()?
-And then deferred probe should be able to sort out the dependencies
-for other drivers depending on i2c?
+This series may need more work, but I think it is worth sending out as is.
 
-Regards,
 
-Tony
- 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> ---
->  drivers/pinctrl/pinctrl-single.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> index 76a4260..3acf7f9 100644
-> --- a/drivers/pinctrl/pinctrl-single.c
-> +++ b/drivers/pinctrl/pinctrl-single.c
-> @@ -980,7 +980,17 @@ static struct platform_driver pcs_driver = {
->  	},
->  };
->  
-> -module_platform_driver(pcs_driver);
-> +static int __init pcs_init(void)
-> +{
-> +	return platform_driver_register(&pcs_driver);
-> +}
-> +postcore_initcall(pcs_init);
-> +
-> +static void __exit pcs_exit(void)
-> +{
-> +	platform_driver_unregister(&pcs_driver);
-> +}
-> +module_exit(pcs_exit);
->  
->  MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
->  MODULE_DESCRIPTION("One-register-per-pin type device tree based pinctrl driver");
-> -- 
-> 1.7.12
-> 
+Prathyush K (1):
+  PM / Domains: add generic function 'pm_genpd_of_add_device_by_name'
+
+Simon Glass (6):
+  spi: s3c64xx: Fix enum dma_data_direction warning
+  spi: s3c64xx: Add support for ISP SPI ports
+  spi: s3c64xx: Use jiffies instead of loops for timeout
+  spi: s3c64xx: Allow use with SPI ports without dma
+  spi: s3c64xx: Tidy up SPI chip select handling
+  spi: s3c64xx: Write to PACKET_CNT after reset
+
+ .../devicetree/bindings/spi/spi-samsung.txt        |    7 +
+ arch/arm/mach-exynos/clock-exynos5.c               |   69 +++++++++
+ arch/arm/mach-exynos/include/mach/map.h            |    2 +
+ arch/arm/mach-exynos/include/mach/regs-clock.h     |    1 +
+ arch/arm/mach-exynos/mach-exynos5-dt.c             |    4 +
+ arch/arm/plat-samsung/include/plat/s3c64xx-spi.h   |    6 +-
+ drivers/spi/spi-s3c64xx.c                          |  150 +++++++++++++-------
+ include/linux/pm_domain.h                          |   19 +++
+ 8 files changed, 202 insertions(+), 56 deletions(-)
+
+-- 
+1.7.7.3
+
