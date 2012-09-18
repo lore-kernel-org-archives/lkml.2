@@ -1,124 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab2IRMtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:49:31 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:57875 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755403Ab2IRMta (ORCPT
+	id S933021Ab2IRMtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:49:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56861 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152Ab2IRMtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:49:30 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, lee.jones@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org, aletes.xgr@gmail.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] spi/pl022: Devicetree support w/o platform data
-Date: Tue, 18 Sep 2012 14:49:00 +0200
-Message-Id: <1347972540-29667-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Tue, 18 Sep 2012 08:49:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1966621.qrSMP274pk@avalon>
+References: <1346737072-24341-1-git-send-email-prabhakar.lad@ti.com>
+ <5046DEC1.6050704@ti.com> <504A4114.5010106@iki.fi> <1966621.qrSMP274pk@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 18 Sep 2012 18:19:18 +0530
+Message-ID: <CA+V-a8vaPwaivk7B8AQEUHWJHQ6LNZ=BwQEFsRyiek6HBBS28g@mail.gmail.com>
+Subject: Re: [PATCH v4] media: v4l2-ctrls: add control for dpcm predictor
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        LMML <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even with devicetree support, we needed platform data to provide some data like
-bus_id and enable_dma, leading to mixed device tree and platform data. This
-patch makes it possible to provide all that information via device tree. Now,
-the data must be provided via platform data _or_ device tree completely.
+Hi Sakari,
 
-Only in case of callback specification (dma_filter()), platform data is
-necessary.
+On Thu, Sep 13, 2012 at 6:29 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Sakari,
+>
+> On Friday 07 September 2012 21:46:44 Sakari Ailus wrote:
+>>
+>> Could you replace the above with this text (with appropriate indentation
+>> etc.) while keeping the reference to Wikipedia?
+>>
+>> ------8<------
+>> Differential pulse-code modulation (DPCM) compression can be used to
+>> compress the samples into fewer bits than they would otherwise require.
+>> This is done by calculating the difference between consecutive samples
+>> and outputting the difference which in average is much smaller than the
+>> values of the samples themselves since there is generally lots of
+>> correlation between adjacent pixels. In decompression the original
+>> samples are reconstructed. The process isn't lossless as the encoded
+>> sample size in bits is less than the original.
+>>
+>> Formats using DPCM compression include <xref
+>> linkend="pixfmt-srggb10dpcm8" />.
+>>
+>> This control is used to select the predictor used to encode the samples.
+>
+> If I remember correctly this control will be used on the receiver side on
+> DaVinci, to decode pixels not encode them. How is the predictor used in that
+> case ? Must it match the predictor used on the encoding side ? If so I expect
+> documentation to be available somewhere.
+>
+> The OMAP3 ISP supports both DPCM encoding and decoding, and documents the
+> predictors as
+>
+> "- The simple predictor
+>
+> This predictor uses only the previous same color component value as a
+> prediction value. Therefore, only two-pixel memory is required.
+>
+> - The advanced predictor
+>
+> This predictor uses four previous pixel values, when the prediction value is
+> evaluated. This means that also the other color component values are used,
+> when the prediction value has been defined."
+>
+> It also states the the simple predictor is preferred for 10-8-10 conversion,
+> and the advanced predictor for 10-7-10 and 10-6-10 conversion.
+>
+What do you suggest ?
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Regards,
+--Prabhakar Lad
 
----
- Documentation/devicetree/bindings/spi/spi_pl022.txt |    9 ++++
- drivers/spi/spi-pl022.c                             |   41 +++++++++++++++++---
- 2 files changed, 45 insertions(+), 5 deletions(-)
-
---- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi_pl022.txt
-+++ linux-2.6/Documentation/devicetree/bindings/spi/spi_pl022.txt
-@@ -10,6 +10,15 @@ Optional properties:
- - cs-gpios : should specify GPIOs used for chipselects.
-   The gpios will be referred to as reg = <index> in the SPI child nodes.
-   If unspecified, a single SPI device without a chip select can be used.
-+- pl022,bus-id : Bus ID (0, 1, ...)
-+- pl022,enable-dma : enables DMA driven transfers (boolean)
-+- pl022,autosuspend-delay : delay in ms following transfer completion before
-+			    the runtime power management system suspends the
-+			    device. A setting of 0 indicates no delay and the
-+                            device will be suspended immediately
-+- pl022,rt : indicates the controller should run the message pump with realtime
-+             priority to minimise the transfer latency on the bus (boolean)
-+
- 
- SPI slave nodes must be children of the SPI master node and can
- contain the following properties.
---- linux-2.6.orig/drivers/spi/spi-pl022.c
-+++ linux-2.6/drivers/spi/spi-pl022.c
-@@ -2024,6 +2024,36 @@ static void pl022_cleanup(struct spi_dev
- 	kfree(chip);
- }
- 
-+static struct pl022_ssp_controller *
-+pl022_platform_data_dt_get(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct pl022_ssp_controller *pd;
-+	u32 tmp;
-+
-+	if (!np) {
-+		dev_err(dev, "no dt node defined\n");
-+		return NULL;
-+	}
-+
-+	pd = devm_kzalloc(dev, sizeof(struct pl022_ssp_controller), GFP_KERNEL);
-+	if (!pd) {
-+		dev_err(dev, "cannot allocate platform data memory\n");
-+		return NULL;
-+	}
-+
-+	of_property_read_u32(np, "pl022,bus-id", &tmp);
-+	pd->bus_id = tmp;
-+	of_property_read_u32(np, "num-cs", &tmp);
-+	pd->num_chipselect = tmp;
-+	pd->enable_dma = of_property_read_bool(np, "pl022,enable-dma") ? 1 : 0;
-+	of_property_read_u32(np, "pl022,autosuspend-delay",
-+			     &pd->autosuspend_delay);
-+	pd->rt = of_property_read_bool(np, "pl022,rt");
-+
-+	return pd;
-+}
-+
- static int __devinit
- pl022_probe(struct amba_device *adev, const struct amba_id *id)
- {
-@@ -2036,18 +2066,19 @@ pl022_probe(struct amba_device *adev, co
- 
- 	dev_info(&adev->dev,
- 		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
--	if (platform_info == NULL) {
--		dev_err(&adev->dev, "probe - no platform data supplied\n");
-+	if (!platform_info && IS_ENABLED(CONFIG_OF))
-+		platform_info = pl022_platform_data_dt_get(dev);
-+
-+	if (!platform_info) {
-+		dev_err(dev, "probe: no platform data defined\n");
- 		status = -ENODEV;
- 		goto err_no_pdata;
- 	}
- 
- 	if (platform_info->num_chipselect) {
- 		num_cs = platform_info->num_chipselect;
--	} else if (IS_ENABLED(CONFIG_OF)) {
--		of_property_read_u32(np, "num-cs", &num_cs);
- 	} else {
--		dev_err(&adev->dev, "probe: no chip select defined\n");
-+		dev_err(dev, "probe: no chip select defined\n");
- 		status = -ENODEV;
- 		goto err_no_pdata;
- 	}
+>> The main difference between the simple and the advanced predictors is
+>> image quality, with advanced predictor supposed to produce better
+>> quality images as a result. Simple predictor can be used e.g. for
+>> testing purposes.
+>> ------8<------
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
