@@ -1,86 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab2IRDN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 23:13:27 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:51153 "EHLO e3.ny.us.ibm.com"
+	id S932713Ab2IRDNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 23:13:49 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:59302 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932627Ab2IRDNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 23:13:12 -0400
+	id S932501Ab2IRDNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 23:13:11 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@google.com>,
         Colin Cross <ccross@google.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] alarmtimer: Rename alarmtimer_remove to alarmtimer_dequeue
-Date: Mon, 17 Sep 2012 23:12:55 -0400
-Message-Id: <1347937975-34169-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/3] alarmtimer: Use hrtimer per-alarm instead of per-base
+Date: Mon, 17 Sep 2012 23:12:53 -0400
+Message-Id: <1347937975-34169-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1347937975-34169-1-git-send-email-john.stultz@linaro.org>
 References: <1347937975-34169-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-x-cbid: 12091803-8974-0000-0000-00000DEE6AAE
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000007; SDB=6.00175089; UDB=6.00039653; UTC=2012-09-18
- 03:13:10
+x-cbid: 12091803-6078-0000-0000-00000FB270C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that alarmtimer_remove has been simplified, change
-its name to _dequeue to better match its paired _enqueue
-function.
+Arve Hjønnevåg reported numerous crashes from the
+"BUG_ON(timer->state != HRTIMER_STATE_CALLBACK)" check
+in __run_hrtimer after it called alarmtimer_fired.
+
+It ends up the alarmtimer code was not properly handling
+possible failures of hrtimer_try_to_cancel, and because
+these faulres occur when the underlying base hrtimer is
+being run, this limits the ability to properly handle
+modifications to any alarmtimers on that base.
+
+Because much of the logic duplicates the hrtimer logic,
+it seems that we might as well have a per-alarmtimer
+hrtimer, and avoid the extra complextity of trying to
+multiplex many alarmtimers off of one hrtimer.
+
+Thus this patch moves the hrtimer to the alarm structure
+and simplifies the management logic.
 
 Cc: Arve Hjønnevåg <arve@google.com>
 Cc: Colin Cross <ccross@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Arve Hjønnevåg <arve@google.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/alarmtimer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/linux/alarmtimer.h |    3 +-
+ kernel/time/alarmtimer.c   |   93 +++++++++++++-------------------------------
+ 2 files changed, 28 insertions(+), 68 deletions(-)
 
+diff --git a/include/linux/alarmtimer.h b/include/linux/alarmtimer.h
+index 96c5c24..f122c9f 100644
+--- a/include/linux/alarmtimer.h
++++ b/include/linux/alarmtimer.h
+@@ -35,6 +35,7 @@ enum alarmtimer_restart {
+  */
+ struct alarm {
+ 	struct timerqueue_node	node;
++	struct hrtimer		timer;
+ 	enum alarmtimer_restart	(*function)(struct alarm *, ktime_t now);
+ 	enum alarmtimer_type	type;
+ 	int			state;
+@@ -43,7 +44,7 @@ struct alarm {
+ 
+ void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
+ 		enum alarmtimer_restart (*function)(struct alarm *, ktime_t));
+-void alarm_start(struct alarm *alarm, ktime_t start);
++int alarm_start(struct alarm *alarm, ktime_t start);
+ int alarm_try_to_cancel(struct alarm *alarm);
+ int alarm_cancel(struct alarm *alarm);
+ 
 diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 8c763ac..d14f833 100644
+index aa27d39..8c763ac 100644
 --- a/kernel/time/alarmtimer.c
 +++ b/kernel/time/alarmtimer.c
-@@ -142,7 +142,7 @@ static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
- }
- 
- /**
-- * alarmtimer_remove - Removes an alarm timer from an alarm_base timerqueue
-+ * alarmtimer_dequeue - Removes an alarm timer from an alarm_base timerqueue
-  * @base: pointer to the base where the timer is running
-  * @alarm: pointer to alarm being removed
+@@ -37,7 +37,6 @@
+ static struct alarm_base {
+ 	spinlock_t		lock;
+ 	struct timerqueue_head	timerqueue;
+-	struct hrtimer		timer;
+ 	ktime_t			(*gettime)(void);
+ 	clockid_t		base_clockid;
+ } alarm_bases[ALARM_NUMTYPE];
+@@ -130,21 +129,16 @@ static inline void alarmtimer_rtc_timer_init(void) { }
+  * @base: pointer to the base where the timer is being run
+  * @alarm: pointer to alarm being enqueued.
   *
-@@ -150,7 +150,7 @@ static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
+- * Adds alarm to a alarm_base timerqueue and if necessary sets
+- * an hrtimer to run.
++ * Adds alarm to a alarm_base timerqueue
   *
   * Must hold base->lock when calling.
   */
--static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
-+static void alarmtimer_dequeue(struct alarm_base *base, struct alarm *alarm)
+ static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
  {
++	WARN_ON(alarm->state & ALARMTIMER_STATE_ENQUEUED);
++
+ 	timerqueue_add(&base->timerqueue, &alarm->node);
+ 	alarm->state |= ALARMTIMER_STATE_ENQUEUED;
+-
+-	if (&alarm->node == timerqueue_getnext(&base->timerqueue)) {
+-		hrtimer_try_to_cancel(&base->timer);
+-		hrtimer_start(&base->timer, alarm->node.expires,
+-				HRTIMER_MODE_ABS);
+-	}
+ }
+ 
+ /**
+@@ -152,28 +146,17 @@ static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
+  * @base: pointer to the base where the timer is running
+  * @alarm: pointer to alarm being removed
+  *
+- * Removes alarm to a alarm_base timerqueue and if necessary sets
+- * a new timer to run.
++ * Removes alarm to a alarm_base timerqueue
+  *
+  * Must hold base->lock when calling.
+  */
+ static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
+ {
+-	struct timerqueue_node *next = timerqueue_getnext(&base->timerqueue);
+-
  	if (!(alarm->state & ALARMTIMER_STATE_ENQUEUED))
  		return;
-@@ -178,7 +178,7 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
+ 
+ 	timerqueue_del(&base->timerqueue, &alarm->node);
+ 	alarm->state &= ~ALARMTIMER_STATE_ENQUEUED;
+-
+-	if (next == &alarm->node) {
+-		hrtimer_try_to_cancel(&base->timer);
+-		next = timerqueue_getnext(&base->timerqueue);
+-		if (!next)
+-			return;
+-		hrtimer_start(&base->timer, next->expires, HRTIMER_MODE_ABS);
+-	}
+ }
+ 
+ 
+@@ -188,42 +171,23 @@ static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
+  */
+ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
+ {
+-	struct alarm_base *base = container_of(timer, struct alarm_base, timer);
+-	struct timerqueue_node *next;
++	struct alarm *alarm = container_of(timer, struct alarm, timer);
++	struct alarm_base *base = &alarm_bases[alarm->type];
+ 	unsigned long flags;
+-	ktime_t now;
+ 	int ret = HRTIMER_NORESTART;
  	int restart = ALARMTIMER_NORESTART;
  
  	spin_lock_irqsave(&base->lock, flags);
--	alarmtimer_remove(base, alarm);
-+	alarmtimer_dequeue(base, alarm);
- 	spin_unlock_irqrestore(&base->lock, flags);
+-	now = base->gettime();
+-	while ((next = timerqueue_getnext(&base->timerqueue))) {
+-		struct alarm *alarm;
+-		ktime_t expired = next->expires;
+-
+-		if (expired.tv64 > now.tv64)
+-			break;
+-
+-		alarm = container_of(next, struct alarm, node);
+-
+-		timerqueue_del(&base->timerqueue, &alarm->node);
+-		alarm->state &= ~ALARMTIMER_STATE_ENQUEUED;
+-
+-		alarm->state |= ALARMTIMER_STATE_CALLBACK;
+-		spin_unlock_irqrestore(&base->lock, flags);
+-		if (alarm->function)
+-			restart = alarm->function(alarm, now);
+-		spin_lock_irqsave(&base->lock, flags);
+-		alarm->state &= ~ALARMTIMER_STATE_CALLBACK;
++	alarmtimer_remove(base, alarm);
++	spin_unlock_irqrestore(&base->lock, flags);
  
- 	if (alarm->function)
-@@ -332,7 +332,7 @@ int alarm_try_to_cancel(struct alarm *alarm)
+-		if (restart != ALARMTIMER_NORESTART) {
+-			timerqueue_add(&base->timerqueue, &alarm->node);
+-			alarm->state |= ALARMTIMER_STATE_ENQUEUED;
+-		}
+-	}
++	if (alarm->function)
++		restart = alarm->function(alarm, base->gettime());
+ 
+-	if (next) {
+-		hrtimer_set_expires(&base->timer, next->expires);
++	spin_lock_irqsave(&base->lock, flags);
++	if (restart != ALARMTIMER_NORESTART) {
++		hrtimer_set_expires(&alarm->timer, alarm->node.expires);
++		alarmtimer_enqueue(base, alarm);
+ 		ret = HRTIMER_RESTART;
+ 	}
+ 	spin_unlock_irqrestore(&base->lock, flags);
+@@ -324,6 +288,9 @@ void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
+ 		enum alarmtimer_restart (*function)(struct alarm *, ktime_t))
+ {
+ 	timerqueue_init(&alarm->node);
++	hrtimer_init(&alarm->timer, alarm_bases[type].base_clockid,
++			HRTIMER_MODE_ABS);
++	alarm->timer.function = alarmtimer_fired;
+ 	alarm->function = function;
+ 	alarm->type = type;
+ 	alarm->state = ALARMTIMER_STATE_INACTIVE;
+@@ -334,17 +301,19 @@ void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
+  * @alarm: ptr to alarm to set
+  * @start: time to run the alarm
+  */
+-void alarm_start(struct alarm *alarm, ktime_t start)
++int alarm_start(struct alarm *alarm, ktime_t start)
+ {
+ 	struct alarm_base *base = &alarm_bases[alarm->type];
+ 	unsigned long flags;
++	int ret;
+ 
  	spin_lock_irqsave(&base->lock, flags);
- 	ret = hrtimer_try_to_cancel(&alarm->timer);
- 	if (ret >= 0)
+-	if (alarmtimer_active(alarm))
 -		alarmtimer_remove(base, alarm);
-+		alarmtimer_dequeue(base, alarm);
+ 	alarm->node.expires = start;
+ 	alarmtimer_enqueue(base, alarm);
++	ret = hrtimer_start(&alarm->timer, alarm->node.expires,
++				HRTIMER_MODE_ABS);
+ 	spin_unlock_irqrestore(&base->lock, flags);
++	return ret;
+ }
+ 
+ /**
+@@ -358,18 +327,12 @@ int alarm_try_to_cancel(struct alarm *alarm)
+ {
+ 	struct alarm_base *base = &alarm_bases[alarm->type];
+ 	unsigned long flags;
+-	int ret = -1;
+-	spin_lock_irqsave(&base->lock, flags);
+-
+-	if (alarmtimer_callback_running(alarm))
+-		goto out;
++	int ret;
+ 
+-	if (alarmtimer_is_queued(alarm)) {
++	spin_lock_irqsave(&base->lock, flags);
++	ret = hrtimer_try_to_cancel(&alarm->timer);
++	if (ret >= 0)
+ 		alarmtimer_remove(base, alarm);
+-		ret = 1;
+-	} else
+-		ret = 0;
+-out:
  	spin_unlock_irqrestore(&base->lock, flags);
  	return ret;
  }
+@@ -802,10 +765,6 @@ static int __init alarmtimer_init(void)
+ 	for (i = 0; i < ALARM_NUMTYPE; i++) {
+ 		timerqueue_init_head(&alarm_bases[i].timerqueue);
+ 		spin_lock_init(&alarm_bases[i].lock);
+-		hrtimer_init(&alarm_bases[i].timer,
+-				alarm_bases[i].base_clockid,
+-				HRTIMER_MODE_ABS);
+-		alarm_bases[i].timer.function = alarmtimer_fired;
+ 	}
+ 
+ 	error = alarmtimer_rtc_interface_setup();
 -- 
 1.7.9.5
 
