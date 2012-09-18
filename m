@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab2IRBjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 21:39:46 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40942 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756490Ab2IRBi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 21:38:58 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Zhouping Liu <zliu@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] 2.6.34.y: time: Move ktime_t overflow checking into timespec_valid_strict
-Date: Mon, 17 Sep 2012 21:38:47 -0400
-Message-Id: <1347932327-33192-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1347932327-33192-1-git-send-email-john.stultz@linaro.org>
-References: <1347932327-33192-1-git-send-email-john.stultz@linaro.org>
-x-cbid: 12091801-9360-0000-0000-00000AC2EC6A
+	id S1756545Ab2IRBoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 21:44:09 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62758 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2IRBoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 21:44:07 -0400
+Message-ID: <5057D1E1.60507@gmail.com>
+Date: Tue, 18 Sep 2012 11:44:01 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH 1/7] rtc: Convert struct i2c_msg initialization to C99
+ format
+References: <1347890294-28467-1-git-send-email-shubhrajyoti@ti.com> <1347890294-28467-2-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1347890294-28467-2-git-send-email-shubhrajyoti@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a -stable backport of cee58483cf56e0ba355fdd97ff5e8925329aa936
+On 17/09/12 23:58, Shubhrajyoti D wrote:
+>     Convert the struct i2c_msg initialization to C99 format. This makes
+>     maintaining and editing the code simpler. Also helps once other fields
+>     like transferred are added in future.
+> 
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> ---
+>  drivers/rtc/rtc-ds1672.c |   26 ++++++++++++++++++++++----
+>  1 files changed, 22 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-ds1672.c b/drivers/rtc/rtc-ds1672.c
+> index 7fa67d0..b44b2a1 100644
+> --- a/drivers/rtc/rtc-ds1672.c
+> +++ b/drivers/rtc/rtc-ds1672.c
+> @@ -37,8 +37,18 @@ static int ds1672_get_datetime(struct i2c_client *client, struct rtc_time *tm)
+>  	unsigned char buf[4];
+>  
+>  	struct i2c_msg msgs[] = {
+> -		{client->addr, 0, 1, &addr},	/* setup read ptr */
+> -		{client->addr, I2C_M_RD, 4, buf},	/* read date */
+> +		{
+> +			.addr = client->addr,
+> +			.flags = 0,
+> +			.len = 1,
+> +			.buf = &addr
+> +		},	/* setup read ptr */
 
-Andreas Bombe reported that the added ktime_t overflow checking added to
-timespec_valid in commit 4e8b14526ca7 ("time: Improve sanity checking of
-timekeeping inputs") was causing problems with X.org because it caused
-timeouts larger then KTIME_T to be invalid.
+It would be nice to tabify the fields, and put the comments on their own
+lines while you are here. With the C99 format you can also omit fields
+which are initialised to zero. Like this:
 
-Previously, these large timeouts would be clamped to KTIME_MAX and would
-never expire, which is valid.
+		{
+			/* Setup read pointer */
+			.addr	= client->addr,
+			.len	= 1,
+			.buf	= &addr,
+		},
 
-This patch splits the ktime_t overflow checking into a new
-timespec_valid_strict function, and converts the timekeeping codes
-internal checking to use this more strict function.
+~Ryan
 
-Reported-and-tested-by: Andreas Bombe <aeb@debian.org>
-Cc: Zhouping Liu <zliu@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/time.h      |    7 +++++++
- kernel/time/timekeeping.c |    6 +++---
- 2 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 146b6f3..bc93987 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -109,6 +109,13 @@ static inline bool timespec_valid(const struct timespec *ts)
- 	/* Can't have more nanoseconds then a second */
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return false;
-+	return true;
-+}
-+
-+static inline bool timespec_valid_strict(const struct timespec *ts)
-+{
-+	if (!timespec_valid(ts))
-+		return false;
- 	/* Disallow values that could overflow ktime_t */
- 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
- 		return false;
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index bbdad71a..21cd75b 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -343,7 +343,7 @@ int do_settimeofday(struct timespec *tv)
- 	struct timespec ts_delta;
- 	unsigned long flags;
- 
--	if (!timespec_valid(tv))
-+	if (!timespec_valid_strict(tv))
- 		return -EINVAL;
- 
- 	write_seqlock_irqsave(&xtime_lock, flags);
-@@ -559,7 +559,7 @@ void __init timekeeping_init(void)
- 	struct timespec now, boot;
- 
- 	read_persistent_clock(&now);
--	if (!timespec_valid(&now)) {
-+	if (!timespec_valid_strict(&now)) {
- 		printk("WARNING: Persistent clock returned invalid value!\n"
- 			"         Check your CMOS/BIOS settings.\n");
- 		now.tv_sec = 0;
-@@ -567,7 +567,7 @@ void __init timekeeping_init(void)
- 	}
- 
- 	read_boot_clock(&boot);
--	if (!timespec_valid(&boot)) {
-+	if (!timespec_valid_strict(&boot)) {
- 		printk("WARNING: Boot clock returned invalid value!\n"
- 			"         Check your CMOS/BIOS settings.\n");
- 		boot.tv_sec = 0;
--- 
-1.7.9.5
 
