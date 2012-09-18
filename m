@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab2IRWQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 18:16:09 -0400
-Received: from bsmtp5.bon.at ([195.3.86.187]:26512 "EHLO lbmfmo03.bon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932173Ab2IRWQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 18:16:07 -0400
-X-Greylist: delayed 1672 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Sep 2012 18:16:06 EDT
-From: Markus Grabner <grabner@icg.tugraz.at>
-To: Johannes Thumshirn <morbidrsa@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: staging: Line6 - Steps needed to get driver out of staging area
-Date: Tue, 18 Sep 2012 23:48:05 +0200
-Message-ID: <8819852.fHKccXL5At@medialab>
-User-Agent: KMail/4.9.1 (Linux/3.4.6-2.10-desktop; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <50582B75.7080608@gmail.com>
-References: <50560C5F.3020700@gmail.com> <20120917202238.GA18748@kroah.com> <50582B75.7080608@gmail.com>
+	id S932234Ab2IRWRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 18:17:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53463 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755351Ab2IRWRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 18:17:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,445,1344236400"; 
+   d="scan'208";a="207366480"
+From: Dave Jiang <dave.jiang@intel.com>
+Subject: [PATCH v2] ioat: Adding Ivy Bridge IOATDMA PCI device IDs
+To: djbw@fb.com
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Date: Tue, 18 Sep 2012 15:17:32 -0700
+Message-ID: <20120918221605.19383.19083.stgit@djiang5-linux.ch.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 18. September 2012, 10:06:13 schrieb Johannes Thumshirn:
-> On 09/17/2012 10:22 PM, Greg KH wrote:
-> > On Sun, Sep 16, 2012 at 07:29:03PM +0200, Johannes Thumshirn wrote:
-> >> Hi LKML,
-> >> 
-> >> I wanted to ask for the steps that are needed to get the line6
-> >> driver out of the staging area (apart from minor getpatch.pl fixes).
-> > 
-> > First try asking on the proper mailing list :)
-> > 
-> > Second, it needs to be submitted to the subsystem that it should be in
-> > (i.e. sound, right?)  It's up to those maintainers to say what's left to
-> > do.
-> > 
-> > Are you willing to help out with this?  Right now it doesn't seem like
-> > anyone is using the driver, or helping to clean it up.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> Ok, then I'll ask on the sound mailing list for a todo-list.
-> 
-> Yes I'm willing to do the maintenance of this driver if the original
-> author doesn't want to take it up again.
-It's absolutely ok for me if you do the maintainance of the driver within the 
-Linux kernel tree, including the steps needed to get it out of staging. There 
-are actually people using it, occasionally I get requests regarding the 
-driver. However, since the Line6 devices available to me for development and 
-testing are rather old now, I can't contribute too much to adding support for 
-newer devices. Other users provided code which, according to the feedback I 
-received, works well for more recent devices. Nevertheless, I have some ideas 
-to improve the driver in areas I can test myself, so I won't completely 
-withdraw from development.
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+Sorry about the churn. I had to move the PCI dev IDs to the header file
+after realizing that dma_v3.c actually sometimes check the PCI IDs in order
+to work around certain silicon bugs.
 
-	Kind regards,
-		Markus
+ drivers/dma/ioat/hw.h  |   11 +++++++++++
+ drivers/dma/ioat/pci.c |   11 +++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/dma/ioat/hw.h b/drivers/dma/ioat/hw.h
+index 60e6754..e2db4c7 100644
+--- a/drivers/dma/ioat/hw.h
++++ b/drivers/dma/ioat/hw.h
+@@ -31,6 +31,17 @@
+ #define IOAT_PCI_DID_SCNB       0x65FF
+ #define IOAT_PCI_DID_SNB        0x402F
+ 
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB3	0x0e23
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB4	0x0e24
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB5	0x0e25
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB6	0x0e26
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB7	0x0e27
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
++#define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
++
+ #define IOAT_PCI_RID            0x00
+ #define IOAT_PCI_SVID           0x8086
+ #define IOAT_PCI_SID            0x8086
+diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
+index 5e3a40f..01be1c9 100644
+--- a/drivers/dma/ioat/pci.c
++++ b/drivers/dma/ioat/pci.c
+@@ -83,6 +83,17 @@ static struct pci_device_id ioat_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB8) },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB9) },
+ 
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB0) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB1) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB2) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB3) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB4) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB5) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB6) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB7) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB8) },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB9) },
++
+ 	{ 0, }
+ };
+ MODULE_DEVICE_TABLE(pci, ioat_pci_tbl);
 
