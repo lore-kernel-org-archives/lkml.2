@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab2IRAg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 20:36:29 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46836 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2IRAg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 20:36:28 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] 2.6.35-stable timekeeping fixes merged in 3.6
-Date: Mon, 17 Sep 2012 20:36:17 -0400
-Message-Id: <1347928580-22833-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12091800-5406-0000-0000-00000060FE67
+	id S932259Ab2IRAkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 20:40:32 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:60118 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754799Ab2IRAka convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 20:40:30 -0400
+From: Mirko Lindner <mlindner@marvell.com>
+To: Jiri Pirko <jiri@resnulli.us>, Stephen Hemminger <shemminger@vyatta.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 17 Sep 2012 17:38:52 -0700
+Subject: RE: [patch net] sky2: fix rx filter setup on link up
+Thread-Topic: [patch net] sky2: fix rx filter setup on link up
+Thread-Index: Ac2VFaga4rMqSuJLTcKBuB/UKdcQPQAH5F53
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE1B63898F0B@SC-VEXCH4.marvell.com>
+References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+ <20120917091214.5cd9b0f5@nehalam.linuxnetplumber.net>,<20120917204724.GA1749@minipsycho.orion>
+In-Reply-To: <20120917204724.GA1749@minipsycho.orion>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanted to send out a few timekeeping fixes that were merged
-in 3.6 which are appropriate for -stable.
+>Mon, Sep 17, 2012 at 06:12:14PM CEST, shemminger@vyatta.com wrote:
+>>On Mon, 17 Sep 2012 17:10:17 +0200
+>>Jiri Pirko <jiri@resnulli.us> wrote:
+>>
+>>> In my case I have following problem. sky2_set_multicast() sets registers
+>>> GM_MC_ADDR_H[1-4] correctly to:
+>>> 0000 0800 0001 0410
+>>> However, when adapter gets link and sky2_link_up() is called, the values
+>>> are for some reason different:
+>>> 0000 0800 0016 0410
+>>
+>>Rather than papering over the problem, it would be better to
+>>trace back what is setting those registers and fix that code.
 
-This queue backports the following fixes:
------------------------------------------
-cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
-bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
-4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+>Yes, I did that. No code at sky2.[ch] is writing to this registers other
+>than sky2_set_multicast() and sky2_gmac_reset() (I hooked on sky2_write*()).
+>So I strongly believe this is a HW issue (maybe only issue of my revision
+>"Yukon-2 EC chip revision 2")
 
-I've run these through my timetest suite w/ kvm on both i386
-& x86_64. But more testing would be of course appreciated.
-	https://github.com/johnstultz-work/timetests
-
-I also have patch queues for all the -stable trees that I'll be
-sending out as my testing completes for those trees.
-
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-
-John Stultz (3):
-  2.6.35.y: time: Improve sanity checking of timekeeping inputs
-  2.6.35.y: time: Avoid making adjustments if we haven't accumulated
-    anything
-  2.6.35.y: time: Move ktime_t overflow checking into
-    timespec_valid_strict
-
- include/linux/ktime.h     |    7 -------
- include/linux/time.h      |   29 +++++++++++++++++++++++++++--
- kernel/time/timekeeping.c |   19 ++++++++++++++++++-
- 3 files changed, 45 insertions(+), 10 deletions(-)
-
--- 
-1.7.9.5
-
+I would like to check the registers as soon as I'm back in my office next week and report my findings.
+Could you also please check the hint from Stephen?
