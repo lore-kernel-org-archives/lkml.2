@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab2IRJvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:51:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45064 "EHLO bear.ext.ti.com"
+	id S1757828Ab2IRJvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:51:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36310 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757787Ab2IRJvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:51:13 -0400
+	id S1757416Ab2IRJvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:51:12 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 5/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 15:20:42 +0530
-Message-ID: <1347961843-9376-6-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 0/6] media: convert to c99 format
+Date: Tue, 18 Sep 2012 15:20:37 +0530
+Message-ID: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
-References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-        Convert the struct i2c_msg initialization to C99 format. This makes
-        maintaining and editing the code simpler. Also helps once other fields
-        like transferred are added in future.
+The series tries to convert the i2c_msg to c99 struct.
+This may avoid issues like below if someone tries to add an
+element to the structure.
+http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/media/radio/saa7706h.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+Special thanks to Julia Lawall for helping it automate.
+By the below script.
+http://www.mail-archive.com/cocci@diku.dk/msg02753.html
 
-diff --git a/drivers/media/radio/saa7706h.c b/drivers/media/radio/saa7706h.c
-index bb953ef..97cf867 100644
---- a/drivers/media/radio/saa7706h.c
-+++ b/drivers/media/radio/saa7706h.c
-@@ -199,8 +199,20 @@ static int saa7706h_get_reg16(struct v4l2_subdev *sd, u16 reg)
- 	u8 buf[2];
- 	int err;
- 	u8 regaddr[] = {reg >> 8, reg};
--	struct i2c_msg msg[] = { {client->addr, 0, sizeof(regaddr), regaddr},
--				{client->addr, I2C_M_RD, sizeof(buf), buf} };
-+	struct i2c_msg msg[] = {
-+					{
-+						.addr = client->addr,
-+						.flags = 0,
-+						.len = sizeof(regaddr),
-+						.buf = regaddr
-+					},
-+					{
-+						.addr = client->addr,
-+						.flags = I2C_M_RD,
-+						.len = sizeof(buf),
-+						.buf = buf
-+					}
-+				};
- 
- 	err = saa7706h_i2c_transfer(client, msg, ARRAY_SIZE(msg));
- 	if (err)
+
+
+Shubhrajyoti D (6):
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+
+ drivers/media/i2c/ks0127.c                    |   14 +++++++-
+ drivers/media/i2c/msp3400-driver.c            |   42 +++++++++++++++++++++---
+ drivers/media/i2c/tvaudio.c                   |   14 +++++++-
+ drivers/media/radio/radio-tea5764.c           |   14 ++++++--
+ drivers/media/radio/saa7706h.c                |   16 ++++++++-
+ drivers/media/radio/si470x/radio-si470x-i2c.c |   24 ++++++++++---
+ 6 files changed, 103 insertions(+), 21 deletions(-)
+
 -- 
 1.7.5.4
 
