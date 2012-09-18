@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2IRTdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 15:33:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37454 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab2IRTdd (ORCPT
+	id S1754569Ab2IRTh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 15:37:28 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:38910 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754085Ab2IRTh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 15:33:33 -0400
-Date: Tue, 18 Sep 2012 12:33:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mhocko@suse.cz, Catalin Marinas <catalin.marinas@arm.com>,
-        Steve Capper <steve.capper@arm.com>
-Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
- passing in mm/huge_memory.c
-Message-Id: <20120918123331.6ca5833c.akpm@linux-foundation.org>
-In-Reply-To: <20120915133833.GA32398@linux-mips.org>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
-	<1347382036-18455-3-git-send-email-will.deacon@arm.com>
-	<20120915133833.GA32398@linux-mips.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 18 Sep 2012 15:37:27 -0400
+Subject: Re: [PATCH 2/3] OMAP i2c: pinctrl-ify i2c-omap.c
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20120918182358.GZ11762@atomide.com>
+Date: Tue, 18 Sep 2012 22:37:22 +0300
+Cc: Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
 Content-Transfer-Encoding: 7bit
+Message-Id: <34F7CFB5-4E48-4B74-99D3-3C1999A0B3B3@antoniou-consulting.com>
+References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com> <1348070841-23354-3-git-send-email-panto@antoniou-consulting.com> <20120918182358.GZ11762@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Sep 2012 15:38:33 +0200
-Ralf Baechle <ralf@linux-mips.org> wrote:
+Hi Tony,
 
-> On Tue, Sep 11, 2012 at 05:47:15PM +0100, Will Deacon wrote:
+On Sep 18, 2012, at 9:23 PM, Tony Lindgren wrote:
+
+> * Pantelis Antoniou <panto@antoniou-consulting.com> [120918 11:13]:
+>> Add support for pinctrl mux settings in the OMAP I2C driver.
+>> If no such pinctl bindings are found a warning message is printed.
+>> 
+>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>> 
+>> ---
+>> drivers/i2c/busses/i2c-omap.c | 7 +++++++
+>> 1 file changed, 7 insertions(+)
+>> 
+>> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+>> index b149e32..f722478 100644
+>> --- a/drivers/i2c/busses/i2c-omap.c
+>> +++ b/drivers/i2c/busses/i2c-omap.c
+>> @@ -43,6 +43,8 @@
+>> #include <linux/slab.h>
+>> #include <linux/i2c-omap.h>
+>> #include <linux/pm_runtime.h>
+>> +#include <linux/pinctrl/consumer.h>
+>> +#include <linux/err.h>
+>> 
+>> /* I2C controller revisions */
+>> #define OMAP_I2C_OMAP1_REV_2		0x20
+>> @@ -1057,6 +1059,7 @@ omap_i2c_probe(struct platform_device *pdev)
+>> 	const struct of_device_id *match;
+>> 	int irq;
+>> 	int r;
+>> +	struct pinctrl *pinctrl;
+>> 
+>> 	/* NOTE: driver uses the static register mapping */
+>> 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> @@ -1197,6 +1200,10 @@ omap_i2c_probe(struct platform_device *pdev)
+>> 
+>> 	of_i2c_register_devices(adap);
+>> 
+>> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+>> +	if (IS_ERR(pinctrl))
+>> +		dev_warn(dev->dev, "pins are not configured from the driver\n");
+>> +
+>> 	pm_runtime_mark_last_busy(dev->dev);
+>> 	pm_runtime_put_autosuspend(dev->dev);
 > 
-> > The update_mmu_cache() takes a pointer (to pte_t by default) as the last
-> > argument but the huge_memory.c passes a pmd_t value. The patch changes
-> > the argument to the pmd_t * pointer.
-> > 
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Steve Capper <steve.capper@arm.com>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  mm/huge_memory.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > index 57c4b93..4aa6d02 100644
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -934,7 +934,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  		entry = pmd_mkyoung(orig_pmd);
-> >  		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-> >  		if (pmdp_set_access_flags(vma, haddr, pmd, entry,  1))
-> > -			update_mmu_cache(vma, address, entry);
-> > +			update_mmu_cache(vma, address, pmd);
+> This must be just a warning here as otherwise things will break
+> badly for drivers doing pinmuxing in bootloader only. Other than
+> that:
 > 
-> Documentation/cachetlb.txt will need an update as well.  Currently it says:
-> 
-> 5) void update_mmu_cache(struct vm_area_struct *vma,
->                          unsigned long address, pte_t *ptep)
 
-Yes please.
+It is just a warning indeed. Not many boards do the pinctrl dance yet.
 
-> I would prefer we introduce something like update_mmu_cache_huge_page(vma,
-> address, pmd) and leave the classic update_mmu_cache() unchanged.
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Why?
+Regards
+
+-- Pantelis
