@@ -1,107 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab2IRSeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:34:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57432 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab2IRSed (ORCPT
+	id S1753912Ab2IRSjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:39:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44549 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab2IRSjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:34:33 -0400
-Date: Tue, 18 Sep 2012 20:34:28 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: pci: Allow passing per-controller private data
-Message-ID: <20120918183428.GC29360@avionic-0098.mockup.avionic-design.de>
-References: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
- <1347657078-32230-3-git-send-email-thierry.reding@avionic-design.de>
- <CAErSpo754W2TKr46V5FKwX43eusoOVjxkAWJ=kkB0BvRt_bJBw@mail.gmail.com>
+	Tue, 18 Sep 2012 14:39:06 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo754W2TKr46V5FKwX43eusoOVjxkAWJ=kkB0BvRt_bJBw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:ik/bhGYp6O1w5AKZUptYqaGISky524YropnqdVeZtKA
- bRM+Q+sVYdciLdmbs3qJIGYBL8EBdY/UzaWM9UguOZ488JmOpy
- re4djquRvuLA1OtKwoPkI67RNCJVkrybUXqW2ljsrDFw874H/b
- Mv8XK4PJIeTkjU7l9ayqX0xV7iiOtnkf1wVrnDKPQJxf3M5ioH
- qGrgW/mFzhXrDKZ8fJWqz/gvarL1iIzavq9n/zycNbN9vXBZrD
- IQInR8rBWwi2KYdyBqHP6BvAQsLGbaJ4Q0gBvMUIuNsUCrWzCt
- ambYYFCsUmniyXJBssV5YfCw1YjzofXjKAmt6jfD5TFXirpuwe
- XNuAYjTz/nlG9FZDdvEzpR4HWFhAdH2WyGnf6o5IBsminIZCTU
- btEWKnRoena/2SBoQ6YmA1syxmswSRIQTY=
+In-Reply-To: <20120918143504.GA30585@redhat.com>
+References: <20120918143504.GA30585@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 18 Sep 2012 11:38:44 -0700
+X-Google-Sender-Auth: V7aiDiQP0DtOJmgPOJjYr40S0dc
+Message-ID: <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
+Subject: Re: 3.6rc6 slab corruption.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting the entire email, since I added Greg to the list of people (as
+the documented maintainer of debugfs) along with what I think are the
+guilty parties.
 
---Fig2xvG2VGoz8o/s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dave, is trinity perhaps doing read calls on the same file in parallel?
 
-On Tue, Sep 18, 2012 at 11:21:21AM -0600, Bjorn Helgaas wrote:
-> On Fri, Sep 14, 2012 at 3:11 PM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > In order to allow drivers to specify private data for each controller,
-> > this commit adds a private_data field to the struct hw_pci. This field
-> > is an array of nr_controllers pointers that will be used to initialize
-> > the private_data field of the corresponding controller's pci_sys_data
-> > structure.
->=20
-> I guess you aren't changing the design here because struct hw_pci
-> already includes "nr_controllers," but having nr_controllers and a
-> private_data[] array sounds like something that might make it hard to
-> hot-add a host bridge after boot.
+Because it looks to me like debugfs is racy for that case. At least
+the file->private_data accesses are, for the case of that "u32_array"
+case.
 
-What I do in the Tegra PCIe driver is to pass each of the root ports to
-pci_common_init() individually because they can be enabled or disabled
-by device tree data. I suppose to some degree you can consider that hot-
-adding. Not that Tegra is likely to ever need to support that. I don't
-know how likely it is for any ARM platform to ever need support for hot-
-adding a host bridge.
+In fact it is racy in two different ways:
 
-Eventually I think it would be advantageous for this to be generalized
-further such that PCI initialization can be shared across architectures.
-That's probably not an easy task so I was going to start by making
-incremental changes that enable the Tegra code to work and, if time
-allows, help further with subsequent improvements.
+ - the whole "file->private_data" access is racy (and this is, I
+think, the bug you are hitting)
 
-It also seems that parts of the PCI core aren't ready yet for hot-adding
-host bridges. One thing I came across while working on the Tegra code is
-that MSI setup and teardown needs to be done by the arch_setup_msi_irq()
-and arch_teardown_msi_irq() respectively, which are expected to be
-builtin. That was also the last issue that keeps the Tegra PCIe driver
-=66rom being built as a module. I think that will also make it impossible
-to hot-add host bridges. On x86 this seems to be handled by platform
-code, but on Tegra for example MSI setup and teardown is tightly coupled
-to the PCIe controller. That was one of the things I thought I could
-take a look at eventually, but getting Tegra support cleaned up is
-higher priority right now.
+   If you have multiple readers on the same file, the whole
 
-Thierry
+                if (file->private_data) {
+                        kfree(file->private_data);
+                        file->private_data = NULL;
+                }
 
---Fig2xvG2VGoz8o/s
-Content-Type: application/pgp-signature
+                file->private_data = format_array_alloc("%u", data->array,
+                                                              data->elements);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+   thing is just a disaster waiting to happen.
 
-iQIcBAEBAgAGBQJQWL60AAoJEN0jrNd/PrOhijAQAIXY0m+vI/d0rLF+VUr80XED
-zSOb+7RHCOHUtff00YQ9Rhp3pjHBQv4nzQ93f6WGVNburzrPh+FZBtdjV2Gb1EdQ
-fhIwcd1VyhG6TsDGg8V6mTsv4OcU08g9YDaXXFR2YKg6LaDlt11sZfTL8Fe73oJx
-rajE4d+vcBpDewUFrt0qGN5Gy5ONZS8SBXiakUrAhefjyMPoBqDDs0tbQXGh1sCQ
-HapD4g3Z/3CzERkIcjur1JjiJiVs0MOJoPUtEjRKt7+RFE70sPQRax+2XEjjdDHC
-CJAmzKgWufeUu3Whn2lS8kb+QNnB5OCsn9HzbeSYwvJb3DhWGelNsEIfc7hvXmpk
-Sk2IMbOFPX5JvZLdErKTy6ZvCWVfzPlAJuGIkhIun05Hgqg1bDAbI39s3A8W7VHz
-XvbdmSor0yezvagy9FfQeEZGKTM5ndzYoRG4RBbEnZgpKq59CLH3PAvGfLBS2wfL
-5MM+dqyLirEFv3d2CFUSHWcd69rS2nm2mg11+Mu28yPhVCKVjhmWLlF7NO9mG1ot
-xAZekNZHlBCnBirx9/HQ5D43mHgcfNZTGZQ/WTo+UBcs3qVhVYgD2vNrkfXCbrvk
-xh7yC6LiegvlDn1KkBLcgBCmytJ99tbXn90sCsbPEiAgO3p6HGKPodFmr+cPl0ug
-WQq3wiZbBUSCRepnwF6j
-=qwWu
------END PGP SIGNATURE-----
+It should be easyish to fix by just adding a lock around those things.
 
---Fig2xvG2VGoz8o/s--
+The other bug is slightly subtler and probably harder to hit (but also
+harder to fix):
+
+ - the whole format_array_alloc() code is one buggy piece of sh*t,
+since afaik there is nothing that guarantees that the values cannot
+change. So the notion of "let's format the output once to know how big
+it is, and then a second time to actually print things into the array
+we just allocated based on the first time" is pure and utter garbage,
+afaik.
+
+Anyway, this is all fairly recent, and came in through the Xen tree.
+See commit 9fe2a7015393 ("debugfs: Add support to print u32 array in
+debugfs").
+
+Guys?
+
+              Linus
+
+On Tue, Sep 18, 2012 at 7:35 AM, Dave Jones <davej@redhat.com> wrote:
+> I was chasing a networking bug, and had trinity reduced to just making read & setsockopt calls,
+> and let that run overnight.  I woke up to 800mb of traces from a different bug..
+>
+> The traces look mostly like this..
+>
+>
+> =============================================================================
+> BUG kmalloc-64 (Not tainted): Redzone overwritten
+> -----------------------------------------------------------------------------
+>
+> INFO: 0xffff88001f4b4970-0xffff88001f4b4977. First byte 0xbb instead of 0xcc
+> INFO: Allocated in u32_array_read+0xd1/0x110 age=0 cpu=6 pid=32767
+>         __slab_alloc+0x516/0x5a5
+>         __kmalloc+0x213/0x2c0
+>         u32_array_read+0xd1/0x110
+>         vfs_read+0xac/0x180
+>         sys_read+0x4d/0x90
+>         system_call_fastpath+0x1a/0x1f
+> INFO: Freed in u32_array_read+0x99/0x110 age=0 cpu=0 pid=32749
+>         __slab_free+0x3f/0x3bf
+>         kfree+0x2d5/0x310
+>         u32_array_read+0x99/0x110
+>         vfs_read+0xac/0x180
+>         sys_read+0x4d/0x90
+>         system_call_fastpath+0x1a/0x1f
+> INFO: Slab 0xffffea00007d2d00 objects=41 used=14 fp=0xffff88001f4b7410 flags=0x10000000004081
+> INFO: Object 0xffff88001f4b4930 @offset=2352 fp=0xffff88001f4b7410
+>
+> Bytes b4 ffff88001f4b4920: 1b 20 1c 00 01 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  . ......ZZZZZZZZ
+> Object ffff88001f4b4930: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff88001f4b4940: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff88001f4b4950: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff88001f4b4960: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+> Redzone ffff88001f4b4970: bb bb bb bb bb bb bb bb                          ........
+> Padding ffff88001f4b4ab0: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> Pid: 32756, comm: trinity-child52 Not tainted 3.6.0-rc6+ #44
+> Call Trace:
+>  [<ffffffff811c10ad>] ? print_section+0x3d/0x40
+>  [<ffffffff811c23fe>] print_trailer+0xfe/0x160
+>  [<ffffffff811c2592>] check_bytes_and_report+0xe2/0x120
+>  [<ffffffff81023b79>] ? native_sched_clock+0x19/0x80
+>  [<ffffffff811c2b5b>] check_object+0x18b/0x250
+>  [<ffffffff8169b7d7>] free_debug_processing+0xc0/0x1fd
+>  [<ffffffff812d2e29>] ? u32_array_read+0x99/0x110
+>  [<ffffffff8169ba5c>] __slab_free+0x3f/0x3bf
+>  [<ffffffff81365a1c>] ? debug_check_no_obj_freed+0x16c/0x210
+>  [<ffffffff810db04f>] ? lock_release_holdtime.part.26+0xf/0x180
+>  [<ffffffff812d2e29>] ? u32_array_read+0x99/0x110
+>  [<ffffffff811c5725>] kfree+0x2d5/0x310
+>  [<ffffffff812d2e29>] u32_array_read+0x99/0x110
+>  [<ffffffff811df88c>] vfs_read+0xac/0x180
+>  [<ffffffff811df9ad>] sys_read+0x4d/0x90
+>  [<ffffffff816aea2d>] system_call_fastpath+0x1a/0x1f
+> FIX kmalloc-64: Restoring 0xffff88001f4b4970-0xffff88001f4b4977=0xcc
+> =============================================================================
+>
+> Which looks like we read some file (probably something in sysfs/procfs) that corrupted some internal state.
+> Any ideas on what I could do to narrow this down ?
+>
+> The full traces are at http://www.codemonkey.org.uk/junk/slab-corrupt.txt
+> They vary a little later, but it looks like it's probably all the same problem to me.
+> Sometimes it flip-flops between "First byte 0xbb instead of 0xcc" and "First byte 0xcc instead of 0xbb"
+>
+>
+> The one outlier being this weird message..
+>
+> Sep 18 02:00:13 bitcrush kernel: [36617.487681] hrtimer: interrupt took 242337 ns
+>
+> Which is weird, but probably unrelated.
+>
+>         Dave
+>
