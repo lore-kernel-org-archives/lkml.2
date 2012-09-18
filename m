@@ -1,155 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2IRWEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 18:04:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab2IRWEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 18:04:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <13189.1347989652@warthog.procyon.org.uk>
-References: <13189.1347989652@warthog.procyon.org.uk> <20120914103930.1e16ad8b@pyramind.ukuu.org.uk> <20120913234802.3575.77103.stgit@warthog.procyon.org.uk> <20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        rusty@rustcorp.com.au, linux-crypto@vger.kernel.org, zohar@us.ibm.com,
-        dmitry.kasatkin@intel.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
-Date: Tue, 18 Sep 2012 23:03:49 +0100
-Message-ID: <16779.1348005829@warthog.procyon.org.uk>
+	id S932161Ab2IRWJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 18:09:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38359 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab2IRWJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 18:09:36 -0400
+Date: Tue, 18 Sep 2012 15:09:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v10 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-Id: <20120918150933.cab895b8.akpm@linux-foundation.org>
+In-Reply-To: <20120918162420.GB1645@optiplex.redhat.com>
+References: <cover.1347897793.git.aquini@redhat.com>
+	<89c9f4096bbad072e155445fcdf1805d47ddf48e.1347897793.git.aquini@redhat.com>
+	<20120917151543.fd523040.akpm@linux-foundation.org>
+	<20120918162420.GB1645@optiplex.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On Tue, 18 Sep 2012 13:24:21 -0300
+Rafael Aquini <aquini@redhat.com> wrote:
 
-> > has it been fuzz tested extensively ?
+> On Mon, Sep 17, 2012 at 03:15:43PM -0700, Andrew Morton wrote:
+> > > +/* return code to identify when a ballooned page has been migrated */
+> > > +#define BALLOON_MIGRATION_RETURN	0xba1100
+> > 
+> > I didn't really spend enough time to work out why this was done this
+> > way, but I know a hack when I see one!
+> >
+> Yes, I'm afraid it's a hack, but, unfortunately, it's a necessary one (IMHO).
+> 
+> This 'distinct' return code is used to flag a sucessful balloon page migration
+> at the following unmap_and_move() snippet (patch 2).
+> If by any reason we fail to identify a sucessfull balloon page migration, we
+> will cause a page leak, as the old 'page' won't be properly released.
+> .....
+>         rc = __unmap_and_move(page, newpage, force, offlining, mode);
+> +
+> +        if (unlikely(rc == BALLOON_MIGRATION_RETURN)) {
+> +                /*
+> +                 * A ballooned page has been migrated already.
+> +                 * Now, it's the time to remove the old page from the isolated
+> +                 * pageset list and handle it back to Buddy, wrap-up counters
+> +                 * and return.
+> +                 */
+> ......
+> 
+> By reaching that point in code, we cannot rely on testing page->mapping flags
+> anymore for both 'page' and 'newpage' because:
+> a) migration has already finished and 'page'->mapping is wiped out;
+> b) balloon might have started to deflate, and 'newpage' might be released
+>    already;
+> 
+> If the return code approach is unnaceptable, we might defer the 'page'->mapping
+> wipe-out step to that point in code for the balloon page case.
+> That, however, tends to be a little bit heavier, IMHO, as it will require us to
+> acquire the page lock once more to proceed the mapping wipe out, thus
+> potentially introducing overhead by lock contention (specially when several
+> parallel compaction threads are scanning pages for isolation)
 
-Also, here's a generator of random binary ASN.1.  I think it should mostly
-produce valid X.509, but invalid ASN.1 is okay too.
+I think the return code approach _is_ acceptable, but the
+implementation could be improved.
 
-Run with something like:
+As it stands, a naive caller could be expecting either 0 (success) or a
+negative errno.  A large positive return value could trigger havoc.  We
+can defend against such programming mistakes with code commentary, but
+a better approach would be to enumerate the return values.  Along the
+lines of
 
-	while :; do ./asn1random.pl | keyctl padd asymmetric vlad @s; done
+/*
+ * Return values from addresss_space_operations.migratepage().  Returns a
+ * negative errno on failure.
+ */
+#define MIGRATEPAGE_SUCCESS		0
+#define MIGRATEPAGE_BALLOON_THINGY	1	/* nice comment goes here */
 
-David
----
-#!/usr/bin/perl -w
-use strict;
+and convert all callers to explicitly check for MIGRATEPAGE_SUCCESS,
+not literal zero.  We should be particularly careful to look for
+codesites which are unprepared for positive return values, such as
 
-my $depth = 0;
-my $maxdepth = 12;
-my $num_elements = 0;
-my $total_elements = 30 + int(rand(400));
+	ret = migratepage();
+	if (ret < 0)
+		return ret;
+	...
+	return ret;		/* success!! */
 
-print STDERR "SEED: ", srand(), "\n";
 
-###############################################################################
-#
-# Generate a header
-#
-###############################################################################
-sub emit_asn1_hdr($$)
-{
-    my ($tag, $len) = @_;
-    my $output = "";
-    my $l;
 
-    if ($len < 0x80) {
-	$l = $len;
-    } elsif ($len <= 0xff) {
-	$l = 0x81;
-    } elsif ($len <= 0xffff) {
-	$l = 0x82;
-    } elsif ($len <= 0xffffff) {
-	$l = 0x83;
-    } else {
-	$l = 0x84;
-    }
+If we wanted to be really vigilant about this, we could do
 
-    $output .= pack("CC", $tag == -1 ? int(rand(255)) & ~0x20 : $tag, $l);
-    if ($len < 0x80) {
-    } elsif ($len <= 0xff) {
-	$output .= pack("C", $len);
-    } elsif ($len <= 0xffff) {
-	$output .= pack("n", $len);
-    } elsif ($len <= 0xffffff) {
-	$output .= pack("Cn", $len >> 16, $len & 0xffff);
-    } else {
-	$output .= pack("N", $len);
-    }
+#define MIGRATEPAGE_SUCCESS		1
+#define MIGRATEPAGE_BALLOON_THINGY	2
 
-    return $output;
-}
+so any naive code which tests for literal zero will nicely explode early
+in testing.
 
-###############################################################################
-#
-# Generate a random primitive
-#
-###############################################################################
-sub emit_asn1_prim($)
-{
-    my ($tag) = @_;
-    my $output;
-    my $len = int(rand(255));
-
-    $len = 4; #####################
-
-    $tag = int(rand(255)) & ~0x20
-	if ($tag == -1);
-
-    $output = emit_asn1_hdr($tag, $len);
-
-    my $i = $len;
-    while ($i > 16) {
-	$output .= "abcdefghijklmnop";
-	$i -= 16;
-    }
-
-    $output .= substr("abcdefghijklmnop", 0, $i);
-    return $output;
-}
-
-###############################################################################
-#
-# Generate a random construct
-#
-###############################################################################
-sub emit_asn1_cons($);
-sub emit_asn1_cons($)
-{
-    my $output = "";
-    my $count = int(rand(20));
-    my ($tag) = @_;
-
-    if ($depth >= $maxdepth) {
-	return emit_asn1_prim($tag);
-    }
-
-    if ($tag == -1) {
-	$tag = int(rand(255)) & ~0x20;
-	if ($tag < 0x40 && $tag != 0x11) {
-	    $tag = 0x10;
-	}
-	$tag |= 0x20;
-    }
-
-    $depth++;
-    while ($count > 0) {
-	if (int(rand(4 + $depth)) == 1) {
-	    $output .= emit_asn1_cons(-1);
-	} else {
-	    $output .= emit_asn1_prim(-1);
-	}
-	$count--;
-    }
-    $depth--;
-
-    return emit_asn1_hdr($tag, length($output)) . $output;
-}
-
-print emit_asn1_cons(-1);
