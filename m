@@ -1,59 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab2IRUMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 16:12:55 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:42705 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab2IRUMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 16:12:48 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>, Imre Kaloz <kaloz@openwrt.org>
-Subject: Re: [PATCH 08+09/24] ARM: ixp4xx: use __iomem pointers for MMIO
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de>
-	<1347658492-11608-10-git-send-email-arnd@arndb.de>
-Date: Tue, 18 Sep 2012 22:12:46 +0200
-In-Reply-To: <1347658492-11608-10-git-send-email-arnd@arndb.de> (Arnd
-	Bergmann's message of "Fri, 14 Sep 2012 23:34:37 +0200")
-Message-ID: <m3ehlzdr9d.fsf_-_@intrepid.localdomain>
+	id S1754843Ab2IRUMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 16:12:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55257 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755Ab2IRUMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 16:12:36 -0400
+Date: Tue, 18 Sep 2012 13:12:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Duncan <1i5t5.duncan@cox.net>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 3.6-rc6] cpufreq/powernow-k8: workqueue user shouldn't
+ migrate the kworker to another CPU
+Message-ID: <20120918201231.GF8474@google.com>
+References: <20120917201721.GJ18677@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917201721.GJ18677@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, there are some minor problems here (both patches merged,
-ixp4xx only):
+So, with work_on_cpu() reimplementation just posted[1], we can do the
+following instead.  Functionally it's about the same but less ugly.
+Ugly as it may be, I think the previous open coded version is better
+suited as a fix and for -stable.  Thoughts?
 
-Arnd Bergmann <arnd@arndb.de> writes:
+Thanks.
 
-> --- a/arch/arm/mach-ixp4xx/include/mach/cpu.h
-> +++ b/arch/arm/mach-ixp4xx/include/mach/cpu.h
-> @@ -37,7 +38,7 @@
->  
->  static inline u32 ixp4xx_read_feature_bits(void)
->  {
-> -	u32 val = ~*IXP4XX_EXP_CFG2;
-> +	u32 val = ~__raw_readl(IXP4XX_EXP_CFG2);
->  
+[1] https://lkml.org/lkml/2012/9/18/430
 
-This is all fine, but
+ drivers/cpufreq/powernow-k8.c |   63 ++++++++++++++++++++++--------------------
+ 1 file changed, 34 insertions(+), 29 deletions(-)
 
-> @@ -51,7 +52,7 @@ static inline u32 ixp4xx_read_feature_bits(void)
->  
->  static inline void ixp4xx_write_feature_bits(u32 value)
->  {
-> -	*IXP4XX_EXP_CFG2 = ~value;
-> +	__raw_writel(~cpu_to_le32(value), IXP4XX_EXP_CFG2);
->  }
-
-The EXP_CFG2 register is already in host order, no need for
-cpu_to_le32() as the replaced code clearly shows.
-
-Can you merge both IXP4xx parts (in the two patches) and fix the above,
-please? Thanks.
--- 
-Krzysztof Halasa
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index c0e8164..1a40935 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -35,7 +35,6 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/cpumask.h>
+-#include <linux/sched.h>	/* for current / set_cpus_allowed() */
+ #include <linux/io.h>
+ #include <linux/delay.h>
+ 
+@@ -1139,16 +1138,23 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
+ 	return res;
+ }
+ 
+-/* Driver entry point to switch to the target frequency */
+-static int powernowk8_target(struct cpufreq_policy *pol,
+-		unsigned targfreq, unsigned relation)
++struct powernowk8_target_arg {
++	struct cpufreq_policy		*pol;
++	unsigned			targfreq;
++	unsigned			relation;
++};
++
++static long powernowk8_target_fn(void *arg)
+ {
+-	cpumask_var_t oldmask;
++	struct powernowk8_target_arg *pta = arg;
++	struct cpufreq_policy *pol = pta->pol;
++	unsigned targfreq = pta->targfreq;
++	unsigned relation = pta->relation;
+ 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
+ 	u32 checkfid;
+ 	u32 checkvid;
+ 	unsigned int newstate;
+-	int ret = -EIO;
++	int ret;
+ 
+ 	if (!data)
+ 		return -EINVAL;
+@@ -1156,29 +1162,16 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+ 	checkfid = data->currfid;
+ 	checkvid = data->currvid;
+ 
+-	/* only run on specific CPU from here on. */
+-	/* This is poor form: use a workqueue or smp_call_function_single */
+-	if (!alloc_cpumask_var(&oldmask, GFP_KERNEL))
+-		return -ENOMEM;
+-
+-	cpumask_copy(oldmask, tsk_cpus_allowed(current));
+-	set_cpus_allowed_ptr(current, cpumask_of(pol->cpu));
+-
+-	if (smp_processor_id() != pol->cpu) {
+-		printk(KERN_ERR PFX "limiting to cpu %u failed\n", pol->cpu);
+-		goto err_out;
+-	}
+-
+ 	if (pending_bit_stuck()) {
+ 		printk(KERN_ERR PFX "failing targ, change pending bit set\n");
+-		goto err_out;
++		return -EIO;
+ 	}
+ 
+ 	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
+ 		pol->cpu, targfreq, pol->min, pol->max, relation);
+ 
+ 	if (query_current_values_with_pending_wait(data))
+-		goto err_out;
++		return -EIO;
+ 
+ 	if (cpu_family != CPU_HW_PSTATE) {
+ 		pr_debug("targ: curr fid 0x%x, vid 0x%x\n",
+@@ -1196,7 +1189,7 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+ 
+ 	if (cpufreq_frequency_table_target(pol, data->powernow_table,
+ 				targfreq, relation, &newstate))
+-		goto err_out;
++		return -EIO;
+ 
+ 	mutex_lock(&fidvid_mutex);
+ 
+@@ -1209,9 +1202,8 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+ 		ret = transition_frequency_fidvid(data, newstate);
+ 	if (ret) {
+ 		printk(KERN_ERR PFX "transition frequency failed\n");
+-		ret = 1;
+ 		mutex_unlock(&fidvid_mutex);
+-		goto err_out;
++		return 1;
+ 	}
+ 	mutex_unlock(&fidvid_mutex);
+ 
+@@ -1220,12 +1212,25 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+ 				data->powernow_table[newstate].index);
+ 	else
+ 		pol->cur = find_khz_freq_from_fid(data->currfid);
+-	ret = 0;
+ 
+-err_out:
+-	set_cpus_allowed_ptr(current, oldmask);
+-	free_cpumask_var(oldmask);
+-	return ret;
++	return 0;
++}
++
++/* Driver entry point to switch to the target frequency */
++static int powernowk8_target(struct cpufreq_policy *pol,
++		unsigned targfreq, unsigned relation)
++{
++	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
++					     .relation = relation };
++
++	/*
++	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
++	 * that we're bound to the current CPU and pol->cpu stays online.
++	 */
++	if (smp_processor_id() == pol->cpu)
++		return powernowk8_target_fn(&pta);
++	else
++		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+ }
+ 
+ /* Driver entry point to verify the policy and range of frequencies */
