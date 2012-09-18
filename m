@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2IRNQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:16:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:44385 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130Ab2IRNQR (ORCPT
+	id S1757153Ab2IRNS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:18:58 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:37998
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755830Ab2IRNS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:16:17 -0400
-Date: Tue, 18 Sep 2012 16:15:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navinp@cdac.in>
-Cc: gregkh@linuxfoundation.org, mfm@muteddisk.com, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
- usbip_host
-Message-ID: <20120918131542.GR13767@mwanda>
-References: <1347940806-4653-1-git-send-email-navinp@cdac.in>
- <20120918074053.GL4587@mwanda>
- <CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
- <20120918093619.GO13767@mwanda>
- <CAPV97yfRd_1Ak+DniNyg+vhg1bkOPqzGwRu-LSKXkpW2=_xw+Q@mail.gmail.com>
+	Tue, 18 Sep 2012 09:18:56 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zz98dI1432I4015I179dNd6f1izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAJRNE-02-NE7-02
+X-M-MSG: 
+Date: Tue, 18 Sep 2012 15:18:42 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Jan Luebbe <jlu@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib/dma-debug: check for vmalloc buffers used with the
+ DMA-API
+Message-ID: <20120918131842.GL2505@amd.com>
+References: <1346670004-10248-1-git-send-email-jlu@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAPV97yfRd_1Ak+DniNyg+vhg1bkOPqzGwRu-LSKXkpW2=_xw+Q@mail.gmail.com>
+In-Reply-To: <1346670004-10248-1-git-send-email-jlu@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 05:14:41PM +0530, navin patidar wrote:
-> for usbip_host  event_handler()   handles following events.  defined
-> in "usbip_common.h"
+On Mon, Sep 03, 2012 at 01:00:04PM +0200, Jan Luebbe wrote:
+> Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+> ---
+> I'm not sure why we don't check for high memory, is there any problem
+> with this approach?
 > 
->  1. SDEV_EVENT_REMOVED   (USBIP_EH_SHUTDOWN | USBIP_EH_RESET | USBIP_EH_BYE)
->  2. SDEV_EVENT_DOWN		(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
->  3. SDEV_EVENT_ERROR_TCP	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
->  4. SDEV_EVENT_ERROR_SUBMIT	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
->  5. VDEV_EVENT_ERROR_MALLOC (USBIP_EH_SHUTDOWN | USBIP_EH_UNUSABLE)
+>  lib/dma-debug.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> In case of events(1,2,3,4),  stub_shoutdown_connection() gets executed
-> first and than stub_device_reset() .
-> 
-> In case of event 5, stub_shoutdown_connection()  kills kernel threads
-> and stub_device_unusable()   changes devices status to
-> "SDEV_ST_ERROR"(fatal error).
-> 
+> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> index 66ce414..7d60ff0 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -944,6 +944,9 @@ static void check_for_illegal_area(struct device *dev, void *addr, unsigned long
+>  	if (overlap(addr, len, _text, _etext) ||
+>  	    overlap(addr, len, __start_rodata, __end_rodata))
+>  		err_printk(dev, NULL, "DMA-API: device driver maps memory from kernel text or rodata [addr=%p] [len=%lu]\n", addr, len);
+> +	if (is_vmalloc_or_module_addr(addr) ||
+> +	    is_vmalloc_or_module_addr(addr+len))
+> +		err_printk(dev, NULL, "DMA-API: device driver maps memory from vmalloc or module address range [addr=%p] [len=%lu]\n", addr, len);
 
-It's case #5 which I would be worried about.  Where did the original
-Oops happen?  I feel like it really would be helpful to see it.  I
-don't see which check for ->status != SDEV_ST_AVAILABLE you're
-talking about here which prevents the pointers from being reused...
+Hmm, this only checks whether the start or end+1 address is in the
+vmalloc/module range. I think it is better to check for overlap against
+VMALLOC_START/END and do a seperate overlap check for MODULES_VADDR and
+MODULES_END when needed.
 
->  thus stub_device_reset() can't  be called without
-> stub_shutdown_connection(), so there is no problem of resource leak .
+Thanks,
 
-Except in the case of #5 obviously.
+	Joerg
 
-> you are also right, i could have set pointers to  NULL in
-> stub_shutdown_connection() but i used  stub_device_reset() which is
-> intended to reset usbip_device stuct member variables.
-> 
-> i'll resend patches, if maintainer ask for that.
-> thanks
-> 
+-- 
+AMD Operating System Research Center
 
-Generally, that's normal.  If you want to ensure that a pointer
-isn't used again then you clear it immediately.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-I'm honestly just trying to figure this out.  When I saw that the
-patch, I immediately thought *resource leak*.  I'm sorry that to
-take your time up, but it shouldn't be that complicated that I have
-to go tracking through the whole driver to understand this.
-
-regards,
-dan carpenter
