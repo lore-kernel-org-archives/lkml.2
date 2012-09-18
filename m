@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2IRH55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 03:57:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46872 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2IRH54 (ORCPT
+	id S932261Ab2IRH73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:59:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41817 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab2IRH72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 03:57:56 -0400
-Date: Tue, 18 Sep 2012 09:57:48 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        HACHIMI Samir <shachimi@adeneo-embedded.com>, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org,
-        =?iso-8859-15?Q?Beno=EEt_Th=E9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH 5/7] pwm: i.MX: add devicetree support
-Message-ID: <20120918075748.GQ6180@pengutronix.de>
-References: <1347267577-3296-1-git-send-email-s.hauer@pengutronix.de>
- <1347267577-3296-6-git-send-email-s.hauer@pengutronix.de>
- <20120911144043.GA3824@avionic-0098.mockup.avionic-design.de>
- <20120912090458.GN6180@pengutronix.de>
- <20120918061154.GB1459@avionic-0098.mockup.avionic-design.de>
+	Tue, 18 Sep 2012 03:59:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120918061154.GB1459@avionic-0098.mockup.avionic-design.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:56:49 up 86 days, 23:08, 34 users,  load average: 0.09, 0.26,
- 0.85
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1347951305.13371.10.camel@smile>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
+	<1347951305.13371.10.camel@smile>
+Date: Tue, 18 Sep 2012 13:29:28 +0530
+X-Google-Sender-Auth: EsB9_94bCPqaqDbe4jy-2mDcXyg
+Message-ID: <CAOh2x=k3hjXtuAd23LYLWvG59HPgFS8W2J+5-2Bre+wFufgcng@mail.gmail.com>
+Subject: Re: [PATCH 2/7] dw_dmac: fill optional encoded parameters in register structure
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 08:11:55AM +0200, Thierry Reding wrote:
-> On Wed, Sep 12, 2012 at 11:04:58AM +0200, Sascha Hauer wrote:
-> > 
-> > 
-> > The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
-> > 
-> >   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.pengutronix.de/git/imx/linux-2.6.git tags/imx-pwm-oftree
-> > 
-> > for you to fetch changes up to a1d38ca9e249e670aa9f608e1cc7491fb4ca45af:
-> > 
-> >   pwm: i.MX: fix clock lookup (2012-09-12 11:00:55 +0200)
-> > 
-> > ----------------------------------------------------------------
-> > Cleanup i.MX PWM driver and add devicetree support
-> > 
-> > ----------------------------------------------------------------
-> > Philipp Zabel (2):
-> >       pwm: i.MX: add devicetree support
-> >       pwm: i.MX: fix clock lookup
-> > 
-> > Sascha Hauer (5):
-> >       pwm: i.MX: factor out SoC specific functions
-> >       pwm: i.MX: remove unnecessary if in pwm_[en|dis]able
-> >       pwm: i.MX: add functions to enable/disable pwm.
-> >       pwm: i.MX: Use module_platform_driver
-> >       pwm: i.MX: use per clock unconditionally
-> > 
-> >  Documentation/devicetree/bindings/pwm/imx-pwm.txt |   17 ++
-> >  drivers/pwm/pwm-imx.c                             |  278 ++++++++++++++-------
-> >  2 files changed, 199 insertions(+), 96 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/pwm/imx-pwm.txt
-> 
-> Applied, thanks. On a side note, I decided to pull the branch, extract
-> the patches and apply them to my tree with git am, so this won't show up
-> as a proper merge. This is all still pretty new to me and I'm still in
-> the process of finding out what works best, so I hope you don't mind.
+On Tue, Sep 18, 2012 at 12:25 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+>> > +#define dma_raw_readl(addr, name) \
+>> > +       readl((addr) + offsetof(struct dw_dma_regs, name))
+>> > +
+>> > +#define dma_raw_writel(addr, name, val) \
+>> > +       writel((val), (addr) + offsetof(struct dw_dma_regs, name))
+>> > +
+>>
+>> But why don't you use earlier defined readl/writel macros:
+>> dma_readl and dma_writel?
 
-Thanks Thierry. I don't mind at all.
+> If you look at further patches, namely 3rd, the access to the register
+> is needed before we allocate memory for the dw_dma structure.
 
-Sascha
+Ok. If i am not wrong, such calls are only required once for below line:
 
+dw_params = dma_raw_readl(regs, DW_PARAMS
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+dma_raw_writel() is not used and shouldn't be required in future too.
+So remove it.
+dma_raw_readl() is required but the name is a bit confusing... this
+raw type is different
+from raw_readl...
+
+Can we name it dma_read_byaddr()?
+
+to make it more explicit.
+
+viresh
