@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2IRXh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 19:37:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40143 "EHLO
+	id S1752910Ab2IRXh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 19:37:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55124 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab2IRXhR (ORCPT
+	with ESMTP id S1752005Ab2IRXhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 19:37:17 -0400
+	Tue, 18 Sep 2012 19:37:16 -0400
 From: Jim Cromie <jim.cromie@gmail.com>
 To: jbaron@redhat.com, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, Jim Cromie <jim.cromie@gmail.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH 5/6] dyndbg: in dynamic_emit_prefix, change inter-field separator
-Date: Tue, 18 Sep 2012 17:36:46 -0600
-Message-Id: <1348011407-24108-6-git-send-email-jim.cromie@gmail.com>
+Cc: gregkh@linuxfoundation.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 4/6] dyndbg: increase verbosity for proc-show, proc-next
+Date: Tue, 18 Sep 2012 17:36:45 -0600
+Message-Id: <1348011407-24108-5-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1348011407-24108-1-git-send-email-jim.cromie@gmail.com>
 References: <1348011407-24108-1-git-send-email-jim.cromie@gmail.com>
@@ -21,56 +20,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dynamic_emit_prefix() currently separates modname, funcname, lineno
-with ':'.  This is confounds use of cut -d: <logfile>, since the field
-positions can change per callsite with dynamic-debug.  So change
-inter-field separator to '.' and keep the ':' prefix terminator.
+When dynamic_debug.verbose=1, catting /dbg/dynamic_debug/control
+creates reams of log entries from ddebug_proc_(show|next|start|open).
 
-This improves the situation, but doesnt solve it entirely; if
-dyndbg==p is used instead of dyndbg==p[fmlt]+, the callsite is enabled
-but no prefix is added, so theres one less ':' in the message.
-Changing the terminator to ',' would fix this, and might be warranted,
-especially since pr_fmt() typically adds a ':' as well.
+Add vXpr_info() macro, and adjust verbosity required to enable those
+callsites to 9 for show, next, and 8 for start, open.  This leaves
+other verbosity levels available should that appear useful later.
 
-Joe Perches wasnt a fan of this, but his complaint was essentially
-that cut -d: was a poor way to do this kind of thing.  I concede that
-point, but note that the kernel is not in the habit of needlessly
-confounding users work, at least when accommodating them is so trivial.
-
-cc: Joe Perches <joe@perches.com>
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ lib/dynamic_debug.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 11a8897..f1f7467 100644
+index 85258a8..11a8897 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -556,16 +556,18 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 	}
- 	pos_after_tid = pos;
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
--		pos += snprintf(buf + pos, remaining(pos), "%s:",
-+		pos += snprintf(buf + pos, remaining(pos), "%s.",
- 				desc->modname);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
--		pos += snprintf(buf + pos, remaining(pos), "%s:",
-+		pos += snprintf(buf + pos, remaining(pos), "%s.",
- 				desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
--		pos += snprintf(buf + pos, remaining(pos), "%d:",
-+		pos += snprintf(buf + pos, remaining(pos), "%d.",
- 				desc->lineno);
--	if (pos - pos_after_tid)
--		pos += snprintf(buf + pos, remaining(pos), " ");
-+	if (pos - pos_after_tid) {
-+		pos--;
-+		pos += snprintf(buf + pos, remaining(pos), ": ");
-+	}
- 	if (pos >= PREFIX_SIZE)
- 		buf[PREFIX_SIZE - 1] = '\0';
+@@ -107,8 +107,12 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+ 	return buf;
+ }
  
+-#define vpr_info(fmt, ...) \
+-	if (verbose) do { pr_info(fmt, ##__VA_ARGS__); } while (0)
++#define vXpr_info(X, fmt, ...) \
++	if (verbose >= X) do { pr_info(fmt, ##__VA_ARGS__); } while (0)
++
++#define vpr_info(fmt, ...)	vXpr_info(1, fmt, ##__VA_ARGS__)
++#define v8pr_info(fmt, ...)	vXpr_info(8, fmt, ##__VA_ARGS__)
++#define v9pr_info(fmt, ...)	vXpr_info(9, fmt, ##__VA_ARGS__)
+ 
+ #define vpr_info_dq(q, msg)					\
+ do {								\
+@@ -768,7 +772,7 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
+ 	struct _ddebug *dp;
+ 	int n = *pos;
+ 
+-	vpr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
++	v8pr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
+ 
+ 	mutex_lock(&ddebug_lock);
+ 
+@@ -792,7 +796,7 @@ static void *ddebug_proc_next(struct seq_file *m, void *p, loff_t *pos)
+ 	struct ddebug_iter *iter = m->private;
+ 	struct _ddebug *dp;
+ 
+-	vpr_info("called m=%p p=%p *pos=%lld\n",
++	v9pr_info("called m=%p p=%p *pos=%lld\n",
+ 		m, p, (unsigned long long)*pos);
+ 
+ 	if (p == SEQ_START_TOKEN)
+@@ -815,7 +819,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 	struct _ddebug *dp = p;
+ 	char flagsbuf[10];
+ 
+-	vpr_info("called m=%p p=%p\n", m, p);
++	v9pr_info("called m=%p p=%p\n", m, p);
+ 
+ 	if (p == SEQ_START_TOKEN) {
+ 		seq_puts(m,
+@@ -839,7 +843,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+  */
+ static void ddebug_proc_stop(struct seq_file *m, void *p)
+ {
+-	vpr_info("called m=%p p=%p\n", m, p);
++	v8pr_info("called m=%p p=%p\n", m, p);
+ 	mutex_unlock(&ddebug_lock);
+ }
+ 
+@@ -862,7 +866,7 @@ static int ddebug_proc_open(struct inode *inode, struct file *file)
+ 	struct ddebug_iter *iter;
+ 	int err;
+ 
+-	vpr_info("called\n");
++	v8pr_info("called\n");
+ 
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (iter == NULL)
 -- 
 1.7.11.4
 
