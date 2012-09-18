@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974Ab2IRMXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:23:08 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54584 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932939Ab2IRMXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:23:01 -0400
+	id S932884Ab2IRMWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:22:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43819 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757270Ab2IRMWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 08:22:51 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv4 0/6] media: convert to c99 format
+Date: Tue, 18 Sep 2012 17:52:30 +0530
+Message-ID: <1347970956-11158-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-In-Reply-To: <1347958810.1943.176.camel@vkoul-udesk3>
-References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
-	<1347543485-339-5-git-send-email-peter.ujfalusi@ti.com>
-	<CACRpkdYAxFzPAZgMsdj9C3YVLzMc_w41Xs0SiqX-1DWaZqxAdw@mail.gmail.com>
-	<20120918083146.GE12445@n2100.arm.linux.org.uk>
-	<1347958810.1943.176.camel@vkoul-udesk3>
-Date: Tue, 18 Sep 2012 14:22:59 +0200
-Message-ID: <CACRpkdbphfZ+Q9L1H3x_cs_nxjYYg4xuerOHJzzdkogsKu948Q@mail.gmail.com>
-Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via
- device_prep_dma_cyclic() callback
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Dan Williams <djbw@fb.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Barry Song <baohua.song@csr.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Vista Silicon <javier.martin@vista-silicon.com>,
-        Zhangfei Gao <zhangfei.gao@marvell.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 11:00 AM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
-> On Tue, 2012-09-18 at 09:31 +0100, Russell King - ARM Linux wrote:
->> On Mon, Sep 17, 2012 at 11:01:23AM +0200, Linus Walleij wrote:
->> > On Thu, Sep 13, 2012 at 3:37 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> >
->> > After some discussion with clever people I know I have come to the conclusion
->> > that this is a good idea, so:
->> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> NAKed-by: me
->>
->> If you look at the other sub-threads of the patch you're acking, you'll
->> notice that there's a v3 of this patch set which changes the way this is
->> done.
->
-> Was it a genuine mistake, think v3 reply v2? Or less caffeine..... :)
+The series tries to convert the i2c_msg to c99 struct.
+This may avoid issues like below if someone tries to add an
+element to the structure.
+http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
 
-I think both, stupid me.
-Ack on v3 indeed, I was probably fooled by some gmail autothreading, grrr.
+Special thanks to Julia Lawall for helping it automate.
+By the below script.
+http://www.mail-archive.com/cocci@diku.dk/msg02753.html
 
-Yours,
-Linus Walleij
+Changelogs
+- Remove the zero inititialisation of the flags.
+
+Shubhrajyoti D (6):
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+  media: Convert struct i2c_msg initialization to C99 format
+
+ drivers/media/i2c/ks0127.c                    |   13 +++++++-
+ drivers/media/i2c/msp3400-driver.c            |   40 +++++++++++++++++++++----
+ drivers/media/i2c/tvaudio.c                   |   13 +++++++-
+ drivers/media/radio/radio-tea5764.c           |   13 ++++++--
+ drivers/media/radio/saa7706h.c                |   15 ++++++++-
+ drivers/media/radio/si470x/radio-si470x-i2c.c |   23 ++++++++++----
+ 6 files changed, 96 insertions(+), 21 deletions(-)
+
+-- 
+1.7.5.4
+
