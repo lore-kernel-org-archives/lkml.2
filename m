@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab2IRS0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:26:13 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:53066 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab2IRSYe (ORCPT
+	id S1753510Ab2IRS1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:27:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52659 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab2IRS1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:24:34 -0400
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
-Cc: "kgene.kim" <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Prathyush K <prathyush.k@samsung.com>, Simon Glass <sjg@chromium.org>
-Subject: [PATCH 1/7] PM / Domains: add generic function 'pm_genpd_of_add_device_by_name'
-Date: Tue, 18 Sep 2012 11:21:53 -0700
-Message-Id: <1347992519-6904-2-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1347992519-6904-1-git-send-email-sjg@chromium.org>
-References: <1347992519-6904-1-git-send-email-sjg@chromium.org>
+	Tue, 18 Sep 2012 14:27:30 -0400
+Date: Tue, 18 Sep 2012 20:27:17 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] arch/arm/plat-mxc/ulpi.c: Remove unecessary semicolon
+Message-ID: <20120918182717.GC5525@pengutronix.de>
+References: <1347986174-30287-1-git-send-email-peter.senna@gmail.com>
+ <1347986174-30287-5-git-send-email-peter.senna@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1347986174-30287-5-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Prathyush K <prathyush.k@samsung.com>
+Hello,
 
-A new function pm_genpd_of_add_device_by_name is added to the pm_domain
-file. This function takes three parameters - target device to be added to
-genpd, a device node and the name of the property. This function reads
-the "propname" property from the device node and finds the corresponding
-genpd device node. The target device is then added to this genpd by
-calling __pm_genpd_of_add_device.
+$Subject ~= s/unecessary/unnecessary/
 
-of_property_read_u32(dev_node, propname, &val);
-genpd_node = of_find_node_by_phandle(val);
-__pm_genpd_of_add_device(genpd_node, dev, NULL);
+other than that the patch looks correct.
 
-Signed-off-by: Prathyush K <prathyush.k@samsung.com>
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Tested-by: Prathyush Kalashwaram <prathyush@chromium.org>
----
- include/linux/pm_domain.h |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+Best regards
+Uwe
 
-diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
-index 30f794e..c733ece 100644
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -137,6 +137,18 @@ static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
- 	return __pm_genpd_add_device(genpd, dev, NULL);
- }
- 
-+static inline int pm_genpd_of_add_device_by_name(
-+					struct device_node *dev_node,
-+					struct device *dev,
-+					char *propname)
-+{
-+	u32 val;
-+	struct device_node *genpd_node;
-+	of_property_read_u32(dev_node, propname, &val);
-+	genpd_node = of_find_node_by_phandle(val);
-+	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
-+}
-+
- static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
- 					 struct device *dev)
- {
-@@ -184,6 +196,13 @@ static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
- {
- 	return -ENOSYS;
- }
-+static inline int pm_genpd_of_add_device_by_name(
-+					struct device_node *dev_node,
-+					struct device *dev,
-+					char *propname)
-+{
-+	return -ENOSYS;
-+}
- static inline int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 					 struct device *dev)
- {
 -- 
-1.7.7.3
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
