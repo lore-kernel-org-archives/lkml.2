@@ -1,98 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab2IRC7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 22:59:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:63176 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2IRC7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 22:59:05 -0400
-Message-ID: <5057E375.2050103@gmail.com>
-Date: Mon, 17 Sep 2012 21:59:01 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: arnd@arndb.de, linux@arm.linux.org.uk, linaro-dev@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, tim@xen.org,
-        Ian.Campbell@citrix.com, konrad.wilk@oracle.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [PATCH v5 06/17] docs: Xen ARM DT bindings
-References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com> <1347903543-2135-6-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1347903543-2135-6-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932661Ab2IRDD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 23:03:28 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58320 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932461Ab2IRDDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 23:03:25 -0400
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE
+ handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Avi Kivity <avi@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+In-Reply-To: <50559400.8030203@redhat.com>
+References: <504A37B0.7020605@linux.vnet.ibm.com>
+	 <1347046931.7332.51.camel@oc2024037011.ibm.com>
+	 <20120908084345.GU30238@linux.vnet.ibm.com>
+	 <1347283005.10325.55.camel@oc6622382223.ibm.com>
+	 <1347293035.2124.22.camel@twins>
+	 <20120910165653.GA28033@linux.vnet.ibm.com>
+	 <1347297124.2124.42.camel@twins>
+	 <1347307972.7332.78.camel@oc2024037011.ibm.com>
+	 <504ED54E.6040608@linux.vnet.ibm.com>
+	 <1347388061.19098.20.camel@oc2024037011.ibm.com>
+	 <20120913114813.GA11797@linux.vnet.ibm.com>
+	 <1347571858.5586.44.camel@oc2024037011.ibm.com>
+	 <50559400.8030203@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 17 Sep 2012 22:03:18 -0500
+Message-ID: <1347937398.10325.190.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
+x-cbid: 12091803-7182-0000-0000-000002A5BD8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 12:38 PM, Stefano Stabellini wrote:
-> Add a doc to describe the Xen ARM device tree bindings
+On Sun, 2012-09-16 at 11:55 +0300, Avi Kivity wrote:
+> On 09/14/2012 12:30 AM, Andrew Theurer wrote:
 > 
+> > The concern I have is that even though we have gone through changes to
+> > help reduce the candidate vcpus we yield to, we still have a very poor
+> > idea of which vcpu really needs to run.  The result is high cpu usage in
+> > the get_pid_task and still some contention in the double runqueue lock.
+> > To make this scalable, we either need to significantly reduce the
+> > occurrence of the lock-holder preemption, or do a much better job of
+> > knowing which vcpu needs to run (and not unnecessarily yielding to vcpus
+> > which do not need to run).
+> > 
+> > On reducing the occurrence:  The worst case for lock-holder preemption
+> > is having vcpus of same VM on the same runqueue.  This guarantees the
+> > situation of 1 vcpu running while another [of the same VM] is not.  To
+> > prove the point, I ran the same test, but with vcpus restricted to a
+> > range of host cpus, such that any single VM's vcpus can never be on the
+> > same runqueue.  In this case, all 10 VMs' vcpu-0's are on host cpus 0-4,
+> > vcpu-1's are on host cpus 5-9, and so on.  Here is the result:
+> > 
+> > kvm_cpu_spin, and all
+> > yield_to changes, plus
+> > restricted vcpu placement:  8823 +/- 3.20%   much, much better
+> > 
+> > On picking a better vcpu to yield to:  I really hesitate to rely on
+> > paravirt hint [telling us which vcpu is holding a lock], but I am not
+> > sure how else to reduce the candidate vcpus to yield to.  I suspect we
+> > are yielding to way more vcpus than are prempted lock-holders, and that
+> > IMO is just work accomplishing nothing.  Trying to think of way to
+> > further reduce candidate vcpus....
 > 
-> Changes in v5:
-> 
-> - add a comment about the size of the grant table memory region;
-> - add a comment about the required presence of a GIC node;
-> - specify that the described properties are part of a top-level
-> "hypervisor" node;
-> - specify #address-cells and #size-cells for the example.
-> 
-> 
-> Changes in v4:
-> 
-> - "xen,xen" should be last as it is less specific;
-> - update reg property using 2 address-cells and 2 size-cells.
-> 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: devicetree-discuss@lists.ozlabs.org
-> CC: David Vrabel <david.vrabel@citrix.com>
-> CC: Rob Herring <robherring2@gmail.com>
-> CC: Dave Martin <dave.martin@linaro.org>
+> I wouldn't say that yielding to the "wrong" vcpu accomplishes nothing.
+> That other vcpu gets work done (unless it is in pause loop itself) and
+> the yielding vcpu gets put to sleep for a while, so it doesn't spend
+> cycles spinning.  While we haven't fixed the problem at least the guest
+> is accomplishing work, and meanwhile the real lock holder may get
+> naturally scheduled and clear the lock.
 
-This is so minimal now and it doesn't seem to have any overlap with kvm, so:
+OK, yes, if the other thread gets useful work done, then it is not
+wasteful.  I was thinking of the worst case scenario, where any other
+vcpu would likely spin as well, and the host side cpu-time for switching
+vcpu threads was not all that productive.  Well, I suppose it does help
+eliminate potential lock holding vcpus; it just seems to be not that
+efficient or fast enough.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+> The main problem with this theory is that the experiments don't seem to
+> bear it out.
 
-> ---
->  Documentation/devicetree/bindings/arm/xen.txt |   25 +++++++++++++++++++++++++
->  1 files changed, 25 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
+Granted, my test case is quite brutal.  It's nothing but over-committed
+VMs which always have some spin lock activity.  However, we really
+should try to fix the worst case scenario.
+
+>   So maybe one of the assumptions is wrong - the yielding
+> vcpu gets scheduled early.  That could be the case if the two vcpus are
+> on different runqueues - you could be changing the relative priority of
+> vcpus on the target runqueue, but still remain on top yourself.  Is this
+> possible with the current code?
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
-> new file mode 100644
-> index 0000000..0f7b9c2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/xen.txt
-> @@ -0,0 +1,25 @@
-> +* Xen hypervisor device tree bindings
-> +
-> +Xen ARM virtual platforms shall have a top-level "hypervisor" node with
-> +the following properties:
-> +
-> +- compatible:
-> +	compatible = "xen,xen-<version>", "xen,xen";
-> +  where <version> is the version of the Xen ABI of the platform.
-> +
-> +- reg: specifies the base physical address and size of a region in
-> +  memory where the grant table should be mapped to, using an
-> +  HYPERVISOR_memory_op hypercall. The memory region is large enough to map
-> +  the whole grant table (it is larger or equal to gnttab_max_grant_frames()).
-> +
-> +- interrupts: the interrupt used by Xen to inject event notifications.
-> +  A GIC node is also required.
-> +
-> +
-> +Example (assuming #address-cells = <2> and #size-cells = <2>):
-> +
-> +hypervisor {
-> +	compatible = "xen,xen-4.3", "xen,xen";
-> +	reg = <0 0xb0000000 0 0x20000>;
-> +	interrupts = <1 15 0xf08>;
-> +};
+> Maybe we should prefer vcpus on the same runqueue as yield_to targets,
+> and only fall back to remote vcpus when we see it didn't help.
 > 
+> Let's examine a few cases:
+> 
+> 1. spinner on cpu 0, lock holder on cpu 0
+> 
+> win!
+> 
+> 2. spinner on cpu 0, random vcpu(s) (or normal processes) on cpu 0
+> 
+> Spinner gets put to sleep, random vcpus get to work, low lock contention
+> (no double_rq_lock), by the time spinner gets scheduled we might have won
+> 
+> 3. spinner on cpu 0, another spinner on cpu 0
+> 
+> Worst case, we'll just spin some more.  Need to detect this case and
+> migrate something in.
+
+Well, we can certainly experiment and see what we get.
+
+IMO, the key to getting this working really well on the large VMs is
+finding the lock-holding cpu -quickly-.  What I think is happening is
+that we go through a relatively long process to get to that one right
+vcpu.  I guess I need to find a faster way to get there.
+
+> 4. spinner on cpu 0, alone
+> 
+> Similar
+> 
+> 
+> It seems we need to tie in to the load balancer.
+> 
+> Would changing the priority of the task while it is spinning help the
+> load balancer?
+
+Not sure.
+
+-Andrew
+
+
+
+
+
 
