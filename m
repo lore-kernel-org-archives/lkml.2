@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab2IRG5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:57:19 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:65450 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab2IRG5Q (ORCPT
+	id S1756993Ab2IRG5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:57:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35719 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756957Ab2IRG5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:57:16 -0400
+	Tue, 18 Sep 2012 02:57:31 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.116.118.250]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 18 Sep 2012 09:56:55 +0300
-Message-ID: <CAK=WgbYzUTfMiW5J-5xWHLjy64Gmi44z3iktrr-aY67Pa9Egog@mail.gmail.com>
-Subject: [GIT PULL] rpmsg: a fix for 3.6
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>
+In-Reply-To: <1347867577-13170-5-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1347867577-13170-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 18 Sep 2012 12:27:31 +0530
+X-Google-Sender-Auth: Qrc-g8JSn3c4Wj4WYzvWzgNNxSI
+Message-ID: <CAOh2x=noPEPNNEDJG7_BRV_eeY1PWxR=8EWpOCWLp_ohS-gpdw@mail.gmail.com>
+Subject: Re: [PATCH 4/7] dw_dmac: autoconfigure block_size or use platform data
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> @@ -1380,6 +1370,7 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>         bool                    autocfg;
+>         unsigned int            dw_params;
+>         unsigned int            nr_channels;
+> +       unsigned int            max_blk_size;
+>         int                     irq;
+>         int                     err;
+>         int                     i;
+> @@ -1420,6 +1411,9 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>
+>         dw->regs = regs;
+>
+> +       /* get hardware configuration parameters */
+> +       max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
+> +
 
-The following changes since commit 55d512e245bc7699a8800e23df1a24195dd08217:
+Do this only for autocfg case.
 
-  Linux 3.6-rc5 (2012-09-08 16:43:45 -0700)
+>         /* Calculate all channel mask before DMA setup */
+>         dw->all_chan_mask = (1 << nr_channels) - 1;
+>
+> @@ -1465,6 +1459,14 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>                 INIT_LIST_HEAD(&dwc->free_list);
+>
+>                 channel_clear_bit(dw, CH_EN, dwc->mask);
+> +
+> +               /* hardware configuration */
+> +               if (autocfg) {
+> +                       dwc->block_size =
+> +                               (4 << ((max_blk_size >> 4 * i) & 0xf)) - 1;
 
-are available in the git repository at:
+Put a comment on what are you doing here.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git
-tags/rpmsg-3.6-fix
+> +               } else {
+> +                       dwc->block_size = pdata->block_size;
+> +               }
 
-for you to fetch changes up to eeb0074f36d1ab0729d06f1c56add9c7799679e2:
+Don't need {} for single line statements.
 
-  rpmsg: fix dma_free_coherent dev parameter (2012-09-12 12:03:57 +0300)
+>         }
+>
+>         /* Clear all interrupts on all channels. */
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index 0f96965..233f5e5 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -186,6 +186,9 @@ struct dw_dma_chan {
+>
+>         unsigned int            descs_allocated;
+>
+> +       /* hardware configuration */
+> +       unsigned short          block_size;
+> +
 
-----------------------------------------------------------------
-A quick rpmsg fix from Fernando, fixing two buggy invocations of
-dma_free_coherent.
+You actually don't save any memory here with short and actually makes access
+to block_size more complex. keeping it int would be better i believe.
 
-----------------------------------------------------------------
-Fernando Guzman Lugo (1):
-      rpmsg: fix dma_free_coherent dev parameter
-
- drivers/rpmsg/virtio_rpmsg_bus.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+viresh
