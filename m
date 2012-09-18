@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab2IRL6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:58:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:43226 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751574Ab2IRL6L (ORCPT
+	id S1756846Ab2IRL75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:59:57 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41889 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab2IRL7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:58:11 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh8275dh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MAJNWR-02-HA3-02
-X-M-MSG: 
-Date: Tue, 18 Sep 2012 13:58:02 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: <dwmw2@infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <chrisw@sous-sol.org>,
-        <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH v2] intel-iommu: Default to non-coherent for domains
- unattached to iommus
-Message-ID: <20120918115802.GJ2505@amd.com>
-References: <20111112002421.10875.8307.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111112002421.10875.8307.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 18 Sep 2012 07:59:55 -0400
+From: Matt Porter <mporter@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tony Lindgren <tony@atomide.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        AnilKumar <anilkumar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [REPOST PATCH v2 1/2] spi: omap2-mcspi: add pinctrl support
+Date: Tue, 18 Sep 2012 08:01:25 -0400
+Message-Id: <1347969685-15571-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 05:26:44PM -0700, Alex Williamson wrote:
-> domain_update_iommu_coherency() currently defaults to setting domains
-> as coherent when the domain is not attached to any iommus.  This
-> allows for a window in domain_context_mapping_one() where such a
-> domain can update context entries non-coherently, and only after
-> update the domain capability to clear iommu_coherency.
-> 
-> This can be seen using KVM device assignment on VT-d systems that
-> do not support coherency in the ecap register.  When a device is
-> added to a guest, a domain is created (iommu_coherency = 0), the
-> device is attached, and ranges are mapped.  If we then hot unplug
-> the device, the coherency is updated and set to the default (1)
-> since no iommus are attached to the domain.  A subsequent attach
-> of a device makes use of the same dmar domain (now marked coherent)
-> updates context entries with coherency enabled, and only disables
-> coherency as the last step in the process.
-> 
-> To fix this, switch domain_update_iommu_coherency() to use the
-> safer, non-coherent default for domains not attached to iommus.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Tested-by: Donald Dutile <ddutile@redhat.com>
-> Acked-by: Donald Dutile <ddutile@redhat.com>
-> Acked-by: Chris Wright <chrisw@sous-sol.org>
+Adds pinctrl support to support OMAP platforms that boot from DT
+and rely on pinctrl support to set pinmuxes.
 
-Applied, thanks.
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index b2fb141..9502566 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -38,6 +38,8 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/err.h>
+ 
+ #include <linux/spi/spi.h>
+ 
+@@ -1124,6 +1126,7 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 	static int		bus_num = 1;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	const struct of_device_id *match;
++	struct pinctrl *pinctrl;
+ 
+ 	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
+ 	if (master == NULL) {
+@@ -1219,6 +1222,11 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 	if (status < 0)
+ 		goto dma_chnl_free;
+ 
++	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&pdev->dev,
++			"pins are not configured from the driver\n");
++
+ 	pm_runtime_use_autosuspend(&pdev->dev);
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+ 	pm_runtime_enable(&pdev->dev);
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.7.9.5
 
