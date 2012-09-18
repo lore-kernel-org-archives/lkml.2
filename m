@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab2IRRi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:38:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55344 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2IRRiz (ORCPT
+	id S1753048Ab2IRRjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:39:45 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:51469 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab2IRRjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:38:55 -0400
-Date: Tue, 18 Sep 2012 10:38:49 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, Zheng Yan <zheng.z.yan@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Current perf tool does not compile anymore on RHEL6
-Message-ID: <20120918173849.GA6572@ghostprotocols.net>
-References: <m2fw6fxmr7.fsf@firstfloor.org>
+	Tue, 18 Sep 2012 13:39:40 -0400
+Message-ID: <5058B1DA.4070001@tilera.com>
+Date: Tue, 18 Sep 2012 13:39:38 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2fw6fxmr7.fsf@firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] compat: Generic compat_sys_sched_rr_get_interval implementation
+References: <1347987727-13739-2-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1347987727-13739-2-git-send-email-catalin.marinas@arm.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 18, 2012 at 10:29:48AM -0700, Andi Kleen escreveu:
-> Presumably flex-2.5.35-8.el6.x86_64 doesn't support YY_EXTRA
-> 
-> Problem started with
-> 
-> commit 90e2b22dee908c13df256140a0d6527e3e8ea3f4
-> Author: Jiri Olsa <jolsa@redhat.com>
-> Date:   Fri Jun 15 14:31:40 2012 +0800
-> 
->     perf/tool: Add support to reuse event grammar to parse out terms
-> 
-> 
-> Unfortunately needs several other patches reverted too to revert.
+On 9/18/2012 1:02 PM, Catalin Marinas wrote:
+> This function is used by sparc, powerpc tile and arm64 for compat
+> support. The patch adds a generic implementation with a wrapper for
+> PowerPC to do the u32->int sign extension.
+>
+> The reason for a single patch covering powerpc, tile and sparc is to
+> keep it bisectable, otherwise kernel building may fail with mismatched
+> function declarations.
+>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+> Please note that the patch has only been compile-tested on sparc, tile
+> and powerpc (run-time tested on arm64).
 
-That is really, really strange, since I do work primarily on:
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>  [for tile]
 
-[acme@sandy linux]$ cat /etc/redhat-release 
-Red Hat Enterprise Linux Server release 6.3 (Santiago)
-[acme@sandy linux]$ rpm -q flex
-flex-2.5.35-8.el6.x86_64
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-And haven't noticed such problem...
-
-- Arnaldo
