@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2IRTm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 15:42:57 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:48700 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754268Ab2IRTmx (ORCPT
+	id S1754676Ab2IRTqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 15:46:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37697 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab2IRTqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 15:42:53 -0400
-Message-ID: <1347997369.2747.68.camel@lorien2>
-Subject: Re: [PATCH] dma-debug: New interfaces to debug dma mapping errors
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Greg KH <greg@kroah.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
-        akpm@linux-foundation.org, bhelgaas@google.com,
-        stern@rowland.harvard.edu, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, devel@linuxdriverproject.org,
-        x86@kernel.org, shuahkhan@gmail.com
-Date: Tue, 18 Sep 2012 13:42:49 -0600
-In-Reply-To: <20120918133414.GM2505@amd.com>
-References: <1347843171.4370.13.camel@lorien2>
-	 <20120917133937.GC11553@phenom.dumpdata.com>
-	 <1347897172.3227.61.camel@lorien2>
-	 <20120917172317.GB15783@phenom.dumpdata.com>
-	 <1347921915.3227.143.camel@lorien2> <20120918133414.GM2505@amd.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Sep 2012 15:46:47 -0400
+Date: Tue, 18 Sep 2012 12:46:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Avi Kivity <avi@redhat.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Haggai Eran <haggaie@mellanox.com>, linux-mm@kvack.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>
+Subject: Re: qemu-kvm loops after kernel udpate
+Message-Id: <20120918124646.02aaee4f.akpm@linux-foundation.org>
+In-Reply-To: <5058CE2F.7030302@suse.cz>
+References: <504F7ED8.1030702@suse.cz>
+	<20120911190303.GA3626@amt.cnet>
+	<504F93F1.2060005@suse.cz>
+	<50504299.2050205@redhat.com>
+	<50504439.3050700@suse.cz>
+	<5050453B.6040702@redhat.com>
+	<5050D048.4010704@suse.cz>
+	<5051AE8B.7090904@redhat.com>
+	<5058CE2F.7030302@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-18 at 15:34 +0200, Joerg Roedel wrote:
-> On Mon, Sep 17, 2012 at 04:45:15PM -0600, Shuah Khan wrote:
-> > Yeah. I will firm up my ideas a bit and summarize in a day or two. Would
-> > like to hear your ideas as well at that time, so we can pick the one
-> > that works the best.
+On Tue, 18 Sep 2012 21:40:31 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
+
+> On 09/13/2012 11:59 AM, Avi Kivity wrote:
+> > On 09/12/2012 09:11 PM, Jiri Slaby wrote:
+> >> On 09/12/2012 10:18 AM, Avi Kivity wrote:
+> >>> On 09/12/2012 11:13 AM, Jiri Slaby wrote:
+> >>>>
+> >>>>>   Please provide the output of vmxcap
+> >>>>> (http://goo.gl/c5lUO),
+> >>>>
+> >>>>    Unrestricted guest                       no
+> >>>
+> >>> The big real mode fixes.
+> >>>
+> >>>
+> >>>>
+> >>>>> and a snapshot of kvm_stat while the guest is hung.
+> >>>>
+> >>>> kvm statistics
+> >>>>
+> >>>>   exits                                      6778198  615942
+> >>>>   host_state_reload                             1988     187
+> >>>>   irq_exits                                     1523     138
+> >>>>   mmu_cache_miss                                   4       0
+> >>>>   fpu_reload                                       1       0
+> >>>
+> >>> Please run this as root so we get the tracepoint based output; and press
+> >>> 'x' when it's running so we get more detailed output.
+> >>
+> >> kvm statistics
+> >>
+> >>   kvm_exit                                  13798699  330708
+> >>   kvm_entry                                 13799110  330708
+> >>   kvm_page_fault                            13793650  330604
+> >>   kvm_exit(EXCEPTION_NMI)                    6188458  330604
+> >>   kvm_exit(EXTERNAL_INTERRUPT)                  2169     105
+> >>   kvm_exit(TPR_BELOW_THRESHOLD)                   82       0
+> >>   kvm_exit(IO_INSTRUCTION)                         6       0
+> >
+> > Strange, it's unable to fault in the very first page.
 > 
-> I think the best approach for this functionality is to add a flag to
-> 'struct dma_debug_entry' which tells whether the address has been
-> checked with dma_mapping error or not. On unmap or driver unload you can
-> then check for that flag and print a warning when an unchecked address
-> is detected.
+> I bisected that. Note the bisection log. I have never seen something 
+> like that :D:
+> git bisect start
+> git bisect bad 3de9d1a1500472bc80478bd75e33fa9c1eba1422
+> git bisect good fea7a08acb13524b47711625eebea40a0ede69a0
+> git bisect good 95a2fe4baa1ad444df5f94bfc9416fc6b4b34cef
+> git bisect good f42c0d57a5a60da03c705bdea9fbba381112dd60
+> git bisect good 31a2e241a9e37a133278959044960c229acc5714
+> git bisect good f15fb01c5593fa1b58cc7a8a9c59913e2625bf2e
+> git bisect good 16d21ff46f5d50e311d07406c31f96916e5e8e1a
+> git bisect good 0b84592f458b4e8567aa7d803aff382c1d3b64fd
+> git bisect bad b955428e7f14cd29fe9d8059efa3ea4be679c83d
+> git bisect bad 20c4da4f68fcade05eda9c9b7dbad0a78cc5efe8
+> git bisect bad 31b90ed2a90f80fb528ac55ee357a815e1dedc36
+> git bisect bad b273fe14ee5b38cecc7bce94f7777f35a0bf9ee4
+> git bisect bad de426dbe9a60706b91b40397f69f819a39a06b6b
+> git bisect bad 6b998094ec50248e72b9f251d0607b58b18dba38
+> git bisect bad cf9b81d47a89f5d404a0cd8013b461617751e520
+> 
+> === 8< ===
+> 
+> Reverting cf9b81d47a89 (mm: wrap calls to set_pte_at_notify with 
+> invalidate_range_start and invalidate_range_end) on the top of today's 
+> -next fixes the issue.
 
-Was hoping to get comments from you as well. You are original author for
-this dam-debug module.
+hm, thanks.  This will probably take some time to resolve so I think
+I'll drop
 
-Are you ok with the system wide and per device error counts I added? Any
-comments on the overall approach?
-
-The approach you suggested will cover the cases where drivers fail to
-check good map cases. We won't able to catch failed maps that get used
-without checks. Are you not concerned about these cases? These could
-cause a silent error with wild writes or could bring the system down. Or
-are you recommending changing the infrastructure to track failed maps as
-well?
-
-I am still pursuing a way to track failed map cases. I combined the flag
-idea with one of the ideas I am looking into. Details below: (if this
-sounds like a reasonable approach, I can do v2 patch and we can discuss
-the code)
-
-. Add new fields dma_map_errors, dma_map_errors_not_checked,
-dma_unmap_errors, iotlb_overflow_cnt, and flag to struct
-dma_debug_entry. Maybe flag is not even needed if
-dma_map_errors_not_checked can double as status.
-
-. Enhance dma_debug_init() to create a second table to track failed maps
-with PREALLOC_DMA_DEBUG_ENTRIES/64 = 64. 64 devices probably is good
-enough.
-
-. Entries added to this new table when debug_dma_map_page() detects
-error when mapping error is detected for the first time. Subsequent
-errors, will increment dma_map_errors, dma_map_errors_not_checked for
-that the device that is tracked by this entry. Note: paddr field could
-work as an index into this table (existing table uses dma_addr)
-
-. Decrement dma_map_errors_not_checked from debug_dma_mapping_error(),
-clear the flag.
-
-. check_unmap() when it detects mapping error, checks flag (status) and
-prints warn message.
-
--- Shuah
-
+mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock.patch
+mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock-fix.patch
+mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock-fix-fix.patch
+mm-wrap-calls-to-set_pte_at_notify-with-invalidate_range_start-and-invalidate_range_end.patch
+ 
