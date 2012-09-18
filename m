@@ -1,146 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab2IRHRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 03:17:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56226 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976Ab2IRHRy (ORCPT
+	id S1757320Ab2IRHSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:18:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58302 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757245Ab2IRHSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 03:17:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347867577-13170-8-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1347867577-13170-8-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 18 Sep 2012 12:47:53 +0530
-X-Google-Sender-Auth: _Vz8Er-GKRWTZfGNbZ2YaE9EVIg
-Message-ID: <CAOh2x=m3-XYEjJTh02AmnzoKJODAFf+OyQXtXaAdKTx3=GLrdg@mail.gmail.com>
-Subject: Re: [PATCH 7/7] dw_dmac: introduce software emulation of LLP transfers
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Sep 2012 03:18:40 -0400
+Date: Tue, 18 Sep 2012 15:19:03 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: shli <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Fix problems about handling bio to plug when bio merged failed.
+References: <201208101944375001710@gmail.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <2012091815190182830910@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8I7IlOK024420
 
-On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 00958ad..fa23711 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -229,10 +229,29 @@ static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+On 2012-08-10 19:44 Jianpeng Ma <majianpeng@gmail.com> Wrote:
+>There are some problems about handling bio which merge to plug failed.
+>Patch1 will avoid unnecessary plug should_sort test,although it's not a bug.
+>Patch2 correct a bug when handle more devices,it leak some devices to trace plug-operation.
 >
->  /*----------------------------------------------------------------------*/
+>Because the patch2,so it's not necessary to sort when flush plug.Although patch2 has 
+>O(n*n) complexity,it's more than list_sort which has O(nlog(n)) complexity.But the plug 
+>list is unlikely too long,so i think patch3 can accept.
 >
-> +/* Perform single block transfer */
-> +static inline void dwc_do_single_block(struct dw_dma_chan *dwc,
-> +                                      struct dw_desc *desc)
-> +{
-> +       struct dw_dma   *dw = to_dw_dma(dwc->chan.device);
-> +       u32             ctllo;
-> +
-> +       /* Software emulation of LLP mode relies on interrupts to continue
-> +        * multi block transfer. */
-> +       ctllo = desc->lli.ctllo | DWC_CTLL_INT_EN;
-> +
-> +       channel_writel(dwc, SAR, desc->lli.sar);
-> +       channel_writel(dwc, DAR, desc->lli.dar);
-> +       channel_writel(dwc, CTL_LO, ctllo);
-> +       channel_writel(dwc, CTL_HI, desc->lli.ctlhi);
-> +       channel_set_bit(dw, CH_EN, dwc->mask);
-> +}
-> +
->  /* Called with dwc->lock held and bh disabled */
->  static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
->  {
->         struct dw_dma   *dw = to_dw_dma(dwc->chan.device);
-> +       unsigned long   was_soft_llp;
 >
->         /* ASSERT:  channel is idle */
->         if (dma_readl(dw, CH_EN) & dwc->mask) {
-> @@ -244,6 +263,26 @@ static void dwc_dostart(struct dw_dma_chan *dwc, struct dw_desc *first)
->                 return;
->         }
+>Jianpeng Ma (3):
+>  block: avoid unnecessary plug should_sort test.
+>  block: Fix not tracing all device plug-operation.
+>  block: Remove unnecessary requests sort.
 >
-> +       if (dwc->nollp) {
-> +               was_soft_llp = test_and_set_bit(DW_DMA_IS_SOFT_LLP,
-> +                                               &dwc->flags);
-> +               if (was_soft_llp) {
-> +                       dev_err(chan2dev(&dwc->chan),
-> +                               "BUG: Attempted to start new LLP transfer "
-> +                               "inside ongoing one\n");
-> +                       return;
-> +               }
-> +
-> +               dwc_initialize(dwc);
-> +
-> +               dwc->tx_list = &first->tx_list;
-> +               dwc->tx_node_active = first->tx_list.next;
-> +
-> +               dwc_do_single_block(dwc, first);
-> +
-> +               return;
-> +       }
-> +
->         dwc_initialize(dwc);
+> block/blk-core.c |   35 ++++++++++++++++++-----------------
+> 1 file changed, 18 insertions(+), 17 deletions(-)
 >
->         channel_writel(dwc, LLP, first->txd.phys);
-> @@ -555,8 +594,36 @@ static void dw_dma_tasklet(unsigned long data)
->                         dwc_handle_cyclic(dw, dwc, status_err, status_xfer);
->                 else if (status_err & (1 << i))
->                         dwc_handle_error(dw, dwc);
-> -               else if (status_xfer & (1 << i))
-> +               else if (status_xfer & (1 << i)) {
-> +                       unsigned long flags;
-> +
-> +                       spin_lock_irqsave(&dwc->lock, flags);
-> +                       if (test_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags)) {
-> +                               if (dwc->tx_node_active != dwc->tx_list) {
-> +                                       struct dw_desc *desc =
-> +                                               list_entry(dwc->tx_node_active,
-> +                                                          struct dw_desc,
-> +                                                          desc_node);
+>-- 
+>1.7.9.5
+Hi axboe:
+	Sorry for asking you again. But I found a problem which it contained those code. So i asked how those patchset again.
+If you discard those,i will send the patch using the old code. On the other hand,I will wait the patchest release and to continue.
 
-can come in single line.
+The problem is about blk_plug. 
+My workload is raid5  which had 16 disks. And used our filesystem to write used direct mode.
+I used the blktrace to find those message:
 
-> +
-> +                                       dma_writel(dw, CLEAR.XFER, dwc->mask);
-> +
-> +                                       /* move pointer to next descriptor */
-> +                                       dwc->tx_node_active =
-> +                                               dwc->tx_node_active->next;
-> +
-> +                                       dwc_do_single_block(dwc, desc);
-> +
-> +                                       spin_unlock_irqrestore(&dwc->lock, flags);
-> +                                       continue;
-> +                               } else {
-> +                                       /* we are done here */
-> +                                       clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
-> +                               }
-> +                       }
-> +                       spin_unlock_irqrestore(&dwc->lock, flags);
-> +
->                         dwc_scan_descriptors(dw, dwc);
-> +               }
->         }
->
->         /*
-> @@ -647,12 +714,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
->         unsigned int            dst_width;
->         u32                     ctllo;
->
-> -       if (dwc->nollp) {
-> -               dev_dbg(chan2dev(&dwc->chan),
-> -                               "channel doesn't support LLP transfers\n");
-> -               return NULL;
-> -       }
-> -
+  8,16   0     3570     1.083923979  2519  I   W 144323176 + 24 [md127_raid5]
+  8,16   0        0     1.083926214     0  m   N cfq2519 insert_request
+  8,16   0     3571     1.083926586  2519  I   W 144323072 + 104 [md127_raid5]
+  8,16   0        0     1.083926952     0  m   N cfq2519 insert_request
+  8,16   0     3572     1.083927180  2519  U   N [md127_raid5] 2
+  8,16   0        0     1.083927870     0  m   N cfq2519 Not idling. st->count:1
+  8,16   0        0     1.083928320     0  m   N cfq2519 dispatch_insert
+  8,16   0        0     1.083928951     0  m   N cfq2519 dispatched a request
+  8,16   0        0     1.083929443     0  m   N cfq2519 activate rq, drv=1
+  8,16   0     3573     1.083929530  2519  D   W 144323176 + 24 [md127_raid5]
+  8,16   0        0     1.083933883     0  m   N cfq2519 Not idling. st->count:1
+  8,16   0        0     1.083934189     0  m   N cfq2519 dispatch_insert
+  8,16   0        0     1.083934654     0  m   N cfq2519 dispatched a request
+  8,16   0        0     1.083935014     0  m   N cfq2519 activate rq, drv=2
+  8,16   0     3574     1.083935101  2519  D   W 144323072 + 104 [md127_raid5]
+  8,16   0     3575     1.084196179     0  C   W 144323176 + 24 [0]
+  8,16   0        0     1.084197979     0  m   N cfq2519 complete rqnoidle 0
+  8,16   0     3576     1.084769073     0  C   W 144323072 + 104 [0]
+  ......
+  8,16   1     3596     1.091394357  2519  I   W 144322544 + 16 [md127_raid5]
+  8,16   1        0     1.091396181     0  m   N cfq2519 insert_request
+  8,16   1     3597     1.091396571  2519  I   W 144322520 + 24 [md127_raid5]
+  8,16   1        0     1.091396934     0  m   N cfq2519 insert_request
+  8,16   1     3598     1.091397165  2519  I   W 144322488 + 32 [md127_raid5]
+  8,16   1        0     1.091397477     0  m   N cfq2519 insert_request
+  8,16   1     3599     1.091397708  2519  I   W 144322432 + 56 [md127_raid5]
+  8,16   1        0     1.091398023     0  m   N cfq2519 insert_request
+  8,16   1     3600     1.091398284  2519  U   N [md127_raid5] 4
+  8,16   1        0     1.091398986     0  m   N cfq2519 Not idling. st->count:1
+  8,16   1        0     1.091399511     0  m   N cfq2519 dispatch_insert
+  8,16   1        0     1.091400217     0  m   N cfq2519 dispatched a request
+  8,16   1        0     1.091400688     0  m   N cfq2519 activate rq, drv=1
+  8,16   1     3601     1.091400766  2519  D   W 144322544 + 16 [md127_raid5]
+  8,16   1        0     1.091406151     0  m   N cfq2519 Not idling. st->count:1
+  8,16   1        0     1.091406460     0  m   N cfq2519 dispatch_insert
+  8,16   1        0     1.091406931     0  m   N cfq2519 dispatched a request
+  8,16   1        0     1.091407291     0  m   N cfq2519 activate rq, drv=2
+  8,16   1     3602     1.091407378  2519  D   W 144322520 + 24 [md127_raid5]
+  8,16   1        0     1.091414006     0  m   N cfq2519 Not idling. st->count:1
+  8,16   1        0     1.091414297     0  m   N cfq2519 dispatch_insert
+  8,16   1        0     1.091414702     0  m   N cfq2519 dispatched a request
+  8,16   1        0     1.091415047     0  m   N cfq2519 activate rq, drv=3
+  8,16   1     3603     1.091415125  2519  D   W 144322488 + 32 [md127_raid5]
+  8,16   1        0     1.091416469     0  m   N cfq2519 Not idling. st->count:1
+  8,16   1        0     1.091416754     0  m   N cfq2519 dispatch_insert
+  8,16   1        0     1.091417186     0  m   N cfq2519 dispatched a request
+  8,16   1        0     1.091417535     0  m   N cfq2519 activate rq, drv=4
+  8,16   1     3604     1.091417628  2519  D   W 144322432 + 56 [md127_raid5]
+  8,16   1     3605     1.091857225  4393  C   W 144322544 + 16 [0]
+  8,16   1        0     1.091858753     0  m   N cfq2519 complete rqnoidle 0
+  8,16   1     3606     1.092068456  4393  C   W 144322520 + 24 [0]
+  8,16   1        0     1.092069851     0  m   N cfq2519 complete rqnoidle 0
+  8,16   1     3607     1.092350440  4393  C   W 144322488 + 32 [0]
+  8,16   1        0     1.092351688     0  m   N cfq2519 complete rqnoidle 0
+  8,16   1     3608     1.093629323     0  C   W 144322432 + 56 [0]
+  8,16   1        0     1.093631151     0  m   N cfq2519 complete rqnoidle 0
+  8,16   1        0     1.093631574     0  m   N cfq2519 will busy wait
+  8,16   1        0     1.093631829     0  m   N cfq schedule dispatch
 
-:)
-You should actually merge 6/7 with 7/7... You can't revert something
-in the same patchset.
+Because in func "elv_attempt_insert_merge", it only to try to backmerge.So the four request can't merge in theory.
+I trace ten minutes and to count those situation, it can count 25%.
+So i think i should do something.
+I diged into and founded elevator only provide backmerge using hash.
+So I think i can sort in func "blk_flush_plug_list".
+At present the requests in blk_plug will sort,but only by request_queue not by start_sector of request.
+So i modified the code:
 
-viresh
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1f61b74..c382abb 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2750,7 +2750,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
+        struct request *rqa = container_of(a, struct request, queuelist);
+        struct request *rqb = container_of(b, struct request, queuelist);
+ 
+-       return !(rqa->q <= rqb->q);
++       return !(rqa->q < rqb->q ||
++               (rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
+ }
+ 
+ /*
+@@ -2822,10 +2823,10 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
+ 
+        list_splice_init(&plug->list, &list);
+ 
+-       if (plug->should_sort) {
++//     if (plug->should_sort) {
+                list_sort(NULL, &list, plug_rq_cmp);
+                plug->should_sort = 0;
+-       }
++//     }
+ 
+        q = NULL;
+        depth = 0;
+
+With those,i tested and not found situation like above.
+So i think i can send a patch to you.But because the early patchset, so I wanted to ask your suggestion how to those.
+
+BTW, why are there only backmerge using hash in elevator?
+
+Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
