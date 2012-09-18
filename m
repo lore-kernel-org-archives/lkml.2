@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab2IRU2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 16:28:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48785 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501Ab2IRU2M (ORCPT
+	id S1755158Ab2IRUey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 16:34:54 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:45464 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab2IRUew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 16:28:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120918201231.GF8474@google.com>
-References: <20120917201721.GJ18677@google.com> <20120918201231.GF8474@google.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 18 Sep 2012 13:27:50 -0700
-X-Google-Sender-Auth: UpQL0U083Ja1yJb6UqnrkXAVI1c
-Message-ID: <CA+55aFwt9Wd9cwk3B4U0+B+EyBJm8oG0r0ADQvEa0D4HmrMWQQ@mail.gmail.com>
-Subject: Re: [PATCH 3.6-rc6] cpufreq/powernow-k8: workqueue user shouldn't
- migrate the kworker to another CPU
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Duncan <1i5t5.duncan@cox.net>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Sep 2012 16:34:52 -0400
+Message-ID: <1348000487.2747.79.camel@lorien2>
+Subject: Re: [PATCH] dma-debug: New interfaces to debug dma mapping errors
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Greg KH <greg@kroah.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        akpm@linux-foundation.org, bhelgaas@google.com,
+        stern@rowland.harvard.edu, LKML <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org, shuahkhan@gmail.com
+Date: Tue, 18 Sep 2012 14:34:47 -0600
+In-Reply-To: <20120918194509.GA14655@phenom.dumpdata.com>
+References: <1347843171.4370.13.camel@lorien2>
+	 <20120917133937.GC11553@phenom.dumpdata.com>
+	 <1347897172.3227.61.camel@lorien2>
+	 <20120917172317.GB15783@phenom.dumpdata.com>
+	 <1347921915.3227.143.camel@lorien2> <20120918133414.GM2505@amd.com>
+	 <1347997369.2747.68.camel@lorien2>
+	 <20120918194509.GA14655@phenom.dumpdata.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 1:12 PM, Tejun Heo <tj@kernel.org> wrote:
-> So, with work_on_cpu() reimplementation just posted[1], we can do the
-> following instead.  Functionally it's about the same but less ugly.
-> Ugly as it may be, I think the previous open coded version is better
-> suited as a fix and for -stable.  Thoughts?
+On Tue, 2012-09-18 at 15:45 -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Sep 18, 2012 at 01:42:49PM -0600, Shuah Khan wrote:
+> > On Tue, 2012-09-18 at 15:34 +0200, Joerg Roedel wrote:
+> > > On Mon, Sep 17, 2012 at 04:45:15PM -0600, Shuah Khan wrote:
+> > > > Yeah. I will firm up my ideas a bit and summarize in a day or two. Would
+> > > > like to hear your ideas as well at that time, so we can pick the one
+> > > > that works the best.
+> > > 
+> > > I think the best approach for this functionality is to add a flag to
+> > > 'struct dma_debug_entry' which tells whether the address has been
+> > > checked with dma_mapping error or not. On unmap or driver unload you can
+> > > then check for that flag and print a warning when an unchecked address
+> > > is detected.
+> > 
+> > Was hoping to get comments from you as well. You are original author for
+> > this dam-debug module.
+> > 
+> > Are you ok with the system wide and per device error counts I added? Any
+> > comments on the overall approach?
+> > 
+> > The approach you suggested will cover the cases where drivers fail to
+> > check good map cases. We won't able to catch failed maps that get used
+> > without checks. Are you not concerned about these cases? These could
+> > cause a silent error with wild writes or could bring the system down. Or
+> > are you recommending changing the infrastructure to track failed maps as
+> > well?
+> > 
+> > I am still pursuing a way to track failed map cases. I combined the flag
+> > idea with one of the ideas I am looking into. Details below: (if this
+> > sounds like a reasonable approach, I can do v2 patch and we can discuss
+> > the code)
+> > 
+> > . Add new fields dma_map_errors, dma_map_errors_not_checked,
+> > dma_unmap_errors, iotlb_overflow_cnt, and flag to struct
+> > dma_debug_entry. Maybe flag is not even needed if
+> > dma_map_errors_not_checked can double as status.
+> 
+> Not sure if you need the iotlb_overflow_cnt anymore. Just having
+> dma_map_errors_not_checked and the dma_map_errors
+> (which you can increment/decrement) would suffice. Unless you
+> were thinking to check that dma_map_errors == dma_unmap_errors and
+> if they != then produce a warning?
 
-I have to say, since the work_on_cpu() reimplementation seems to
-seriously simplify the code, and removes more lines than it adds, and
-makes this patch smaller than your original patch, I would personally
-prefer this approach instead anyway.
+Right. I wsn't thinking about that, but I get it. Don't need
+iotlb_overflow_cnt as it is included in the failed map count. What I
+meant was dma_map_errors_not_checked > 0 is same as the status this flag
+is intended to track can be a trigger for warn. But that is not going
+work because it will generate warnings as soon as
+dma_map_errors_not_checked becomes > 0 and stays that way. Need the
+flag. :) So dropping iotlb_overflow_cnt and keeping the status flag.
 
-It's what we want long-range, isn't it? And it's smaller and simpler.
-Sure, it might be a *conceptually* bigger change, but since it's both
-prettier and *practically* smaller, I do like it more. Even at this
-stage of -rc (and even for backporting to -stable).
+-- Shuah
 
-Can we get some quick testing of this two-patch series from the people
-who saw the original K8 cpufreq issue? Duncan?
-
-           Linus
