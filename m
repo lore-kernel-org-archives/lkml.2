@@ -1,161 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2IRISY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:18:24 -0400
-Received: from smtp-out-031.synserver.de ([212.40.185.31]:1126 "EHLO
-	smtp-out-031.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab2IRISW (ORCPT
+	id S932476Ab2IRIYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:24:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53718 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab2IRIYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:18:22 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 32107
-Message-ID: <50582E77.3070808@metafoo.de>
-Date: Tue, 18 Sep 2012 10:19:03 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
-MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6] iio: adc: add new lp8788 adc driver
-References: <A874F61F95741C4A9BA573A70FE3998F41EF510C@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF510C@DQHE02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Sep 2012 04:24:04 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Qin Rui <qinrui@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 5/5] pwm: Move PUV3 PWM driver to PWM framework
+Date: Tue, 18 Sep 2012 10:23:53 +0200
+Message-Id: <1347956633-15667-6-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:/2Cf/Xzv6BwF+oTOaa1hKpRbDHcZ2nsGXH8X4K2ESGn
+ p/oq8UZDQmJjv1/SUNoSwDXEKt5mSrHF2sSTouyls3fKge+fRS
+ dRm8SQDS4O5oG8ePY4dXgXqdT3FEdRzak/myMo+lzkkE+Ko7tE
+ UW6F95LKfFEsopSVih5geEwD8FTZdKlAtLa4k/Oz4VXZRKiY9x
+ L2ZSNzh9TWMgpTr2vWvUpW5Qn2OZwQ8uZx4jlsqquR+ehqFxt5
+ uKNnAxgbBAdb0J04aFVt8Pe6uSf6oyqXWT7N6YPJxcOs5uTRsY
+ JkMrH53oV0zbZAYuCC4bkkz9HfMX0VzcYBukEtHNN5DyD0IcyJ
+ pebDOixadIsjaPGcYOESwHoeNklOhxxI3vl5nnPRYIjW1TETCW
+ Zv/fkBGV510mZzrLEswEd/paSYv9/gDDw9saUt+PoB9/Fnvonz
+ cHhtK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 11:35 AM, Kim, Milo wrote:
->  TI LP8788 PMU provides regulators, battery charger, ADC,
->  RTC, backlight driver and current sinks.
-> 
->  This patch enables the LP8788 ADC functions.
-> 
->  The LP8788 ADC has several ADC input selection and supports 12bit resolution.
->  Internal operation of getting ADC is access to registers of LP8788.
->  The LP8788 ADC uses exported functions for accessing these registers.
->  (exported by LP8788 MFD device driver)
-> 
->  This driver supports IIO_CHAN_INFO_RAW and SCALE.
->  So the IIO consumer can calculate the value with raw and scale.
->  The unit of scale is micro.
-> 
->  (ADC Input Selection)
-> 
->  Voltage: battery voltage (MAX 5.0, 5.5 and 6.0V)
->           charger input voltage
->           four general ADC inputs
->           coin cell voltage
->  Current: battery charging current
->  Temperature: IC temperature
-> 
->  (The IIO map for the IIO consumer)
-> 
->  The ADC input is configurable in the platform side.
->  Even though this platform data is not defined,
->  the default IIO map is created for supporting the power supply driver.
->  The battery voltage and temperature are used inside this driver.
-> 
->  (History)
-> 
->  Patch v6.
->  (a) Fix scale value for each ADC input selection
->  Voltage and current type are mili unit and temperature is degree.
->  To calculate the IC temperature,
->  temp = raw * scaleint + (raw * scalepart)/ 1000000, scaleint is always 0.
->       = raw * 0.061050, raw: 0 ~ 4095
->  Then range of IC temperature(ADC result) is 0 ~ 250'C
-> 
->  (b) Reorganization of the IIO channel Spec
->  Remove address, scan_type and scan_index and rollback the datasheet name.
->  The reason why 'address' field is unnecessary is no relation with each channel.
->  Moreover, to get the raw ADC value, the address info is not only one register
->  but also several registers.
->  Therefore specific function(lp8788_get_adc_result) is called rather than
->  using one 'address' field.
-> 
->  (c) Fix coding style
->  Remove duplicated checking routine while unregistering the IIO map.
->  Fix code for space and parenthesis.
-> 
->  Patch v5.
->  Fix default consumer name as 'lp8788-charger'.
->  Add mutex for ADC read operation.
->  Reorganization on lp8788_adc_read_raw().
-> 
->  Patch v4.
->  Fix adc_raw function: support RAW and SCALE channel info.
->  Change LP8788 ADC platform data - iio map.
->  Enables the default IIO map.
-> 
->  Patch v3.
->  Fix wrong size of allocating iio private data.
->  Fix coding styles.
-> 
->  Patch v2.
->  Support RAW and SCALE interface for IIO consumer.
->  Clean up the iio channel spec macro.
-> 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+This commit moves the driver to drivers/pwm and converts it to the new
+PWM framework.
 
-Looks good to me,
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ arch/unicore32/Kconfig         |  12 +--
+ arch/unicore32/kernel/Makefile |   1 -
+ arch/unicore32/kernel/pwm.c    | 219 -----------------------------------------
+ drivers/pwm/Kconfig            |  10 +-
+ drivers/pwm/Makefile           |   1 +
+ drivers/pwm/pwm-puv3.c         | 161 ++++++++++++++++++++++++++++++
+ 6 files changed, 173 insertions(+), 231 deletions(-)
+ delete mode 100644 arch/unicore32/kernel/pwm.c
+ create mode 100644 drivers/pwm/pwm-puv3.c
 
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+index b0a4743..91e2037 100644
+--- a/arch/unicore32/Kconfig
++++ b/arch/unicore32/Kconfig
+@@ -20,9 +20,6 @@ config UNICORE32
+ 	  designs licensed by PKUnity Ltd.
+ 	  Please see web page at <http://www.pkunity.com/>.
+ 
+-config HAVE_PWM
+-	bool
+-
+ config GENERIC_GPIO
+ 	def_bool y
+ 
+@@ -105,7 +102,8 @@ config PUV3_DB0913
+ 
+ config PUV3_NB0916
+ 	bool "NetBook board (0916)"
+-	select HAVE_PWM
++	select PWM
++	select PWM_PUV3
+ 
+ config PUV3_SMW0919
+ 	bool "Security Mini-Workstation board (0919)"
+@@ -219,12 +217,6 @@ config PUV3_GPIO
+ 	select GPIO_SYSFS if EXPERIMENTAL
+ 	default y
+ 
+-config PUV3_PWM
+-	tristate
+-	default BACKLIGHT_PWM
+-	help
+-	  Enable support for NB0916 PWM controllers
+-
+ if PUV3_NB0916
+ 
+ menu "PKUnity NetBook-0916 Features"
+diff --git a/arch/unicore32/kernel/Makefile b/arch/unicore32/kernel/Makefile
+index 3240101..fa497e0 100644
+--- a/arch/unicore32/kernel/Makefile
++++ b/arch/unicore32/kernel/Makefile
+@@ -16,7 +16,6 @@ obj-$(CONFIG_UNICORE_FPU_F64)	+= fpu-ucf64.o
+ obj-$(CONFIG_ARCH_PUV3)		+= clock.o irq.o time.o
+ 
+ obj-$(CONFIG_PUV3_GPIO)		+= gpio.o
+-obj-$(CONFIG_PUV3_PWM)		+= pwm.o
+ obj-$(CONFIG_PUV3_PM)		+= pm.o sleep.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o hibernate_asm.o
+ 
+diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
+deleted file mode 100644
+index 724e860..0000000
+--- a/arch/unicore32/kernel/pwm.c
++++ /dev/null
+@@ -1,219 +0,0 @@
+-/*
+- * linux/arch/unicore32/kernel/pwm.c
+- *
+- * Code specific to PKUnity SoC and UniCore ISA
+- *
+- *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
+- *	Copyright (C) 2001-2010 Guan Xuetao
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/platform_device.h>
+-#include <linux/slab.h>
+-#include <linux/err.h>
+-#include <linux/clk.h>
+-#include <linux/io.h>
+-#include <linux/pwm.h>
+-
+-#include <asm/div64.h>
+-#include <mach/hardware.h>
+-
+-struct pwm_device {
+-	struct list_head	node;
+-	struct platform_device *pdev;
+-
+-	void __iomem	*base;
+-
+-	const char	*label;
+-	struct clk	*clk;
+-	int		clk_enabled;
+-
+-	unsigned int	use_count;
+-	unsigned int	pwm_id;
+-};
+-
+-/*
+- * period_ns = 10^9 * (PRESCALE + 1) * (PV + 1) / PWM_CLK_RATE
+- * duty_ns   = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
+- */
+-int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+-{
+-	unsigned long long c;
+-	unsigned long period_cycles, prescale, pv, dc;
+-
+-	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
+-		return -EINVAL;
+-
+-	c = clk_get_rate(pwm->clk);
+-	c = c * period_ns;
+-	do_div(c, 1000000000);
+-	period_cycles = c;
+-
+-	if (period_cycles < 1)
+-		period_cycles = 1;
+-	prescale = (period_cycles - 1) / 1024;
+-	pv = period_cycles / (prescale + 1) - 1;
+-
+-	if (prescale > 63)
+-		return -EINVAL;
+-
+-	if (duty_ns == period_ns)
+-		dc = OST_PWMDCCR_FDCYCLE;
+-	else
+-		dc = (pv + 1) * duty_ns / period_ns;
+-
+-	/* NOTE: the clock to PWM has to be enabled first
+-	 * before writing to the registers
+-	 */
+-	clk_enable(pwm->clk);
+-
+-	writel(prescale, pwm->base + OST_PWM_PWCR);
+-	writel(pv - dc, pwm->base + OST_PWM_DCCR);
+-	writel(pv, pwm->base + OST_PWM_PCR);
+-
+-	clk_disable(pwm->clk);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(pwm_config);
+-
+-int pwm_enable(struct pwm_device *pwm)
+-{
+-	int rc = 0;
+-
+-	if (!pwm->clk_enabled) {
+-		rc = clk_enable(pwm->clk);
+-		if (!rc)
+-			pwm->clk_enabled = 1;
+-	}
+-	return rc;
+-}
+-EXPORT_SYMBOL(pwm_enable);
+-
+-void pwm_disable(struct pwm_device *pwm)
+-{
+-	if (pwm->clk_enabled) {
+-		clk_disable(pwm->clk);
+-		pwm->clk_enabled = 0;
+-	}
+-}
+-EXPORT_SYMBOL(pwm_disable);
+-
+-static DEFINE_MUTEX(pwm_lock);
+-static LIST_HEAD(pwm_list);
+-
+-struct pwm_device *pwm_request(int pwm_id, const char *label)
+-{
+-	struct pwm_device *pwm;
+-	int found = 0;
+-
+-	mutex_lock(&pwm_lock);
+-
+-	list_for_each_entry(pwm, &pwm_list, node) {
+-		if (pwm->pwm_id == pwm_id) {
+-			found = 1;
+-			break;
+-		}
+-	}
+-
+-	if (found) {
+-		if (pwm->use_count == 0) {
+-			pwm->use_count++;
+-			pwm->label = label;
+-		} else
+-			pwm = ERR_PTR(-EBUSY);
+-	} else
+-		pwm = ERR_PTR(-ENOENT);
+-
+-	mutex_unlock(&pwm_lock);
+-	return pwm;
+-}
+-EXPORT_SYMBOL(pwm_request);
+-
+-void pwm_free(struct pwm_device *pwm)
+-{
+-	mutex_lock(&pwm_lock);
+-
+-	if (pwm->use_count) {
+-		pwm->use_count--;
+-		pwm->label = NULL;
+-	} else
+-		pr_warning("PWM device already freed\n");
+-
+-	mutex_unlock(&pwm_lock);
+-}
+-EXPORT_SYMBOL(pwm_free);
+-
+-static inline void __add_pwm(struct pwm_device *pwm)
+-{
+-	mutex_lock(&pwm_lock);
+-	list_add_tail(&pwm->node, &pwm_list);
+-	mutex_unlock(&pwm_lock);
+-}
+-
+-static int __devinit pwm_probe(struct platform_device *pdev)
+-{
+-	struct pwm_device *pwm;
+-	struct resource *r;
+-
+-	pwm = devm_kzalloc(&pdev->dev, sizeof(struct pwm_device), GFP_KERNEL);
+-	if (pwm == NULL) {
+-		dev_err(&pdev->dev, "failed to allocate memory\n");
+-		return -ENOMEM;
+-	}
+-
+-	pwm->clk = devm_clk_get(&pdev->dev, "OST_CLK");
+-	if (IS_ERR(pwm->clk))
+-		return PTR_ERR(pwm->clk);
+-
+-	pwm->clk_enabled = 0;
+-
+-	pwm->use_count = 0;
+-	pwm->pwm_id = pdev->id;
+-	pwm->pdev = pdev;
+-
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (r == NULL) {
+-		dev_err(&pdev->dev, "no memory resource defined\n");
+-		return -ENODEV;
+-	}
+-
+-	pwm->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (pwm->base == NULL)
+-		return -EADDRNOTAVAIL;
+-
+-	__add_pwm(pwm);
+-	platform_set_drvdata(pdev, pwm);
+-	return 0;
+-}
+-
+-static int __devexit pwm_remove(struct platform_device *pdev)
+-{
+-	struct pwm_device *pwm;
+-
+-	pwm = platform_get_drvdata(pdev);
+-	if (pwm == NULL)
+-		return -ENODEV;
+-
+-	mutex_lock(&pwm_lock);
+-	list_del(&pwm->node);
+-	mutex_unlock(&pwm_lock);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver puv3_pwm_driver = {
+-	.driver		= {
+-		.name	= "PKUnity-v3-PWM",
+-	},
+-	.probe		= pwm_probe,
+-	.remove		= __devexit_p(pwm_remove),
+-};
+-module_platform_driver(puv3_pwm_driver);
+-
+-MODULE_LICENSE("GPL v2");
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 5c663df..007c225 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -1,6 +1,5 @@
+ menuconfig PWM
+ 	bool "Pulse-Width Modulation (PWM) Support"
+-	depends on !PUV3_PWM
+ 	help
+ 	  Generic Pulse-Width Modulation (PWM) support.
+ 
+@@ -77,6 +76,15 @@ config PWM_MXS
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-mxs.
+ 
++config PWM_PUV3
++	tristate "PKUnity NetBook-0916 PWM support"
++	depends on ARCH_PUV3
++	help
++	  Generic PWM framework driver for PKUnity NetBook-0916.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-puv3.
++
+ config PWM_PXA
+ 	tristate "PXA PWM support"
+ 	depends on ARCH_PXA
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index a1d6169..c8e521b 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -4,6 +4,7 @@ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
++obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
+ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
+ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
+ obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
+diff --git a/drivers/pwm/pwm-puv3.c b/drivers/pwm/pwm-puv3.c
+new file mode 100644
+index 0000000..2a93f37
+--- /dev/null
++++ b/drivers/pwm/pwm-puv3.c
+@@ -0,0 +1,161 @@
++/*
++ * linux/arch/unicore32/kernel/pwm.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
++ *	Copyright (C) 2001-2010 Guan Xuetao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/pwm.h>
++
++#include <asm/div64.h>
++#include <mach/hardware.h>
++
++struct puv3_pwm_chip {
++	struct pwm_chip chip;
++	void __iomem *base;
++	struct clk *clk;
++	bool enabled;
++};
++
++static inline struct puv3_pwm_chip *to_puv3(struct pwm_chip *chip)
++{
++	return container_of(chip, struct puv3_pwm_chip, chip);
++}
++
++/*
++ * period_ns = 10^9 * (PRESCALE + 1) * (PV + 1) / PWM_CLK_RATE
++ * duty_ns   = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
++ */
++static int puv3_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			   int duty_ns, int period_ns)
++{
++	unsigned long period_cycles, prescale, pv, dc;
++	struct puv3_pwm_chip *puv3 = to_puv3(chip);
++	unsigned long long c;
++
++	c = clk_get_rate(puv3->clk);
++	c = c * period_ns;
++	do_div(c, 1000000000);
++	period_cycles = c;
++
++	if (period_cycles < 1)
++		period_cycles = 1;
++
++	prescale = (period_cycles - 1) / 1024;
++	pv = period_cycles / (prescale + 1) - 1;
++
++	if (prescale > 63)
++		return -EINVAL;
++
++	if (duty_ns == period_ns)
++		dc = OST_PWMDCCR_FDCYCLE;
++	else
++		dc = (pv + 1) * duty_ns / period_ns;
++
++	/*
++	 * NOTE: the clock to PWM has to be enabled first
++	 * before writing to the registers
++	 */
++	clk_prepare_enable(puv3->clk);
++
++	writel(prescale, puv3->base + OST_PWM_PWCR);
++	writel(pv - dc, puv3->base + OST_PWM_DCCR);
++	writel(pv, puv3->base + OST_PWM_PCR);
++
++	clk_disable_unprepare(puv3->clk);
++
++	return 0;
++}
++
++static int puv3_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct puv3_pwm_chip *puv3 = to_puv3(chip);
++
++	return clk_prepare_enable(puv3->clk);
++}
++
++static void puv3_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct puv3_pwm_chip *puv3 = to_puv3(chip);
++
++	clk_disable_unprepare(puv3->clk);
++}
++
++static const struct pwm_ops puv3_pwm_ops = {
++	.config = puv3_pwm_config,
++	.enable = puv3_pwm_enable,
++	.disable = puv3_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++static int __devinit pwm_probe(struct platform_device *pdev)
++{
++	struct puv3_pwm_chip *puv3;
++	struct resource *r;
++	int ret;
++
++	puv3 = devm_kzalloc(&pdev->dev, sizeof(*puv3), GFP_KERNEL);
++	if (puv3 == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	puv3->clk = devm_clk_get(&pdev->dev, "OST_CLK");
++	if (IS_ERR(puv3->clk))
++		return PTR_ERR(puv3->clk);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		return -ENODEV;
++	}
++
++	puv3->base = devm_request_and_ioremap(&pdev->dev, r);
++	if (puv3->base == NULL)
++		return -EADDRNOTAVAIL;
++
++	puv3->chip.dev = &pdev->dev;
++	puv3->chip.ops = &puv3_pwm_ops;
++	puv3->chip.base = -1;
++	puv3->chip.npwm = 1;
++
++	ret = pwmchip_add(&puv3->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, puv3);
++	return 0;
++}
++
++static int __devexit pwm_remove(struct platform_device *pdev)
++{
++	struct puv3_pwm_chip *puv3 = platform_get_drvdata(pdev);
++
++	return pwmchip_remove(&puv3->chip);
++}
++
++static struct platform_driver puv3_pwm_driver = {
++	.driver = {
++		.name = "PKUnity-v3-PWM",
++	},
++	.probe = pwm_probe,
++	.remove = __devexit_p(pwm_remove),
++};
++module_platform_driver(puv3_pwm_driver);
++
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.12
 
-One comment though, not sure if it is critical or not.
-
-> +static int lp8788_get_adc_result(struct lp8788_adc *adc, enum lp8788_adc_id id,
-> +				int *val)
-> +{
-> +	unsigned int msb;
-> +	unsigned int lsb;
-> +	unsigned int result;
-> +	u8 data;
-> +	u8 rawdata[2];
-> +	int size = ARRAY_SIZE(rawdata);
-> +	int retry = 5;
-> +	int ret;
-> +
-> +	data = (id << 1) | ADC_CONV_START;
-> +	ret = lp8788_write_byte(adc->lp, LP8788_ADC_CONF, data);
-> +	if (ret)
-> +		goto err_io;
-> +
-> +	/* retry until adc conversion is done */
-> +	data = 0;
-> +	while (retry--) {
-> +		usleep_range(100, 200);
-> +
-> +		ret = lp8788_read_byte(adc->lp, LP8788_ADC_DONE, &data);
-> +		if (ret)
-> +			goto err_io;
-> +
-> +		/* conversion done */
-> +		if (data)
-> +			break;
-
-Could as well go into the while header like this:
-    while (!data && retry--)
-
-> +	}
-> +
-
-You still sample the data, even if there was a timeout and ADC_DONE is not set.
-
-> +	ret = lp8788_read_multi_bytes(adc->lp, LP8788_ADC_RAW, rawdata, size);
-> +	if (ret)
-> +		goto err_io;
-> +
-> +	msb = (rawdata[0] << 4) & 0x00000ff0;
-> +	lsb = (rawdata[1] >> 4) & 0x0000000f;
-> +	result = msb | lsb;
-> +	*val = result;
-> +
-> +	return 0;
-> +
-> +err_io:
-> +	return ret;
-> +}
