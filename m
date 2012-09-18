@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab2IRPtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:49:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43037 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2IRPtU (ORCPT
+	id S1757915Ab2IRPwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 11:52:36 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44564 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab2IRPwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:49:20 -0400
-Date: Tue, 18 Sep 2012 17:49:14 +0200
+	Tue, 18 Sep 2012 11:52:34 -0400
 From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 11/19] ARM: ux500: Add all known I2C sub-device nodes to
- the HREF DT
-Message-ID: <20120918154909.GB11404@gmail.com>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
- <1347016499-29354-12-git-send-email-lee.jones@linaro.org>
- <CACRpkdY+t9MwWewtZzpD7i4eeTxVHNk+NxSZ1E=T-k4a0mveHg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdY+t9MwWewtZzpD7i4eeTxVHNk+NxSZ1E=T-k4a0mveHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/1] ARM: ux500: Fix SSP register address format
+Date: Tue, 18 Sep 2012 17:52:28 +0200
+Message-Id: <1347983548-15243-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 04:34:15AM -0700, Linus Walleij wrote:
-> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > Here we add the skeleton nodes for each of the known I2C sub-devices
-> > currently registered on ST-Ericsson's HREF Development Platform. We
-> > will fill these nodes in turn as the drivers are enabled for Device
-> > Tree.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Can't we have it the other way around (discussing patch ordering
-> with Arnd simultaneously), so you first add the DT support to the
-> subdevices, then add the more complete nodes to the device tree?
-> 
-> And if you put in a device tree like this, will these devices
-> not collide with the ones that are currently supplied from
-> the boardfiles? I'm a bit confused here, maybe I'm not smart
-> enough to understand this...
+SSP won't probe unless the specified register address format
+is correct i.e. we have to specify that the address is in hex.
+After this patch has been applied, the SSP (SPI) driver probes
+as expected.
 
-We finished this conversation about future ordering didn't we?
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/dbx5x0.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Would you mind reviewing the code in the patch please, as it's
-still missing your Ack, so can't send.
-
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 3708a6b..748ba7a 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -536,7 +536,7 @@
+ 
+ 		ssp@80002000 {
+ 			compatible = "arm,pl022", "arm,primecell";
+-			reg = <80002000 0x1000>;
++			reg = <0x80002000 0x1000>;
+ 			interrupts = <0 14 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
