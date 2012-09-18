@@ -1,44 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab2IRPqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:46:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45547 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab2IRPpy (ORCPT
+	id S1757671Ab2IRPsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 11:48:22 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:9977 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab2IRPsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:45:54 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] ARM: ux500: Remove redundant #gpio-cell properties from Snowball DT
-Date: Tue, 18 Sep 2012 17:45:22 +0200
-Message-Id: <1347983122-15174-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 18 Sep 2012 11:48:18 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGhi0PEj9t
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: KY Srinivasan <kys@microsoft.com>, Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH] ata_piix: reenable MS Virtual PC guests
+Date: Tue, 18 Sep 2012 17:48:01 +0200
+Message-Id: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This property has no place here as the populated node is not related
-to a GPIO controller.
+An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
+defer disks to the Hyper-V drivers by default") broke MS Virtual PC
+guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
+info. As a result the driver does currently ignore the emulated hardware
+in Virtual PC guests and defers the handling to hv_blkvsc. Since Virtual
+PC does not offer paravirtualized drivers no disks will be found in the
+guest.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/snowball.dts |    1 -
- 1 file changed, 1 deletion(-)
+One difference in the DMI info is the product version. This patch adds a
+match for MS Virtual PC 2007 and "unignores" the emulated hardware.
 
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index 2969997..702c0ba 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -127,7 +127,6 @@
- 			mmc-cap-mmc-highspeed;
- 			vmmc-supply = <&ab8500_ldo_aux3_reg>;
+This was reported for openSuSE 12.1 in bugzilla:
+https://bugzilla.novell.com/show_bug.cgi?id=737532
+
+Here is a detailed list of DMI info from example guests:
+
+hwinfo --bios:
+
+virtual pc guest:
+
+  System Info: #1
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "VS2005R2"
+    Serial: "3178-9905-1533-4840-9282-0569-59"
+    UUID: undefined, but settable
+    Wake-up: 0x06 (Power Switch)
+  Board Info: #2
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "5.0"
+    Serial: "3178-9905-1533-4840-9282-0569-59"
+  Chassis Info: #3
+    Manufacturer: "Microsoft Corporation"
+    Version: "5.0"
+    Serial: "3178-9905-1533-4840-9282-0569-59"
+    Asset Tag: "7188-3705-6309-9738-9645-0364-00"
+    Type: 0x03 (Desktop)
+    Bootup State: 0x03 (Safe)
+    Power Supply State: 0x03 (Safe)
+    Thermal State: 0x01 (Other)
+    Security Status: 0x01 (Other)
+
+win2k8 guest:
+
+  System Info: #1
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "7.0"
+    Serial: "9106-3420-9819-5495-1514-2075-48"
+    UUID: undefined, but settable
+    Wake-up: 0x06 (Power Switch)
+  Board Info: #2
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "7.0"
+    Serial: "9106-3420-9819-5495-1514-2075-48"
+  Chassis Info: #3
+    Manufacturer: "Microsoft Corporation"
+    Version: "7.0"
+    Serial: "9106-3420-9819-5495-1514-2075-48"
+    Asset Tag: "7076-9522-6699-1042-9501-1785-77"
+    Type: 0x03 (Desktop)
+    Bootup State: 0x03 (Safe)
+    Power Supply State: 0x03 (Safe)
+    Thermal State: 0x01 (Other)
+    Security Status: 0x01 (Other)
+
+win2k12 guest:
+
+  System Info: #1
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "7.0"
+    Serial: "8179-1954-0187-0085-3868-2270-14"
+    UUID: undefined, but settable
+    Wake-up: 0x06 (Power Switch)
+  Board Info: #2
+    Manufacturer: "Microsoft Corporation"
+    Product: "Virtual Machine"
+    Version: "7.0"
+    Serial: "8179-1954-0187-0085-3868-2270-14"
+  Chassis Info: #3
+    Manufacturer: "Microsoft Corporation"
+    Version: "7.0"
+    Serial: "8179-1954-0187-0085-3868-2270-14"
+    Asset Tag: "8374-0485-4557-6331-0620-5845-25"
+    Type: 0x03 (Desktop)
+    Bootup State: 0x03 (Safe)
+    Power Supply State: 0x03 (Safe)
+    Thermal State: 0x01 (Other)
+    Security Status: 0x01 (Other)
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index ef773e1..bec35f4 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -1585,12 +1585,31 @@ static void piix_ignore_devices_quirk(struct ata_host *host)
+ 		},
+ 		{ }	/* terminate list */
+ 	};
+-	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
++	static const struct dmi_system_id allow_virtual_pc[] = {
++		{
++			/* In MS Virtual PC guests the DMI ident is nearly
++			 * identical to a Hyper-V guest. One difference is the
++			 * product version which is used here to identify
++			 * a Virtual PC guest. This entry allows ata_piix to
++			 * drive the emulated hardware.
++			 */
++			.ident = "MS Virtual PC 2007",
++			.matches = {
++				DMI_MATCH(DMI_SYS_VENDOR,
++						"Microsoft Corporation"),
++				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
++				DMI_MATCH(DMI_PRODUCT_VERSION, "VS2005R2"),
++			},
++		},
++		{ }	/* terminate list */
++	};
++	const struct dmi_system_id *ignore = dmi_first_match(ignore_hyperv);
++	const struct dmi_system_id *allow = dmi_first_match(allow_virtual_pc);
  
--			#gpio-cells = <1>;
- 			cd-gpios  = <&gpio6 26 0x4>; // 218
- 			cd-inverted;
- 
+-	if (dmi && prefer_ms_hyperv) {
++	if (ignore && !allow && prefer_ms_hyperv) {
+ 		host->flags |= ATA_HOST_IGNORE_ATA;
+ 		dev_info(host->dev, "%s detected, ATA device ignore set\n",
+-			dmi->ident);
++			ignore->ident);
+ 	}
+ #endif
+ }
 -- 
-1.7.9.5
+1.7.12
 
