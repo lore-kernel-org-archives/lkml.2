@@ -1,158 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab2IRKKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 06:10:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5340 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757887Ab2IRKKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 06:10:41 -0400
-X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
-   d="scan'208";a="5864665"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, linux-numa@vger.kernel.org
-Cc: wency@cn.fujitsu.com, tangchen@cn.fujitsu.com
-Subject: [PATCH] Update sched_domains_numa_masks when new cpus are onlined.
-Date: Tue, 18 Sep 2012 18:12:08 +0800
-Message-Id: <1347963128-25942-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 18:10:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 18:10:48,
-	Serialize complete at 2012/09/18 18:10:48
+	id S1757930Ab2IRKK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:10:59 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58007 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915Ab2IRKK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 06:10:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120910230701.GA5898@quad>
+References: <20120910230701.GA5898@quad>
+Date: Tue, 18 Sep 2012 12:10:55 +0200
+Message-ID: <CABPqkBRRh7=r7pKEPRh8D35kf1fsPvZ1kCgHH-43iB8zYF1duQ@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: update Intel Ivy Bridge support
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once array sched_domains_numa_masks is defined, it is never updated.
-When a new cpu on a new node is onlined, the coincident member in
-sched_domains_numa_masks is not initialized, and all the masks are 0.
-As a result, the build_overlap_sched_groups() will initialize a NULL
-sched_group for the new cpu on the new node, which will lead to kernel panic.
+Any comment on this patch?
 
-[ 3189.403280] Call Trace:
-[ 3189.403286]  [<ffffffff8106c36f>] warn_slowpath_common+0x7f/0xc0
-[ 3189.403289]  [<ffffffff8106c3ca>] warn_slowpath_null+0x1a/0x20
-[ 3189.403292]  [<ffffffff810b1d57>] build_sched_domains+0x467/0x470
-[ 3189.403296]  [<ffffffff810b2067>] partition_sched_domains+0x307/0x510
-[ 3189.403299]  [<ffffffff810b1ea2>] ? partition_sched_domains+0x142/0x510
-[ 3189.403305]  [<ffffffff810fcc93>] cpuset_update_active_cpus+0x83/0x90
-[ 3189.403308]  [<ffffffff810b22a8>] cpuset_cpu_active+0x38/0x70
-[ 3189.403316]  [<ffffffff81674b87>] notifier_call_chain+0x67/0x150
-[ 3189.403320]  [<ffffffff81664647>] ? native_cpu_up+0x18a/0x1b5
-[ 3189.403328]  [<ffffffff810a044e>] __raw_notifier_call_chain+0xe/0x10
-[ 3189.403333]  [<ffffffff81070470>] __cpu_notify+0x20/0x40
-[ 3189.403337]  [<ffffffff8166663e>] _cpu_up+0xe9/0x131
-[ 3189.403340]  [<ffffffff81666761>] cpu_up+0xdb/0xee
-[ 3189.403348]  [<ffffffff8165667c>] store_online+0x9c/0xd0
-[ 3189.403355]  [<ffffffff81437640>] dev_attr_store+0x20/0x30
-[ 3189.403361]  [<ffffffff8124aa63>] sysfs_write_file+0xa3/0x100
-[ 3189.403368]  [<ffffffff811ccbe0>] vfs_write+0xd0/0x1a0
-[ 3189.403371]  [<ffffffff811ccdb4>] sys_write+0x54/0xa0
-[ 3189.403375]  [<ffffffff81679c69>] system_call_fastpath+0x16/0x1b
-[ 3189.403377] ---[ end trace 1e6cf85d0859c941 ]---
-[ 3189.403398] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
 
-This patch registers a new notifier for cpu hotplug notify chain, and
-updates sched_domains_numa_masks every time a new cpu is onlined or offlined.
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- kernel/sched/core.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fbf1fd0..66b36ab 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6711,6 +6711,14 @@ static void sched_init_numa(void)
- 	 * numbers.
- 	 */
- 
-+	/*
-+	 * Since sched_domains_numa_levels is also used in other functions as
-+	 * an index for sched_domains_numa_masks[][], we should reset it here in
-+	 * case sched_domains_numa_masks[][] fails to be initialized. And set it
-+	 * to 'level' when sched_domains_numa_masks[][] is fully initialized.
-+	 */
-+	sched_domains_numa_levels = 0;
-+
- 	sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
- 	if (!sched_domains_numa_masks)
- 		return;
-@@ -6765,11 +6773,64 @@ static void sched_init_numa(void)
- 	}
- 
- 	sched_domain_topology = tl;
-+
-+	sched_domains_numa_levels = level;
-+}
-+
-+static void sched_domains_numa_masks_set(int cpu)
-+{
-+	int i, j;
-+	int node = cpu_to_node(cpu);
-+
-+	for (i = 0; i < sched_domains_numa_levels; i++)
-+		for (j = 0; j < nr_node_ids; j++)
-+			if (node_distance(j, node) <= sched_domains_numa_distance[i])
-+				cpumask_set_cpu(cpu, sched_domains_numa_masks[i][j]);
-+}
-+
-+static void sched_domains_numa_masks_clear(int cpu)
-+{
-+	int i, j;
-+	for (i = 0; i < sched_domains_numa_levels; i++)
-+		for (j = 0; j < nr_node_ids; j++)
-+			cpumask_clear_cpu(cpu, sched_domains_numa_masks[i][j]);
-+}
-+
-+/*
-+ * Update sched_domains_numa_masks[level][node] array when new cpus
-+ * are onlined.
-+ */
-+static int sched_domains_numa_masks_update(struct notifier_block *nfb,
-+					   unsigned long action,
-+					   void *hcpu)
-+{
-+	int cpu = (int)hcpu;
-+
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_ONLINE:
-+		sched_domains_numa_masks_set(cpu);
-+		break;
-+
-+	case CPU_DEAD:
-+		sched_domains_numa_masks_clear(cpu);
-+		break;
-+
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+	return NOTIFY_OK;
- }
- #else
- static inline void sched_init_numa(void)
- {
- }
-+
-+static int sched_domains_numa_masks_update(struct notifier_block *nfb,
-+                                           unsigned long action,
-+                                           void *hcpu)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_NUMA */
- 
- static int __sdt_alloc(const struct cpumask *cpu_map)
-@@ -7218,6 +7279,7 @@ void __init sched_init_smp(void)
- 	mutex_unlock(&sched_domains_mutex);
- 	put_online_cpus();
- 
-+	hotcpu_notifier(sched_domains_numa_masks_update, CPU_PRI_SCHED_ACTIVE);
- 	hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
- 	hotcpu_notifier(cpuset_cpu_inactive, CPU_PRI_CPUSET_INACTIVE);
- 
--- 
-1.7.1
-
+On Tue, Sep 11, 2012 at 1:07 AM, Stephane Eranian <eranian@google.com> wrote:
+>
+> This patch updates the existing Intel IvyBridge (model 58)
+> support with proper PEBS event constraints. It cannot reuse
+> the same as SandyBridge because some events (0xd3) are
+> specific to IvyBridge.
+>
+> Also there is no UOPS_DISPATCHED.THREAD on IVB, so do not
+> populate the PERF_COUNT_HW_STALLED_CYCLES_BACKEND mapping.
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 6605a81..8b6defe 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -586,6 +586,8 @@ extern struct event_constraint intel_westmere_pebs_event_constraints[];
+>
+>  extern struct event_constraint intel_snb_pebs_event_constraints[];
+>
+> +extern struct event_constraint intel_ivb_pebs_event_constraints[];
+> +
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+>
+>  void intel_pmu_pebs_enable(struct perf_event *event);
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 0d3d63a..6bca492 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2048,7 +2048,6 @@ __init int intel_pmu_init(void)
+>         case 42: /* SandyBridge */
+>         case 45: /* SandyBridge, "Romely-EP" */
+>                 x86_add_quirk(intel_sandybridge_quirk);
+> -       case 58: /* IvyBridge */
+>                 memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+>                        sizeof(hw_cache_event_ids));
+>                 memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
+> @@ -2073,6 +2072,29 @@ __init int intel_pmu_init(void)
+>
+>                 pr_cont("SandyBridge events, ");
+>                 break;
+> +       case 58: /* IvyBridge */
+> +               memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+> +                      sizeof(hw_cache_event_ids));
+> +               memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
+> +                      sizeof(hw_cache_extra_regs));
+> +
+> +               intel_pmu_lbr_init_snb();
+> +
+> +               x86_pmu.event_constraints = intel_snb_event_constraints;
+> +               x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
+> +               x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+> +               x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               /* all extra regs are per-cpu when HT is on */
+> +               x86_pmu.er_flags |= ERF_HAS_RSP_1;
+> +               x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+> +
+> +               /* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+> +               intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+> +                       X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+> +
+> +               pr_cont("IvyBridge events, ");
+> +               break;
+> +
+>
+>         default:
+>                 switch (x86_pmu.version) {
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index e38d97b..826054a 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -407,6 +407,20 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> +struct event_constraint intel_ivb_pebs_event_constraints[] = {
+> +        INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> +        INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> +        INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> +        INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> +        INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> +        EVENT_CONSTRAINT_END
+> +};
+> +
+>  struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+>  {
+>         struct event_constraint *c;
