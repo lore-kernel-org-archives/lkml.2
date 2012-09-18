@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab2IRUyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 16:54:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64878 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2IRUyE (ORCPT
+	id S1755367Ab2IRVDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:03:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38028 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab2IRVDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 16:54:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120918102141.GB4118@daedalus.informatik.rwth-aachen.de>
-References: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
-	<20120626213958.GA17871@burratino>
-	<20120626215806.GM21479@carsten-otto>
-	<4FEABBFC.6090708@canonical.com>
-	<20120627221743.GC13738@burratino>
-	<20120918102141.GB4118@daedalus.informatik.rwth-aachen.de>
-Date: Tue, 18 Sep 2012 21:54:01 +0100
-X-Google-Sender-Auth: RW0QFVOpPeVBt1jyEf52f1YA69c
-Message-ID: <CAHR064hJPrp=2xdpcTMJuKtEJsrfQsJkKomjvN+Pkty9uUCEFQ@mail.gmail.com>
-Subject: Re: [PATCH] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
-From: Corentin Chary <corentincj@iksaif.net>
-To: Carsten Otto <otto@informatik.rwth-aachen.de>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Alex Hung <alex.hung@canonical.com>, corentincj@iksaif.net,
-        mjg@redhat.com, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        679158@bugs.debian.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Sep 2012 17:03:14 -0400
+Date: Tue, 18 Sep 2012 14:03:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, numa: reclaim from all nodes within reclaim
+ distance
+Message-Id: <20120918140313.236f7a66.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 18 Sep 2012 00:03:57 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-On Tue, Sep 18, 2012 at 11:21 AM, Carsten Otto
-<otto@informatik.rwth-aachen.de> wrote:
-> Dear all,
->
-> the patch seems to be integrated in 3.5.4 (current stable kernel). When
-> rebasing using git I see that the patch is not applied on top, most
-> likely because it was already included somewhere in the official stable
-> Linux itself.
+> RECLAIM_DISTANCE represents the distance between nodes at which it is
+> deemed too costly to allocate from; it's preferred to try to reclaim from
+> a local zone before falling back to allocating on a remote node with such
+> a distance.
+> 
+> To do this, zone_reclaim_mode is set if the distance between any two
+> nodes on the system is greather than this distance.  This, however, ends
+> up causing the page allocator to reclaim from every zone regardless of
+> its affinity.
+> 
+> What we really want is to reclaim only from zones that are closer than 
+> RECLAIM_DISTANCE.  This patch adds a nodemask to each node that
+> represents the set of nodes that are within this distance.  During the
+> zone iteration, if the bit for a zone's node is set for the local node,
+> then reclaim is attempted; otherwise, the zone is skipped.
 
-Easy workaround is to blacklist/remove asus-wmi (and/or
-eeepc-wmi/asus-nb-wmi). I think ubuntu guys are working on it, and
-since they seems to be working with Asus (and I'm not), it will be
-easier for them.
+Is this a theoretical thing, or does the patch have real observable
+effects?
 
-> As mentioned in the following Ubuntu bug report, this patch causes
-> problems (which I also observe).
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1041883
->
-> It takes me about 10 tries to successfully boot my system. In the
-> unsuccessful tries the screen is blanked shortly during the boot process
-> and nothing happens (the magic keys don't work, network access cannot be
-> tested that early).
->
-> Bye,
-> --
-> Carsten Otto           otto@informatik.rwth-aachen.de
-> LuFG Informatik 2      http://verify.rwth-aachen.de/otto/
-> RWTH Aachen            phone: +49 241 80-21211
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.12 (GNU/Linux)
->
-> iEYEARECAAYFAlBYSzUACgkQjUF4jpCSQBQpbgCfSUUvaZbs1krkcRKa8iTcyKxA
-> 7AQAn1NfXugZ5553+Z9LOB46lJqFcXt8
-> =avwS
-> -----END PGP SIGNATURE-----
->
+This change makes it more important that the arch code implements
+node_distance() accurately (wrt RECLAIM_DISTANCE), yes?  I wonder how
+much code screwed that up, and what the effects of such a screwup would
+be, and how arch maintainers would go about detecting then fixing such
+an error?
 
-
-
--- 
-Corentin Chary
-http://xf.iksaif.net
