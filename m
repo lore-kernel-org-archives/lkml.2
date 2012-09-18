@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab2IRJ5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:57:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46111 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab2IRJ5l (ORCPT
+	id S1757861Ab2IRKAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:00:05 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59459 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab2IRKAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:57:41 -0400
-Message-ID: <5058457E.9010706@kernel.dk>
-Date: Tue, 18 Sep 2012 11:57:18 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Tue, 18 Sep 2012 06:00:03 -0400
 MIME-Version: 1.0
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-CC: stephenmcameron@gmail.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
-        thenzl@redhat.com
-Subject: Re: [PATCH] cciss: fix handling of protocol error
-References: <20120914213510.12067.52801.stgit@beardog.cce.hp.com>
-In-Reply-To: <20120914213510.12067.52801.stgit@beardog.cce.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.116.118.250]
+In-Reply-To: <1346351174-28441-1-git-send-email-fernando.lugo@ti.com>
+References: <1346351174-28441-1-git-send-email-fernando.lugo@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 18 Sep 2012 12:59:42 +0300
+Message-ID: <CAK=WgbaoPMj9OobHuC=VObTjvT--faen2_rfY-s4Jk-+Fqi5iQ@mail.gmail.com>
+Subject: Re: [PATCHv2 0/3] remoteproc: introduce rproc recovery
+To: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 11:35 PM, Stephen M. Cameron wrote:
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> 
-> If a command completes with a status of CMD_PROTOCOL_ERR, this
-> information should be conveyed to the SCSI mid layer, not dropped
-> on the floor.  Unlike a similar bug in the hpsa driver, this bug
-> only affects tape drives and CD and DVD ROM drives in the cciss
-> driver, and to induce it, you have to disconnect (or damage) a
-> cable, so it is not a very likely scenario (which would explain
-> why the bug has gone undetected for the last 10 years.)
+Hi Fernando,
 
-Thanks Stephen, applied.
+On Thu, Aug 30, 2012 at 9:26 PM, Fernando Guzman Lugo
+<fernando.lugo@ti.com> wrote:
+> These set of patches make possible the remoteproc recover after a crash.
+> This is a hard recovery, that means the remoteproc is reset and it will
+> start from the beginning. When a crash happen all the virtio devices are
+> destroyed. Therefore, both rpmsg drivers and devices are gracefully
+> removed which also cause rproc users become 0 and the remoteproc is turned
+> off. After the virtio devices are destroyed the crash handler function
+> will read the virtio information from the firmware in order to recreate
+> the virtio devices that will boot the remoteproc and everything will be
+> functional again.
 
--- 
-Jens Axboe
+Applied to remoteproc's for-next branch with a few changes (so we
+don't miss the merge window).
 
+The changes are detailed in the commit logs of the patches, please let
+me know if there's any issue.
+
+Thanks!
+Ohad.
