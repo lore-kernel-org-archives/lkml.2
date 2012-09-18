@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab2IRQ6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 12:58:01 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:62153 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751326Ab2IRQ57 (ORCPT
+	id S1752330Ab2IRQ6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 12:58:22 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:65199 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2IRQ6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 12:57:59 -0400
-Date: Tue, 18 Sep 2012 16:57:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dave Jones <davej@redhat.com>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.orgB>
-Subject: Re: Taint kernel when we detect a corrupted slab.
-In-Reply-To: <20120918150543.GA14718@redhat.com>
-Message-ID: <00000139da509650-e5756e3f-f538-4735-afcd-c3c8ac9035b7-000000@email.amazonses.com>
-References: <20120918150543.GA14718@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Sep 2012 12:58:18 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+In-Reply-To: <CA+V-a8tNCjXKgfV9TtWroZ+FvFQFqmrVfczVxEmUkZt2pQL3RQ@mail.gmail.com>
+References: <1347986174-30287-1-git-send-email-peter.senna@gmail.com>
+	<1347986174-30287-2-git-send-email-peter.senna@gmail.com>
+	<CA+V-a8tNCjXKgfV9TtWroZ+FvFQFqmrVfczVxEmUkZt2pQL3RQ@mail.gmail.com>
+Date: Tue, 18 Sep 2012 18:58:16 +0200
+Message-ID: <CA+MoWDqWecdiVMn4JZDmXxxRL4Rtff7vUvohx61dUkAQOCK36w@mail.gmail.com>
+Subject: Re: [PATCH] arch/arm/mach-davinci/board-dm646x-evm.c: Remove unecessary
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: nsekhar@ti.com, khilman@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com, linux@arm.linux.org.uk,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Dave Jones wrote:
+> The commit message 'Remove unecessary' doesn't explain
+> what are you trying to do.
+Sorry for that. I'll resend it now.
 
-> It doesn't seem worth adding a new taint flag for this, so just re-use
-> the one from 'bad page'
-
-Acked-by: Christoph Lameter <cl@linux.com>
+-- 
+Peter
