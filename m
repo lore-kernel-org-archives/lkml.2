@@ -1,124 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757733Ab2IRNzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:55:21 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:37030 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752149Ab2IRNzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:55:17 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        devicetree-discuss@lists.ozlabs.org, aletes.xgr@gmail.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2] spi/pl022: Devicetree support w/o platform data
-Date: Tue, 18 Sep 2012 15:53:53 +0200
-Message-Id: <1347976433-1176-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1757905Ab2IRNzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:55:51 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34882 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757628Ab2IRNzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 09:55:49 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Vagin <avagin@openvz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf: teach perf inject to merge sched_stat_* and sched_switch events (v3)
+Date: Tue, 18 Sep 2012 17:56:25 +0400
+Message-Id: <1347976585-3816541-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even with devicetree support, we needed platform data to provide some data,
-leading to mixed device tree and platform data. This patch makes it possible to
-provide all that information via device tree. Now, the data must be provided
-via platform data _or_ device tree completely.
+You may want to know where and how long a task is sleeping. A callchain
+may be found in sched_switch and a time slice in stat_iowait, so I add
+handler in perf inject for merging this events.
 
-Only in case of DMA where a callback specification is necessary (dma_filter()),
-platform data is the only option.
+My code saves sched_switch event for each process and when it meets
+stat_iowait, it reports the sched_switch event, because this event
+contains a correct callchain. By another words it replaces all
+stat_iowait events on proper sched_switch events.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+v2: - remove the global variable "session"
+    - hadle errors from malloc()
 
+v3: - use sample->tid instead of sample->pid for merging events.
+
+    Frederic Weisbecker noticed that this code works only in a root pidns.
+    It's true, because a pid from trace content is not pid-namespace safe
+    and currently no way to get this pid in a current pidns. This problem
+    is more general, so I don't think that it should be solved in this series.
+
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>,
+Cc: Ingo Molnar <mingo@redhat.com
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
-Changes since v1:
-* Removed property pl022,bus-id: Set to -1 (auto) in DT case
-* Removed property pl022,enable-dma: Only useful in platform data (no OF node)
-  case, since dma_filter() callback only possible via platform data
+ tools/perf/Documentation/perf-inject.txt |    4 ++
+ tools/perf/builtin-inject.c              |   86 ++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
 
- Documentation/devicetree/bindings/spi/spi_pl022.txt |    7 +++
- drivers/spi/spi-pl022.c                             |   39 +++++++++++++++++---
- 2 files changed, 41 insertions(+), 5 deletions(-)
-
---- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi_pl022.txt
-+++ linux-2.6/Documentation/devicetree/bindings/spi/spi_pl022.txt
-@@ -10,6 +10,13 @@ Optional properties:
- - cs-gpios : should specify GPIOs used for chipselects.
-   The gpios will be referred to as reg = <index> in the SPI child nodes.
-   If unspecified, a single SPI device without a chip select can be used.
-+- pl022,autosuspend-delay : delay in ms following transfer completion before
-+			    the runtime power management system suspends the
-+			    device. A setting of 0 indicates no delay and the
-+                            device will be suspended immediately
-+- pl022,rt : indicates the controller should run the message pump with realtime
-+             priority to minimise the transfer latency on the bus (boolean)
-+
+diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
+index 6be2101..c04e0c6 100644
+--- a/tools/perf/Documentation/perf-inject.txt
++++ b/tools/perf/Documentation/perf-inject.txt
+@@ -35,6 +35,10 @@ OPTIONS
+ -o::
+ --output=::
+         Output file name. (default: stdout)
++-s::
++--sched-stat::
++	Merge sched_stat and sched_switch for getting events where and how long
++	tasks slept.
  
- SPI slave nodes must be children of the SPI master node and can
- contain the following properties.
---- linux-2.6.orig/drivers/spi/spi-pl022.c
-+++ linux-2.6/drivers/spi/spi-pl022.c
-@@ -2024,6 +2024,34 @@ static void pl022_cleanup(struct spi_dev
- 	kfree(chip);
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index ed12b19..1783f0a 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -8,11 +8,13 @@
+ #include "builtin.h"
+ 
+ #include "perf.h"
++#include "util/evsel.h"
+ #include "util/session.h"
+ #include "util/tool.h"
+ #include "util/debug.h"
+ 
+ #include "util/parse-options.h"
++#include "util/trace-event.h"
+ 
+ static const char	*input_name	= "-";
+ static const char	*output_name	= "-";
+@@ -21,6 +23,7 @@ static int		output;
+ static u64		bytes_written;
+ 
+ static bool		inject_build_ids;
++static bool		inject_sched_stat;
+ 
+ static int perf_event__repipe_synth(struct perf_tool *tool __used,
+ 				    union perf_event *event,
+@@ -213,6 +216,83 @@ repipe:
+ 	return 0;
  }
  
-+static struct pl022_ssp_controller *
-+pl022_platform_data_dt_get(struct device *dev)
++struct event_entry {
++	struct list_head node;
++	u32		 tid;
++	union perf_event event[0];
++};
++
++static LIST_HEAD(samples);
++
++static int perf_event__sched_stat(struct perf_tool *tool,
++				      union perf_event *event,
++				      struct perf_sample *sample,
++				      struct perf_evsel *evsel,
++				      struct machine *machine)
 +{
-+	struct device_node *np = dev->of_node;
-+	struct pl022_ssp_controller *pd;
-+	u32 tmp;
++	const char *evname = NULL;
++	uint32_t size;
++	struct event_entry *ent;
++	union perf_event *event_sw = NULL;
++	struct perf_sample sample_sw;
++	int sched_process_exit;
 +
-+	if (!np) {
-+		dev_err(dev, "no dt node defined\n");
-+		return NULL;
++	size = event->header.size;
++
++	evname = evsel->tp_format->name;
++
++	sched_process_exit = !strcmp(evname, "sched_process_exit");
++
++	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
++		list_for_each_entry(ent, &samples, node)
++			if (sample->tid == ent->tid)
++				break;
++
++		if (&ent->node != &samples) {
++			list_del(&ent->node);
++			free(ent);
++		}
++
++		if (sched_process_exit)
++			return 0;
++
++		ent = malloc(size + sizeof(struct event_entry));
++		if (ent == NULL)
++			die("malloc");
++		ent->tid = sample->tid;
++		memcpy(&ent->event, event, size);
++		list_add(&ent->node, &samples);
++		return 0;
++
++	} else if (!strncmp(evname, "sched_stat_", 11)) {
++		u32 pid;
++
++		pid = raw_field_value(evsel->tp_format,
++					"pid", sample->raw_data);
++
++		list_for_each_entry(ent, &samples, node) {
++			if (pid == ent->tid)
++				break;
++		}
++
++		if (&ent->node == &samples)
++			return 0;
++
++		event_sw = &ent->event[0];
++		perf_evsel__parse_sample(evsel, event_sw, &sample_sw, false);
++
++		sample_sw.period = sample->period;
++		sample_sw.time = sample->time;
++		perf_evsel__synthesize_sample(evsel, event_sw, &sample_sw, false);
++
++		perf_event__repipe(tool, event_sw, &sample_sw, machine);
++		return 0;
 +	}
 +
-+	pd = devm_kzalloc(dev, sizeof(struct pl022_ssp_controller), GFP_KERNEL);
-+	if (!pd) {
-+		dev_err(dev, "cannot allocate platform data memory\n");
-+		return NULL;
-+	}
++	perf_event__repipe(tool, event, sample, machine);
 +
-+	pd->bus_id = -1;
-+	of_property_read_u32(np, "num-cs", &tmp);
-+	pd->num_chipselect = tmp;
-+	of_property_read_u32(np, "pl022,autosuspend-delay",
-+			     &pd->autosuspend_delay);
-+	pd->rt = of_property_read_bool(np, "pl022,rt");
-+
-+	return pd;
++	return 0;
 +}
-+
- static int __devinit
- pl022_probe(struct amba_device *adev, const struct amba_id *id)
- {
-@@ -2036,18 +2064,19 @@ pl022_probe(struct amba_device *adev, co
- 
- 	dev_info(&adev->dev,
- 		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
--	if (platform_info == NULL) {
--		dev_err(&adev->dev, "probe - no platform data supplied\n");
-+	if (!platform_info && IS_ENABLED(CONFIG_OF))
-+		platform_info = pl022_platform_data_dt_get(dev);
-+
-+	if (!platform_info) {
-+		dev_err(dev, "probe: no platform data defined\n");
- 		status = -ENODEV;
- 		goto err_no_pdata;
+ struct perf_tool perf_inject = {
+ 	.sample		= perf_event__repipe_sample,
+ 	.mmap		= perf_event__repipe,
+@@ -248,6 +328,9 @@ static int __cmd_inject(void)
+ 		perf_inject.mmap	 = perf_event__repipe_mmap;
+ 		perf_inject.fork	 = perf_event__repipe_task;
+ 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
++	} else if (inject_sched_stat) {
++		perf_inject.sample	 = perf_event__sched_stat;
++		perf_inject.ordered_samples = true;
  	}
  
- 	if (platform_info->num_chipselect) {
- 		num_cs = platform_info->num_chipselect;
--	} else if (IS_ENABLED(CONFIG_OF)) {
--		of_property_read_u32(np, "num-cs", &num_cs);
- 	} else {
--		dev_err(&adev->dev, "probe: no chip select defined\n");
-+		dev_err(dev, "probe: no chip select defined\n");
- 		status = -ENODEV;
- 		goto err_no_pdata;
- 	}
+ 	session = perf_session__new(input_name, O_RDONLY, false, true, &perf_inject);
+@@ -275,6 +358,9 @@ static const char * const report_usage[] = {
+ static const struct option options[] = {
+ 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
+ 		    "Inject build-ids into the output stream"),
++	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
++		    "Merge sched-stat and sched-switch for getting events "
++		    "where and how long tasks slept"),
+ 	OPT_STRING('i', "input", &input_name, "file",
+ 		    "input file name"),
+ 	OPT_STRING('o', "output", &output_name, "file",
+-- 
+1.7.1
+
