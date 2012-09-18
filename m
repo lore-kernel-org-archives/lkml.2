@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab2IRTDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 15:03:55 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:42759 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754192Ab2IRTDu (ORCPT
+	id S1754209Ab2IRTIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 15:08:31 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60005 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab2IRTI3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 15:03:50 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH 5/5] snd-ice1712: Fix resume on ice1724
-Date: Tue, 18 Sep 2012 20:58:36 +0200
-Message-Id: <1347994716-10251-6-git-send-email-linux@rainbow-software.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1347994716-10251-1-git-send-email-linux@rainbow-software.org>
-References: <1347994716-10251-1-git-send-email-linux@rainbow-software.org>
+	Tue, 18 Sep 2012 15:08:29 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.118.250]
+In-Reply-To: <1347993165-4394-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1347993165-4394-1-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 18 Sep 2012 22:08:08 +0300
+Message-ID: <CAK=WgbZ+GYV2+EQEoteESgjZrZ3OPyQH008mA330pVeQLwu86Q@mail.gmail.com>
+Subject: Re: [PATCHv3] remtoteproc: Export notification id range
+To: sjur.brandeland@stericsson.com
+Cc: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_pro_rate() is called from hw_params() but not from prepare(), breaking running PCM on suspend/resume.
-Call it from prepare() if PCM was suspended to fix the problem.
+On Tue, Sep 18, 2012 at 9:32 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Some of the rproc drivers needs to know the range
+> of the notification IDs used for notifying the device.
+> Export a variable in struct rproc holding the
+> largest allocated notification id.
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- sound/pci/ice1712/ice1724.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
-index 0eb7ec6..ade3354 100644
---- a/sound/pci/ice1712/ice1724.c
-+++ b/sound/pci/ice1712/ice1724.c
-@@ -783,6 +783,13 @@ static int snd_vt1724_playback_pro_prepare(struct snd_pcm_substream *substream)
- 	struct snd_ice1712 *ice = snd_pcm_substream_chip(substream);
- 	unsigned char val;
- 	unsigned int size;
-+	int err;
-+
-+	if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
-+		err = snd_vt1724_set_pro_rate(ice, substream->runtime->rate, 0);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	spin_lock_irq(&ice->reg_lock);
- 	val = (8 - substream->runtime->channels) >> 1;
-@@ -853,6 +860,13 @@ static int snd_vt1724_pcm_prepare(struct snd_pcm_substream *substream)
- {
- 	struct snd_ice1712 *ice = snd_pcm_substream_chip(substream);
- 	const struct vt1724_pcm_reg *reg = substream->runtime->private_data;
-+	int err;
-+
-+	if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
-+		err = snd_vt1724_set_pro_rate(ice, substream->runtime->rate, 0);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	spin_lock_irq(&ice->reg_lock);
- 	outl(substream->runtime->dma_addr, ice->profi_port + reg->addr);
--- 
-Ondrej Zary
-
+Rebased and applied, thanks!
