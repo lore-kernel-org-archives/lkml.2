@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2IRI02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:26:28 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52924 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab2IRI0Z (ORCPT
+	id S1757232Ab2IRI3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:29:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34845 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab2IRI3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:26:25 -0400
-Message-ID: <50583027.3070502@linux.vnet.ibm.com>
-Date: Tue, 18 Sep 2012 16:26:15 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 18 Sep 2012 04:29:22 -0400
+Date: Tue, 18 Sep 2012 09:28:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Dan Williams <djbw@fb.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH v3 02/15] dmaengine: omap: Add support for pause/resume
+	in cyclic dma mode
+Message-ID: <20120918082843.GD12445@n2100.arm.linux.org.uk>
+References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com> <1347624358-25582-3-git-send-email-peter.ujfalusi@ti.com> <1347851637.1943.125.camel@vkoul-udesk3>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
-References: <5052FF61.3070600@linux.vnet.ibm.com> <5053000E.3050303@linux.vnet.ibm.com> <50530337.2080208@linux.vnet.ibm.com> <20120915153106.GC3037@amt.cnet>
-In-Reply-To: <20120915153106.GC3037@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091808-7014-0000-0000-000001E93629
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347851637.1943.125.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2012 11:31 PM, Marcelo Tosatti wrote:
-> On Fri, Sep 14, 2012 at 06:13:11PM +0800, Xiao Guangrong wrote:
->> On 09/14/2012 05:59 PM, Xiao Guangrong wrote:
->>
->>> +		return FNAME(prefetch_gpte)(vcpu, sp, spte, gptep[i], true);
->>
->> Sorry, this was wrong. Update this patch.
->>
->> [PATCH v2 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
->>
->> The only different thing between FNAME(update_pte) and FNAME(pte_prefetch)
->> is that the former is allowed to prefetch gfn from dirty logged slot, so
->> introduce a common function to prefetch spte
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> 
-> IMHO, for the human reader, the meaning of the two functions is
-> different and therefore separation is justified. Moreover they already
+On Mon, Sep 17, 2012 at 08:43:57AM +0530, Vinod Koul wrote:
+> On Fri, 2012-09-14 at 15:05 +0300, Peter Ujfalusi wrote:
+> > -       /* FIXME: not supported by platform private API */
+> > -       return -EINVAL;
+> > +       /* Pause/Resume only allowed with cyclic mode */
+> > +       if (!c->cyclic)
+> > +               return -EINVAL; 
+> This is not a dma restriction right?
 
-Actually, these two functions do the same things, both of them prefetch
-spte based on gpte. The only different is, in the case of update_pte, we
-have high opportunity that the spte can be accessed soon (that why it is
-allowed to prefetch dirty logged gfn).
-
-> share common code via FNAME(prefetch_invalid_gpte) (which BTW, is a
-> confusing name because the function does not prefetch gpte, it validates
-> gpte).
-
-I think it is not too bad for it not just validates gpte, it also can drop
-spte if the gpte is invalid, it is also the behaviour that modify spte based
-on gpte. ;)
-
+This is needed because this is not a real "pause" - it is a stop, which
+causes the contents of the DMA engine's FIFOs to be discarded - which
+means a subsequent resume will loose data.
