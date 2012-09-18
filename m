@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab2IRJKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:10:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:21218 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab2IRJKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:10:17 -0400
-X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
-   d="scan'208";a="5864391"
-Message-ID: <50583AF0.9050403@cn.fujitsu.com>
-Date: Tue, 18 Sep 2012 17:12:16 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756331Ab2IRJNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:13:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41308 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754392Ab2IRJNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:13:05 -0400
+Date: Tue, 18 Sep 2012 11:13:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, glommer@parallels.com, sachin.kamat@linaro.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] memcg: move mem_cgroup_is_root upwards (was Re: +
+ memcg-cleanup-kmem-tcp-ifdefs.patch added to -mm tree)
+Message-ID: <20120918091304.GA13936@dhcp22.suse.cz>
+References: <20120917222052.240CC200057@hpza10.eem.corp.google.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 3/5] rcu: Document SRCU dead-CPU capabilities,
- emphasize read-side limits
-References: <20120830184448.GA31753@linux.vnet.ibm.com> <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com> <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 17:10:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 17:10:33,
-	Serialize complete at 2012/09/18 17:10:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120917222052.240CC200057@hpza10.eem.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2012 02:45 AM, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The current documentation did not help someone grepping for SRCU to
-> learn that disabling preemption is not a replacement for srcu_read_lock(),
-> so upgrade the documentation to bring this out, not just for SRCU,
-> but also for RCU-bh.  Also document the fact that SRCU readers are
-> respected on CPUs executing in user mode, idle CPUs, and even on
-> offline CPUs.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Hi Andrew,
+could you add the patch bellow on top of memcg-cleanup-kmem-tcp-ifdefs.patch?
+They are not directly related (that's why I didn't post it as a series)
+but this one depend on the changed context (and it makes my old compiler much
+happier).
+---
+>From 3c18a5330f37a3bb2a622d63b1755dd4d8682fd3 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 14 Sep 2012 13:56:32 +0200
+Subject: [PATCH] memcg: move mem_cgroup_is_root upwards
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Good.  (Sorry, I'm late.)
+kmem code uses this function and it is better to not use forward
+declarations for static inline functions as some (older) compilers don't
+like it:
 
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+gcc version 4.3.4 [gcc-4_3-branch revision 152973] (SUSE Linux)
 
-> ---
->  Documentation/RCU/checklist.txt |    6 ++++++
->  Documentation/RCU/whatisRCU.txt |    9 +++++++--
->  2 files changed, 13 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
-> index fc103d7..cdb20d4 100644
-> --- a/Documentation/RCU/checklist.txt
-> +++ b/Documentation/RCU/checklist.txt
-> @@ -310,6 +310,12 @@ over a rather long period of time, but improvements are always welcome!
->  	code under the influence of preempt_disable(), you instead
->  	need to use synchronize_irq() or synchronize_sched().
->  
-> +	This same limitation also applies to synchronize_rcu_bh()
-> +	and synchronize_srcu(), as well as to the asynchronous and
-> +	expedited forms of the three primitives, namely call_rcu(),
-> +	call_rcu_bh(), call_srcu(), synchronize_rcu_expedited(),
-> +	synchronize_rcu_bh_expedited(), and synchronize_srcu_expedited().
-> +
->  12.	Any lock acquired by an RCU callback must be acquired elsewhere
->  	with softirq disabled, e.g., via spin_lock_irqsave(),
->  	spin_lock_bh(), etc.  Failing to disable irq on a given
-> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
-> index 69ee188..bf0f6de 100644
-> --- a/Documentation/RCU/whatisRCU.txt
-> +++ b/Documentation/RCU/whatisRCU.txt
-> @@ -873,7 +873,7 @@ d.	Do you need to treat NMI handlers, hardirq handlers,
->  	and code segments with preemption disabled (whether
->  	via preempt_disable(), local_irq_save(), local_bh_disable(),
->  	or some other mechanism) as if they were explicit RCU readers?
-> -	If so, you need RCU-sched.
-> +	If so, RCU-sched is the only choice that will work for you.
->  
->  e.	Do you need RCU grace periods to complete even in the face
->  	of softirq monopolization of one or more of the CPUs?  For
-> @@ -884,7 +884,12 @@ f.	Is your workload too update-intensive for normal use of
->  	RCU, but inappropriate for other synchronization mechanisms?
->  	If so, consider SLAB_DESTROY_BY_RCU.  But please be careful!
->  
-> -g.	Otherwise, use RCU.
-> +g.	Do you need read-side critical sections that are respected
-> +	even though they are in the middle of the idle loop, during
-> +	user-mode execution, or on an offlined CPU?  If so, SRCU is the
-> +	only choice that will work for you.
-> +
-> +h.	Otherwise, use RCU.
->  
->  Of course, this all assumes that you have determined that RCU is in fact
->  the right tool for your job.
+mm/memcontrol.c:421: warning: ‘mem_cgroup_is_root’ declared inline after being called
+mm/memcontrol.c:421: warning: previous declaration of ‘mem_cgroup_is_root’ was here
 
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index cf5cb0b..6005049 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -412,10 +412,14 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
+ 	return container_of(s, struct mem_cgroup, css);
+ }
+ 
++static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
++{
++	return (memcg == root_mem_cgroup);
++}
++
+ /* Writing them here to avoid exposing memcg's inner layout */
+ #if defined(CONFIG_INET) && defined(CONFIG_MEMCG_KMEM)
+ 
+-static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+ void sock_update_memcg(struct sock *sk)
+ {
+ 	if (mem_cgroup_sockets_enabled) {
+@@ -1011,11 +1015,6 @@ void mem_cgroup_iter_break(struct mem_cgroup *root,
+ 	     iter != NULL;				\
+ 	     iter = mem_cgroup_iter(NULL, iter, NULL))
+ 
+-static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+-{
+-	return (memcg == root_mem_cgroup);
+-}
+-
+ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ {
+ 	struct mem_cgroup *memcg;
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
