@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab2IRLpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:45:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40548 "EHLO
+	id S932873Ab2IRLpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:45:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40540 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab2IRLo5 (ORCPT
+	with ESMTP id S932828Ab2IRLoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:44:57 -0400
+	Tue, 18 Sep 2012 07:44:54 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv3 5/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 17:14:31 +0530
-Message-ID: <1347968672-10803-6-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv3 4/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 17:14:30 +0530
+Message-ID: <1347968672-10803-5-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347968672-10803-1-git-send-email-shubhrajyoti@ti.com>
 References: <1347968672-10803-1-git-send-email-shubhrajyoti@ti.com>
@@ -29,35 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/media/radio/saa7706h.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/media/i2c/msp3400-driver.c |   40 ++++++++++++++++++++++++++++++-----
+ 1 files changed, 34 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/radio/saa7706h.c b/drivers/media/radio/saa7706h.c
-index bb953ef..54db36c 100644
---- a/drivers/media/radio/saa7706h.c
-+++ b/drivers/media/radio/saa7706h.c
-@@ -199,8 +199,19 @@ static int saa7706h_get_reg16(struct v4l2_subdev *sd, u16 reg)
- 	u8 buf[2];
- 	int err;
- 	u8 regaddr[] = {reg >> 8, reg};
--	struct i2c_msg msg[] = { {client->addr, 0, sizeof(regaddr), regaddr},
--				{client->addr, I2C_M_RD, sizeof(buf), buf} };
-+	struct i2c_msg msg[] = {
-+					{
-+						.addr = client->addr,
-+						.len = sizeof(regaddr),
-+						.buf = regaddr
-+					},
-+					{
-+						.addr = client->addr,
-+						.flags = I2C_M_RD,
-+						.len = sizeof(buf),
-+						.buf = buf
-+					}
-+				};
+diff --git a/drivers/media/i2c/msp3400-driver.c b/drivers/media/i2c/msp3400-driver.c
+index aeb22be..766305f 100644
+--- a/drivers/media/i2c/msp3400-driver.c
++++ b/drivers/media/i2c/msp3400-driver.c
+@@ -119,12 +119,31 @@ int msp_reset(struct i2c_client *client)
+ 	static u8 write[3]     = { I2C_MSP_DSP + 1, 0x00, 0x1e };
+ 	u8 read[2];
+ 	struct i2c_msg reset[2] = {
+-		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_off },
+-		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_on  },
++		{
++			.addr = client->addr,
++			.flags = I2C_M_IGNORE_NAK,
++			.len = 3,
++			.buf = reset_off
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_IGNORE_NAK,
++			.len = 3,
++			.buf = reset_on
++		},
+ 	};
+ 	struct i2c_msg test[2] = {
+-		{ client->addr, 0,        3, write },
+-		{ client->addr, I2C_M_RD, 2, read  },
++		{
++			.addr = client->addr,
++			.len = 3,
++			.buf = write
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 2,
++			.buf = read
++		},
+ 	};
  
- 	err = saa7706h_i2c_transfer(client, msg, ARRAY_SIZE(msg));
- 	if (err)
+ 	v4l_dbg(3, msp_debug, client, "msp_reset\n");
+@@ -143,8 +162,17 @@ static int msp_read(struct i2c_client *client, int dev, int addr)
+ 	u8 write[3];
+ 	u8 read[2];
+ 	struct i2c_msg msgs[2] = {
+-		{ client->addr, 0,        3, write },
+-		{ client->addr, I2C_M_RD, 2, read  }
++		{
++			.addr = client->addr,
++			.len = 3,
++			.buf = write
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 2,
++			.buf = read
++		}
+ 	};
+ 
+ 	write[0] = dev + 1;
 -- 
 1.7.5.4
 
