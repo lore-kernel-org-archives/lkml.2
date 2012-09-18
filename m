@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab2IRJI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:08:28 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58700 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2IRJI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:08:26 -0400
+	id S1756347Ab2IRJKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:10:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21218 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754092Ab2IRJKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:10:17 -0400
+X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
+   d="scan'208";a="5864391"
+Message-ID: <50583AF0.9050403@cn.fujitsu.com>
+Date: Tue, 18 Sep 2012 17:12:16 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A1820D5@SHSMSX101.ccr.corp.intel.com>
-References: <1347972841.4312.2.camel@cliu38-desktop-build>
-	<CAK7N6vqKp0Tcdr0CP4grq12C8-Oe05+uCEyos=mLMitwpet+Zw@mail.gmail.com>
-	<27240C0AC20F114CBF8149A2696CBE4A181E13@SHSMSX101.ccr.corp.intel.com>
-	<CAK7N6vosWH8HoWCyw_jjubL3CRYr-VRdxi1o9WevXd=stSQkcw@mail.gmail.com>
-	<27240C0AC20F114CBF8149A2696CBE4A1820D5@SHSMSX101.ccr.corp.intel.com>
-Date: Tue, 18 Sep 2012 14:38:26 +0530
-Message-ID: <CAK7N6vqxnKbzm=iepjtOq0bZQhkFBjsWe6qhWnqOJtGxgKrT9w@mail.gmail.com>
-Subject: Re: [PATCH] genirq: Add the IRQS_ONESHOT support for edge interrupt
-From: anish singh <anish198519851985@gmail.com>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 3/5] rcu: Document SRCU dead-CPU capabilities,
+ emphasize read-side limits
+References: <20120830184448.GA31753@linux.vnet.ibm.com> <1346352312-31987-1-git-send-email-paulmck@linux.vnet.ibm.com> <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1346352312-31987-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:10:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:10:33,
+	Serialize complete at 2012/09/18 17:10:33
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 12:51 PM, Liu, Chuansheng
-<chuansheng.liu@intel.com> wrote:
->> This comment might help.
->> kernel/irq/manage.c
->>
->>     } else if (new->handler == irq_default_primary_handler) {
->>
->>         /*
->>          * The interrupt was requested with handler = NULL, so
->>          * we use the default primary handler for it. But it
->>          * does not have the oneshot flag set. In combination
->>          * with level interrupts this is deadly, because the
->>          * default primary handler just wakes the thread, then
->>          * the irq lines is reenabled, but the device still
->>          * has the level irq asserted. Rinse and repeat....
->>          *
->>          * While this works for edge type interrupts, we play
->>          * it safe and reject unconditionally because we can't
->>          * say for sure which type this interrupt really
->>          * has. The type flags are unreliable as the
->>          * underlying chip implementation can override them.
->>          */
->
-> This is not my case. My request_irq is as below:
-> request_threaded_irq(drv_data->irq,
->                                           func1,
->                                           func2,
->                                           IRQF_SHARED|IRQS_ONESHOT ,
->                                           "AAAA",
->                                           drv_data);
+On 08/31/2012 02:45 AM, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The current documentation did not help someone grepping for SRCU to
+> learn that disabling preemption is not a replacement for srcu_read_lock(),
+> so upgrade the documentation to bring this out, not just for SRCU,
+> but also for RCU-bh.  Also document the fact that SRCU readers are
+> respected on CPUs executing in user mode, idle CPUs, and even on
+> offline CPUs.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-I hope you are disabling the interrupt in your primary handler and returning
-IRQ_WAKE_THREAD.
-If yes then someone with experience in this interrupt handling code
-can help you.
+Good.  (Sorry, I'm late.)
+
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+> ---
+>  Documentation/RCU/checklist.txt |    6 ++++++
+>  Documentation/RCU/whatisRCU.txt |    9 +++++++--
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/RCU/checklist.txt b/Documentation/RCU/checklist.txt
+> index fc103d7..cdb20d4 100644
+> --- a/Documentation/RCU/checklist.txt
+> +++ b/Documentation/RCU/checklist.txt
+> @@ -310,6 +310,12 @@ over a rather long period of time, but improvements are always welcome!
+>  	code under the influence of preempt_disable(), you instead
+>  	need to use synchronize_irq() or synchronize_sched().
+>  
+> +	This same limitation also applies to synchronize_rcu_bh()
+> +	and synchronize_srcu(), as well as to the asynchronous and
+> +	expedited forms of the three primitives, namely call_rcu(),
+> +	call_rcu_bh(), call_srcu(), synchronize_rcu_expedited(),
+> +	synchronize_rcu_bh_expedited(), and synchronize_srcu_expedited().
+> +
+>  12.	Any lock acquired by an RCU callback must be acquired elsewhere
+>  	with softirq disabled, e.g., via spin_lock_irqsave(),
+>  	spin_lock_bh(), etc.  Failing to disable irq on a given
+> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
+> index 69ee188..bf0f6de 100644
+> --- a/Documentation/RCU/whatisRCU.txt
+> +++ b/Documentation/RCU/whatisRCU.txt
+> @@ -873,7 +873,7 @@ d.	Do you need to treat NMI handlers, hardirq handlers,
+>  	and code segments with preemption disabled (whether
+>  	via preempt_disable(), local_irq_save(), local_bh_disable(),
+>  	or some other mechanism) as if they were explicit RCU readers?
+> -	If so, you need RCU-sched.
+> +	If so, RCU-sched is the only choice that will work for you.
+>  
+>  e.	Do you need RCU grace periods to complete even in the face
+>  	of softirq monopolization of one or more of the CPUs?  For
+> @@ -884,7 +884,12 @@ f.	Is your workload too update-intensive for normal use of
+>  	RCU, but inappropriate for other synchronization mechanisms?
+>  	If so, consider SLAB_DESTROY_BY_RCU.  But please be careful!
+>  
+> -g.	Otherwise, use RCU.
+> +g.	Do you need read-side critical sections that are respected
+> +	even though they are in the middle of the idle loop, during
+> +	user-mode execution, or on an offlined CPU?  If so, SRCU is the
+> +	only choice that will work for you.
+> +
+> +h.	Otherwise, use RCU.
+>  
+>  Of course, this all assumes that you have determined that RCU is in fact
+>  the right tool for your job.
+
