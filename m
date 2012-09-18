@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2IRIY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:24:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52435 "EHLO
+	id S1757401Ab2IRIYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:24:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50677 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab2IRIYN (ORCPT
+	with ESMTP id S1753810Ab2IRIYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Sep 2012 04:24:13 -0400
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Qin Rui <qinrui@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/5] unicore32: pwm: Use managed resource allocations
-Date: Tue, 18 Sep 2012 10:23:52 +0200
-Message-Id: <1347956633-15667-5-git-send-email-thierry.reding@avionic-design.de>
+Subject: [PATCH v2 2/5] unicore32: pwm: Use module_platform_driver()
+Date: Tue, 18 Sep 2012 10:23:50 +0200
+Message-Id: <1347956633-15667-3-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
 References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:pwHU16HPcQxMngHQvb4x5vJJW4DMVA+TUsqXTkCYIF0
- pV4YwDohiTzeYAST7RR+3/zp0vbuuRsJfsPqKkCU5z6POXOPIB
- PtO6IiFo7g5EhP1KoeEh/QISVDLPabnu+Lieg4s7QMmln9UNZ0
- CPhQNaxVBZMN26wNxrjHJj8zv26+p9f1xw4PdmZKCvV0yK5xxl
- xqlnLtx/LaexJJWKDZZpoaSx61VYxywvNYy3PbdDa+Bcw5m5fe
- owkSgG6yKDk5QiUcE2mGeyIe8INhqMNQq1voDSkgPu7sg+kJkQ
- iPWQ3Ei/eT1y9K59Eu8wt8lrBAMn5cV916fZyt2N3uOpN7eoW5
- 0zb+8EIqg9/T72NBd8fh3+0bMuQ+7Y7PrOFNV3OyW1WqPt+cKZ
- IcF3Sxd6ycqjIaQnikOMgGVZ4WbarGf5j2ieCPZmutm64nf133
- mUWob
+X-Provags-ID: V02:K0:U/Ln3rQ+nNz69qPat4dm+1kkJr5U0tZVOssoqyFTXOd
+ eDEEUzvz/7SC62+PEAij8SnC2FtQIfm5e34YcRPXbxl79/8jQ3
+ KM0nmpmqPCFmOjQP7sLZhN1xhlvCbn/MpIsXZaYM++fqoloiLN
+ zkU/PTVTXcoX5Gmg9wSPypXFHGiCVpoGSPUr9U2YMKip6owgGn
+ QdcAJDm8UvMVZL4+3crHuHopi6yq69xEz9ht4LpSqhGG0vBnE8
+ ocEK2k7imNvv30oEWipk2g29PyCllWruc7peCe8qarHpKgNIWx
+ d4ibe4Bqny2zLRAYvE9TJZWv19EL5rn9twi0xOeR8vr1IErCsQ
+ 6GwRExRiUw3bCQSiUVTGHYVYUXFir7ib4q6agmR//2C+0+L+Z9
+ C3g51k3YbY7a17uFE1dvMNskRSEKbXgUZSIGWWlnfoJFXygUQp
+ 0wtYO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit uses the managed resource allocation functions to simplify
-the cleanup paths on error and removal.
+Some of the boilerplate code can be eliminated by using this macro. The
+driver was previously registered with an arch_initcall(), so technically
+this is no longer the same, but when the driver is moved to the PWM
+framework, deferred probing will take care of any driver probe ordering
+issues.
 
 Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- arch/unicore32/kernel/pwm.c | 47 +++++++++------------------------------------
- 1 file changed, 9 insertions(+), 38 deletions(-)
+ arch/unicore32/kernel/pwm.c | 21 +--------------------
+ 1 file changed, 1 insertion(+), 20 deletions(-)
 
 diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
-index 7e23470..724e860 100644
+index 885bbcd..012c54a 100644
 --- a/arch/unicore32/kernel/pwm.c
 +++ b/arch/unicore32/kernel/pwm.c
-@@ -160,19 +160,17 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- {
- 	struct pwm_device *pwm;
- 	struct resource *r;
+@@ -254,25 +254,6 @@ static struct platform_driver puv3_pwm_driver = {
+ 	.probe		= puv3_pwm_probe,
+ 	.remove		= __devexit_p(pwm_remove),
+ };
+-
+-static int __init pwm_init(void)
+-{
 -	int ret = 0;
- 
--	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(struct pwm_device), GFP_KERNEL);
- 	if (pwm == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
- 		return -ENOMEM;
- 	}
- 
--	pwm->clk = clk_get(NULL, "OST_CLK");
--	if (IS_ERR(pwm->clk)) {
--		ret = PTR_ERR(pwm->clk);
--		goto err_free;
--	}
-+	pwm->clk = devm_clk_get(&pdev->dev, "OST_CLK");
-+	if (IS_ERR(pwm->clk))
-+		return PTR_ERR(pwm->clk);
-+
- 	pwm->clk_enabled = 0;
- 
- 	pwm->use_count = 0;
-@@ -182,41 +180,21 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
- 		dev_err(&pdev->dev, "no memory resource defined\n");
--		ret = -ENODEV;
--		goto err_free_clk;
+-
+-	ret = platform_driver_register(&puv3_pwm_driver);
+-	if (ret) {
+-		printk(KERN_ERR "failed to register puv3_pwm_driver\n");
+-		return ret;
 -	}
 -
--	r = request_mem_region(r->start, resource_size(r), pdev->name);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "failed to request memory resource\n");
--		ret = -EBUSY;
--		goto err_free_clk;
-+		return -ENODEV;
- 	}
- 
--	pwm->base = ioremap_nocache(r->start, resource_size(r));
--	if (pwm->base == NULL) {
--		dev_err(&pdev->dev, "failed to remap memory resource\n");
--		ret = -EADDRNOTAVAIL;
--		goto err_release_mem;
--	}
-+	pwm->base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (pwm->base == NULL)
-+		return -EADDRNOTAVAIL;
- 
- 	__add_pwm(pwm);
- 	platform_set_drvdata(pdev, pwm);
- 	return 0;
--
--err_release_mem:
--	release_mem_region(r->start, resource_size(r));
--err_free_clk:
--	clk_put(pwm->clk);
--err_free:
--	kfree(pwm);
 -	return ret;
- }
- 
- static int __devexit pwm_remove(struct platform_device *pdev)
- {
- 	struct pwm_device *pwm;
--	struct resource *r;
- 
- 	pwm = platform_get_drvdata(pdev);
- 	if (pwm == NULL)
-@@ -226,13 +204,6 @@ static int __devexit pwm_remove(struct platform_device *pdev)
- 	list_del(&pwm->node);
- 	mutex_unlock(&pwm_lock);
- 
--	iounmap(pwm->base);
+-}
+-arch_initcall(pwm_init);
 -
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(r->start, resource_size(r));
--
--	clk_put(pwm->clk);
--	kfree(pwm);
- 	return 0;
- }
+-static void __exit pwm_exit(void)
+-{
+-	platform_driver_unregister(&puv3_pwm_driver);
+-}
+-module_exit(pwm_exit);
++module_platform_driver(puv3_pwm_driver);
  
+ MODULE_LICENSE("GPL v2");
 -- 
 1.7.12
 
