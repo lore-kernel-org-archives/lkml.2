@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2IQP0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 11:26:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40020 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2IQP0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 11:26:44 -0400
-Message-ID: <5057412B.6040402@gmail.com>
-Date: Mon, 17 Sep 2012 23:26:35 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S932159Ab2IQP1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 11:27:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60790 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932093Ab2IQP1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 11:27:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,437,1344236400"; 
+   d="scan'208";a="223056392"
+Date: Mon, 17 Sep 2012 23:30:20 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, arjan@linux.intel.com, lenb@kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH V2 0/3] x86,idle: Enhance cpuidle prediction to handle
+	its failure
+Message-ID: <20120918033020.GA20862@linux-youquan.bj.intel.com>
+References: <1347933209-25939-1-git-send-email-youquan.song@intel.com> <50573934.4030102@linaro.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3] ACPI/pci-bind: remove bind/unbind callbacks from acpi_device_ops
-References: <CAE9FiQWBYmRj5--pg8eAwH_RKZsCWo+CVGN_KpeGXeE_3cSq9g@mail.gmail.com> <1347804577-23015-1-git-send-email-jiang.liu@huawei.com> <CAE9FiQUC9OyPQYDTC1xR45qd1an63H13LBKGaPueqihwq=yhSw@mail.gmail.com> <CAE9FiQU4tNDot3J9EEwhd=YUfTSoojtreb2JFVn-=KUsq=W+ow@mail.gmail.com>
-In-Reply-To: <CAE9FiQU4tNDot3J9EEwhd=YUfTSoojtreb2JFVn-=KUsq=W+ow@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50573934.4030102@linaro.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 02:02 AM, Yinghai Lu wrote:
-> On Sun, Sep 16, 2012 at 9:49 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Sun, Sep 16, 2012 at 7:09 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> @@ -160,10 +160,13 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
->>>         }
->>>         dev->archdata.acpi_handle = handle;
->>>
->>> -       acpi_pci_bind_notify(dev->archdata.acpi_handle, dev, true);
->>> -
->>>         status = acpi_bus_get_device(handle, &acpi_dev);
->>> -       if (!ACPI_FAILURE(status)) {
->>> +       if (!ACPI_FAILURE(status))
->>> +               acpi_dev = NULL;
->>> +
->>> +       acpi_pci_bind_notify(dev->archdata.acpi_handle, acpi_dev, dev, true);
->>
->> It seems you can do
->>     acpi_pci_bind_notify(acpi_dev, dev, true);
->> instead.
->>
->> aka:
->> Do you have test case acpi_dev is not created before pci device?
->>
+> > One case is turbostat utility (tools/power/x86/turbostat) at kernel 3.3 or early
+> > . turbostat utility will read 10 registers one by one at Sandybridge, so it will
+> > generate 10 IPIs to wake up idle CPUs. So cpuidle menu governor will predict it
+> >  is repeat mode and there is another IPI wake up idle CPU soon, so it keeps idle
+> >  CPU stay at C1 state even though CPU is totally idle. However, in the turbostat
+> > , following 10 registers reading is sleep 5 seconds by default, so the idle CPU
+> >  will keep at C1 for a long time though it is idle until break event occurs.
+> > In a idle Sandybridge system, run "./turbostat -v", we will notice that deep 
+> > C-state dangles between "70% ~ 99%". After patched the kernel, we will notice
+> > deep C-state stays at >99.98%.
 > 
-> updated your patch, and retrieve handle if needed from acpi_dev->handle or
-> pci_dev->dev.archdata.acpi_handle.
-Hi Yinghai,
-	Thanks for your review. I have made some changes to the attached patch
-to better support bisect. But the final result should be the same.
-	--Gerry
+> Is there an impact on performances ?
 
-> 
-> Thanks
-> 
-> Yinghai
-> 
+In this case, turbostat is utility to measure cpu idle status and itself
+also is a workload to system. Its purpose is that show cpu C-state
+information every 5 seconds. After patched the kernel, it also does
+the same thing as usual. So I think the performance has no/little impact.
 
+I do not find performance impact in my tests. If you performance impact cases or
+suggestions, I will be very glad to try. 
+
+Thanks
+-Youquan
