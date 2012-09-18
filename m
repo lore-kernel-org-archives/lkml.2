@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab2IRMDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:03:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64617 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab2IRMD3 (ORCPT
+	id S932876Ab2IRMIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:08:19 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63603 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932801Ab2IRMIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:03:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1347901159-3665-1-git-send-email-stigge@antcom.de>
-References: <1347901159-3665-1-git-send-email-stigge@antcom.de>
-Date: Tue, 18 Sep 2012 14:03:28 +0200
-Message-ID: <CACRpkdbRQsLWT=xocPTQnLVU34MGSX6XgZ+-f3w-hOetzwnbuw@mail.gmail.com>
-Subject: Re: [PATCH] spi/pl022: Devicetree support w/o platform data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: lee.jones@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Sep 2012 08:08:16 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: FlorianSchandinat@gmx.de, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 08/10] drivers/video/cyber2000fb.c: fix error return code
+Date: Tue, 18 Sep 2012 14:07:58 +0200
+Message-Id: <1347970080-25175-8-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
+References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 6:59 PM, Roland Stigge <stigge@antcom.de> wrote:
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-> Even with devicetree support, we needed platform data to provide some data like
-> bus_id and enable_dma, leading to mixed device tree and platform data. This
-> patch makes it possible to provide all that information via device tree. Now,
-> the data must be provided via platform data _or_ device tree completely.
->
-> Only in case of callback specification (dma_filter()), platform data is
-> necessary.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-This looks good so:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-But I think you need to page Mark Brown so it
-gets picked to the stuff queued for the next merge window.
-I think the dependent patch is in his SPI tree.
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
 
-So I'd resend it to mark+grant with my ACK.
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ drivers/video/cyber2000fb.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/video/cyber2000fb.c b/drivers/video/cyber2000fb.c
+index c1527f5..e40125c 100644
+--- a/drivers/video/cyber2000fb.c
++++ b/drivers/video/cyber2000fb.c
+@@ -1804,8 +1804,10 @@ cyberpro_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 
+ 	cfb->irq = dev->irq;
+ 	cfb->region = pci_ioremap_bar(dev, 0);
+-	if (!cfb->region)
++	if (!cfb->region) {
++		err = -ENOMEM;
+ 		goto failed_ioremap;
++	}
+ 
+ 	cfb->regs = cfb->region + MMIO_OFFSET;
+ 	cfb->fb.device = &dev->dev;
+-- 
+1.7.11.4
+
