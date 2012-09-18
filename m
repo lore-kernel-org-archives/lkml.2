@@ -1,123 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2IRCY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 22:24:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46925 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2IRCY5 (ORCPT
+	id S932428Ab2IRC0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 22:26:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43209 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2IRC0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 22:24:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120917213009.GH13691@dastard>
-References: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
-	<20120917213009.GH13691@dastard>
-Date: Tue, 18 Sep 2012 10:24:55 +0800
-Message-ID: <CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
-Subject: Re: [RFC v1 00/11] vfs: hot data tracking
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Sep 2012 22:26:16 -0400
+Date: Tue, 18 Sep 2012 12:26:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: linux-next: manual merge of the sound-asoc tree with the v4l-dvb
+ tree
+Message-Id: <20120918122604.be2d46aa6616f308f756ef4d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Sep_2012_12_26_04_+1000_KW6bjVagwGAobpUN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 5:30 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Mon, Sep 17, 2012 at 03:18:34PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> NOTE:
->>
->>   The patchset is currently post out mainly to make sure
->> it is going in the correct direction and hope to get some
->> helpful comments from other guys.
->>
->> TODO List:
->>
->>  1.) Need to do scalability or performance tests.
->>  2.) Turn some Micro into tunables
->>        TIME_TO_KICK, and HEAT_UPDATE_DELAY
->>  3.) Rafactor hot_hash_is_aging()
->>        If you just made the timeout value a timespec and compared
->>      the _timespecs_, you would be doing a lot fewer conversions.
->>  4.) Cleanup some unnecessary lock protect
->>  5.) Add more comments to explain how to calc temperature
->
-> 0) Documentation.
->
->> Zhi Yong Wu (11):
->>   vfs: introduce one structure hot_info
->>   vfs: introduce one rb tree - hot_inode_tree
->>   vfs: introduce 2 rb tree items - inode and range
->
-> These three patches can probably just be flattened into one.
-> Splitting out the first two doesn't add to the clarity of the
-> series - add the structures in the patch that actually uses them
-> so we don't ahve to jump between patches to see how they are used.
-It make sense to me, OK, thanks.
->
->>   vfs: add support for updating access frequency
->>   vfs: add one new mount option '-o hottrack'
->>   vfs: add init and exit support
->>   vfs: introduce one hash table
->>   vfs: enable hot data tracking
->>   vfs: fork one private kthread to update temperature info
->>   vfs: add 3 new ioctl interfaces
->>   vfs: add debugfs support
->>
->>  fs/Makefile               |    3 +-
->>  fs/compat_ioctl.c         |    8 +
->>  fs/dcache.c               |    2 +
->>  fs/direct-io.c            |   10 +
->>  fs/hot_debugfs.c          |  487 ++++++++++++++++++++++++++++++++++
->>  fs/hot_debugfs.h          |   60 +++++
->>  fs/hot_hash.c             |  369 ++++++++++++++++++++++++++
->>  fs/hot_hash.h             |  108 ++++++++
->>  fs/hot_rb.c               |  648 +++++++++++++++++++++++++++++++++++++++++++++
->>  fs/hot_rb.h               |   70 +++++
->>  fs/hot_track.c            |  113 ++++++++
->>  fs/hot_track.h            |   23 ++
->>  fs/ioctl.c                |  132 +++++++++
->>  fs/namespace.c            |   10 +
->>  fs/super.c                |   11 +
->>  include/linux/fs.h        |   15 +
->>  include/linux/hot_track.h |  169 ++++++++++++
->>  mm/filemap.c              |    8 +
->>  mm/page-writeback.c       |   21 ++
->>  mm/readahead.c            |    9 +
->>  20 files changed, 2275 insertions(+), 1 deletions(-)
->>  create mode 100644 fs/hot_debugfs.c
->>  create mode 100644 fs/hot_debugfs.h
->>  create mode 100644 fs/hot_hash.c
->>  create mode 100644 fs/hot_hash.h
->>  create mode 100644 fs/hot_rb.c
->>  create mode 100644 fs/hot_rb.h
->>  create mode 100644 fs/hot_track.c
->>  create mode 100644 fs/hot_track.h
->>  create mode 100644 include/linux/hot_track.h
->
-> So, 9 new files for tracking all of this? I'm not sure that so
-> many new files are needed - putting it all in fs/hot_tracking.[ch]
-> might make more sense, or if all 8 fs/hot* files remain, putting
-> them in their own subdirectory might be an idea (like quota).
-If all functions are in two files, they will be large and the logic is
-not so clear. so i prefer the latter. thanks.
->
-> I'll comment on the code when I get a bit of time to look at it.
-Great, very look forward to your more comments.
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+--Signature=_Tue__18_Sep_2012_12_26_04_+1000_KW6bjVagwGAobpUN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
+Today's linux-next merge of the sound-asoc tree got a conflict in
+arch/arm/mach-imx/mach-imx27_visstrim_m10.c between commit b6c14dc29757
+("[media] Visstrim M10: Add support for Coda") from the v4l-dvb tree and
+commit d41789b2660e ("ASoC: mx27vis: retrieve gpio numbers from
+platform_data") from the sound-asoc tree.
 
--- 
-Regards,
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Zhi Yong Wu
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+index 821d6aa,5627229..0000000
+--- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
++++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+@@@ -32,6 -32,8 +32,7 @@@
+  #include <linux/delay.h>
+  #include <linux/dma-mapping.h>
+  #include <linux/leds.h>
+ -#include <linux/memblock.h>
++ #include <linux/platform_data/asoc-mx27vis.h>
+  #include <media/soc_camera.h>
+  #include <sound/tlv320aic32x4.h>
+  #include <asm/mach-types.h>
+@@@ -403,47 -436,14 +434,55 @@@ static const struct imx_ssi_platform_da
+  	.flags			=3D IMX_SSI_DMA | IMX_SSI_SYN,
+  };
+ =20
+ +/* coda */
+ +
+ +static void __init visstrim_coda_init(void)
+ +{
+ +	struct platform_device *pdev;
+ +	int dma;
+ +
+ +	pdev =3D imx27_add_coda();
+ +	dma =3D dma_declare_coherent_memory(&pdev->dev,
+ +					  mx2_camera_base + MX2_CAMERA_BUF_SIZE,
+ +					  mx2_camera_base + MX2_CAMERA_BUF_SIZE,
+ +					  MX2_CAMERA_BUF_SIZE,
+ +					  DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
+ +	if (!(dma & DMA_MEMORY_MAP))
+ +		return;
+ +}
+ +
+ +/* DMA deinterlace */
+ +static struct platform_device visstrim_deinterlace =3D {
+ +	.name =3D "m2m-deinterlace",
+ +	.id =3D 0,
+ +};
+ +
+ +static void __init visstrim_deinterlace_init(void)
+ +{
+ +	int ret =3D -ENOMEM;
+ +	struct platform_device *pdev =3D &visstrim_deinterlace;
+ +	int dma;
+ +
+ +	ret =3D platform_device_register(pdev);
+ +
+ +	dma =3D dma_declare_coherent_memory(&pdev->dev,
+ +					  mx2_camera_base + 2 * MX2_CAMERA_BUF_SIZE,
+ +					  mx2_camera_base + 2 * MX2_CAMERA_BUF_SIZE,
+ +					  MX2_CAMERA_BUF_SIZE,
+ +					  DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
+ +	if (!(dma & DMA_MEMORY_MAP))
+ +		return;
+ +}
+ +
+ +
++ /* Audio */
++ static const struct snd_mx27vis_platform_data snd_mx27vis_pdata __initcon=
+st =3D {
++ 	.amp_gain0_gpio =3D AMP_GAIN_0,
++ 	.amp_gain1_gpio =3D AMP_GAIN_1,
++ 	.amp_mutel_gpio =3D AMP_MUTE_SDL,
++ 	.amp_muter_gpio =3D AMP_MUTE_SDR,
++ };
++=20
+  static void __init visstrim_m10_revision(void)
+  {
+  	int exp_version =3D 0;
+
+--Signature=_Tue__18_Sep_2012_12_26_04_+1000_KW6bjVagwGAobpUN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQV9u8AAoJEECxmPOUX5FEceQP/0l3OZzf6MJT2Y0Pv2vKELuQ
+bvic1nIU5zhnDeFs9TzENIsXHQZ0gpJ8AOPKhflJSDSCoJF10lMclUuTn/fNuROG
+r4eYEmeUHW61tPkT05guyCxXcWjE9yfZBFcK4/BZlN8h3LXYhV/XWqhFitxV+byn
+k+40SU8pfgwzC8nNgP2kvmtwE7N2aGVLmQE3vmJasrdc3kKguAhDnASq1naSL+Ak
+NHoTSPpIdZMpv8gozfMp05k4I9sHIqNeJBjYGzkT7YNI1Msfkve3s9cTkHGQKpC7
+E/LaP8rRLlshqhy8VfNg+SzqejviJQzT9G1GEOZ2Hgk3vya0P27fUf+32Lp6gS2f
+FChX5NXJQ3Lhc0sGa71unIhhOaaU293K+IeROH+YFRFhSZiuPIwkTmQUxdHIMEe9
+1l9gBVM5YuklvD+2gB/gKnWk1zHhSuZHuk/ZVA2WaaRt8t/bngtgFZoalpYHY//a
+POezaZyBk2kZI+ZTY5HzZ0ERPb+K4NqiMvel+ZSItpvJFWGyxXxewLzKHTSuP5xn
+ETDCYmUHW+zhV19J4SBcBIamFqMFIO2J5wX53M20RYADqENxJ9nbNltMYrB/DG61
+UlpFTLS4iGDMgv7c9iTBmgTEuPBob1pdjv7wSSnQBUHIFBwpQfRkmLSsFJ1uwgPG
+S0flfsTvhZ8kvEb/ikN/
+=c0Yq
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Sep_2012_12_26_04_+1000_KW6bjVagwGAobpUN--
