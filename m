@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2IRG6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:58:09 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:54992 "EHLO
+	id S1756966Ab2IRHAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:00:47 -0400
+Received: from shmail0.sohard.de ([212.114.139.117]:55056 "EHLO
 	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab2IRG6G convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756038Ab2IRHAo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:58:06 -0400
-Date: Tue, 18 Sep 2012 08:58:01 +0200 (CEST)
+	Tue, 18 Sep 2012 03:00:44 -0400
+Date: Tue, 18 Sep 2012 09:00:41 +0200 (CEST)
 From: Rene Buergel <rene.buergel@sohard.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/3]: ezusb FX2 support, firmware downloading support
-Message-ID: <bb6a1493-77bc-4d4e-ac2a-92cd8dc2f156@shmail0>
-In-Reply-To: <c6dd1b59-bdc4-4575-9e30-1b5a46b112ea@shmail0>
+Subject: Re: [PATCH v3 1/3]: ezusb: add support for Cypress FX2LP
+Message-ID: <534b65ec-de43-484b-8f72-d2c144d9028b@shmail0>
+In-Reply-To: <bb6a1493-77bc-4d4e-ac2a-92cd8dc2f156@shmail0>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -22,15 +22,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This Patch adds support for the newer Cypress FX2LP. It also adapts 
+three drivers currently using ezusb to the interface change. (whiteheat 
+and keyspan[_pda])
 
-this is v3 of a patches-series for controllers using the ezusb-functions.
-
-euzsb: add support for Cypress FX2LP
-ezusb: add functions for firmware download
-ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
-
---
-René Bürgel
-
-SOHARD Embedded Systems GmbH
+Signed-off-by: René Bürgel <rene.buergel@sohard.de>
+---
+diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/serial/ezusb.c
+index 3048b52d..351988d 100644
+--- a/drivers/usb/serial/ezusb.c
++++ b/drivers/usb/serial/ezusb.c
+@@ -14,11 +14,25 @@
+ #include <linux/module.h>
+ #include <linux/usb.h>
+ 
+-/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
+-#define CPUCS_REG    0x7F92
++struct ezusb_fx_type {
++	/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
++	unsigned short cpucs_reg;
++	unsigned short max_internal_adress;
++};
+ 
+-/* Command for writing to internal memory */
++struct ezusb_fx_type ezusb_fx1 = {
++	.cpucs_reg = 0x7F92,
++	.max_internal_adress = 0x1B3F,
++};
++
++struct ezusb_fx_type ezusb_fx2 = {
++	.cpucs_reg = 0xE600,
++	.max_internal_adress = 0x3FFF,
++};
++
++/* Commands for writing to memory */
+ #define WRITE_INT_RAM 0xA0
++#define WRITE_EXT_RAM 0xA3
+ 
+ int ezusb_writememory(struct usb_device *dev, int address,
+ 				unsigned char *data, int length, __u8 request)
+@@ -47,13 +61,24 @@ int ezusb_writememory(struct usb_device *dev, int address,
+ }
+ EXPORT_SYMBOL_GPL(ezusb_writememory);
+ 
+-int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit)
++int ezusb_set_reset(struct usb_device *dev, unsigned short cpucs_reg,
++			 unsigned char reset_bit)
+ {
+-	int response = ezusb_writememory(dev, CPUCS_REG, &reset_bit, 1, WRITE_INT_RAM);
++	int response = ezusb_writememory(dev, cpucs_reg, &reset_bit, 1, WRITE_INT_RAM);
+ 	if (response < 0)
+ 		dev_err(&dev->dev, "%s-%d failed: %d\n",
+ 						__func__, reset_bit, response);
+ 	return response;
+ }
+-EXPORT_SYMBOL_GPL(ezusb_set_reset);
+ 
++int ezusb_fx1_set_reset(struct usb_device *dev, unsigned char reset_bit)
++{
++	return ezusb_set_reset(dev, ezusb_fx1.cpucs_reg, reset_bit);
++}
++EXPORT_SYMBOL_GPL(ezusb_fx1_set_reset);
++
++int ezusb_fx2_set_reset(struct usb_device *dev, unsigned char reset_bit)
++{
++	return ezusb_set_reset(dev, ezusb_fx2.cpucs_reg, reset_bit);
++}
++EXPORT_SYMBOL_GPL(ezusb_fx2_set_reset);
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index cf17f3a..f38fc98 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -43,6 +43,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/usb/ezusb.h>
+ #include "keyspan.h"
+ 
+ static bool debug;
+@@ -1247,7 +1248,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
+ 	dev_dbg(&serial->dev->dev, "Uploading Keyspan %s firmware.\n", fw_name);
+ 
+ 		/* download the firmware image */
+-	response = ezusb_set_reset(serial->dev, 1);
++	response = ezusb_fx1_set_reset(serial->dev, 1);
+ 
+ 	record = (const struct ihex_binrec *)fw->data;
+ 
+@@ -1266,7 +1267,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
+ 	release_firmware(fw);
+ 		/* bring device out of reset. Renumeration will occur in a
+ 		   moment and the new device will bind to the real driver */
+-	response = ezusb_set_reset(serial->dev, 0);
++	response = ezusb_fx1_set_reset(serial->dev, 0);
+ 
+ 	/* we don't want this device to have a driver assigned to it. */
+ 	return 1;
+diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
+index 8cefb67..dda424e 100644
+--- a/drivers/usb/serial/keyspan_pda.c
++++ b/drivers/usb/serial/keyspan_pda.c
+@@ -30,6 +30,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/usb/ezusb.h>
+ 
+ /* make a simple define to handle if we are compiling keyspan_pda or xircom support */
+ #if defined(CONFIG_USB_SERIAL_KEYSPAN_PDA) || defined(CONFIG_USB_SERIAL_KEYSPAN_PDA_MODULE)
+@@ -678,7 +679,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
+ 	const struct firmware *fw;
+ 
+ 	/* download the firmware here ... */
+-	response = ezusb_set_reset(serial->dev, 1);
++	response = ezusb_fx1_set_reset(serial->dev, 1);
+ 
+ 	if (0) { ; }
+ #ifdef KEYSPAN
+@@ -718,7 +719,7 @@ static int keyspan_pda_fake_startup(struct usb_serial *serial)
+ 	release_firmware(fw);
+ 	/* bring device out of reset. Renumeration will occur in a moment
+ 	   and the new device will bind to the real driver */
+-	response = ezusb_set_reset(serial->dev, 0);
++	response = ezusb_fx1_set_reset(serial->dev, 0);
+ 
+ 	/* we want this device to fail to have a driver assigned to it. */
+ 	return 1;
+diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
+index dd9de0e..b49af0b 100644
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -32,6 +32,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/serial.h>
+ #include <linux/usb/serial.h>
++#include <linux/usb/ezusb.h>
+ #include <linux/firmware.h>
+ #include <linux/ihex.h>
+ #include "whiteheat.h"			/* WhiteHEAT specific commands */
+@@ -213,7 +214,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
+ 		goto out;
+ 	}
+ 	ret = 0;
+-	response = ezusb_set_reset(serial->dev, 1);
++	response = ezusb_fx1_set_reset(serial->dev, 1);
+ 
+ 	record = (const struct ihex_binrec *)loader_fw->data;
+ 	while (record) {
+@@ -230,7 +231,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
+ 		record = ihex_next_binrec(record);
+ 	}
+ 
+-	response = ezusb_set_reset(serial->dev, 0);
++	response = ezusb_fx1_set_reset(serial->dev, 0);
+ 
+ 	record = (const struct ihex_binrec *)firmware_fw->data;
+ 	while (record && be32_to_cpu(record->addr) < 0x1b40)
+@@ -250,7 +251,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
+ 		++record;
+ 	}
+ 
+-	response = ezusb_set_reset(serial->dev, 1);
++	response = ezusb_fx1_set_reset(serial->dev, 1);
+ 
+ 	record = (const struct ihex_binrec *)firmware_fw->data;
+ 	while (record && be32_to_cpu(record->addr) < 0x1b40) {
+@@ -268,7 +269,7 @@ static int whiteheat_firmware_download(struct usb_serial *serial,
+ 		++record;
+ 	}
+ 	ret = 0;
+-	response = ezusb_set_reset(serial->dev, 0);
++	response = ezusb_fx1_set_reset(serial->dev, 0);
+  out:
+ 	release_firmware(loader_fw);
+ 	release_firmware(firmware_fw);
+diff --git a/include/linux/usb/ezusb.h b/include/linux/usb/ezusb.h
+new file mode 100644
+index 0000000..fc618d8
+--- /dev/null
++++ b/include/linux/usb/ezusb.h
+@@ -0,0 +1,16 @@
++#ifndef __EZUSB_H
++#define __EZUSB_H
++
++
++extern int ezusb_writememory(struct usb_device *dev, int address,
++			     unsigned char *data, int length, __u8 bRequest);
++
++extern int ezusb_fx1_set_reset(struct usb_device *dev, unsigned char reset_bit);
++extern int ezusb_fx2_set_reset(struct usb_device *dev, unsigned char reset_bit);
++
++extern int ezusb_fx1_ihex_firmware_download(struct usb_device *dev,
++					    const char *firmware_path);
++extern int ezusb_fx2_ihex_firmware_download(struct usb_device *dev,
++					    const char *firmware_path);
++
++#endif /* __EZUSB_H */
+diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
+index 6bed6db..ec11a56 100644
+--- a/include/linux/usb/serial.h
++++ b/include/linux/usb/serial.h
+@@ -301,10 +301,6 @@ extern void usb_serial_port_softint(struct usb_serial_port *port);
+ extern int usb_serial_suspend(struct usb_interface *intf, pm_message_t message);
+ extern int usb_serial_resume(struct usb_interface *intf);
+ 
+-extern int ezusb_writememory(struct usb_device *dev, int address,
+-			     unsigned char *data, int length, __u8 bRequest);
+-extern int ezusb_set_reset(struct usb_device *dev, unsigned char reset_bit);
+-
+ /* USB Serial console functions */
+ #ifdef CONFIG_USB_SERIAL_CONSOLE
+ extern void usb_serial_console_init(int debug, int minor);
