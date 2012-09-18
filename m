@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab2IRILP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:11:15 -0400
-Received: from linux-sh.org ([111.68.239.195]:45839 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520Ab2IRILL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:11:11 -0400
-Date: Tue, 18 Sep 2012 17:11:08 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh fixes for 3.6-rc7
-Message-ID: <20120918081106.GR13568@linux-sh.org>
+	id S1756891Ab2IRIPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:15:45 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33571 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab2IRIPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 04:15:42 -0400
+Message-ID: <50582DA4.8060000@linux.vnet.ibm.com>
+Date: Tue, 18 Sep 2012 16:15:32 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 4/5] KVM: MMU: introduce page_fault_start and page_fault_end
+References: <5052FF61.3070600@linux.vnet.ibm.com> <5052FFEA.1040607@linux.vnet.ibm.com> <20120915152512.GB3037@amt.cnet>
+In-Reply-To: <20120915152512.GB3037@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091808-3568-0000-0000-0000027AE550
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6dab7ede9390d4d937cb89feca932e4fd575d2da:
+On 09/15/2012 11:25 PM, Marcelo Tosatti wrote:
+> On Fri, Sep 14, 2012 at 05:59:06PM +0800, Xiao Guangrong wrote:
+>> Wrap the common operations into these two functions
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> 
+> Why? I think people are used to 
+> 
+> spin_lock(lock)
+> sequence
+> spin_unlock(lock)
 
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2012-08-18 16:20:05 -0700)
+Marcelo,
 
-are available in the git repository at:
+There are many functions use this style that wrap the lock into the
+_start and _end functions in kernel (eg.: cgroup_pidlist_start and
+cgroup_pidlist_stop in kernel/cgroup.c).
 
+Actually, i just wanted to remove below duplicate ugly code:
 
-  git://github.com/pmundt/linux-sh tags/sh-for-linus
+	if (!is_error_pfn(pfn))
+		kvm_release_pfn_clean(pfn);
 
-for you to fetch changes up to 5e071e2b4b82599f07cce5e1d2d272feb462950c:
+> 
+> So its easy to verify whether access to data structures are protected.
+> 
+> Unrelated to this patch, one opportunity i see to simplify this
+> code is:
+> 
+> - error pfn / mmio pfn / invalid pfn relation
+> 
+> Have the meaning of this bits unified in a single function/helper, see
+> comment to patch 1 (perhaps you can further improve).
 
-  sh: Fix up TIF_NOTIFY_RESUME sans TIF_SIGPENDING handling. (2012-09-18 17:04:37 +0900)
+Sorry, more detail?
 
-----------------------------------------------------------------
-SuperH fixes for 3.6-rc7
-
-----------------------------------------------------------------
-Al Viro (1):
-      sh: Fix up TIF_NOTIFY_RESUME sans TIF_SIGPENDING handling.
-
-Laurent Pinchart (1):
-      sh: pfc: Release spinlock in sh_pfc_gpio_request_enable() error path
-
-Paul Mundt (1):
-      sh: intc: Fix up multi-evt irq association.
-
- arch/sh/kernel/cpu/sh5/entry.S | 2 +-
- arch/sh/kernel/entry-common.S  | 2 +-
- drivers/sh/intc/core.c         | 2 +-
- drivers/sh/pfc/pinctrl.c       | 3 ++-
- 4 files changed, 5 insertions(+), 4 deletions(-)
