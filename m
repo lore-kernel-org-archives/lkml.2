@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2IRGzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:55:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62155 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752110Ab2IRGzX convert rfc822-to-8bit (ORCPT
+	id S1756439Ab2IRGzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:55:46 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33827 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755863Ab2IRGzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:55:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,441,1344236400"; 
-   d="scan'208";a="223365597"
-Message-ID: <1347951305.13371.10.camel@smile>
-Subject: Re: [PATCH 2/7] dw_dmac: fill optional encoded parameters in
- register structure
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Date: Tue, 18 Sep 2012 09:55:05 +0300
-In-Reply-To: <CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Tue, 18 Sep 2012 02:55:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <5057654A.803@tlinx.org>
+References: <5057654A.803@tlinx.org>
+Date: Tue, 18 Sep 2012 14:55:43 +0800
+Message-ID: <CANE52Khbw0-iA=nAebySc=Fw-6CtY-wuOC9Kw_UE3mbkOAKJmA@mail.gmail.com>
+Subject: Re: 2 physical-cpu (like 2x6core) config and NUMA?
+From: Jike Song <albcamus@gmail.com>
+To: Linda Walsh <lkml@tlinx.org>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-18 at 12:09 +0530, viresh kumar wrote:
+On Tue, Sep 18, 2012 at 2:00 AM, Linda Walsh <lkml@tlinx.org> wrote:
+> Does the kernel support scheduling based on the different speed of
+> memory between "on die" vs. "off die"?   I was surprised to see
+> that it viewed my system as 1 NUMA node with all 12 on 1 node -- when
+> I know that it is physically organized as 2x6.
+> Do I have to configure that manually or did I maybe turn off something
+> in my kernel config I should have turned on?
 
-[snip]
+Do you have anything printed with:
 
-> > +#define dma_raw_readl(addr, name) \
-> > +       readl((addr) + offsetof(struct dw_dma_regs, name))
-> > +
-> > +#define dma_raw_writel(addr, name, val) \
-> > +       writel((val), (addr) + offsetof(struct dw_dma_regs, name))
-> > +
-> 
-> But why don't you use earlier defined readl/writel macros:
-> dma_readl and dma_writel?
-If you look at further patches, namely 3rd, the access to the register
-is needed before we allocate memory for the dw_dma structure.
+ # acpidump -a --table SRAT
 
+?
+
+I have a Dell box with 2 physical CPUs, each of them has 6 cores.  If
+I enable "Node Interleaving" in BIOS' Memory Setting, and boot the
+kernel, the SRAT table will be invisible to Linux - results the same
+topology as you got.  If I disable "Node Interleaving" and boot the
+kernel, SRAT is present, and the topology is correct.
+
+Hope that helps.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Thanks,
+Jike
