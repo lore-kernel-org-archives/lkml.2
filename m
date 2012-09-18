@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab2IRIqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:46:32 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59797 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746Ab2IRIqa (ORCPT
+	id S1757513Ab2IRIvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:51:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64195 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab2IRIvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:46:30 -0400
-Message-ID: <505834D0.2060704@linux.vnet.ibm.com>
-Date: Tue, 18 Sep 2012 16:46:08 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: trace the events of mmu_notifier
-References: <50499123.70609@linux.vnet.ibm.com> <504DAE34.1060402@redhat.com> <504DB22F.4020609@linux.vnet.ibm.com> <5052C7DD.4000205@linux.vnet.ibm.com> <5055A2E2.9080003@redhat.com>
-In-Reply-To: <5055A2E2.9080003@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091808-5140-0000-0000-000002171196
+	Tue, 18 Sep 2012 04:51:19 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: Describe interrupt-controller binding
+Date: Tue, 18 Sep 2012 10:51:14 +0200
+Message-Id: <1347958274-19425-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:PU3PVbcnvJZrUrQImCpmSS750vpMglE8T8EqWCyw+Vi
+ PSWvD15BqwG8Hwg42oXNPVpyqIM9poiN0DZXkXwfhKDwE6PDvH
+ gZCBAKrzVBf+enMBDRH254VQJtbclI7NZwF7cr1g0MUfdzev1N
+ UOQdfGrLeh2jXH7K6XcKioaiceUVnFx2n1xd3Hgxl+tmoTjGav
+ xL5X0n/Ch7U8zdLWDjg/PNIbHmBWHwcqeisTU5QkGpitGEg7fy
+ NQ1+EcQi8o1KskG3B2t6ZdDMpkBwbI9/Exjx54DpaEABA5hwRa
+ 8MIMlnLDQintH9tO0mXylwMa7sCctuQFzK+3cg2atmF4c0JrP1
+ hwJgTttnfjZL3i4vWDVSNrnhu+O7aS+mzHugrayQT7YbseplpN
+ 12CGmwouJYHt/M1JpfGO5o2mhWCo+lIwfLpagfIKjgTTBInaT8
+ Mavvc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2012 05:58 PM, Avi Kivity wrote:
-> On 09/14/2012 08:59 AM, Xiao Guangrong wrote:
->> On 09/10/2012 05:26 PM, Xiao Guangrong wrote:
->>> On 09/10/2012 05:09 PM, Avi Kivity wrote:
->>>> On 09/07/2012 09:16 AM, Xiao Guangrong wrote:
->>>>> mmu_notifier is the interface to broadcast the mm events to KVM, the
->>>>> tracepoints introduced in this patch can trace all these events, it is
->>>>> very helpful for us to notice and fix the bug caused by mm
->>>>
->>>> There is nothing kvm specific here.  Perhaps this can be made generic
->>>> (with a mm parameter so we can filter by process).
->>>
->>> Hmm, i would like to put these tracepoints in the mmu-lock then we can clearly
->>> know the sequence between mm and kvm mmu. It is useful for us to detect the
->>> issue/race between them.
->>>
->>
->> Ping...?
-> 
-> Sorry.  Yes you are right, knowing the exact sequence is valuable.  Yet
-> it will be hard to associate these events with the mmu since we don't
-> have gpas there.
-> 
+In order to use GPIO controllers as interrupt controllers, they need to
+be marked with the DT interrupt-controller property. This commit adds
+some documentation about this to the general GPIO binding document.
 
-Avi,
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ Documentation/devicetree/bindings/gpio/gpio.txt | 33 +++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-I have some patches in my local queue which use tracepoints instead of
-rmap_printk, they can track rmap_add/rmap_remove/rmap_write_protect.
-
-Though we can not directly get the gfn from these mmu-notifier events, it
-can be got from the later events. We can see what mmu is doing when the
-notifier events are triggered.
-
-
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+index 4e16ba4..8d125b0 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+@@ -75,4 +75,37 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+ 		gpio-controller;
+ 	};
+ 
++If the GPIO controller supports the generation of interrupts, it should
++also contain an empty "interrupt-controller" property as well as an
++"#interrupt-cells" property. This is required in order for other nodes
++to use the GPIO controller as their interrupt parent.
+ 
++If #interrupt-cells is 1, the single cell is used to specify the number
++of the GPIO that is to be used as an interrupt.
++
++If #interrupt-cells is 2, the first cell is used to specify the number
++of the GPIO that is to be used as an interrupt, whereas the second cell
++is used to specify any of the following flags:
++  - bits[3:0] trigger type and level flags
++      1 = low-to-high edge triggered
++      2 = high-to-low edge triggered
++      4 = active high level-sensitive
++      8 = active low level-sensitive
++
++Example:
++
++	gpioext: gpio-controller@41 {
++		compatible = "ad,gpio-adnp";
++		reg = <0x41>;
++
++		interrupt-parent = <&gpio>;
++		interrupts = <160 1>;
++
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		interrupt-controller;
++		#interrupt-cells = <2>;
++
++		nr-gpios = <64>;
++	};
+-- 
+1.7.12
 
