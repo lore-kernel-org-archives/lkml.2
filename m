@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab2IRA36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 20:29:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57653 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2IRA35 (ORCPT
+	id S1756190Ab2IRAg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 20:36:29 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46836 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2IRAg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 20:29:57 -0400
-Date: Tue, 18 Sep 2012 08:30:20 +0800
-From: "Jianpeng Ma" <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>, tj <tj@kernel.org>
-Cc: rostedt <rostedt@goodmis.org>, fweisbec <fweisbec@gmail.com>,
-        mingo <mingo@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "Li Zefan" <lizf@cn.fujitsu.com>, "Tao Ma" <boyu.mt@taobao.com>
-Subject: Re: Re: Why blktrace didn't trace requests merge?
-References: <201209171933464847623@gmail.com> <1347888148.13080.20.camel@gandalf.local.home> <20120917175534.GG18677@google.com>, 
-	<50576BAE.4020602@kernel.dk>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201209180830165936690@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Mon, 17 Sep 2012 20:36:28 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: stable@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] 2.6.35-stable timekeeping fixes merged in 3.6
+Date: Mon, 17 Sep 2012 20:36:17 -0400
+Message-Id: <1347928580-22833-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091800-5406-0000-0000-00000060FE67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8I0V71H023185
 
-On 2012-09-18 02:27 Jens Axboe <axboe@kernel.dk> Wrote:
->On 2012-09-17 19:55, Tejun Heo wrote:
->> (cc'ing Jens)
->> 
->> On Mon, Sep 17, 2012 at 09:22:28AM -0400, Steven Rostedt wrote:
->>> On Mon, 2012-09-17 at 19:33 +0800, Jianpeng Ma wrote:
->>>> Hi all:
->>>> 	I used blktrace to trace some io.But i can't find requests merge. I searched the code and did't not find.
->>>> 	Why? 
->>>> 									
->>>
->>> No idea. I don't use blktrace much, but I Cc'd those that understand it
->>> better than I.
->
->Works for me:
->
->[...]
->
->
->  8,0    0       26     0.009147735   664  A  WS 315226143 + 8 <- (8,7) 19406344
->  8,0    0       27     0.009148677   664  Q  WS 315226143 + 8 [btrfs-submit-1]
->  8,0    0       28     0.009152967   664  G  WS 315226143 + 8 [btrfs-submit-1]
->  8,0    0       29     0.009154242   664  P   N [btrfs-submit-1]
->  8,0    0       30     0.009155538   664  A  WS 315226151 + 8 <- (8,7) 19406352
->  8,0    0       31     0.009155743   664  Q  WS 315226151 + 8 [btrfs-submit-1]
->  8,0    0       32     0.009157086   664  M  WS 315226151 + 8 [btrfs-submit-1]
->  8,0    0       33     0.009158716   664  I  WS 315226143 + 16 [btrfs-submit-1]
->
->That's from a quick trace of /dev/sda. I started blktrace, then did:
->
->$ dd if=/dev/zero of=foo bs=4k count=128 && sync
->
->to ensure that I knew merges would be happening. Output stats at the end:
->
->Total (sda):
-> Reads Queued:           7,       44KiB  Writes Queued:         447,     7692KiB
-> Read Dispatches:        7,       44KiB  Write Dispatches:      416,     7692KiB
-> Reads Requeued:         0               Writes Requeued:         0
-> Reads Completed:        7,       44KiB  Writes Completed:      435,     5864KiB
-> Read Merges:            0,        0KiB  Write Merges:           23,      428KiB
-> IO unplugs:            78               Timer unplugs:           0
->
->-- 
->Jens Axboe
->
-First, Thanks your time!
-If i understand correctly, the merge of your example is bio with request, not request wiht request.
-Yes or no?
+Just wanted to send out a few timekeeping fixes that were merged
+in 3.6 which are appropriate for -stable.
 
-Thanks!
-Jianpeng
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This queue backports the following fixes:
+-----------------------------------------
+cee58483cf56e0ba355fdd97ff5e8925329aa936    time: Move ktime_t overflow checking into timespec_valid_strict
+bf2ac312195155511a0f79325515cbb61929898a    time: Avoid making adjustments if we haven't accumulated anything
+4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b    time: Improve sanity checking of timekeeping inputs
+
+I've run these through my timetest suite w/ kvm on both i386
+& x86_64. But more testing would be of course appreciated.
+	https://github.com/johnstultz-work/timetests
+
+I also have patch queues for all the -stable trees that I'll be
+sending out as my testing completes for those trees.
+
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+
+John Stultz (3):
+  2.6.35.y: time: Improve sanity checking of timekeeping inputs
+  2.6.35.y: time: Avoid making adjustments if we haven't accumulated
+    anything
+  2.6.35.y: time: Move ktime_t overflow checking into
+    timespec_valid_strict
+
+ include/linux/ktime.h     |    7 -------
+ include/linux/time.h      |   29 +++++++++++++++++++++++++++--
+ kernel/time/timekeeping.c |   19 ++++++++++++++++++-
+ 3 files changed, 45 insertions(+), 10 deletions(-)
+
+-- 
+1.7.9.5
+
