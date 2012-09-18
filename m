@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab2IRVDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 17:03:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38028 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab2IRVDO (ORCPT
+	id S1755397Ab2IRVET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:04:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52228 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab2IRVEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 17:03:14 -0400
-Date: Tue, 18 Sep 2012 14:03:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, numa: reclaim from all nodes within reclaim
- distance
-Message-Id: <20120918140313.236f7a66.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Sep 2012 17:04:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120918205248.GZ12245@n2100.arm.linux.org.uk>
+References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
+	<20120914094155.GC12245@n2100.arm.linux.org.uk>
+	<1347619868.1943.113.camel@vkoul-udesk3>
+	<20120914111842.GD12245@n2100.arm.linux.org.uk>
+	<1347853223.1943.136.camel@vkoul-udesk3>
+	<20120917083654.GO12245@n2100.arm.linux.org.uk>
+	<1347875429.1943.141.camel@vkoul-udesk3>
+	<20120917215753.GS12245@n2100.arm.linux.org.uk>
+	<1347938307.1943.166.camel@vkoul-udesk3>
+	<CACRpkdaBiJXowtWm=yTV4_7=6P=SFuVuZo8+icQfE0EN87A23g@mail.gmail.com>
+	<20120918205248.GZ12245@n2100.arm.linux.org.uk>
+Date: Tue, 18 Sep 2012 23:04:13 +0200
+Message-ID: <CACRpkdZHN4yw51j0-83a5Z+hoPDL2yZ11Vcx+tYHeyJMrDgVLw@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Dan Williams <djbw@fb.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Per Forlin <per.forlin@stericsson.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012 00:03:57 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+On Tue, Sep 18, 2012 at 10:52 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-> RECLAIM_DISTANCE represents the distance between nodes at which it is
-> deemed too costly to allocate from; it's preferred to try to reclaim from
-> a local zone before falling back to allocating on a remote node with such
-> a distance.
-> 
-> To do this, zone_reclaim_mode is set if the distance between any two
-> nodes on the system is greather than this distance.  This, however, ends
-> up causing the page allocator to reclaim from every zone regardless of
-> its affinity.
-> 
-> What we really want is to reclaim only from zones that are closer than 
-> RECLAIM_DISTANCE.  This patch adds a nodemask to each node that
-> represents the set of nodes that are within this distance.  During the
-> zone iteration, if the bit for a zone's node is set for the local node,
-> then reclaim is attempted; otherwise, the zone is skipped.
+> There's a clue in that paragraph about how the DMA engine TX descriptors
+> _should_ be handled.  "hold a reference" is the clue.  Or another way to
+> say it, a kref should be embedded in the structure, providing us with
+> proper reference counting - and descriptors should only be 'freed'
+> (whether that means actually freeing them or placing them into a free
+> list) when the last reference is dropped.  That's _much_ better to
+> understand than this DMA_CTRL_ACK business...
 
-Is this a theoretical thing, or does the patch have real observable
-effects?
+This indeed sounds like a more robust approach by far.
+Why didn't we do that from the beginning ...
 
-This change makes it more important that the arch code implements
-node_distance() accurately (wrt RECLAIM_DISTANCE), yes?  I wonder how
-much code screwed that up, and what the effects of such a screwup would
-be, and how arch maintainers would go about detecting then fixing such
-an error?
-
+Yours,
+Linus Walleij
