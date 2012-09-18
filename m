@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2IRWTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 18:19:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16695 "EHLO mx1.redhat.com"
+	id S1755784Ab2IRWWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 18:22:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29577 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755351Ab2IRWTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 18:19:38 -0400
-Message-ID: <1348006746.12937.7.camel@eddie.install.bos.redhat.com>
-Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
-From: Peter Jones <pjones@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: David Howells <dhowells@redhat.com>, herbert@gondor.hengli.com.au,
-        rusty@rustcorp.com.au, linux-crypto@vger.kernel.org, zohar@us.ibm.com,
-        dmitry.kasatkin@intel.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Sep 2012 18:19:06 -0400
-In-Reply-To: <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
-References: <20120914103930.1e16ad8b@pyramind.ukuu.org.uk>
-	 <20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
-	 <20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
-	 <13189.1347989652@warthog.procyon.org.uk>
-	 <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
-Organization: Red Hat, Inc.
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755167Ab2IRWWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 18:22:38 -0400
+Date: Wed, 19 Sep 2012 01:24:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sjur =?iso-8859-1?Q?Br=E6ndeland?= <sjurbren@gmail.com>,
+        Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH repost] virtio: don't crash when device is buggy
+Message-ID: <20120918222405.GB20285@redhat.com>
+References: <20120903143018.GA5353@redhat.com>
+ <CAJK669bkHHMAPYMEr22-6uOwfgJv1uKTbzNBQVVCq=OooExC0g@mail.gmail.com>
+ <20120903202737.GD6181@redhat.com>
+ <CAJK669ZvnnG6fGOog-Z47B7xqyn9hcx5dAD7S--+2PSgE+hrLA@mail.gmail.com>
+ <20120904135022.GI9805@redhat.com>
+ <CAJK669Z1UYakBWartChfoeKL_eU5=GFZMGhH8R_Q-difVm0ygQ@mail.gmail.com>
+ <20120904185541.GB3602@redhat.com>
+ <87k3w7j49i.fsf@rustcorp.com.au>
+ <20120916094427.GA24075@redhat.com>
+ <87ehm1s28q.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ehm1s28q.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-18 at 19:51 +0100, Alan Cox wrote:
-> On Tue, 18 Sep 2012 18:34:12 +0100
-> David Howells <dhowells@redhat.com> wrote:
+On Mon, Sep 17, 2012 at 01:57:17PM +0930, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
 > 
-> > Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > 
-> > > Why do this in the kernel.That appears to be completely insane.
-> > 
-> > A number of reasons:
-> > 
-> >  (1) The UEFI signature/key database may contain ASN.1 X.509 certificates and
-> >      we may need to use those very early in the boot process, during initrd.
+> > Because of a sanity check in virtio_dev_remove, a buggy device can crash
+> > kernel.  And in case of rproc it's userspace so it's not a good idea.
+> > We are unloading a driver so how bad can it be?
+> > Be less aggressive in handling this error: if it's a driver bug,
+> > warning once should be enough.
+> >
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >
+> > --
+> >
+> > 3.6 material?
 > 
-> Ok that makes some sense. Presumably they've also got to fall within what
-> you trust and sign ?
+> I have already applied, this, but it's not for stable, since it's a
+> "theoretical bugfix".  That check has been in there forever and noone
+> AFAIK has actually struck it.
+> 
+> Cheers,
+> Rusty.
 
-The idea is that you implicitly trust keys in the lists maintained by
-your system firmware and/or shim ("mok") key databases, or else you
-shouldn't have Secure Boot turned on in the first place.  Using these
-keys and hashes allows you to e.g. relatively easily add a key you're
-using to sign a module you're currently developing, while still *ahem*
-enjoying the many benefits of signed modules, kernel, and bootloader.
-
-(Though obviously we would never recommend adding a public key whose
-private half you're normally keeping on that same machine.)
+Yes but can't malicious userspace trigger this with remoteproc? If yes
+it's not a question of whether anyone has struck it since people don't
+normally run malicious userspace :)
 
 -- 
-  Peter
-
+MST
