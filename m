@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738Ab2IRJpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:45:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20980 "EHLO relay.sw.ru"
+	id S1757760Ab2IRJpW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:45:22 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25189 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757684Ab2IRJpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:45:05 -0400
-Subject: [PATCH v2 0/3] lockd: use per-net refrence-counted NSM clients
+	id S1757740Ab2IRJpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:45:17 -0400
+Subject: [PATCH v2 3/3] lockd: create and use per-net NSM RPC clients on
+	MON/UNMON requests
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 18 Sep 2012 13:37:06 +0400
-Message-ID: <20120918093612.2469.94393.stgit@localhost.localdomain>
+Date: Tue, 18 Sep 2012 13:37:23 +0400
+Message-ID: <20120918093723.2469.47300.stgit@localhost.localdomain>
+In-Reply-To: <20120918093612.2469.94393.stgit@localhost.localdomain>
+References: <20120918093612.2469.94393.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,38 +24,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
-1) NSM transport is TCP based now. And all RPC tasks now called with
-RPC_TASK_SOFTCONN. The advantage of this is that the kernel could discover
-when statd is not running and fail the upcall immediately, rather than waiting
-possibly many seconds for each upcall RPC to time out.
-2) XDR layer violation (reference to upper RPC client cl_hostname) was
-replaced by passing the string as a part of nlm_args structure.
+NSM RPC client can be required on NFSv3 umount, when child reaper is dying
+(and destroying it's mount namespace). It means, that current nsproxy is set
+to NULL already, but creation of RPC client requires UTS namespace for gaining
+hostname string.
 
-This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
+This patch creates reference-counted per-net NSM client on first monitor
+request and destroys it after last unmonitor request.
 
-The problem is that with NFSv4 mount in container (with separated mount
-namesapce) and active lock on it, dying child reaped of this container will
-try to umount NFS and doing this will try to create RPC client to send
-unmonitor request to statd.
-But creation of RCP client requires valid current->nsproxy (for operation with
-utsname()) and during umount on child reaper exit it's equal to zero.
-
-Proposed solution is to introduce refrence-counter per-net NSM client, which
-is created on fist monitor call and destroyed after the lst monitor call.
-
-The following series implements...
-
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: <stable@vger.kernel.org>
 ---
+ fs/lockd/mon.c |   37 ++++++++++++++++++++-----------------
+ 1 files changed, 20 insertions(+), 17 deletions(-)
 
-Stanislav Kinsbursky (3):
-      lockd: per-net NSM client creation and destruction helpers introduced
-      lockd: use rpc client's cl_nodename for id encoding
-      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
-
-
- fs/lockd/mon.c   |   86 +++++++++++++++++++++++++++++++++++++++++++-----------
- fs/lockd/netns.h |    4 +++
- fs/lockd/svc.c   |    1 +
- 3 files changed, 74 insertions(+), 17 deletions(-)
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index e0bc36e..e4fb3ba 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -7,7 +7,6 @@
+  */
+ 
+ #include <linux/types.h>
+-#include <linux/utsname.h>
+ #include <linux/kernel.h>
+ #include <linux/ktime.h>
+ #include <linux/slab.h>
+@@ -86,7 +85,7 @@ static struct rpc_clnt *nsm_create(struct net *net)
+ 	return rpc_create(&args);
+ }
+ 
+-__maybe_unused static struct rpc_clnt *nsm_client_get(struct net *net)
++static struct rpc_clnt *nsm_client_get(struct net *net)
+ {
+ 	static DEFINE_MUTEX(nsm_create_mutex);
+ 	struct rpc_clnt	*clnt;
+@@ -113,7 +112,7 @@ out:
+ 	return clnt;
+ }
+ 
+-__maybe_unused static void nsm_client_put(struct net *net)
++static void nsm_client_put(struct net *net)
+ {
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 	struct rpc_clnt	*clnt = ln->nsm_clnt;
+@@ -132,9 +131,8 @@ __maybe_unused static void nsm_client_put(struct net *net)
+ }
+ 
+ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+-			 struct net *net)
++			 struct rpc_clnt *clnt)
+ {
+-	struct rpc_clnt	*clnt;
+ 	int		status;
+ 	struct nsm_args args = {
+ 		.priv		= &nsm->sm_priv,
+@@ -142,20 +140,14 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 		.vers		= 3,
+ 		.proc		= NLMPROC_NSM_NOTIFY,
+ 		.mon_name	= nsm->sm_mon_name,
+-		.nodename	= utsname()->nodename,
++		.nodename	= clnt->cl_nodename,
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &args,
+ 		.rpc_resp	= res,
+ 	};
+ 
+-	clnt = nsm_create(net);
+-	if (IS_ERR(clnt)) {
+-		status = PTR_ERR(clnt);
+-		dprintk("lockd: failed to create NSM upcall transport, "
+-				"status=%d\n", status);
+-		goto out;
+-	}
++	BUG_ON(clnt == NULL);
+ 
+ 	memset(res, 0, sizeof(*res));
+ 
+@@ -166,8 +158,6 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 				status);
+ 	else
+ 		status = 0;
+-	rpc_shutdown_client(clnt);
+- out:
+ 	return status;
+ }
+ 
+@@ -187,6 +177,7 @@ int nsm_monitor(const struct nlm_host *host)
+ 	struct nsm_handle *nsm = host->h_nsmhandle;
+ 	struct nsm_res	res;
+ 	int		status;
++	struct rpc_clnt *clnt;
+ 
+ 	dprintk("lockd: nsm_monitor(%s)\n", nsm->sm_name);
+ 
+@@ -199,7 +190,15 @@ int nsm_monitor(const struct nlm_host *host)
+ 	 */
+ 	nsm->sm_mon_name = nsm_use_hostnames ? nsm->sm_name : nsm->sm_addrbuf;
+ 
+-	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, host->net);
++	clnt = nsm_client_get(host->net);
++	if (IS_ERR(clnt)) {
++		status = PTR_ERR(clnt);
++		dprintk("lockd: failed to create NSM upcall transport, "
++				"status=%d, net=%p\n", status, host->net);
++		return status;
++	}
++
++	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, clnt);
+ 	if (unlikely(res.status != 0))
+ 		status = -EIO;
+ 	if (unlikely(status < 0)) {
+@@ -231,9 +230,11 @@ void nsm_unmonitor(const struct nlm_host *host)
+ 
+ 	if (atomic_read(&nsm->sm_count) == 1
+ 	 && nsm->sm_monitored && !nsm->sm_sticky) {
++		struct lockd_net *ln = net_generic(host->net, lockd_net_id);
++
+ 		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
+ 
+-		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
++		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, ln->nsm_clnt);
+ 		if (res.status != 0)
+ 			status = -EIO;
+ 		if (status < 0)
+@@ -241,6 +242,8 @@ void nsm_unmonitor(const struct nlm_host *host)
+ 					nsm->sm_name);
+ 		else
+ 			nsm->sm_monitored = 0;
++
++		nsm_client_put(host->net);
+ 	}
+ }
+ 
 
