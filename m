@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab2IRNNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:13:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64794 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab2IRNNk (ORCPT
+	id S932538Ab2IRNQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:16:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44385 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab2IRNQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:13:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH] spi/pl022: Devicetree support w/o platform data
-Date: Tue, 18 Sep 2012 13:13:30 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, lee.jones@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        devicetree-discuss@lists.ozlabs.org, aletes.xgr@gmail.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-References: <1347972540-29667-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1347972540-29667-1-git-send-email-stigge@antcom.de>
+	Tue, 18 Sep 2012 09:16:17 -0400
+Date: Tue, 18 Sep 2012 16:15:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: navin patidar <navinp@cdac.in>
+Cc: gregkh@linuxfoundation.org, mfm@muteddisk.com, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
+ usbip_host
+Message-ID: <20120918131542.GR13767@mwanda>
+References: <1347940806-4653-1-git-send-email-navinp@cdac.in>
+ <20120918074053.GL4587@mwanda>
+ <CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
+ <20120918093619.GO13767@mwanda>
+ <CAPV97yfRd_1Ak+DniNyg+vhg1bkOPqzGwRu-LSKXkpW2=_xw+Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209181313.30880.arnd@arndb.de>
-X-Provags-ID: V02:K0:MPx+yUsvKLQGTz2oojwGnN81IOIg5itlEkm0d7NTNZR
- iJDtIQtiIM3WH/fUJGsfn2EWQxNkmgdOsZEreWcrP/RifuBNEt
- MJ2LLIv6B+OwJCnnSkqOsDQIjMlY+ykhIP6cO4xNUYUzGM1aNT
- IIfwq54FsHAl26iatAQlijd4PxvbM3pEENLtLoybAMMDK+jDvg
- Tg52RYHv6Sj2+VBoHCXzgE74pqeJDKdIDtcM9pyHOb0hJRoLV0
- 5EcYu0Z5tytWCFqEtd4wt3XctFYOEq2oZ/lxN77jQ8NXNTmExs
- ooe5D+meaZ9ppMo7eUzjgg/fzaab7qUsGn0zvC7aCH+O8F/Yzu
- XBnql8y0XUepJwa/sjiw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPV97yfRd_1Ak+DniNyg+vhg1bkOPqzGwRu-LSKXkpW2=_xw+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 September 2012, Roland Stigge wrote:
-> --- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> +++ linux-2.6/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> @@ -10,6 +10,15 @@ Optional properties:
->  - cs-gpios : should specify GPIOs used for chipselects.
->    The gpios will be referred to as reg = <index> in the SPI child nodes.
->    If unspecified, a single SPI device without a chip select can be used.
-> +- pl022,bus-id : Bus ID (0, 1, ...)
+On Tue, Sep 18, 2012 at 05:14:41PM +0530, navin patidar wrote:
+> for usbip_host  event_handler()   handles following events.  defined
+> in "usbip_common.h"
+> 
+>  1. SDEV_EVENT_REMOVED   (USBIP_EH_SHUTDOWN | USBIP_EH_RESET | USBIP_EH_BYE)
+>  2. SDEV_EVENT_DOWN		(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+>  3. SDEV_EVENT_ERROR_TCP	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+>  4. SDEV_EVENT_ERROR_SUBMIT	(USBIP_EH_SHUTDOWN | USBIP_EH_RESET)
+>  5. VDEV_EVENT_ERROR_MALLOC (USBIP_EH_SHUTDOWN | USBIP_EH_UNUSABLE)
+> 
+> In case of events(1,2,3,4),  stub_shoutdown_connection() gets executed
+> first and than stub_device_reset() .
+> 
+> In case of event 5, stub_shoutdown_connection()  kills kernel threads
+> and stub_device_unusable()   changes devices status to
+> "SDEV_ST_ERROR"(fatal error).
+> 
 
-I don't understand why we need the bus-id here. My understanding is that
-this is a linux-specific number that should not be necessary when all
-devices are described in the device tree rather than through spi_board_info.
+It's case #5 which I would be worried about.  Where did the original
+Oops happen?  I feel like it really would be helpful to see it.  I
+don't see which check for ->status != SDEV_ST_AVAILABLE you're
+talking about here which prevents the pointers from being reused...
 
-Can't you just set master->bus_num to -1 when using the DT for probing?
+>  thus stub_device_reset() can't  be called without
+> stub_shutdown_connection(), so there is no problem of resource leak .
 
-> +- pl022,enable-dma : enables DMA driven transfers (boolean)
+Except in the case of #5 obviously.
 
-Similar thing here: Can't you just set the enable_dma flag when
-a dma channel is provided in the device tree and unset it otherwise?
+> you are also right, i could have set pointers to  NULL in
+> stub_shutdown_connection() but i used  stub_device_reset() which is
+> intended to reset usbip_device stuct member variables.
+> 
+> i'll resend patches, if maintainer ask for that.
+> thanks
+> 
 
-It also seems a bit pointless to enable DMA mode when you don't provide
-a way to specify the channel at the same time.
+Generally, that's normal.  If you want to ensure that a pointer
+isn't used again then you clear it immediately.
 
-	Arnd
+I'm honestly just trying to figure this out.  When I saw that the
+patch, I immediately thought *resource leak*.  I'm sorry that to
+take your time up, but it shouldn't be that complicated that I have
+to go tracking through the whole driver to understand this.
+
+regards,
+dan carpenter
