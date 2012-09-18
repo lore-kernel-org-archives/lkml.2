@@ -1,204 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2IRNzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:55:51 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34882 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757628Ab2IRNzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:55:49 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Vagin <avagin@openvz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf: teach perf inject to merge sched_stat_* and sched_switch events (v3)
-Date: Tue, 18 Sep 2012 17:56:25 +0400
-Message-Id: <1347976585-3816541-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1757855Ab2IRN54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:57:56 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:3364 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757611Ab2IRN5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 09:57:53 -0400
+X-IronPort-AV: E=Sophos;i="4.80,442,1344211200"; 
+   d="scan'208";a="14608418"
+Date: Tue, 18 Sep 2012 14:57:05 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH v5 00/17] Introduce Xen support on ARM (based on
+ 3.6-rc5)
+In-Reply-To: <201209181234.29557.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.02.1209181450570.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com> <201209181234.29557.arnd@arndb.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may want to know where and how long a task is sleeping. A callchain
-may be found in sched_switch and a time slice in stat_iowait, so I add
-handler in perf inject for merging this events.
+On Tue, 18 Sep 2012, Arnd Bergmann wrote:
+> On Monday 17 September 2012, Stefano Stabellini wrote:
+> 
+> > I am also attaching to this email the dts'es that I am currently using
+> > for dom0 and domU: vexpress-v2p-ca15-tc1.dts (that includes
+> > vexpress-v2m-rs1-rtsm.dtsi) is the dts used for dom0 and it is passed to
+> > Linux by Xen, while vexpress-virt.dts is the dts used for other domUs
+> > and it is appended in binary form to the guest kernel image. I am not
+> > sure where they are supposed to live yet, so I am just attaching them
+> > here so that people can actually try out this series if they want to.
+> 
+> You can submit the dts files separately so we can include them in
+> the arm-soc tree. Pawel Moll is handling vexpress related changes these
+> days, so it would be reasonable if he included them in a pull request.
 
-My code saves sched_switch event for each process and when it meets
-stat_iowait, it reports the sched_switch event, because this event
-contains a correct callchain. By another words it replaces all
-stat_iowait events on proper sched_switch events.
+OK, I'll submit them as a patch series separately.
 
-v2: - remove the global variable "session"
-    - hadle errors from malloc()
 
-v3: - use sample->tid instead of sample->pid for merging events.
+> > The patch series has been rebased on Konrad's stable/for-linus-3.7
+> > branch.
+> > 
+> > Arnd, Russell, what do you think about this series? If you are OK with
+> > it, to whom should I submit it?
+> 
+> I have no objections to your patches from this series. IMHO they should
+> be submitted through the Xen tree,
+    
+Konrad, are you happy to carry this series in your tree?
 
-    Frederic Weisbecker noticed that this code works only in a root pidns.
-    It's true, because a pid from trace content is not pid-namespace safe
-    and currently no way to get this pid in a current pidns. This problem
-    is more general, so I don't think that it should be solved in this series.
 
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>,
-Cc: Ingo Molnar <mingo@redhat.com
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- tools/perf/Documentation/perf-inject.txt |    4 ++
- tools/perf/builtin-inject.c              |   86 ++++++++++++++++++++++++++++++
- 2 files changed, 90 insertions(+), 0 deletions(-)
+>but it would be good to have an Ack from Russell.
 
-diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
-index 6be2101..c04e0c6 100644
---- a/tools/perf/Documentation/perf-inject.txt
-+++ b/tools/perf/Documentation/perf-inject.txt
-@@ -35,6 +35,10 @@ OPTIONS
- -o::
- --output=::
-         Output file name. (default: stdout)
-+-s::
-+--sched-stat::
-+	Merge sched_stat and sched_switch for getting events where and how long
-+	tasks slept.
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index ed12b19..1783f0a 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -8,11 +8,13 @@
- #include "builtin.h"
- 
- #include "perf.h"
-+#include "util/evsel.h"
- #include "util/session.h"
- #include "util/tool.h"
- #include "util/debug.h"
- 
- #include "util/parse-options.h"
-+#include "util/trace-event.h"
- 
- static const char	*input_name	= "-";
- static const char	*output_name	= "-";
-@@ -21,6 +23,7 @@ static int		output;
- static u64		bytes_written;
- 
- static bool		inject_build_ids;
-+static bool		inject_sched_stat;
- 
- static int perf_event__repipe_synth(struct perf_tool *tool __used,
- 				    union perf_event *event,
-@@ -213,6 +216,83 @@ repipe:
- 	return 0;
- }
- 
-+struct event_entry {
-+	struct list_head node;
-+	u32		 tid;
-+	union perf_event event[0];
-+};
-+
-+static LIST_HEAD(samples);
-+
-+static int perf_event__sched_stat(struct perf_tool *tool,
-+				      union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_evsel *evsel,
-+				      struct machine *machine)
-+{
-+	const char *evname = NULL;
-+	uint32_t size;
-+	struct event_entry *ent;
-+	union perf_event *event_sw = NULL;
-+	struct perf_sample sample_sw;
-+	int sched_process_exit;
-+
-+	size = event->header.size;
-+
-+	evname = evsel->tp_format->name;
-+
-+	sched_process_exit = !strcmp(evname, "sched_process_exit");
-+
-+	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
-+		list_for_each_entry(ent, &samples, node)
-+			if (sample->tid == ent->tid)
-+				break;
-+
-+		if (&ent->node != &samples) {
-+			list_del(&ent->node);
-+			free(ent);
-+		}
-+
-+		if (sched_process_exit)
-+			return 0;
-+
-+		ent = malloc(size + sizeof(struct event_entry));
-+		if (ent == NULL)
-+			die("malloc");
-+		ent->tid = sample->tid;
-+		memcpy(&ent->event, event, size);
-+		list_add(&ent->node, &samples);
-+		return 0;
-+
-+	} else if (!strncmp(evname, "sched_stat_", 11)) {
-+		u32 pid;
-+
-+		pid = raw_field_value(evsel->tp_format,
-+					"pid", sample->raw_data);
-+
-+		list_for_each_entry(ent, &samples, node) {
-+			if (pid == ent->tid)
-+				break;
-+		}
-+
-+		if (&ent->node == &samples)
-+			return 0;
-+
-+		event_sw = &ent->event[0];
-+		perf_evsel__parse_sample(evsel, event_sw, &sample_sw, false);
-+
-+		sample_sw.period = sample->period;
-+		sample_sw.time = sample->time;
-+		perf_evsel__synthesize_sample(evsel, event_sw, &sample_sw, false);
-+
-+		perf_event__repipe(tool, event_sw, &sample_sw, machine);
-+		return 0;
-+	}
-+
-+	perf_event__repipe(tool, event, sample, machine);
-+
-+	return 0;
-+}
- struct perf_tool perf_inject = {
- 	.sample		= perf_event__repipe_sample,
- 	.mmap		= perf_event__repipe,
-@@ -248,6 +328,9 @@ static int __cmd_inject(void)
- 		perf_inject.mmap	 = perf_event__repipe_mmap;
- 		perf_inject.fork	 = perf_event__repipe_task;
- 		perf_inject.tracing_data = perf_event__repipe_tracing_data;
-+	} else if (inject_sched_stat) {
-+		perf_inject.sample	 = perf_event__sched_stat;
-+		perf_inject.ordered_samples = true;
- 	}
- 
- 	session = perf_session__new(input_name, O_RDONLY, false, true, &perf_inject);
-@@ -275,6 +358,9 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
-+		    "Merge sched-stat and sched-switch for getting events "
-+		    "where and how long tasks slept"),
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file",
--- 
-1.7.1
-
+Indeed
