@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab2IRAvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 20:51:07 -0400
-Received: from nm.newmedia-net.de ([217.113.179.122]:36405 "EHLO
+	id S1756866Ab2IRAwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 20:52:01 -0400
+Received: from nm.newmedia-net.de ([217.113.179.122]:36421 "EHLO
 	webmail.newmedia-net.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2IRAvF (ORCPT
+	with ESMTP id S1751230Ab2IRAv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 20:51:05 -0400
-Message-ID: <5057C3DC.9090003@dd-wrt.com>
-Date: Tue, 18 Sep 2012 02:44:12 +0200
+	Mon, 17 Sep 2012 20:51:59 -0400
+Message-ID: <5057C5AD.80609@dd-wrt.com>
+Date: Tue, 18 Sep 2012 02:51:57 +0200
 From: "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: XHCI Bug discovered in 3.6-RC6
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: XHCI Bug discovered in 3.6-RC6 (solution included)
+References: <5057C55D.2060402@dd-wrt.com>
+In-Reply-To: <5057C55D.2060402@dd-wrt.com>
 Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,13 +27,6 @@ available or not enabled in the kernel config (which is common in my
 case, since its a ARM Platform with XHCI support)
 the xhci-hcd driver will crash due nullpointer access since 
 dmi_get_system_info returns always NULL if DMI support is not enabled.
-
-proposed patch: simply add  to this function
-  if (!dmi_sys_vendor || !dmi_product_name)
-         return false;
-
-even better. disable the whole quirk handling for this case if 
-CONFIG_DMI is not set
 
 static bool compliance_mode_recovery_timer_quirk_check(void)
 {
@@ -51,6 +46,15 @@ static bool compliance_mode_recovery_timer_quirk_check(void)
      return false;
 }
 
+proposed patch: simply add
+
+  if (!dmi_sys_vendor || !dmi_product_name)
+         return false;
+
+even better. disable the whole quirk handling for this case if 
+CONFIG_DMI is not set
+
+
 
 -- 
 Mit freundlichen Grüssen / Regards
@@ -63,5 +67,18 @@ Registergericht: Amtsgericht Darmstadt, HRB 25473
 Geschäftsführer: Peter Steinhäuser, Christian Scheele
 http://www.dd-wrt.com
 email: s.gottschall@dd-wrt.com
+Tel.: +496251-582650 / Fax: +496251-5826565
+
+-- 
+Mit freundlichen Grüssen / Regards
+
+Sebastian Gottschall / CTO
+
+NewMedia-NET GmbH - DD-WRT
+Firmensitz:  Berliner Ring 101, 64625 Bensheim
+Registergericht: Amtsgericht Darmstadt, HRB 25473
+Geschäftsführer: Peter Steinhäuser, Christian Scheele
+http://www.dd-wrt.com
+email:s.gottschall@dd-wrt.com
 Tel.: +496251-582650 / Fax: +496251-5826565
 
