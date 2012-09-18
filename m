@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab2IRJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:44:25 -0400
-Received: from mga10.intel.com ([192.55.52.92]:33483 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753829Ab2IRJoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:44:23 -0400
+	id S1757738Ab2IRJpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:45:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20980 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757684Ab2IRJpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:45:05 -0400
+Subject: [PATCH v2 0/3] lockd: use per-net refrence-counted NSM clients
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Date: Tue, 18 Sep 2012 13:37:06 +0400
+Message-ID: <20120918093612.2469.94393.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Date: Tue, 18 Sep 2012 12:44:21 +0300
-Message-ID: <CALLzPKZqw05_4V6NQeo-A6xOza2P4g6mqxDJnv7f-ktovj_HpQ@mail.gmail.com>
-Subject: IMA policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+v2:
+1) NSM transport is TCP based now. And all RPC tasks now called with
+RPC_TASK_SOFTCONN. The advantage of this is that the kernel could discover
+when statd is not running and fail the upcall immediately, rather than waiting
+possibly many seconds for each upcall RPC to time out.
+2) XDR layer violation (reference to upper RPC client cl_hostname) was
+replaced by passing the string as a part of nlm_args structure.
 
-I have asked this question already 2 times in fsdevel but have not got
-any single response.
+This is a bug fix for https://bugzilla.redhat.com/show_bug.cgi?id=830862.
 
-Certain file system types and partitions will never be measured or
-appraised depending on the IMA policy.
-For example, pseudo file systems are not measured and appraised.
-In upstream IMA implementation policy will be checked again and again
-for every inode in the filesystem.
-It happens thousands times per second. That is absolute waste of CPU
-and may be batter resources.
+The problem is that with NFSv4 mount in container (with separated mount
+namesapce) and active lock on it, dying child reaped of this container will
+try to umount NFS and doing this will try to create RPC client to send
+unmonitor request to statd.
+But creation of RCP client requires valid current->nsproxy (for operation with
+utsname()) and during umount on child reaper exit it's equal to zero.
 
-To overcome such issue I would like to have a flag in super block data structure
-which can be set once if IMA does not need to measure anything from a partition.
-The flag might be tested by ima hooks to return without doing anything.
+Proposed solution is to introduce refrence-counter per-net NSM client, which
+is created on fist monitor call and destroyed after the lst monitor call.
 
-I looked to <linux/fs.h> and found that there is a possibility to to
-add additional flag for sb->s_flags.
-For example
+The following series implements...
 
-#define MS_NOT_IMA              (1<<25) /* NOT_IMA */
-#define IS_I_NOT_IMA(inode)   __IS_FLG(inode, MS_NOT_IMA)
+---
+
+Stanislav Kinsbursky (3):
+      lockd: per-net NSM client creation and destruction helpers introduced
+      lockd: use rpc client's cl_nodename for id encoding
+      lockd: create and use per-net NSM RPC clients on MON/UNMON requests
 
 
-Another way is to add additional dedicated integrity related member to
-the sb structure.
-struct super_block {
-...
-#ifdef CONFIG_INTEGRITY
-      int s_integrity;
-#endif
-};
+ fs/lockd/mon.c   |   86 +++++++++++++++++++++++++++++++++++++++++++-----------
+ fs/lockd/netns.h |    4 +++
+ fs/lockd/svc.c   |    1 +
+ 3 files changed, 74 insertions(+), 17 deletions(-)
 
-Obviously there are only few super blocks in the system and few bytes
-will not harm.
-
-Can you please advice about this?
-
-Thanks,
-Dmitry
