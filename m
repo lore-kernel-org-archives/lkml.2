@@ -1,78 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab2IRSRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:17:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45265 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab2IRSRp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:17:45 -0400
+	id S1753541Ab2IRSSD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:18:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58915 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753417Ab2IRSR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 14:17:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,444,1344236400"; 
+   d="scan'208";a="194194565"
+Date: Tue, 18 Sep 2012 11:17:51 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Neil Zhang <zhangwm@marvell.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] USB: remove CONFIG_EXPERIMENTAL dependancies
+Message-ID: <20120918181751.GA17755@xanatos>
+References: <20120915041550.GA28736@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120918180200.GA2281@netboy.at.omicron.at>
-References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
- <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
- <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Sep 2012 11:17:23 -0700
-Message-ID: <CALCETrUd=Tg31nrkBW2RxxSjaLNPYwPF2+=j-19UWP_dShYnSQ@mail.gmail.com>
-Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
- issue in timekeeping core
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120915041550.GA28736@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 11:02 AM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> On Mon, Sep 17, 2012 at 05:20:41PM -0700, John Stultz wrote:
->> On 09/17/2012 04:49 PM, Andy Lutomirski wrote:
->> >2. There's nothing vsyscall-specific about the code in
->> >vclock_gettime.c.  In fact, the VVAR macro should work just fine in
->> >kernel code.  If you moved all this code into a header, then in-kernel
->> >uses could use it, and maybe even other arches could use it.  Last
->> >time I checked, it seemed like vclock_gettime was considerably faster
->> >than whatever the in-kernel equivalent did.
->> I like the idea of unifying the implementations, but I'd want to
->> know more about why vclock_gettime was faster then the in-kernel
->> getnstimeofday(), since it might be due to the more limited locking
->> (we only update vsyscall data under the vsyscall lock, where as the
->> timekeeper lock is held for the entire execution of
->> update_wall_time()), or some of the optimizations in the vsyscall
->> code is focused on providing timespecs to userland, where as
->> in-kernel we also have to provide ktime_ts.
->
-> This there a valid technical reason why each arch has its own vdso
-> implementation?
+On Fri, Sep 14, 2012 at 09:15:50PM -0700, Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> As discussed at the kernel summit this year, CONFIG_EXPERIMENTAL means
+> nothing, so let's get rid of it.
+> 
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: David Herrmann <dh.herrmann@googlemail.com>
+> Cc: Hauke Mehrtens <hauke@hauke-m.de>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Neil Zhang <zhangwm@marvell.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Fabio Estevam <fabio.estevam@freescale.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/usb/core/Kconfig     |    2 +-
+>  drivers/usb/gadget/Kconfig   |   17 ++++++-----------
+>  drivers/usb/host/Kconfig     |   22 ++++++++++------------
+>  drivers/usb/wusbcore/Kconfig |    3 +--
+>  4 files changed, 18 insertions(+), 26 deletions(-)
+> 
+> Any objections to me applying this patch to the usb-next branch?
 
-I don't know too much about other arch vdsos.  i386's doesn't have
-clock functions.  x32 works exactly like x86-64, except that it
-probably involves a bit of addressing mode weirdness.  ia64's is very
-strange indeed, I think.
+No objections for the xHCI changes.
 
-In any case, the VVAR macro is an x86-64-ism, although if it were to
-be the beginning of a generic mechanism, #define VVAR(x) (x) would be
-a perfectly fine start, I think.
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
->
-> If not, I would suggest that the first step would be to refactor these
-> into one C-language header. If this can be shared with kernel code,
-> then all the better.
-
-That should be most straightforward to do.
-
-One issue: you can't call a function pointer from vdso code (because
-the vdso is in a different place in different processes).  The
-vclock_mode stuff would need to be extended to work across
-architectures, and the fallback to a real syscall would need to turn
-into something else.
-
---Andy
+> 
+> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+> index 9981984..f70c1a1 100644
+> --- a/drivers/usb/core/Kconfig
+> +++ b/drivers/usb/core/Kconfig
+> @@ -56,7 +56,7 @@ config USB_SUSPEND
+>  
+>  config USB_OTG
+>  	bool "OTG support"
+> -	depends on USB && EXPERIMENTAL
+> +	depends on USB
+>  	depends on USB_SUSPEND
+>  	default n
+>  	help
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index a53be32..dfb51a4 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -557,7 +557,7 @@ config USB_ZERO_HNPTEST
+>  	  one serve as the USB host instead (in the "B-Host" role).
+>  
+>  config USB_AUDIO
+> -	tristate "Audio Gadget (EXPERIMENTAL)"
+> +	tristate "Audio Gadget"
+>  	depends on SND
+>  	select USB_LIBCOMPOSITE
+>  	select SND_PCM
+> @@ -672,8 +672,7 @@ config USB_G_NCM
+>  	  dynamically linked module called "g_ncm".
+>  
+>  config USB_GADGETFS
+> -	tristate "Gadget Filesystem (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL
+> +	tristate "Gadget Filesystem"
+>  	help
+>  	  This driver provides a filesystem based API that lets user mode
+>  	  programs implement a single-configuration USB device, including
+> @@ -681,15 +680,11 @@ config USB_GADGETFS
+>  	  All endpoints, transfer speeds, and transfer types supported by
+>  	  the hardware are available, through read() and write() calls.
+>  
+> -	  Currently, this option is still labelled as EXPERIMENTAL because
+> -	  of existing race conditions in the underlying in-kernel AIO core.
+> -
+>  	  Say "y" to link the driver statically, or "m" to build a
+>  	  dynamically linked module called "gadgetfs".
+>  
+>  config USB_FUNCTIONFS
+> -	tristate "Function Filesystem (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL
+> +	tristate "Function Filesystem"
+>  	select USB_LIBCOMPOSITE
+>  	select USB_FUNCTIONFS_GENERIC if !(USB_FUNCTIONFS_ETH || USB_FUNCTIONFS_RNDIS)
+>  	help
+> @@ -799,8 +794,8 @@ config USB_G_SERIAL
+>  	  make MS-Windows work with CDC ACM.
+>  
+>  config USB_MIDI_GADGET
+> -	tristate "MIDI Gadget (EXPERIMENTAL)"
+> -	depends on SND && EXPERIMENTAL
+> +	tristate "MIDI Gadget"
+> +	depends on SND
+>  	select USB_LIBCOMPOSITE
+>  	select SND_RAWMIDI
+>  	help
+> @@ -867,7 +862,7 @@ config USB_G_ACM_MS
+>  	  dynamically linked module called "g_acm_ms".
+>  
+>  config USB_G_MULTI
+> -	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
+> +	tristate "Multifunction Composite Gadget"
+>  	depends on BLOCK && NET
+>  	select USB_G_MULTI_CDC if !USB_G_MULTI_RNDIS
+>  	select USB_LIBCOMPOSITE
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 13cd6d5..b1deb0f 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -18,8 +18,8 @@ config USB_C67X00_HCD
+>  	  module will be called c67x00.
+>  
+>  config USB_XHCI_HCD
+> -	tristate "xHCI HCD (USB 3.0) support (EXPERIMENTAL)"
+> -	depends on USB && USB_ARCH_HAS_XHCI && EXPERIMENTAL
+> +	tristate "xHCI HCD (USB 3.0) support"
+> +	depends on USB && USB_ARCH_HAS_XHCI
+>  	---help---
+>  	  The eXtensible Host Controller Interface (xHCI) is standard for USB 3.0
+>  	  "SuperSpeed" host controller hardware.
+> @@ -262,7 +262,7 @@ config USB_ISP116X_HCD
+>  
+>  config USB_ISP1760_HCD
+>  	tristate "ISP 1760 HCD support"
+> -	depends on USB && EXPERIMENTAL
+> +	depends on USB
+>  	---help---
+>  	  The ISP1760 chip is a USB 2.0 host controller.
+>  
+> @@ -376,7 +376,7 @@ config USB_OHCI_HCD_PCI
+>  
+>  config USB_OHCI_HCD_SSB
+>  	bool "OHCI support for Broadcom SSB OHCI core (DEPRECATED)"
+> -	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD) && EXPERIMENTAL
+> +	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD)
+>  	select USB_HCD_SSB
+>  	select USB_OHCI_HCD_PLATFORM
+>  	default n
+> @@ -414,7 +414,7 @@ config USB_CNS3XXX_OHCI
+>  
+>  config USB_OHCI_HCD_PLATFORM
+>  	bool "Generic OHCI driver for a platform device"
+> -	depends on USB_OHCI_HCD && EXPERIMENTAL
+> +	depends on USB_OHCI_HCD
+>  	default n
+>  	---help---
+>  	  Adds an OHCI host driver for a generic platform device, which
+> @@ -424,7 +424,7 @@ config USB_OHCI_HCD_PLATFORM
+>  
+>  config USB_EHCI_HCD_PLATFORM
+>  	bool "Generic EHCI driver for a platform device"
+> -	depends on USB_EHCI_HCD && EXPERIMENTAL
+> +	depends on USB_EHCI_HCD
+>  	default n
+>  	---help---
+>  	  Adds an EHCI host driver for a generic platform device, which
+> @@ -591,8 +591,7 @@ config USB_RENESAS_USBHS_HCD
+>  	  module will be called renesas-usbhs.
+>  
+>  config USB_WHCI_HCD
+> -	tristate "Wireless USB Host Controller Interface (WHCI) driver (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL
+> +	tristate "Wireless USB Host Controller Interface (WHCI) driver"
+>  	depends on PCI && USB && UWB
+>  	select USB_WUSB
+>  	select UWB_WHCI
+> @@ -604,8 +603,7 @@ config USB_WHCI_HCD
+>  	  will be called "whci-hcd".
+>  
+>  config USB_HWA_HCD
+> -	tristate "Host Wire Adapter (HWA) driver (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL
+> +	tristate "Host Wire Adapter (HWA) driver"
+>  	depends on USB && UWB
+>  	select USB_WUSB
+>  	select UWB_HWA
+> @@ -656,7 +654,7 @@ config USB_OCTEON2_COMMON
+>  
+>  config USB_HCD_BCMA
+>  	tristate "BCMA usb host driver"
+> -	depends on BCMA && EXPERIMENTAL
+> +	depends on BCMA
+>  	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+>  	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+>  	help
+> @@ -668,7 +666,7 @@ config USB_HCD_BCMA
+>  
+>  config USB_HCD_SSB
+>  	tristate "SSB usb host driver"
+> -	depends on SSB && EXPERIMENTAL
+> +	depends on SSB
+>  	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+>  	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+>  	help
+> diff --git a/drivers/usb/wusbcore/Kconfig b/drivers/usb/wusbcore/Kconfig
+> index f29fdd7..8bf1976 100644
+> --- a/drivers/usb/wusbcore/Kconfig
+> +++ b/drivers/usb/wusbcore/Kconfig
+> @@ -2,8 +2,7 @@
+>  # Wireless USB Core configuration
+>  #
+>  config USB_WUSB
+> -	tristate "Enable Wireless USB extensions (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL
+> +	tristate "Enable Wireless USB extensions"
+>  	depends on USB
+>  	depends on PCI
+>  	depends on UWB
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
