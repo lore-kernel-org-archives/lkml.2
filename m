@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2IRJAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:00:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1682 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123Ab2IRJAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:00:02 -0400
-X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
-   d="scan'208";a="5864327"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 1/2] workqueue: intruduce cwq_set_max_active() helper for thaw_workqueues()
-Date: Tue, 18 Sep 2012 16:36:52 +0800
-Message-Id: <1347957414-6692-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 16:35:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 16:35:13,
-	Serialize complete at 2012/09/18 16:35:13
+	id S1754974Ab2IRJEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:04:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38581 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574Ab2IRJE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:04:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,441,1344236400"; 
+   d="scan'208";a="146240087"
+Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via
+ device_prep_dma_cyclic() callback
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Dan Williams <djbw@fb.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+In-Reply-To: <20120918083146.GE12445@n2100.arm.linux.org.uk>
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com>
+	 <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com>
+	 <CACRpkdYAxFzPAZgMsdj9C3YVLzMc_w41Xs0SiqX-1DWaZqxAdw@mail.gmail.com>
+	 <20120918083146.GE12445@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Sep 2012 14:30:10 +0530
+Message-ID: <1347958810.1943.176.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using a helper instead of open code makes thaw_workqueues() more clear.
+On Tue, 2012-09-18 at 09:31 +0100, Russell King - ARM Linux wrote:
+> On Mon, Sep 17, 2012 at 11:01:23AM +0200, Linus Walleij wrote:
+> > On Thu, Sep 13, 2012 at 3:37 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> > 
+> > > Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+> > > can receive the no_wakeup request coming from client drivers.
+> > > This feature can be used during audio operation to disable all audio
+> > > related interrupts.
+> > >
+> > > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > > CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > > CC: Barry Song <baohua.song@csr.com>
+> > > CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> > > CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> > > CC: Vista Silicon <javier.martin@vista-silicon.com>
+> > > CC: Zhangfei Gao <zhangfei.gao@marvell.com>
+> > > CC: Shawn Guo <shawn.guo@linaro.org>
+> > > CC: Laxman Dewangan <ldewangan@nvidia.com>
+> > 
+> > After some discussion with clever people I know I have come to the conclusion
+> > that this is a good idea, so:
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> NAKed-by: me
+> 
+> If you look at the other sub-threads of the patch you're acking, you'll
+> notice that there's a v3 of this patch set which changes the way this is
+> done.
+Was it a genuine mistake, think v3 reply v2? Or less caffeine..... :)
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index cd05cf3..d0ca063 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3412,6 +3412,26 @@ void destroy_workqueue(struct workqueue_struct *wq)
- EXPORT_SYMBOL_GPL(destroy_workqueue);
- 
- /**
-+ * cwq_set_max_active - adjust max_active of a cwq
-+ * @cwq: target cpu_workqueue_struct
-+ * @max_active: new max_active value.
-+ *
-+ * Set max_active of @cwq to @max_active and activate delayed works
-+ * if max_active is increased.
-+ *
-+ * CONTEXT:
-+ * spin_lock_irq(gcwq->lock).
-+ */
-+static void cwq_set_max_active(struct cpu_workqueue_struct *cwq, int max_active)
-+{
-+	cwq->max_active = max_active;
-+
-+	while (!list_empty(&cwq->delayed_works) &&
-+	       cwq->nr_active < cwq->max_active)
-+		cwq_activate_first_delayed(cwq);
-+}
-+
-+/**
-  * workqueue_set_max_active - adjust max_active of a workqueue
-  * @wq: target workqueue
-  * @max_active: new max_active value.
-@@ -3837,11 +3857,7 @@ void thaw_workqueues(void)
- 				continue;
- 
- 			/* restore max_active and repopulate worklist */
--			cwq->max_active = wq->saved_max_active;
--
--			while (!list_empty(&cwq->delayed_works) &&
--			       cwq->nr_active < cwq->max_active)
--				cwq_activate_first_delayed(cwq);
-+			cwq_set_max_active(cwq, wq->saved_max_active);
- 		}
- 
- 		for_each_worker_pool(pool, gcwq)
 -- 
-1.7.4.4
+~Vinod
 
