@@ -1,131 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab2IRWva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 18:51:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40026 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab2IRWv0 (ORCPT
+	id S932286Ab2IRWyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 18:54:19 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58753 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755813Ab2IRWyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 18:51:26 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
-        bilhuang@nvidia.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST] mfd: max8907: add power off control
-Date: Tue, 18 Sep 2012 16:51:19 -0600
-Message-Id: <1348008679-20582-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 18 Sep 2012 18:54:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347670122-25824-2-git-send-email-yinghai@kernel.org>
+References: <1347670122-25824-1-git-send-email-yinghai@kernel.org> <1347670122-25824-2-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 18 Sep 2012 16:53:52 -0600
+Message-ID: <CAErSpo4-tGvDHrgmJJG5Q4wxmqWQGYx-rm+m2rV-=B1WOiGGaw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Use correct type when freeing bus resource list
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Fri, Sep 14, 2012 at 6:48 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Should use struct pci_bus_resource instead of struct pci_host_bridge_window
 
-Add DT property "maxim,system-power-controller" to indicate whether the
-PMIC is in charge of controlling the system power. If this is set, the
-driver will provide the pm_power_off() function.
+Looks good, and this is all my fault, sorry.  Applied to a
+pci/yinghai-misc branch.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-Samuel, I'm not sure if you have this in your list to process or not, nor
-if you prefer a patch to be reposted vs. a response to the original email;
-Mark Brown requested that for him at least I repost rather than reply, so
-I'm giving that a go everywhere.
-
- .../devicetree/bindings/regulator/max8907.txt      |    6 ++++++
- drivers/mfd/max8907.c                              |   20 ++++++++++++++++++++
- include/linux/mfd/max8907.h                        |    2 ++
- 3 files changed, 28 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/max8907.txt b/Documentation/devicetree/bindings/regulator/max8907.txt
-index 4fd847f..51e683b 100644
---- a/Documentation/devicetree/bindings/regulator/max8907.txt
-+++ b/Documentation/devicetree/bindings/regulator/max8907.txt
-@@ -16,6 +16,10 @@ Required properties:
-   property, with valid values listed below. The content of each sub-node
-   is defined by the standard binding for regulators; see regulator.txt.
- 
-+Optional properties:
-+- maxim,system-power-controller: Boolean property indicating that the PMIC
-+  controls the overall system power.
-+
- Valid regulator-compatible values are:
- 
-   sd1, sd2, sd3, ldo1, ldo2, ldo3, ldo4, ldo5, ldo6, ldo7, ldo8, ldo9, ldo10,
-@@ -29,6 +33,8 @@ Example:
- 			reg = <0x3c>;
- 			interrupts = <0 86 0x4>;
- 
-+			maxim,system-power-controller;
-+
- 			mbatt-supply = <&some_reg>;
- 			in-v1-supply = <&mbatt_reg>;
- 			...
-diff --git a/drivers/mfd/max8907.c b/drivers/mfd/max8907.c
-index 6497c98..2303641 100644
---- a/drivers/mfd/max8907.c
-+++ b/drivers/mfd/max8907.c
-@@ -176,11 +176,26 @@ static const struct regmap_irq_chip max8907_rtc_irq_chip = {
- 	.num_irqs = ARRAY_SIZE(max8907_rtc_irqs),
- };
- 
-+struct max8907 *max8907_pm_off;
-+static void max8907_power_off(void)
-+{
-+	regmap_update_bits(max8907_pm_off->regmap_gen, MAX8907_REG_RESET_CNFG,
-+			MAX8907_MASK_POWER_OFF, MAX8907_MASK_POWER_OFF);
-+}
-+
- static __devinit int max8907_i2c_probe(struct i2c_client *i2c,
- 				       const struct i2c_device_id *id)
- {
- 	struct max8907 *max8907;
- 	int ret;
-+	struct max8907_platform_data *pdata = dev_get_platdata(&i2c->dev);
-+	bool pm_off = false;
-+
-+	if (pdata)
-+		pm_off = pdata->pm_off;
-+	else if (i2c->dev.of_node)
-+		pm_off = of_property_read_bool(i2c->dev.of_node,
-+					"maxim,system-power-controller");
- 
- 	max8907 = devm_kzalloc(&i2c->dev, sizeof(struct max8907), GFP_KERNEL);
- 	if (!max8907) {
-@@ -251,6 +266,11 @@ static __devinit int max8907_i2c_probe(struct i2c_client *i2c,
- 		goto err_add_devices;
- 	}
- 
-+	if (pm_off && !pm_power_off) {
-+		max8907_pm_off = max8907;
-+		pm_power_off = max8907_power_off;
-+	}
-+
- 	return 0;
- 
- err_add_devices:
-diff --git a/include/linux/mfd/max8907.h b/include/linux/mfd/max8907.h
-index 283531f..b06f7a6 100644
---- a/include/linux/mfd/max8907.h
-+++ b/include/linux/mfd/max8907.h
-@@ -167,6 +167,7 @@
- #define MAX8907_MASK_OUT5V_VINEN	0x10
- #define MAX8907_MASK_OUT5V_ENSRC	0x0E
- #define MAX8907_MASK_OUT5V_EN		0x01
-+#define MAX8907_MASK_POWER_OFF		0x40
- 
- /* Regulator IDs */
- #define MAX8907_MBATT	0
-@@ -231,6 +232,7 @@ enum {
- 
- struct max8907_platform_data {
- 	struct regulator_init_data *init_data[MAX8907_NUM_REGULATORS];
-+	bool pm_off;
- };
- 
- struct regmap_irq_chips_data;
--- 
-1.7.0.4
-
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+> ---
+>  drivers/pci/bus.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6/drivers/pci/bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/bus.c
+> +++ linux-2.6/drivers/pci/bus.c
+> @@ -87,11 +87,15 @@ EXPORT_SYMBOL_GPL(pci_bus_resource_n);
+>  void pci_bus_remove_resources(struct pci_bus *bus)
+>  {
+>         int i;
+> +       struct pci_bus_resource *bus_res, *tmp;
+>
+>         for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++)
+>                 bus->resource[i] = NULL;
+>
+> -       pci_free_resource_list(&bus->resources);
+> +       list_for_each_entry_safe(bus_res, tmp, &bus->resources, list) {
+> +               list_del(&bus_res->list);
+> +               kfree(bus_res);
+> +       }
+>  }
+>
+>  /**
