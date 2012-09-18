@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab2IRRLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:11:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50544 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab2IRRLD (ORCPT
+	id S1752677Ab2IRRNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:13:46 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52379 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752113Ab2IRRNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:11:03 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jesse@nicira.com
-Cc: davem@davemloft.net, dev@openvswitch.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 2/3] net/openvswitch/vport.c: Remove unecessary semicolon
-Date: Tue, 18 Sep 2012 19:10:44 +0200
-Message-Id: <1347988245-31413-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347988245-31413-1-git-send-email-peter.senna@gmail.com>
-References: <1347988245-31413-1-git-send-email-peter.senna@gmail.com>
+	Tue, 18 Sep 2012 13:13:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1347657078-32230-2-git-send-email-thierry.reding@avionic-design.de>
+References: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
+ <1347657078-32230-2-git-send-email-thierry.reding@avionic-design.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 18 Sep 2012 11:13:23 -0600
+Message-ID: <CAErSpo7bix_4bayh2ha_yogwNiLACU7Bymd_H5ur1wxF-tmTNw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: pci: Keep pci_common_init() around after init
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found by http://coccinelle.lip6.fr/
+On Fri, Sep 14, 2012 at 3:11 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> When using deferred driver probing, PCI host controller drivers may
+> actually require this function after the init stage.
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  arch/arm/kernel/bios32.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> index 2b2f25e..7288093 100644
+> --- a/arch/arm/kernel/bios32.c
+> +++ b/arch/arm/kernel/bios32.c
+> @@ -423,7 +423,7 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+>         return irq;
+>  }
+>
+> -static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+> +static void __devinit pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- net/openvswitch/vport.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Shouldn't we just remove __init completely, since Greg KH is in the
+process of removing __devinit?
 
-diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
-index 9055dd6..03779e8 100644
---- a/net/openvswitch/vport.c
-+++ b/net/openvswitch/vport.c
-@@ -398,7 +398,7 @@ void ovs_vport_record_error(struct vport *vport, enum vport_err_type err_type)
- 	case VPORT_E_TX_ERROR:
- 		vport->err_stats.tx_errors++;
- 		break;
--	};
-+	}
- 
- 	spin_unlock(&vport->stats_lock);
- }
--- 
-1.7.11.4
-
+>  {
+>         struct pci_sys_data *sys = NULL;
+>         int ret;
+> @@ -472,7 +472,7 @@ static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+>         }
+>  }
+>
+> -void __init pci_common_init(struct hw_pci *hw)
+> +void __devinit pci_common_init(struct hw_pci *hw)
+>  {
+>         struct pci_sys_data *sys;
+>         LIST_HEAD(head);
+> --
+> 1.7.12
+>
