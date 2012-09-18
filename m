@@ -1,89 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2IRHH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 03:07:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58825 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508Ab2IRHH4 (ORCPT
+	id S1757087Ab2IRHLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 03:11:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:52730 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab2IRHLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 03:07:56 -0400
-Date: Tue, 18 Sep 2012 09:07:52 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, NeilBrown <neilb@suse.de>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mfd: twl: Move PWM driver to PWM framework
-Message-ID: <20120918070752.GA17545@avionic-0098.mockup.avionic-design.de>
-References: <1346582458-7890-1-git-send-email-thierry.reding@avionic-design.de>
- <5044664C.5010508@ti.com>
- <20120907131926.GF29340@avionic-0098.mockup.avionic-design.de>
- <5049FC05.6090101@ti.com>
+	Tue, 18 Sep 2012 03:11:05 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
-Content-Disposition: inline
-In-Reply-To: <5049FC05.6090101@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:YqJB1d8EiuELJdX8+duL+m9TLBRGwNqXdSdvFaUaqyj
- O+2yZpwre3J5n/IYr73ADRsvlX69OxQCVOz1Vw6YETqsM5WqSs
- Pqh4toIBbWAESGiUJM5KeG/PT0YWT1/eu3UVniYRT/5EsmC2lb
- pu4XvD/rni9JfstRJ+KN9S5oifD+j+hWoGWwKruf5hRDI+uqeK
- Y1Ni+3wg3BPdB3HA/bIwxJdCJ6bHAbvT/chXWW9M0Xk53wKV1T
- MD4+UeQhZZjBE9o/x527max7UUsnyQDmXaeMtOyua7lHjiNdHN
- w1GEaEnRK6yUL3ZpFitG5NWm5RAB5r5CeeBW9XTl4cpFXiLVKE
- Oa+MCQ+Iez+WxWZDFKgxuJUJebLGqvfV/AR1AFfxg9R1MvxOTz
- ZkEpuF0Z7L1DT3b/XnfzvcSmOvXg/X0n14=
+In-Reply-To: <1347867577-13170-6-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1347867577-13170-6-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 18 Sep 2012 12:41:04 +0530
+X-Google-Sender-Auth: e26djeVE18DLdgUOqqiL9wDzrlg
+Message-ID: <CAOh2x=kRV-K+0SfBwoTkA641G9CeQWP4-4COMZKmkZGNL=1Dgw@mail.gmail.com>
+Subject: Re: [PATCH 5/7] dw_dmac: autoconfigure data_width or get it via
+ platform data
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> @@ -647,7 +657,11 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+>                 return NULL;
+>         }
+>
+> -       src_width = dst_width = dwc_fast_fls(src | dest | len);
+> +       src_width = dst_width = min_t(unsigned int,
+> +                                     /* For memory-to-memory transfers we
+> +                                      * always use AHB master 1 */
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry couldn't understand your comment. :(
+We use master 0 for src and master 1 for dst in memcpy.
 
-On Fri, Sep 07, 2012 at 04:52:05PM +0300, Peter Ujfalusi wrote:
-> On 09/07/2012 04:19 PM, Thierry Reding wrote:
-> >> All looks good for me but I have one comment for patch 2.
-> >=20
-> > Okay. With that change to patch 2, can I add your Acked-by?
->=20
-> Yes, with that change added:
->=20
-> Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> +                                     dwc->dw->data_width[0],
+> +                                     dwc_fast_fls(src | dest | len));
+>
+>         ctllo = DWC_DEFAULT_CTLLO(chan)
+>                         | DWC_CTLL_DST_WIDTH(dst_width)
+> @@ -717,6 +731,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>         dma_addr_t              reg;
+>         unsigned int            reg_width;
+>         unsigned int            mem_width;
+> +       unsigned int            data_width;
+>         unsigned int            i;
+>         struct scatterlist      *sg;
+>         size_t                  total_len = 0;
+> @@ -740,6 +755,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>                 ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
+>                         DWC_CTLL_FC(DW_DMA_FC_D_M2P);
+>
+> +               data_width = dwc->dw->data_width[dwc_get_sms(dws)];
+> +
+>                 for_each_sg(sgl, sg, sg_len, i) {
+>                         struct dw_desc  *desc;
+>                         u32             len, dlen, mem;
+> @@ -747,7 +764,9 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>                         mem = sg_dma_address(sg);
+>                         len = sg_dma_len(sg);
+>
+> -                       mem_width = dwc_fast_fls(mem | len);
+> +                       mem_width = min_t(unsigned int,
+> +                                         data_width,
+> +                                         dwc_fast_fls(mem | len));
 
-Peter: does this Acked-by also apply to patch 1?
+can above three be merged into a single line or two lines?
 
-Do I need Acked-by's from anybody else? I was hoping Samuel would give
-his, but there has been no response for over a week. Does anybody know
-if he's on vacation or so? I thought I had seen other mails from him,
-so maybe he just overlooked this. Before I queue this up for Linus I
-wanted to take it through linux-next for a few weeks, but time is
-already running short.
+>
+>  slave_sg_todev_fill_desc:
+>                         desc = dwc_desc_get(dwc);
+> @@ -800,6 +819,8 @@ slave_sg_todev_fill_desc:
+>                 ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
+>                         DWC_CTLL_FC(DW_DMA_FC_D_P2M);
+>
+> +               data_width = dwc->dw->data_width[dwc_get_dms(dws)];
+> +
+>                 for_each_sg(sgl, sg, sg_len, i) {
+>                         struct dw_desc  *desc;
+>                         u32             len, dlen, mem;
+> @@ -807,7 +828,9 @@ slave_sg_todev_fill_desc:
+>                         mem = sg_dma_address(sg);
+>                         len = sg_dma_len(sg);
+>
+> -                       mem_width = dwc_fast_fls(mem | len);
+> +                       mem_width = min_t(unsigned int,
+> +                                         data_width,
+> +                                         dwc_fast_fls(mem | len));
 
-Thierry
+ditto
 
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature
+>
+>  slave_sg_fromdev_fill_desc:
+>                         desc = dwc_desc_get(dwc);
+> @@ -1413,6 +1436,17 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>
+>         /* get hardware configuration parameters */
+>         max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
+> +       if (autocfg)
+> +               dw->nr_masters = (dw_params >> DW_PARAMS_NR_MASTER & 3) + 1;
+> +       else
+> +               dw->nr_masters = pdata->nr_masters;
+> +       for (i = 0; i < dw->nr_masters; i++) {
+> +               if (autocfg)
+> +                       dw->data_width[i] =
+> +                               (dw_params >> DW_PARAMS_DATA_WIDTH(i) & 3) + 2;
+> +               else
+> +                       dw->data_width[i] = pdata->data_width[i];
+> +       }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+There are many autocfg, if, else statements now in probe. Can you try
+to group these
+into as minimum if, else calls?
 
-iQIcBAEBAgAGBQJQWB3HAAoJEN0jrNd/PrOhkvsQAJxOhZPPqYbG376CNXTQ8/Y4
-ThxqnQ/otY50yTD+tMWmyZrvQcGONaI110ax5R4O7GgHkcLh8aXs2AfP6Z/x3YQn
-ciLjoZJ0vOPLH9wCVUccM43JqyOOLlaj68qCMFK9GKBbbtBNFncbGVpex3yvuPHA
-91xnyBbLH3HXa+Ll9BHLjz5t1lWnK/uonFH2ZbB2M/V1j9MKGuHIxOwJYo63+OrA
-2fq7AHqWx5DSQDKr3Knih0hoP5JVVIAvs4umxBPi/CP4CiTQFAqVM0+JENSHD/BY
-eKJPnIoanv10Yr5+pjP2pKY4/0o0qciWf8OwPrgEQcwKsk4TVC0dZivFZ+LWNxsl
-OC6N4YZiaQ+YVavOUHK4EXyDMlmZob0x7xQs23QYps/eEUXb7/jRUOaIOjjjcUVE
-YfREk7wwJm48WKnR75b0kdXhlyVaTUi6IxNI8aF23/RT46aYZjYX0t9cOJYV+V/i
-RjTDGBvPOJO28c9PKAW29E6HuGnRewHv5ZdTJd7VWjOjvjlehd5Z3mgvDuBkgTbe
-5ucLj8seEAsG3mkQJFuYj1UpaTS+R67ch2rDXUFd1NAUH7bLh8mGt0RYQWRFAHSP
-uSnPC894thj5pDW6HVygjFCqz+mfVfYNXgxV6iotFCH69+tPrlTQpZHcT76GvZmo
-Hu53GzX8cuIdH31kiwkG
-=0h7W
------END PGP SIGNATURE-----
+>
+>         /* Calculate all channel mask before DMA setup */
+>         dw->all_chan_mask = (1 << nr_channels) - 1;
+> @@ -1460,6 +1494,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>
+>                 channel_clear_bit(dw, CH_EN, dwc->mask);
+>
+> +               dwc->dw = dw;
+> +
+>                 /* hardware configuration */
+>                 if (autocfg) {
+>                         dwc->block_size =
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index 233f5e5..9beaef0 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -106,6 +106,12 @@ struct dw_dma_regs {
+>
+>  /* Bitfields in DW_PARAMS */
+>  #define DW_PARAMS_NR_CHAN      8               /* number of channels */
+> +#define DW_PARAMS_NR_MASTER    11              /* number of AHB masters */
+> +#define DW_PARAMS_DATA_WIDTH(n)        (15 + 2 * (n))
+> +#define DW_PARAMS_DATA_WIDTH1  15              /* master 1 data width */
+> +#define DW_PARAMS_DATA_WIDTH2  17              /* master 2 data width */
+> +#define DW_PARAMS_DATA_WIDTH3  19              /* master 3 data width */
+> +#define DW_PARAMS_DATA_WIDTH4  21              /* master 4 data width */
+>  #define DW_PARAMS_EN           28              /* encoded parameters */
+>
 
---fdj2RfSjLxBAspz7--
+Do these changes in a single patch 2/7
+
+viresh
