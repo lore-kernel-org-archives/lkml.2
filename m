@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2IRQii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 12:38:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62125 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2IRQg1 (ORCPT
+	id S1751908Ab2IRQlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 12:41:10 -0400
+Received: from toast.topped-with-meat.com ([204.197.218.159]:41871 "EHLO
+	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab2IRQlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 12:36:27 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: nsekhar@ti.com
-Cc: khilman@ti.com, linux@arm.linux.org.uk,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH] arch/arm/mach-davinci/board-dm646x-evm.c: Remove unecessary
-Date: Tue, 18 Sep 2012 18:36:09 +0200
-Message-Id: <1347986174-30287-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1347986174-30287-1-git-send-email-peter.senna@gmail.com>
-References: <1347986174-30287-1-git-send-email-peter.senna@gmail.com>
+	Tue, 18 Sep 2012 12:41:07 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@hack.frob.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/lkml
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Pedro Alves <palves@redhat.com>
+Subject: Re: [PATCH -mm v2 2/2] coredump: add a new elf note with siginfo
+	of the signal
+In-Reply-To: Oleg Nesterov's message of  Tuesday, 18 September 2012 17:30:27 +0200 <20120918153027.GA21612@redhat.com>
+References: <1347979995-1452-1-git-send-email-vda.linux@googlemail.com>
+	<1347979995-1452-3-git-send-email-vda.linux@googlemail.com>
+	<20120918153027.GA21612@redhat.com>
+X-Antipastobozoticataclysm: Bariumenemanilow
+Message-Id: <20120918164103.440C22C0A4@topped-with-meat.com>
+Date: Tue, 18 Sep 2012 09:41:03 -0700 (PDT)
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.0 cv=LtfpOghc c=1 sm=1 a=zq2bqNxIbzgA:10
+		a=Z6MIti7PxpgA:10 a=kj9zAlcOel0A:10 a=hOe2yjtxAAAA:8 a=14OXPxybAAAA:8
+		a=ZLkgJA63eJsA:10 a=isXBeLDtNaAAsHjGD2kA:9 a=CjuIK1q_8ugA:10
+		a=WkljmVdYkabdwxfqvArNOQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found by http://coccinelle.lip6.fr/
+> But, somehow I forgot about compat tasks when we discussed this before.
+> Perhaps the code above should do
+> 
+> 	if (is_compat_task())
+> 		copy_siginfo_to_user32(...);
+> 	else
+> 		copy_siginfo_to_user(...);
+> 
+> ?
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- arch/arm/mach-davinci/board-dm646x-evm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+compat_binfmt_elf.c will define a separate copy of this code via #include.
+So it just needs #define copy_siginfo_to_user copy_siginfo_to_user32 or
+something like that, as the various other types and functions are handled.
 
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 958679a..1ccaace 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -193,7 +193,7 @@ static int evm_led_setup(struct i2c_client *client, int gpio,
- 	while (ngpio--) {
- 		leds->gpio = gpio++;
- 		leds++;
--	};
-+	}
- 
- 	evm_led_dev = platform_device_alloc("leds-gpio", 0);
- 	platform_device_add_data(evm_led_dev, &evm_led_data,
--- 
-1.7.11.4
 
+Thanks,
+Roland
