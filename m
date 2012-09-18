@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab2IRLxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:53:41 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38125 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab2IRLxk (ORCPT
+	id S1756399Ab2IRL6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:58:14 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:43226 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751574Ab2IRL6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:53:40 -0400
+	Tue, 18 Sep 2012 07:58:11 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh8275dh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MAJNWR-02-HA3-02
+X-M-MSG: 
+Date: Tue, 18 Sep 2012 13:58:02 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: <dwmw2@infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <chrisw@sous-sol.org>,
+        <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH v2] intel-iommu: Default to non-coherent for domains
+ unattached to iommus
+Message-ID: <20120918115802.GJ2505@amd.com>
+References: <20111112002421.10875.8307.stgit@bling.home>
 MIME-Version: 1.0
-In-Reply-To: <1347951240-11548-1-git-send-email-richard.zhao@freescale.com>
-References: <1347951240-11548-1-git-send-email-richard.zhao@freescale.com>
-Date: Tue, 18 Sep 2012 13:53:38 +0200
-Message-ID: <CACRpkdZE28oxRgaWob_tSYM1dc7jr09FzWqERhd_GfmcV_LmzA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: imx: remove duplicated const
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Richard Zhao <richard.zhao@freescale.com>
-Cc: linux-kernel@vger.kernel.org, dong.aisheng@linaro.org,
-        shawn.guo@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111112002421.10875.8307.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 8:54 AM, Richard Zhao
-<richard.zhao@freescale.com> wrote:
+On Fri, Nov 11, 2011 at 05:26:44PM -0700, Alex Williamson wrote:
+> domain_update_iommu_coherency() currently defaults to setting domains
+> as coherent when the domain is not attached to any iommus.  This
+> allows for a window in domain_context_mapping_one() where such a
+> domain can update context entries non-coherently, and only after
+> update the domain capability to clear iommu_coherency.
+> 
+> This can be seen using KVM device assignment on VT-d systems that
+> do not support coherency in the ecap register.  When a device is
+> added to a guest, a domain is created (iommu_coherency = 0), the
+> device is attached, and ranges are mapped.  If we then hot unplug
+> the device, the coherency is updated and set to the default (1)
+> since no iommus are attached to the domain.  A subsequent attach
+> of a device makes use of the same dmar domain (now marked coherent)
+> updates context entries with coherency enabled, and only disables
+> coherency as the last step in the process.
+> 
+> To fix this, switch domain_update_iommu_coherency() to use the
+> safer, non-coherent default for domains not attached to iommus.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Tested-by: Donald Dutile <ddutile@redhat.com>
+> Acked-by: Donald Dutile <ddutile@redhat.com>
+> Acked-by: Chris Wright <chrisw@sous-sol.org>
 
-> fix smatch warning:
-> drivers/pinctrl/pinctrl-imx.c:435:21: warning: duplicate const
->
-> Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
+Applied, thanks.
 
-Patch applied with Dong's ACK!
+-- 
+AMD Operating System Research Center
 
-Thank you for running smatch, BTW much appreciated.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-Yours,
-Linus Walleij
