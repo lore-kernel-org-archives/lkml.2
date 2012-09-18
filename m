@@ -1,244 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab2IRV37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 17:29:59 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:60704 "EHLO ogre.sisk.pl"
+	id S1755573Ab2IRVgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:36:06 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:60723 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab2IRV3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 17:29:53 -0400
+	id S1755138Ab2IRVgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 17:36:02 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-Subject: Re: Summary of changes for v3.7
-Date: Tue, 18 Sep 2012 23:36:20 +0200
+To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
+Date: Tue, 18 Sep 2012 23:42:30 +0200
 User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>
-References: <201209182219.00649.rjw@sisk.pl> <3E54258959B69E4282D79E01AB1F32B7041D147D@DFLE12.ent.ti.com>
-In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041D147D@DFLE12.ent.ti.com>
+Cc: Borislav Petkov <bp@alien8.de>, bhelgaas@google.com, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+References: <50158321.4030007@gmx.net> <201208022340.16948.rjw@sisk.pl> <5055DFB6.6070809@gmx.net>
+In-Reply-To: <5055DFB6.6070809@gmx.net>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209182336.20497.rjw@sisk.pl>
+Message-Id: <201209182342.30244.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 18, 2012, Karicheri, Muralidharan wrote:
-> Rafael,
+Hi,
+
+On Sunday, September 16, 2012, Witold Szczeponik wrote:
+> Hi Rafael, 
 > 
-> Could you review the attached patch which is sent to the list and merge it
-> if it looks ok? If not, please provide your comment.
+> what about the patches 1 and 3 which do not make any changes to the ABI?
+> The first patch simplifies the code, while the third patch fixes a problem in
+> the PNP resource allocation.  Any chances to have them included in 3.7?
 
-You've sent it as an RFC and never submitted again, so I thought it was
-dropped.
+They would be fine as far as I'm concerned, but I'm not maintaining that part
+of the kernel (at least at the moment).
 
-Please see my comment in a reply to the original patch message I've just sent.
+I'm not sure who's the maintainer of it, to be honest.
 
 Thanks,
 Rafael
-
-
-> >> -----Original Message-----
-> >> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-owner@vger.kernel.org] On
-> >> Behalf Of Rafael J. Wysocki
-> >> Sent: Tuesday, September 18, 2012 4:19 PM
-> >> To: LKML
-> >> Cc: ACPI Devel Mailing List; Linux PM list; Linux-sh list; Len Brown
-> >> Subject: PM: Summary of changes for v3.7
-> >> 
-> >> Hi all,
-> >> 
-> >> All of the changes I'd like to include into the first PM pull request during
-> >> the v3.7 merge window, except maybe for a couple of patches I know of, but
-> >> haven't decided what to do with them yet, is on the 'linux-next' branch of the
-> >> linux-pm.git tree now.
-> >> 
-> >> The summary of those changes is appended.  If anyone finds any of them
-> >> objectionable, please let me know ASAP.  Also please let me know if there are
-> >> any power management patches I've seen already that you'd like me to take for
-> >> v3.7 (if I haven't seen them yet, they clearly are not v3.7 material, unless
-> >> they are urgent fixes).
-> >> 
-> >> Thanks,
-> >> Rafael
-> >> 
-> >> ---
-> >> 
-> >>  Documentation/ABI/testing/sysfs-devices-system-cpu |  11 +
-> >>  Documentation/cpu-freq/boost.txt                   |  93 +++++
-> >>  Documentation/cpuidle/sysfs.txt                    |  10 +-
-> >>  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |  55 +++
-> >>  Documentation/devicetree/bindings/power/opp.txt    |  25 ++
-> >>  arch/arm/kernel/smp.c                              |  54 +++
-> >>  arch/arm/mach-shmobile/Makefile                    |   2 +-
-> >>  arch/arm/mach-shmobile/board-ap4evb.c              |  21 +-
-> >>  arch/arm/mach-shmobile/board-armadillo800eva.c     |   6 +-
-> >>  arch/arm/mach-shmobile/board-mackerel.c            |  34 +-
-> >>  arch/arm/mach-shmobile/common.c                    |  24 --
-> >>  arch/arm/mach-shmobile/cpuidle.c                   |  39 +-
-> >>  arch/arm/mach-shmobile/include/mach/common.h       |  14 +-
-> >>  arch/arm/mach-shmobile/include/mach/pm-rmobile.h   |  35 +-
-> >>  arch/arm/mach-shmobile/include/mach/r8a7740.h      |   6 +-
-> >>  arch/arm/mach-shmobile/include/mach/r8a7779.h      |  12 +-
-> >>  arch/arm/mach-shmobile/include/mach/sh7372.h       |  20 +-
-> >>  arch/arm/mach-shmobile/pm-r8a7740.c                |  42 ++-
-> >>  arch/arm/mach-shmobile/pm-r8a7779.c                |  71 ++--
-> >>  arch/arm/mach-shmobile/pm-rmobile.c                |  33 +-
-> >>  arch/arm/mach-shmobile/pm-sh7372.c                 | 283 ++++++++------
-> >>  arch/arm/mach-shmobile/setup-r8a7740.c             |  27 +-
-> >>  arch/arm/mach-shmobile/setup-r8a7779.c             |   5 +-
-> >>  arch/arm/mach-shmobile/setup-sh7372.c              |  69 ++--
-> >>  arch/x86/include/asm/msr-index.h                   |   3 +
-> >>  drivers/acpi/processor_driver.c                    |   8 +-
-> >>  drivers/acpi/processor_idle.c                      |  40 +-
-> >>  drivers/acpi/processor_perflib.c                   |  30 ++
-> >>  drivers/base/platform.c                            |   2 +
-> >>  drivers/base/power/domain.c                        | 244 ++++++++++---
-> >>  drivers/base/power/main.c                          |  35 +-
-> >>  drivers/base/power/opp.c                           |  47 +++
-> >>  drivers/base/power/power.h                         |  36 +-
-> >>  drivers/base/power/wakeup.c                        |  46 ++-
-> >>  drivers/clocksource/sh_cmt.c                       |  71 +++-
-> >>  drivers/clocksource/sh_mtu2.c                      |  41 ++-
-> >>  drivers/clocksource/sh_tmu.c                       | 112 +++++-
-> >>  drivers/cpufreq/Kconfig                            |  11 +
-> >>  drivers/cpufreq/Kconfig.x86                        |  18 +-
-> >>  drivers/cpufreq/Makefile                           |   4 +-
-> >>  drivers/cpufreq/acpi-cpufreq.c                     | 272 +++++++++++++-
-> >>  drivers/cpufreq/cpufreq-cpu0.c                     | 269 ++++++++++++++
-> >>  drivers/cpufreq/cpufreq_conservative.c             |   2 +
-> >>  drivers/cpufreq/cpufreq_ondemand.c                 |   1 +
-> >>  drivers/cpufreq/longhaul.h                         |  26 +-
-> >>  drivers/cpufreq/omap-cpufreq.c                     |  35 --
-> >>  drivers/cpufreq/powernow-k8.c                      | 406 ++-------------------
-> >>  drivers/cpufreq/powernow-k8.h                      |  32 --
-> >>  drivers/cpuidle/governors/ladder.c                 |   6 +-
-> >>  drivers/xen/xen-acpi-processor.c                   |   1 -
-> >>  include/acpi/processor.h                           |   9 +-
-> >>  include/linux/clockchips.h                         |   8 +
-> >>  include/linux/device.h                             |   7 +
-> >>  include/linux/opp.h                                |   8 +
-> >>  include/linux/pm.h                                 |   2 +
-> >>  include/linux/pm_domain.h                          |  92 ++++-
-> >>  kernel/power/Kconfig                               |   4 +
-> >>  kernel/power/poweroff.c                            |   2 +-
-> >>  kernel/power/process.c                             |   2 +-
-> >>  kernel/power/qos.c                                 |   1 +
-> >>  kernel/time/clockevents.c                          |  24 ++
-> >>  kernel/time/timekeeping.c                          |   2 +
-> >>  62 files changed, 2028 insertions(+), 922 deletions(-)
-> >> 
-> >> ---------------
-> >> 
-> >> Amit Daniel Kachhap (1):
-> >>       PM / cpufreq: Initialise the cpu field during conservative governor start
-> >> 
-> >> Andi Kleen (1):
-> >>       sections: fix section conflicts in drivers/cpufreq
-> >> 
-> >> Andre Przywara (5):
-> >>       acpi-cpufreq: Add quirk to disable _PSD usage on all AMD CPUs
-> >>       cpufreq: Add warning message to powernow-k8
-> >>       powernow-k8: delay info messages until initialization has succeeded
-> >>       acpi-cpufreq: Add support for disabling dynamic overclocking
-> >>       acpi-cpufreq: Add compatibility for legacy AMD cpb sysfs knob
-> >> 
-> >> Borislav Petkov (1):
-> >>       cpufreq / powernow-k8: Fixup missing _PSS objects message
-> >> 
-> >> Carsten Emde (1):
-> >>       Honor state disabling in the cpuidle ladder governor
-> >> 
-> >> Daniel Lezcano (4):
-> >>       cpuidle / ACPI : remove power from acpi_processor_cx structure
-> >>       ACPI / processor: remove unused function parameter
-> >>       ACPI / processor: remove pointless variable initialization
-> >>       cpuidle / ACPI : move cpuidle_device field out of the acpi_processor_power structure
-> >> 
-> >> Jan Beulich (1):
-> >>       properly __init-annotate pm_sysrq_init()
-> >> 
-> >> John Stultz (1):
-> >>       PM / wakeup: Use irqsave/irqrestore for events_lock
-> >> 
-> >> Luis Gonzalez Fernandez (1):
-> >>       PM / QoS: Add return code to pm_qos_get_value function.
-> >> 
-> >> Matthew Garrett (3):
-> >>       acpi-cpufreq: Add support for modern AMD CPUs
-> >>       ACPI: Add fixups for AMD P-state figures
-> >>       cpufreq: Remove support for hardware P-state chips from powernow-k8
-> >> 
-> >> Michal Pecio (2):
-> >>       cpufreq / ondemand: update frequency when limits are relaxed
-> >>       cpufreq: conservative: update frequency when limits are relaxed
-> >> 
-> >> Rafael J. Wysocki (40):
-> >>       PM / cpuidle: Make ladder governor use the "disabled" state flag
-> >>       PM / Domains: Introduce simplified power on routine for system resume
-> >>       PM / Domains: Add power off/on function for system core suspend stage
-> >>       timekeeping: Add suspend and resume of clock event devices
-> >>       sh: TMU: Introduce clocksource/clock events suspend/resume routines
-> >>       sh: CMT: Introduce clocksource/clock events suspend/resume routines
-> >>       sh: MTU2: Introduce clock events suspend/resume routines
-> >>       PM: Reorganize device PM initialization
-> >>       PM / Runtime: Allow helpers to be called by early platform drivers
-> >>       PM / Domains: Rename the always_on device flag to syscore
-> >>       PM / Domains: Move syscore flag from subsys data to struct device
-> >>       PM / Domains: Do not measure start time for "irq safe" devices
-> >>       sh: TMU: Basic runtime PM support
-> >>       sh: CMT: Basic runtime PM support
-> >>       sh: MTU2: Basic runtime PM support
-> >>       PM: Do not use the syscore flag for runtime PM
-> >>       PM / Domains: Make it possible to use domain names when adding devices
-> >>       PM / Domains: Make it possible to use names when adding subdomains
-> >>       PM / Domains: Add power-on function using names to identify domains
-> >>       PM / Domains: Document cpuidle-related functions and change their names
-> >>       PM / Domains: Operations related to cpuidle using domain names
-> >>       ARM: shmobile: Use names of power domains for adding devices to them
-> >>       ARM: shmobile: Drop r8a7779_add_device_to_domain()
-> >>       ARM: shmobile: Use domain names when adding subdomains to power domains
-> >>       ARM: shmobile: Add routine for automatic PM domains initialization
-> >>       ARM: shmobile: Do not access sh7372 A4S domain internals directly
-> >>       ARM: shmobile: Move sh7372's PM domain objects to a table
-> >>       ARM: shmobile: Move r8a7740's PM domain objects to a table
-> >>       ARM: shmobile: Move r8a7779's PM domain objects to a table
-> >>       ARM: shmobile: Make rmobile_init_pm_domain() static
-> >>       ARM: shmobile: Set PM domain on/off latencies directly
-> >>       ARM: shmobile: Allow device latencies to be specified directly
-> >>       ARM: shmobile: Specify device latencies for SH7372 devices directly
-> >>       ARM: shmobile: Specify device latencies for Mackerel devices directly
-> >>       ARM: shmobile: Rework adding devices to PM domains on Mackerel
-> >>       ARM: shmobile: Rework adding devices to PM domains on AP4EVB
-> >>       ARM: shmobile: Remove the console check from sh7372_enter_suspend()
-> >>       ARM: shmobile: Move definition of shmobile_init_late() to header
-> >>       ARM: shmobile: Make sh7372 cpuidle handling more straightforward
-> >>       ARM: shmobile: Add A4S cpuidle state on sh7372
-> >> 
-> >> Richard Zhao (2):
-> >>       ARM: add cpufreq transiton notifier to adjust loops_per_jiffy for smp
-> >>       cpufreq: OMAP: remove loops_per_jiffy recalculate for smp
-> >> 
-> >> Sachin Kamat (1):
-> >>       PM / Domains: Fix compilation warning related to genpd_start_dev_no_timing()
-> >> 
-> >> Sedat Dilek (1):
-> >>       PM / Freezer: Fix small typo "regrigerator"
-> >> 
-> >> Shawn Guo (2):
-> >>       PM / OPP: Initialize OPP table from device tree
-> >>       cpufreq: Add a generic cpufreq-cpu0 driver
-> >> 
-> >> Todd Poynor (1):
-> >>       PM / Sleep: Print name of wakeup source that aborts suspend
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
