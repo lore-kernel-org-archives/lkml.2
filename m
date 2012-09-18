@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180Ab2IREA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 00:00:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10305 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2IREA1 (ORCPT
+	id S1751626Ab2IREBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 00:01:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58224 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2IREBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 00:00:27 -0400
-X-Authority-Analysis: v=2.0 cv=VPlfbqzX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=maPYIuHyZko35Kr02IYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1347940824.13080.26.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.43-rt65
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 18 Sep 2012 00:00:24 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Sep 2012 00:01:03 -0400
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org, mfm@muteddisk.com
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navinp@cdac.in>
+Subject: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of usbip_host
+Date: Tue, 18 Sep 2012 09:30:06 +0530
+Message-Id: <1347940806-4653-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+stub_device_reset should set kernel thread pointers to NULL.
+so that at the time of usbip_host removal stub_shoutdown_connection
+doesn't try to kill kernel threads which are already killed.
 
-Dear RT Folks,
+Signed-off-by: navin patidar <navinp@cdac.in>
+---
+ drivers/staging/usbip/stub_dev.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-I'm pleased to announce the 3.0.43-rt65 stable release.
-
-
-This release is just an update to the new stable 3.0.43 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: a13e9ee67bbc2d0870167dc0fe558cab3f117442
-
-
-Or to build 3.0.43-rt65 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.43.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.43-rt65.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index 92ced35..447a98c 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -198,10 +198,8 @@ static void stub_shutdown_connection(struct usbip_device *ud)
+ 	 * tcp_socket is freed after threads are killed so that usbip_xmit does
+ 	 * not touch NULL socket.
+ 	 */
+-	if (ud->tcp_socket) {
++	if (ud->tcp_socket)
+ 		sock_release(ud->tcp_socket);
+-		ud->tcp_socket = NULL;
+-	}
+ 
+ 	/* 3. free used data */
+ 	stub_device_cleanup_urbs(sdev);
+@@ -233,6 +231,9 @@ static void stub_device_reset(struct usbip_device *ud)
+ 
+ 	dev_dbg(&udev->dev, "device reset");
+ 
++	ud->tcp_socket = NULL;
++	ud->tcp_rx = NULL;
++	ud->tcp_tx = NULL;
+ 	ret = usb_lock_device_for_reset(udev, sdev->interface);
+ 	if (ret < 0) {
+ 		dev_err(&udev->dev, "lock for reset\n");
+-- 
+1.7.9.5
 
