@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2IRLQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:16:19 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55445 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757156Ab2IRLQR convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 18 Sep 2012 07:16:17 -0400
-Message-Id: <5058741E020000780009C014@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 18 Sep 2012 12:16:14 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH, v2] x86: use tzcnt instead of bsf
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758038Ab2IRLWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:22:10 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51626 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758014Ab2IRLWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 07:22:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120914080347.GB3374@gmail.com>
+References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
+	<20120914080347.GB3374@gmail.com>
+Date: Tue, 18 Sep 2012 13:22:06 +0200
+Message-ID: <CACRpkdbntZ2k+2mi7=nCL2RV+YcbYi=wbK2RaDKsKNKqsCxMOA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between DT
+ and non-DT boots
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: arnd@arndb.de, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following a relatively recent compiler change, make use of the fact
-that for non-zero input BSF and TZCNT produce the same result, and that
-CPUs not knowing of TZCNT will treat the instruction as BSF (i.e.
-ignore what looks like a REP prefix to them). The assumption here is
-that TZCNT would never have worse performance than BSF.
+On Fri, Sep 14, 2012 at 10:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, Sep 13, 2012 at 11:35:43AM +0200, Linus Walleij wrote:
+>>
+>> Not having this patch in v3.6-rcN gives the following boot noise (and
+>> the key does not work):
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at /home/elinwal/linux-stericsson/kernel/irq/irqdomain.c:137
+>> irq_domain_legacy_revmap+0x20/0x48()
+(...)
+> I haven't tested this, but I think this patch should be pulled out
+> of -next and pushed into the -rcs to fix the issue you see above.
+> The real fix along with the revert to this patch also resides in
+> -next and will be applied during the next merge window.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Dmitry, can you fix this?
 
----
-v2: Do this unconditionally, and change title accordingly.
+v3.6-rc6 is regressing on us...
 
----
- arch/x86/include/asm/bitops.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- 3.6-rc6/arch/x86/include/asm/bitops.h
-+++ 3.6-rc6-x86-bsf-tzcnt/arch/x86/include/asm/bitops.h
-@@ -355,7 +355,7 @@ static int test_bit(int nr, const volati
-  */
- static inline unsigned long __ffs(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm("rep; bsf %1,%0"
- 		: "=r" (word)
- 		: "rm" (word));
- 	return word;
-@@ -369,7 +369,7 @@ static inline unsigned long __ffs(unsign
-  */
- static inline unsigned long ffz(unsigned long word)
- {
--	asm("bsf %1,%0"
-+	asm("rep; bsf %1,%0"
- 		: "=r" (word)
- 		: "r" (~word));
- 	return word;
-
-
-
+Yours,
+Linus Walleij
