@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab2IRNCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:02:09 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51576 "EHLO
+	id S1756699Ab2IRNDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:03:25 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40469 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab2IRNCH (ORCPT
+	with ESMTP id S1755408Ab2IRNDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:02:07 -0400
+	Tue, 18 Sep 2012 09:03:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347973228-29839-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1347973228-29839-2-git-send-email-stigge@antcom.de>
 References: <1347973228-29839-1-git-send-email-stigge@antcom.de>
-Date: Tue, 18 Sep 2012 10:02:06 -0300
-Message-ID: <CAAAP30F=TTyZtRk+EOK+u0e_5Km=T9ibhvA+4--pA7cfxHjYew@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: LPC32xx: DTS update for devicetree completion of spi-pl022
+	<1347973228-29839-2-git-send-email-stigge@antcom.de>
+Date: Tue, 18 Sep 2012 10:03:23 -0300
+Message-ID: <CAAAP30HhoQjJNEr_Qj1Yx2xBA4JikzS_NAtGYoX6uYR6ryiS0g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: LPC32xx: Platform update for devicetree
+ completion of spi-pl022
 From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 To: Roland Stigge <stigge@antcom.de>
 Cc: linux-arm-kernel@lists.infradead.org, broonie@opensource.wolfsonmicro.com,
@@ -28,36 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Sep 18, 2012 at 10:00 AM, Roland Stigge <stigge@antcom.de> wrote:
 > spi-pl022 got a further update to its devicetree support, completing properties
-> such that no platform data is necessary anymore. This patch adjusts
-> lpc32xx.dtsi accordingly.
+> such that no platform data is necessary anymore. This patch adjusts phy3250.c
+> accordingly: The supplied platform data is deleted. However, OF_DEV_AUXDATA()
+> are still necessary due to device naming ("dev:ssp0").
 >
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
->
-> ---
+> --
 > I will do a git pull request for arm-soc.git when the respective change in
 > spi-pl022.c is merged.
 >
->  arch/arm/boot/dts/lpc32xx.dtsi |    2 ++
->  1 file changed, 2 insertions(+)
+> --- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
+> +++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
+> @@ -27,7 +27,6 @@
+>  #include <linux/gpio.h>
+>  #include <linux/amba/bus.h>
+>  #include <linux/amba/clcd.h>
+> -#include <linux/amba/pl022.h>
+>  #include <linux/amba/pl08x.h>
+>  #include <linux/amba/mmci.h>
+>  #include <linux/of.h>
+> @@ -156,21 +155,6 @@ static struct clcd_board lpc32xx_clcd_da
+>         .remove         = lpc32xx_clcd_remove,
+>  };
 >
-> --- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-> +++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-> @@ -91,6 +91,7 @@
->                                 compatible = "arm,pl022", "arm,primecell";
->                                 reg = <0x20084000 0x1000>;
->                                 interrupts = <0x14 0>;
-> +                               pl022,bus-id = <0>;
->                         };
+> -/*
+> - * AMBA SSP (SPI)
+> - */
+> -static struct pl022_ssp_controller lpc32xx_ssp0_data = {
+> -       .bus_id                 = 0,
+> -       .num_chipselect         = 1,
+> -       .enable_dma             = 0,
+> -};
+> -
+> -static struct pl022_ssp_controller lpc32xx_ssp1_data = {
+> -       .bus_id                 = 1,
+> -       .num_chipselect         = 1,
+> -       .enable_dma             = 0,
+> -};
+> -
+>  static struct pl08x_channel_data pl08x_slave_channels[] = {
+>         {
+>                 .bus_id = "nand-slc",
+> @@ -232,8 +216,8 @@ static struct lpc32xx_mlc_platform_data
+>  };
 >
->                         spi1: spi@20088000 {
-> @@ -102,6 +103,7 @@
->                                 compatible = "arm,pl022", "arm,primecell";
->                                 reg = <0x2008c000 0x1000>;
->                                 interrupts = <0x15 0>;
-> +                               pl022,bus-id = <1>;
->                         };
->
->                         spi2: spi@20090000 {
+>  static const struct of_dev_auxdata lpc32xx_auxdata_lookup[] __initconst = {
+> -       OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", &lpc32xx_ssp0_data),
+> -       OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", &lpc32xx_ssp1_data),
+> +       OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", NULL),
+> +       OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", NULL),
+>         OF_DEV_AUXDATA("arm,pl110", 0x31040000, "dev:clcd", &lpc32xx_clcd_data),
+>         OF_DEV_AUXDATA("arm,pl080", 0x31000000, "pl08xdmac", &pl08x_pd),
+>         OF_DEV_AUXDATA("arm,pl18x", 0x20098000, "20098000.sd",
