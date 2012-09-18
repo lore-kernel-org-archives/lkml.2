@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab2IRPG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:06:26 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:6010 "EHLO
+	id S1758230Ab2IRPUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 11:20:19 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:15421 "EHLO
 	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933285Ab2IRPGY (ORCPT
+	by vger.kernel.org with ESMTP id S1752834Ab2IRPUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:06:24 -0400
-Date: Tue, 18 Sep 2012 15:06:22 +0000
+	Tue, 18 Sep 2012 11:20:13 -0400
+Date: Tue, 18 Sep 2012 15:20:11 +0000
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@gentwo.org
 To: Glauber Costa <glommer@parallels.com>
@@ -17,13 +17,11 @@ cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Suleiman Souhlal <suleiman@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
-In-Reply-To: <1347977050-29476-6-git-send-email-glommer@parallels.com>
-Message-ID: <00000139d9ea69c6-109249c2-5176-4a1e-b000-4c076d05844d-000000@email.amazonses.com>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-6-git-send-email-glommer@parallels.com>
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 03/16] slab: Ignore the cflgs bit in cache creation
+In-Reply-To: <1347977530-29755-4-git-send-email-glommer@parallels.com>
+Message-ID: <00000139d9f7127d-c812558e-aa71-44b4-9629-d33cadba9929-000000@email.amazonses.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-4-git-send-email-glommer@parallels.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,20 +32,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 18 Sep 2012, Glauber Costa wrote:
 
-> +++ b/include/linux/gfp.h
-> @@ -35,6 +35,11 @@ struct vm_area_struct;
->  #else
->  #define ___GFP_NOTRACK		0
->  #endif
-> +#ifdef CONFIG_MEMCG_KMEM
-> +#define ___GFP_KMEMCG		0x400000u
-> +#else
-> +#define ___GFP_KMEMCG		0
-> +#endif
+> No cache should ever pass that as a creation flag, since this bit is
+> used to mark an internal decision of the slab about object placement. We
+> can just ignore this bit if it happens to be passed (such as when
+> duplicating a cache in the kmem memcg patches)
 
-Could you leave __GFP_MEMCG a simple definition and then define GFP_MEMCG
-to be zer0 if !MEMCG_KMEM? I think that would be cleaner and the
-__GFP_KMEMCHECK another case that would be good to fix up.
+If we do this then I would like to see a general masking of internal
+allocator bits in kmem_cache_create. We could declare the highest byte to
+be the internal slab flags. SLUB uses two flags in that area. SLAB uses
+one.
 
+F.e. add
 
+#define SLAB_INTERNAL 0xFF00000000UL
+
+to slab.h.
+
+Then the flags can then be masked in mm/slab_common.c
 
