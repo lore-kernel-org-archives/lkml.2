@@ -1,42 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2IRVgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 17:36:06 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:60723 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab2IRVgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 17:36:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-Date: Tue, 18 Sep 2012 23:42:30 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Borislav Petkov <bp@alien8.de>, bhelgaas@google.com, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-References: <50158321.4030007@gmx.net> <201208022340.16948.rjw@sisk.pl> <5055DFB6.6070809@gmx.net>
-In-Reply-To: <5055DFB6.6070809@gmx.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209182342.30244.rjw@sisk.pl>
+	id S1755613Ab2IRVhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:37:24 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:42131 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab2IRVhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 17:37:20 -0400
+From: David Sharp <dhsharp@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
+Date: Tue, 18 Sep 2012 14:37:05 -0700
+Message-Id: <1348004227-23575-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1347499439.10751.78.camel@gandalf.local.home>
+References: <1347499439.10751.78.camel@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In order to promote interoperability between userspace tracers and ftrace,
+add a trace_clock that reports raw TSC values which will then be recorded
+in the ring buffer. Userspace tracers that also record TSCs are then on
+exactly the same time base as the kernel and events can be unambiguously
+interlaced.
 
-On Sunday, September 16, 2012, Witold Szczeponik wrote:
-> Hi Rafael, 
-> 
-> what about the patches 1 and 3 which do not make any changes to the ABI?
-> The first patch simplifies the code, while the third patch fixes a problem in
-> the PNP resource allocation.  Any chances to have them included in 3.7?
+Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+timestamp values.
 
-They would be fine as far as I'm concerned, but I'm not maintaining that part
-of the kernel (at least at the moment).
+v2:
+Move arch-specific bits out of generic code.
 
-I'm not sure who's the maintainer of it, to be honest.
+Google-Bug-Id: 6980623
+Signed-off-by: David Sharp <dhsharp@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/trace_clock.c      |   20 ++++++++++++++++++++
+ include/asm-generic/trace_clock.h  |   15 +++++++++++++++
+ include/linux/trace_clock.h        |    2 ++
+ kernel/trace/trace.c               |    1 +
+ 6 files changed, 55 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace_clock.h
+ create mode 100644 arch/x86/kernel/trace_clock.c
+ create mode 100644 include/asm-generic/trace_clock.h
 
-Thanks,
-Rafael
+diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..0b1f391
+--- /dev/null
++++ b/arch/x86/include/asm/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_X86_TRACE_CLOCK_H
++#define _ASM_X86_TRACE_CLOCK_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#ifdef CONFIG_X86_TSC
++
++extern u64 notrace trace_clock_x86_tsc(void);
++
++# define ARCH_TRACE_CLOCKS \
++	{ trace_clock_x86_tsc,	"tsc" },
++
++#endif
++
++#endif  /* _ASM_X86_TRACE_CLOCK_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..0ee9344 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
++obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+new file mode 100644
+index 0000000..b8959f8
+--- /dev/null
++++ b/arch/x86/kernel/trace_clock.c
+@@ -0,0 +1,20 @@
++/*
++ * X86 trace clocks
++ */
++#include <asm/trace_clock.h>
++#include <asm/barrier.h>
++#include <asm/msr.h>
++
++/*
++ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
++ *
++ * Unlike the other clocks, this is not in nanoseconds.
++ */
++u64 notrace trace_clock_x86_tsc(void)
++{
++	u64 ret;
++	rdtsc_barrier();
++	rdtscll(ret);
++
++	return ret;
++}
+diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+new file mode 100644
+index 0000000..648cdcd
+--- /dev/null
++++ b/include/asm-generic/trace_clock.h
+@@ -0,0 +1,15 @@
++/*
++ * Arch-specific trace clocks.
++ */
++#ifndef _ASM_GENERIC_TRACE_CLOCK_H
++#define _ASM_GENERIC_TRACE_CLOCK_H
++
++/*
++ * Additional trace clocks added to the trace_clocks
++ * array in kernel/trace/trace.c
++ */
++#ifndef ARCH_TRACE_CLOCKS
++# define ARCH_TRACE_CLOCKS
++#endif
++
++#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index 4eb4902..d563f37 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -12,6 +12,8 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ 
++#include <asm/trace_clock.h>
++
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
+ extern u64 notrace trace_clock_global(void);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..92fb08e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -480,6 +480,7 @@ static struct {
+ 	{ trace_clock_local,	"local" },
+ 	{ trace_clock_global,	"global" },
+ 	{ trace_clock_counter,	"counter" },
++	ARCH_TRACE_CLOCKS
+ };
+ 
+ int trace_clock_id;
+-- 
+1.7.7.3
+
