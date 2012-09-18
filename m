@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab2IRNDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:03:25 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40469 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab2IRNDY (ORCPT
+	id S1757027Ab2IRNDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:03:40 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:39146 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756820Ab2IRNDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:03:24 -0400
+	Tue, 18 Sep 2012 09:03:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347973228-29839-2-git-send-email-stigge@antcom.de>
-References: <1347973228-29839-1-git-send-email-stigge@antcom.de>
-	<1347973228-29839-2-git-send-email-stigge@antcom.de>
-Date: Tue, 18 Sep 2012 10:03:23 -0300
-Message-ID: <CAAAP30HhoQjJNEr_Qj1Yx2xBA4JikzS_NAtGYoX6uYR6ryiS0g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: LPC32xx: Platform update for devicetree
- completion of spi-pl022
+In-Reply-To: <1347972540-29667-1-git-send-email-stigge@antcom.de>
+References: <1347972540-29667-1-git-send-email-stigge@antcom.de>
+Date: Tue, 18 Sep 2012 10:03:37 -0300
+Message-ID: <CAAAP30HEWkEK44GW2Be1xawpmttPiyDCMnm5izQUkr_kfK4jzQ@mail.gmail.com>
+Subject: Re: [PATCH] spi/pl022: Devicetree support w/o platform data
 From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 To: Roland Stigge <stigge@antcom.de>
-Cc: linux-arm-kernel@lists.infradead.org, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+Cc: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         STEricsson_nomadik_linux@list.st.com, arnd@arndb.de,
         devicetree-discuss@lists.ozlabs.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com
@@ -28,60 +26,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 10:00 AM, Roland Stigge <stigge@antcom.de> wrote:
-> spi-pl022 got a further update to its devicetree support, completing properties
-> such that no platform data is necessary anymore. This patch adjusts phy3250.c
-> accordingly: The supplied platform data is deleted. However, OF_DEV_AUXDATA()
-> are still necessary due to device naming ("dev:ssp0").
+On Tue, Sep 18, 2012 at 9:49 AM, Roland Stigge <stigge@antcom.de> wrote:
+> Even with devicetree support, we needed platform data to provide some data like
+> bus_id and enable_dma, leading to mixed device tree and platform data. This
+> patch makes it possible to provide all that information via device tree. Now,
+> the data must be provided via platform data _or_ device tree completely.
+>
+> Only in case of callback specification (dma_filter()), platform data is
+> necessary.
 >
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-> --
-> I will do a git pull request for arm-soc.git when the respective change in
-> spi-pl022.c is merged.
+> ---
+>  Documentation/devicetree/bindings/spi/spi_pl022.txt |    9 ++++
+>  drivers/spi/spi-pl022.c                             |   41 +++++++++++++++++---
+>  2 files changed, 45 insertions(+), 5 deletions(-)
 >
-> --- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
-> +++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
-> @@ -27,7 +27,6 @@
->  #include <linux/gpio.h>
->  #include <linux/amba/bus.h>
->  #include <linux/amba/clcd.h>
-> -#include <linux/amba/pl022.h>
->  #include <linux/amba/pl08x.h>
->  #include <linux/amba/mmci.h>
->  #include <linux/of.h>
-> @@ -156,21 +155,6 @@ static struct clcd_board lpc32xx_clcd_da
->         .remove         = lpc32xx_clcd_remove,
->  };
+> --- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi_pl022.txt
+> +++ linux-2.6/Documentation/devicetree/bindings/spi/spi_pl022.txt
+> @@ -10,6 +10,15 @@ Optional properties:
+>  - cs-gpios : should specify GPIOs used for chipselects.
+>    The gpios will be referred to as reg = <index> in the SPI child nodes.
+>    If unspecified, a single SPI device without a chip select can be used.
+> +- pl022,bus-id : Bus ID (0, 1, ...)
+> +- pl022,enable-dma : enables DMA driven transfers (boolean)
+> +- pl022,autosuspend-delay : delay in ms following transfer completion before
+> +                           the runtime power management system suspends the
+> +                           device. A setting of 0 indicates no delay and the
+> +                            device will be suspended immediately
+> +- pl022,rt : indicates the controller should run the message pump with realtime
+> +             priority to minimise the transfer latency on the bus (boolean)
+> +
 >
-> -/*
-> - * AMBA SSP (SPI)
-> - */
-> -static struct pl022_ssp_controller lpc32xx_ssp0_data = {
-> -       .bus_id                 = 0,
-> -       .num_chipselect         = 1,
-> -       .enable_dma             = 0,
-> -};
-> -
-> -static struct pl022_ssp_controller lpc32xx_ssp1_data = {
-> -       .bus_id                 = 1,
-> -       .num_chipselect         = 1,
-> -       .enable_dma             = 0,
-> -};
-> -
->  static struct pl08x_channel_data pl08x_slave_channels[] = {
->         {
->                 .bus_id = "nand-slc",
-> @@ -232,8 +216,8 @@ static struct lpc32xx_mlc_platform_data
->  };
+>  SPI slave nodes must be children of the SPI master node and can
+>  contain the following properties.
+> --- linux-2.6.orig/drivers/spi/spi-pl022.c
+> +++ linux-2.6/drivers/spi/spi-pl022.c
+> @@ -2024,6 +2024,36 @@ static void pl022_cleanup(struct spi_dev
+>         kfree(chip);
+>  }
 >
->  static const struct of_dev_auxdata lpc32xx_auxdata_lookup[] __initconst = {
-> -       OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", &lpc32xx_ssp0_data),
-> -       OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", &lpc32xx_ssp1_data),
-> +       OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", NULL),
-> +       OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", NULL),
->         OF_DEV_AUXDATA("arm,pl110", 0x31040000, "dev:clcd", &lpc32xx_clcd_data),
->         OF_DEV_AUXDATA("arm,pl080", 0x31000000, "pl08xdmac", &pl08x_pd),
->         OF_DEV_AUXDATA("arm,pl18x", 0x20098000, "20098000.sd",
+> +static struct pl022_ssp_controller *
+> +pl022_platform_data_dt_get(struct device *dev)
+> +{
+> +       struct device_node *np = dev->of_node;
+> +       struct pl022_ssp_controller *pd;
+> +       u32 tmp;
+> +
+> +       if (!np) {
+> +               dev_err(dev, "no dt node defined\n");
+> +               return NULL;
+> +       }
+> +
+> +       pd = devm_kzalloc(dev, sizeof(struct pl022_ssp_controller), GFP_KERNEL);
+> +       if (!pd) {
+> +               dev_err(dev, "cannot allocate platform data memory\n");
+> +               return NULL;
+> +       }
+> +
+> +       of_property_read_u32(np, "pl022,bus-id", &tmp);
+> +       pd->bus_id = tmp;
+> +       of_property_read_u32(np, "num-cs", &tmp);
+> +       pd->num_chipselect = tmp;
+> +       pd->enable_dma = of_property_read_bool(np, "pl022,enable-dma") ? 1 : 0;
+> +       of_property_read_u32(np, "pl022,autosuspend-delay",
+> +                            &pd->autosuspend_delay);
+> +       pd->rt = of_property_read_bool(np, "pl022,rt");
+> +
+> +       return pd;
+> +}
+> +
+>  static int __devinit
+>  pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>  {
+> @@ -2036,18 +2066,19 @@ pl022_probe(struct amba_device *adev, co
+>
+>         dev_info(&adev->dev,
+>                  "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
+> -       if (platform_info == NULL) {
+> -               dev_err(&adev->dev, "probe - no platform data supplied\n");
+> +       if (!platform_info && IS_ENABLED(CONFIG_OF))
+> +               platform_info = pl022_platform_data_dt_get(dev);
+> +
+> +       if (!platform_info) {
+> +               dev_err(dev, "probe: no platform data defined\n");
+>                 status = -ENODEV;
+>                 goto err_no_pdata;
+>         }
+>
+>         if (platform_info->num_chipselect) {
+>                 num_cs = platform_info->num_chipselect;
+> -       } else if (IS_ENABLED(CONFIG_OF)) {
+> -               of_property_read_u32(np, "num-cs", &num_cs);
+>         } else {
+> -               dev_err(&adev->dev, "probe: no chip select defined\n");
+> +               dev_err(dev, "probe: no chip select defined\n");
+>                 status = -ENODEV;
+>                 goto err_no_pdata;
+>         }
