@@ -1,341 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab2IQNvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 09:51:25 -0400
+	id S1755768Ab2IQNvf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 09:51:35 -0400
 Received: from mga03.intel.com ([143.182.124.21]:23963 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755498Ab2IQNvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 09:51:22 -0400
+	id S1755601Ab2IQNv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 09:51:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,435,1344236400"; 
-   d="scan'208";a="145899773"
+   d="scan'208";a="145899804"
 From: Youquan Song <youquan.song@intel.com>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         arjan@linux.intel.com, lenb@kernel.org
 Cc: Rik van Riel <riel@redhat.com>,
         Youquan Song <youquan.song@linux.intel.com>,
         Youquan Song <youquan.song@intel.com>
-Subject: [PATCH V2 1/3] x86,idle: Quickly notice prediction failure for repeat mode
-Date: Mon, 17 Sep 2012 21:53:27 -0400
-Message-Id: <1347933209-25939-2-git-send-email-youquan.song@intel.com>
+Subject: [PATCH V2 3/3] x86,idle: Set residency to 0 if target Cstate not really enter
+Date: Mon, 17 Sep 2012 21:53:29 -0400
+Message-Id: <1347933209-25939-4-git-send-email-youquan.song@intel.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1347933209-25939-1-git-send-email-youquan.song@intel.com>
+In-Reply-To: <1347933209-25939-3-git-send-email-youquan.song@intel.com>
 References: <1347933209-25939-1-git-send-email-youquan.song@intel.com>
+ <1347933209-25939-2-git-send-email-youquan.song@intel.com>
+ <1347933209-25939-3-git-send-email-youquan.song@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prediction for future is difficult and when the cpuidle governor prediction 
-fails and govenor possibly choose the shallower C-state than it should. How to 
-quickly notice and find the failure becomes important for power saving.    
+When cpuidle governor choose a C-state to enter for idle CPU, but it notice that
+there is tasks request to be executed. So the idle CPU will not really enter
+the target C-state and go to run task.
 
-cpuidle menu governor has a method to predict the repeat pattern if there are 8
-C-states residency which are continuous and the same or very close, so it will
-predict the next C-states residency will keep same residency time.
+In this situation, it will use the residency of previous really entered target 
+C-states. Obviously, it is not reasonable. 
 
-There is a real case that turbostat utility (tools/power/x86/turbostat) 
-at kernel 3.3 or early. turbostat utility will read 10 registers one by one at
-Sandybridge, so it will generate 10 IPIs to wake up idle CPUs. So cpuidle menu
- governor will predict it is repeat mode and there is another IPI wake up idle
- CPU soon, so it keeps idle CPU stay at C1 state even though CPU is totally 
-idle. However, in the turbostat, following 10 registers reading is sleep 5 
-seconds by default, so the idle CPU will keep at C1 for a long time though it is
- idle until break event occurs.
-In a idle Sandybridge system, run "./turbostat -v", we will notice that deep 
-C-state dangles between "70% ~ 99%". After patched the kernel, we will notice
-deep C-state stays at >99.98%.
-
-In the patch, a timer is added when menu governor detects a repeat mode and
-choose a shallow C-state. The timer is set to a time out value that greater
-than predicted time, and we conclude repeat mode prediction failure if timer is
-triggered. When repeat mode happens as expected, the timer is not triggered
-and CPU waken up from C-states and it will cancel the timer initiatively. 
-When repeat mode does not happen, the timer will be time out and menu governor 
-will quickly notice that the repeat mode prediction fails and then re-evaluates 
-deeper C-states possibility.
-
-Below is another case which will clearly show the patch much benefit:
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <time.h>
-#include <pthread.h>
-
-volatile int * shutdown;
-volatile long * count;
-int delay = 20;
-int loop = 8;
-
-void usage(void)
-{
-	fprintf(stderr,
-		"Usage: idle_predict [options]\n"
-		"  --help	-h  Print this help\n"
-		"  --thread	-n  Thread number\n"
-		"  --loop     	-l  Loop times in shallow Cstate\n"
-		"  --delay	-t  Sleep time (uS)in shallow Cstate\n");
-}
-
-void *simple_loop() {
-	int idle_num = 1;
-	while (!(*shutdown)) {
-		*count = *count + 1;
-	
-		if (idle_num % loop)
-			usleep(delay);
-		else {
-			/* sleep 1 second */
-			usleep(1000000);
-			idle_num = 0;
-		}
-		idle_num++;
-	}
-
-}
-
-static void sighand(int sig)
-{
-	*shutdown = 1;
-}
-
-int main(int argc, char *argv[])
-{
-	sigset_t sigset;
-	int signum = SIGALRM;
-	int i, c, er = 0, thread_num = 8;
-	pthread_t pt[1024];
-
-	static char optstr[] = "n:l:t:h:";
-
-	while ((c = getopt(argc, argv, optstr)) != EOF)
-		switch (c) {
-			case 'n':
-				thread_num = atoi(optarg);
-				break;
-			case 'l':
-				loop = atoi(optarg);
-				break;
-			case 't':
-				delay = atoi(optarg);
-				break;
-			case 'h':
-			default:
-				usage();
-				exit(1);
-		}
-
-	printf("thread=%d,loop=%d,delay=%d\n",thread_num,loop,delay);
-	count = malloc(sizeof(long));
-	shutdown = malloc(sizeof(int));
-	*count = 0;
-	*shutdown = 0;
-
-	sigemptyset(&sigset);
-	sigaddset(&sigset, signum);
-	sigprocmask (SIG_BLOCK, &sigset, NULL);
-	signal(SIGINT, sighand);
-	signal(SIGTERM, sighand);
-
-	for(i = 0; i < thread_num ; i++)
-		pthread_create(&pt[i], NULL, simple_loop, NULL);
-
-	for (i = 0; i < thread_num; i++)
-		pthread_join(pt[i], NULL);
-
-	exit(0);
-}
-
-Get powertop V2 from git://github.com/fenrus75/powertop, build powertop.
-After build the above test application, then run it.
-Test plaform can be Intel Sandybridge or other recent platforms.
-#./idle_predict -l 10 &
-#./powertop
-
-We will find that deep C-state will dangle between 40%~100% and much time spent
-on C1 state. It is because menu governor wrongly predict that repeat mode
-is kept, so it will choose the C1 shallow C-state even though it has chance to
-sleep 1 second in deep C-state.
- 
-While after patched the kernel, we find that deep C-state will keep >99.6%. 
+So, this patch fix it by set the target C-state residency to 0. 
 
 Signed-off-by: Youquan Song <youquan.song@intel.com>
 ---
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 5b1f2c3..5419cae 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -28,6 +28,11 @@
- #define MAX_INTERESTING 50000
- #define STDDEV_THRESH 400
- 
-+/* 60 * 60 > STDDEV_THRESH * INTERVALS = 400 * 8 */
-+#define MAX_DEVIATION 60
-+
-+static DEFINE_PER_CPU(struct hrtimer, menu_hrtimer);
-+static DEFINE_PER_CPU(int, hrtimer_started);
- 
- /*
-  * Concepts and ideas behind the menu governor
-@@ -191,17 +196,42 @@ static u64 div_round64(u64 dividend, u32 divisor)
- 	return div_u64(dividend + (divisor / 2), divisor);
- }
- 
-+/* Cancel the hrtimer if it is not triggered yet */
-+void menu_hrtimer_cancel(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
-+
-+	/* The timer is still not time out*/
-+	if (per_cpu(hrtimer_started, cpu)) {
-+		hrtimer_cancel(hrtmr);
-+		per_cpu(hrtimer_started, cpu) = 0;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(menu_hrtimer_cancel);
-+
-+/* Call back for hrtimer is triggered */
-+static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
-+{
-+	int cpu = smp_processor_id();
-+
-+	per_cpu(hrtimer_started, cpu) = 0;
-+
-+	return HRTIMER_NORESTART;
-+}
-+
- /*
-  * Try detecting repeating patterns by keeping track of the last 8
-  * intervals, and checking if the standard deviation of that set
-  * of points is below a threshold. If it is... then use the
-  * average of these 8 points as the estimated value.
-  */
--static void detect_repeating_patterns(struct menu_device *data)
-+static int detect_repeating_patterns(struct menu_device *data)
- {
- 	int i;
- 	uint64_t avg = 0;
- 	uint64_t stddev = 0; /* contains the square of the std deviation */
-+	int ret = 0;
- 
- 	/* first calculate average and standard deviation of the past */
- 	for (i = 0; i < INTERVALS; i++)
-@@ -210,7 +240,7 @@ static void detect_repeating_patterns(struct menu_device *data)
- 
- 	/* if the avg is beyond the known next tick, it's worthless */
- 	if (avg > data->expected_us)
--		return;
-+		return 0;
- 
- 	for (i = 0; i < INTERVALS; i++)
- 		stddev += (data->intervals[i] - avg) *
-@@ -223,8 +253,12 @@ static void detect_repeating_patterns(struct menu_device *data)
- 	 * repeating pattern and predict we keep doing this.
- 	 */
- 
--	if (avg && stddev < STDDEV_THRESH)
-+	if (avg && stddev < STDDEV_THRESH) {
- 		data->predicted_us = avg;
-+		ret = 1;
-+	}
-+
-+	return ret;
- }
- 
- /**
-@@ -240,6 +274,9 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	int i;
- 	int multiplier;
- 	struct timespec t;
-+	int repeat = 0;
-+	int cpu = smp_processor_id();
-+	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
- 
- 	if (data->needs_update) {
- 		menu_update(drv, dev);
-@@ -274,7 +311,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
- 					 RESOLUTION * DECAY);
- 
--	detect_repeating_patterns(data);
-+	repeat = detect_repeating_patterns(data);
- 
- 	/*
- 	 * We want to default to C1 (hlt), not to busy polling
-@@ -309,6 +346,26 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 		}
+ drivers/cpuidle/cpuidle.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 2f0083a..7992417 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -136,6 +136,10 @@ int cpuidle_idle_call(void)
+ 	/* ask the governor for the next state */
+ 	next_state = cpuidle_curr_governor->select(drv, dev);
+ 	if (need_resched()) {
++		dev->last_residency = 0;
++		/* give the governor an opportunity to reflect on the outcome */
++		if (cpuidle_curr_governor->reflect)
++			cpuidle_curr_governor->reflect(dev, next_state);
+ 		local_irq_enable();
+ 		return 0;
  	}
- 
-+	if (data->last_state_idx < drv->state_count - 1) {
-+
-+		/* Repeat mode detected */
-+		if (repeat) {
-+			unsigned int repeat_us = 0;
-+			/*
-+			 * Set enough timer to recognize the repeat mode broken.
-+			 * If the timer is time out, the repeat mode prediction
-+			 * fails,then re-evaluate deeper C-states possibility.
-+			 * If the timer is not triggered, the timer will be
-+			 * cancelled when CPU waken up.
-+			 */
-+			repeat_us = 2 * data->predicted_us + MAX_DEVIATION;
-+			hrtimer_start(hrtmr, ns_to_ktime(1000 * repeat_us),
-+				HRTIMER_MODE_REL_PINNED);
-+			/* menu hrtimer is started */
-+			per_cpu(hrtimer_started, cpu) = 1;
-+		}
-+	}
-+
- 	return data->last_state_idx;
- }
- 
-@@ -399,6 +456,9 @@ static int menu_enable_device(struct cpuidle_driver *drv,
- 				struct cpuidle_device *dev)
- {
- 	struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
-+	struct hrtimer *t = &per_cpu(menu_hrtimer, dev->cpu);
-+	hrtimer_init(t, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	t->function = menu_hrtimer_notify;
- 
- 	memset(data, 0, sizeof(struct menu_device));
- 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f37fceb..8867424 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -142,4 +142,10 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
- static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
- # endif /* !NO_HZ */
- 
-+# ifdef CONFIG_CPU_IDLE_GOV_MENU
-+extern void menu_hrtimer_cancel(void);
-+# else
-+static inline void menu_hrtimer_cancel(void) { return -1; }
-+# endif /* CONFIG_CPU_IDLE_GOV_MENU */
-+
- #endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 024540f..9fbb358 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -525,6 +525,8 @@ void tick_nohz_irq_exit(void)
- 	if (!ts->inidle)
- 		return;
- 
-+	/* Cancel the timer because CPU already waken up from the C-states*/
-+	menu_hrtimer_cancel();
- 	__tick_nohz_idle_enter(ts);
- }
- 
-@@ -620,6 +622,8 @@ void tick_nohz_idle_exit(void)
- 
- 	ts->inidle = 0;
- 
-+	/* Cancel the timer because CPU already waken up from the C-states*/
-+	menu_hrtimer_cancel();
- 	if (ts->idle_active || ts->tick_stopped)
- 		now = ktime_get();
- 
