@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2IRR3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:29:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30566 "EHLO mga14.intel.com"
+	id S1752904Ab2IRReK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:34:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21579 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab2IRR3w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:29:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,444,1344236400"; 
-   d="scan'208";a="146401013"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@ghostprotocols.net, jolsa@redhat.com,
-        Zheng Yan <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Current perf tool does not compile anymore on RHEL6
-Date: Tue, 18 Sep 2012 10:29:48 -0700
-Message-ID: <m2fw6fxmr7.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752585Ab2IRReI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 13:34:08 -0400
+Date: Tue, 18 Sep 2012 19:36:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@hack.frob.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Pedro Alves <palves@redhat.com>
+Subject: Re: [PATCH -mm v2] coredump: extend core dump note section to
+	contain file names of mapped files
+Message-ID: <20120918173605.GA27653@redhat.com>
+References: <1347980129-1510-1-git-send-email-vda.linux@googlemail.com> <20120918165819.583252C0A4@topped-with-meat.com> <20120918172720.GA26606@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120918172720.GA26606@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/18, Oleg Nesterov wrote:
+>
+> On 09/18, Roland McGrath wrote:
+> >
+> > It's doubtful that rolling your own single loop actually performs better
+> > than just calling strlen and memcpy.
 
-Presumably flex-2.5.35-8.el6.x86_64 doesn't support YY_EXTRA
+Ah, I misread your message, sorry...
 
-Problem started with
+> This is needed to advance 'name' if d_path() fails with !ENAMETOOLONG.
+> Probably needs a comment.
+>
+> Or perhaps 'filename = ""' case can handle this case itself. In this
+> case we do not even need strlen(), remaining = name - filename.
 
-commit 90e2b22dee908c13df256140a0d6527e3e8ea3f4
-Author: Jiri Olsa <jolsa@redhat.com>
-Date:   Fri Jun 15 14:31:40 2012 +0800
+Yes, but you strlen + memcpy as you suggested will work too.
 
-    perf/tool: Add support to reuse event grammar to parse out terms
+Oleg.
 
-
-Unfortunately needs several other patches reverted too to revert.
-
-
-    CC /home/ak/lsrc/obj-perf/util/symbol.o
-util/parse-events.c: In function ‘parse_events__scanner’:
-util/parse-events.c:695: warning: implicit declaration of function
-‘parse_events_lex_init_extra’
-util/parse-events.c:695: warning: nested extern declaration of
-‘parse_events_lex_init_extra’
-util/parse-events.c:699: error: too many arguments to function
-‘parse_events__scan_string’
-util/parse-events.c:706: error: too many arguments to function
-‘parse_events__flush_buffer’
-util/parse-events.c:707: error: too many arguments to function
-‘parse_events__delete_buffer’
-util/parse-events.c:708: error: too many arguments to function
-‘parse_events_lex_destroy’
-util/parse-events.c: In function ‘parse_events_terms’:
-util/parse-events.c:722: error: ‘PE_START_TERMS’ undeclared (first use
-in this function)
-util/parse-events.c:722: error: (Each undeclared identifier is reported
-only once
-util/parse-events.c:722: error: for each function it appears in.)
-util/parse-events.c: In function ‘parse_events’:
-util/parse-events.c:741: error: ‘PE_START_EVENTS’ undeclared (first use
-in this function)
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only
