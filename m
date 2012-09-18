@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2IRIC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:02:28 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59475 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab2IRICZ (ORCPT
+	id S1756380Ab2IRIGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:06:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40146 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab2IRIGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:02:25 -0400
+	Tue, 18 Sep 2012 04:06:18 -0400
+Message-ID: <50582B75.7080608@gmail.com>
+Date: Tue, 18 Sep 2012 10:06:13 +0200
+From: Johannes Thumshirn <morbidrsa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <CAF+7xWnJj4XovwT5K_BDN8Q4GBLogsCb29Ro9t0Taek95HaPDg@mail.gmail.com>
-References: <1347939042.15578.1.camel@phoenix> <CAK5ve-LXv76vuBLHQQtREHn_ZogUsbyqzz2-uTHT_Ps-9vS3Pw@mail.gmail.com>
- <CAF+7xWnJj4XovwT5K_BDN8Q4GBLogsCb29Ro9t0Taek95HaPDg@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 18 Sep 2012 16:02:03 +0800
-X-Google-Sender-Auth: QJP2JGb25ng1Yjj_DiDNu-4LIss
-Message-ID: <CAK5ve-L92DqDv7ZApaaN5BOby+oPf2Ate-3jvgkadm7gfXZLcg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP: OMAP_DEBUG_LEDS needs to select LEDS_CLASS
-To: axel.lin@gmail.com
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, grabner@icg.tugraz.at
+Subject: Re: staging: Line6 - Steps needed to get driver out of staging area
+References: <50560C5F.3020700@gmail.com> <20120917202238.GA18748@kroah.com>
+In-Reply-To: <20120917202238.GA18748@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 2:49 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> 2012/9/18 Bryan Wu <bryan.wu@canonical.com>:
->> On Tue, Sep 18, 2012 at 11:30 AM, Axel Lin <axel.lin@gmail.com> wrote:
->>> This fixes below build error when CONFIG_LEDS_CLASS is not set.
->>>
->>>   LD      init/built-in.o
->>> arch/arm/plat-omap/built-in.o: In function `fpga_probe':
->>> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
->>> make: *** [vmlinux] Error 1
->>>
+On 09/17/2012 10:22 PM, Greg KH wrote:
+> On Sun, Sep 16, 2012 at 07:29:03PM +0200, Johannes Thumshirn wrote:
+>> Hi LKML,
 >>
->> Thanks for posting this. But I think Tony has already fixed it in mainline:
->> --
->> commit 359f64f7b3997e94ee71039b5fcdc1278b9b77c4
->> Author: Tony Lindgren <tony@atomide.com>
->> Date:   Wed Sep 15 10:18:51 2010 -0700
->>
->>     omap: Fix compile dependency to LEDS_CLASS
->>
->>     If we LEDS_CLASS is not selected, we will get undefined reference
->>     to `led_classdev_register'.
->>
->>     Signed-off-by: Tony Lindgren <tony@atomide.com>
+>> I wanted to ask for the steps that are needed to get the line6
+>> driver out of the staging area (apart from minor getpatch.pl fixes).
+> First try asking on the proper mailing list :)
 >
-> Commit 359f64f7b was commited on Sep 15 2010.
-> This patch is against current linux-next tree.
-> I got the build error on linux-next tree (next-20120917).
+> Second, it needs to be submitted to the subsystem that it should be in
+> (i.e. sound, right?)  It's up to those maintainers to say what's left to
+> do.
 >
+> Are you willing to help out with this?  Right now it doesn't seem like
+> anyone is using the driver, or helping to clean it up.
+>
+> thanks,
+>
+> greg k-h
+Ok, then I'll ask on the sound mailing list for a todo-list.
 
-Obviously, linux-next is not updated to latest mainline, -:D
+Yes I'm willing to do the maintenance of this driver if the original
+author doesn't want to take it up again.
 
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Thanks for your answer.
+
+Johannes
