@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab2IRR2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:28:01 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:42440 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab2IRR15 (ORCPT
+	id S1752877Ab2IRR3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:29:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30566 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083Ab2IRR3w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:27:57 -0400
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, Tom Mingarelli <thomas.mingarelli@hp.com>,
-        Linda Knippers <linda.knippers@hp.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Message-Id: <20120918172807.12439.93299.sendpatchset@tmingo.houston.hp.com>
-Subject: [PATCH v2] Intel IOMMU patch to reprocess RMRR info
-Date: Tue, 18 Sep 2012 17:27:56 +0000 (UTC)
+	Tue, 18 Sep 2012 13:29:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,444,1344236400"; 
+   d="scan'208";a="146401013"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@ghostprotocols.net, jolsa@redhat.com,
+        Zheng Yan <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Current perf tool does not compile anymore on RHEL6
+Date: Tue, 18 Sep 2012 10:29:48 -0700
+Message-ID: <m2fw6fxmr7.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a 32bit PCI device is removed from the SI Domain, the RMRR information
-for this device becomes invalid and needs to be reprocessed to avoid DMA
-Read errors. These errors are evidenced by the Present bit being cleared in
-the device's context entry. Fixing this problem with an enhancement to process
-the RMRR info when the device is assigned to another domain. The Bus Master bit
-is cleared during the move to another domain and during the reprocessing of
-the RMRR info so no DMA can take place at this time.
-----
-PATCH v1: https://lkml.org/lkml/2012/6/15/204
 
-drivers/iommu/intel-iommu.c |   47 ++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 44 insertions(+), 3 deletions(-)
+Presumably flex-2.5.35-8.el6.x86_64 doesn't support YY_EXTRA
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Problem started with
 
-diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
---- ./drivers/iommu/intel-iommu.c.ORIG	2012-09-18 09:58:25.147976889 -0500
-+++ ./drivers/iommu/intel-iommu.c	2012-09-18 10:39:43.286672765 -0500
-@@ -2706,11 +2706,39 @@ static int iommu_dummy(struct pci_dev *p
- 	return pdev->dev.archdata.iommu == DUMMY_DEVICE_DOMAIN_INFO;
- }
- 
-+static int reprocess_rmrr(struct device *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	struct pci_dev *pdev;
-+	int i, ret;
-+
-+	pdev = to_pci_dev(dev);
-+
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Here we are just concerned with
-+			 * finding the one device that was
-+			 * removed from the si_domain and
-+			 * re-evaluating its RMRR info.
-+			 */
-+			if (rmrr->devices[i] != pdev)
-+				continue;
-+			pr_info("IOMMU: Reprocess RMRR information for device %s.\n",
-+				pci_name(pdev));
-+			ret = iommu_prepare_rmrr_dev(rmrr, pdev);
-+			if (ret)
-+				pr_err("IOMMU: Reprocessing RMRR reserved region for device failed");
-+		}
-+	}
-+return 0;
-+}
-+
- /* Check if the pdev needs to go through non-identity map and unmap process.*/
- static int iommu_no_mapping(struct device *dev)
- {
- 	struct pci_dev *pdev;
--	int found;
-+	int found, current_bus_master;
- 
- 	if (unlikely(dev->bus != &pci_bus_type))
- 		return 1;
-@@ -2731,9 +2759,22 @@ static int iommu_no_mapping(struct devic
- 			 * 32 bit DMA is removed from si_domain and fall back
- 			 * to non-identity mapping.
- 			 */
--			domain_remove_one_dev_info(si_domain, pdev);
- 			printk(KERN_INFO "32bit %s uses non-identity mapping\n",
--			       pci_name(pdev));
-+				pci_name(pdev));
-+			/*
-+			 * If a device gets this far we need to clear the Bus
-+			 * Master bit before we start moving devices from domain
-+			 * to domain. We will also reset the Bus Master bit
-+			 * after reprocessing the RMRR info. However, we only
-+			 * do both the clearing and setting if needed.
-+			 */
-+			current_bus_master = pdev->is_busmaster;
-+			if (current_bus_master)
-+				pci_clear_master(pdev);
-+			domain_remove_one_dev_info(si_domain, pdev);
-+			reprocess_rmrr(dev);
-+			if (current_bus_master)
-+				pci_set_master(pdev);
- 			return 0;
- 		}
- 	} else {
+commit 90e2b22dee908c13df256140a0d6527e3e8ea3f4
+Author: Jiri Olsa <jolsa@redhat.com>
+Date:   Fri Jun 15 14:31:40 2012 +0800
+
+    perf/tool: Add support to reuse event grammar to parse out terms
+
+
+Unfortunately needs several other patches reverted too to revert.
+
+
+    CC /home/ak/lsrc/obj-perf/util/symbol.o
+util/parse-events.c: In function ‘parse_events__scanner’:
+util/parse-events.c:695: warning: implicit declaration of function
+‘parse_events_lex_init_extra’
+util/parse-events.c:695: warning: nested extern declaration of
+‘parse_events_lex_init_extra’
+util/parse-events.c:699: error: too many arguments to function
+‘parse_events__scan_string’
+util/parse-events.c:706: error: too many arguments to function
+‘parse_events__flush_buffer’
+util/parse-events.c:707: error: too many arguments to function
+‘parse_events__delete_buffer’
+util/parse-events.c:708: error: too many arguments to function
+‘parse_events_lex_destroy’
+util/parse-events.c: In function ‘parse_events_terms’:
+util/parse-events.c:722: error: ‘PE_START_TERMS’ undeclared (first use
+in this function)
+util/parse-events.c:722: error: (Each undeclared identifier is reported
+only once
+util/parse-events.c:722: error: for each function it appears in.)
+util/parse-events.c: In function ‘parse_events’:
+util/parse-events.c:741: error: ‘PE_START_EVENTS’ undeclared (first use
+in this function)
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
