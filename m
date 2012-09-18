@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab2IRP5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:57:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61755 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757782Ab2IRP5I (ORCPT
+	id S932772Ab2IRQBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 12:01:00 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46803 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755326Ab2IRQA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:57:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <87obl3z8jn.fsf@tucsk.pomaz.szeredi.hu>
-References: <871ui01jr1.fsf@tucsk.pomaz.szeredi.hu> <20120917203946.GV13973@ZenIV.linux.org.uk>
- <CA+55aFxeghUVxiFS=P+ck_BCnOuMm=HFAkqTBccxJoubk96afQ@mail.gmail.com> <87obl3z8jn.fsf@tucsk.pomaz.szeredi.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 18 Sep 2012 08:56:46 -0700
-X-Google-Sender-Auth: HT01D-ncgswzf7GejcbARNkZDg8
-Message-ID: <CA+55aFxJKQMjGm00kBpj30twj1w60Mx4C0mXTJtHiJPOpu-iMA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] vfs: dcache: fix deadlock in tree traversal
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        Trond.Myklebust@netapp.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Sep 2012 12:00:58 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
+        krzysztof.wilczynski@linux.com, devendra.aaru@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] staging: wlan-ng: Fix dereference before NULL check
+Date: Tue, 18 Sep 2012 18:04:07 +0200
+Message-Id: <1347984247-9226-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 7:53 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> Yes, with the test cases that IBM were using it is DCACHE_DISCONNECTED
-> case that triggers the double-lock.  Trond was misusing
-> DCACHE_DISCONNECTED and this made the failure in try_to_ascend() much
-> more likely (and bogus).  But there is a case, which is triggered rarely
-> if ever, when try_to_ascend() failure with rename_lock held is perfectly
-> valid.
+Smatch is warning about a dereference before we check for NULL.
+This patch moves the dereference to after the NULL check.
 
-Ok. The whole DCACHE_DISCONNECTED logic there is clearly bogus and
-results in endless loops if that case then ever triggers, but you fix
-that in the second patch.
+Smatch warning:
+drivers/staging/wlan-ng/cfg80211.c:345 prism2_scan() warn:
+	variable dereferenced before check 'request' (see line 332)
 
-HOWEVER. Why introduce that new DCACHE_KILLED flag at all? Wouldn't it
-be much better to just check whether the dentry is hashed instead of
-introducing a new flag for this case? Couldn't we just check for
-"d_unhashed()"?
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+Introduced by my commit 01f8a27e
 
-Anyway, I don't hate the 2/2 thing, but these are clearly related, and
-I'd like to understand why we had that odd DCACHE_DISCONNECTED test in
-the first place when there *seems* to be more straightforward
-approaches to it?
+ drivers/staging/wlan-ng/cfg80211.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-              Linus
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 0970127..57a2b05 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -329,9 +329,9 @@ int prism2_get_station(struct wiphy *wiphy, struct net_device *dev,
+ 
+ int prism2_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request)
+ {
+-	struct net_device *dev = request->wdev->netdev;
++	struct net_device *dev;
+ 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
+-	wlandevice_t *wlandev = dev->ml_priv;
++	wlandevice_t *wlandev;
+ 	struct p80211msg_dot11req_scan msg1;
+ 	struct p80211msg_dot11req_scan_results msg2;
+ 	struct cfg80211_bss *bss;
+@@ -345,6 +345,9 @@ int prism2_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request)
+ 	if (!request)
+ 		return -EINVAL;
+ 
++	dev = request->wdev->netdev;
++	wlandev = dev->ml_priv;
++
+ 	if (priv->scan_request && priv->scan_request != request)
+ 		return -EBUSY;
+ 
+-- 
+1.7.10.4
+
