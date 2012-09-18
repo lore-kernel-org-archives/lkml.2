@@ -1,171 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab2IRLbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:31:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2IRLbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:31:10 -0400
-Date: Tue, 18 Sep 2012 08:30:28 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
-        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] perf ui/browser: Integrate script browser into
- annotation browser
-Message-ID: <20120918113028.GD13283@infradead.org>
-References: <1347007349-3102-1-git-send-email-feng.tang@intel.com>
- <1347007349-3102-7-git-send-email-feng.tang@intel.com>
- <20120917152301.GB16820@infradead.org>
- <20120918154010.451e5891@feng-i7>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758071Ab2IRLcC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:32:02 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59575 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab2IRLcA convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 18 Sep 2012 07:32:00 -0400
+Message-Id: <505877CE020000780009C02B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 18 Sep 2012 12:31:58 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <akpm@linux-foundation.org>
+Cc: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] improve standard conformance of sscanf()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120918154010.451e5891@feng-i7>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 18, 2012 at 03:40:10PM +0800, Feng Tang escreveu:
-> Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > Em Fri, Sep 07, 2012 at 04:42:28PM +0800, Feng Tang escreveu:
-> > > Integrate the script browser into annotation, users can press function
-> > > key 'r' to list all perf scripts and select one of them to run that
-> > > script, the output will be shown in a separate browser.
-> > 
-> > I think this needs a bit more work... i.e. I tried it with your script,
-> > event_analyzing_sample and I kinda get meaningful output when pressing
-> > 'r' + that script from the top and hists browser.
-> 
-> I would answer you question about "elllaborate on the assumptions" first
-> here, that the main purpose of this script browser is not to replace the
-> normal "perf script" command, but to:
-> 1. Provide a convenient way for user to directly run scripts while they
+Xen's pciback points out a couple of deficiencies with vsscanf()'s
+standard conformance:
 
-I think this is what confused me, you say "directly run scripts", but
-that only means "directly run the report phase of scripts, not the
-record phase". Ok, that is clear now.
+- Trailing character matching cannot be checked by the caller: With a
+  format string of "(%x:%x.%x) %n" absence of the closing parenthesis
+  cannot be checked, as input of "(00:00.0)" doesn't cause the %n to be
+  evaluated (because of the code not skipping white space before the
+  trailing %n).
+- The parameter corresponding to a trailing %n could get filled even if
+  there was a matching error: With a format string of "(%x:%x.%x)%n",
+  input of "(00:00.0]" would still fill the respective variable pointed
+  to (and hence again make the mismatch non-detectable by the caller).
 
-> are browsing through the hists or annotation browser, and provide some
-> option for run script with samples from specific thread or symbol
+This patch aims at fixing those, but leaves other non-conforming
+aspects of it untouched, among them these possibly relevant ones:
+- improper handling of the assignment suppression character '*'
+  (blindly discarding all succeeding non-white space from the format
+  and input strings),
+- not honoring conversion specifiers for %n,
+- not recognizing the C99 conversion specifier 't' (recognized by
+  vsprintf()).
 
-> 2. Prepare for some advance feature, like inside the annotation browser,
-> analyze some specific hot line of code with samples containing precise
-> information, like the register values, store/load latency stuff. But I
-> have no idea how to implement it now, I guess after Stefan work out the
-> general perf latency tool, we may be able to revisit it.   
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I'm ok with adding infrastructure for later improvements, but I think we
-should try to do it in a way that doesn't confuses users too much,
-otherwise they may get annoyed and not try the feature when it becomes
-useful, worse, tell others that it is cumbersome, don't bother trying
-it.
+---
+ lib/vsprintf.c |   33 ++++++++++++++-------------------
+ 1 file changed, 14 insertions(+), 19 deletions(-)
 
-So we should try to do it in a way that is useful for the constraints
-you explained here, more on that later in this message.
+--- 3.6-rc6/lib/vsprintf.c
++++ 3.6-rc6-sscanf-conformance/lib/vsprintf.c
+@@ -2017,7 +2017,7 @@ int vsscanf(const char *buf, const char 
+ 	s16 field_width;
+ 	bool is_sign;
  
-> And when I started to code, I assumed user will mainly use this feature
-> for running scripts for general samples other than the existing scripts
-> for tracepoints. And yes, some user cases you mentioned are not covered.
-
-Ok, so we need to filter out some more, like you did for the top script.
+-	while (*fmt && *str) {
++	while (*fmt) {
+ 		/* skip any white space in format */
+ 		/* white space in format matchs any amount of
+ 		 * white space, including none, in the input.
+@@ -2042,6 +2042,8 @@ int vsscanf(const char *buf, const char 
+ 		 * advance both strings to next white space
+ 		 */
+ 		if (*fmt == '*') {
++			if (!*str)
++				break;
+ 			while (!isspace(*fmt) && *fmt != '%' && *fmt)
+ 				fmt++;
+ 			while (!isspace(*str) && *str)
+@@ -2070,7 +2072,17 @@ int vsscanf(const char *buf, const char 
+ 			}
+ 		}
  
-> > But with other scripts, and you filtered the -top suffixed ones, that
-> > require special handling, I get things like "Press Control+C to get a
-> > summary", and when I press that, the browser exits, going back to
-> > annotate or report/top browser.
-> 
-> That's right, 4 current perf python scripts will print that line in its
-> "trace_begin" function, as some of the scripts may run for quiet some
-> time if the perf.data is huge. And what you see in the script browser 
-> is just some static text of the script output. 
+-		if (!*fmt || !*str)
++		if (!*fmt)
++			break;
++
++		if (*fmt == 'n') {
++			/* return number of characters read so far */
++			*va_arg(args, int *) = str - buf;
++			++fmt;
++			continue;
++		}
++
++		if (!*str)
+ 			break;
+ 
+ 		base = 10;
+@@ -2103,13 +2115,6 @@ int vsscanf(const char *buf, const char 
+ 			num++;
+ 		}
+ 		continue;
+-		case 'n':
+-			/* return number of characters read so far */
+-		{
+-			int *i = (int *)va_arg(args, int*);
+-			*i = str - buf;
+-		}
+-		continue;
+ 		case 'o':
+ 			base = 8;
+ 			break;
+@@ -2210,16 +2215,6 @@ int vsscanf(const char *buf, const char 
+ 		str = next;
+ 	}
+ 
+-	/*
+-	 * Now we've come all the way through so either the input string or the
+-	 * format ended. In the former case, there can be a %n at the current
+-	 * position in the format that needs to be filled.
+-	 */
+-	if (*fmt == '%' && *(fmt + 1) == 'n') {
+-		int *p = (int *)va_arg(args, int *);
+-		*p = str - buf;
+-	}
+-
+ 	return num;
+ }
+ EXPORT_SYMBOL(vsscanf);
 
-Ok, so one thing I think we can do is to look at the record script:
 
-[acme@sandy linux]$ cat
-tools/perf/scripts/python/bin/syscall-counts-by-pid-record 
-#!/bin/bash
-perf record -e raw_syscalls:sys_enter $@
 
-and also at the perf.data file:
-
-[root@sandy linux]# perf evlist
-cycles
-
-See? we can't offer the syscall-counts-by-pid script to analyse this
-perf.data file, one is made for the raw_syscalls:sys_enter tracepoint
-while the other has only cpu cycles.
-
-While the script you provided:
-
-[acme@sandy linux]$ cat
-tools/perf/scripts/python/bin/event_analyzing_sample-record 
-#!/bin/bash
-
-#
-# event_analyzing_sample.py can cover all type of perf samples including
-# the tracepoints, so no special record requirements, just record what
-# you want to analyze.
-#
-perf record $@
-[acme@sandy linux]$ 
-
------------------------
-
-You made it general purpose, so yeah, we can offer that script to the
-user analysing that perf.data file.
-
-So this is one possible way of matching scripts to perf.data files,
-another would be for us to somehow annotate the scripts, in the first
-few lines, with markers that would help do this matching, but I'd start
-with what we have: parse the line that has the 'perf record' command in
-the tools/perf/scripts/python/bin/*-record file, look at the event it
-handles and match to what 'perf evlist' reports.
-
-Not necessarily running 'perf evlist', just doing what it does to figure
-out the needed information. 
-
-> > I.e. this only works if we are processing a perf.data file made
-> > specially for that specific script, right? I.e. the record phase is not
-> > integrated at all, just running specific scripts in specific perf.data
-> > files.
-> 
-> No, the record phase is not added, it just handle the recorded data. And
-> there is something missed in current implementation, that the script in
-> browser mode is only run for the "perf.data" even if the perf report/annotate
-> is run for data with another name.
-
-Ok, so that needs to be handled, using the filtering I suggested above.
-
-> > How to allow the user to chose appropriate scripts to run each perf.data
-> > file is an aspect of usability that is missing...
-> 
-> Do we need to run script for another perf.data when we run report/annotation
-> for one perf.data? or should we add a option for script browser to make it
-> work in browser mode, this is something Numhyung has mentioned in his review
-
-Well, it would be great to be able to press some key in the main hists
-browser and then switch to a different perf.data file, the tool could
-just look at the current directory, looking at the magic number in the
-first few bytes of all files, looking for perf.data files to offer.
-
-That, done in the 'top' tool would make it stop doing continuous
-profiling, stopping the thread it uses to read the counters and instead
-switch to static profiling, i.e. just reading a perf.data file.
-
-This is something that is a nice new feature and one that would pave the
-way for a better top/report/script/annotate integration.
-
-- Arnaldo
-
-> > Can you ellaborate on the assumptions you made while working on this, do
-> > they match what I described above as how to use this scripts browser?
-> > 
-> > So I merged part of this patchset, but will wait till more discussion
-> > happens on the browsing part,
-> > 
-> > Thanks,
-> > 
-> > - Arnaldo
