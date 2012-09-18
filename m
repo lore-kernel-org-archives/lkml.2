@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2IRIYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:24:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51720 "EHLO
+	id S1757181Ab2IRIYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:24:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50190 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab2IRIYN (ORCPT
+	with ESMTP id S1756274Ab2IRIYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:24:13 -0400
+	Tue, 18 Sep 2012 04:24:15 -0400
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Qin Rui <qinrui@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/5] unicore32: pwm: Remove unnecessary indirection
-Date: Tue, 18 Sep 2012 10:23:51 +0200
-Message-Id: <1347956633-15667-4-git-send-email-thierry.reding@avionic-design.de>
+Subject: [PATCH v2 0/5] unicore32: Move PWM driver to PWM framework
+Date: Tue, 18 Sep 2012 10:23:48 +0200
+Message-Id: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1347956633-15667-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:9n4HPYXXNfPmfHe9/WICfqPfqqnEEftgeWpgzKEEuJu
- 0ScDow8K7+s8WXvlis7jtBxdtgcgItUBHLdW/+lPC47iHWSt+H
- ccK/aroyjAYo0pMZa7CYjUV5e5UaFq0X3icMBGBjEn3UL8gGdS
- Oub7GXurJguqrkKa3lATACnR2oL0h0BsaKcwBom5vrJtapMZ5U
- FVCYl42kTq15wXUIflDDXvyQlmWUpA71eexZl+wfUzPIpzfb3T
- MwRg0YZo3XB7mhZmHEgLJX1l/EUVrevTri1J+79lxejxzKrYky
- A9sCj9CvYkzhaUnxmbRaALH8utubrgXdGFaaM9UPq/zz27in/2
- 8L0E38wEXXygsgFBPxFaAKuTUUDNE7QhwmSjeeOi9URvjI+ayM
- 53PT0J6k73ljQXyH0QPBpzXTNyA7jSNNHT6CODj1FYO0s3KmyS
- HbIKt
+X-Provags-ID: V02:K0:odIVdCkOOCiZBdyhkWjFKaWehWx9w+RAoUN/+SE0uEr
+ gk/xUcv49r8zeWc4HIlMnO9OdRTQPAMcbsDTVYiuvNlv4Q+5fq
+ ecvl0jZG7fCH9oDn72TX7X1g7JO7VbtEnBqwfibHAtQTAGc4/t
+ hluy+JkzpNigjDw4tdB1OtokI+CxEGes+XVaVkOk9919mngdxM
+ /JRsQsaTRK9F7+wfgD8Tae4W5j65uPjiWDwyg3jIbsJDtytT18
+ sM0ofW91RDPWV+sRXwa/fNA8jeIS6WLglohTvTeEnvtsKpCsm5
+ ln4XlhPVd2gU28S7oYGBxrB039lrWppsLUlkXVMcYJz8aT2Olg
+ FRu1uvzJSTnFJdU4TlfT/V8XrPkn6gxi7O2QR6mFmASeOOmAKV
+ iUh/WHPOkzv/0QYmbv8L9qAMnYYit+YtQgMucmPpUThoRpSJcZ
+ hF2j5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling the actual probing function through a proxy isn't required and
-makes the code needlessly complex.
+This series cleans up the PWM driver as well as moves and converts it
+to the PWM framework. I don't have any Unicore32 hardware, so all I
+could do was test if the kernel builds properly with the patches
+applied. I think except for the final patch all of these should go
+through the Unicore32 tree.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- arch/unicore32/kernel/pwm.c | 23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+Changes in v2:
+- drop common clock framework support (this series now depends on a
+  patch (https://lkml.org/lkml/2012/9/9/54) by Lars-Peter Clausen that
+  should soon appear in linux-next and which makes devm_clk_get()
+  available outside of the common clock framework)
+- update patch 1 to incorporate changes by Guan Xuetao
 
-diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
-index 012c54a..7e23470 100644
---- a/arch/unicore32/kernel/pwm.c
-+++ b/arch/unicore32/kernel/pwm.c
-@@ -156,8 +156,7 @@ static inline void __add_pwm(struct pwm_device *pwm)
- 	mutex_unlock(&pwm_lock);
- }
- 
--static struct pwm_device *pwm_probe(struct platform_device *pdev,
--		unsigned int pwm_id, struct pwm_device *parent_pwm)
-+static int __devinit pwm_probe(struct platform_device *pdev)
- {
- 	struct pwm_device *pwm;
- 	struct resource *r;
-@@ -166,7 +165,7 @@ static struct pwm_device *pwm_probe(struct platform_device *pdev,
- 	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
- 	if (pwm == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
--		return ERR_PTR(-ENOMEM);
-+		return -ENOMEM;
- 	}
- 
- 	pwm->clk = clk_get(NULL, "OST_CLK");
-@@ -177,7 +176,7 @@ static struct pwm_device *pwm_probe(struct platform_device *pdev,
- 	pwm->clk_enabled = 0;
- 
- 	pwm->use_count = 0;
--	pwm->pwm_id = pwm_id;
-+	pwm->pwm_id = pdev->id;
- 	pwm->pdev = pdev;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -203,7 +202,7 @@ static struct pwm_device *pwm_probe(struct platform_device *pdev,
- 
- 	__add_pwm(pwm);
- 	platform_set_drvdata(pdev, pwm);
--	return pwm;
-+	return 0;
- 
- err_release_mem:
- 	release_mem_region(r->start, resource_size(r));
-@@ -211,17 +210,7 @@ err_free_clk:
- 	clk_put(pwm->clk);
- err_free:
- 	kfree(pwm);
--	return ERR_PTR(ret);
--}
--
--static int __devinit puv3_pwm_probe(struct platform_device *pdev)
--{
--	struct pwm_device *pwm = pwm_probe(pdev, pdev->id, NULL);
--
--	if (IS_ERR(pwm))
--		return PTR_ERR(pwm);
--
--	return 0;
-+	return ret;
- }
- 
- static int __devexit pwm_remove(struct platform_device *pdev)
-@@ -251,7 +240,7 @@ static struct platform_driver puv3_pwm_driver = {
- 	.driver		= {
- 		.name	= "PKUnity-v3-PWM",
- 	},
--	.probe		= puv3_pwm_probe,
-+	.probe		= pwm_probe,
- 	.remove		= __devexit_p(pwm_remove),
- };
- module_platform_driver(puv3_pwm_driver);
+Thierry
+
+Thierry Reding (5):
+  unicore32: pwm: Properly remap memory-mapped registers
+  unicore32: pwm: Use module_platform_driver()
+  unicore32: pwm: Remove unnecessary indirection
+  unicore32: pwm: Use managed resource allocations
+  pwm: Move PUV3 PWM driver to PWM framework
+
+ arch/unicore32/Kconfig                 |  12 +-
+ arch/unicore32/include/mach/regs-ost.h |  18 +--
+ arch/unicore32/kernel/Makefile         |   1 -
+ arch/unicore32/kernel/pwm.c            | 263 ---------------------------------
+ drivers/pwm/Kconfig                    |  10 +-
+ drivers/pwm/Makefile                   |   1 +
+ drivers/pwm/pwm-puv3.c                 | 161 ++++++++++++++++++++
+ 7 files changed, 181 insertions(+), 285 deletions(-)
+ delete mode 100644 arch/unicore32/kernel/pwm.c
+ create mode 100644 drivers/pwm/pwm-puv3.c
+
 -- 
 1.7.12
 
