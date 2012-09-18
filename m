@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab2IRGUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:20:32 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:46757 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755379Ab2IRGUb (ORCPT
+	id S1753071Ab2IRGdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:33:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60717 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2IRGdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:20:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag4KACwSWFB5LJUB/2dsb2JhbABFhR62DwOBAIEIgiABAQU6HCMQCAMYLhQNGAMhEx6HUwMLsRUNiVMUiipjHGqFYgOUDYFUixiFCoJ4gUk
-Date: Tue, 18 Sep 2012 16:20:20 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, cmm@us.ibm.com,
-        tytso@mit.edu, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v1 00/11] vfs: hot data tracking
-Message-ID: <20120918062020.GR11511@dastard>
-References: <1347866325-25979-1-git-send-email-zwu.kernel@gmail.com>
- <20120917213009.GH13691@dastard>
- <CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEH94LgfxDa2=TubEFcDAyPD=UPfa2yJ-y0Rn7Dto6zs90xScw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Sep 2012 02:33:11 -0400
+Date: Tue, 18 Sep 2012 14:33:32 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: tj <tj@kernel.org>, rostedt <rostedt@goodmis.org>,
+        fweisbec <fweisbec@gmail.com>, mingo <mingo@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Li Zefan" <lizf@cn.fujitsu.com>, "Tao Ma" <boyu.mt@taobao.com>
+Subject: Re: Re: Why blktrace didn't trace requests merge?
+References: <201209171933464847623@gmail.com> <1347888148.13080.20.camel@gandalf.local.home> <20120917175534.GG18677@google.com>, 
+	<50576BAE.4020602@kernel.dk> <201209180830165936690@gmail.com>, 
+	<50580B51.70300@kernel.dk>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201209181433295154570@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8I6XN2h024253
 
-On Tue, Sep 18, 2012 at 10:24:55AM +0800, Zhi Yong Wu wrote:
-> On Tue, Sep 18, 2012 at 5:30 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Mon, Sep 17, 2012 at 03:18:34PM +0800, zwu.kernel@gmail.com wrote:
-> >>  20 files changed, 2275 insertions(+), 1 deletions(-)
-> >>  create mode 100644 fs/hot_debugfs.c
-> >>  create mode 100644 fs/hot_debugfs.h
-> >>  create mode 100644 fs/hot_hash.c
-> >>  create mode 100644 fs/hot_hash.h
-> >>  create mode 100644 fs/hot_rb.c
-> >>  create mode 100644 fs/hot_rb.h
-> >>  create mode 100644 fs/hot_track.c
-> >>  create mode 100644 fs/hot_track.h
-> >>  create mode 100644 include/linux/hot_track.h
-> >
-> > So, 9 new files for tracking all of this? I'm not sure that so
-> > many new files are needed - putting it all in fs/hot_tracking.[ch]
-> > might make more sense, or if all 8 fs/hot* files remain, putting
-> > them in their own subdirectory might be an idea (like quota).
-> If all functions are in two files, they will be large and the logic is
-> not so clear. so i prefer the latter. thanks.
+On 2012-09-18 13:49 Jens Axboe <axboe@kernel.dk> Wrote:
+>On 2012-09-18 02:30, Jianpeng Ma wrote:
+>> On 2012-09-18 02:27 Jens Axboe <axboe@kernel.dk> Wrote:
+>>> On 2012-09-17 19:55, Tejun Heo wrote:
+>>>> (cc'ing Jens)
+>>>>
+>>>> On Mon, Sep 17, 2012 at 09:22:28AM -0400, Steven Rostedt wrote:
+>>>>> On Mon, 2012-09-17 at 19:33 +0800, Jianpeng Ma wrote:
+>>>>>> Hi all:
+>>>>>> 	I used blktrace to trace some io.But i can't find requests merge. I searched the code and did't not find.
+>>>>>> 	Why? 
+>>>>>> 									
+>>>>>
+>>>>> No idea. I don't use blktrace much, but I Cc'd those that understand it
+>>>>> better than I.
+>>>
+>>> Works for me:
+>>>
+>>> [...]
+>>>
+>>>
+>>>  8,0    0       26     0.009147735   664  A  WS 315226143 + 8 <- (8,7) 19406344
+>>>  8,0    0       27     0.009148677   664  Q  WS 315226143 + 8 [btrfs-submit-1]
+>>>  8,0    0       28     0.009152967   664  G  WS 315226143 + 8 [btrfs-submit-1]
+>>>  8,0    0       29     0.009154242   664  P   N [btrfs-submit-1]
+>>>  8,0    0       30     0.009155538   664  A  WS 315226151 + 8 <- (8,7) 19406352
+>>>  8,0    0       31     0.009155743   664  Q  WS 315226151 + 8 [btrfs-submit-1]
+>>>  8,0    0       32     0.009157086   664  M  WS 315226151 + 8 [btrfs-submit-1]
+>>>  8,0    0       33     0.009158716   664  I  WS 315226143 + 16 [btrfs-submit-1]
+>>>
+>>> That's from a quick trace of /dev/sda. I started blktrace, then did:
+>>>
+>>> $ dd if=/dev/zero of=foo bs=4k count=128 && sync
+>>>
+>>> to ensure that I knew merges would be happening. Output stats at the end:
+>>>
+>>> Total (sda):
+>>> Reads Queued:           7,       44KiB  Writes Queued:         447,     7692KiB
+>>> Read Dispatches:        7,       44KiB  Write Dispatches:      416,     7692KiB
+>>> Reads Requeued:         0               Writes Requeued:         0
+>>> Reads Completed:        7,       44KiB  Writes Completed:      435,     5864KiB
+>>> Read Merges:            0,        0KiB  Write Merges:           23,      428KiB
+>>> IO unplugs:            78               Timer unplugs:           0
+>>>
+>>> -- 
+>>> Jens Axboe
+>>>
+>> First, Thanks your time!
+>> If i understand correctly, the merge of your example is bio with
+>> request, not request wiht request.  Yes or no?
+>
+>It is bio to request, correct. Request to request merges are relatively
+>more rare.
+>
+>-- 
+>Jens Axboe
+>
+Thanks very much, I know.
 
-A single file is much easier to handle when searching and editting,
-though. And realistically:
-
-$ wc -l fs/*.c |sort -nr -k 1 |head -10
-  62483 total
-   4000 fs/namei.c
-   3281 fs/buffer.c
-   3169 fs/dcache.c
-   2677 fs/namespace.c
-   2364 fs/locks.c
-   2321 fs/exec.c
-   2120 fs/binfmt_elf.c
-   2053 fs/splice.c
-   1934 fs/eventpoll.c
-$
-
-There are plenty of files for a single function/subsystem of around
-the aggregate size of this code, so everyone is used to dealing with
-this amount of logic for a particular feature in a single file.
-
-I much prefer it that way, to tell the truth, because I find it
-fairly common to have 5-10 files open at once when tracking
-something through, say, the buffered IO path. If I've now got to
-have another 5-10 files open just to track that same code path
-through this index, then that makes it much more difficult to
-manage than if were all in one .c file.
-
-IOWs, splitting code up into multiple files is not a win when the
-resultant files are all small and interdependent and you need to
-look at multiple files at the same time to understand what the code
-does as a whole....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
