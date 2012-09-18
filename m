@@ -1,61 +1,768 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab2IRNeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:34:24 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:45400
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757064Ab2IRNeV (ORCPT
+	id S932928Ab2IRNhP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 09:37:15 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:36191 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757064Ab2IRNhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:34:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIzz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MAJSD2-02-OUB-02
-X-M-MSG: 
-Date: Tue, 18 Sep 2012 15:34:14 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Shuah Khan <shuah.khan@hp.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Greg KH <greg@kroah.com>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <rob@landley.net>, <akpm@linux-foundation.org>, <bhelgaas@google.com>,
-        <stern@rowland.harvard.edu>, LKML <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devel@linuxdriverproject.org>,
-        <x86@kernel.org>, <shuahkhan@gmail.com>
-Subject: Re: [PATCH] dma-debug: New interfaces to debug dma mapping errors
-Message-ID: <20120918133414.GM2505@amd.com>
-References: <1347843171.4370.13.camel@lorien2>
- <20120917133937.GC11553@phenom.dumpdata.com>
- <1347897172.3227.61.camel@lorien2>
- <20120917172317.GB15783@phenom.dumpdata.com>
- <1347921915.3227.143.camel@lorien2>
+	Tue, 18 Sep 2012 09:37:12 -0400
+Message-ID: <50587903.9060507@gmail.com>
+Date: Tue, 18 Sep 2012 08:37:07 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1347921915.3227.143.camel@lorien2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] gpio: Add Avionic Design N-bit GPIO expander support
+References: <1347958630-19672-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1347958630-19672-1-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 04:45:15PM -0600, Shuah Khan wrote:
-> Yeah. I will firm up my ideas a bit and summarize in a day or two. Would
-> like to hear your ideas as well at that time, so we can pick the one
-> that works the best.
+On 09/18/2012 03:57 AM, Thierry Reding wrote:
+> This commit adds a driver for the Avionic Design N-bit GPIO expander.
+> The expander provides a variable number of GPIO pins with interrupt
+> support.
+> 
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+> Changes in v2:
+> - allow building the driver as a module
+> - assign of_node unconditionally
+> - use linear mapping IRQ domain
+> - properly cleanup IRQ domain
+> - add OF device table and annotate device tables
+> - emulate rising and falling edge triggers
+> - increase #gpio-cells to 2
+> - drop support for !OF
+> - use IS_ENABLED to conditionalize DEBUG_FS code
+> 
+> Changes in v3:
+> - make IRQ support runtime configurable (interrupt-controller property)
+> - drop interrupt-controller and #interrupt-cells from DT binding
+> - add inline to_adnp() function to wrap container_of() macro
+> - consistently use adnp as name for struct adnp variables
+> - remove irq_mask_cur and rename irq_mask to irq_enable
+> - fix a subtle deadlock in adnp_gpio_direction_output()
+> - remove dynamic allocations from debugfs code
+> - rename regs to num_regs to avoid confusion
+> - annotate non-trivial code with comments
+> - don't acquire mutex in adnp_gpio_get()
+> - assume NO_IRQ == 0
+> ---
+>  .../devicetree/bindings/gpio/gpio-adnp.txt         |  30 +
+>  drivers/gpio/Kconfig                               |  11 +
+>  drivers/gpio/Makefile                              |   1 +
+>  drivers/gpio/gpio-adnp.c                           | 611 +++++++++++++++++++++
+>  4 files changed, 653 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+>  create mode 100644 drivers/gpio/gpio-adnp.c
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+> new file mode 100644
+> index 0000000..5a09a21
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+> @@ -0,0 +1,30 @@
+> +Avionic Design N-bit GPIO expander bindings
+> +
+> +Required properties:
+> +- compatible: should be "ad,gpio-adnp"
+> +- reg: The I2C slave address for this device.
+> +- interrupt-parent: phandle of the parent interrupt controller.
+> +- interrupts: Interrupt specifier for the controllers interrupt.
+> +- #gpio-cells: Should be 2. The first cell is the GPIO number and the
+> +  second cell is used to specify optional parameters:
+> +  - bit 0: polarity (0: normal, 1: inverted)
 
-I think the best approach for this functionality is to add a flag to
-'struct dma_debug_entry' which tells whether the address has been
-checked with dma_mapping error or not. On unmap or driver unload you can
-then check for that flag and print a warning when an unchecked address
-is detected.
+This contradicts the documentation changes you just submitted. That's
+fine, but perhaps that documentation should say recommended encoding of
+cells unless defined differently for an individual binding.
 
+Otherwise,
 
-	Joerg
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+> +- gpio-controller: Marks the device as a GPIO controller
+> +- nr-gpios: The number of pins supported by the controller.
+> +
+> +Example:
+> +
+> +	gpioext: gpio-controller@41 {
+> +		compatible = "ad,gpio-adnp";
+> +		reg = <0x41>;
+> +
+> +		interrupt-parent = <&gpio>;
+> +		interrupts = <160 1>;
+> +
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +
+> +		nr-gpios = <64>;
+> +	};
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 95778f1..a2e2323 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -444,6 +444,17 @@ config GPIO_ADP5588_IRQ
+>  	  Say yes here to enable the adp5588 to be used as an interrupt
+>  	  controller. It requires the driver to be built in the kernel.
+>  
+> +config GPIO_ADNP
+> +	tristate "Avionic Design N-bit GPIO expander"
+> +	depends on I2C && OF
+> +	help
+> +	  This option enables support for N GPIOs found on Avionic Design
+> +	  I2C GPIO expanders. The register space will be extended by powers
+> +	  of two, so the controller will need to accomodate for that. For
+> +	  example: if a controller provides 48 pins, 6 registers will be
+> +	  enough to represent all pins, but the driver will assume a
+> +	  register layout for 64 pins (8 registers).
+> +
+>  comment "PCI GPIO expanders:"
+>  
+>  config GPIO_CS5535
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 153cace..710f2b6 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+>  
+>  obj-$(CONFIG_GPIO_74X164)	+= gpio-74x164.o
+>  obj-$(CONFIG_GPIO_AB8500)	+= gpio-ab8500.o
+> +obj-$(CONFIG_GPIO_ADNP)		+= gpio-adnp.o
+>  obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
+>  obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
+>  obj-$(CONFIG_GPIO_AMD8111)	+= gpio-amd8111.o
+> diff --git a/drivers/gpio/gpio-adnp.c b/drivers/gpio/gpio-adnp.c
+> new file mode 100644
+> index 0000000..3df8833
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-adnp.c
+> @@ -0,0 +1,611 @@
+> +/*
+> + * Copyright (C) 2011-2012 Avionic Design GmbH
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/gpio.h>
+> +#include <linux/i2c.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/module.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/seq_file.h>
+> +#include <linux/slab.h>
+> +
+> +#define GPIO_DDR(gpio) (0x00 << (gpio)->reg_shift)
+> +#define GPIO_PLR(gpio) (0x01 << (gpio)->reg_shift)
+> +#define GPIO_IER(gpio) (0x02 << (gpio)->reg_shift)
+> +#define GPIO_ISR(gpio) (0x03 << (gpio)->reg_shift)
+> +#define GPIO_PTR(gpio) (0x04 << (gpio)->reg_shift)
+> +
+> +struct adnp {
+> +	struct i2c_client *client;
+> +	struct gpio_chip gpio;
+> +	unsigned int reg_shift;
+> +
+> +	struct mutex i2c_lock;
+> +
+> +	struct irq_domain *domain;
+> +	struct mutex irq_lock;
+> +
+> +	u8 *irq_enable;
+> +	u8 *irq_level;
+> +	u8 *irq_rise;
+> +	u8 *irq_fall;
+> +	u8 *irq_high;
+> +	u8 *irq_low;
+> +};
+> +
+> +static inline struct adnp *to_adnp(struct gpio_chip *chip)
+> +{
+> +	return container_of(chip, struct adnp, gpio);
+> +}
+> +
+> +static int adnp_read(struct adnp *adnp, unsigned offset, uint8_t *value)
+> +{
+> +	int err;
+> +
+> +	err = i2c_smbus_read_byte_data(adnp->client, offset);
+> +	if (err < 0) {
+> +		dev_err(adnp->gpio.dev, "%s failed: %d\n",
+> +			"i2c_smbus_read_byte_data()", err);
+> +		return err;
+> +	}
+> +
+> +	*value = err;
+> +	return 0;
+> +}
+> +
+> +static int adnp_write(struct adnp *adnp, unsigned offset, uint8_t value)
+> +{
+> +	int err;
+> +
+> +	err = i2c_smbus_write_byte_data(adnp->client, offset, value);
+> +	if (err < 0) {
+> +		dev_err(adnp->gpio.dev, "%s failed: %d\n",
+> +			"i2c_smbus_write_byte_data()", err);
+> +		return err;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int adnp_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +	unsigned int reg = offset >> adnp->reg_shift;
+> +	unsigned int pos = offset & 7;
+> +	u8 value;
+> +	int err;
+> +
+> +	err = adnp_read(adnp, GPIO_PLR(adnp) + reg, &value);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	return (value & BIT(pos)) ? 1 : 0;
+> +}
+> +
+> +static void __adnp_gpio_set(struct adnp *adnp, unsigned offset, int value)
+> +{
+> +	unsigned int reg = offset >> adnp->reg_shift;
+> +	unsigned int pos = offset & 7;
+> +	int err;
+> +	u8 val;
+> +
+> +	err = adnp_read(adnp, GPIO_PLR(adnp) + reg, &val);
+> +	if (err < 0)
+> +		return;
+> +
+> +	if (value)
+> +		val |= BIT(pos);
+> +	else
+> +		val &= ~BIT(pos);
+> +
+> +	adnp_write(adnp, GPIO_PLR(adnp) + reg, val);
+> +}
+> +
+> +static void adnp_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +
+> +	mutex_lock(&adnp->i2c_lock);
+> +	__adnp_gpio_set(adnp, offset, value);
+> +	mutex_unlock(&adnp->i2c_lock);
+> +}
+> +
+> +static int adnp_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +	unsigned int reg = offset >> adnp->reg_shift;
+> +	unsigned int pos = offset & 7;
+> +	u8 value;
+> +	int err;
+> +
+> +	mutex_lock(&adnp->i2c_lock);
+> +
+> +	err = adnp_read(adnp, GPIO_DDR(adnp) + reg, &value);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	value &= ~BIT(pos);
+> +
+> +	err = adnp_write(adnp, GPIO_DDR(adnp) + reg, value);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	err = adnp_read(adnp, GPIO_DDR(adnp) + reg, &value);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	if (err & BIT(pos))
+> +		err = -EACCES;
+> +
+> +	err = 0;
+> +
+> +out:
+> +	mutex_unlock(&adnp->i2c_lock);
+> +	return err;
+> +}
+> +
+> +static int adnp_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+> +				      int value)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +	unsigned int reg = offset >> adnp->reg_shift;
+> +	unsigned int pos = offset & 7;
+> +	int err;
+> +	u8 val;
+> +
+> +	mutex_lock(&adnp->i2c_lock);
+> +
+> +	err = adnp_read(adnp, GPIO_DDR(adnp) + reg, &val);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	val |= BIT(pos);
+> +
+> +	err = adnp_write(adnp, GPIO_DDR(adnp) + reg, val);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	err = adnp_read(adnp, GPIO_DDR(adnp) + reg, &val);
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	if (!(val & BIT(pos))) {
+> +		err = -EPERM;
+> +		goto out;
+> +	}
+> +
+> +	__adnp_gpio_set(adnp, offset, value);
+> +	err = 0;
+> +
+> +out:
+> +	mutex_unlock(&adnp->i2c_lock);
+> +	return err;
+> +}
+> +
+> +static void adnp_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +	unsigned int num_regs = 1 << adnp->reg_shift, i, j;
+> +	int err;
+> +
+> +	for (i = 0; i < num_regs; i++) {
+> +		u8 ddr, plr, ier, isr;
+> +
+> +		mutex_lock(&adnp->i2c_lock);
+> +
+> +		err = adnp_read(adnp, GPIO_DDR(adnp) + i, &ddr);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			return;
+> +		}
+> +
+> +		err = adnp_read(adnp, GPIO_PLR(adnp) + i, &plr);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			return;
+> +		}
+> +
+> +		err = adnp_read(adnp, GPIO_IER(adnp) + i, &ier);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			return;
+> +		}
+> +
+> +		err = adnp_read(adnp, GPIO_ISR(adnp) + i, &isr);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			return;
+> +		}
+> +
+> +		mutex_unlock(&adnp->i2c_lock);
+> +
+> +		for (j = 0; j < 8; j++) {
+> +			unsigned int bit = (i << adnp->reg_shift) + j;
+> +			const char *direction = "input ";
+> +			const char *level = "low ";
+> +			const char *interrupt = "disabled";
+> +			const char *pending = "";
+> +
+> +			if (ddr & BIT(j))
+> +				direction = "output";
+> +
+> +			if (plr & BIT(j))
+> +				level = "high";
+> +
+> +			if (ier & BIT(j))
+> +				interrupt = "enabled ";
+> +
+> +			if (isr & BIT(j))
+> +				pending = "pending";
+> +
+> +			seq_printf(s, "%2u: %s %s IRQ %s %s\n", bit,
+> +				   direction, level, interrupt, pending);
+> +		}
+> +	}
+> +}
+> +
+> +static int adnp_gpio_setup(struct adnp *adnp, unsigned int num_gpios)
+> +{
+> +	struct gpio_chip *chip = &adnp->gpio;
+> +
+> +	adnp->reg_shift = get_count_order(num_gpios) - 3;
+> +
+> +	chip->direction_input = adnp_gpio_direction_input;
+> +	chip->direction_output = adnp_gpio_direction_output;
+> +	chip->get = adnp_gpio_get;
+> +	chip->set = adnp_gpio_set;
+> +	chip->can_sleep = 1;
+> +
+> +	if (IS_ENABLED(CONFIG_DEBUG_FS))
+> +		chip->dbg_show = adnp_gpio_dbg_show;
+> +
+> +	chip->base = -1;
+> +	chip->ngpio = num_gpios;
+> +	chip->label = adnp->client->name;
+> +	chip->dev = &adnp->client->dev;
+> +	chip->of_node = chip->dev->of_node;
+> +	chip->owner = THIS_MODULE;
+> +
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t adnp_irq(int irq, void *data)
+> +{
+> +	struct adnp *adnp = data;
+> +	unsigned int num_regs, i;
+> +
+> +	num_regs = 1 << adnp->reg_shift;
+> +
+> +	for (i = 0; i < num_regs; i++) {
+> +		unsigned int base = i << adnp->reg_shift, bit;
+> +		u8 changed, level, isr, ier;
+> +		unsigned long pending;
+> +		int err;
+> +
+> +		mutex_lock(&adnp->i2c_lock);
+> +
+> +		err = adnp_read(adnp, GPIO_PLR(adnp) + i, &level);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			continue;
+> +		}
+> +
+> +		err = adnp_read(adnp, GPIO_ISR(adnp) + i, &isr);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			continue;
+> +		}
+> +
+> +		err = adnp_read(adnp, GPIO_IER(adnp) + i, &ier);
+> +		if (err < 0) {
+> +			mutex_unlock(&adnp->i2c_lock);
+> +			continue;
+> +		}
+> +
+> +		mutex_unlock(&adnp->i2c_lock);
+> +
+> +		/* determine pins that changed levels */
+> +		changed = level ^ adnp->irq_level[i];
+> +
+> +		/* compute edge-triggered interrupts */
+> +		pending = changed & ((adnp->irq_fall[i] & ~level) |
+> +				     (adnp->irq_rise[i] & level));
+> +
+> +		/* add in level-triggered interrupts */
+> +		pending |= (adnp->irq_high[i] & level) |
+> +			   (adnp->irq_low[i] & ~level);
+> +
+> +		/* mask out non-pending and disabled interrupts */
+> +		pending &= isr & ier;
+> +
+> +		for_each_set_bit(bit, &pending, 8) {
+> +			unsigned int virq;
+> +			virq = irq_find_mapping(adnp->domain, base + bit);
+> +			handle_nested_irq(virq);
+> +		}
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int adnp_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct adnp *adnp = to_adnp(chip);
+> +	return irq_create_mapping(adnp->domain, offset);
+> +}
+> +
+> +static void adnp_irq_mask(struct irq_data *data)
+> +{
+> +	struct adnp *adnp = irq_data_get_irq_chip_data(data);
+> +	unsigned int reg = data->hwirq >> adnp->reg_shift;
+> +	unsigned int pos = data->hwirq & 7;
+> +
+> +	adnp->irq_enable[reg] &= ~BIT(pos);
+> +}
+> +
+> +static void adnp_irq_unmask(struct irq_data *data)
+> +{
+> +	struct adnp *adnp = irq_data_get_irq_chip_data(data);
+> +	unsigned int reg = data->hwirq >> adnp->reg_shift;
+> +	unsigned int pos = data->hwirq & 7;
+> +
+> +	adnp->irq_enable[reg] |= BIT(pos);
+> +}
+> +
+> +static int adnp_irq_set_type(struct irq_data *data, unsigned int type)
+> +{
+> +	struct adnp *adnp = irq_data_get_irq_chip_data(data);
+> +	unsigned int reg = data->hwirq >> adnp->reg_shift;
+> +	unsigned int pos = data->hwirq & 7;
+> +
+> +	if (type & IRQ_TYPE_EDGE_RISING)
+> +		adnp->irq_rise[reg] |= BIT(pos);
+> +	else
+> +		adnp->irq_rise[reg] &= ~BIT(pos);
+> +
+> +	if (type & IRQ_TYPE_EDGE_FALLING)
+> +		adnp->irq_fall[reg] |= BIT(pos);
+> +	else
+> +		adnp->irq_fall[reg] &= ~BIT(pos);
+> +
+> +	if (type & IRQ_TYPE_LEVEL_HIGH)
+> +		adnp->irq_high[reg] |= BIT(pos);
+> +	else
+> +		adnp->irq_high[reg] &= ~BIT(pos);
+> +
+> +	if (type & IRQ_TYPE_LEVEL_LOW)
+> +		adnp->irq_low[reg] |= BIT(pos);
+> +	else
+> +		adnp->irq_low[reg] &= ~BIT(pos);
+> +
+> +	return 0;
+> +}
+> +
+> +static void adnp_irq_bus_lock(struct irq_data *data)
+> +{
+> +	struct adnp *adnp = irq_data_get_irq_chip_data(data);
+> +
+> +	mutex_lock(&adnp->irq_lock);
+> +}
+> +
+> +static void adnp_irq_bus_unlock(struct irq_data *data)
+> +{
+> +	struct adnp *adnp = irq_data_get_irq_chip_data(data);
+> +	unsigned int num_regs = 1 << adnp->reg_shift, i;
+> +
+> +	mutex_lock(&adnp->i2c_lock);
+> +
+> +	for (i = 0; i < num_regs; i++)
+> +		adnp_write(adnp, GPIO_IER(adnp) + i, adnp->irq_enable[i]);
+> +
+> +	mutex_unlock(&adnp->i2c_lock);
+> +	mutex_unlock(&adnp->irq_lock);
+> +}
+> +
+> +static struct irq_chip adnp_irq_chip = {
+> +	.name = "gpio-adnp",
+> +	.irq_mask = adnp_irq_mask,
+> +	.irq_unmask = adnp_irq_unmask,
+> +	.irq_set_type = adnp_irq_set_type,
+> +	.irq_bus_lock = adnp_irq_bus_lock,
+> +	.irq_bus_sync_unlock = adnp_irq_bus_unlock,
+> +};
+> +
+> +static int adnp_irq_map(struct irq_domain *domain, unsigned int irq,
+> +			irq_hw_number_t hwirq)
+> +{
+> +	irq_set_chip_data(irq, domain->host_data);
+> +	irq_set_chip(irq, &adnp_irq_chip);
+> +	irq_set_nested_thread(irq, true);
+> +
+> +#ifdef CONFIG_ARM
+> +	set_irq_flags(irq, IRQF_VALID);
+> +#else
+> +	irq_set_noprobe(irq);
+> +#endif
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct irq_domain_ops adnp_irq_domain_ops = {
+> +	.map = adnp_irq_map,
+> +	.xlate = irq_domain_xlate_twocell,
+> +};
+> +
+> +static int adnp_irq_setup(struct adnp *adnp)
+> +{
+> +	unsigned int num_regs = 1 << adnp->reg_shift, i;
+> +	struct gpio_chip *chip = &adnp->gpio;
+> +	int err;
+> +
+> +	mutex_init(&adnp->irq_lock);
+> +
+> +	/*
+> +	 * Allocate memory to keep track of the current level and trigger
+> +	 * modes of the interrupts. To avoid multiple allocations, a single
+> +	 * large buffer is allocated and pointers are setup to point at the
+> +	 * corresponding offsets. For consistency, the layout of the buffer
+> +	 * is chosen to match the register layout of the hardware in that
+> +	 * each segment contains the corresponding bits for all interrupts.
+> +	 */
+> +	adnp->irq_enable = devm_kzalloc(chip->dev, num_regs * 6, GFP_KERNEL);
+> +	if (!adnp->irq_enable)
+> +		return -ENOMEM;
+> +
+> +	adnp->irq_level = adnp->irq_enable + (num_regs * 1);
+> +	adnp->irq_rise = adnp->irq_enable + (num_regs * 2);
+> +	adnp->irq_fall = adnp->irq_enable + (num_regs * 3);
+> +	adnp->irq_high = adnp->irq_enable + (num_regs * 4);
+> +	adnp->irq_low = adnp->irq_enable + (num_regs * 5);
+> +
+> +	for (i = 0; i < num_regs; i++) {
+> +		/*
+> +		 * Read the initial level of all pins to allow the emulation
+> +		 * of edge triggered interrupts.
+> +		 */
+> +		err = adnp_read(adnp, GPIO_PLR(adnp) + i, &adnp->irq_level[i]);
+> +		if (err < 0)
+> +			return err;
+> +
+> +		/* disable all interrupts */
+> +		err = adnp_write(adnp, GPIO_IER(adnp) + i, 0);
+> +		if (err < 0)
+> +			return err;
+> +
+> +		adnp->irq_enable[i] = 0x00;
+> +	}
+> +
+> +	adnp->domain = irq_domain_add_linear(chip->of_node, chip->ngpio,
+> +					     &adnp_irq_domain_ops, adnp);
+> +
+> +	err = request_threaded_irq(adnp->client->irq, NULL, adnp_irq,
+> +				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> +				   dev_name(chip->dev), adnp);
+> +	if (err != 0) {
+> +		dev_err(chip->dev, "can't request IRQ#%d: %d\n",
+> +			adnp->client->irq, err);
+> +		goto error;
+> +	}
+> +
+> +	chip->to_irq = adnp_gpio_to_irq;
+> +	return 0;
+> +
+> +error:
+> +	irq_domain_remove(adnp->domain);
+> +	return err;
+> +}
+> +
+> +static void adnp_irq_teardown(struct adnp *adnp)
+> +{
+> +	unsigned int irq, i;
+> +
+> +	free_irq(adnp->client->irq, adnp);
+> +
+> +	for (i = 0; i < adnp->gpio.ngpio; i++) {
+> +		irq = irq_find_mapping(adnp->domain, i);
+> +		if (irq > 0)
+> +			irq_dispose_mapping(irq);
+> +	}
+> +
+> +	irq_domain_remove(adnp->domain);
+> +}
+> +
+> +static __devinit int adnp_i2c_probe(struct i2c_client *client,
+> +				    const struct i2c_device_id *id)
+> +{
+> +	struct device_node *np = client->dev.of_node;
+> +	struct adnp *adnp;
+> +	u32 num_gpios;
+> +	int err;
+> +
+> +	err = of_property_read_u32(np, "nr-gpios", &num_gpios);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	client->irq = irq_of_parse_and_map(np, 0);
+> +	if (!client->irq)
+> +		return -EPROBE_DEFER;
+> +
+> +	adnp = devm_kzalloc(&client->dev, sizeof(*adnp), GFP_KERNEL);
+> +	if (!adnp)
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&adnp->i2c_lock);
+> +	adnp->client = client;
+> +
+> +	err = adnp_gpio_setup(adnp, num_gpios);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	if (of_find_property(np, "interrupt-controller", NULL)) {
+> +		err = adnp_irq_setup(adnp);
+> +		if (err < 0)
+> +			goto teardown;
+> +	}
+> +
+> +	err = gpiochip_add(&adnp->gpio);
+> +	if (err < 0)
+> +		goto teardown;
+> +
+> +	i2c_set_clientdata(client, adnp);
+> +	return 0;
+> +
+> +teardown:
+> +	if (of_find_property(np, "interrupt-controller", NULL))
+> +		adnp_irq_teardown(adnp);
+> +
+> +	return err;
+> +}
+> +
+> +static __devexit int adnp_i2c_remove(struct i2c_client *client)
+> +{
+> +	struct adnp *adnp = i2c_get_clientdata(client);
+> +	struct device_node *np = client->dev.of_node;
+> +	int err;
+> +
+> +	err = gpiochip_remove(&adnp->gpio);
+> +	if (err < 0) {
+> +		dev_err(&client->dev, "%s failed: %d\n", "gpiochip_remove()",
+> +			err);
+> +		return err;
+> +	}
+> +
+> +	if (of_find_property(np, "interrupt-controller", NULL))
+> +		adnp_irq_teardown(adnp);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id adnp_i2c_id[] __devinitconst = {
+> +	{ "gpio-adnp" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(i2c, adnp_i2c_id);
+> +
+> +static const struct of_device_id adnp_of_match[] __devinitconst = {
+> +	{ .compatible = "ad,gpio-adnp", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, adnp_of_match);
+> +
+> +static struct i2c_driver adnp_i2c_driver = {
+> +	.driver = {
+> +		.name = "gpio-adnp",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = of_match_ptr(adnp_of_match),
+> +	},
+> +	.probe = adnp_i2c_probe,
+> +	.remove = __devexit_p(adnp_i2c_remove),
+> +	.id_table = adnp_i2c_id,
+> +};
+> +module_i2c_driver(adnp_i2c_driver);
+> +
+> +MODULE_DESCRIPTION("Avionic Design N-bit GPIO expander");
+> +MODULE_AUTHOR("Thierry Reding <thierry.reding@avionic-design.de>");
+> +MODULE_LICENSE("GPL");
+> 
