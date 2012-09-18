@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab2IRKAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 06:00:15 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59028 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757868Ab2IRKAN (ORCPT
+	id S932690Ab2IRKAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 06:00:37 -0400
+Received: from ams-iport-3.cisco.com ([144.254.224.146]:42981 "EHLO
+	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab2IRKAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 06:00:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDEFB947B@BGMAIL02.nvidia.com>
+	Tue, 18 Sep 2012 06:00:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAJBFWFCQ/khR/2dsb2JhbABFhge2K4EHgiABAQEEEgEQVhALGAICJgICVwYTIodeC5oujRuTHYEhigAahTyBEgOVYo44gWmCaIFh
+X-IronPort-AV: E=Sophos;i="4.80,442,1344211200"; 
+   d="scan'208";a="8118867"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: Re: [PATCHv2 0/6] media: convert to c99 format
+Date: Tue, 18 Sep 2012 12:00:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
 References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
-	<1347961843-9376-7-git-send-email-shubhrajyoti@ti.com>
-	<D958900912E20642BCBC71664EFECE3E6DDEFB947B@BGMAIL02.nvidia.com>
-Date: Tue, 18 Sep 2012 15:30:10 +0530
-Message-ID: <CAM=Q2cv8R8QUbV2UqNO+AbwgprAYxBtBjK=4rkHnqegGJWTdog@mail.gmail.com>
-Subject: Re: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99 format
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "julia.lawall@lip6.fr" <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209181200.20788.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 3:26 PM, Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Shubhrajyoti D
->> Sent: Tuesday, September 18, 2012 3:21 PM
->> To: linux-media@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org; julia.lawall@lip6.fr; Shubhrajyoti D
->> Subject: [PATCHv2 6/6] media: Convert struct i2c_msg initialization to C99
->> format
->>
->>         Convert the struct i2c_msg initialization to C99 format. This makes
->>         maintaining and editing the code simpler. Also helps once other fields
->>         like transferred are added in future.
->>
->> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
->> ---
->>  drivers/media/i2c/msp3400-driver.c |   42
->> ++++++++++++++++++++++++++++++-----
->>  1 files changed, 36 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/media/i2c/msp3400-driver.c
->> b/drivers/media/i2c/msp3400-driver.c
->> index aeb22be..b8cef8d 100644
->> --- a/drivers/media/i2c/msp3400-driver.c
->> +++ b/drivers/media/i2c/msp3400-driver.c
->> @@ -119,12 +119,32 @@ int msp_reset(struct i2c_client *client)
->>       static u8 write[3]     = { I2C_MSP_DSP + 1, 0x00, 0x1e };
->>       u8 read[2];
->>       struct i2c_msg reset[2] = {
->> -             { client->addr, I2C_M_IGNORE_NAK, 3, reset_off },
->> -             { client->addr, I2C_M_IGNORE_NAK, 3, reset_on  },
->> +             {
->> +                     .addr = client->addr,
->> +                     .flags = I2C_M_IGNORE_NAK,
->> +                     .len = 3,
->> +                     .buf = reset_off
->> +             },
->> +             {
->> +                     .addr = client->addr,
->> +                     .flags = I2C_M_IGNORE_NAK,
->> +                     .len = 3,
->> +                     .buf = reset_on
->> +             },
->>       };
->>       struct i2c_msg test[2] = {
->> -             { client->addr, 0,        3, write },
->> -             { client->addr, I2C_M_RD, 2, read  },
->> +             {
->> +                     .addr = client->addr,
->> +                     .flags = 0,
->
-> Does flags not contain 0 by default?
->
+On Tue 18 September 2012 11:50:37 Shubhrajyoti D wrote:
+> The series tries to convert the i2c_msg to c99 struct.
+> This may avoid issues like below if someone tries to add an
+> element to the structure.
+> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg08972.html
+> 
+> Special thanks to Julia Lawall for helping it automate.
+> By the below script.
+> http://www.mail-archive.com/cocci@diku.dk/msg02753.html
 
-It does however I felt that 0 means write so letting it be explicit.
+That looks much better.
 
-In case a removal is preferred that's doable too however felt it is
-more readable this way.
+For the whole series:
+
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+
+Regards,
+
+	Hans
+
+> 
+> 
+> 
+> Shubhrajyoti D (6):
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+>   media: Convert struct i2c_msg initialization to C99 format
+> 
+>  drivers/media/i2c/ks0127.c                    |   14 +++++++-
+>  drivers/media/i2c/msp3400-driver.c            |   42 +++++++++++++++++++++---
+>  drivers/media/i2c/tvaudio.c                   |   14 +++++++-
+>  drivers/media/radio/radio-tea5764.c           |   14 ++++++--
+>  drivers/media/radio/saa7706h.c                |   16 ++++++++-
+>  drivers/media/radio/si470x/radio-si470x-i2c.c |   24 ++++++++++---
+>  6 files changed, 103 insertions(+), 21 deletions(-)
+> 
+> 
