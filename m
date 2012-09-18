@@ -1,38 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab2IRDWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 23:22:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59221 "EHLO mga11.intel.com"
+	id S932746Ab2IRD3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 23:29:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36145 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab2IRDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 23:22:40 -0400
+	id S932657Ab2IRD3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Sep 2012 23:29:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,439,1344236400"; 
-   d="scan'208";a="223315869"
-Subject: Re: [PATCH] dmaengine: add dmanegine slave map api's
+   d="scan'208";a="193910524"
+Subject: Re: [PATCH] dmaengine: use kmem_cache_zalloc instead of
+ kmem_cache_alloc/memset
 From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Arnd Bergmann <arnd@arndb.de>, linus.walleij@linaro.org,
-        Jon Hunter <jon-hunter@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        Benoit Cousson <b-cousson@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        viresh kumar <viresh.kumar@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20120917215753.GS12245@n2100.arm.linux.org.uk>
-References: <1347615189-27052-1-git-send-email-vinod.koul@linux.intel.com>
-	 <20120914094155.GC12245@n2100.arm.linux.org.uk>
-	 <1347619868.1943.113.camel@vkoul-udesk3>
-	 <20120914111842.GD12245@n2100.arm.linux.org.uk>
-	 <1347853223.1943.136.camel@vkoul-udesk3>
-	 <20120917083654.GO12245@n2100.arm.linux.org.uk>
-	 <1347875429.1943.141.camel@vkoul-udesk3>
-	 <20120917215753.GS12245@n2100.arm.linux.org.uk>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: djbw@fb.com, yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+In-Reply-To: <CAPgLHd-GhyvXvS0iKCwP_fcp8EsUeihjp6HSpLLbWtQiz06zuQ@mail.gmail.com>
+References: <CAPgLHd-GhyvXvS0iKCwP_fcp8EsUeihjp6HSpLLbWtQiz06zuQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Sep 2012 08:48:27 +0530
-Message-ID: <1347938307.1943.166.camel@vkoul-udesk3>
+Date: Tue, 18 Sep 2012 08:55:33 +0530
+Message-ID: <1347938733.1943.169.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -40,39 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-09-17 at 22:57 +0100, Russell King - ARM Linux wrote:
-> On Mon, Sep 17, 2012 at 03:20:29PM +0530, Vinod Koul wrote:
-> > On Mon, 2012-09-17 at 09:36 +0100, Russell King - ARM Linux wrote:
-> > > > > I'm not saying take the slave_id out of the map.  I'm saying, let the
-> > > > > DMA engine driver itself figure out what dma_chan to return. 
-> > > > But wont that assume the dma controller knows which channel to allocate.
-> > > > And how would it know this information? This can be problematic for hard
-> > > > wired muxes, but can be easily done for controller which have
-> > > > programmable mux.
-> > > 
-> > > Well, as I have already said, at the moment you're returning the _first_
-> > > _free_ _channel_ on a DMA device, which almost certainly will always be
-> > > the wrong one. 
-> > Yes I overlooked, the continue is wrong. It needs to move to next
-> > available channel. I have fixed it.
-> > 
-> > Now on the question if we should allow dmaengine to select channel or
-> > let dma engine driver do that, I don't see how that helps for hard wired
-> > muxes where dma engine driver doesn't know anything of mapping.
-> > 
-> > For your OMAP dma this wont matter as I think you have a programmable
-> > mux so you maybe able to use any channel with rightly programmed mux,
-> > right?
+On Mon, 2012-08-27 at 12:40 +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Except that we expose one 'channel' per mux setting, so as far as DMA
-> engine goes, the mux number _is_ the channel number - which is the same
-> approach taken by the PL08x and sa11x0 DMA engine drivers.  It is the
-> only sane approach to dealing with N hardware channels vs >>N clients.
-Sure that makes things easy in dmaengine code.
+> Using kmem_cache_zalloc() instead of kmem_cache_alloc() and memset().
+> 
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/dma/ioat/dma_v2.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> index 8689576..b9d6678 100644
+> --- a/drivers/dma/ioat/dma_v2.c
+> +++ b/drivers/dma/ioat/dma_v2.c
+> @@ -434,12 +434,11 @@ static struct ioat_ring_ent *ioat2_alloc_ring_ent(struct dma_chan *chan, gfp_t f
+>  		return NULL;
+>  	memset(hw, 0, sizeof(*hw));
+>  
+> -	desc = kmem_cache_alloc(ioat2_cache, flags);
+> +	desc = kmem_cache_zalloc(ioat2_cache, flags);
+>  	if (!desc) {
+>  		pci_pool_free(dma->dma_pool, hw, phys);
+>  		return NULL;
+>  	}
+> -	memset(desc, 0, sizeof(*desc));
+>  
+>  	dma_async_tx_descriptor_init(&desc->txd, chan);
+>  	desc->txd.tx_submit = ioat2_tx_submit_unlock;
+Applied thanks
 
-So we allocate channel number given by slave id (if set) or first free
-channel. This would also mean people need to update their drivers to use
-virtual channel which indeed is a good idea :)
 
 -- 
 ~Vinod
