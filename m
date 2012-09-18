@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907Ab2IRMIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:08:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60032 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932802Ab2IRMIQ (ORCPT
+	id S932911Ab2IRMJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:09:20 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63124 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab2IRMIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:08:16 -0400
+	Tue, 18 Sep 2012 08:08:15 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: geoff@infradead.org
-Cc: FlorianSchandinat@gmx.de, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 09/10] drivers/video/ps3fb.c: fix error return code
-Date: Tue, 18 Sep 2012 14:07:59 +0200
-Message-Id: <1347970080-25175-9-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 07/10] drivers/video/bw2.c: fix error return code
+Date: Tue, 18 Sep 2012 14:07:57 +0200
+Message-Id: <1347970080-25175-7-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
 References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
@@ -50,49 +49,25 @@ ret@p1 = 0
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- drivers/video/ps3fb.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/video/bw2.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/video/ps3fb.c b/drivers/video/ps3fb.c
-index 4e292f2..0b340d6 100644
---- a/drivers/video/ps3fb.c
-+++ b/drivers/video/ps3fb.c
-@@ -1034,6 +1034,7 @@ static int __devinit ps3fb_probe(struct ps3_system_bus_device *dev)
- 	if (status) {
- 		dev_err(&dev->core, "%s: lv1_gpu_memory_allocate failed: %d\n",
- 			__func__, status);
-+		retval = -ENOMEM;
- 		goto err_close_device;
- 	}
- 	dev_dbg(&dev->core, "ddr:lpar:0x%llx\n", ddr_lpar);
-@@ -1046,6 +1047,7 @@ static int __devinit ps3fb_probe(struct ps3_system_bus_device *dev)
- 		dev_err(&dev->core,
- 			"%s: lv1_gpu_context_allocate failed: %d\n", __func__,
- 			status);
-+		retval = -ENOMEM;
- 		goto err_gpu_memory_free;
- 	}
+diff --git a/drivers/video/bw2.c b/drivers/video/bw2.c
+index 7ba74cd..6bea9a9 100644
+--- a/drivers/video/bw2.c
++++ b/drivers/video/bw2.c
+@@ -319,8 +319,10 @@ static int __devinit bw2_probe(struct platform_device *op)
  
-@@ -1053,6 +1055,7 @@ static int __devinit ps3fb_probe(struct ps3_system_bus_device *dev)
- 	dinfo = (void __force *)ioremap(lpar_driver_info, 128 * 1024);
- 	if (!dinfo) {
- 		dev_err(&dev->core, "%s: ioremap failed\n", __func__);
-+		retval = -ENOMEM;
- 		goto err_gpu_context_free;
- 	}
- 
-@@ -1121,8 +1124,10 @@ static int __devinit ps3fb_probe(struct ps3_system_bus_device *dev)
- 	}
- 
- 	info = framebuffer_alloc(sizeof(struct ps3fb_par), &dev->core);
--	if (!info)
-+	if (!info) {
-+		retval = -ENOMEM;
- 		goto err_context_fb_close;
+ 	info->screen_base = of_ioremap(&op->resource[0], 0,
+ 				       info->fix.smem_len, "bw2 ram");
+-	if (!info->screen_base)
++	if (!info->screen_base) {
++		err = -ENOMEM;
+ 		goto out_unmap_regs;
 +	}
  
- 	par = info->par;
- 	par->mode_id = ~ps3fb_mode;	/* != ps3fb_mode, to trigger change */
+ 	bw2_blank(FB_BLANK_UNBLANK, info);
+ 
 -- 
 1.7.11.4
 
