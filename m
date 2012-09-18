@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918Ab2IRMLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:11:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54844 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451Ab2IRMIN (ORCPT
+	id S932930Ab2IRMLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:11:31 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58280 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757403Ab2IRMIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Sep 2012 08:08:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <505757D8.8090405@antcom.de>
-References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
-	<1347016499-29354-10-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaC_enpxUFNM_wteAQWKER_naUNUH-s1pJtiGzVFSV+og@mail.gmail.com>
-	<505757D8.8090405@antcom.de>
-Date: Tue, 18 Sep 2012 14:08:12 +0200
-Message-ID: <CACRpkdZLdernphVSfwHS43HptS+33=PzorihQ0bBKm689u_oFw@mail.gmail.com>
-Subject: Re: [PATCH 09/19] ARM: ux500: Enable SSP (SPI) for HREF when booting
- Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        spi mailing list <spi-devel-general@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 03/10] drivers/video/cg3.c: fix error return code
+Date: Tue, 18 Sep 2012 14:07:53 +0200
+Message-Id: <1347970080-25175-3-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
+References: <1347970080-25175-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 7:03 PM, Roland Stigge <stigge@antcom.de> wrote:
-> On 09/10/2012 01:11 PM, Linus Walleij wrote:
->>
->> It appears Roland has written his bindings such that DT
->> data augments platform data (yes, I am also getting crazy
->> about this prioritization, mea culpa for ACKing this without
->> proper discussion) so it appears that you could actually
->> use AUXDATA and some stuff in the DT at the same
->> time.
->
-> Sorry for the incompleteness of the devicetree conversion. I'm sending a
-> patch (separately) that makes it possible to specify everything via
-> devicetree, so you can choose between dt and platform data.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-OK it was not such a big deal, but many many thanks for fixing this
-up! :-)
+Convert a nonnegative error return code to a negative one, as returned
+elsewhere in the function.
 
-> Except in case of callback specification (dma_filter()), you need to
-> provide platform data.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-OK.
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
 
-> Interestingly, when I removed the actual platform data from the board
-> file, I noticed that I still needed to specify a device name (like
-> dev:ssp0) to make it work. But this seems to be expected according to
-> the documentation of OF_DEV_AUXDATA(). Are there any plans or ideas how
-> to fix this?
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ drivers/video/cg3.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This is very likely because the clock tree has a name like "dev:ssp0"
-encoded for this device, and if you don't nail it down like that the
-device name will be the same as the node in your device tree and
-then clock lookup will fail.
+diff --git a/drivers/video/cg3.c b/drivers/video/cg3.c
+index f927a7b..c5e7612 100644
+--- a/drivers/video/cg3.c
++++ b/drivers/video/cg3.c
+@@ -398,7 +398,8 @@ static int __devinit cg3_probe(struct platform_device *op)
+ 			goto out_unmap_screen;
+ 	}
+ 
+-	if (fb_alloc_cmap(&info->cmap, 256, 0))
++	err = fb_alloc_cmap(&info->cmap, 256, 0);
++	if (err)
+ 		goto out_unmap_screen;
+ 
+ 	fb_set_cmap(&info->cmap, info);
+-- 
+1.7.11.4
 
-The "real fix" is to convert the clock drivers to use device tree so
-the drivers can just refer to the phandles to figure out what clock
-node they need.
-
-Along with the DMA channel mapping this is one of the major
-roadblocks to finalizing the device tree adoptions.
-
-> When we have sorted out this driver change (please check the new pl022
-> specific dt property names!), I will provide patches for arm-soc to
-> actually use this new interface via dts files.
-
-OK cool I guess you will do this for the LPC32xx? Or are you testing
-this on some other platforms?
-
-Yours,
-Linus Walleij
