@@ -1,32 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab2IRA6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Sep 2012 20:58:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43335 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2IRA6m (ORCPT
+	id S1756355Ab2IRBYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Sep 2012 21:24:16 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44354 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab2IRBXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Sep 2012 20:58:42 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1347898641-17575-1-git-send-email-apr@cn-eng.de>
-References: <1347898641-17575-1-git-send-email-apr@cn-eng.de>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 18 Sep 2012 08:58:22 +0800
-Message-ID: <CAF+7xW=PBGNbDRGmWyJR=e1OaxN4C85hTywKiyytB3pq6ST8cA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: Use devm_* APIs for mc13xxx: remove leftover kfree
-To: Andreas Pretzsch <apr@cn-eng.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Sep 2012 21:23:53 -0400
+Subject: Re: [PATCH] drivers/target/target_core_configfs.c: fix error
+ return code
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <1347905133-28492-1-git-send-email-peter.senna@gmail.com>
+References: <1347905133-28492-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Sep 2012 18:23:50 -0700
+Message-ID: <1347931430.10711.149.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/9/18 Andreas Pretzsch <apr@cn-eng.de>:
-> commit e7c706b1e5ccf28eaaf76c7a4613e80b0ca52863 migrated the allocation
-> of struct mc13xxx to devm_* functions, but left a kfree(mc13xxx) in the
-> mc13xxx_common_init error path. Remove it to prevent memory corruption.
->
-> Signed-off-by: Andreas Pretzsch <apr@cn-eng.de>
+On Mon, 2012-09-17 at 20:05 +0200, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
 
-Reviewed-by: Axel Lin <axel.lin@gmail.com>
+<SNIP>
+
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> ---
+
+This bug-fix patch with a slightly more verbose commit log has been
+applied to target-pending/for-next, along with a CC' to stable so it
+get's picked up for v3.6.1 + friends.
+
+Thanks Peter!
+
+--nab
+
+>  drivers/target/target_core_configfs.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+> index a1b4171..015f5be 100644
+> --- a/drivers/target/target_core_configfs.c
+> +++ b/drivers/target/target_core_configfs.c
+> @@ -3124,6 +3124,7 @@ static int __init target_core_init_configfs(void)
+>  				GFP_KERNEL);
+>  	if (!target_cg->default_groups) {
+>  		pr_err("Unable to allocate target_cg->default_groups\n");
+> +		ret = -ENOMEM;
+>  		goto out_global;
+>  	}
+>  
+> @@ -3139,6 +3140,7 @@ static int __init target_core_init_configfs(void)
+>  				GFP_KERNEL);
+>  	if (!hba_cg->default_groups) {
+>  		pr_err("Unable to allocate hba_cg->default_groups\n");
+> +		ret = -ENOMEM;
+>  		goto out_global;
+>  	}
+>  	config_group_init_type_name(&alua_group,
+> @@ -3154,6 +3156,7 @@ static int __init target_core_init_configfs(void)
+>  			GFP_KERNEL);
+>  	if (!alua_cg->default_groups) {
+>  		pr_err("Unable to allocate alua_cg->default_groups\n");
+> +		ret = -ENOMEM;
+>  		goto out_global;
+>  	}
+>  
+> @@ -3165,14 +3168,17 @@ static int __init target_core_init_configfs(void)
+>  	 * Add core/alua/lu_gps/default_lu_gp
+>  	 */
+>  	lu_gp = core_alua_allocate_lu_gp("default_lu_gp", 1);
+> -	if (IS_ERR(lu_gp))
+> +	if (IS_ERR(lu_gp)) {
+> +		ret = -ENOMEM;
+>  		goto out_global;
+> +	}
+>  
+>  	lu_gp_cg = &alua_lu_gps_group;
+>  	lu_gp_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
+>  			GFP_KERNEL);
+>  	if (!lu_gp_cg->default_groups) {
+>  		pr_err("Unable to allocate lu_gp_cg->default_groups\n");
+> +		ret = -ENOMEM;
+>  		goto out_global;
+>  	}
+>  
+
+
