@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab2IRIbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:31:24 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:33280 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab2IRIbT (ORCPT
+	id S1757494Ab2IRIcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:32:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34860 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756785Ab2IRIc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:31:19 -0400
-Message-ID: <5058313F.8060704@atmel.com>
-Date: Tue, 18 Sep 2012 10:30:55 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 18 Sep 2012 04:32:29 -0400
+Date: Tue, 18 Sep 2012 09:31:46 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Ricardo Neri <ricardo.neri@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Barry Song <baohua.song@csr.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Vista Silicon <javier.martin@vista-silicon.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH v2 04/15] dmaengine: Pass no_wakeup parameter via
+	device_prep_dma_cyclic() callback
+Message-ID: <20120918083146.GE12445@n2100.arm.linux.org.uk>
+References: <1347543485-339-1-git-send-email-peter.ujfalusi@ti.com> <1347543485-339-5-git-send-email-peter.ujfalusi@ti.com> <CACRpkdYAxFzPAZgMsdj9C3YVLzMc_w41Xs0SiqX-1DWaZqxAdw@mail.gmail.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        voice <voice.shen@atmel.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] at91: one fix for 3.6
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYAxFzPAZgMsdj9C3YVLzMc_w41Xs0SiqX-1DWaZqxAdw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+On Mon, Sep 17, 2012 at 11:01:23AM +0200, Linus Walleij wrote:
+> On Thu, Sep 13, 2012 at 3:37 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> 
+> > Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
+> > can receive the no_wakeup request coming from client drivers.
+> > This feature can be used during audio operation to disable all audio
+> > related interrupts.
+> >
+> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > CC: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > CC: Barry Song <baohua.song@csr.com>
+> > CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> > CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> > CC: Vista Silicon <javier.martin@vista-silicon.com>
+> > CC: Zhangfei Gao <zhangfei.gao@marvell.com>
+> > CC: Shawn Guo <shawn.guo@linaro.org>
+> > CC: Laxman Dewangan <ldewangan@nvidia.com>
+> 
+> After some discussion with clever people I know I have come to the conclusion
+> that this is a good idea, so:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-We have one last minute fix. It can help us to use the device tree for 
-GPIO interrupt attached devices. I have based my tag on top of the "fixes" pull 
-request that I've already sent to you.
-I hope that it could make it for 3.6-final.
+NAKed-by: me
 
-The following changes since commit 51a6149b89b822cacf572b2ca2a15cb6f2232b11:
-
-  ARM: at91/feature-removal-schedule: delay at91_mci removal (2012-08-27 09:59:36 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 51ac51a6a5ab5f0aff46c4757ba4c32f3f8f7a2e:
-
-  ARM: at91: fix missing #interrupt-cells on gpio-controller (2012-09-17 10:25:01 +0200)
-
-----------------------------------------------------------------
-Modify AT91 device tree files for making the GPIO interrupts work.
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: fix missing #interrupt-cells on gpio-controller
-
- arch/arm/boot/dts/at91sam9260.dtsi | 3 +++
- arch/arm/boot/dts/at91sam9263.dtsi | 5 +++++
- arch/arm/boot/dts/at91sam9g45.dtsi | 5 +++++
- arch/arm/boot/dts/at91sam9n12.dtsi | 4 ++++
- arch/arm/boot/dts/at91sam9x5.dtsi  | 4 ++++
- 5 files changed, 21 insertions(+)
-
-Thanks, best regards,
--- 
-Nicolas Ferre
+If you look at the other sub-threads of the patch you're acking, you'll
+notice that there's a v3 of this patch set which changes the way this is
+done.
