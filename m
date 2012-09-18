@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab2IRM3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:29:06 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:42956 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755056Ab2IRM3E convert rfc822-to-8bit (ORCPT
+	id S932982Ab2IRMel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:34:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53911 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495Ab2IRMek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:29:04 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>,
-        "mporter@kernel.crashing.org" <mporter@kernel.crashing.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "chul.kim@idt.com" <chul.kim@idt.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: RE: [PATCH] drivers/rapidio/devices/tsi721.c: fix error return code
-Thread-Topic: [PATCH] drivers/rapidio/devices/tsi721.c: fix error return code
-Thread-Index: AQHNlKx2guXyHMIbkk+axLjDNpqlYJeQB+4Q
-Date: Tue, 18 Sep 2012 12:27:55 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D12E7C4AFF@corpmail1.na.ads.idt.com>
-References: <1347869644-2569-1-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1347869644-2569-1-git-send-email-peter.senna@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Sep 2012 08:34:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH v5 00/17] Introduce Xen support on ARM (based on 3.6-rc5)
+Date: Tue, 18 Sep 2012 12:34:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>
+References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209181234.29557.arnd@arndb.de>
+X-Provags-ID: V02:K0:bcMTw+7UhK/ACDTwV5qA3ZZHptjq/o/6VKOclcPohqU
+ HQ4eEYiFzFJ6Vcclkk0ycZj9Ft2OdkfJdHKm60IHK8mDDj4HSl
+ JL4CpovXoiZh8Chskt0Ejt1hF+8BX0Jxh6k+ZriO5WJke3NdJc
+ tCQZf1bK/Q+sAdVVQY/HGxvPdPk6KBLWy/qhled3PwdLBrFRud
+ 89miQ7zCprpkSLwa9HHKG/XtUoFAAv7fwPJ6n9K+QylLEdtRgt
+ tglroBjozQqLkIYAA1AqsZNIp02JcUSFEgaWTJp6E/SqCE/Zau
+ 1IlmJGTAQx+Qtx6DLKbV/xLK2/kU21tUpEf5bwz8OORHspFJre
+ FQ5LMtfZRuLGLcXORCW4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, Sep.17, at 2012 4:14 AM Peter Senna Tschudin wrote:
-> 
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
-> 
-... skip ...
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> ---
->  drivers/rapidio/devices/tsi721.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/rapidio/devices/tsi721.c
-> b/drivers/rapidio/devices/tsi721.c
-> index 1974359..78dff6f 100644
-> --- a/drivers/rapidio/devices/tsi721.c
-> +++ b/drivers/rapidio/devices/tsi721.c
-> @@ -2316,7 +2316,8 @@ static int __devinit tsi721_probe(struct pci_dev
-> *pdev,
-> 
->  	/* Configure DMA attributes. */
->  	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
-> -		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-> +		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-> +		if (err) {
->  			dev_info(&pdev->dev, "Unable to set DMA mask\n");
->  			goto err_unmap_bars;
->  		}
-> --
-> 1.7.11.4
+On Monday 17 September 2012, Stefano Stabellini wrote:
 
-Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> I am also attaching to this email the dts'es that I am currently using
+> for dom0 and domU: vexpress-v2p-ca15-tc1.dts (that includes
+> vexpress-v2m-rs1-rtsm.dtsi) is the dts used for dom0 and it is passed to
+> Linux by Xen, while vexpress-virt.dts is the dts used for other domUs
+> and it is appended in binary form to the guest kernel image. I am not
+> sure where they are supposed to live yet, so I am just attaching them
+> here so that people can actually try out this series if they want to.
 
+You can submit the dts files separately so we can include them in
+the arm-soc tree. Pawel Moll is handling vexpress related changes these
+days, so it would be reasonable if he included them in a pull request.
+ 
+> The patch series has been rebased on Konrad's stable/for-linus-3.7
+> branch.
+> 
+> Arnd, Russell, what do you think about this series? If you are OK with
+> it, to whom should I submit it?
+
+I have no objections to your patches from this series. IMHO they should
+be submitted through the Xen tree, but it would be good to have an Ack
+from Russell.
+
+	Arnd
