@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab2IRMYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 08:24:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51502 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932952Ab2IRMYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 08:24:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] ARM: ux500: tidy up pin sleep modes
-Date: Tue, 18 Sep 2012 12:24:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <1347967598-24691-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1347967598-24691-1-git-send-email-linus.walleij@stericsson.com>
+	id S932965Ab2IRMZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 08:25:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52576 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757424Ab2IRMWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 08:22:52 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCHv4 4/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 17:52:34 +0530
+Message-ID: <1347970956-11158-5-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1347970956-11158-1-git-send-email-shubhrajyoti@ti.com>
+References: <1347970956-11158-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209181224.36834.arnd@arndb.de>
-X-Provags-ID: V02:K0:XtJO0BxKg9ALR4N3UJlPOedCQtG/KiVis9QouNDOyZf
- 3Hv+ZmHDMfc+PKUhyv+xWsZdoxMM4B3n9efebl+h3v0lwWTRd/
- kIIKvZ81p5FIgaoohUbcvcBjBe/KAvT5W99sYCJNoUIImJiGJx
- HqWnOJMCrczF4W3/fW22Y6wXukaWm6AnKnqLsoYs7rjmZDXkyz
- VAaYjU3Wcf1r0vMaAyZB0RXK4puK/iLhP4UKFajVW9EXtz+DiB
- 4QgQSfi4ehNq+uQsHjYuU7+N0l7Dv9y0MmJoEBgMoqPf0Av3eU
- Tu1+SPqCR5DXr1uc1KKORoBcwWqJAAeIQHQnN9Gu0dtZC3EVU3
- q3d4Wi+QAjDqmrrnpkEE=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 September 2012, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This named the sleep mode pin configurations as slpm rather
-> than sleep to correspond better with the settings from the
-> datasheet. It also defines an optional sleep mode for the SPI
-> controller SPI2.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Arnd, Olof: again a patch I'd like to take through the pinctrl
-> tree for simplicity.
+Convert the struct i2c_msg initialization to C99 format. This makes
+maintaining and editing the code simpler. Also helps once other fields
+like transferred are added in future.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/media/i2c/msp3400-driver.c |   40 ++++++++++++++++++++++++++++++-----
+ 1 files changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/i2c/msp3400-driver.c b/drivers/media/i2c/msp3400-driver.c
+index aeb22be..766305f 100644
+--- a/drivers/media/i2c/msp3400-driver.c
++++ b/drivers/media/i2c/msp3400-driver.c
+@@ -119,12 +119,31 @@ int msp_reset(struct i2c_client *client)
+ 	static u8 write[3]     = { I2C_MSP_DSP + 1, 0x00, 0x1e };
+ 	u8 read[2];
+ 	struct i2c_msg reset[2] = {
+-		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_off },
+-		{ client->addr, I2C_M_IGNORE_NAK, 3, reset_on  },
++		{
++			.addr = client->addr,
++			.flags = I2C_M_IGNORE_NAK,
++			.len = 3,
++			.buf = reset_off
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_IGNORE_NAK,
++			.len = 3,
++			.buf = reset_on
++		},
+ 	};
+ 	struct i2c_msg test[2] = {
+-		{ client->addr, 0,        3, write },
+-		{ client->addr, I2C_M_RD, 2, read  },
++		{
++			.addr = client->addr,
++			.len = 3,
++			.buf = write
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 2,
++			.buf = read
++		},
+ 	};
+ 
+ 	v4l_dbg(3, msp_debug, client, "msp_reset\n");
+@@ -143,8 +162,17 @@ static int msp_read(struct i2c_client *client, int dev, int addr)
+ 	u8 write[3];
+ 	u8 read[2];
+ 	struct i2c_msg msgs[2] = {
+-		{ client->addr, 0,        3, write },
+-		{ client->addr, I2C_M_RD, 2, read  }
++		{
++			.addr = client->addr,
++			.len = 3,
++			.buf = write
++		},
++		{
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 2,
++			.buf = read
++		}
+ 	};
+ 
+ 	write[0] = dev + 1;
+-- 
+1.7.5.4
+
