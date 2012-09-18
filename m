@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab2IRGjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 02:39:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62818 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab2IRGjB (ORCPT
+	id S1755299Ab2IRGkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 02:40:09 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39281 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752110Ab2IRGkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 02:39:01 -0400
+	Tue, 18 Sep 2012 02:40:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 18 Sep 2012 12:09:01 +0530
-X-Google-Sender-Auth: 1baWs8jJN1pg9fH_sDfPKAPNJOc
-Message-ID: <CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
-Subject: Re: [PATCH 2/7] dw_dmac: fill optional encoded parameters in register structure
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAN1soZzFmRxWUh9Og31O8XoXKwPcNPszCseJDkt_6oNPx7gD-g@mail.gmail.com>
+References: <CAPgLHd93SqsiFmE7y356VwBJtaac0APE__vk+8dBZnaOyt4org@mail.gmail.com>
+ <CACRpkdYAeChEqeLrz0hQxpXrWp477iXoko01swG8Y=SA7tNh5Q@mail.gmail.com>
+ <CAMPhdO_XJ2+=yrkLXVFTR4ykf8QnON7mBXQ2+2xiTor=wY5S+w@mail.gmail.com> <CAN1soZzFmRxWUh9Og31O8XoXKwPcNPszCseJDkt_6oNPx7gD-g@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 18 Sep 2012 14:39:45 +0800
+Message-ID: <CAMPhdO9xKL48=0FRPrLZ=JP8epF5D=Ta0qheLEMQaL-eoe305w@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pxa: using for_each_set_bit to simplify the code
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Wei Yongjun <weiyj.lk@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index f6d92d7..4633d39 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -82,9 +82,28 @@ struct dw_dma_regs {
->         DW_REG(ID);
->         DW_REG(TEST);
->
-> +       /* reserved */
-> +       DW_REG(__reserved0);
-> +       DW_REG(__reserved1);
-> +
->         /* optional encoded params, 0x3c8..0x3f7 */
-> +       u32     __reserved;
-> +
-> +       /* per-channel configuration registers */
-> +       u32     DWC_PARAMS[DW_DMA_MAX_NR_CHANNELS];
-> +       u32     MULTI_BLK_TYPE;
-> +       u32     MAX_BLK_SIZE;
-> +
-> +       /* top-level parameters */
-> +       u32     DW_PARAMS;
->  };
+On Tue, Sep 18, 2012 at 1:56 PM, Haojian Zhuang
+<haojian.zhuang@gmail.com> wrote:
+> On Tue, Sep 18, 2012 at 1:43 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
+>> On Mon, Sep 17, 2012 at 6:56 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Fri, Sep 14, 2012 at 4:36 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+>>>
+>>>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>>>
+>>>> Using for_each_set_bit() to simplify the code.
+>>>>
+>>>> spatch with a semantic match is used to found this.
+>>>> (http://coccinelle.lip6.fr/)
+>>>>
+>>>> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>>
+>>> PXA maintainers: does this look OK?
+>>
+>> I seem to have Acked this already in another mail, if that got lost, here
+>> it is:
+>>
+>> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+>>
+> The another mail thread is for irq, not gpio. I'll apply it today. :)
 
-Above is Ok.
-
-> +#define dma_raw_readl(addr, name) \
-> +       readl((addr) + offsetof(struct dw_dma_regs, name))
-> +
-> +#define dma_raw_writel(addr, name, val) \
-> +       writel((val), (addr) + offsetof(struct dw_dma_regs, name))
-> +
-
-But why don't you use earlier defined readl/writel macros:
-dma_readl and dma_writel?
-
---
-viresh
+Thanks Haojian!
