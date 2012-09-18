@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab2IROL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 10:11:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22302 "EHLO relay.sw.ru"
+	id S933061Ab2IROPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 10:15:43 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:36973 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933066Ab2IROHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 10:07:55 -0400
+	id S1758029Ab2IROPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 10:15:42 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -13,120 +13,61 @@ Cc: <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
         Suleiman Souhlal <suleiman@google.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v3 00/13] kmem controller for memcg.
-Date: Tue, 18 Sep 2012 18:03:57 +0400
-Message-Id: <1347977050-29476-1-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 00/16] slab accounting for memcg
+Date: Tue, 18 Sep 2012 18:11:54 +0400
+Message-Id: <1347977530-29755-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a followup to the previous kmem series. I divided them logically
+so it gets easier for reviewers. But I believe they are ready to be merged
+together (although we can do a two-pass merge if people would prefer)
 
-This is the first part of the kernel memory controller for memcg. It has been
-discussed many times, and I consider this stable enough to be on tree. A follow
-up to this series are the patches to also track slab memory. They are not
-included here because I believe we could benefit from merging them separately
-for better testing coverage. If there are any issues preventing this to be
-merged, let me know. I'll be happy to address them.
+Throwaway git tree found at:
 
-*v3:
-	- Changed function names to match memcg's
-	- avoid doing get/put in charge/uncharge path
-	- revert back to keeping the account enabled after it is first activated
+	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-slab
 
-The slab patches are also mature in my self evaluation and could be merged not
-too long after this. For the reference, the last discussion about them happened
-at http://lwn.net/Articles/508087/. Patches for that will be sent shortly, and
-will include the documentation for this.
+There are mostly bugfixes since last submission.
 
-Numbers can be found at https://lkml.org/lkml/2012/9/13/239
-
-A (throwaway) git tree with them is placed at:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-stack
-
-A general explanation of what this is all about follows:
-
-The kernel memory limitation mechanism for memcg concerns itself with
-disallowing potentially non-reclaimable allocations to happen in exaggerate
-quantities by a particular set of processes (cgroup). Those allocations could
-create pressure that affects the behavior of a different and unrelated set of
-processes.
-
-Its basic working mechanism is to annotate some allocations with the
-_GFP_KMEMCG flag. When this flag is set, the current process allocating will
-have its memcg identified and charged against. When reaching a specific limit,
-further allocations will be denied.
-
-One example of such problematic pressure that can be prevented by this work is
-a fork bomb conducted in a shell. We prevent it by noting that processes use a
-limited amount of stack pages. Seen this way, a fork bomb is just a special
-case of resource abuse. If the offender is unable to grab more pages for the
-stack, no new processes can be created.
-
-There are also other things the general mechanism protects against. For
-example, using too much of pinned dentry and inode cache, by touching files an
-leaving them in memory forever.
-
-In fact, a simple:
-
-while true; do mkdir x; cd x; done
-
-can halt your system easily because the file system limits are hard to reach
-(big disks), but the kernel memory is not. Those are examples, but the list
-certainly don't stop here.
-
-An important use case for all that, is concerned with people offering hosting
-services through containers. In a physical box we can put a limit to some
-resources, like total number of processes or threads. But in an environment
-where each independent user gets its own piece of the machine, we don't want a
-potentially malicious user to destroy good users' services.
-
-This might be true for systemd as well, that now groups services inside
-cgroups. They generally want to put forward a set of guarantees that limits the
-running service in a variety of ways, so that if they become badly behaved,
-they won't interfere with the rest of the system.
-
-There is, of course, a cost for that. To attempt to mitigate that, static
-branches are used to make sure that even if the feature is compiled in with
-potentially a lot of memory cgroups deployed this code will only be enabled
-after the first user of this service configures any limit. Limits lower than
-the user limit effectively means there is a separate kernel memory limit that
-may be reached independently than the user limit. Values equal or greater than
-the user limit implies only that kernel memory is tracked. This provides a
-unified vision of "maximum memory", be it kernel or user memory. Because this
-is all default-off, existing deployments will see no change in behavior.
+For a detailed explanation about this series, please refer to my previous post
+(Subj: [PATCH v3 00/13] kmem controller for memcg.)
 
 
-Glauber Costa (11):
-  memcg: change defines to an enum
-  kmem accounting basic infrastructure
-  Add a __GFP_KMEMCG flag
-  memcg: kmem controller infrastructure
-  mm: Allocate kernel pages to the right memcg
-  res_counter: return amount of charges after res_counter_uncharge
-  memcg: kmem accounting lifecycle management
-  memcg: use static branches when code not in use
-  memcg: allow a memcg with kmem charges to be destructed.
-  execute the whole memcg freeing in rcu callback
-  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
-    bombs
+Glauber Costa (16):
+  slab/slub: struct memcg_params
+  slub: use free_page instead of put_page for freeing kmalloc
+    allocation
+  slab: Ignore the cflgs bit in cache creation
+  provide a common place for initcall processing in kmem_cache
+  consider a memcg parameter in kmem_create_cache
+  memcg: infrastructure to match an allocation to the right cache
+  memcg: skip memcg kmem allocations in specified code regions
+  slab: allow enable_cpu_cache to use preset values for its tunables
+  sl[au]b: always get the cache from its page in kfree
+  sl[au]b: Allocate objects from memcg cache
+  memcg: destroy memcg caches
+  memcg/sl[au]b Track all the memcg children of a kmem_cache.
+  slab: slab-specific propagation changes.
+  slub: slub-specific propagation changes.
+  memcg/sl[au]b: shrink dead caches
+  Add documentation about the kmem controller
 
-Suleiman Souhlal (2):
-  memcg: Make it possible to use the stock for more than one page.
-  memcg: Reclaim when more than one page needed.
-
- Documentation/cgroups/resource_counter.txt |   7 +-
- include/linux/gfp.h                        |  10 +-
- include/linux/memcontrol.h                 |  99 ++++++
- include/linux/res_counter.h                |  12 +-
- include/linux/thread_info.h                |   2 +
- kernel/fork.c                              |   4 +-
- kernel/res_counter.c                       |  20 +-
- mm/memcontrol.c                            | 519 +++++++++++++++++++++++++----
- mm/page_alloc.c                            |  35 ++
- 9 files changed, 628 insertions(+), 80 deletions(-)
+ Documentation/cgroups/memory.txt |  73 ++++++-
+ include/linux/memcontrol.h       |  60 ++++++
+ include/linux/sched.h            |   1 +
+ include/linux/slab.h             |  23 +++
+ include/linux/slab_def.h         |   4 +
+ include/linux/slub_def.h         |  18 +-
+ init/Kconfig                     |   2 +-
+ mm/memcontrol.c                  | 403 +++++++++++++++++++++++++++++++++++++++
+ mm/slab.c                        |  70 ++++++-
+ mm/slab.h                        |  72 ++++++-
+ mm/slab_common.c                 |  85 ++++++++-
+ mm/slob.c                        |   5 +
+ mm/slub.c                        |  54 ++++--
+ 13 files changed, 829 insertions(+), 41 deletions(-)
 
 -- 
 1.7.11.4
