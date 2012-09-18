@@ -1,132 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab2IRSxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:53:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58090 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab2IRSx0 (ORCPT
+	id S1753020Ab2IRSzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:55:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42588 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab2IRSzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:53:26 -0400
-Date: Tue, 18 Sep 2012 20:53:22 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: pci: Allow passing per-controller private data
-Message-ID: <20120918185322.GE29360@avionic-0098.mockup.avionic-design.de>
-References: <1347657078-32230-1-git-send-email-thierry.reding@avionic-design.de>
- <1347657078-32230-3-git-send-email-thierry.reding@avionic-design.de>
- <CAErSpo754W2TKr46V5FKwX43eusoOVjxkAWJ=kkB0BvRt_bJBw@mail.gmail.com>
- <20120918183428.GC29360@avionic-0098.mockup.avionic-design.de>
- <CAErSpo591Ybuf95nU-O38=PrqtuJHWkWcce+5Owbc8YAprAUBw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Uwl7UQhJk99r8jnw"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo591Ybuf95nU-O38=PrqtuJHWkWcce+5Owbc8YAprAUBw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:2CM7bTRi8ZXB5WLj0KdXBCRHMUOADOnZN/Jt6Aj6uE/
- nSZSOc750mrWBNUWtksz7T37FoFQ7wrzV7x8yYbwiGlyhGl+H4
- DQBjWyxPyrzc+Z3WKe/WrU4id/w/imVn3R4djgA/AAcolrzNbh
- 7PdYa/IUYWHcx3tXwHFvUjRFZlU5LO+UUj/xYorlezXLdVRq1t
- 7eEmSICEuqDm4+HO5qBvcG7Wdy5u+/AixQJ70f/Hef2jeVGCcD
- kmx0QJ42Le5KYSgk4rGKAhTmgWkqIKGyvBUtb+NDY4mGa8Cjs9
- H9M5OkVLcALrNEoQx1JNfPfc7dyVdIrJfYch8p8N7rCs6Ud9MK
- q1a1CqrTghkDwZwOgI4H9ppk+/Qi6v2qiIPG7YLlvXPS/yFhoc
- P5CP+fy13xo28RTsYiQ4TWlq5NBXPnll1VTGxfYu6sSqf6LlAH
- CnSh7
+	Tue, 18 Sep 2012 14:55:07 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-doc@vger.kernel.org, "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Landley <rob@landley.net>
+Subject: [PATCH v4] media: v4l2-ctrl: add a helper function to add standard control with driver specific menu
+Date: Wed, 19 Sep 2012 00:24:38 +0530
+Message-Id: <1347994478-31784-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
---Uwl7UQhJk99r8jnw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add helper function v4l2_ctrl_new_std_menu_items(), which adds
+a standard menu control, with driver specific menu.
 
-On Tue, Sep 18, 2012 at 12:38:53PM -0600, Bjorn Helgaas wrote:
-> On Tue, Sep 18, 2012 at 12:34 PM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Tue, Sep 18, 2012 at 11:21:21AM -0600, Bjorn Helgaas wrote:
-> >> On Fri, Sep 14, 2012 at 3:11 PM, Thierry Reding
-> >> <thierry.reding@avionic-design.de> wrote:
-> >> > In order to allow drivers to specify private data for each controlle=
-r,
-> >> > this commit adds a private_data field to the struct hw_pci. This fie=
-ld
-> >> > is an array of nr_controllers pointers that will be used to initiali=
-ze
-> >> > the private_data field of the corresponding controller's pci_sys_data
-> >> > structure.
-> >>
-> >> I guess you aren't changing the design here because struct hw_pci
-> >> already includes "nr_controllers," but having nr_controllers and a
-> >> private_data[] array sounds like something that might make it hard to
-> >> hot-add a host bridge after boot.
-> >
-> > What I do in the Tegra PCIe driver is to pass each of the root ports to
-> > pci_common_init() individually because they can be enabled or disabled
-> > by device tree data. I suppose to some degree you can consider that hot-
-> > adding. Not that Tegra is likely to ever need to support that. I don't
-> > know how likely it is for any ARM platform to ever need support for hot-
-> > adding a host bridge.
-> >
-> > Eventually I think it would be advantageous for this to be generalized
-> > further such that PCI initialization can be shared across architectures.
-> > That's probably not an easy task so I was going to start by making
-> > incremental changes that enable the Tegra code to work and, if time
-> > allows, help further with subsequent improvements.
-> >
-> > It also seems that parts of the PCI core aren't ready yet for hot-adding
-> > host bridges. One thing I came across while working on the Tegra code is
-> > that MSI setup and teardown needs to be done by the arch_setup_msi_irq()
-> > and arch_teardown_msi_irq() respectively, which are expected to be
-> > builtin. That was also the last issue that keeps the Tegra PCIe driver
-> > from being built as a module. I think that will also make it impossible
-> > to hot-add host bridges. On x86 this seems to be handled by platform
-> > code, but on Tegra for example MSI setup and teardown is tightly coupled
-> > to the PCIe controller. That was one of the things I thought I could
-> > take a look at eventually, but getting Tegra support cleaned up is
-> > higher priority right now.
->=20
-> The PCI core doesn't support hot-add of host bridges yet, but there's
-> a lot of work in that area right now, which is why it's on my mind :)
-> I'm not suggesting you change anything here; just keep it in the back
-> of your mind for the future.  Thanks for the arch_setup_msi_irq() tip;
-> I'll look into that.
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Rob Landley <rob@landley.net>
+---
+Changes for v4:
+1: Rather then adding a function to modify the menu, added a helper
+   function, that creates a new standard control with user specific
+   menu.
 
-I think it wouldn't even be that hard to implement. When I last looked
-at this it seemed like a simple registration mechanism in the core
-should work. That is the core would keep a list of registered host
-bridges, each of which would implement setup_msi() and teardown_msi()
-operations. Then, whenever an MSI is requested, the core would look up
-the corresponding host bridge and call the associated setup_msi()
-callback. Perhaps these could go into struct pci_ops. It already has
-pointers for configuration space access, which is also controller-
-specific.
+Changes for v3:
+1: Fixed style/grammer issues as pointed by Hans.
+   Thanks Hans for providing the description.
 
-Thierry
+Changes for v2:
+1: Fixed review comments from Hans, to have return type as
+   void, add WARN_ON() for fail conditions, allow this fucntion
+   to modify the menu of custom controls.
 
---Uwl7UQhJk99r8jnw
-Content-Type: application/pgp-signature
+ Documentation/video4linux/v4l2-controls.txt |   25 ++++++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls.c        |   28 +++++++++++++++++++++++++++
+ include/media/v4l2-ctrls.h                  |   23 ++++++++++++++++++++++
+ 3 files changed, 76 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+diff --git a/Documentation/video4linux/v4l2-controls.txt b/Documentation/video4linux/v4l2-controls.txt
+index 43da22b..ad8e172 100644
+--- a/Documentation/video4linux/v4l2-controls.txt
++++ b/Documentation/video4linux/v4l2-controls.txt
+@@ -136,11 +136,25 @@ Or alternatively for integer menu controls, by calling v4l2_ctrl_new_int_menu:
+ 			const struct v4l2_ctrl_ops *ops,
+ 			u32 id, s32 max, s32 def, const s64 *qmenu_int);
+ 
++Standard menu controls with driver specific menu are added by calling
++v4l2_ctrl_new_std_menu_items:
++
++	struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(
++		struct v4l2_ctrl_handler *hdl,
++		const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
++		s32 skip_mask, s32 def, const char * const *qmenu_user);
++
+ These functions are typically called right after the v4l2_ctrl_handler_init:
+ 
+ 	static const s64 exp_bias_qmenu[] = {
+ 	       -2, -1, 0, 1, 2
+ 	};
++	static const char * const test_pattern[] = {
++		"Disabled",
++		"Vertical Bars",
++		"Solid Black",
++		"Solid White",
++	};
+ 
+ 	v4l2_ctrl_handler_init(&foo->ctrl_handler, nr_of_controls);
+ 	v4l2_ctrl_new_std(&foo->ctrl_handler, &foo_ctrl_ops,
+@@ -156,6 +170,9 @@ These functions are typically called right after the v4l2_ctrl_handler_init:
+ 			ARRAY_SIZE(exp_bias_qmenu) - 1,
+ 			ARRAY_SIZE(exp_bias_qmenu) / 2 - 1,
+ 			exp_bias_qmenu);
++	v4l2_ctrl_new_std_menu_items(&foo->ctrl_handler, &foo_ctrl_ops,
++			V4L2_CID_TEST_PATTERN, ARRAY_SIZE(test_pattern) - 1, 0,
++			0, test_pattern);
+ 	...
+ 	if (foo->ctrl_handler.error) {
+ 		int err = foo->ctrl_handler.error;
+@@ -185,6 +202,14 @@ v4l2_ctrl_new_std_menu in that it doesn't have the mask argument and takes
+ as the last argument an array of signed 64-bit integers that form an exact
+ menu item list.
+ 
++The v4l2_ctrl_new_std_menu_items funtion is very similar as
++v4l2_ctrl_new_std_menu but takes a extra parameter qmenu_user, which is
++driver specific menu but yet a standard menu control.
++A good example for this control is the test pattern control for
++capture/display/sensors devices that have the capability to generate test
++patterns. These test patterns are hardware specific, so the contents of the
++menu will vary from device to device.
++
+ Note that if something fails, the function will return NULL or an error and
+ set ctrl_handler->error to the error code. If ctrl_handler->error was already
+ set, then it will just return and do nothing. This is also true for
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+index d731422..9ac1b75 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+@@ -1649,6 +1649,34 @@ struct v4l2_ctrl *v4l2_ctrl_new_std_menu(struct v4l2_ctrl_handler *hdl,
+ }
+ EXPORT_SYMBOL(v4l2_ctrl_new_std_menu);
+ 
++/* Helper function for standard menu controls with user defined menu */
++struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(struct v4l2_ctrl_handler *hdl,
++			const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
++			s32 mask, s32 def, const char * const *qmenu_user)
++{
++	const char * const *qmenu = v4l2_ctrl_get_menu(id);
++	const char *name;
++	enum v4l2_ctrl_type type;
++	s32 min;
++	s32 step;
++	u32 flags;
++
++	if (!qmenu) {
++		handler_set_err(hdl, -EINVAL);
++		return NULL;
++	}
++
++	v4l2_ctrl_fill(id, &name, &type, &min, &max, &step, &def, &flags);
++	if (type != V4L2_CTRL_TYPE_MENU) {
++		handler_set_err(hdl, -EINVAL);
++		return NULL;
++	}
++	return v4l2_ctrl_new(hdl, ops, id, name, type,
++			     0, max, mask, def, flags, qmenu_user, NULL, NULL);
++
++}
++EXPORT_SYMBOL(v4l2_ctrl_new_std_menu_items);
++
+ /* Helper function for standard integer menu controls */
+ struct v4l2_ctrl *v4l2_ctrl_new_int_menu(struct v4l2_ctrl_handler *hdl,
+ 			const struct v4l2_ctrl_ops *ops,
+diff --git a/include/media/v4l2-ctrls.h b/include/media/v4l2-ctrls.h
+index 776605f..e0dd392 100644
+--- a/include/media/v4l2-ctrls.h
++++ b/include/media/v4l2-ctrls.h
+@@ -351,6 +351,29 @@ struct v4l2_ctrl *v4l2_ctrl_new_std_menu(struct v4l2_ctrl_handler *hdl,
+ 			const struct v4l2_ctrl_ops *ops,
+ 			u32 id, s32 max, s32 mask, s32 def);
+ 
++/** v4l2_ctrl_new_std_menu_items() - Create a new standard V4L2 menu control
++  * with driver specific menu.
++  * @hdl:	The control handler.
++  * @ops:	The control ops.
++  * @id:	The control ID.
++  * @max:	The control's maximum value.
++  * @mask:	The control's skip mask for menu controls. This makes it
++  *		easy to skip menu items that are not valid. If bit X is set,
++  *		then menu item X is skipped. Of course, this only works for
++  *		menus with <= 32 menu items. There are no menus that come
++  *		close to that number, so this is OK. Should we ever need more,
++  *		then this will have to be extended to a u64 or a bit array.
++  * @def:	The control's default value.
++  * @qmenu_user:The new menu.
++  *
++  * Same as v4l2_ctrl_new_std_menu().but @qmenu_user will be the menu to
++  * which the control will be pointing to.
++  *
++  */
++struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(struct v4l2_ctrl_handler *hdl,
++			const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
++			s32 mask, s32 def, const char * const *qmenu_user);
++
+ /** v4l2_ctrl_new_int_menu() - Create a new standard V4L2 integer menu control.
+   * @hdl:	The control handler.
+   * @ops:	The control ops.
+-- 
+1.7.0.4
 
-iQIcBAEBAgAGBQJQWMMiAAoJEN0jrNd/PrOhpnAQAIdhoyxhVvDD2AM9w9urVBFr
-X6OzWfdq68GklEdbATAn1shKZRcotmHjJZRz5Wv3dmNJuqJpvT9MPgn+vl0GCjgv
-FP/F0Gb2zo4sd3jkamyt4WCCJ9df71aNWSD3Nvgzm7AugfRzaljTgujMDI3J6zgn
-hLRmLxLVtywgPhKewQTbR9neWrVQv2Q+2oGRthy/Q8Eme9c3MOKN/7D7pFJqqCh3
-of126ChIFg93zghOZfI2FMLdfOYhUKpwcNDSSTc99qkJ2l3/BgDWM4XlsN5FIn7F
-wJWDrYbg6rHgnWPOdpgiTB3KQOzwo6SNatm9lz7xinIE49U1aJ4hQ6A01kMslhPm
-k+BYhoVdTURkTQpjHpcsclw6sJT95IMJSNgmXKAnBnlACJoPmEyK15TsVpLV7CNd
-LZcpwF68C/tIziRZwR8NM3AVr6YMAJH7DLmN6tFZBpmQUCvCap4V6WbhoYfYZytB
-dSlTrFRBSLau5q/wpbpGhClMOUxwjcLhENPFroWidggOfF81XJnQEXsUST3mg1KE
-ZG9DCi3hxxp1CwUmDgF1dYf0zRvaKWpE0SWpZb22s7tfvPn1pftdMVnqiuk8beRY
-ocNgsnHsSW6HUPrnX2vBB8Ilc0753BnRwf06dAxNvY7kVHSnbXEuaJhN2b50HJth
-ZYH/4MF/jIjTbpYQisIw
-=x6x1
------END PGP SIGNATURE-----
-
---Uwl7UQhJk99r8jnw--
