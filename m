@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab2IRLov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:44:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41507 "EHLO arroyo.ext.ti.com"
+	id S1758079Ab2IRLqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:46:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41505 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792Ab2IRLos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932738Ab2IRLos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Sep 2012 07:44:48 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv3 6/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 17:14:32 +0530
-Message-ID: <1347968672-10803-7-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv3 3/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 17:14:29 +0530
+Message-ID: <1347968672-10803-4-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347968672-10803-1-git-send-email-shubhrajyoti@ti.com>
 References: <1347968672-10803-1-git-send-email-shubhrajyoti@ti.com>
@@ -28,57 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/media/radio/si470x/radio-si470x-i2c.c |   23 +++++++++++++++++------
- 1 files changed, 17 insertions(+), 6 deletions(-)
+ drivers/media/radio/radio-tea5764.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/radio/si470x/radio-si470x-i2c.c b/drivers/media/radio/si470x/radio-si470x-i2c.c
-index f867f04..e5024cf 100644
---- a/drivers/media/radio/si470x/radio-si470x-i2c.c
-+++ b/drivers/media/radio/si470x/radio-si470x-i2c.c
-@@ -98,8 +98,12 @@ int si470x_get_register(struct si470x_device *radio, int regnr)
- {
- 	u16 buf[READ_REG_NUM];
+diff --git a/drivers/media/radio/radio-tea5764.c b/drivers/media/radio/radio-tea5764.c
+index 6b1fae3..52a34b1 100644
+--- a/drivers/media/radio/radio-tea5764.c
++++ b/drivers/media/radio/radio-tea5764.c
+@@ -151,8 +151,11 @@ int tea5764_i2c_read(struct tea5764_device *radio)
+ 	u16 *p = (u16 *) &radio->regs;
+ 
  	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{
-+			.addr = radio->client->addr,
+-		{ radio->i2c_client->addr, I2C_M_RD, sizeof(radio->regs),
+-			(void *)&radio->regs },
++		{	.addr = radio->i2c_client->addr,
 +			.flags = I2C_M_RD,
-+			.len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf
++			.len = sizeof(radio->regs),
++			.buf = (void *)&radio->regs
 +		},
  	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
-@@ -119,8 +123,11 @@ int si470x_set_register(struct si470x_device *radio, int regnr)
- 	int i;
- 	u16 buf[WRITE_REG_NUM];
+ 	if (i2c_transfer(radio->i2c_client->adapter, msgs, 1) != 1)
+ 		return -EIO;
+@@ -167,7 +170,11 @@ int tea5764_i2c_write(struct tea5764_device *radio)
+ 	struct tea5764_write_regs wr;
+ 	struct tea5764_regs *r = &radio->regs;
  	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, 0, sizeof(u16) * WRITE_REG_NUM,
--			(void *)buf },
+-		{ radio->i2c_client->addr, 0, sizeof(wr), (void *) &wr },
 +		{
-+			.addr = radio->client->addr,
-+			.len = sizeof(u16) * WRITE_REG_NUM,
-+			.buf = (void *)buf
++			.addr = radio->i2c_client->addr,
++			.len = sizeof(wr),
++			.buf = (void *)&wr
 +		},
  	};
- 
- 	for (i = 0; i < WRITE_REG_NUM; i++)
-@@ -146,8 +153,12 @@ static int si470x_get_all_registers(struct si470x_device *radio)
- 	int i;
- 	u16 buf[READ_REG_NUM];
- 	struct i2c_msg msgs[1] = {
--		{ radio->client->addr, I2C_M_RD, sizeof(u16) * READ_REG_NUM,
--			(void *)buf },
-+		{
-+			.addr = radio->client->addr,
-+			.flags = I2C_M_RD,
-+			.len = sizeof(u16) * READ_REG_NUM,
-+			.buf = (void *)buf
-+		},
- 	};
- 
- 	if (i2c_transfer(radio->client->adapter, msgs, 1) != 1)
+ 	wr.intreg  = r->intreg & 0xff;
+ 	wr.frqset  = __cpu_to_be16(r->frqset);
 -- 
 1.7.5.4
 
