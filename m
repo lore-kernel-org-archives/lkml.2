@@ -1,160 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2IRPsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:48:22 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:9977 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581Ab2IRPsS (ORCPT
+	id S1757854Ab2IRPtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 11:49:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43037 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab2IRPtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:48:18 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGhi0PEj9t
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: KY Srinivasan <kys@microsoft.com>, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] ata_piix: reenable MS Virtual PC guests
-Date: Tue, 18 Sep 2012 17:48:01 +0200
-Message-Id: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.7.12
+	Tue, 18 Sep 2012 11:49:20 -0400
+Date: Tue, 18 Sep 2012 17:49:14 +0200
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 11/19] ARM: ux500: Add all known I2C sub-device nodes to
+ the HREF DT
+Message-ID: <20120918154909.GB11404@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+ <1347016499-29354-12-git-send-email-lee.jones@linaro.org>
+ <CACRpkdY+t9MwWewtZzpD7i4eeTxVHNk+NxSZ1E=T-k4a0mveHg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdY+t9MwWewtZzpD7i4eeTxVHNk+NxSZ1E=T-k4a0mveHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
-defer disks to the Hyper-V drivers by default") broke MS Virtual PC
-guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
-info. As a result the driver does currently ignore the emulated hardware
-in Virtual PC guests and defers the handling to hv_blkvsc. Since Virtual
-PC does not offer paravirtualized drivers no disks will be found in the
-guest.
+On Mon, Sep 10, 2012 at 04:34:15AM -0700, Linus Walleij wrote:
+> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > Here we add the skeleton nodes for each of the known I2C sub-devices
+> > currently registered on ST-Ericsson's HREF Development Platform. We
+> > will fill these nodes in turn as the drivers are enabled for Device
+> > Tree.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Can't we have it the other way around (discussing patch ordering
+> with Arnd simultaneously), so you first add the DT support to the
+> subdevices, then add the more complete nodes to the device tree?
+> 
+> And if you put in a device tree like this, will these devices
+> not collide with the ones that are currently supplied from
+> the boardfiles? I'm a bit confused here, maybe I'm not smart
+> enough to understand this...
 
-One difference in the DMI info is the product version. This patch adds a
-match for MS Virtual PC 2007 and "unignores" the emulated hardware.
+We finished this conversation about future ordering didn't we?
 
-This was reported for openSuSE 12.1 in bugzilla:
-https://bugzilla.novell.com/show_bug.cgi?id=737532
+Would you mind reviewing the code in the patch please, as it's
+still missing your Ack, so can't send.
 
-Here is a detailed list of DMI info from example guests:
-
-hwinfo --bios:
-
-virtual pc guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "VS2005R2"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "5.0"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "5.0"
-    Serial: "3178-9905-1533-4840-9282-0569-59"
-    Asset Tag: "7188-3705-6309-9738-9645-0364-00"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-win2k8 guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "7.0"
-    Serial: "9106-3420-9819-5495-1514-2075-48"
-    Asset Tag: "7076-9522-6699-1042-9501-1785-77"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-win2k12 guest:
-
-  System Info: #1
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-    UUID: undefined, but settable
-    Wake-up: 0x06 (Power Switch)
-  Board Info: #2
-    Manufacturer: "Microsoft Corporation"
-    Product: "Virtual Machine"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-  Chassis Info: #3
-    Manufacturer: "Microsoft Corporation"
-    Version: "7.0"
-    Serial: "8179-1954-0187-0085-3868-2270-14"
-    Asset Tag: "8374-0485-4557-6331-0620-5845-25"
-    Type: 0x03 (Desktop)
-    Bootup State: 0x03 (Safe)
-    Power Supply State: 0x03 (Safe)
-    Thermal State: 0x01 (Other)
-    Security Status: 0x01 (Other)
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index ef773e1..bec35f4 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -1585,12 +1585,31 @@ static void piix_ignore_devices_quirk(struct ata_host *host)
- 		},
- 		{ }	/* terminate list */
- 	};
--	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
-+	static const struct dmi_system_id allow_virtual_pc[] = {
-+		{
-+			/* In MS Virtual PC guests the DMI ident is nearly
-+			 * identical to a Hyper-V guest. One difference is the
-+			 * product version which is used here to identify
-+			 * a Virtual PC guest. This entry allows ata_piix to
-+			 * drive the emulated hardware.
-+			 */
-+			.ident = "MS Virtual PC 2007",
-+			.matches = {
-+				DMI_MATCH(DMI_SYS_VENDOR,
-+						"Microsoft Corporation"),
-+				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-+				DMI_MATCH(DMI_PRODUCT_VERSION, "VS2005R2"),
-+			},
-+		},
-+		{ }	/* terminate list */
-+	};
-+	const struct dmi_system_id *ignore = dmi_first_match(ignore_hyperv);
-+	const struct dmi_system_id *allow = dmi_first_match(allow_virtual_pc);
- 
--	if (dmi && prefer_ms_hyperv) {
-+	if (ignore && !allow && prefer_ms_hyperv) {
- 		host->flags |= ATA_HOST_IGNORE_ATA;
- 		dev_info(host->dev, "%s detected, ATA device ignore set\n",
--			dmi->ident);
-+			ignore->ident);
- 	}
- #endif
- }
 -- 
-1.7.12
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
