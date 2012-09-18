@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2IRRjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:39:45 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:51469 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab2IRRjk (ORCPT
+	id S1753046Ab2IRRlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:41:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42228 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab2IRRlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:39:40 -0400
-Message-ID: <5058B1DA.4070001@tilera.com>
-Date: Tue, 18 Sep 2012 13:39:38 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Tue, 18 Sep 2012 13:41:08 -0400
+Date: Tue, 18 Sep 2012 10:41:02 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [V2 for-next PATCH 2/2] workqueue: remove @delayed argument
+ from cwq_dec_nr_in_flight()
+Message-ID: <20120918174102.GD8474@google.com>
+References: <1347947862-4533-1-git-send-email-laijs@cn.fujitsu.com>
+ <1347947862-4533-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] compat: Generic compat_sys_sched_rr_get_interval implementation
-References: <1347987727-13739-2-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1347987727-13739-2-git-send-email-catalin.marinas@arm.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347947862-4533-2-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/18/2012 1:02 PM, Catalin Marinas wrote:
-> This function is used by sparc, powerpc tile and arm64 for compat
-> support. The patch adds a generic implementation with a wrapper for
-> PowerPC to do the u32->int sign extension.
->
-> The reason for a single patch covering powerpc, tile and sparc is to
-> keep it bisectable, otherwise kernel building may fail with mismatched
-> function declarations.
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
-> Please note that the patch has only been compile-tested on sparc, tile
-> and powerpc (run-time tested on arm64).
+On Tue, Sep 18, 2012 at 01:57:34PM +0800, Lai Jiangshan wrote:
+> The argument @delayed is always false in all call site,
+> we simply remove it.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>  [for tile]
+Applied 1-2 to wq/for-3.7 with comment / description updates.
+
+Thanks.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+tejun
