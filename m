@@ -1,70 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855Ab2IRN54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 09:57:56 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:3364 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611Ab2IRN5x (ORCPT
+	id S932997Ab2IROBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 10:01:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47298 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757715Ab2IROBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 09:57:53 -0400
-X-IronPort-AV: E=Sophos;i="4.80,442,1344211200"; 
-   d="scan'208";a="14608418"
-Date: Tue, 18 Sep 2012 14:57:05 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH v5 00/17] Introduce Xen support on ARM (based on
- 3.6-rc5)
-In-Reply-To: <201209181234.29557.arnd@arndb.de>
-Message-ID: <alpine.DEB.2.02.1209181450570.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209171215490.29232@kaball.uk.xensource.com> <201209181234.29557.arnd@arndb.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 18 Sep 2012 10:01:44 -0400
+Message-ID: <50587EC4.7070804@gmail.com>
+Date: Tue, 18 Sep 2012 08:01:40 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Dong Hao <haodong@linux.vnet.ibm.com>
+CC: acme@infradead.org, mtosatti@redhat.com, avi@redhat.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com
+Subject: Re: [PATCH v8 2/3] perf: move stat related code to util/stat.c
+References: <1347870675-31495-1-git-send-email-haodong@linux.vnet.ibm.com> <1347870675-31495-3-git-send-email-haodong@linux.vnet.ibm.com>
+In-Reply-To: <1347870675-31495-3-git-send-email-haodong@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Arnd Bergmann wrote:
-> On Monday 17 September 2012, Stefano Stabellini wrote:
-> 
-> > I am also attaching to this email the dts'es that I am currently using
-> > for dom0 and domU: vexpress-v2p-ca15-tc1.dts (that includes
-> > vexpress-v2m-rs1-rtsm.dtsi) is the dts used for dom0 and it is passed to
-> > Linux by Xen, while vexpress-virt.dts is the dts used for other domUs
-> > and it is appended in binary form to the guest kernel image. I am not
-> > sure where they are supposed to live yet, so I am just attaching them
-> > here so that people can actually try out this series if they want to.
-> 
-> You can submit the dts files separately so we can include them in
-> the arm-soc tree. Pawel Moll is handling vexpress related changes these
-> days, so it would be reasonable if he included them in a pull request.
+On 9/17/12 2:31 AM, Dong Hao wrote:
+> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>
+> Then, the code can be shared between kvm events and perf stat
+>
+> [ Dong Hao <haodong@linux.vnet.ibm.com>: rebase it on acme's git tree ]
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
+> ---
+>   tools/perf/Makefile       |    1 +
+>   tools/perf/builtin-stat.c |   56 +------------------------------------------
+>   tools/perf/util/stat.c    |   57 +++++++++++++++++++++++++++++++++++++++++++++
+>   tools/perf/util/stat.h    |   16 ++++++++++++
+>   4 files changed, 76 insertions(+), 54 deletions(-)
+>   create mode 100644 tools/perf/util/stat.c
+>   create mode 100644 tools/perf/util/stat.h
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 209774b..5077f8e 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -406,6 +406,7 @@ LIB_OBJS += $(OUTPUT)util/target.o
+>   LIB_OBJS += $(OUTPUT)util/rblist.o
+>   LIB_OBJS += $(OUTPUT)util/intlist.o
+>   LIB_OBJS += $(OUTPUT)util/vdso.o
+> +LIB_OBJS += $(OUTPUT)util/stat.o
+>
+>   LIB_OBJS += $(OUTPUT)ui/helpline.o
+>   LIB_OBJS += $(OUTPUT)ui/hist.o
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index dab347d..3c43a35 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -51,13 +51,13 @@
+>   #include "util/evsel.h"
+>   #include "util/debug.h"
+>   #include "util/color.h"
+> +#include "util/stat.h"
+>   #include "util/header.h"
+>   #include "util/cpumap.h"
+>   #include "util/thread.h"
+>   #include "util/thread_map.h"
+>
+>   #include <sys/prctl.h>
+> -#include <math.h>
+>   #include <locale.h>
+>
+>   #define DEFAULT_SEPARATOR	" "
+> @@ -199,11 +199,6 @@ static int			output_fd;
+>
+>   static volatile int done = 0;
+>
+> -struct stats
+> -{
+> -	double n, mean, M2;
+> -};
+> -
+>   struct perf_stat {
+>   	struct stats	  res_stats[3];
+>   };
+> @@ -220,50 +215,6 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+>   	evsel->priv = NULL;
+>   }
+>
+> -static void update_stats(struct stats *stats, u64 val)
+> -{
+> -	double delta;
+> -
+> -	stats->n++;
+> -	delta = val - stats->mean;
+> -	stats->mean += delta / stats->n;
+> -	stats->M2 += delta*(val - stats->mean);
+> -}
+> -
+> -static double avg_stats(struct stats *stats)
+> -{
+> -	return stats->mean;
+> -}
+> -
+> -/*
+> - * http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+> - *
+> - *       (\Sum n_i^2) - ((\Sum n_i)^2)/n
+> - * s^2 = -------------------------------
+> - *                  n - 1
+> - *
+> - * http://en.wikipedia.org/wiki/Stddev
+> - *
+> - * The std dev of the mean is related to the std dev by:
+> - *
+> - *             s
+> - * s_mean = -------
+> - *          sqrt(n)
+> - *
+> - */
+> -static double stddev_stats(struct stats *stats)
+> -{
+> -	double variance, variance_mean;
+> -
+> -	if (!stats->n)
+> -		return 0.0;
+> -
+> -	variance = stats->M2 / (stats->n - 1);
+> -	variance_mean = variance / stats->n;
+> -
+> -	return sqrt(variance_mean);
+> -}
+> -
+>   static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+>   static struct stats runtime_cycles_stats[MAX_NR_CPUS];
+>   static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
+> @@ -559,10 +510,7 @@ static int run_perf_stat(int argc __maybe_unused, const char **argv)
+>
+>   static void print_noise_pct(double total, double avg)
+>   {
+> -	double pct = 0.0;
+> -
+> -	if (avg)
+> -		pct = 100.0*total/avg;
+> +	double pct = rel_stddev_stats(total, avg);
+>
+>   	if (csv_output)
+>   		fprintf(output, "%s%.2f%%", csv_sep, pct);
+> diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+> new file mode 100644
+> index 0000000..2374212
+> --- /dev/null
+> +++ b/tools/perf/util/stat.c
+> @@ -0,0 +1,57 @@
+> +#include <math.h>
+> +
+> +#include "stat.h"
+> +
+> +void update_stats(struct stats *stats, u64 val)
+> +{
+> +	double delta;
+> +
+> +	stats->n++;
+> +	delta = val - stats->mean;
+> +	stats->mean += delta / stats->n;
+> +	stats->M2 += delta*(val - stats->mean);
+> +}
+> +
+> +double avg_stats(struct stats *stats)
+> +{
+> +	return stats->mean;
+> +}
+> +
+> +/*
+> + * http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+> + *
+> + *       (\Sum n_i^2) - ((\Sum n_i)^2)/n
+> + * s^2 = -------------------------------
+> + *                  n - 1
+> + *
+> + * http://en.wikipedia.org/wiki/Stddev
+> + *
+> + * The std dev of the mean is related to the std dev by:
+> + *
+> + *             s
+> + * s_mean = -------
+> + *          sqrt(n)
+> + *
+> + */
+> +double stddev_stats(struct stats *stats)
+> +{
+> +	double variance, variance_mean;
+> +
+> +	if (!stats->n)
+> +		return 0.0;
+> +
+> +	variance = stats->M2 / (stats->n - 1);
+> +	variance_mean = variance / stats->n;
+> +
+> +	return sqrt(variance_mean);
+> +}
+> +
+> +double rel_stddev_stats(double stddev, double avg)
+> +{
+> +	double pct = 0.0;
+> +
+> +	if (avg)
+> +		pct = 100.0 * stddev/avg;
+> +
+> +	return pct;
+> +}
 
-OK, I'll submit them as a patch series separately.
+rel_stddev_stats should take the struct stats as an input and use 
+elements from it to compute the return value. perf-stat's relative 
+stddev sites can be fixed later.
 
 
-> > The patch series has been rebased on Konrad's stable/for-linus-3.7
-> > branch.
-> > 
-> > Arnd, Russell, what do you think about this series? If you are OK with
-> > it, to whom should I submit it?
-> 
-> I have no objections to your patches from this series. IMHO they should
-> be submitted through the Xen tree,
-    
-Konrad, are you happy to carry this series in your tree?
+> diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+> new file mode 100644
+> index 0000000..588367c
+> --- /dev/null
+> +++ b/tools/perf/util/stat.h
+> @@ -0,0 +1,16 @@
+> +#ifndef __PERF_STATS_H
+> +#define __PERF_STATS_H
+> +
+> +#include "types.h"
+> +
+> +struct stats
+> +{
+> +	double n, mean, M2;
+> +};
+> +
+> +void update_stats(struct stats *stats, u64 val);
+> +double avg_stats(struct stats *stats);
+> +double stddev_stats(struct stats *stats);
+> +double rel_stddev_stats(double stddev, double avg);
+> +
+> +#endif
+>
 
-
->but it would be good to have an Ack from Russell.
-
-Indeed
