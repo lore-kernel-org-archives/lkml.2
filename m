@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2IRVrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 17:47:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40136 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab2IRVrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 17:47:07 -0400
+	id S1755682Ab2IRVui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:50:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41430 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754865Ab2IRVuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 17:50:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,445,1344236400"; 
+   d="scan'208";a="146486445"
+Date: Tue, 18 Sep 2012 14:50:36 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] memory.txt: remove stray information
+Message-ID: <20120918215036.GP4092@tassilo.jf.intel.com>
+References: <alpine.LNX.2.00.1209182336280.31149@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1347499439.10751.78.camel@gandalf.local.home>
-References: <1347417671-22998-1-git-send-email-dhsharp@google.com>
- <1347492720-26078-1-git-send-email-dhsharp@google.com> <1347492720-26078-3-git-send-email-dhsharp@google.com>
- <1347499439.10751.78.camel@gandalf.local.home>
-From: David Sharp <dhsharp@google.com>
-Date: Tue, 18 Sep 2012 14:46:43 -0700
-Message-ID: <CAJL_ekvw2qsNOj1AuHQB5AOrQ+Lanv0pkr4p97-a_h-uDnXdrg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] tracing,x86: add a TSC trace_clock
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1209182336280.31149@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 12, 2012 at 6:23 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> This change will require an ack from one of the x86 maintainers.
->
-> For reference to this patch, please see this thread:
->
->  https://lkml.org/lkml/2012/9/11/572
->
-> On Wed, 2012-09-12 at 16:31 -0700, David Sharp wrote:
->> In order to promote interoperability between userspace tracers and ftrace,
->> add a trace_clock that reports raw TSC values which will then be recorded
->> in the ring buffer. Userspace tracers that also record TSCs are then on
->> exactly the same time base as the kernel and events can be unambiguously
->> interlaced.
->>
->> Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
->> timestamp values.
->>
->> v2:
->> Move arch-specific bits out of generic code.
->
-> As Masami pointed out, please add a SOB to your patches.
+> It seems to me like we are not losing anything by completely removing the
+> file now.
 
-Sorry about that. I guess that's what happens when I rush before going
-on vacation. Apparently I did `git format-patch --signoff` the first
-time instead of in the commit.
+The stuff at the end still seems useful, down from
+"There are other memory problems which Linux cannot deal with...."
+
+The rest could go I agree.
+
+-Andi
