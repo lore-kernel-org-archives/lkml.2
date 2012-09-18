@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab2IRJcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:32:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56189 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756841Ab2IRJcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:32:17 -0400
+	id S1757564Ab2IRJeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:34:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10984 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757437Ab2IRJeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:34:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
+   d="scan'208";a="5864519"
+Message-ID: <50584159.3020403@cn.fujitsu.com>
+Date: Tue, 18 Sep 2012 17:39:37 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20120918074053.GL4587@mwanda>
-References: <1347940806-4653-1-git-send-email-navinp@cdac.in>
-	<20120918074053.GL4587@mwanda>
-Date: Tue, 18 Sep 2012 15:02:15 +0530
-X-Google-Sender-Auth: 44oaljdV1cPBAYEvAP9ljB4CNIs
-Message-ID: <CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of usbip_host
-From: navin patidar <navinp@cdac.in>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, mfm@muteddisk.com, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC v8 PATCH 00/20] memory-hotplug: hot-remove physical memory
+References: <1346148027-24468-1-git-send-email-wency@cn.fujitsu.com> <20120831134956.fec0f681.akpm@linux-foundation.org> <504D467D.2080201@jp.fujitsu.com> <504D4A08.7090602@cn.fujitsu.com> <20120910135213.GA1550@dhcp-192-168-178-175.profitbricks.localdomain> <50501B9C.7000200@cn.fujitsu.com> <20120912171814.GB5253@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20120912171814.GB5253@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:34:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:34:20,
+	Serialize complete at 2012/09/18 17:34:20
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 1:10 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Tue, Sep 18, 2012 at 09:30:06AM +0530, navin patidar wrote:
->> stub_device_reset should set kernel thread pointers to NULL.
->> so that at the time of usbip_host removal stub_shoutdown_connection
->> doesn't try to kill kernel threads which are already killed.
+At 09/13/2012 01:18 AM, Vasilis Liaskovitis Wrote:
+> Hi,
+> 
+> On Wed, Sep 12, 2012 at 01:20:28PM +0800, Wen Congyang wrote:
+>>>
+>>> On Mon, Sep 10, 2012 at 10:01:44AM +0800, Wen Congyang wrote:
+>>>> At 09/10/2012 09:46 AM, Yasuaki Ishimatsu Wrote:
+>>>>> How do you test the patch? As Andrew says, for hot-removing memory,
+>>>>> we need a particular hardware. I think so too. So many people may want
+>>>>> to know how to test the patch.
+>>>>> If we apply following patch to kvm guest, can we hot-remove memory on
+>>>>> kvm guest?
+>>>>>
+>>>>> http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
+>>>>
+>>>> Yes, if we apply this patchset, we can test hot-remove memory on kvm guest.
+>>>> But that patchset doesn't implement _PS3, so there is some restriction.
+>>>
+>>> the following repos contain the patchset above, plus 2 more patches that add
+>>> PS3 support to the dimm devices in qemu/seabios:
+>>>
+>>> https://github.com/vliaskov/seabios/commits/memhp-v2
+>>> https://github.com/vliaskov/qemu-kvm/commits/memhp-v2
+>>>
+>>> I have not posted the PS3 patches yet in the qemu list, but will post them
+>>> soon for v3 of the memory hotplug series. If you have issues testing, let me
+>>> know.
 >>
->
-> If you have the Oops output, that's always nice to put in the commit
-> message.
+>> Hmm, seabios doesn't support ACPI table SLIT. We can specify node it for dimm
+>> device, so I think we should support SLIT in seabios. Otherwise we may meet
+>> the following kernel messages:
+>> [  325.016769] init_memory_mapping: [mem 0x40000000-0x5fffffff]
+>> [  325.018060]  [mem 0x40000000-0x5fffffff] page 2M
+>> [  325.019168] [ffffea0001000000-ffffea00011fffff] potential offnode page_structs
+>> [  325.024172] [ffffea0001200000-ffffea00013fffff] potential offnode page_structs
+>> [  325.028596]  [ffffea0001400000-ffffea00017fffff] PMD -> [ffff880035000000-ffff8800353fffff] on node 1
+>> [  325.031775] [ffffea0001600000-ffffea00017fffff] potential offnode page_structs
+>>
+>> Do you have plan to do it?
+> thanks for testing.
+> 
+> commit 5294828 from https://github.com/vliaskov/seabios/commits/memhp-v2
+> implements a SLIT table for the given numa nodes.
 
-i'll surely keep this in mind  before submitting further patches.
+Hmm, why do you set node_distance(i, j) to REMOTE_DISTANCE if i != j?
 
-> Why don't you set the pointers to NULL in stub_shutdown_connection()
-> since that's where you actually kill the threads.  Setting them to
-> NULL in stub_device_reset() will (sometimes) solve the problem but
-> it gives you a new problem of a resource leak.
+> 
+> However I am not sure the SLIT is the problem. The kernel builds a default
+> numa_distance table in arch/x86/mm/numa.c: numa_alloc_distance(). If the BIOS
+> doesn't present a SLIT, this should take effect (numactl --hardware should
+> report this table)
 
- stub_device_reset() always gets executed after
-stub_shutdown_connection() , never before.
+If the BIOS doesn't present a SLIT, numa_distance_cnt is set to 0 in the
+function numa_reset_distance(). So node_distance(i, j) is REMOTE_DISTANCE(i != j).
 
+> 
+> Do you have more details on how to reproduce the warning? e.g. how many dimms
+> are present in the system? Does this happen on the first dimm hot-plugged?
+> Are all SRAT entries parsed correctly at boot-time or do you see any other
+> warnings at boot-time?
 
->
-> regards,
-> dan carpenter
->
+I can't reproduce it again. IIRC, I only do the following things:
+hotplug a memory device, online the pages, offline the pages and hot remove
+the memory device.
 
---navin-patidar
+Thanks
+Wen Congyang
+
+> 
+> I 'll investigate a bit more and report back.
+> 
+> thanks,
+> 
+> - Vasilis
+> 
+
