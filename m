@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab2IRPFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 11:05:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55672 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755036Ab2IRPFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 11:05:47 -0400
-Date: Tue, 18 Sep 2012 11:05:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: cl@linux-foundation.org
-Subject: Taint kernel when we detect a corrupted slab.
-Message-ID: <20120918150543.GA14718@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	cl@linux-foundation.org
+	id S933315Ab2IRPG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 11:06:26 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:6010 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933285Ab2IRPGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 11:06:24 -0400
+Date: Tue, 18 Sep 2012 15:06:22 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
+In-Reply-To: <1347977050-29476-6-git-send-email-glommer@parallels.com>
+Message-ID: <00000139d9ea69c6-109249c2-5176-4a1e-b000-4c076d05844d-000000@email.amazonses.com>
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-6-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't seem worth adding a new taint flag for this, so just re-use
-the one from 'bad page'
+On Tue, 18 Sep 2012, Glauber Costa wrote:
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+> +++ b/include/linux/gfp.h
+> @@ -35,6 +35,11 @@ struct vm_area_struct;
+>  #else
+>  #define ___GFP_NOTRACK		0
+>  #endif
+> +#ifdef CONFIG_MEMCG_KMEM
+> +#define ___GFP_KMEMCG		0x400000u
+> +#else
+> +#define ___GFP_KMEMCG		0
+> +#endif
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 2fdd96f..0c5009d 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -568,6 +568,8 @@ static void slab_bug(struct kmem_cache *s, char *fmt, ...)
- 	printk(KERN_ERR "BUG %s (%s): %s\n", s->name, print_tainted(), buf);
- 	printk(KERN_ERR "----------------------------------------"
- 			"-------------------------------------\n\n");
-+
-+	add_taint(TAINT_BAD_PAGE);
- }
- 
- static void slab_fix(struct kmem_cache *s, char *fmt, ...)
+Could you leave __GFP_MEMCG a simple definition and then define GFP_MEMCG
+to be zer0 if !MEMCG_KMEM? I think that would be cleaner and the
+__GFP_KMEMCHECK another case that would be good to fix up.
+
+
+
