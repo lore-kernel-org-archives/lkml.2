@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2IRSYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:24:36 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:58352 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab2IRSYe (ORCPT
+	id S1753840Ab2IRSYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:24:43 -0400
+Received: from mail-fa0-f74.google.com ([209.85.161.74]:57305 "EHLO
+	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab2IRSYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:24:34 -0400
+	Tue, 18 Sep 2012 14:24:35 -0400
 From: Simon Glass <sjg@chromium.org>
 To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
 Cc: "kgene.kim" <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
         Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
         Simon Glass <sjg@chromium.org>
-Subject: [PATCH 2/7] spi: s3c64xx: Fix enum dma_data_direction warning
-Date: Tue, 18 Sep 2012 11:21:54 -0700
-Message-Id: <1347992519-6904-3-git-send-email-sjg@chromium.org>
+Subject: [PATCH 7/7] spi: s3c64xx: Write to PACKET_CNT after reset
+Date: Tue, 18 Sep 2012 11:21:59 -0700
+Message-Id: <1347992519-6904-8-git-send-email-sjg@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1347992519-6904-1-git-send-email-sjg@chromium.org>
 References: <1347992519-6904-1-git-send-email-sjg@chromium.org>
@@ -22,51 +22,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While the effect is harmless, the SPI driver is actually using the wrong
-enum and this generates warnings:
+The Exynos5 datasheet specifically says that a software reset of SPI
+must be performed before writing to the PACKET_CNT register. Also,
+the current code sometimes causes an extra transfer or two to be
+performed.
 
-drivers/spi/spi-s3c64xx.c: In function 's3c64xx_spi_dmacb':
-drivers/spi/spi-s3c64xx.c:268:21: warning: comparison between 'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
-drivers/spi/spi-s3c64xx.c:277:21: warning: comparison between 'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
-drivers/spi/spi-s3c64xx.c: In function 'prepare_dma':
-drivers/spi/spi-s3c64xx.c:296:21: warning: comparison between 'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
+Adjust the code slightly to fix this problem.
+
+Test flashrom operation on snow.
+See that SPI operation with ChromeOS EC is reliable now.
 
 Signed-off-by: Simon Glass <sjg@chromium.org>
 ---
- drivers/spi/spi-s3c64xx.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/spi/spi-s3c64xx.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 646a765..3152659 100644
+index c34ef8f..3716825 100644
 --- a/drivers/spi/spi-s3c64xx.c
 +++ b/drivers/spi/spi-s3c64xx.c
-@@ -260,7 +260,7 @@ static void s3c64xx_spi_dmacb(void *data)
- 	struct s3c64xx_spi_dma_data *dma = data;
- 	unsigned long flags;
+@@ -213,7 +213,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+ 	unsigned long loops;
+ 	u32 val;
  
--	if (dma->direction == DMA_DEV_TO_MEM)
-+	if (dma->direction == DMA_FROM_DEVICE)
- 		sdd = container_of(data,
- 			struct s3c64xx_spi_driver_data, rx_dma);
- 	else
-@@ -269,7 +269,7 @@ static void s3c64xx_spi_dmacb(void *data)
+-	writel(0, regs + S3C64XX_SPI_PACKET_CNT);
++	val = readl(regs + S3C64XX_SPI_CH_CFG);
++	val &= ~(S3C64XX_SPI_CH_RXCH_ON | S3C64XX_SPI_CH_TXCH_ON);
++	writel(val, regs + S3C64XX_SPI_CH_CFG);
  
- 	spin_lock_irqsave(&sdd->lock, flags);
+ 	val = readl(regs + S3C64XX_SPI_CH_CFG);
+ 	val |= S3C64XX_SPI_CH_SW_RST;
+@@ -250,9 +252,7 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+ 	val &= ~(S3C64XX_SPI_MODE_TXDMA_ON | S3C64XX_SPI_MODE_RXDMA_ON);
+ 	writel(val, regs + S3C64XX_SPI_MODE_CFG);
  
--	if (dma->direction == DMA_DEV_TO_MEM) {
-+	if (dma->direction == DMA_FROM_DEVICE) {
- 		sdd->state &= ~RXBUSY;
- 		if (!(sdd->state & TXBUSY))
- 			complete(&sdd->xfer_completion);
-@@ -289,7 +289,7 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 	struct samsung_dma_prep info;
- 	struct samsung_dma_config config;
+-	val = readl(regs + S3C64XX_SPI_CH_CFG);
+-	val &= ~(S3C64XX_SPI_CH_RXCH_ON | S3C64XX_SPI_CH_TXCH_ON);
+-	writel(val, regs + S3C64XX_SPI_CH_CFG);
++	writel(0, regs + S3C64XX_SPI_PACKET_CNT);
+ }
  
--	if (dma->direction == DMA_DEV_TO_MEM) {
-+	if (dma->direction == DMA_FROM_DEVICE) {
- 		sdd = container_of((void *)dma,
- 			struct s3c64xx_spi_driver_data, rx_dma);
- 		config.direction = sdd->rx_dma.direction;
+ static void s3c64xx_spi_dmacb(void *data)
 -- 
 1.7.7.3
 
