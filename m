@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab2IRSqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:46:53 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35203 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab2IRSqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:46:48 -0400
-Date: Tue, 18 Sep 2012 19:51:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: herbert@gondor.hengli.com.au, pjones@redhat.com, rusty@rustcorp.com.au,
-        linux-crypto@vger.kernel.org, zohar@us.ibm.com,
-        dmitry.kasatkin@intel.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
-Message-ID: <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
-In-Reply-To: <13189.1347989652@warthog.procyon.org.uk>
-References: <20120914103930.1e16ad8b@pyramind.ukuu.org.uk>
-	<20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
-	<20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
-	<13189.1347989652@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754044Ab2IRSv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:51:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60422 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751658Ab2IRSv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 14:51:57 -0400
+Message-ID: <1347994314.9011.1.camel@joe2Laptop>
+Subject: [PATCH] pci: Convert pci_resource_<foo> macros to static inlines
+From: Joe Perches <joe@perches.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Sep 2012 11:51:54 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012 18:34:12 +0100
-David Howells <dhowells@redhat.com> wrote:
+Get the compiler to verify the argument type of struct pci_dev *.
 
-> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> 
-> > Why do this in the kernel.That appears to be completely insane.
-> 
-> A number of reasons:
-> 
->  (1) The UEFI signature/key database may contain ASN.1 X.509 certificates and
->      we may need to use those very early in the boot process, during initrd.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
 
-Ok that makes some sense. Presumably they've also got to fall within what
-you trust and sign ?
+Another possible improvement is to range check index.
 
-Alan
+ include/linux/pci.h |   36 ++++++++++++++++++++++++++----------
+ 1 files changed, 26 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 5faa831..971d0e9 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1396,16 +1396,32 @@ static inline struct pci_dev *pci_dev_get(struct pci_dev *dev)
+ 
+ /* these helpers provide future and backwards compatibility
+  * for accessing popular PCI BAR info */
+-#define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+-#define pci_resource_end(dev, bar)	((dev)->resource[(bar)].end)
+-#define pci_resource_flags(dev, bar)	((dev)->resource[(bar)].flags)
+-#define pci_resource_len(dev,bar) \
+-	((pci_resource_start((dev), (bar)) == 0 &&	\
+-	  pci_resource_end((dev), (bar)) ==		\
+-	  pci_resource_start((dev), (bar))) ? 0 :	\
+-							\
+-	 (pci_resource_end((dev), (bar)) -		\
+-	  pci_resource_start((dev), (bar)) + 1))
++static inline resource_size_t
++pci_resource_start(const struct pci_dev *dev, int index)
++{
++	return dev->resource[index].start;
++}
++
++static inline resource_size_t
++pci_resource_end(const struct pci_dev *dev, int index)
++{
++	return dev->resource[index].end;
++}
++
++static inline unsigned long
++pci_resource_flags(const struct pci_dev *dev, int index)
++{
++	return dev->resource[index].flags;
++}
++
++static inline resource_size_t
++pci_resource_len(const struct pci_dev *dev, int index)
++{
++	if (pci_resource_start(dev, index) == 0 &&
++	    pci_resource_end(dev, index) == 0)
++		return 0;
++	return resource_size(&dev->resource[index]);
++}
+ 
+ /* Similar to the helpers above, these manipulate per-pci_dev
+  * driver-specific data.  They are really just a wrapper around
+
+
+
