@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab2IRLEM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 07:04:12 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:44555 "EHLO
-	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab2IRLEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 07:04:11 -0400
-Message-ID: <50585526.8050006@tlinx.org>
-Date: Tue, 18 Sep 2012 04:04:06 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
-MIME-Version: 1.0
-To: Jike Song <albcamus@gmail.com>
-CC: Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 2 physical-cpu (like 2x6core) config and NUMA?
-References: <5057654A.803@tlinx.org> <CANE52Khbw0-iA=nAebySc=Fw-6CtY-wuOC9Kw_UE3mbkOAKJmA@mail.gmail.com>
-In-Reply-To: <CANE52Khbw0-iA=nAebySc=Fw-6CtY-wuOC9Kw_UE3mbkOAKJmA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758021Ab2IRLQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 07:16:19 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:55445 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757156Ab2IRLQR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 18 Sep 2012 07:16:17 -0400
+Message-Id: <5058741E020000780009C014@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 18 Sep 2012 12:16:14 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH, v2] x86: use tzcnt instead of bsf
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jike Song wrote:
-> Do you have anything printed with:
->
->  # acpidump -a --table SRAT
->   
-It prints out a bunch of stuff, but the word SRAT wasn't in the
-output.
+Following a relatively recent compiler change, make use of the fact
+that for non-zero input BSF and TZCNT produce the same result, and that
+CPUs not knowing of TZCNT will treat the instruction as BSF (i.e.
+ignore what looks like a REP prefix to them). The assumption here is
+that TZCNT would never have worse performance than BSF.
 
-I don't remember a node interleaving in the BIOS -- There's a ECC mode,
-where I only get 4/6 slots for usable memory, or an optimized mode that uses
-6/6 mem sort.  Each processer has it's own set of 6-slots for memory
-(PowerEdge 610 dual X5660's)...
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 
-I wonder if the optimizing mode is node interleaving?   But the only other
-result results in taking a 1/3rd memory penalty...Hmm...
+---
+v2: Do this unconditionally, and change title accordingly.
 
-I'm wondering about this BIOS .. I had to use pcie_aspm=force to get it
-to get some parts to work at all.  Like the on-board I/O DMA engine --
-linux didn't even see the hardware without the aspm=force.
+---
+ arch/x86/include/asm/bitops.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Maybe a bios update is needed?  will probe along those lines...
+--- 3.6-rc6/arch/x86/include/asm/bitops.h
++++ 3.6-rc6-x86-bsf-tzcnt/arch/x86/include/asm/bitops.h
+@@ -355,7 +355,7 @@ static int test_bit(int nr, const volati
+  */
+ static inline unsigned long __ffs(unsigned long word)
+ {
+-	asm("bsf %1,%0"
++	asm("rep; bsf %1,%0"
+ 		: "=r" (word)
+ 		: "rm" (word));
+ 	return word;
+@@ -369,7 +369,7 @@ static inline unsigned long __ffs(unsign
+  */
+ static inline unsigned long ffz(unsigned long word)
+ {
+-	asm("bsf %1,%0"
++	asm("rep; bsf %1,%0"
+ 		: "=r" (word)
+ 		: "r" (~word));
+ 	return word;
 
-I can always call Dell tech support...still under warantee...;-)
-
-Thanks for the ideas and confirmation....
-
-
-> Hope that helps.
->   
-Yep!
 
 
