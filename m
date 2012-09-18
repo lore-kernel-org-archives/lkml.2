@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab2IRSqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 14:46:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:60337 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2IRSq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 14:46:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Axel Lin <axel.lin@gmail.com>, Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH] cpufreq: OMAP: Check IS_ERR() instead of NULL for omap_device_get_by_hwmod_name
-Date: Tue, 18 Sep 2012 20:52:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-References: <1347932747.6562.3.camel@phoenix>
-In-Reply-To: <1347932747.6562.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754059Ab2IRSqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 14:46:53 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35203 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab2IRSqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 14:46:48 -0400
+Date: Tue, 18 Sep 2012 19:51:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: herbert@gondor.hengli.com.au, pjones@redhat.com, rusty@rustcorp.com.au,
+        linux-crypto@vger.kernel.org, zohar@us.ibm.com,
+        dmitry.kasatkin@intel.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
+Message-ID: <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
+In-Reply-To: <13189.1347989652@warthog.procyon.org.uk>
+References: <20120914103930.1e16ad8b@pyramind.ukuu.org.uk>
+	<20120913234802.3575.77103.stgit@warthog.procyon.org.uk>
+	<20120913235005.3575.46218.stgit@warthog.procyon.org.uk>
+	<13189.1347989652@warthog.procyon.org.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209182052.57414.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 18, 2012, Axel Lin wrote:
-> omap_device_get_by_hwmod_name() returns ERR_PTR on error.
+On Tue, 18 Sep 2012 18:34:12 +0100
+David Howells <dhowells@redhat.com> wrote:
+
+> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Kevin, should I take this?
-
-Rafael
-
-
-> ---
->  drivers/cpufreq/omap-cpufreq.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> > Why do this in the kernel.That appears to be completely insane.
 > 
-> diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-> index 6e22f44..65f8e9a 100644
-> --- a/drivers/cpufreq/omap-cpufreq.c
-> +++ b/drivers/cpufreq/omap-cpufreq.c
-> @@ -266,9 +266,9 @@ static int __init omap_cpufreq_init(void)
->  	}
->  
->  	mpu_dev = omap_device_get_by_hwmod_name("mpu");
-> -	if (!mpu_dev) {
-> +	if (IS_ERR(mpu_dev)) {
->  		pr_warning("%s: unable to get the mpu device\n", __func__);
-> -		return -EINVAL;
-> +		return PTR_ERR(mpu_dev);
->  	}
->  
->  	mpu_reg = regulator_get(mpu_dev, "vcc");
+> A number of reasons:
 > 
+>  (1) The UEFI signature/key database may contain ASN.1 X.509 certificates and
+>      we may need to use those very early in the boot process, during initrd.
 
+Ok that makes some sense. Presumably they've also got to fall within what
+you trust and sign ?
+
+Alan
