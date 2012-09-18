@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab2IRFxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 01:53:25 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:19712 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754613Ab2IRFxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 01:53:24 -0400
-X-IronPort-AV: E=Sophos;i="4.80,441,1344204000"; 
-   d="scan'208";a="173577538"
-Date: Tue, 18 Sep 2012 07:53:21 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Ryan Mallon <rmallon@gmail.com>
-cc: Shubhrajyoti <shubhrajyoti@ti.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH 3/7] rtc: Convert struct i2c_msg initialization to C99
- format
-In-Reply-To: <50580AF1.4060109@gmail.com>
-Message-ID: <alpine.DEB.2.02.1209180752080.2056@localhost6.localdomain6>
-References: <1347890294-28467-1-git-send-email-shubhrajyoti@ti.com> <1347890294-28467-4-git-send-email-shubhrajyoti@ti.com> <5057D3A2.3040206@gmail.com> <50580937.7000802@ti.com> <50580AF1.4060109@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1756143Ab2IRFzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 01:55:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16733 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab2IRFzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 01:55:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,441,1344182400"; 
+   d="scan'208";a="5862498"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [V2 -stable PATCH 1/2] workqueue: fix leak of active
+Date: Tue, 18 Sep 2012 13:57:33 +0800
+Message-Id: <1347947862-4533-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 13:56:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 13:56:08,
+	Serialize complete at 2012/09/18 13:56:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Ryan Mallon wrote:
+try_to_grab_pending() leave LINKED tagalong in delayed queue when
+it deletes a work. This behavior will cause future
+cwq_activate_first_delayed() increase the ->nr_active wrongly,
+and may cause the whole cwq frozen.
 
-> On 18/09/12 15:40, Shubhrajyoti wrote:
->> On Tuesday 18 September 2012 07:21 AM, Ryan Mallon wrote:
->>> Actually, I wonder if it is useful to have something like:.
->> Read and write differ only in the flag also it will be a deviation from
->> what $SUBJECT
->> would warrant.  So could be a separate patch.
->
-> Sure, but I think it would help make the code even more readable than
-> just converting to C99 initialisers (especially since putting the C99
-> initialiser all on one line is hard to read),
+example:
 
-The one line thing is the fault of Coccinelle :)
+state: cwq->max_active = 1, cwq->nr_active = 1
+       one work in cwq->pool, many in cwq->delayed_works.
 
-julia
+step1: try_to_grab_pending() remove a work from delayed_works
+       but leave tagalong.
+step2: when the work in cwq->pool is finished,
+       cwq_activate_first_delayed() move the tagalong to cwq->pool
+       and increase the ->nr_active.
 
-> and there is little sense
-> in doing one clean up and then replacing it later with a different clean up.
->
-> If you are worried about the duplication of code for a single flag
-> difference you could always do:
->
->  #define I2C_OP(_addr, _buf, _len, _flags)	\
-> 	...
->
->  #define I2C_WRITE(addr, buf, len) I2C_OP(addr, buf, len, 0)
->  #define I2C_READ(addr, buf, len)  I2C_OP(addr, buf, len, I2C_M_RD)
->
-> ~Ryan
->
->>>
->>> 	#define I2C_WRITE(_addr, _buf, _len) {	\
->>> 		.addr	= _addr,		\
->>> 		.buf	= _buf,			\
->>> 		.len	= _len,			\
->>> 	}
->>>
->>> 	#define I2C_READ(_addr, _buf, _len) {	\
->>> 		.addr	= _addr,		\
->>> 		.buf	= _buf,			\
->>> 		.len	= _len,			\
->>> 		.flags	= I2C_M_RD,		\
->>> 	}
->>>
->>> and then write this as:
->>>
->>> 	struct i2c_msg msgs[2] = {
->>> 		I2C_WRITE(client->addr, reg_addr, sizeof(reg_addr)),
->>> 		I2C_READ(client->addr, buf, len),
->>> 	};
->>
->
->
+current state: cwq->nr_active = 1, but works of the cwq
+               in cwq->pool are all NO_COLOR, so even when
+               these works are finished, cwq->nr_active will
+               not be decreased, and no work will be moved from
+               cwq->delayed_works. the whole cwq is frozen.
+
+Fix it by moving the work to cwq->pool before delete it
+in try_to_grab_pending(), thus the tagalong is left in
+cwq->pool like as grabbing non-delayed work.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |   26 +++++++++++++++++++++++---
+ 1 files changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 7b91332..834aa62 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -973,10 +973,9 @@ static void move_linked_works(struct work_struct *work, struct list_head *head,
+ 		*nextp = n;
+ }
+ 
+-static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++static void cwq_activate_delayed_work(struct work_struct *work)
+ {
+-	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+-						    struct work_struct, entry);
++	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 
+ 	trace_workqueue_activate_work(work);
+ 	move_linked_works(work, &cwq->pool->worklist, NULL);
+@@ -984,6 +983,14 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
+ 	cwq->nr_active++;
+ }
+ 
++static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++{
++	struct work_struct *work = list_first_entry(&cwq->delayed_works,
++						    struct work_struct, entry);
++
++	cwq_activate_delayed_work(work);
++}
++
+ /**
+  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+  * @cwq: cwq of interest
+@@ -1102,6 +1109,19 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
+ 		smp_rmb();
+ 		if (gcwq == get_work_gcwq(work)) {
+ 			debug_work_deactivate(work);
++
++			/*
++			 * We cannot remove delayed work directly.
++			 * Otherwise we may leave some LINKED
++			 * tagalong(if exist) in the ->delayed_works,
++			 * and future cwq_activate_first_delayed() will
++			 * move this tagalong works((which are all NO_COLOR)
++			 * to cwq->pool and increase the ->nr_active,
++			 * and it may cause the whole cwq frozen.
++			 */
++			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
++				cwq_activate_delayed_work(work);
++
+ 			list_del_init(&work->entry);
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+ 				get_work_color(work),
+-- 
+1.7.4.4
+
