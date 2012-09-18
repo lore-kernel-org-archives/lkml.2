@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab2IRIpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 04:45:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64349 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756746Ab2IRIps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 04:45:48 -0400
-X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
-   d="scan'208";a="5864223"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/2] workqueue: Keep activate-order equals to queue_work()-order
-Date: Tue, 18 Sep 2012 16:36:53 +0800
-Message-Id: <1347957414-6692-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1347957414-6692-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1347957414-6692-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 16:35:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/18 16:35:14,
-	Serialize complete at 2012/09/18 16:35:14
+	id S1757526Ab2IRIqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 04:46:32 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59797 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab2IRIqa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 04:46:30 -0400
+Message-ID: <505834D0.2060704@linux.vnet.ibm.com>
+Date: Tue, 18 Sep 2012 16:46:08 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: trace the events of mmu_notifier
+References: <50499123.70609@linux.vnet.ibm.com> <504DAE34.1060402@redhat.com> <504DB22F.4020609@linux.vnet.ibm.com> <5052C7DD.4000205@linux.vnet.ibm.com> <5055A2E2.9080003@redhat.com>
+In-Reply-To: <5055A2E2.9080003@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12091808-5140-0000-0000-000002171196
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The whole workqueue.c keeps activate-order equals to queue_work()-order
-in any given cwq except workqueue_set_max_active().
+On 09/16/2012 05:58 PM, Avi Kivity wrote:
+> On 09/14/2012 08:59 AM, Xiao Guangrong wrote:
+>> On 09/10/2012 05:26 PM, Xiao Guangrong wrote:
+>>> On 09/10/2012 05:09 PM, Avi Kivity wrote:
+>>>> On 09/07/2012 09:16 AM, Xiao Guangrong wrote:
+>>>>> mmu_notifier is the interface to broadcast the mm events to KVM, the
+>>>>> tracepoints introduced in this patch can trace all these events, it is
+>>>>> very helpful for us to notice and fix the bug caused by mm
+>>>>
+>>>> There is nothing kvm specific here.  Perhaps this can be made generic
+>>>> (with a mm parameter so we can filter by process).
+>>>
+>>> Hmm, i would like to put these tracepoints in the mmu-lock then we can clearly
+>>> know the sequence between mm and kvm mmu. It is useful for us to detect the
+>>> issue/race between them.
+>>>
+>>
+>> Ping...?
+> 
+> Sorry.  Yes you are right, knowing the exact sequence is valuable.  Yet
+> it will be hard to associate these events with the mmu since we don't
+> have gpas there.
+> 
 
-If this order is not kept, something may be not good:
+Avi,
 
-first_work_fn() { release some resource; }
-second_work_fn() { wait and request the resource; use resource; }
+I have some patches in my local queue which use tracepoints instead of
+rmap_printk, they can track rmap_add/rmap_remove/rmap_write_protect.
 
-1. user queues the first work.	# ->max_active is low, is queued on ->delayed_works.
-2. someone increases the >max_active via workqueue_set_max_active()
-3. user queues the second work.	# queued on cwq->pool.
+Though we can not directly get the gfn from these mmu-notifier events, it
+can be got from the later events. We can see what mmu is doing when the
+notifier events are triggered.
 
-When the second work is launched to execute, it waits the first work
-to release the resource. But the first work is still in ->delayed_works,
-it waits the first work to finish and them it can be activated.
 
-It is bad. we fix it by activating the first work in the step 2.
 
-I can't fully determine that it is workqueue's responsibility
-or the user's responsibility.
-If it is workqueue's responsibility, the patch needs go to -stable.
-If it is user's responsibility. it is a nice cleanup, it can go to for-next.
-I prefer it is workqueue's responsibility.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index d0ca063..8783414 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3458,7 +3458,7 @@ void workqueue_set_max_active(struct workqueue_struct *wq, int max_active)
- 
- 		if (!(wq->flags & WQ_FREEZABLE) ||
- 		    !(gcwq->flags & GCWQ_FREEZING))
--			get_cwq(gcwq->cpu, wq)->max_active = max_active;
-+			cwq_set_max_active(get_cwq(gcwq->cpu, wq), max_active);
- 
- 		spin_unlock_irq(&gcwq->lock);
- 	}
--- 
-1.7.4.4
 
