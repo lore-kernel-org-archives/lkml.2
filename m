@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab2IRJgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:36:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50189 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757514Ab2IRJgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:36:51 -0400
-Date: Tue, 18 Sep 2012 12:36:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navinp@cdac.in>
-Cc: gregkh@linuxfoundation.org, mfm@muteddisk.com, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_dev: Fixed oops during removal of
- usbip_host
-Message-ID: <20120918093619.GO13767@mwanda>
-References: <1347940806-4653-1-git-send-email-navinp@cdac.in>
- <20120918074053.GL4587@mwanda>
- <CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
+	id S1757664Ab2IRJik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:38:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:3300 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757558Ab2IRJij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:38:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,442,1344182400"; 
+   d="scan'208";a="5864537"
+Message-ID: <5058419A.5050904@cn.fujitsu.com>
+Date: Tue, 18 Sep 2012 17:40:42 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPV97yda9d6yVbTfmET0Rj+xrRDniKzucfKCy=8gUbCDFYR5jg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [V2 for-next PATCH 0/7] workqueue: async idle rebinding and cleanup
+ for hotplug
+References: <1347896808-2398-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1347896808-2398-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:38:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/18 17:38:55,
+	Serialize complete at 2012/09/18 17:38:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 03:02:15PM +0530, navin patidar wrote:
-> On Tue, Sep 18, 2012 at 1:10 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Tue, Sep 18, 2012 at 09:30:06AM +0530, navin patidar wrote:
-> >> stub_device_reset should set kernel thread pointers to NULL.
-> >> so that at the time of usbip_host removal stub_shoutdown_connection
-> >> doesn't try to kill kernel threads which are already killed.
-> >>
-> >
-> > If you have the Oops output, that's always nice to put in the commit
-> > message.
+On 09/17/2012 11:46 PM, Lai Jiangshan wrote:
+> Patch1 fix new found possible bug.
 > 
-> i'll surely keep this in mind  before submitting further patches.
+> Patch2 use async algorithm to replace the synchronous algorithm to rebind
+> idle workers.
 > 
-> > Why don't you set the pointers to NULL in stub_shutdown_connection()
-> > since that's where you actually kill the threads.  Setting them to
-> > NULL in stub_device_reset() will (sometimes) solve the problem but
-> > it gives you a new problem of a resource leak.
+> The synchronous algorithm requires 3 hand shakes, it introduces much
+> complicated. 
 > 
->  stub_device_reset() always gets executed after
-> stub_shutdown_connection() , never before.
+> The new async algorithm does not do any synchronization. it removes
+> the idle workers from idle_list to ensure the local-wake-up is correct
+> instead.
 > 
+> Patch3-7 do simple cleanup
+> 
+> Patch2-7 are ready for for-next. I have other devlopment and cleanup for workqueue,
+> should I wait this patchset merged or send them at the same time?
 
-No it isn't.  Read event_handler() more carefully.  They can be
-executed independently.
+Hello, Tejun:
 
-In other words, stub_shutdown_connection() can be called without
-calling stub_device_reset() and stub_device_reset() can be called
-without stub_shutdown_connection().  If either of those happen then
-it causes a problem with the patch you have just sent.
+Please defer Patch3-7, because they conflict with the merged one.
 
-regards,
-dan carpenter
+Could you please review and merge the the Patch2(async idle rebinding).
+I have made some effort to write/review/check it.
+
+Thanks,
+Lai
+
+> 
+> Lai Jiangshan (7):
+>   workqueue: clear WORKER_REBIND unconditionaly in
+>     busy_worker_rebind_fn()
+>   workqueue: async idle rebinding
+>   workqueue: new day don't need WORKER_REBIND for busy rebinding
+>   workqueue: remove WORKER_REBIND
+>   workqueue: rename manager_mutex to assoc_mutex
+>   workqueue: use __cpuinit instead of __devinit for cpu callback
+>   workqueue: use hotcpu_notifier() for workqueue_cpu_down_callback()
+> 
+>  kernel/workqueue.c |  228 ++++++++++++++++++---------------------------------
+>  1 files changed, 81 insertions(+), 147 deletions(-)
+> 
 
