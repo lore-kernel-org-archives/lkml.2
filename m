@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2IRRLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 13:11:16 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56795 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab2IRRLE (ORCPT
+	id S1752815Ab2IRRLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 13:11:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50544 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab2IRRLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 13:11:04 -0400
+	Tue, 18 Sep 2012 13:11:03 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jon.maloy@ericsson.com
-Cc: allan.stephens@windriver.com, davem@davemloft.net, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 3/3] net/tipc/name_table.c: Remove unecessary semicolon
-Date: Tue, 18 Sep 2012 19:10:45 +0200
-Message-Id: <1347988245-31413-3-git-send-email-peter.senna@gmail.com>
+To: jesse@nicira.com
+Cc: davem@davemloft.net, dev@openvswitch.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 2/3] net/openvswitch/vport.c: Remove unecessary semicolon
+Date: Tue, 18 Sep 2012 19:10:44 +0200
+Message-Id: <1347988245-31413-2-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347988245-31413-1-git-send-email-peter.senna@gmail.com>
 References: <1347988245-31413-1-git-send-email-peter.senna@gmail.com>
@@ -27,22 +26,22 @@ Found by http://coccinelle.lip6.fr/
 
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- net/tipc/name_table.c | 2 +-
+ net/openvswitch/vport.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/tipc/name_table.c b/net/tipc/name_table.c
-index 98975e8..4675477 100644
---- a/net/tipc/name_table.c
-+++ b/net/tipc/name_table.c
-@@ -783,7 +783,7 @@ static int subseq_list(struct sub_seq *sseq, char *buf, int len, u32 depth,
- 		if (!list_is_last(&publ->zone_list, &info->zone_list))
- 			ret += tipc_snprintf(buf + ret, len - ret,
- 					     "\n%33s", " ");
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 9055dd6..03779e8 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -398,7 +398,7 @@ void ovs_vport_record_error(struct vport *vport, enum vport_err_type err_type)
+ 	case VPORT_E_TX_ERROR:
+ 		vport->err_stats.tx_errors++;
+ 		break;
 -	};
 +	}
  
- 	ret += tipc_snprintf(buf + ret, len - ret, "\n");
- 	return ret;
+ 	spin_unlock(&vport->stats_lock);
+ }
 -- 
 1.7.11.4
 
