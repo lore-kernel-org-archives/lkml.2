@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab2IRORx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 10:17:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:17072 "EHLO relay.sw.ru"
+	id S933257Ab2IROR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 10:17:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:40636 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933185Ab2IRORA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933183Ab2IRORA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Sep 2012 10:17:00 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
@@ -17,9 +17,9 @@ Cc: <cgroups@vger.kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v3 10/16] sl[au]b: Allocate objects from memcg cache
-Date: Tue, 18 Sep 2012 18:12:04 +0400
-Message-Id: <1347977530-29755-11-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 13/16] slab: slab-specific propagation changes.
+Date: Tue, 18 Sep 2012 18:12:07 +0400
+Message-Id: <1347977530-29755-14-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1347977530-29755-1-git-send-email-glommer@parallels.com>
 References: <1347977530-29755-1-git-send-email-glommer@parallels.com>
@@ -27,13 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are able to match a cache allocation to a particular memcg.  If the
-task doesn't change groups during the allocation itself - a rare event,
-this will give us a good picture about who is the first group to touch a
-cache page.
-
-This patch uses the now available infrastructure by calling
-memcg_kmem_get_cache() before all the cache allocations.
+When a parent cache does tune_cpucache, we need to propagate that to the
+children as well. For that, we unfortunately need to tap into the slab core.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
@@ -43,161 +38,68 @@ CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/slub_def.h | 15 ++++++++++-----
- mm/memcontrol.c          |  9 +++++++++
- mm/slab.c                |  6 +++++-
- mm/slub.c                |  5 +++--
- 4 files changed, 27 insertions(+), 8 deletions(-)
+ mm/slab.c        | 28 +++++++++++++++++++++++++++-
+ mm/slab_common.c |  1 +
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index 8bb8ad2..76bf6da 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -13,6 +13,8 @@
- #include <linux/kobject.h>
- 
- #include <linux/kmemleak.h>
-+#include <linux/memcontrol.h>
-+#include <linux/mm.h>
- 
- enum stat_item {
- 	ALLOC_FASTPATH,		/* Allocation from cpu slab */
-@@ -209,14 +211,14 @@ static __always_inline int kmalloc_index(size_t size)
-  * This ought to end up with a global pointer to the right cache
-  * in kmalloc_caches.
-  */
--static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
-+static __always_inline struct kmem_cache *kmalloc_slab(gfp_t flags, size_t size)
- {
- 	int index = kmalloc_index(size);
- 
- 	if (index == 0)
- 		return NULL;
- 
--	return kmalloc_caches[index];
-+	return memcg_kmem_get_cache(kmalloc_caches[index], flags);
- }
- 
- void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
-@@ -225,7 +227,10 @@ void *__kmalloc(size_t size, gfp_t flags);
- static __always_inline void *
- kmalloc_order(size_t size, gfp_t flags, unsigned int order)
- {
--	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
-+	void *ret;
-+
-+	flags |= (__GFP_COMP | __GFP_KMEMCG);
-+	ret = (void *) __get_free_pages(flags, order);
- 	kmemleak_alloc(ret, size, 1, flags);
- 	return ret;
- }
-@@ -274,7 +279,7 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
- 			return kmalloc_large(size, flags);
- 
- 		if (!(flags & SLUB_DMA)) {
--			struct kmem_cache *s = kmalloc_slab(size);
-+			struct kmem_cache *s = kmalloc_slab(flags, size);
- 
- 			if (!s)
- 				return ZERO_SIZE_PTR;
-@@ -307,7 +312,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
- {
- 	if (__builtin_constant_p(size) &&
- 		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
--			struct kmem_cache *s = kmalloc_slab(size);
-+			struct kmem_cache *s = kmalloc_slab(flags, size);
- 
- 		if (!s)
- 			return ZERO_SIZE_PTR;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ee982aa..0068b7d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -477,7 +477,14 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
- #include <net/sock.h>
- #include <net/ip.h>
- 
-+/*
-+ * A lot of the calls to the cache allocation functions are expected to be
-+ * inlined by the compiler. Since the calls to memcg_kmem_get_cache are
-+ * conditional to this static branch, we'll have to allow modules that does
-+ * kmem_cache_alloc and the such to see this symbol as well
-+ */
- struct static_key memcg_kmem_enabled_key;
-+EXPORT_SYMBOL(memcg_kmem_enabled_key);
- 
- static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
- static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
-@@ -589,6 +596,8 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
- 
- 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
- 				      (s->flags & ~SLAB_PANIC), s->ctor, s);
-+	if (new)
-+		new->allocflags |= __GFP_KMEMCG;
- 
- 	kfree(name);
- 	return new;
 diff --git a/mm/slab.c b/mm/slab.c
-index 18de3f6..f9c7e03 100644
+index d5c196b..bd9928f 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -1971,7 +1971,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
- 	}
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += nr_freed;
--	free_pages((unsigned long)addr, cachep->gfporder);
-+	free_accounted_pages((unsigned long)addr, cachep->gfporder);
+@@ -4104,7 +4104,7 @@ static void do_ccupdate_local(void *info)
  }
  
- static void kmem_rcu_free(struct rcu_head *head)
-@@ -3541,6 +3541,8 @@ __cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
- 	if (slab_should_failslab(cachep, flags))
- 		return NULL;
- 
-+	cachep = memcg_kmem_get_cache(cachep, flags);
-+
- 	cache_alloc_debugcheck_before(cachep, flags);
- 	local_irq_save(save_flags);
- 
-@@ -3626,6 +3628,8 @@ __cache_alloc(struct kmem_cache *cachep, gfp_t flags, void *caller)
- 	if (slab_should_failslab(cachep, flags))
- 		return NULL;
- 
-+	cachep = memcg_kmem_get_cache(cachep, flags);
-+
- 	cache_alloc_debugcheck_before(cachep, flags);
- 	local_irq_save(save_flags);
- 	objp = __do_cache_alloc(cachep, flags);
-diff --git a/mm/slub.c b/mm/slub.c
-index a045dfc..ac79595 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1403,7 +1403,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 	reset_page_mapcount(page);
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += pages;
--	__free_pages(page, order);
-+	__free_accounted_pages(page, order);
+ /* Always called with the slab_mutex held */
+-static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
++static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ 				int batchcount, int shared, gfp_t gfp)
+ {
+ 	struct ccupdate_struct *new;
+@@ -4147,6 +4147,32 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ 	return alloc_kmemlist(cachep, gfp);
  }
  
- #define need_reserve_slab_rcu						\
-@@ -2313,6 +2313,7 @@ static __always_inline void *slab_alloc(struct kmem_cache *s,
- 	if (slab_pre_alloc_hook(s, gfpflags))
- 		return NULL;
- 
-+	s = memcg_kmem_get_cache(s, gfpflags);
- redo:
- 
- 	/*
-@@ -3454,7 +3455,7 @@ void kfree(const void *x)
- 	if (unlikely(!PageSlab(page))) {
- 		BUG_ON(!PageCompound(page));
- 		kmemleak_free(x);
--		__free_pages(page, compound_order(page));
-+		__free_accounted_pages(page, compound_order(page));
- 		return;
- 	}
- 	slab_free(page->slab, page, object, _RET_IP_);
++static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
++				int batchcount, int shared, gfp_t gfp)
++{
++	int ret;
++#ifdef CONFIG_MEMCG_KMEM
++	struct kmem_cache *c;
++	struct mem_cgroup_cache_params *p;
++#endif
++
++	ret = __do_tune_cpucache(cachep, limit, batchcount, shared, gfp);
++#ifdef CONFIG_MEMCG_KMEM
++	if (slab_state < FULL)
++		return ret;
++
++	if ((ret < 0) || (cachep->memcg_params.id == -1))
++		return ret;
++
++	list_for_each_entry(p, &cachep->memcg_params.sibling_list, sibling_list) {
++		c = container_of(p, struct kmem_cache, memcg_params);
++		/* return value determined by the parent cache only */
++		__do_tune_cpucache(c, limit, batchcount, shared, gfp);
++	}
++#endif
++	return ret;
++}
++
+ /* Called with slab_mutex held always */
+ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
+ {
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index c6fb4a7..341c3e1 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -124,6 +124,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ #ifdef CONFIG_MEMCG_KMEM
+ 		s->memcg_params.memcg = memcg;
+ 		s->memcg_params.parent = parent_cache;
++		s->memcg_params.id = -1; /* not registered yet */
+ #endif
+ 		s->name = kstrdup(name, GFP_KERNEL);
+ 		if (!s->name) {
 -- 
 1.7.11.4
 
