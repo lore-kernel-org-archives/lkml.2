@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab2IRJvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 05:51:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36301 "EHLO arroyo.ext.ti.com"
+	id S1757853Ab2IRJvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 05:51:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45064 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab2IRJvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 05:51:04 -0400
+	id S1757787Ab2IRJvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 05:51:13 -0400
 From: Shubhrajyoti D <shubhrajyoti@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <julia.lawall@lip6.fr>,
         Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 1/6] media: Convert struct i2c_msg initialization to C99 format
-Date: Tue, 18 Sep 2012 15:20:38 +0530
-Message-ID: <1347961843-9376-2-git-send-email-shubhrajyoti@ti.com>
+Subject: [PATCHv2 5/6] media: Convert struct i2c_msg initialization to C99 format
+Date: Tue, 18 Sep 2012 15:20:42 +0530
+Message-ID: <1347961843-9376-6-git-send-email-shubhrajyoti@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
 References: <1347961843-9376-1-git-send-email-shubhrajyoti@ti.com>
@@ -28,34 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- drivers/media/i2c/ks0127.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/media/radio/saa7706h.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/i2c/ks0127.c b/drivers/media/i2c/ks0127.c
-index ee7ca2d..4ede64a 100644
---- a/drivers/media/i2c/ks0127.c
-+++ b/drivers/media/i2c/ks0127.c
-@@ -319,8 +319,18 @@ static u8 ks0127_read(struct v4l2_subdev *sd, u8 reg)
- 	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 	char val = 0;
- 	struct i2c_msg msgs[] = {
--		{ client->addr, 0, sizeof(reg), &reg },
--		{ client->addr, I2C_M_RD | I2C_M_NO_RD_ACK, sizeof(val), &val }
-+		{
-+			.addr = client->addr,
-+			.flags = 0,
-+			.len = sizeof(reg),
-+			.buf = &reg
-+		},
-+		{
-+			.addr = client->addr,
-+			.flags = I2C_M_RD | I2C_M_NO_RD_ACK,
-+			.len = sizeof(val),
-+			.buf = &val
-+		}
- 	};
- 	int ret;
+diff --git a/drivers/media/radio/saa7706h.c b/drivers/media/radio/saa7706h.c
+index bb953ef..97cf867 100644
+--- a/drivers/media/radio/saa7706h.c
++++ b/drivers/media/radio/saa7706h.c
+@@ -199,8 +199,20 @@ static int saa7706h_get_reg16(struct v4l2_subdev *sd, u16 reg)
+ 	u8 buf[2];
+ 	int err;
+ 	u8 regaddr[] = {reg >> 8, reg};
+-	struct i2c_msg msg[] = { {client->addr, 0, sizeof(regaddr), regaddr},
+-				{client->addr, I2C_M_RD, sizeof(buf), buf} };
++	struct i2c_msg msg[] = {
++					{
++						.addr = client->addr,
++						.flags = 0,
++						.len = sizeof(regaddr),
++						.buf = regaddr
++					},
++					{
++						.addr = client->addr,
++						.flags = I2C_M_RD,
++						.len = sizeof(buf),
++						.buf = buf
++					}
++				};
  
+ 	err = saa7706h_i2c_transfer(client, msg, ARRAY_SIZE(msg));
+ 	if (err)
 -- 
 1.7.5.4
 
