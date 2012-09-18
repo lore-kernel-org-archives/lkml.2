@@ -1,293 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab2IRVhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 17:37:51 -0400
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:60942 "EHLO
-	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755603Ab2IRVhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 17:37:42 -0400
-From: David Sharp <dhsharp@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH v2 3/3] tracing: format non-nanosec times from tsc clock without a decimal point.
-Date: Tue, 18 Sep 2012 14:37:07 -0700
-Message-Id: <1348004227-23575-3-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1348004227-23575-1-git-send-email-dhsharp@google.com>
-References: <1347499439.10751.78.camel@gandalf.local.home>
- <1348004227-23575-1-git-send-email-dhsharp@google.com>
+	id S932104Ab2IRVlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 17:41:12 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:60740 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755595Ab2IRVlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 17:41:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Airlie <airlied@gmail.com>
+Subject: Re: runtime PM and special power switches
+Date: Tue, 18 Sep 2012 23:47:33 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel" <dri-devel@lists.freedesktop.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-pci@vger.kernel.org
+References: <201209112255.10486.rjw@sisk.pl> <CAPM=9twQJSCX64kYsAikteZoJOH9m8e6AWuj-e_Ouyk3HmyOuQ@mail.gmail.com> <CAPM=9tw8ydqLveJLAdDJ75gDW4UkUiXMSqHqvtYPwnn-wLmGhg@mail.gmail.com>
+In-Reply-To: <CAPM=9tw8ydqLveJLAdDJ75gDW4UkUiXMSqHqvtYPwnn-wLmGhg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209182347.34049.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the addition of the "tsc" clock, formatting timestamps to look like
-fractional seconds is misleading. Mark clocks as either in nanoseconds or
-not, and format non-nanosecond timestamps as decimal integers.
+Sorry for the delayed response.
 
-Tested:
-$ cd /sys/kernel/debug/tracing/
-$ cat trace_clock
-[local] global tsc
-$ echo sched_switch > set_event
-$ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-$ cat trace
-          <idle>-0     [000]  6330.555552: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
-           sleep-29964 [000]  6330.555628: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-$ echo 1 > options/latency-format
-$ cat trace
-  <idle>-0       0 4104553247us+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
-   sleep-29964   0 4104553322us+: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-$ echo tsc > trace_clock
-$ cat trace
-$ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-$ echo 0 > options/latency-format
-$ cat trace
-          <idle>-0     [000] 16490053398357: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
-           sleep-31128 [000] 16490053588518: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-echo 1 > options/latency-format
-$ cat trace
-  <idle>-0       0 91557653238+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
-   sleep-31128   0 91557843399+: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
+On Wednesday, September 12, 2012, Dave Airlie wrote:
+> On Wed, Sep 12, 2012 at 3:13 PM, Dave Airlie <airlied@gmail.com> wrote:
+> > On Wed, Sep 12, 2012 at 8:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> On Wednesday, September 12, 2012, Dave Airlie wrote:
+> >>> On Wed, Sep 12, 2012 at 7:32 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> >>> > On Tue, 11 Sep 2012, Rafael J. Wysocki wrote:
+> >>> >
+> >>> >> Hi,
+> >>> >>
+> >>> >> On Tuesday, September 11, 2012, Dave Airlie wrote:
+> >>> >> > Hi Rafael,
+> >>> >> >
+> >>> >> > I've been investigating runtime PM support for some use-cases on GPUs.
+> >>> >> >
+> >>> >> > In some laptops we have a secondary GPU (optimus) that can be powered
+> >>> >> > up for certain 3D tasks and then turned off when finished with. Now I
+> >>> >> > did an initial pass on supporting it without using the kernel runtime
+> >>> >> > PM stuff, but Alan said I should take a look so here I am.
+> >>> >>
+> >>> >> Alan Stern or Alan Cox? :-)
+> >>> >>
+> >>> >> > While I've started to get a handle on things, we have a bit of an
+> >>> >> > extra that I'm not sure we cater for.
+> >>> >> >
+> >>> >> > Currently we get called from the PCI layer which after we are finished
+> >>> >> > with our runtime suspend callback, will go put the device into the
+> >>> >> > correct state etc, however on these optimus/powerxpress laptops we
+> >>> >> > have a separate ACPI or platform driver controlled power switch that
+> >>> >> > we need to call once the PCI layer is finished the job. This switch
+> >>> >> > effectively turns the power to the card completely off leaving it
+> >>> >> > drawing no power.
+> >>> >> >
+> >>> >> > No we can't hit the switch from the driver callback as the PCI layer
+> >>> >> > will get lost, so I'm wondering how you'd envisage we could plug this
+> >>> >> > in.
+> >>> >>
+> >>> >> Hmm.  In principle we might modify pci_pm_runtime_suspend() so that it
+> >>> >> doesn't call pci_finish_runtime_suspend() if pci_dev->state_saved is
+> >>> >> set.  That would actually make it work in analogy with pci_pm_suspend_noirq(),
+> >>> >> so perhaps it's not even too dangerous.
+> >>> >
+> >>> > This sounds more like a job for a power domain.  Unless the power
+> >>> > switch is already in the device hierarchy as a parent to the PCI
+> >>> > device.
+> >>>
+> >>> I'll have to investigate power domains then,
+> >>>
+> >>> The switch is hidden in many different places, one some laptops its in
+> >>> a ACPI _DSM on one GPU, on others its in an ACPI _DSM on the other
+> >>> one, in some its in a different ACPI _DSM, then we have it in the ACPI
+> >>> ATPX method on others, and finally Apple have it in a piece of hw that
+> >>> isn't just on the LPC bus or somewhere like that.
+> >>>
+> >>> Currently we just hide it all inside vga_switcheroo and I'd just need
+> >>> an interface to call that once the layers have stopped poking
+> >>> registers in PCI config space, if we could fix PCI runtime suspend so
+> >>> the driver was the last to g 2et called then that would also not suck.
+> >>
+> >> Well, as I said, we may try to change the PCI layer so that it doesn't
+> >> access the device any more in pci_pm_runtime_suspend() if it sees that
+> >> pci_dev->state_saved has been set by the driver's callback.  Then,
+> >> your drivers would only need to set pci_dev->state_saved in their
+> >> .runtime_suspend() callbacks.
+> >>
+> >
+> > Actually it appears I'll need this, I'd forgotten things are a bit
+> > messier than I thought
+> >
+> > So there are two variants on the _DSM for nvidia dual-gpu machines,
+> > the older pre-optimus _DSM requires
+> > an explicit power off call post-D3, however for optimus _DSM the D3
+> > transition will flick the power switch, however
+> > the pci code then goes and seem to turn the device back to D0 for some
+> > reason. So yes after save state,
+> > I'd really appreciate if it the pci layer would stop poking my device.
 
-v2:
-Move arch-specific bits out of generic code.
+OK, so the patch for that is appended.  It would be nice if you could see
+if that's sufficient for your use cases.
 
-Google-Bug-Id: 6980623
-Signed-off-by: David Sharp <dhsharp@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >> Alternatively, which may be less hackish but more work, you can set the
+> >> pm_domain pointer in the device structure to a struct dev_pm_domain whose
+> >> ops will just call the corresponding bus type's ops except for
+> >> .runtime_suspend() that will execute the additional ACPI stuff after calling
+> >> the bus type's method.
+> >
+> > I've mostly written this, and it seems to work, I've jsut set a
+> > pm_domain in the vga switcheroo code that copies the dev->bus->pm
+> > into a private structure. I'll need this for the old nvidia and radeon
+> > poweroffs.
+> >
+> 
+> 
+> http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-opt-pwr
+> is my current WIP branch
+
+It looks reasonable to me.
+
+Thanks,
+Rafael
+
+
 ---
- arch/x86/include/asm/trace_clock.h |    2 +-
- include/linux/ftrace_event.h       |    6 +++
- kernel/trace/trace.c               |   15 +++++-
- kernel/trace/trace.h               |    4 --
- kernel/trace/trace_output.c        |   82 +++++++++++++++++++++++++-----------
- 5 files changed, 76 insertions(+), 33 deletions(-)
+ drivers/pci/pci-driver.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
-index 0b1f391..4af2eb7 100644
---- a/arch/x86/include/asm/trace_clock.h
-+++ b/arch/x86/include/asm/trace_clock.h
-@@ -9,7 +9,7 @@
- extern u64 notrace trace_clock_x86_tsc(void);
+Index: linux/drivers/pci/pci-driver.c
+===================================================================
+--- linux.orig/drivers/pci/pci-driver.c
++++ linux/drivers/pci/pci-driver.c
+@@ -1063,10 +1063,10 @@ static int pci_pm_runtime_suspend(struct
+ 		return 0;
+ 	}
  
- # define ARCH_TRACE_CLOCKS \
--	{ trace_clock_x86_tsc,	"tsc" },
-+	{ trace_clock_x86_tsc,	"tsc",		.in_ns = 0 },
- 
- #endif
- 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 642928c..c760670 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -86,6 +86,12 @@ struct trace_iterator {
- 	cpumask_var_t		started;
- };
- 
-+enum trace_iter_flags {
-+	TRACE_FILE_LAT_FMT	= 1,
-+	TRACE_FILE_ANNOTATE	= 2,
-+	TRACE_FILE_TIME_IN_NS	= 4,
-+};
-+
- 
- struct trace_event;
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 4e26df3..3fe4c5b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -476,10 +476,11 @@ static const char *trace_options[] = {
- static struct {
- 	u64 (*func)(void);
- 	const char *name;
-+	int in_ns; /* is this clock in nanoseconds? */
- } trace_clocks[] = {
--	{ trace_clock_local,	"local" },
--	{ trace_clock_global,	"global" },
--	{ trace_clock_counter,	"counter" },
-+	{ trace_clock_local,	"local",	1 },
-+	{ trace_clock_global,	"global",	1 },
-+	{ trace_clock_counter,	"counter",	0 },
- 	ARCH_TRACE_CLOCKS
- };
- 
-@@ -2425,6 +2426,10 @@ __tracing_open(struct inode *inode, struct file *file)
- 	if (ring_buffer_overruns(iter->tr->buffer))
- 		iter->iter_flags |= TRACE_FILE_ANNOTATE;
- 
-+	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-+	if (trace_clocks[trace_clock_id].in_ns)
-+		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-+
- 	/* stop the trace while dumping */
- 	tracing_stop();
- 
-@@ -3324,6 +3329,10 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	if (trace_flags & TRACE_ITER_LATENCY_FMT)
- 		iter->iter_flags |= TRACE_FILE_LAT_FMT;
- 
-+	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-+	if (trace_clocks[trace_clock_id].in_ns)
-+		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-+
- 	iter->cpu_file = cpu_file;
- 	iter->tr = &global_trace;
- 	mutex_init(&iter->mutex);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 55e1f7f..84fefed 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -409,10 +409,6 @@ void tracing_start_sched_switch_record(void);
- int register_tracer(struct tracer *type);
- void unregister_tracer(struct tracer *type);
- int is_tracing_stopped(void);
--enum trace_file_type {
--	TRACE_FILE_LAT_FMT	= 1,
--	TRACE_FILE_ANNOTATE	= 2,
--};
- 
- extern cpumask_var_t __read_mostly tracing_buffer_mask;
- 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 123b189..c86d62a 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -610,24 +610,57 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
- 	return trace_print_lat_fmt(s, entry);
- }
- 
--static unsigned long preempt_mark_thresh = 100;
-+static unsigned long preempt_mark_thresh_us = 100;
-+/* roughly the same at 2.0GHz: */
-+static unsigned long preempt_mark_thresh_cycles = 200000;
- 
- static int
--lat_print_timestamp(struct trace_seq *s, u64 abs_usecs,
--		    unsigned long rel_usecs)
-+lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
- {
--	return trace_seq_printf(s, " %4lldus%c: ", abs_usecs,
--				rel_usecs > preempt_mark_thresh ? '!' :
--				  rel_usecs > 1 ? '+' : ' ');
-+	int ret;
-+	struct trace_seq *s = &iter->seq;
-+	unsigned long verbose = trace_flags & TRACE_ITER_VERBOSE;
-+	unsigned long in_ns = iter->iter_flags & TRACE_FILE_TIME_IN_NS;
-+	unsigned long long abs_ts = iter->ts - iter->tr->time_start;
-+	unsigned long long rel_ts = next_ts - iter->ts;
-+	unsigned long mark_thresh;
-+
-+	if (in_ns) {
-+		abs_ts = ns2usecs(abs_ts);
-+		rel_ts = ns2usecs(rel_ts);
-+		mark_thresh = preempt_mark_thresh_us;
-+	} else
-+		mark_thresh = preempt_mark_thresh_cycles;
-+
-+	if (verbose && in_ns) {
-+		ret = trace_seq_printf(
-+				s, "[%08llx] %lld.%03lldms (+%lld.%03lldms): ",
-+				ns2usecs(iter->ts),
-+				abs_ts / USEC_PER_MSEC,
-+				abs_ts % USEC_PER_MSEC,
-+				rel_ts / USEC_PER_MSEC,
-+				rel_ts % USEC_PER_MSEC);
-+	} else if (verbose && !in_ns) {
-+		ret = trace_seq_printf(
-+				s, "[%016llx] %lld (+%lld): ",
-+				iter->ts, abs_ts, rel_ts);
-+	} else { /* !verbose */
-+		ret = trace_seq_printf(
-+				s, " %4lld%s%c: ",
-+				abs_ts,
-+				in_ns ? "us" : "",
-+				rel_ts > mark_thresh ? '!' :
-+				  rel_ts > 1 ? '+' : ' ');
+-	if (!pci_dev->state_saved)
++	if (!pci_dev->state_saved) {
+ 		pci_save_state(pci_dev);
+-
+-	pci_finish_runtime_suspend(pci_dev);
++		pci_finish_runtime_suspend(pci_dev);
 +	}
-+	return ret;
+ 
+ 	return 0;
  }
- 
- int trace_print_context(struct trace_iterator *iter)
- {
- 	struct trace_seq *s = &iter->seq;
- 	struct trace_entry *entry = iter->ent;
--	unsigned long long t = ns2usecs(iter->ts);
--	unsigned long usec_rem = do_div(t, USEC_PER_SEC);
--	unsigned long secs = (unsigned long)t;
-+	unsigned long long t;
-+	unsigned long secs, usec_rem;
- 	char comm[TASK_COMM_LEN];
- 	int ret;
- 
-@@ -644,8 +677,13 @@ int trace_print_context(struct trace_iterator *iter)
- 			return 0;
- 	}
- 
--	return trace_seq_printf(s, " %5lu.%06lu: ",
--				secs, usec_rem);
-+	if (iter->iter_flags & TRACE_FILE_TIME_IN_NS) {
-+		t = ns2usecs(iter->ts);
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		secs = (unsigned long)t;
-+		return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
-+	} else
-+		return trace_seq_printf(s, "%12llu: ", iter->ts);
- }
- 
- int trace_print_lat_context(struct trace_iterator *iter)
-@@ -659,36 +697,30 @@ int trace_print_lat_context(struct trace_iterator *iter)
- 			   *next_entry = trace_find_next_entry(iter, NULL,
- 							       &next_ts);
- 	unsigned long verbose = (trace_flags & TRACE_ITER_VERBOSE);
--	unsigned long abs_usecs = ns2usecs(iter->ts - iter->tr->time_start);
--	unsigned long rel_usecs;
-+
- 
- 	/* Restore the original ent_size */
- 	iter->ent_size = ent_size;
- 
- 	if (!next_entry)
- 		next_ts = iter->ts;
--	rel_usecs = ns2usecs(next_ts - iter->ts);
- 
- 	if (verbose) {
- 		char comm[TASK_COMM_LEN];
- 
- 		trace_find_cmdline(entry->pid, comm);
- 
--		ret = trace_seq_printf(s, "%16s %5d %3d %d %08x %08lx [%08llx]"
--				       " %ld.%03ldms (+%ld.%03ldms): ", comm,
--				       entry->pid, iter->cpu, entry->flags,
--				       entry->preempt_count, iter->idx,
--				       ns2usecs(iter->ts),
--				       abs_usecs / USEC_PER_MSEC,
--				       abs_usecs % USEC_PER_MSEC,
--				       rel_usecs / USEC_PER_MSEC,
--				       rel_usecs % USEC_PER_MSEC);
-+		ret = trace_seq_printf(
-+				s, "%16s %5d %3d %d %08x %08lx ",
-+				comm, entry->pid, iter->cpu, entry->flags,
-+				entry->preempt_count, iter->idx);
- 	} else {
- 		ret = lat_print_generic(s, entry, iter->cpu);
--		if (ret)
--			ret = lat_print_timestamp(s, abs_usecs, rel_usecs);
- 	}
- 
-+	if (ret)
-+		ret = lat_print_timestamp(iter, next_ts);
-+
- 	return ret;
- }
- 
--- 
-1.7.7.3
-
