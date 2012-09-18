@@ -1,106 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab2IRTKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 15:10:16 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:38019 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753821Ab2IRTKO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 15:10:14 -0400
-Subject: Re: [PATCH 1/3] pinctrl: pinctrl-single must be initialized early.
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20120918182150.GY11762@atomide.com>
-Date: Tue, 18 Sep 2012 22:10:08 +0300
-Cc: Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B7D59159-4456-468B-A414-9B57BCEE018D@antoniou-consulting.com>
-References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com> <1348070841-23354-2-git-send-email-panto@antoniou-consulting.com> <20120918182150.GY11762@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1754358Ab2IRTOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 15:14:07 -0400
+Received: from mail.us.es ([193.147.175.20]:49813 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532Ab2IRTOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 15:14:04 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.5/15370. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.6/7.5):. 
+ Processed in 2.131678 secs); 18 Sep 2012 19:14:02 -0000
+X-Envelope-From: pneira@us.es
+Date: Tue, 18 Sep 2012 21:13:55 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netfilter-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Sept 18 (netfilter)
+Message-ID: <20120918191355.GA661@1984>
+References: <20120918163755.0a5e6757d3ae75ecb43373a0@canb.auug.org.au>
+ <5058A8A7.7000604@xenotime.net>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+In-Reply-To: <5058A8A7.7000604@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-On Sep 18, 2012, at 9:21 PM, Tony Lindgren wrote:
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Hi,
+On Tue, Sep 18, 2012 at 10:00:23AM -0700, Randy Dunlap wrote:
+> On 09/17/2012 11:37 PM, Stephen Rothwell wrote:
 > 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [120918 11:13]:
->> When using pinctrl-single to handle i2c initialization, it has
->> to be done early.
->> On the beaglebone the regulator is connected to the i2c0 bus,
->> and for sure that's the case for many other am33xx boards.
+> > Hi all,
+> > 
+> > Changes since 201209017:
+> > 
 > 
-> Usually it's better to initialize things later than earlier as
-> that cuts down nasty dependencies and let's us have a proper
-> debug console before we start initializing things beyond
-> interrupts and drivers.
+> on x86_64:
 > 
-
-Agreed.
-
-> Maybe just fix up the i2c-omap.c not to use subsys_initcall()?
-> And then deferred probe should be able to sort out the dependencies
-> for other drivers depending on i2c?
+> ERROR: "ip6t_do_table" [net/ipv6/netfilter/ip6table_nat.ko] undefined!
+> ERROR: "ip6t_register_table" [net/ipv6/netfilter/ip6table_nat.ko] undefined!
+> ERROR: "ip6t_alloc_initial_table" [net/ipv6/netfilter/ip6table_nat.ko] undefined!
+> ERROR: "ip6t_unregister_table" [net/ipv6/netfilter/ip6table_nat.ko] undefined!
 > 
-
-As long as we get the regulator to work early in the game no problem.
-I don't know if deferring the probe will work in this case.
-I could give it a shot and see if it works at all.
-
-FWIW, the regulator is on I2C0 which doesn't need any pinmux setup.
-So in theory I2C0 is ready to go without any pinctrl action, however
-the other busses require it.
-
-It's not clear how to do so without making the driver all hacky.
-Perhaps a property that signals that no pinctrl binding is required.
-
-
-> Regards,
 > 
-> Tony
-> 
+> Full randconfig file is attached.
 
-Regards
+This should fix it. Thanks for the report.
 
--- Pantelis
+--SLDf9lqlvOQaIe6s
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-netfilter-fix-IPv6-NAT-dependencies-in-Kconfig.patch"
 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->> ---
->> drivers/pinctrl/pinctrl-single.c | 12 +++++++++++-
->> 1 file changed, 11 insertions(+), 1 deletion(-)
->> 
->> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
->> index 76a4260..3acf7f9 100644
->> --- a/drivers/pinctrl/pinctrl-single.c
->> +++ b/drivers/pinctrl/pinctrl-single.c
->> @@ -980,7 +980,17 @@ static struct platform_driver pcs_driver = {
->> 	},
->> };
->> 
->> -module_platform_driver(pcs_driver);
->> +static int __init pcs_init(void)
->> +{
->> +	return platform_driver_register(&pcs_driver);
->> +}
->> +postcore_initcall(pcs_init);
->> +
->> +static void __exit pcs_exit(void)
->> +{
->> +	platform_driver_unregister(&pcs_driver);
->> +}
->> +module_exit(pcs_exit);
->> 
->> MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
->> MODULE_DESCRIPTION("One-register-per-pin type device tree based pinctrl driver");
->> -- 
->> 1.7.12
->> 
+>From 78c2b7d8b8978e77fde5b11b3f27a0cd1031fe94 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Tue, 18 Sep 2012 21:03:39 +0200
+Subject: [PATCH] netfilter: fix IPv6 NAT dependencies in Kconfig
 
+* NF_NAT_IPV6 requires IP6_NF_IPTABLES
+
+* IP6_NF_TARGET_MASQUERADE, IP6_NF_TARGET_NETMAP, IP6_NF_TARGET_REDIRECT
+  and IP6_NF_TARGET_NPT require NF_NAT_IPV6.
+
+This change just mirrors what IPv4 does in Kconfig, for consistency.
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/ipv6/netfilter/Kconfig |  110 ++++++++++++++++++++++----------------------
+ 1 file changed, 55 insertions(+), 55 deletions(-)
+
+diff --git a/net/ipv6/netfilter/Kconfig b/net/ipv6/netfilter/Kconfig
+index 3b73254..d8f276b 100644
+--- a/net/ipv6/netfilter/Kconfig
++++ b/net/ipv6/netfilter/Kconfig
+@@ -25,18 +25,6 @@ config NF_CONNTRACK_IPV6
+ 
+ 	  To compile it as a module, choose M here.  If unsure, say N.
+ 
+-config NF_NAT_IPV6
+-	tristate "IPv6 NAT"
+-	depends on NF_CONNTRACK_IPV6
+-	depends on NETFILTER_ADVANCED
+-	select NF_NAT
+-	help
+-	  The IPv6 NAT option allows masquerading, port forwarding and other
+-	  forms of full Network Address Port Translation. It is controlled by
+-	  the `nat' table in ip6tables, see the man page for ip6tables(8).
+-
+-	  To compile it as a module, choose M here.  If unsure, say N.
+-
+ config IP6_NF_IPTABLES
+ 	tristate "IP6 tables support (required for filtering)"
+ 	depends on INET && IPV6
+@@ -144,48 +132,6 @@ config IP6_NF_TARGET_HL
+ 	(e.g. when running oldconfig). It selects
+ 	CONFIG_NETFILTER_XT_TARGET_HL.
+ 
+-config IP6_NF_TARGET_MASQUERADE
+-	tristate "MASQUERADE target support"
+-	depends on NF_NAT_IPV6
+-	help
+-	  Masquerading is a special case of NAT: all outgoing connections are
+-	  changed to seem to come from a particular interface's address, and
+-	  if the interface goes down, those connections are lost.  This is
+-	  only useful for dialup accounts with dynamic IP address (ie. your IP
+-	  address will be different on next dialup).
+-
+-	  To compile it as a module, choose M here.  If unsure, say N.
+-
+-config IP6_NF_TARGET_NETMAP
+-	tristate "NETMAP target support"
+-	depends on NF_NAT_IPV6
+-	help
+-	  NETMAP is an implementation of static 1:1 NAT mapping of network
+-	  addresses. It maps the network address part, while keeping the host
+-	  address part intact.
+-
+-	  To compile it as a module, choose M here.  If unsure, say N.
+-
+-config IP6_NF_TARGET_REDIRECT
+-	tristate "REDIRECT target support"
+-	depends on NF_NAT_IPV6
+-	help
+-	  REDIRECT is a special case of NAT: all incoming connections are
+-	  mapped onto the incoming interface's address, causing the packets to
+-	  come to the local machine instead of passing through.  This is
+-	  useful for transparent proxies.
+-
+-	  To compile it as a module, choose M here.  If unsure, say N.
+-
+-config IP6_NF_TARGET_NPT
+-	tristate "NPT (Network Prefix translation) target support"
+-	depends on NETFILTER_ADVANCED
+-	help
+-	  This option adds the `SNPT' and `DNPT' target, which perform
+-	  stateless IPv6-to-IPv6 Network Prefix Translation per RFC 6296.
+-
+-	  To compile it as a module, choose M here.  If unsure, say N.
+-
+ config IP6_NF_FILTER
+ 	tristate "Packet filtering"
+ 	default m if NETFILTER_ADVANCED=n
+@@ -235,9 +181,63 @@ config IP6_NF_SECURITY
+        help
+          This option adds a `security' table to iptables, for use
+          with Mandatory Access Control (MAC) policy.
+-        
++
+          If unsure, say N.
+ 
++config NF_NAT_IPV6
++	tristate "IPv6 NAT"
++	depends on NF_CONNTRACK_IPV6
++	depends on NETFILTER_ADVANCED
++	select NF_NAT
++	help
++	  The IPv6 NAT option allows masquerading, port forwarding and other
++	  forms of full Network Address Port Translation. It is controlled by
++	  the `nat' table in ip6tables, see the man page for ip6tables(8).
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
++if NF_NAT_IPV6
++
++config IP6_NF_TARGET_MASQUERADE
++	tristate "MASQUERADE target support"
++	help
++	  Masquerading is a special case of NAT: all outgoing connections are
++	  changed to seem to come from a particular interface's address, and
++	  if the interface goes down, those connections are lost.  This is
++	  only useful for dialup accounts with dynamic IP address (ie. your IP
++	  address will be different on next dialup).
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
++config IP6_NF_TARGET_NETMAP
++	tristate "NETMAP target support"
++	help
++	  NETMAP is an implementation of static 1:1 NAT mapping of network
++	  addresses. It maps the network address part, while keeping the host
++	  address part intact.
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
++config IP6_NF_TARGET_REDIRECT
++	tristate "REDIRECT target support"
++	help
++	  REDIRECT is a special case of NAT: all incoming connections are
++	  mapped onto the incoming interface's address, causing the packets to
++	  come to the local machine instead of passing through.  This is
++	  useful for transparent proxies.
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
++config IP6_NF_TARGET_NPT
++	tristate "NPT (Network Prefix translation) target support"
++	help
++	  This option adds the `SNPT' and `DNPT' target, which perform
++	  stateless IPv6-to-IPv6 Network Prefix Translation per RFC 6296.
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
++endif # NF_NAT_IPV6
++
+ endif # IP6_NF_IPTABLES
+ 
+ endmenu
+-- 
+1.7.10.4
+
+
+--SLDf9lqlvOQaIe6s--
