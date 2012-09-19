@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2ITAii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 20:38:38 -0400
-Received: from mail.scott.k12.ms.us ([68.153.119.111]:3426 "EHLO
+	id S1753378Ab2ITAih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 20:38:37 -0400
+Received: from mail.scott.k12.ms.us ([68.153.119.111]:3425 "EHLO
 	Scott.k12.ms.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751094Ab2ITAig convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750919Ab2ITAif convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 20:38:36 -0400
-Message-Id: <505A13FC020000DB00010E99@Scott.k12.ms.us>
+	Wed, 19 Sep 2012 20:38:35 -0400
+X-Greylist: delayed 2749 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 20:38:35 EDT
+Message-Id: <505A13FC020000DB00010E96@Scott.k12.ms.us>
 X-Mailer: Novell GroupWise Internet Agent 7.0.4 
-Date: Wed, 19 Sep 2012 18:50:36 -0500
+Date: Wed, 19 Sep 2012 18:49:40 -0500
 From: "Freda Stuart" <fstuart@scott.k12.ms.us>
 Subject: Dear Email User,
 Mime-Version: 1.0
