@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab2ISQRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:17:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53051 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab2ISQRQ (ORCPT
+	id S932339Ab2ISQVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:21:37 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:46401 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932126Ab2ISQVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:17:16 -0400
+	Wed, 19 Sep 2012 12:21:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120918165819.583252C0A4@topped-with-meat.com>
-References: <1347980129-1510-1-git-send-email-vda.linux@googlemail.com> <20120918165819.583252C0A4@topped-with-meat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 19 Sep 2012 18:16:53 +0200
-Message-ID: <CAK1hOcOH_KGccLgFr3N7Ep5J_i1svcXTantYFqE5N9WDBvoomA@mail.gmail.com>
-Subject: Re: [PATCH -mm v2] coredump: extend core dump note section to contain
- file names of mapped files
-To: Roland McGrath <roland@hack.frob.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Amerigo Wang <amwang@redhat.com>,
-        "Jonathan M. Foote" <jmfoote@cert.org>,
-        Pedro Alves <palves@redhat.com>
+In-Reply-To: <201209191458.00531.arnd@arndb.de>
+References: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
+ <20120917215128.GF11762@atomide.com> <201209191458.00531.arnd@arndb.de>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Wed, 19 Sep 2012 21:51:13 +0530
+Message-ID: <CAMQu2gyyROhnhhuD8pBviPojEr+4JJuK1hE_fg=6jOEX9Wd7Cg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to drivers/bus/
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 6:58 PM, Roland McGrath <roland@hack.frob.com> wrote:
-> The code needs to be macroized a bit so that compat_binfmt_elf.c will
-> produce a version that encodes 32-bit values correctly so as to be
-> compatible with the output of a native 32-bit kernel.
+On Wed, Sep 19, 2012 at 8:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 17 September 2012, Tony Lindgren wrote:
+>> * Santosh Shilimkar <santosh.shilimkar@ti.com> [120914 02:21]:
+>> > OMAP interconnect drivers are used for the interconnect error handling.
+>> > Since they are bus driver, lets move it to newly created drivers/bus.
+>> >
+>> > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > Cc: Tony Lindgren <tony@atomide.com>
+>> > Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+>> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> > ---
+>> > Patch just moves OMAP interconnect drivers as is to the newly created
+>> > driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
+>> > tree and test on all OMAP boards.
+>>
+>> Great, looks like this should not conflict with other
+>> omap patches queued, so Arnd should probably take this into
+>> the bus branch:
+>>
+>> Acked-by: Tony Lindgren <tony@atomide.com>
+>
+> Ok, added to the branch. In the future please Cc both Olof and me when submitting
+> patches for inclusion.
+>
+Thanks Arnd. Sorry I missed to Cc Olof on the patch. Will take care of
+this in future.
 
-Just did it...
-
-> It's doubtful that rolling your own single loop actually performs better
-> than just calling strlen and memcpy.
-
-I didn't do it for speed, rather for simplicity.
-
-> Since you're just counting to estimate the size of a temporary buffer,
-> you could skip the initial loop and just estimate based on mm->map_count.
-> Then collect the count in the main loop and write the first word of the
-> buffer last.
-
-The format is:
-
-    long count     -- how many files are mapped
-    long page_size -- units for file_ofs
-    array of [COUNT] elements of
-       long start
-       long end
-       long file_ofs
-    followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
-
-In order to fill in file names, we need to know exact number of array elements,
-since file names immediately follow that array. IOW:
-
-+       for (vma = current->mm->mmap; vma != NULL; vma = vma->vm_next) {
-+               if (it is a file-backed vma)
-+                       count++;
-+       }
-+
-+       size = count * 64;
-+       word_count = 2 + 3 * count;               <=====
-...
-+       name = (void*)&start_end_ofs[word_count]; <=====
-
-The marked statements are crucial. We can't use estimated count,
-we need exact one here in order for 'name' pointer to be correct.
-
-Otherwise (if we would use count = mm->map_count),
-we'd need to memmove block of file names at the end.
-And we might end up allocating significant amounts of memory
-we don't need if there are tons of anon mappings.
-IMO this is worse than the counting loop.
-
-Anyway, I will shortly send a patch which implements your logic.
--- 
-vda
+Regards
+santosh
