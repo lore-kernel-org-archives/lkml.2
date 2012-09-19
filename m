@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab2ISQGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:06:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19125 "EHLO relay.sw.ru"
+	id S932434Ab2ISQG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:06:58 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:27061 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932348Ab2ISQGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:06:44 -0400
-Subject: [PATCH v5 04/10] ipc: add new SHM_SET command for sys_shmctl() call
+	id S932384Ab2ISQGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:06:51 -0400
+Subject: [PATCH v5 07/10] ipc: add new SEM_SET command for sys_semctl() call
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
@@ -17,8 +17,8 @@ Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
         james.l.morris@oracle.com, catalin.marinas@arm.com,
         casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
         jitendra.kalsaria@qlogic.com, devel@openvz.org
-Date: Wed, 19 Sep 2012 20:05:48 +0400
-Message-ID: <20120919160547.11254.5179.stgit@localhost6.localdomain6>
+Date: Wed, 19 Sep 2012 20:06:05 +0400
+Message-ID: <20120919160604.11254.72994.stgit@localhost6.localdomain6>
 In-Reply-To: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
 References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -29,115 +29,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New SHM_SET command will be interpreted exactly as IPC_SET, but also will
+New SEM_SET command will be interpreted exactly as IPC_SET, but also will
 update key, cuid and cgid values. IOW, it allows to change existent key value.
 The fact, that key is not used is checked before update. Otherwise -EEXIST is
 returned.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- include/linux/shm.h        |    1 +
+ include/linux/sem.h        |    1 +
  ipc/compat.c               |    1 +
- ipc/shm.c                  |   13 +++++++++++--
+ ipc/sem.c                  |   10 ++++++++--
  security/selinux/hooks.c   |    1 +
  security/smack/smack_lsm.c |    1 +
- 5 files changed, 15 insertions(+), 2 deletions(-)
+ 5 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/shm.h b/include/linux/shm.h
-index edd0868..9a3e423 100644
---- a/include/linux/shm.h
-+++ b/include/linux/shm.h
-@@ -63,6 +63,7 @@ struct shmid_ds {
- /* ipcs ctl commands */
- #define SHM_STAT 	13
- #define SHM_INFO 	14
-+#define SHM_SET		15
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index 10d6b22..c74b9b5 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -18,6 +18,7 @@
+ /* ipcs ctl cmds */
+ #define SEM_STAT 18
+ #define SEM_INFO 19
++#define SEM_SET  20
  
- /* Obsolete, used only for backwards compatibility */
- struct	shminfo {
+ /* Obsolete, used only for backwards compatibility and libc5 compiles */
+ struct semid_ds {
 diff --git a/ipc/compat.c b/ipc/compat.c
-index af30d13..35c750d 100644
+index 9c70f9a..84d8efd 100644
 --- a/ipc/compat.c
 +++ b/ipc/compat.c
-@@ -692,6 +692,7 @@ long compat_sys_shmctl(int first, int second, void __user *uptr)
- 
+@@ -290,6 +290,7 @@ static long do_compat_semctl(int first, int second, int third, u32 pad)
+ 		break;
  
  	case IPC_SET:
-+	case SHM_SET:
++	case SEM_SET:
  		if (version == IPC_64) {
- 			err = get_compat_shmid64_ds(&s64, uptr);
+ 			err = get_compat_semid64_ds(&s64, compat_ptr(pad));
  		} else {
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 0088418..65c0c5c 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -636,6 +636,9 @@ copy_shmid_from_user(struct shmid64_ds *out, void __user *buf, int version)
- 		out->shm_perm.uid	= tbuf_old.shm_perm.uid;
- 		out->shm_perm.gid	= tbuf_old.shm_perm.gid;
- 		out->shm_perm.mode	= tbuf_old.shm_perm.mode;
-+		out->shm_perm.cuid	= tbuf_old.shm_perm.cuid;
-+		out->shm_perm.cgid	= tbuf_old.shm_perm.cgid;
-+		out->shm_perm.key	= tbuf_old.shm_perm.key;
+diff --git a/ipc/sem.c b/ipc/sem.c
+index e89b90c..b4f80082 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1085,12 +1085,13 @@ static int semctl_down(struct ipc_namespace *ns, int semid,
+ 	struct semid64_ds semid64;
+ 	struct kern_ipc_perm *ipcp;
  
- 		return 0;
- 	    }
-@@ -740,12 +743,13 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
- 	struct shmid_kernel *shp;
- 	int err;
- 
--	if (cmd == IPC_SET) {
-+	if (cmd == IPC_SET || cmd == SHM_SET) {
- 		if (copy_shmid_from_user(&shmid64, buf, version))
+-	if(cmd == IPC_SET) {
++	if (cmd == IPC_SET || cmd == SEM_SET) {
+ 		if (copy_semid_from_user(&semid64, arg.buf, version))
  			return -EFAULT;
  	}
  
--	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid, cmd,
-+	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid,
-+			       (cmd != SHM_SET) ? cmd : IPC_SET,
- 			       &shmid64.shm_perm, 0);
+-	ipcp = ipcctl_pre_down(ns, &sem_ids(ns), semid, cmd,
++	ipcp = ipcctl_pre_down(ns, &sem_ids(ns), semid,
++			       (cmd != SEM_SET) ? cmd : IPC_SET,
+ 			       &semid64.sem_perm, 0);
  	if (IS_ERR(ipcp))
  		return PTR_ERR(ipcp);
-@@ -759,6 +763,10 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+@@ -1105,6 +1106,10 @@ static int semctl_down(struct ipc_namespace *ns, int semid,
  	case IPC_RMID:
- 		do_shm_rmid(ns, ipcp);
+ 		freeary(ns, ipcp);
  		goto out_up;
-+	case SHM_SET:
-+		err = ipc_update_key(&shm_ids(ns), &shmid64.shm_perm, ipcp);
++	case SEM_SET:
++		err = ipc_update_key(&sem_ids(ns), &semid64.sem_perm, ipcp);
 +		if (err)
 +			break;
  	case IPC_SET:
- 		ipc_update_perm(&shmid64.shm_perm, ipcp);
- 		shp->shm_ctim = get_seconds();
-@@ -936,6 +944,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
- 	}
+ 		ipc_update_perm(&semid64.sem_perm, ipcp);
+ 		sma->sem_ctime = get_seconds();
+@@ -1150,6 +1155,7 @@ SYSCALL_DEFINE(semctl)(int semid, int semnum, int cmd, union semun arg)
+ 		return err;
  	case IPC_RMID:
  	case IPC_SET:
-+	case SHM_SET:
- 		err = shmctl_down(ns, shmid, cmd, buf, version);
++	case SEM_SET:
+ 		err = semctl_down(ns, semid, cmd, version, arg);
  		return err;
  	default:
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6c77f63..928ffc2 100644
+index 8269286..a23a7d6 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -5058,6 +5058,7 @@ static int selinux_shm_shmctl(struct shmid_kernel *shp, int cmd)
- 		perms = SHM__GETATTR | SHM__ASSOCIATE;
+@@ -5164,6 +5164,7 @@ static int selinux_sem_semctl(struct sem_array *sma, int cmd)
+ 		perms = SEM__DESTROY;
  		break;
  	case IPC_SET:
-+	case SHM_SET:
- 		perms = SHM__SETATTR;
++	case SEM_SET:
+ 		perms = SEM__SETATTR;
  		break;
- 	case SHM_LOCK:
+ 	case IPC_STAT:
 diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 8221514..0f2c481 100644
+index 193e147..fea40cf 100644
 --- a/security/smack/smack_lsm.c
 +++ b/security/smack/smack_lsm.c
-@@ -2142,6 +2142,7 @@ static int smack_shm_shmctl(struct shmid_kernel *shp, int cmd)
- 		may = MAY_READ;
- 		break;
- 	case IPC_SET:
-+	case SHM_SET:
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
+@@ -2274,6 +2274,7 @@ static int smack_sem_semctl(struct sem_array *sma, int cmd)
+ 	case SETALL:
  	case IPC_RMID:
+ 	case IPC_SET:
++	case SEM_SET:
+ 		may = MAY_READWRITE;
+ 		break;
+ 	case IPC_INFO:
 
