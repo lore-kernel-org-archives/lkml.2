@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab2ISTi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:38:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43499 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2ISTiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 15:38:21 -0400
-Date: Wed, 19 Sep 2012 12:38:18 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 2.6.32] memcg: warn on deeper hierarchies with
- use_hierarchy==0
-In-Reply-To: <20120919140308.GB5398@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.00.1209191237020.749@chino.kir.corp.google.com>
-References: <20120913205827.GO7677@google.com> <20120914150306.GQ28039@dhcp22.suse.cz> <20120919140203.GA5398@dhcp22.suse.cz> <20120919140308.GB5398@dhcp22.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751167Ab2ISTjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:39:52 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48165 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851Ab2ISTjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 15:39:51 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
+Date: Wed, 19 Sep 2012 23:40:00 +0400
+Message-Id: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Sep 2012, Michal Hocko wrote:
+rcv_wscale is a symetric parameter with snd_wscale.
 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f99f599..b61c34b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3106,6 +3106,11 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->  	} else {
->  		parent = mem_cgroup_from_cont(cont->parent);
->  		mem->use_hierarchy = parent->use_hierarchy;
-> +		WARN_ONCE(!mem->use_hierarchy && parent != root_mem_cgroup,
-> +				"Creating hierarchies with use_hierarchy==0 "
-> +				"(flat hierarchy) is considered deprecated. "
-> +				"If you believe that your setup is correct, "
-> +				"we kindly ask you to contact linux-mm@kvack.org and let us know");
+Both this parameters are set on a connection handshake.
 
-When I deprecated /proc/pid/oom_adj (now removed), we did a WARN_ONCE() 
-and others complained that this unnecessarily alters userspace scripts 
-that a serious issue has occurred and Linus agreed that we shouldn't do 
-deprecation in this way.  The alternative is to use printk_once() instead.
+Without this value a remote window size can not be interpreted correctly,
+because a value from a packet should be shifted on rcv_wscale.
 
-This applies to all three patches for this one, 3.0, and 3.2+.
+And one more thing is that wscale_ok should be set too.
+
+This patch doesn't break a backward compatibility.
+If someone uses it in a old scheme, a rcv window
+will be restored with the same bug (rcv_wscale = 0).
+
+v2: Save backward compatibility on big-endian system. Before
+    the first two bytes were snd_wscale and the second two bytes were
+    rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
+    This approach is independent on byte ordering.
+
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+CC: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ net/ipv4/tcp.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index df83d74..42689aa 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2348,10 +2348,17 @@ static int tcp_repair_options_est(struct tcp_sock *tp,
+ 			tp->rx_opt.mss_clamp = opt.opt_val;
+ 			break;
+ 		case TCPOPT_WINDOW:
+-			if (opt.opt_val > 14)
+-				return -EFBIG;
++			{
++				u16 snd_wscale = opt.opt_val & 0xFFFF;
++				u16 rcv_wscale = opt.opt_val >> 16;
++
++				if (snd_wscale > 14 || rcv_wscale > 14)
++					return -EFBIG;
+ 
+-			tp->rx_opt.snd_wscale = opt.opt_val;
++				tp->rx_opt.snd_wscale = snd_wscale;
++				tp->rx_opt.rcv_wscale = rcv_wscale;
++				tp->rx_opt.wscale_ok = 1;
++			}
+ 			break;
+ 		case TCPOPT_SACK_PERM:
+ 			if (opt.opt_val != 0)
+-- 
+1.7.1
+
