@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167Ab2ISTjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:39:52 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48165 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab2ISTjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 15:39:51 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
-Date: Wed, 19 Sep 2012 23:40:00 +0400
-Message-Id: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1751279Ab2ISTkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:40:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49729 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab2ISTkQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 15:40:16 -0400
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: willy@meta-x.org
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, mujeeb.adil@gmail.com
+Subject: [PATCH] Staging: panel: Fixed a macro coding style issue
+Date: Thu, 20 Sep 2012 01:10:09 +0530
+Message-Id: <1348083609-7852-1-git-send-email-mujeeb.adil@gmail.com>
+X-Mailer: git-send-email 1.7.6.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcv_wscale is a symetric parameter with snd_wscale.
+Removed do {} while (0) loop for a single statement macros
 
-Both this parameters are set on a connection handshake.
-
-Without this value a remote window size can not be interpreted correctly,
-because a value from a packet should be shifted on rcv_wscale.
-
-And one more thing is that wscale_ok should be set too.
-
-This patch doesn't break a backward compatibility.
-If someone uses it in a old scheme, a rcv window
-will be restored with the same bug (rcv_wscale = 0).
-
-v2: Save backward compatibility on big-endian system. Before
-    the first two bytes were snd_wscale and the second two bytes were
-    rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
-    This approach is independent on byte ordering.
-
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-CC: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
 ---
- net/ipv4/tcp.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ linux-3.6-rc6/drivers/staging/panel/panel.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index df83d74..42689aa 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2348,10 +2348,17 @@ static int tcp_repair_options_est(struct tcp_sock *tp,
- 			tp->rx_opt.mss_clamp = opt.opt_val;
- 			break;
- 		case TCPOPT_WINDOW:
--			if (opt.opt_val > 14)
--				return -EFBIG;
-+			{
-+				u16 snd_wscale = opt.opt_val & 0xFFFF;
-+				u16 rcv_wscale = opt.opt_val >> 16;
-+
-+				if (snd_wscale > 14 || rcv_wscale > 14)
-+					return -EFBIG;
+diff --git a/linux-3.6-rc6/drivers/staging/panel/panel.c b/linux-3.6-rc6/drivers/staging/panel/panel.c
+index 39f9982..d9fec5b 100644
+--- a/linux-3.6-rc6/drivers/staging/panel/panel.c
++++ b/linux-3.6-rc6/drivers/staging/panel/panel.c
+@@ -137,8 +137,8 @@
+ #define r_ctr(x)        (parport_read_control((x)->port))
+ #define r_dtr(x)        (parport_read_data((x)->port))
+ #define r_str(x)        (parport_read_status((x)->port))
+-#define w_ctr(x, y)     do { parport_write_control((x)->port, (y)); } while (0)
+-#define w_dtr(x, y)     do { parport_write_data((x)->port, (y)); } while (0)
++#define w_ctr(x, y)     (parport_write_control((x)->port, (y)))
++#define w_dtr(x, y)     (parport_write_data((x)->port, (y)))
  
--			tp->rx_opt.snd_wscale = opt.opt_val;
-+				tp->rx_opt.snd_wscale = snd_wscale;
-+				tp->rx_opt.rcv_wscale = rcv_wscale;
-+				tp->rx_opt.wscale_ok = 1;
-+			}
- 			break;
- 		case TCPOPT_SACK_PERM:
- 			if (opt.opt_val != 0)
+ /* this defines which bits are to be used and which ones to be ignored */
+ /* logical or of the output bits involved in the scan matrix */
 -- 
-1.7.1
+1.7.7.3
 
