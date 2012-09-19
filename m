@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab2ISRLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:11:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52437 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab2ISRLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:11:12 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <b-cousson@ti.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Radhesh Fadnis <radhesh.fadnis@ti.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 1/1] staging: omap-thermal: bandgap: fix setting of alert thresholds
-Date: Wed, 19 Sep 2012 20:07:49 +0300
-Message-ID: <1348074469-1361-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+	id S1756743Ab2ISRLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:11:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34751 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615Ab2ISRLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 13:11:32 -0400
+Date: Wed, 19 Sep 2012 10:11:26 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, arnd@arndb.de, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between
+ DT and non-DT boots
+Message-ID: <20120919171126.GA16730@core.coreip.homeip.net>
+References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
+ <20120914080347.GB3374@gmail.com>
+ <CACRpkdbntZ2k+2mi7=nCL2RV+YcbYi=wbK2RaDKsKNKqsCxMOA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbntZ2k+2mi7=nCL2RV+YcbYi=wbK2RaDKsKNKqsCxMOA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Radhesh Fadnis <radhesh.fadnis@ti.com>
+On Tue, Sep 18, 2012 at 01:22:06PM +0200, Linus Walleij wrote:
+> On Fri, Sep 14, 2012 at 10:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Thu, Sep 13, 2012 at 11:35:43AM +0200, Linus Walleij wrote:
+> >>
+> >> Not having this patch in v3.6-rcN gives the following boot noise (and
+> >> the key does not work):
+> >>
+> >> ------------[ cut here ]------------
+> >> WARNING: at /home/elinwal/linux-stericsson/kernel/irq/irqdomain.c:137
+> >> irq_domain_legacy_revmap+0x20/0x48()
+> (...)
+> > I haven't tested this, but I think this patch should be pulled out
+> > of -next and pushed into the -rcs to fix the issue you see above.
+> > The real fix along with the revert to this patch also resides in
+> > -next and will be applied during the next merge window.
+> 
+> Dmitry, can you fix this?
+> 
+> v3.6-rc6 is regressing on us...
 
-There was an error in check for the valid temperature in
-function temp_to_adc_conversion. The temperature value was
-compared with higher limit for less than condition as well,
-resulting in returning -EINVAL. Corrected the check condition
-to properly check for lower and higher temperature limits.
+OK, I'll revert and send a pull request tonight.
 
-Signed-off-by: Radhesh Fadnis <radhesh.fadnis@ti.com>
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/staging/omap-thermal/omap-bandgap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
-index ff93c15..368a2e1 100644
---- a/drivers/staging/omap-thermal/omap-bandgap.c
-+++ b/drivers/staging/omap-thermal/omap-bandgap.c
-@@ -157,7 +157,7 @@ static int temp_to_adc_conversion(long temp, struct omap_bandgap *bg_ptr, int i,
- 	high = ts_data->adc_end_val - ts_data->adc_start_val;
- 	mid = (high + low) / 2;
- 
--	if (temp < bg_ptr->conv_table[high] || temp > bg_ptr->conv_table[high])
-+	if (temp < bg_ptr->conv_table[low] || temp > bg_ptr->conv_table[high])
- 		return -EINVAL;
- 
- 	while (low < high) {
 -- 
-1.7.7.1.488.ge8e1c
-
+Dmitry
