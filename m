@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab2ISG6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 02:58:09 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34151 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752153Ab2ISG6F (ORCPT
+	id S1752904Ab2ISG7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 02:59:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14198 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2ISG7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 02:58:05 -0400
-Date: Wed, 19 Sep 2012 09:57:58 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Christoph Lameter <cl@linux.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (slab
- tree related)
-In-Reply-To: <00000139b6e13c92-97adf129-be2c-4b74-9559-0a92c10b9eda-000000@email.amazonses.com>
-Message-ID: <alpine.LFD.2.02.1209190957330.2390@tux.localdomain>
-References: <20120911161923.10299045655dd4c84f96f4b3@canb.auug.org.au> <00000139b6e13c92-97adf129-be2c-4b74-9559-0a92c10b9eda-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 19 Sep 2012 02:59:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 18 Sep 2012 23:57:36 -0700
+Date: Wed, 19 Sep 2012 09:58:43 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
+ more precisely
+Message-ID: <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+In-Reply-To: <20120918124918.GK2505@amd.com>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
+	<20120918124918.GK2505@amd.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Sep 2012, Christoph Lameter wrote:
+Hi Joerg,
 
-> On Tue, 11 Sep 2012, Stephen Rothwell wrote:
-> 
-> > After merging the final tree, today's linux-next build (sparc64 defconfig)
-> > produced this warning:
-> >
-> > mm/slab.c:808:13: warning: '__slab_error' defined but not used [-Wunused-function]
-> >
-> > Introduced by commit 945cf2b6199b ("mm/sl[aou]b: Extract a common function for kmem_cache_destroy").  All uses of slab_error() are now guarded by DEBUG.
-> 
-> 
-> Subject: Slab: Only define slab_error for DEBUG
-> 
-> There is no use case left for slab builds without DEBUG.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/mm/slab.c
-> ===================================================================
-> --- linux.orig/mm/slab.c	2012-09-11 14:44:56.304015235 -0500
-> +++ linux/mm/slab.c	2012-09-11 14:48:46.988948440 -0500
-> @@ -803,6 +803,7 @@ static void cache_estimate(unsigned long
->  	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
->  }
-> 
-> +#if DEBUG
->  #define slab_error(cachep, msg) __slab_error(__func__, cachep, msg)
-> 
->  static void __slab_error(const char *function, struct kmem_cache *cachep,
-> @@ -812,6 +813,7 @@ static void __slab_error(const char *fun
->  	       function, cachep->name, msg);
->  	dump_stack();
->  }
-> +#endif
-> 
->  /*
->   * By default on NUMA we use alien caches to stage the freeing of
-> 
+On Tue, 18 Sep 2012 14:49:18 +0200
+Joerg Roedel <joerg.roedel@amd.com> wrote:
 
-Applied, thanks.
+> On Wed, Aug 29, 2012 at 09:55:30AM +0300, Hiroshi Doyu wrote:
+> > The following APIs are needed for us to support the legacy Tegra
+> > memory manager for devices("NvMap") with *DMA mapping API*.
+> 
+> Maybe I am not understanding the need completly. Can you elaborate on
+> why this is needed for legacy Tegra?
 
-P.S. Guys, please use penberg@kernel.org email address. I missed this 
-patch because I don't read this mailbox.
+Actually not for legacy but it's necessary to replace homebrewed
+in-kernel API(not upstreamed) with the standard ones. The homebrewed
+in-kernel API has been used for the abvoe nvmap as its backend. The
+homebrewed ones are being replaced with the standard ones, IOMMU-API,
+DMA-API and dma-buf, mainly for transition purpose. I found that some
+missing features in DMA-API for that. I posted since other SoCs may
+have the similiar requirements, (1) To specify IOVA address at
+allocation, and (2) To have IOVA allocation and mapping separately.
 
-			Pekka
+> > New API:
+> > 
+> >  ->iova_alloc(): To allocate IOVA area.
+> >  ->iova_alloc_at(): To allocate IOVA area at specific address.
+> >  ->iova_free():  To free IOVA area.
+> > 
+> >  ->map_page_at(): To map page at specific IOVA.
+> 
+> This sounds like a layering violation. The situation today is as
+> follows:
+> 
+> 	DMA-API   : Handle DMA-addresses including an address allocator
+> 	IOMMU-API : Full control over DMA address space, no address
+> 	            allocator
+> 
+> So what you want to do add to the DMA-API is already part of the
+> IOMMU-API.
+>
+> Here is my suggestion what you can do instead of extending the DMA-API.
+> You can use the IOMMU-API to initialize the device address space with
+> any mappings at the IOVAs you need the mappings. In the end you allocate
+> another free range in the device address space and use that to satisfy
+> DMA-API allocations. Any reason why that could not work?
+
+I guess that it would work. Originally I thought that using DMA-API
+and IOMMU-API together in driver might be kind of layering violation
+since IOMMU-API itself is used in DMA-API. Only DMA-API used in driver
+might be cleaner. Considering that DMA API traditionally handling
+*anonymous* {bus,iova} address only, introducing the concept of
+specific address in DMA API may not be so encouraged, though.
+
+It would be nice to listen how other SoCs have solved similar needs.
