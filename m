@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2ISWa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 18:30:59 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:40624 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2ISWa5 (ORCPT
+	id S1752759Ab2ISWjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 18:39:17 -0400
+Received: from nm12.bullet.mail.sp2.yahoo.com ([98.139.91.82]:46985 "HELO
+	nm12.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752636Ab2ISWip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 18:30:57 -0400
-Message-ID: <505A47A0.1060709@hardwarefreak.com>
-Date: Wed, 19 Sep 2012 17:30:56 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Wed, 19 Sep 2012 18:38:45 -0400
+X-Yahoo-Newman-Id: 115991.79283.bm@omp1008.access.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 25.ggiUVM1nR1.UMBy5uiKaJHmvziA2Ka0qV9uCbQiMtOpt
+ L0lyrGYkNi5t9gtzGvB1kOMESS1ziGTUkWM_GxsJoDEXuQC_S_TtWr.jB_G8
+ 7FkiUe1dTa__FsdQRjolWOunSxSN2ATc3BSAfXdMdTYbeBokYmYKyirznCuf
+ 7lFrGhaEPpuC8FxMm5kxFqR2c8u4RNY_qMKovGEqTzw6HpunBc1acnx1pMy8
+ xB3w7B4d6dvQ.AJVQSj2mReUwIVej_u38Dx9FwOnoFjK0f7IcorKmFYsVZvA
+ YYQq7_AbPZHczXCyNWplOrChA9_1MWJpAHZ1p8B3ERZgBuosywvoIqYzrMDS
+ BqhdkaTGOQvOAKiQcix_OX5Sk97Ozl8M1yfWkO_H2Ejms5TcMb8lMxxd1OzG
+ xupLuhfNFgv9gAptEC5dnxA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <505A499F.1040102@att.net>
+Date: Wed, 19 Sep 2012 17:39:27 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Nix <nix@esperi.org.uk>
-CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Areca hardware RAID / first-ever SCSI bus reset: am I about to
- lose this disk controller?
-References: <87mx0lsv4d.fsf@spindle.srvr.nix>
-In-Reply-To: <87mx0lsv4d.fsf@spindle.srvr.nix>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Where to put test code?
+References: <505A3EAB.2030002@att.net> <CAFTL4hyF9c5e91JbVxGyo5RSjm3XuvRmhxXLExamZub3ae5KTg@mail.gmail.com>
+In-Reply-To: <CAFTL4hyF9c5e91JbVxGyo5RSjm3XuvRmhxXLExamZub3ae5KTg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/19/2012 1:52 PM, Nix wrote:
-> So I have this x86-64 server running Linux 3.5.1 
+Thanks for the response!
 
-When did you install 3.5.1 on this machine?  If fairly recently, does it
-run without these errors when booted into the previous kernel?
+On 09/19/2012 05:18 PM, Frederic Weisbecker wrote:
+> 2012/9/19 Daniel Santos <danielfsantos@att.net>:
+>> I'm putting the finishing touches on the generic red-black tree test
+>> code, but I'm uncertain about where to place it exactly.
+>>
+>> I haven't finished the test module just yet, but the idea is that the
+>> tests can be run in userspace as well as kernelspace to make it easier
+>> to test on multiple compilers.  It has some common sources files (used
+>> by in both places) and then specific code for both user- and
+>> kernel-space that I currently have as follows:
+>>
+>> tools/testing/selftests/grbtree/       - common.{c,h}
+>> tools/testing/selftests/grbtree/user   - user-space main.c, Makefile, etc.
+>> tools/testing/selftests/grbtree/module - kernel-space grbtest.c,
+>> Makefile, etc.
+>>
+>> Would this be correct or should the common & module code go some place
+>> else and then just have the user-space code under
+>> tools/testing/selftests/grbtest?
+> It depends on the nature of your tests. Are these pure validation
+> tests (some batch
+> tests that perform actions and check the result is correct) or stress
+> tests (something
+> that runs for a while)?
+The program does both performance measurement tests and validation tests
+based upon what you pass at the command line.  The primary aim is to
+measure performance differences between the generic code and specific
+(hand-coded) implementations on various compilers.  The secondary aim is
+to provide validation that the results are correct in all
+circumstances.  I'm not sure in this case what would be considered a
+"stress" test.
 
-> with a SATA-on-PCIe
-> Areca 1210 hardware RAID-5 controller driven by libata which has been
-> humming along happily for years -- but suddenly, today, the entire
-> machine froze for a couple of minutes (or at least fs access froze),
-> followed by this in the logs:
-> 
-> Sep 19 16:55:47 spindle notice: [3447524.381843] arcmsr0: abort device command of scsi id = 0 lun = 1 
-> [... repeated a few times at intervals over the next five minutes,
->  followed by a mass of them at 16:59:29, and...]
-> Sep 19 16:59:25 spindle err: [3447657.821450] arcmsr: executing bus reset eh.....num_resets = 0, num_aborts = 33 
-> Sep 19 16:59:25 spindle notice: [3447697.878386] arcmsr0: wait 'abort all outstanding command' timeout 
-> Sep 19 16:59:25 spindle notice: [3447697.878628] arcmsr0: executing hw bus reset .....
-> Sep 19 16:59:25 spindle err: [3447698.287054] irq 16: nobody cared (try booting with the "irqpoll" option)
-> Sep 19 16:59:25 spindle warning: [3447698.287291] Pid: 0, comm: swapper/4 Not tainted 3.5.1-dirty #1
-> Sep 19 16:59:25 spindle warning: [3447698.287522] Call Trace:
-> Sep 19 16:59:25 spindle warning: [3447698.287754]  <IRQ>  [<ffffffff810af5ba>] __report_bad_irq+0x31/0xc2
-> Sep 19 16:59:25 spindle warning: [3447698.288031]  [<ffffffff810af84e>] note_interrupt+0x16a/0x1e8
-> Sep 19 16:59:25 spindle warning: [3447698.288263]  [<ffffffff810ad9d5>] handle_irq_event_percpu+0x163/0x1a5
-> Sep 19 16:59:25 spindle warning: [3447698.288497]  [<ffffffff810ada4f>] handle_irq_event+0x38/0x55
-> Sep 19 16:59:25 spindle warning: [3447698.288727]  [<ffffffff810b01a0>] handle_fasteoi_irq+0x78/0xab
-> Sep 19 16:59:25 spindle warning: [3447698.288960]  [<ffffffff8103631c>] handle_irq+0x24/0x2a
-> Sep 19 16:59:25 spindle warning: [3447698.289189]  [<ffffffff81036229>] do_IRQ+0x4d/0xb4
-> Sep 19 16:59:25 spindle warning: [3447698.289419]  [<ffffffff815070e7>] common_interrupt+0x67/0x67
-> Sep 19 16:59:25 spindle warning: [3447698.289648]  <EOI>  [<ffffffff812ab174>] ? acpi_idle_enter_c1+0xcb/0xf2
-> Sep 19 16:59:25 spindle warning: [3447698.289919]  [<ffffffff812ab152>] ? acpi_idle_enter_c1+0xa9/0xf2
-> Sep 19 16:59:25 spindle warning: [3447698.290152]  [<ffffffff813c1446>] cpuidle_enter+0x12/0x14
-> Sep 19 16:59:25 spindle warning: [3447698.290382]  [<ffffffff813c1902>] cpuidle_idle_call+0xc5/0x175
-> Sep 19 16:59:25 spindle warning: [3447698.290614]  [<ffffffff8103c2da>] cpu_idle+0x5b/0xa5
-> Sep 19 16:59:25 spindle warning: [3447698.290844]  [<ffffffff81ad4fcb>] start_secondary+0x1a2/0x1a6
-> Sep 19 16:59:25 spindle err: [3447698.291074] handlers:
-> Sep 19 16:59:25 spindle err: [3447698.291294] [<ffffffff8133b9a3>] usb_hcd_irq
-> Sep 19 16:59:25 spindle emerg: [3447698.291553] Disabling IRQ #16
-> Sep 19 16:59:25 spindle err: [3447710.888187] arcmsr0: waiting for hw bus reset return, retry=0
-> Sep 19 16:59:25 spindle err: [3447720.882155] arcmsr0: waiting for hw bus reset return, retry=1
-> Sep 19 16:59:25 spindle notice: [3447730.896410] Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
-> Sep 19 16:59:25 spindle err: [3447730.916348] arcmsr: scsi  bus reset eh returns with success
-> 
-> This is the first SCSI (that is, um, ATA) bus reset I have *ever* had on
-> this machine, hence my concern. (The IRQ disable we can ignore: it was
-> just bad luck that an interrupt destined for the Areca hit after the
-> controller had briefly vanished from the PCI bus as part of resetting.)
-> 
-> Now just last week another (surge-protected) machine on the same power
-> main as it died without warning with a fried power supply which
-> apparently roasted the BIOS and/or other motherboard components before
-> it died (the ACPI DSDT was filled with rubbish, and other things must
-> have been fried because even with ACPI off Linux wouldn't boot more than
-> one time out of a hundred (freezing solid at different places in the
-> boot each time). So my worry level when this SCSI bus reset turned up
-> today is quite high. It's higher given that the controller logs
-> (accessed via the Areca binary-only utility for this purpose) show no
-> sign of any problem at all.
-> 
-> EDAC shows no PCI bus problems and no memory problems, so this probably
-> *is* the controller.
-> 
-> So... is this a serious problem? Does anyone know if I'm about to lose
-> this controller, or indeed machine as well? (I really, really hope not.)
-> 
-> I'd write this off as a spurious problem and not report it at all, but
-> I'm jittery as heck after the catastrophic hardware failure last week,
-> and when this happens in close proximity, I worry.
+> If these are only about validation tests, then both user and module
+> can be in that
+> tools/testing/selftests directory.
+>
+> What is the module doing?
+The module is the exact same thing, except built in kernel-space, where
+the actual code will normally reside.  Parameters are passed when you
+load the module and it unloads when the test is complete.  Perhaps what
+I omitted is that the user-space program is generated partially by
+compiling sources and headers that are intended for kernel-space only,
+but linked with glibc using some cute hacks.  This is done mostly to
+ease the process of testing the code with multiple compilers.
 
+Daniel
