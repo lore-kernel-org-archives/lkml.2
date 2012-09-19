@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2ISGfA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 02:35:00 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:41035 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755743Ab2ISGe7 (ORCPT
+	id S1752717Ab2ISGni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 02:43:38 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:46474 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752102Ab2ISGnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 02:34:59 -0400
+	Wed, 19 Sep 2012 02:43:37 -0400
 From: hongfeng <hongfeng@marvell.com>
 To: akpm@linux-foundation.org, gorcunov@openvz.org, keescook@chromium.org,
         serge.hallyn@canonical.com, ebiederm@xmission.com
 Cc: linux-kernel@vger.kernel.org, hongfeng <hongfeng@marvell.com>
 Subject: [PATCH V2] poweroff: fix bug in orderly_poweroff
-Date: Wed, 19 Sep 2012 14:32:38 +0800
-Message-Id: <1348036358-28462-1-git-send-email-hongfeng@marvell.com>
+Date: Wed, 19 Sep 2012 14:37:57 +0800
+Message-Id: <1348036677-28626-1-git-send-email-hongfeng@marvell.com>
 X-Mailer: git-send-email 1.7.1
-X-OriginalArrivalTime: 19 Sep 2012 06:32:52.0576 (UTC) FILETIME=[988FA600:01CD9630]
+X-OriginalArrivalTime: 19 Sep 2012 06:38:00.0293 (UTC) FILETIME=[4FF98950:01CD9631]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,6 +29,7 @@ should change to UMH_WAIT_EXEC which will monitor whether user application succe
 
 Change-Id: I2f9ebbb90c0c2443780080ec9507c8d004e5da74
 Signed-off-by: Feng Hong <hongfeng@marvell.com>
+Acked-by: Kees Cook <keescook@chromium.org>
 ---
  kernel/sys.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
