@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab2ISRDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:03:55 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:33399 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753954Ab2ISRDv (ORCPT
+	id S932625Ab2ISREE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:04:04 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:61805 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755847Ab2ISREB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:03:51 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [alsa-devel] [RFC PATCH v2 0/5] snd-ice1712: Add Philips =?iso-8859-1?q?PSC724=09Ultimate?= Edge
-Date: Wed, 19 Sep 2012 19:03:14 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-References: <1347994716-10251-1-git-send-email-linux@rainbow-software.org> <s5h392eyqui.wl%tiwai@suse.de>
-In-Reply-To: <s5h392eyqui.wl%tiwai@suse.de>
-X-KMail-QuotePrefix: > 
+	Wed, 19 Sep 2012 13:04:01 -0400
+Date: Wed, 19 Sep 2012 19:03:47 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+Message-ID: <20120919170347.GA2232@netboy.at.omicron.at>
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
+ <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
+ <5057BE59.3050903@linaro.org>
+ <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org>
+ <20120919045038.GA2248@netboy.at.omicron.at>
+ <5059F367.5020104@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201209191903.14690.linux@rainbow-software.org>
+In-Reply-To: <5059F367.5020104@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 September 2012 17:28:21 Takashi Iwai wrote:
-> At Tue, 18 Sep 2012 20:58:31 +0200,
->
-> Ondrej Zary wrote:
-> > Hello,
-> > this is second attempt to add Philips PSC724 Ultimate Edge sound card
-> > support to snd-ice1712 driver. Unlike other snd-ice1712 subdrivers, the
-> > codec code is splitted into separate modules and thus reusable by other
-> > ice1712 subdrivers.
->
-> Well, the problem is that most of ice17xx boards use only a part of
-> channels on codecs.   Thus you don't want to expose controls for all
-> channels, too.  Otherwise user will get confusing dead controls.
+On Wed, Sep 19, 2012 at 09:31:35AM -0700, John Stultz wrote:
 
-The controls can be easily hidden by setting its name to NULL. It's even used 
-in the psc724 subdriver.
+> On powerpc, I mean magic addresses where userland can find
+> structures that it can use to calculate time.
 
-> If these new modules are supposed to be used by other ice1712/ice1724
-> sub drivers, they should provide some good binding mechanism, too.
-> (And that's one of the good reasons why ASoC has been nominated.)
+...
+ 
+> With powerpc, there is no arch specific kernel code involved, its
+> just a data structure the kernel exports that is accessible to
+> userland. The execution logic lives in userland libraries, or
+> sometimes application code itself.
 
-They're easy to use, you just need to provide wm87x6_write() function. I think 
-that other subdrivers could be easily converted to use this (with hardware to 
-test).
+I took a brief look at arch/powerpc/kernel/vdso32/gettimeofday.S and
+arch/powerpc/kernel/vdso64/gettimeofday.S, and I see what looks a lot
+like functions
 
-> thanks,
->
-> Takashi
->
-> > Working: all analog outputs (front, rear, center+lfe, headphone) and
-> > inputs (front mic, rear mic, line, cd, aux), mixer, headphone jack
-> > detection, suspend/resume
-> >
-> > Currently untested: SPDIF
-> >
-> > Buggy: switching AGC mode in mixer causes alsamixer to crash - looks like
-> > it does not like notifications about control activating/deactivating
-> > _______________________________________________
-> > Alsa-devel mailing list
-> > Alsa-devel@alsa-project.org
-> > http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+$ find arch/powerpc/kernel/vdso* -name gettimeofday.S|xargs grep FUNCTION_BEGIN
 
+arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__do_get_tspec)
+
+and I wonder whether these could be done in C instead.
+
+Thanks,
+Richard
