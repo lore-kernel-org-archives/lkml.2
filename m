@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab2ISF6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 01:58:35 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:47591 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab2ISF6d (ORCPT
+	id S1755513Ab2ISGFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 02:05:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15472 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab2ISGFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 01:58:33 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Feng Hong <hongfeng@marvell.com>
-Cc: "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "gorcunov\@openvz.org" <gorcunov@openvz.org>,
-        "keescook\@chromium.org" <keescook@chromium.org>,
-        "serge.hallyn\@canonical.com" <serge.hallyn@canonical.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1348025233-13412-1-git-send-email-hongfeng@marvell.com>
-	<87fw6eaac4.fsf@xmission.com>
-	<E62404B31D39064FBDD0B843ADF05A7D2D395FC749@SC-VEXCH4.marvell.com>
-Date: Tue, 18 Sep 2012 22:58:24 -0700
-In-Reply-To: <E62404B31D39064FBDD0B843ADF05A7D2D395FC749@SC-VEXCH4.marvell.com>
-	(Feng Hong's message of "Tue, 18 Sep 2012 22:07:04 -0700")
-Message-ID: <87a9wma70f.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+F6Xi315yREzRkAM+10GFZD6Wq7UKfqcU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Feng Hong <hongfeng@marvell.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] poweroff: fix bug in orderly_poweroff
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 19 Sep 2012 02:05:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6839"; a="238442519"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] clk: wm831x: Fix clk_register() error code checking
+Date: Tue, 18 Sep 2012 23:05:28 -0700
+Message-Id: <1348034730-16473-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.403.gce5cf6f
+In-Reply-To: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org>
+References: <1348034730-16473-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Feng Hong <hongfeng@marvell.com> writes:
+clk_register() returns an ERR_PTR upon failure, not NULL. Fix
+these error paths.
 
-> Hi, Eric
->
-> 1. We are developing on an Android phone platform, we use thermal
-> framework to monitor the temperature, when the temperature above like
-> 110 degree, thermal framework will use orderly_shutdown to shutdown
-> phone, however, on Android platform there is no " /sbin/poweroff " cmd
-> ready . Then we want "fail ret" to trigger force shutdown (use
-> kernel_power_off), but always we get "suc ret"
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/clk-wm831x.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-> 2. Here the caller just wait for "poweroff" userspace application, if
-> it block the called, then it's the "poweroff" problem itself
+diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+index e7b7765..eb1afaf 100644
+--- a/drivers/clk/clk-wm831x.c
++++ b/drivers/clk/clk-wm831x.c
+@@ -371,20 +371,20 @@ static __devinit int wm831x_clk_probe(struct platform_device *pdev)
+ 
+ 	clkdata->xtal_hw.init = &wm831x_xtal_init;
+ 	clkdata->xtal = clk_register(&pdev->dev, &clkdata->xtal_hw);
+-	if (!clkdata->xtal)
+-		return -EINVAL;
++	if (IS_ERR(clkdata->xtal))
++		return PTR_ERR(clkdata->xtal);
+ 
+ 	clkdata->fll_hw.init = &wm831x_fll_init;
+ 	clkdata->fll = clk_register(&pdev->dev, &clkdata->fll_hw);
+-	if (!clkdata->fll) {
+-		ret = -EINVAL;
++	if (IS_ERR(clkdata->fll)) {
++		ret = PTR_ERR(clkdata->fll);
+ 		goto err_xtal;
+ 	}
+ 
+ 	clkdata->clkout_hw.init = &wm831x_clkout_init;
+ 	clkdata->clkout = clk_register(&pdev->dev, &clkdata->clkout_hw);
+-	if (!clkdata->clkout) {
+-		ret = -EINVAL;
++	if (IS_ERR(clkdata->clkout)) {
++		ret = PTR_ERR(clkdata->clkout);
+ 		goto err_fll;
+ 	}
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-> 3. As in the original orderly_shutdown design, we must get the right
-> "ret", if this ret is always "0", then it obey orderly_poweroff design
-> goal. Step 2: force shutdown is always useless code. 
-
-That sounds like a clear case that we need to change it to
-UMH_WAIT_EXEC.
-
-Changing it to UMH_WAIT_PROC seems much more dangerous.
-
-Eric
