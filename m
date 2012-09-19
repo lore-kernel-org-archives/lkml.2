@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab2ISRt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:49:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38705 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab2ISRt0 (ORCPT
+	id S932871Ab2ISRuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:50:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55720 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932789Ab2ISRuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:49:26 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH] PCI, ia64: clear initial value for root info resources
-Date: Wed, 19 Sep 2012 10:49:01 -0700
-Message-Id: <1348076941-410-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1348076941-410-1-git-send-email-yinghai@kernel.org>
-References: <CAE9FiQW0PpBU0N9VzJyNKK9PvaUwokCYeB6w_j4mcN9EV0geLQ@mail.gmail.com>
- <1348076941-410-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 19 Sep 2012 13:50:08 -0400
+Date: Wed, 19 Sep 2012 13:50:06 -0400 (EDT)
+Message-Id: <20120919.135006.394934820049386022.davem@davemloft.net>
+To: nicolas.ferre@atmel.com
+Cc: netdev@vger.kernel.org, havard@skinnemoen.net, bhutchings@solarflare.com,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        patrice.vilchez@atmel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] net/macb: driver enhancement concerning GEM
+ support, ring logic and cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
+References: <cover.1348055112.git.nicolas.ferre@atmel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-after
-	PCI, ia64: clear initial value for root info resources
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Date: Wed, 19 Sep 2012 13:55:13 +0200
 
-change ia64 code accordingly, because later ia64 will support root bus removal too.
+> This is an enhancement work that began several years ago. I try to catchup with
+> some performance improvement that has been implemented then by Havard.
+> The ring index logic and the TX error path modification are the biggest changes
+> but some cleanup/debugging have been added along the way.
+> The GEM revision will benefit from the Gigabit support.
+> 
+> The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+> flavors.
+> 
+> v2: - modify the tx error handling: now uses a workqueue
+>     - information provided by ethtool -i were not accurate: removed
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Don't submit patches like this.
 
----
- arch/ia64/pci/pci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+When you put an RFC right in the middle of the series, it screws everything
+up.
 
-Index: linux-2.6/arch/ia64/pci/pci.c
-===================================================================
---- linux-2.6.orig/arch/ia64/pci/pci.c
-+++ linux-2.6/arch/ia64/pci/pci.c
-@@ -295,7 +295,6 @@ static __devinit acpi_status add_window(
- 	window->resource.flags = flags;
- 	window->resource.start = addr.minimum + offset;
- 	window->resource.end = window->resource.start + addr.address_length - 1;
--	window->resource.child = NULL;
- 	window->offset = offset;
- 
- 	if (insert_resource(root, &window->resource)) {
-@@ -357,7 +356,7 @@ pci_acpi_scan_root(struct acpi_pci_root
- 			&windows);
- 	if (windows) {
- 		controller->window =
--			kmalloc_node(sizeof(*controller->window) * windows,
-+			kzalloc_node(sizeof(*controller->window) * windows,
- 				     GFP_KERNEL, controller->node);
- 		if (!controller->window)
- 			goto out2;
+It means that I can't only apply the parts that are not RFC.
