@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab2ISQHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:07:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47320 "EHLO relay.sw.ru"
+	id S932511Ab2ISQH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:07:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26707 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab2ISQHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:07:40 -0400
-Subject: [PATCH v5 05/10] ipc: add new MSG_SET command for sys_msgctl() call
+	id S932260Ab2ISQHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:07:20 -0400
+Subject: [PATCH v5 00/10] IPC: checkpoint/restore in userspace enhancements
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
@@ -17,10 +17,8 @@ Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
         james.l.morris@oracle.com, catalin.marinas@arm.com,
         casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
         jitendra.kalsaria@qlogic.com, devel@openvz.org
-Date: Wed, 19 Sep 2012 20:05:54 +0400
-Message-ID: <20120919160553.11254.38366.stgit@localhost6.localdomain6>
-In-Reply-To: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
-References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
+Date: Wed, 19 Sep 2012 20:05:21 +0400
+Message-ID: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,122 +27,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New MSG_SET command will be interpreted exactly as IPC_SET, but also will
-update key, cuid and cgid values. IOW, it allows to change existent key value.
-The fact, that key is not used is checked before update. Otherwise -EEXIST is
-returned.
+v5:
+1) Several define-dependent compile bugs fixed
+2) IPC message copy test updated
+3) A couple of minor fixes.
+4) Qlogic driver update: rename of its internal SEM_SET define into SEM_INIT
+(compile error).
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+v4:
+1) If MSG_COPY flag is specified, then "mtype" is not a type, but message
+number to copy.
+2) MSG_SET_COPY logic for sys_msgctl() was removed.
+
+v3:
+1) Copy messages to user-space under spinlock was replaced by allocation of
+dummy message before queue lock and then copy of desired message to the dummy
+one instead of unlinking it from queue list.
+I.e. the message queue copy logic was changed: messages can be retrived one by
+one (instead of receiving of the whole list at once).
+
+This patch set is aimed to provide additional functionality for all IPC objects,
+which is required for migration of these objects by user-space
+checkpoint/restore utils (CRIU).
+
+The main problem here was impossibility to set up object id. This patch set
+solves the problem in two steps:
+1) Makes it possible to create new object (shared memory, semaphores set or
+messages queue) with ID, equal to passed key.
+2) Makes it possible to change existent object key.
+
+Another problem was to peek messages from queues without deleting them.
+This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
+MSG_COPY flag is set, then msgtyp is interpreted as message number.
+
+The following series implements...
+
 ---
- include/linux/msg.h        |    1 +
- ipc/compat.c               |    1 +
- ipc/msg.c                  |   13 +++++++++++--
- security/selinux/hooks.c   |    1 +
- security/smack/smack_lsm.c |    1 +
- 5 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 56abf15..6689e73 100644
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -6,6 +6,7 @@
- /* ipcs ctl commands */
- #define MSG_STAT 11
- #define MSG_INFO 12
-+#define MSG_SET  13
- 
- /* msgrcv options */
- #define MSG_NOERROR     010000  /* no error if message is too big */
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 35c750d..9c70f9a 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -483,6 +483,7 @@ long compat_sys_msgctl(int first, int second, void __user *uptr)
- 		break;
- 
- 	case IPC_SET:
-+	case MSG_SET:
- 		if (version == IPC_64) {
- 			err = get_compat_msqid64(&m64, uptr);
- 		} else {
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 1cecaf2..ef4f118 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -392,6 +392,9 @@ copy_msqid_from_user(struct msqid64_ds *out, void __user *buf, int version)
- 		out->msg_perm.uid      	= tbuf_old.msg_perm.uid;
- 		out->msg_perm.gid      	= tbuf_old.msg_perm.gid;
- 		out->msg_perm.mode     	= tbuf_old.msg_perm.mode;
-+		out->msg_perm.cuid	= tbuf_old.msg_perm.cuid;
-+		out->msg_perm.cgid	= tbuf_old.msg_perm.cgid;
-+		out->msg_perm.key	= tbuf_old.msg_perm.key;
- 
- 		if (tbuf_old.msg_qbytes == 0)
- 			out->msg_qbytes	= tbuf_old.msg_lqbytes;
-@@ -418,12 +421,13 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 	struct msg_queue *msq;
- 	int err;
- 
--	if (cmd == IPC_SET) {
-+	if (cmd == IPC_SET || cmd == MSG_SET) {
- 		if (copy_msqid_from_user(&msqid64, buf, version))
- 			return -EFAULT;
- 	}
- 
--	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
-+	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid,
-+			       (cmd != MSG_SET) ? cmd : IPC_SET,
- 			       &msqid64.msg_perm, msqid64.msg_qbytes);
- 	if (IS_ERR(ipcp))
- 		return PTR_ERR(ipcp);
-@@ -439,6 +443,7 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 		freeque(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
-+	case MSG_SET:
- 		if (msqid64.msg_qbytes > ns->msg_ctlmnb &&
- 		    !capable(CAP_SYS_RESOURCE)) {
- 			err = -EPERM;
-@@ -447,6 +452,9 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 
- 		msq->q_qbytes = msqid64.msg_qbytes;
- 
-+		if (cmd == MSG_SET)
-+			ipc_update_key(&msg_ids(ns), &msqid64.msg_perm, ipcp);
-+
- 		ipc_update_perm(&msqid64.msg_perm, ipcp);
- 		msq->q_ctime = get_seconds();
- 		/* sleeping receivers might be excluded by
-@@ -566,6 +574,7 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
- 	}
- 	case IPC_SET:
- 	case IPC_RMID:
-+	case MSG_SET:
- 		err = msgctl_down(ns, msqid, cmd, buf, version);
- 		return err;
- 	default:
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 928ffc2..8269286 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4916,6 +4916,7 @@ static int selinux_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		perms = MSGQ__GETATTR | MSGQ__ASSOCIATE;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 		perms = MSGQ__SETATTR;
- 		break;
- 	case IPC_RMID:
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 0f2c481..193e147 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2395,6 +2395,7 @@ static int smack_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		may = MAY_READ;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 	case IPC_RMID:
- 		may = MAY_READWRITE;
- 		break;
+Stanislav Kinsbursky (10):
+      ipc: remove forced assignment of selected message
+      ipc: "use key as id" functionality for resource get system call introduced
+      ipc: segment key change helper introduced
+      ipc: add new SHM_SET command for sys_shmctl() call
+      ipc: add new MSG_SET command for sys_msgctl() call
+      glge driver: rename internal SEM_SET macro to SEM_INIT
+      ipc: add new SEM_SET command for sys_semctl() call
+      IPC: message queue receive cleanup
+      IPC: message queue copy feature introduced
+      test: IPC message queue copy feture test
 
+
+ drivers/net/ethernet/qlogic/qlge/qlge.h      |    4 
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c |   16 +-
+ include/linux/ipc.h                          |    1 
+ include/linux/msg.h                          |    7 +
+ include/linux/sem.h                          |    1 
+ include/linux/shm.h                          |    1 
+ ipc/compat.c                                 |   45 +++--
+ ipc/msg.c                                    |  112 +++++++++---
+ ipc/msgutil.c                                |   38 ++++
+ ipc/sem.c                                    |   14 +
+ ipc/shm.c                                    |   17 +-
+ ipc/util.c                                   |   69 +++++++
+ ipc/util.h                                   |    6 +
+ security/selinux/hooks.c                     |    3 
+ security/smack/smack_lsm.c                   |    3 
+ tools/testing/selftests/ipc/Makefile         |   28 +++
+ tools/testing/selftests/ipc/msgque.c         |  251 ++++++++++++++++++++++++++
+ 17 files changed, 547 insertions(+), 69 deletions(-)
+ create mode 100644 tools/testing/selftests/ipc/Makefile
+ create mode 100644 tools/testing/selftests/ipc/msgque.c
+
+-- 
+Signature
