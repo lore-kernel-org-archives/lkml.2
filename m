@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2ISNyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:54:52 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36202 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab2ISNyu (ORCPT
+	id S1755545Ab2ISNzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:55:07 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:48186 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754106Ab2ISNzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:54:50 -0400
-Date: Wed, 19 Sep 2012 14:59:25 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the usb tree
-Message-ID: <20120919145925.35e95b5a@pyramind.ukuu.org.uk>
-In-Reply-To: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
-References: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Sep 2012 09:55:03 -0400
+X-Greylist: delayed 2307 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 09:55:03 EDT
+X-Originating-Ip: [194.89.68.22]
+Date: Wed, 19 Sep 2012 16:16:32 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Oliver Chick <oliver.chick@citrix.com>
+Cc: xen-devel@lists.xen.org, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
+Message-ID: <20120919131632.GS8912@reaktio.net>
+References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Sep 2012 14:31:36 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed, Sep 19, 2012 at 11:51:27AM +0100, Oliver Chick wrote:
+> This patch implements persistent grants for the xen-blk{front,back}
+> mechanism. The effect of this change is to reduce the number of unmap
+> operations performed, since they cause a (costly) TLB shootdown. This
+> allows the I/O performance to scale better when a large number of VMs
+> are performing I/O.
+> 
+> Previously, the blkfront driver was supplied a bvec[] from the request
+> queue. This was granted to dom0; dom0 performed the I/O and wrote
+> directly into the grant-mapped memory and unmapped it; blkfront then
+> removed foreign access for that grant. The cost of unmapping scales
+> badly with the number of CPUs in Dom0. An experiment showed that when
+> Dom0 has 24 VCPUs, and guests are performing parallel I/O to a
+> ramdisk, the IPIs from performing unmap's is a bottleneck at 5 guests
+> (at which point 650,000 IOPS are being performed in total). If more
+> than 5 guests are used, the performance declines. By 10 guests, only
+> 400,000 IOPS are being performed.
+> 
+> This patch improves performance by only unmapping when the connection
+> between blkfront and back is broken.
+>
 
-> Hi Greg,
-> 
-> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/usb/serial/vizzini.c: In function 'vizzini_set_termios':
-> drivers/usb/serial/vizzini.c:454:22: error: invalid type argument of '->' (have 'struct ktermios')
-> 
-> Caused by commit c05fecb1d57e ("USB: serial: add vizzini driver")
-> interacting with commit adc8d746caa6 ("tty: move the termios object into
-> the tty") from the tty tree.
-> 
-> I added the following merge fix patch and can carry it as necessary:
+So how many IOPS can you get with this patch / persistent grants ? 
 
-Vizzini seems to have teleported into Greg's tree. Greg - it's got a pile
-of other bugs in it plus complete bogus comments and the like. You don't
-seem to have every posted it to the lists for comment or if you did it
-didn't turn up here ?
+-- Pasi
 
-Alan
