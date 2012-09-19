@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab2ISLNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:13:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55745 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab2ISLNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:13:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2] compat: fs: Generic compat_sys_sendfile implementation
-Date: Wed, 19 Sep 2012 11:13:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-References: <1348052512-15538-1-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1348052512-15538-1-git-send-email-catalin.marinas@arm.com>
+	id S1753437Ab2ISLYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:24:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62209 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751044Ab2ISLYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:24:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
+   d="scan'208";a="224007204"
+Date: Wed, 19 Sep 2012 13:23:15 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: NeilBrown <neilb@suse.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] mfd: twl: Move PWM driver to PWM framework
+Message-ID: <20120919112315.GA8138@sortiz-mobl>
+References: <1347956991-16088-1-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209191113.26929.arnd@arndb.de>
-X-Provags-ID: V02:K0:fXvn7f5mLtnrb9HZQravs/OBZ4x5VkqlR3CfkUvevw0
- IGEbkWPGU8Mk+GaT0G2HERGy1RvmqeA5KApTj7mCjWFfDgg3D5
- hxheb32p/Ml0R7J277kGXEfNnBvhziCQX6K5GCtq6hrBoq5K9J
- PMT/TlEgst8l1gFXGHdkdYYbAocf+bTftakINMidY18j1YUjxg
- ZUf086VNgZjImSRQHupr/z5tLTIZUnjRQYnotjx3decqkCr2Bk
- qkz3Mp0jlqCCt0teXYiKmsgq2m+VhQc35mQhtOZn81xQdjQ7Re
- PLhEexTcWfPnVqDW0a8xWbHADSYHY1Cyf/7ZhI+MetzL5guSwB
- pDoQWcawYGP9WvTB7n1Q=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347956991-16088-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 September 2012, Catalin Marinas wrote:
-> 
-> This function is used by sparc, powerpc and arm64 for compat support.
-> The patch adds a generic implementation which calls do_sendfile()
-> directly and avoids set_fs().
-> 
-> The sparc architecture has wrappers for the sign extensions while
-> powerpc relies on the compiler to do the this. The patch adds wrappers
-> for powerpc to handle the u32->int type conversion.
-> 
-> compat_sys_sendfile64() can be replaced by a sys_sendfile() call since
-> compat_loff_t has the same size as off_t on a 64-bit system.
-> 
-> On powerpc, the patch also changes the 64-bit sendfile call from
-> sys_sendile64 to sys_sendfile.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: David S. Miller <davem@davemloft.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
+Hi Thierry,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Tue, Sep 18, 2012 at 10:29:49AM +0200, Thierry Reding wrote:
+> Hi,
+> 
+> This mini series replaces the twl_has_*() macros by the equivalent
+> standard IS_ENABLED() macro and moves the PWM driver to the PWM
+> framework.
+> 
+> I'll take the second patch through the PWM tree but would like to have
+> some Acked-bys from people that know and have the hardware and can
+> verify that I haven't broken anything.
+> 
+> Thierry
+> 
+> Thierry Reding (2):
+>   mfd: twl: Replace twl_has_*() macros by IS_ENABLED()
+>   pwm: Move TWL6030 PWM driver to PWM framework
+Both patches applied now, thanks.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
