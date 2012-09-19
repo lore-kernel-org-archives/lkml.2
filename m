@@ -1,109 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab2ISNQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:16:44 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:33806 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753017Ab2ISNQn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:16:43 -0400
-X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
-   d="scan'208";a="691505036"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Richard Ems <richard.ems@cape-horn-eng.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
- nfs4_lookup_revalidate
-Thread-Topic: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
- nfs4_lookup_revalidate
-Thread-Index: AQHNeydeps439z5YdkGX6qRBR7IpBpdkjR6AgC2i0AD//6tmcA==
-Date: Wed, 19 Sep 2012 13:16:41 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FD7706@SACEXCMBX04-PRD.hq.netapp.com>
-References: <503361AF.8030707@cape-horn-eng.com>
- <5059A9F0.2070409@cape-horn-eng.com>
-In-Reply-To: <5059A9F0.2070409@cape-horn-eng.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="Windows-1252"
+	id S1755012Ab2ISNQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:16:51 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:50609 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab2ISNQr convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 19 Sep 2012 09:16:47 -0400
+Message-Id: <5059E1DA020000780009C53D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 19 Sep 2012 14:16:42 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
+Cc: "Ryan Mallon" <rmallon@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH, v2] allow gpiolib to be a module
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-
-> owner@vger.kernel.org] On Behalf Of Richard Ems
-> Sent: Wednesday, September 19, 2012 7:18 AM
-> To: Myklebust, Trond
-> Cc: linux-nfs@vger.kernel.org; linux-kernel@vger.kernel.org;
-> gregkh@linuxfoundation.org
-> Subject: Fwd: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
-> nfs4_lookup_revalidate
-> 
-> Hi all,
-> 
-> I still don't see this patch in the 3.5.x series.
-> Will it make it into 3.5.5?
-> 
-> Thanks,
-> Richard
- 
-Hi Greg,
+Without ARCH_REQUIRE_GPIOLIB there's no reason to force this code, when
+enabled, to always be built into the kernel, which requires only minor
+Makefile and source code adjustments.
 
-I believe you said that you would take this patch. Do you want me to resend?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Ryan Mallon <rmallon@gmail.com>
 
-Cheers,
-   Trond
+---
+v2: Make gpiolib_init() static. Properly handle !CONFIG_DEBUG_FS case.
+
+---
+ drivers/gpio/Kconfig       |    2 +-
+ drivers/gpio/Makefile      |    3 ++-
+ drivers/gpio/gpiolib.c     |   21 +++++++++++++++++++++
+ include/asm-generic/gpio.h |    3 ++-
+ 4 files changed, 26 insertions(+), 3 deletions(-)
+
+--- 3.6-rc6/drivers/gpio/Kconfig
++++ 3.6-rc6-gpiolib-module/drivers/gpio/Kconfig
+@@ -33,7 +33,7 @@ config ARCH_REQUIRE_GPIOLIB
  
-> -------- Original Message --------
-> Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
-> nfs4_lookup_revalidate
-> Date: Tue, 21 Aug 2012 12:23:43 +0200
-> From: Richard Ems <richard.ems@cape-horn-eng.com>
-> To: Trond Myklebust <Trond.Myklebust@netapp.com>
-> CC: linux-nfs@vger.kernel.org
-> 
-> On 08/15/2012 10:49 PM, Trond Myklebust wrote:
-> > This Oops affects 3.5 kernels and older, and is due to
-> > lookup_one_len() calling down to the dentry revalidation code with a
-> > NULL pointer to struct nameidata.
-> >
-> > It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-> > to ->d_revalidate())
-> >
-> > Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
-> 
-> Hi Trond,
-> 
-> I don't see this patch going into 3.5.3 at
-> http://www.kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.3-
-> rc1.gz
-> .
-> Shouldn't it be included in 3.5.3 ?
-> 
-> Thanks,
-> Richard
-> 
-> 
-> --
-> Richard Ems       mail: Richard.Ems@Cape-Horn-Eng.com
-> 
-> Cape Horn Engineering S.L.
-> C/ Dr. J.J. Dómine 1, 5º piso
-> 46011 Valencia
-> Tel : +34 96 3242923 / Fax 924
-> http://www.cape-horn-eng.com
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+ 
+ menuconfig GPIOLIB
+-	bool "GPIO Support"
++	tristate "GPIO Support"
+ 	depends on ARCH_WANT_OPTIONAL_GPIOLIB || ARCH_REQUIRE_GPIOLIB
+ 	select GENERIC_GPIO
+ 	help
+--- 3.6-rc6/drivers/gpio/Makefile
++++ 3.6-rc6-gpiolib-module/drivers/gpio/Makefile
+@@ -2,7 +2,8 @@
+ 
+ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+-obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
++gpio-lib-y			:= gpiolib.o devres.o
++obj-$(CONFIG_GPIOLIB)		+= gpio-lib.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+--- 3.6-rc6/drivers/gpio/gpiolib.c
++++ 3.6-rc6-gpiolib-module/drivers/gpio/gpiolib.c
+@@ -1003,7 +1003,9 @@ static int __init gpiolib_sysfs_init(voi
+ 
+ 	return status;
+ }
++#ifndef MODULE
+ postcore_initcall(gpiolib_sysfs_init);
++#endif
+ 
+ #else
+ static inline int gpiochip_export(struct gpio_chip *chip)
+@@ -1832,6 +1834,25 @@ static int __init gpiolib_debugfs_init(v
+ 				NULL, NULL, &gpiolib_operations);
+ 	return 0;
+ }
++#ifndef MODULE
+ subsys_initcall(gpiolib_debugfs_init);
++#endif
+ 
+ #endif	/* DEBUG_FS */
++
++#ifdef MODULE
++static int __init gpiolib_init(void)
++{
++	int err = gpiolib_sysfs_init();
++
++#ifdef CONFIG_DEBUG_FS
++	if (!err)
++		err = gpiolib_debugfs_init();
++#endif
++	return err;
++}
++module_init(gpiolib_init);
++
++MODULE_DESCRIPTION("GPIO library");
++MODULE_LICENSE("GPL");
++#endif
+--- 3.6-rc6/include/asm-generic/gpio.h
++++ 3.6-rc6-gpiolib-module/include/asm-generic/gpio.h
+@@ -4,9 +4,10 @@
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
++#include <linux/kconfig.h>
+ #include <linux/of.h>
+ 
+-#ifdef CONFIG_GPIOLIB
++#if IS_ENABLED(CONFIG_GPIOLIB)
+ 
+ #include <linux/compiler.h>
+ 
+
+
+
