@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab2ISVgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:36:20 -0400
+	id S1752197Ab2ISVfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:35:07 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:36881 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2ISVfL (ORCPT
+	with ESMTP id S1752001Ab2ISVfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:35:11 -0400
+	Wed, 19 Sep 2012 17:35:04 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Martin Willi <martin@revosec.ch>
-Subject: [PATCH 5/6] xfrm_user: ensure user supplied esn replay window is valid
-Date: Wed, 19 Sep 2012 23:33:42 +0200
-Message-Id: <1348090423-32665-6-git-send-email-minipli@googlemail.com>
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH 1/6] xfrm_user: fix info leak in copy_to_user_auth()
+Date: Wed, 19 Sep 2012 23:33:38 +0200
+Message-Id: <1348090423-32665-2-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
 References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
@@ -22,111 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code fails to ensure that the netlink message actually
-contains as many bytes as the header indicates. If a user creates a new
-state or updates an existing one but does not supply the bytes for the
-whole ESN replay window, the kernel copies random heap bytes into the
-replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
-netlink attribute. This leads to following issues:
+copy_to_user_auth() fails to initialize the remainder of alg_name and
+therefore discloses up to 54 bytes of heap memory via netlink to
+userland.
 
-1. The replay window has random bits set confusing the replay handling
-   code later on.
+Use strncpy() instead of strcpy() to fill the trailing bytes of alg_name
+with null bytes.
 
-2. A malicious user could use this flaw to leak up to ~3.5kB of heap
-   memory when she has access to the XFRM netlink interface (requires
-   CAP_NET_ADMIN).
-
-Known users of the ESN replay window are strongSwan and Steffen's
-iproute2 patch (<http://patchwork.ozlabs.org/patch/85962/>). The latter
-uses the interface with a bitmap supplied while the former does not.
-strongSwan is therefore prone to run into issue 1.
-
-To fix both issues without breaking existing userland allow using the
-XFRMA_REPLAY_ESN_VAL netlink attribute with either an empty bitmap or a
-fully specified one. For the former case we initialize the in-kernel
-bitmap with zero, for the latter we copy the user supplied bitmap.
-
-For state updates the full bitmap must be supplied.
-
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Martin Willi <martin@revosec.ch>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- net/xfrm/xfrm_user.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ net/xfrm/xfrm_user.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index 9f1e749..7fd92b8 100644
+index e75d8e4..ba26423 100644
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -123,9 +123,17 @@ static inline int verify_replay(struct xfrm_usersa_info *p,
- 				struct nlattr **attrs)
- {
- 	struct nlattr *rt = attrs[XFRMA_REPLAY_ESN_VAL];
-+	struct xfrm_replay_state_esn *rs;
+@@ -742,7 +742,7 @@ static int copy_to_user_auth(struct xfrm_algo_auth *auth, struct sk_buff *skb)
+ 		return -EMSGSIZE;
  
--	if ((p->flags & XFRM_STATE_ESN) && !rt)
--		return -EINVAL;
-+	if (p->flags & XFRM_STATE_ESN) {
-+		if (!rt)
-+			return -EINVAL;
-+
-+		rs = nla_data(rt);
-+		if (nla_len(rt) < xfrm_replay_state_esn_len(rs) &&
-+		    nla_len(rt) != sizeof(*rs))
-+			return -EINVAL;
-+	}
- 
- 	if (!rt)
- 		return 0;
-@@ -370,14 +378,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
- 					 struct nlattr *rp)
- {
- 	struct xfrm_replay_state_esn *up;
-+	size_t ulen;
- 
- 	if (!replay_esn || !rp)
- 		return 0;
- 
- 	up = nla_data(rp);
-+	ulen = xfrm_replay_state_esn_len(up);
- 
--	if (xfrm_replay_state_esn_len(replay_esn) !=
--			xfrm_replay_state_esn_len(up))
-+	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
- 		return -EINVAL;
- 
- 	return 0;
-@@ -388,22 +397,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
- 				       struct nlattr *rta)
- {
- 	struct xfrm_replay_state_esn *p, *pp, *up;
-+	size_t klen, ulen;
- 
- 	if (!rta)
- 		return 0;
- 
- 	up = nla_data(rta);
-+	klen = xfrm_replay_state_esn_len(up);
-+	ulen = nla_len(rta) > sizeof(*up) ? klen : sizeof(*up);
- 
--	p = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
-+	p = kzalloc(klen, GFP_KERNEL);
- 	if (!p)
- 		return -ENOMEM;
- 
--	pp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
-+	pp = kzalloc(klen, GFP_KERNEL);
- 	if (!pp) {
- 		kfree(p);
- 		return -ENOMEM;
- 	}
- 
-+	memcpy(p, up, ulen);
-+	memcpy(pp, up, ulen);
-+
- 	*replay_esn = p;
- 	*preplay_esn = pp;
+ 	algo = nla_data(nla);
+-	strcpy(algo->alg_name, auth->alg_name);
++	strncpy(algo->alg_name, auth->alg_name, sizeof(algo->alg_name));
+ 	memcpy(algo->alg_key, auth->alg_key, (auth->alg_key_len + 7) / 8);
+ 	algo->alg_key_len = auth->alg_key_len;
  
 -- 
 1.7.10.4
