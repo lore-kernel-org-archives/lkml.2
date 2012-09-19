@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab2ISAFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 20:05:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44717 "EHLO
+	id S1755955Ab2ISAF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 20:05:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44740 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab2ISAFC (ORCPT
+	with ESMTP id S1753061Ab2ISAF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 20:05:02 -0400
-Date: Tue, 18 Sep 2012 17:04:46 -0700
+	Tue, 18 Sep 2012 20:05:57 -0400
+Date: Tue, 18 Sep 2012 17:05:41 -0700
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-841e3604d35aa70d399146abdc526d8c89a2c2f5@git.kernel.org>
+Message-ID: <tip-9c6ff8bbb69a4e7b47ac40bfa44509296e89c5c0@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        james.t.kukunas@linux.intel.com, neilb@suse.de,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+        rusty@rustcorp.com.au, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        james.t.kukunas@linux.intel.com, neilb@suse.de,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1345842782-24175-5-git-send-email-suresh.b.siddha@intel.com>
-References: <1345842782-24175-5-git-send-email-suresh.b.siddha@intel.com>
+        rusty@rustcorp.com.au, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com>
+References: <1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86, fpu: always use kernel_fpu_begin/end()
-  for in-kernel FPU usage
-Git-Commit-ID: 841e3604d35aa70d399146abdc526d8c89a2c2f5
+Subject: [tip:x86/fpu] lguest, x86: handle guest TS bit for lazy/
+ non-lazy fpu host models
+Git-Commit-ID: 9c6ff8bbb69a4e7b47ac40bfa44509296e89c5c0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,425 +30,64 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 18 Sep 2012 17:04:52 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 18 Sep 2012 17:05:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  841e3604d35aa70d399146abdc526d8c89a2c2f5
-Gitweb:     http://git.kernel.org/tip/841e3604d35aa70d399146abdc526d8c89a2c2f5
+Commit-ID:  9c6ff8bbb69a4e7b47ac40bfa44509296e89c5c0
+Gitweb:     http://git.kernel.org/tip/9c6ff8bbb69a4e7b47ac40bfa44509296e89c5c0
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Fri, 24 Aug 2012 14:13:00 -0700
+AuthorDate: Fri, 24 Aug 2012 14:13:01 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 18 Sep 2012 15:52:08 -0700
+CommitDate: Tue, 18 Sep 2012 15:52:09 -0700
 
-x86, fpu: always use kernel_fpu_begin/end() for in-kernel FPU usage
+lguest, x86: handle guest TS bit for lazy/non-lazy fpu host models
 
-use kernel_fpu_begin/end() instead of unconditionally accessing cr0 and
-saving/restoring just the few used xmm/ymm registers.
-
-This has some advantages like:
-* If the task's FPU state is already active, then kernel_fpu_begin()
-  will just save the user-state and avoiding the read/write of cr0.
-  In general, cr0 accesses are much slower.
-
-* Manual save/restore of xmm/ymm registers will affect the 'modified' and
-  the 'init' optimizations brought in the by xsaveopt/xrstor
-  infrastructure.
-
-* Foward compatibility with future vector register extensions will be a
-  problem if the xmm/ymm registers are manually saved and restored
-  (corrupting the extended state of those vector registers).
-
-With this patch, there was no significant difference in the xor throughput
-using AVX, measured during boot.
+Instead of using unlazy_fpu() check if user_has_fpu() and set/clear
+the host TS bits so that the lguest works fine with both the
+lazy/non-lazy FPU host models with minimal changes.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1345842782-24175-5-git-send-email-suresh.b.siddha@intel.com
-Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>
-Cc: NeilBrown <neilb@suse.de>
+Link: http://lkml.kernel.org/r/1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/xor_32.h  |   56 +++++-------------------------------
- arch/x86/include/asm/xor_64.h  |   61 ++++++----------------------------------
- arch/x86/include/asm/xor_avx.h |   54 ++++++++---------------------------
- 3 files changed, 29 insertions(+), 142 deletions(-)
+ drivers/lguest/x86/core.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/xor_32.h b/arch/x86/include/asm/xor_32.h
-index 4545708..aabd585 100644
---- a/arch/x86/include/asm/xor_32.h
-+++ b/arch/x86/include/asm/xor_32.h
-@@ -534,38 +534,6 @@ static struct xor_block_template xor_block_p5_mmx = {
-  * Copyright (C) 1999 Zach Brown (with obvious credit due Ingo)
-  */
+diff --git a/drivers/lguest/x86/core.c b/drivers/lguest/x86/core.c
+index 39809035..4af12e1 100644
+--- a/drivers/lguest/x86/core.c
++++ b/drivers/lguest/x86/core.c
+@@ -203,8 +203,8 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 * we set it now, so we can trap and pass that trap to the Guest if it
+ 	 * uses the FPU.
+ 	 */
+-	if (cpu->ts)
+-		unlazy_fpu(current);
++	if (cpu->ts && user_has_fpu())
++		stts();
  
--#define XMMS_SAVE				\
--do {						\
--	preempt_disable();			\
--	cr0 = read_cr0();			\
--	clts();					\
--	asm volatile(				\
--		"movups %%xmm0,(%0)	;\n\t"	\
--		"movups %%xmm1,0x10(%0)	;\n\t"	\
--		"movups %%xmm2,0x20(%0)	;\n\t"	\
--		"movups %%xmm3,0x30(%0)	;\n\t"	\
--		:				\
--		: "r" (xmm_save) 		\
--		: "memory");			\
--} while (0)
--
--#define XMMS_RESTORE				\
--do {						\
--	asm volatile(				\
--		"sfence			;\n\t"	\
--		"movups (%0),%%xmm0	;\n\t"	\
--		"movups 0x10(%0),%%xmm1	;\n\t"	\
--		"movups 0x20(%0),%%xmm2	;\n\t"	\
--		"movups 0x30(%0),%%xmm3	;\n\t"	\
--		:				\
--		: "r" (xmm_save)		\
--		: "memory");			\
--	write_cr0(cr0);				\
--	preempt_enable();			\
--} while (0)
--
--#define ALIGN16 __attribute__((aligned(16)))
--
- #define OFFS(x)		"16*("#x")"
- #define PF_OFFS(x)	"256+16*("#x")"
- #define	PF0(x)		"	prefetchnta "PF_OFFS(x)"(%1)		;\n"
-@@ -587,10 +555,8 @@ static void
- xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
- {
- 	unsigned long lines = bytes >> 8;
--	char xmm_save[16*4] ALIGN16;
--	int cr0;
+ 	/*
+ 	 * SYSENTER is an optimized way of doing system calls.  We can't allow
+@@ -234,6 +234,10 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 if (boot_cpu_has(X86_FEATURE_SEP))
+ 		wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
  
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -633,7 +599,7 @@ xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
- 	:
- 	: "memory");
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
++	/* Clear the host TS bit if it was set above. */
++	if (cpu->ts && user_has_fpu())
++		clts();
++
+ 	/*
+ 	 * If the Guest page faulted, then the cr2 register will tell us the
+ 	 * bad virtual address.  We have to grab this now, because once we
+@@ -249,7 +253,7 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 * a different CPU. So all the critical stuff should be done
+ 	 * before this.
+ 	 */
+-	else if (cpu->regs->trapnum == 7)
++	else if (cpu->regs->trapnum == 7 && !user_has_fpu())
+ 		math_state_restore();
  }
  
- static void
-@@ -641,10 +607,8 @@ xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3)
- {
- 	unsigned long lines = bytes >> 8;
--	char xmm_save[16*4] ALIGN16;
--	int cr0;
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -694,7 +658,7 @@ xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	:
- 	: "memory" );
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static void
-@@ -702,10 +666,8 @@ xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4)
- {
- 	unsigned long lines = bytes >> 8;
--	char xmm_save[16*4] ALIGN16;
--	int cr0;
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -762,7 +724,7 @@ xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	:
- 	: "memory" );
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static void
-@@ -770,10 +732,8 @@ xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4, unsigned long *p5)
- {
- 	unsigned long lines = bytes >> 8;
--	char xmm_save[16*4] ALIGN16;
--	int cr0;
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	/* Make sure GCC forgets anything it knows about p4 or p5,
- 	   such that it won't pass to the asm volatile below a
-@@ -850,7 +810,7 @@ xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	   like assuming they have some legal value.  */
- 	asm("" : "=r" (p4), "=r" (p5));
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static struct xor_block_template xor_block_pIII_sse = {
-diff --git a/arch/x86/include/asm/xor_64.h b/arch/x86/include/asm/xor_64.h
-index b9b2323..5fc06d0 100644
---- a/arch/x86/include/asm/xor_64.h
-+++ b/arch/x86/include/asm/xor_64.h
-@@ -34,41 +34,7 @@
-  * no advantages to be gotten from x86-64 here anyways.
-  */
- 
--typedef struct {
--	unsigned long a, b;
--} __attribute__((aligned(16))) xmm_store_t;
--
--/* Doesn't use gcc to save the XMM registers, because there is no easy way to
--   tell it to do a clts before the register saving. */
--#define XMMS_SAVE				\
--do {						\
--	preempt_disable();			\
--	asm volatile(				\
--		"movq %%cr0,%0		;\n\t"	\
--		"clts			;\n\t"	\
--		"movups %%xmm0,(%1)	;\n\t"	\
--		"movups %%xmm1,0x10(%1)	;\n\t"	\
--		"movups %%xmm2,0x20(%1)	;\n\t"	\
--		"movups %%xmm3,0x30(%1)	;\n\t"	\
--		: "=&r" (cr0)			\
--		: "r" (xmm_save) 		\
--		: "memory");			\
--} while (0)
--
--#define XMMS_RESTORE				\
--do {						\
--	asm volatile(				\
--		"sfence			;\n\t"	\
--		"movups (%1),%%xmm0	;\n\t"	\
--		"movups 0x10(%1),%%xmm1	;\n\t"	\
--		"movups 0x20(%1),%%xmm2	;\n\t"	\
--		"movups 0x30(%1),%%xmm3	;\n\t"	\
--		"movq 	%0,%%cr0	;\n\t"	\
--		:				\
--		: "r" (cr0), "r" (xmm_save)	\
--		: "memory");			\
--	preempt_enable();			\
--} while (0)
-+#include <asm/i387.h>
- 
- #define OFFS(x)		"16*("#x")"
- #define PF_OFFS(x)	"256+16*("#x")"
-@@ -91,10 +57,8 @@ static void
- xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
- {
- 	unsigned int lines = bytes >> 8;
--	unsigned long cr0;
--	xmm_store_t xmm_save[4];
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -135,7 +99,7 @@ xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
- 	: [inc] "r" (256UL)
- 	: "memory");
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static void
-@@ -143,11 +107,8 @@ xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3)
- {
- 	unsigned int lines = bytes >> 8;
--	xmm_store_t xmm_save[4];
--	unsigned long cr0;
--
--	XMMS_SAVE;
- 
-+	kernel_fpu_begin();
- 	asm volatile(
- #undef BLOCK
- #define BLOCK(i) \
-@@ -194,7 +155,7 @@ xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  [p1] "+r" (p1), [p2] "+r" (p2), [p3] "+r" (p3)
- 	: [inc] "r" (256UL)
- 	: "memory");
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static void
-@@ -202,10 +163,8 @@ xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4)
- {
- 	unsigned int lines = bytes >> 8;
--	xmm_store_t xmm_save[4];
--	unsigned long cr0;
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -261,7 +220,7 @@ xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	: [inc] "r" (256UL)
- 	: "memory" );
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static void
-@@ -269,10 +228,8 @@ xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4, unsigned long *p5)
- {
- 	unsigned int lines = bytes >> 8;
--	xmm_store_t xmm_save[4];
--	unsigned long cr0;
- 
--	XMMS_SAVE;
-+	kernel_fpu_begin();
- 
- 	asm volatile(
- #undef BLOCK
-@@ -336,7 +293,7 @@ xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	: [inc] "r" (256UL)
- 	: "memory");
- 
--	XMMS_RESTORE;
-+	kernel_fpu_end();
- }
- 
- static struct xor_block_template xor_block_sse = {
-diff --git a/arch/x86/include/asm/xor_avx.h b/arch/x86/include/asm/xor_avx.h
-index 2510d35..7ea79c5 100644
---- a/arch/x86/include/asm/xor_avx.h
-+++ b/arch/x86/include/asm/xor_avx.h
-@@ -20,32 +20,6 @@
- #include <linux/compiler.h>
- #include <asm/i387.h>
- 
--#define ALIGN32 __aligned(32)
--
--#define YMM_SAVED_REGS 4
--
--#define YMMS_SAVE \
--do { \
--	preempt_disable(); \
--	cr0 = read_cr0(); \
--	clts(); \
--	asm volatile("vmovaps %%ymm0, %0" : "=m" (ymm_save[0]) : : "memory"); \
--	asm volatile("vmovaps %%ymm1, %0" : "=m" (ymm_save[32]) : : "memory"); \
--	asm volatile("vmovaps %%ymm2, %0" : "=m" (ymm_save[64]) : : "memory"); \
--	asm volatile("vmovaps %%ymm3, %0" : "=m" (ymm_save[96]) : : "memory"); \
--} while (0);
--
--#define YMMS_RESTORE \
--do { \
--	asm volatile("sfence" : : : "memory"); \
--	asm volatile("vmovaps %0, %%ymm3" : : "m" (ymm_save[96])); \
--	asm volatile("vmovaps %0, %%ymm2" : : "m" (ymm_save[64])); \
--	asm volatile("vmovaps %0, %%ymm1" : : "m" (ymm_save[32])); \
--	asm volatile("vmovaps %0, %%ymm0" : : "m" (ymm_save[0])); \
--	write_cr0(cr0); \
--	preempt_enable(); \
--} while (0);
--
- #define BLOCK4(i) \
- 		BLOCK(32 * i, 0) \
- 		BLOCK(32 * (i + 1), 1) \
-@@ -60,10 +34,9 @@ do { \
- 
- static void xor_avx_2(unsigned long bytes, unsigned long *p0, unsigned long *p1)
- {
--	unsigned long cr0, lines = bytes >> 9;
--	char ymm_save[32 * YMM_SAVED_REGS] ALIGN32;
-+	unsigned long lines = bytes >> 9;
- 
--	YMMS_SAVE
-+	kernel_fpu_begin();
- 
- 	while (lines--) {
- #undef BLOCK
-@@ -82,16 +55,15 @@ do { \
- 		p1 = (unsigned long *)((uintptr_t)p1 + 512);
- 	}
- 
--	YMMS_RESTORE
-+	kernel_fpu_end();
- }
- 
- static void xor_avx_3(unsigned long bytes, unsigned long *p0, unsigned long *p1,
- 	unsigned long *p2)
- {
--	unsigned long cr0, lines = bytes >> 9;
--	char ymm_save[32 * YMM_SAVED_REGS] ALIGN32;
-+	unsigned long lines = bytes >> 9;
- 
--	YMMS_SAVE
-+	kernel_fpu_begin();
- 
- 	while (lines--) {
- #undef BLOCK
-@@ -113,16 +85,15 @@ do { \
- 		p2 = (unsigned long *)((uintptr_t)p2 + 512);
- 	}
- 
--	YMMS_RESTORE
-+	kernel_fpu_end();
- }
- 
- static void xor_avx_4(unsigned long bytes, unsigned long *p0, unsigned long *p1,
- 	unsigned long *p2, unsigned long *p3)
- {
--	unsigned long cr0, lines = bytes >> 9;
--	char ymm_save[32 * YMM_SAVED_REGS] ALIGN32;
-+	unsigned long lines = bytes >> 9;
- 
--	YMMS_SAVE
-+	kernel_fpu_begin();
- 
- 	while (lines--) {
- #undef BLOCK
-@@ -147,16 +118,15 @@ do { \
- 		p3 = (unsigned long *)((uintptr_t)p3 + 512);
- 	}
- 
--	YMMS_RESTORE
-+	kernel_fpu_end();
- }
- 
- static void xor_avx_5(unsigned long bytes, unsigned long *p0, unsigned long *p1,
- 	unsigned long *p2, unsigned long *p3, unsigned long *p4)
- {
--	unsigned long cr0, lines = bytes >> 9;
--	char ymm_save[32 * YMM_SAVED_REGS] ALIGN32;
-+	unsigned long lines = bytes >> 9;
- 
--	YMMS_SAVE
-+	kernel_fpu_begin();
- 
- 	while (lines--) {
- #undef BLOCK
-@@ -184,7 +154,7 @@ do { \
- 		p4 = (unsigned long *)((uintptr_t)p4 + 512);
- 	}
- 
--	YMMS_RESTORE
-+	kernel_fpu_end();
- }
- 
- static struct xor_block_template xor_block_avx = {
