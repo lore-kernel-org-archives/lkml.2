@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2ISRxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:53:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60885 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932717Ab2ISRxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:53:34 -0400
-Message-ID: <1348077212.22122.13.camel@joe2Laptop>
-Subject: Re: [PATCH] USB: remove dbg() usage in USB networking drivers
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 19 Sep 2012 10:53:32 -0700
-In-Reply-To: <20120919171316.GA12248@kroah.com>
-References: <20120919171316.GA12248@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S932879Ab2ISRzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:55:17 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:49813 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932821Ab2ISRzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 13:55:13 -0400
+Message-ID: <505A06BD.6000406@linaro.org>
+Date: Wed, 19 Sep 2012 10:54:05 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org> <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com> <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at> <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at> <5059F367.5020104@linaro.org> <20120919170347.GA2232@netboy.at.omicron.at>
+In-Reply-To: <20120919170347.GA2232@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12091917-2876-0000-0000-000000500EF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 18:13 +0100, Greg Kroah-Hartman wrote:
-> The dbg() USB macro is so old, it predates me.  The USB networking drivers are
-> the last hold-out using this macro, and we want to get rid of it, so replace
-> the usage of it with the proper netdev_dbg() or dev_dbg() (depending on the
-> context) calls.
+On 09/19/2012 10:03 AM, Richard Cochran wrote:
+> On Wed, Sep 19, 2012 at 09:31:35AM -0700, John Stultz wrote:
+>> With powerpc, there is no arch specific kernel code involved, its
+>> just a data structure the kernel exports that is accessible to
+>> userland. The execution logic lives in userland libraries, or
+>> sometimes application code itself.
+> I took a brief look at arch/powerpc/kernel/vdso32/gettimeofday.S and
+> arch/powerpc/kernel/vdso64/gettimeofday.S, and I see what looks a lot
+> like functions
+Sorry, yes. My statement wasn't subtle enough (and I may be confusing my 
+history).
 
-There's a missing newline.
+You are right, there is arch specific code involved, but the data 
+structure that is exported is considered part of the abi since some 
+applications access it directly.
 
-There are several dev_err(&intf-dev, ...) to dev_err(dev, ...)
-conversions.
+See the comments and structure in:
+arch/powerpc/include/asm/vdso_datapage.h
 
-Either those should be in a separate patch or you should mention
-those changes in the commit message.
 
-> diff --git a/drivers/net/usb/catc.c b/drivers/net/usb/catc.c
-> index 26c5beb..6bf5672 100644
-> --- a/drivers/net/usb/catc.c
-> +++ b/drivers/net/usb/catc.c
-> @@ -236,7 +236,8 @@ static void catc_rx_done(struct urb *urb)
->  	}
->  
->  	if (status) {
-> -		dbg("rx_done, status %d, length %d", status, urb->actual_length);
-> +		dev_dbg(&urb->dev->dev, "rx_done, status %d, length %d",
-> +			status, urb->actual_length);
+> $ find arch/powerpc/kernel/vdso* -name gettimeofday.S|xargs grep FUNCTION_BEGIN
+>
+> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__do_get_tspec)
+>
+> and I wonder whether these could be done in C instead.
 
-newline
+Possibly, but I suspect they're in asm for performance reasons.
 
-> @@ -774,7 +783,7 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
->  
->  	if (usb_set_interface(usbdev,
->  			intf->altsetting->desc.bInterfaceNumber, 1)) {
-> -                dev_err(&intf->dev, "Can't set altsetting 1.\n");
-> +		dev_err(dev, "Can't set altsetting 1.\n");
+Paul/Ben: Do you have any thoughts here?
 
-?  Odd conversion.
-
-> diff --git a/drivers/net/usb/kaweth.c b/drivers/net/usb/kaweth.c
-[]
-> @@ -787,7 +787,8 @@ static void kaweth_usb_transmit_complete(struct urb *urb)
->  
->  	if (unlikely(status != 0))
->  		if (status != -ENOENT)
-> -			dbg("%s: TX status %d.", kaweth->net->name, status);
-> +			dev_dbg(&urb->dev->dev, "%s: TX status %d.\n",
-> +				kaweth->net->name, status);
-
-probably
-			netdev_dbg(kaweth->net, "TX status %d\n", status);
-
-[] 
-
-> @@ -1003,36 +1005,37 @@ static int kaweth_probe(
->  		const struct usb_device_id *id      /* from id_table */
->  	)
->  {
-> -	struct usb_device *dev = interface_to_usbdev(intf);
-> +	struct device *dev = &intf->dev;
-> +	struct usb_device *udev = interface_to_usbdev(intf);
-
-Miscellaneous renaming.
-
-[]
-
-> diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
-> index 28c4d51..aad7abe 100644
-> --- a/drivers/net/usb/net1080.c
-> +++ b/drivers/net/usb/net1080.c
-> @@ -156,11 +156,11 @@ static void nc_dump_registers(struct usbnet *dev)
->  	u16	*vp = kmalloc(sizeof (u16));
->  
->  	if (!vp) {
-> -		dbg("no memory?");
-> +		netdev_dbg(dev->net, "no memory?\n");
-
-could delete altogether.
-
+thanks
+-john
 
