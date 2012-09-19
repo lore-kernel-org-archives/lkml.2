@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab2ISFph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 01:45:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:59504 "EHLO ozlabs.org"
+	id S1754637Ab2ISF6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 01:58:15 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:48477 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab2ISFpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 01:45:00 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/2] module: add syscall to load module from fd
-In-Reply-To: <1347564136.2270.4.camel@falcor>
-References: <1346955201-8926-1-git-send-email-keescook@chromium.org> <50500C5C.8060006@zytor.com> <878vcfu22s.fsf@rustcorp.com.au> <1347564136.2270.4.camel@falcor>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 19 Sep 2012 13:08:47 +0930
-Message-ID: <87obl2ptq0.fsf@rustcorp.com.au>
+	id S1754169Ab2ISF6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 01:58:11 -0400
+Message-ID: <50595EF1.6050003@msgid.tls.msk.ru>
+Date: Wed, 19 Sep 2012 09:58:09 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alex Lyashkov <umka@cloudlinux.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lve module taint?
+References: <87sjaepy67.fsf@rustcorp.com.au>
+In-Reply-To: <87sjaepy67.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+On 19.09.2012 06:02, Rusty Russell wrote:
 
-> On Wed, 2012-09-12 at 17:04 +0930, Rusty Russell wrote:
->> "H. Peter Anvin" <hpa@zytor.com> writes:
->> 
->> > On 09/06/2012 11:13 AM, Kees Cook wrote:
->> >> Instead of (or in addition to) kernel module signing, being able to reason
->> >> about the origin of a kernel module would be valuable in situations
->> >> where an OS already trusts a specific file system, file, etc, due to
->> >> things like security labels or an existing root of trust to a partition
->> >> through things like dm-verity.
->> >>
->> >> This introduces a new syscall (currently only on x86), similar to
->> >> init_module, that has only two arguments. The first argument is used as
->> >> a file descriptor to the module and the second argument is a pointer to
->> >> the NULL terminated string of module arguments.
->> >>
->> >
->> > Please use the standard naming convention, which is an f- prefix (i.e. 
->> > finit_module()).
->> 
->> Good point; I just did a replace here.
->
-> Have you pushed out the changes?  And if so, to where?
+> From:	Matthew Garrett <mjg59@srcf.ucam.org>
+> Subject: module: taint kernel when lve module is loaded
+> Date: Fri, 22 Jun 2012 13:49:31 -0400
+> 
+> Cloudlinux have a product called lve that includes a kernel module. This
+> was previously GPLed but is now under a proprietary license, but the
+> module continues to declare MODULE_LICENSE("GPL") and makes use of some
+> EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
 
-No, I kept them in my patch series but out of linux-next, since I
-thought you disliked the placement of the security hooks?
+> +	/* lve claims to be GPL but upstream won't provide source */
+> +	if (strcmp(mod->name, "lve") == 0)
+> +		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
 
-Cheers,
-Rusty.
+This is setting a, in my opinion, rather bad precedent.  Next we'll
+be adding various modules here due to various reasons.
+
+I think this case should be pure political now, not technical.  Ie,
+if some project declares itself as GPL, it is not kernel task to
+verify that the sources are available or to enforce that.
+
+Thanks,
+
+/mjt
