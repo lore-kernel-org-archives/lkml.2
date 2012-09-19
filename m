@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab2ISUj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:39:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:34395 "EHLO 1wt.eu"
+	id S1751935Ab2ISUrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:47:19 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34626 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751583Ab2ISUj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:39:57 -0400
-Date: Wed, 19 Sep 2012 22:39:42 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Joe Perches <joe@perches.com>
-Cc: Adil Mujeeb <mujeeb.adil@gmail.com>, willy@meta-x.org,
-        gregkh@linuxfoundation.org, evel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: panel: Fixed a macro coding style issue
-Message-ID: <20120919203942.GB413@1wt.eu>
-References: <1348083460-7920-1-git-send-email-mujeeb.adil@gmail.com> <1348083898.2055.8.camel@joe2Laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348083898.2055.8.camel@joe2Laptop>
-User-Agent: Mutt/1.4.2.3i
+	id S1751798Ab2ISUrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 16:47:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
+Date: Wed, 19 Sep 2012 22:53:45 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>
+References: <1347661174-15404-1-git-send-email-m-karicheri2@ti.com> <201209182334.08229.rjw@sisk.pl> <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209192253.45722.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 12:44:58PM -0700, Joe Perches wrote:
-> On Thu, 2012-09-20 at 01:07 +0530, Adil Mujeeb wrote:
-> > Removed do {} while (0) loop for a single statement macros
-> > 
-> > Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
-> > ---
-> >  linux-3.6-rc6/drivers/staging/panel/panel.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/linux-3.6-rc6/drivers/staging/panel/panel.c b/linux-3.6-rc6/drivers/staging/panel/panel.c
-> > index 39f9982..d9fec5b 100644
-> > --- a/linux-3.6-rc6/drivers/staging/panel/panel.c
-> > +++ b/linux-3.6-rc6/drivers/staging/panel/panel.c
-> > @@ -137,8 +137,8 @@
-> >  #define r_ctr(x)        (parport_read_control((x)->port))
-> >  #define r_dtr(x)        (parport_read_data((x)->port))
-> >  #define r_str(x)        (parport_read_status((x)->port))
-> > -#define w_ctr(x, y)     do { parport_write_control((x)->port, (y)); } while (0)
-> > -#define w_dtr(x, y)     do { parport_write_data((x)->port, (y)); } while (0)
-> > +#define w_ctr(x, y)     (parport_write_control((x)->port, (y)))
-> > +#define w_dtr(x, y)     (parport_write_data((x)->port, (y)))
+On Wednesday, September 19, 2012, Karicheri, Muralidharan wrote:
+> >> -----Original Message-----
+> >> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> >> Sent: Tuesday, September 18, 2012 5:34 PM
+> >> To: Karicheri, Muralidharan
+> >> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
+> >> mturquette@linaro.org; Magnus Damm; Linux-sh list
+> >> Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
+> >> 
+> >> On Saturday, September 15, 2012, Murali Karicheri wrote:
+> >> > As part of my work to migrate davinci SoC code to
+> >> > use common clk framework, I encountered an issue with this driver
+> >> > which is calling clk_enable() and clk_disable() without prepare()/
+> >> > unprepare(). This change is needed to enable common clock migration
+> >> > for davinci SoCs.
+> >> >
+> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> >> 
+> >> There are other users of this code than davinci.  For example, sh
+> >> and ARM/shmobile both use it.  Have you verified that your changes will
+> >> work for them too?
+> >> 
+> Rafael,
 > 
-> Unnecessary parentheses too.
-> It might be better to use static inlines instead.
+> Technically do you agree with the changes or do I need to get it reviewed
+> by someone in particular?
 
-Agreed. We already got bugs in the cyrix register manipulation for
-years because of the use of macros which caused registers to be set
-in the wrong order, let's not redo that mistake again.
+You may ask the people on the linux-sh list to review your patch, but there's
+no guarantee that anyone will have the time to do that.
 
-Willy
+> I have no way of verifying if this works for sh and
+> ARM/shmobile. I have copied this RFC patch to the list showed up by
+> scripts/get_maintainer.pl list.
 
+Well, you can send whatever you like as an RFC, but if you request that the
+patch be merged, it should be submitted without the "RFC" in the subject.
+
+> Any idea how I can get this patch reviewed by
+> the sh and ARM/shmobile maintainers and get it tested as well? This is
+> required for DaVinci for sure unless there is an alternate way of doing this.
+> Well, then that is the idea of sending an RFC patch.
+
+The general rule is that if you want a change to be made in the core, you
+have to make sure that your change won't cause problems to happen to
+anyone.  If you don't do that and your change turns out to cause problems
+to happen after it's been applied, it will be reverted anyway.
+
+Thanks,
+Rafael
