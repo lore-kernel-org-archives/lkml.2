@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab2ISS4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:56:11 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:51008 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932963Ab2ISS4G (ORCPT
+	id S932995Ab2ISS4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:56:21 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:35657 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932963Ab2ISS4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:56:06 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnSpAN0UWlBV5h1yPGdsb2JhbABFhSGFI7B5AQF/GQEBAQEfGQ0ngmEcIxgRTCUKGogauyAUjFxsgyFgA5VjgRWEW40a
-X-IronPort-AV: E=Sophos;i="4.80,450,1344204000"; 
-   d="scan'208";a="195712342"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 19 Sep 2012 20:56:05 +0200
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Input and HID updates for 3.7
-Message-ID: <20120919185605.GA778@polaris.bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Sep 2012 14:56:15 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, x86 <x86@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Dave Airlie <airlied@redhat.com>, Julia Lawall <julia@diku.dk>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 01/40] PCI: fix default vga ref_count
+Date: Wed, 19 Sep 2012 11:54:15 -0700
+Message-Id: <1348080894-23412-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
+References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
+ <1348080894-23412-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+when __ARCH_HAS_VGA_DEFAULT_DEVICE is not defined, aka EFIFB is not used,
+for static path, vga_default setting is through vga_arbiter_add_pci_device.
+and later x86 pci_fixup_video, will skip setting again.
+- subsys_initcall(vga_arb_device_init) come first to call vga_arbiter_add_pci_device. It will call pci_get_dev to hold one reference.
 
-Please pull this tree to receive Input and HID updates for 3.7. The
-tree contains input core changes, Acked by Dmitry, which substantially
-reduces the irqsoff latency for all input devices. It also contains MT
-changes which allows further memory reduction, speedup and hardware
-support in the HID Multitouch driver. Lastly, you get the conversion
-of the bcm5974 driver to MT-B, which due to the mixed dependency of
-the tree fits better here than anywhere else.
+for hotplug add path, even vga_arbiter_add_pci_device is called via notifier,
+but it will check VGA_RSRC_LEGACY_MASK that is not set for hotplug path.
+So x86 pci_fixup_video will take over to call vga_set_default_device().
+It will not hold one refrence.
 
-Thanks,
-Henrik
+Later for hotplug remove path, vga_arbiter_del_pci_device that does not check
+VGA_RSRC_LEGACY_MASK will call put_device and it will cause ref_count to
+decrease extra. that will have that pci device get deleted early wrongly.
 
-The following changes since commit 4cbe5a555fa58a79b6ecbb6c531b8bab0650778d:
+Need to make get/put balance for both cases.
 
-  Linux 3.6-rc4 (2012-09-01 10:39:58 -0700)
+-v2: According to Bjorn, update vga_set_default_device instead...
 
-are available in the git repository at:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Julia Lawall <julia@diku.dk>
+Cc: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/gpu/vga/vgaarb.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
-  git://github.com/rydberg/linux.git for-next
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index b6852b7..0888951e 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -141,6 +141,12 @@ EXPORT_SYMBOL_GPL(vga_default_device);
+ 
+ void vga_set_default_device(struct pci_dev *pdev)
+ {
++	if (vga_default)
++		pci_dev_put(vga_default);
++
++	if (pdev)
++		pdev = pci_dev_get(pdev);
++
+ 	vga_default = pdev;
+ }
+ #endif
+@@ -577,7 +583,7 @@ static bool vga_arbiter_add_pci_device(struct pci_dev *pdev)
+ #ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+ 	if (vga_default == NULL &&
+ 	    ((vgadev->owns & VGA_RSRC_LEGACY_MASK) == VGA_RSRC_LEGACY_MASK))
+-		vga_default = pci_dev_get(pdev);
++		vga_set_default_device(pdev);
+ #endif
+ 
+ 	vga_arbiter_check_bridge_sharing(vgadev);
+@@ -613,10 +619,8 @@ static bool vga_arbiter_del_pci_device(struct pci_dev *pdev)
+ 	}
+ 
+ #ifndef __ARCH_HAS_VGA_DEFAULT_DEVICE
+-	if (vga_default == pdev) {
+-		pci_dev_put(vga_default);
+-		vga_default = NULL;
+-	}
++	if (vga_default == pdev)
++		vga_set_default_device(NULL);
+ #endif
+ 
+ 	if (vgadev->decodes & (VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM))
+-- 
+1.7.7
 
-for you to fetch changes up to 51c80b74002f86477d691ed7c8ac479dcfa6271c:
-
-  Input: bcm5974 - Convert to MT-B (2012-09-19 19:50:22 +0200)
-
-----------------------------------------------------------------
-Henrik Rydberg (21):
-      Input: Break out MT data
-      Input: Improve the events-per-packet estimate
-      Input: Make sure we follow all EV_KEY events
-      Input: Move autorepeat to the event-passing phase
-      Input: Send events one packet at a time
-      Input: evdev - Add the events() callback
-      Input: MT - Add flags to input_mt_init_slots()
-      Input: MT - Handle frame synchronization in core
-      Input: MT - Add in-kernel tracking
-      Input: MT - Get slot by key
-      Input: MT - Allow legacy pressure computation
-      HID: Add an input configured notification callback
-      HID: Allow more fields in the hid report
-      HID: hid-multitouch: Simplify setup and frame synchronization
-      HID: hid-multitouch: Remove the redundant touch state
-      HID: hid-multitouch: Fix contact count on 3M panels
-      HID: hid-multitouch: Add Flatfrog support
-      Input: bcm5974 - only setup button urb for TYPE1 devices
-      Input: bcm5974 - Preparatory renames
-      Input: bcm5974 - Drop the logical dimensions
-      Input: bcm5974 - Convert to MT-B
-
- drivers/hid/hid-ids.h                    |   3 +
- drivers/hid/hid-input.c                  |  11 +-
- drivers/hid/hid-magicmouse.c             |   2 +-
- drivers/hid/hid-multitouch.c             | 185 ++++++++--------
- drivers/input/evdev.c                    |  78 ++++---
- drivers/input/input-mt.c                 | 305 ++++++++++++++++++++++++---
- drivers/input/input.c                    | 254 ++++++++++++++--------
- drivers/input/misc/uinput.c              |   2 +-
- drivers/input/mouse/alps.c               |   2 +-
- drivers/input/mouse/bcm5974.c            | 348 ++++++++++++++-----------------
- drivers/input/mouse/elantech.c           |   4 +-
- drivers/input/mouse/sentelic.c           |   2 +-
- drivers/input/mouse/synaptics.c          |   4 +-
- drivers/input/tablet/wacom_wac.c         |   6 +-
- drivers/input/touchscreen/atmel_mxt_ts.c |   2 +-
- drivers/input/touchscreen/cyttsp_core.c  |   2 +-
- drivers/input/touchscreen/edt-ft5x06.c   |   2 +-
- drivers/input/touchscreen/egalax_ts.c    |   2 +-
- drivers/input/touchscreen/ili210x.c      |   2 +-
- drivers/input/touchscreen/mms114.c       |   2 +-
- drivers/input/touchscreen/penmount.c     |   2 +-
- drivers/input/touchscreen/wacom_w8001.c  |   2 +-
- include/linux/hid.h                      |   5 +-
- include/linux/input.h                    |  35 ++--
- include/linux/input/mt.h                 |  57 ++++-
- 25 files changed, 850 insertions(+), 469 deletions(-)
