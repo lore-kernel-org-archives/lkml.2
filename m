@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab2ISXqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 19:46:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57843 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab2ISXqm (ORCPT
+	id S1753154Ab2ISXq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 19:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48879 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab2ISXqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 19:46:42 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: [PATCH 04/11] tty/serial/core: Introduce poll_init callback
-Date: Wed, 19 Sep 2012 16:41:55 -0700
-Message-Id: <1348098122-11041-4-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <20120919234003.GA24143@lizard>
-References: <20120919234003.GA24143@lizard>
+	Wed, 19 Sep 2012 19:46:55 -0400
+Date: Wed, 19 Sep 2012 16:46:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, numa: reclaim from all nodes within reclaim
+ distance
+Message-Id: <20120919164654.43204ba9.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1209180003340.16777@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was noticed that polling drivers (like KGDB) are not able to use
-serial ports if the ports were not previously initialized via console.
-I.e.  when booting with console=ttyAMA0 kgdboc=ttyAMA0, everything works
-fine, but with console=ttyFOO kgdboc=ttyAMA0, the kgdboc doesn't work.
+On Tue, 18 Sep 2012 00:03:57 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-This is because we don't initialize the hardware. Calling ->startup() is
-not an option, because drivers request interrupts there, and drivers
-fail to handle situations when tty isn't opened with interrupts enabled.
+> RECLAIM_DISTANCE represents the distance between nodes at which it is
+> deemed too costly to allocate from; it's preferred to try to reclaim from
+> a local zone before falling back to allocating on a remote node with such
+> a distance.
+> 
+> To do this, zone_reclaim_mode is set if the distance between any two
+> nodes on the system is greather than this distance.  This, however, ends
+> up causing the page allocator to reclaim from every zone regardless of
+> its affinity.
+> 
+> What we really want is to reclaim only from zones that are closer than 
+> RECLAIM_DISTANCE.  This patch adds a nodemask to each node that
+> represents the set of nodes that are within this distance.  During the
+> zone iteration, if the bit for a zone's node is set for the local node,
+> then reclaim is attempted; otherwise, the zone is skipped.
 
-So, we have to implement a new callback (actually, tty_ops already have
-a similar callback), which does everything needed to initialize just the
-hardware.
+zone_reclaim_mode isn't an lval if CONFIG_NUMA=n:
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/serial/serial_core.c | 17 +++++++++++++++++
- include/linux/serial_core.h      |  1 +
- 2 files changed, 18 insertions(+)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 046279c..dcb2d5a 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2129,6 +2129,7 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
- 	int bits = 8;
- 	int parity = 'n';
- 	int flow = 'n';
-+	int ret;
+--- a/mm/page_alloc.c~mm-numa-reclaim-from-all-nodes-within-reclaim-distance-fix
++++ a/mm/page_alloc.c
+@@ -4561,7 +4561,9 @@ void __paginginit free_area_init_node(in
+ 	for_each_online_node(i)
+ 		if (node_distance(nid, i) <= RECLAIM_DISTANCE) {
+ 			node_set(i, pgdat->reclaim_nodes);
++#ifdef CONFIG_NUMA
+ 			zone_reclaim_mode = 1;
++#endif
+ 		}
+ 	calculate_node_totalpages(pgdat, zones_size, zholes_size);
  
- 	if (!state || !state->uart_port)
- 		return -1;
-@@ -2137,6 +2138,22 @@ static int uart_poll_init(struct tty_driver *driver, int line, char *options)
- 	if (!(port->ops->poll_get_char && port->ops->poll_put_char))
- 		return -1;
- 
-+	if (port->ops->poll_init) {
-+		struct tty_port *tport = &state->port;
-+
-+		ret = 0;
-+		mutex_lock(&tport->mutex);
-+		/*
-+		 * We don't set ASYNCB_INITIALIZED as we only initialized the
-+		 * hw, e.g. state->xmit is still uninitialized.
-+		 */
-+		if (!test_bit(ASYNCB_INITIALIZED, &tport->flags))
-+			ret = port->ops->poll_init(port);
-+		mutex_unlock(&tport->mutex);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	if (options) {
- 		uart_parse_options(options, &baud, &parity, &bits, &flow);
- 		return uart_set_options(port, NULL, baud, parity, bits, flow);
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 7cf0b68..822c887 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -274,6 +274,7 @@ struct uart_ops {
- 	int		(*verify_port)(struct uart_port *, struct serial_struct *);
- 	int		(*ioctl)(struct uart_port *, unsigned int, unsigned long);
- #ifdef CONFIG_CONSOLE_POLL
-+	int		(*poll_init)(struct uart_port *);
- 	void	(*poll_put_char)(struct uart_port *, unsigned char);
- 	int		(*poll_get_char)(struct uart_port *);
- #endif
--- 
-1.7.11.5
+
+That may not be a very good fix though - can we get all this NUMAy code
+out of a non-NUMA-specific code site?
 
