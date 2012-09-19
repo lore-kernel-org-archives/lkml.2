@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab2ISVfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:35:16 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36881 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2ISVfH (ORCPT
+	id S1752284Ab2ISVfN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:35:13 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:57701 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab2ISVfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:35:07 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH 3/6] xfrm_user: fix info leak in copy_to_user_policy()
-Date: Wed, 19 Sep 2012 23:33:40 +0200
-Message-Id: <1348090423-32665-4-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
-References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	Wed, 19 Sep 2012 17:35:08 -0400
+Date: Wed, 19 Sep 2012 21:35:06 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+cc: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 2/9] ARM: OMAP3: hwmod data: add mmu data for iva and
+ isp
+In-Reply-To: <1347479152-588-3-git-send-email-omar.luna@linaro.org>
+Message-ID: <alpine.DEB.2.00.1209192134490.5264@utopia.booyaka.com>
+References: <1347479152-588-1-git-send-email-omar.luna@linaro.org> <1347479152-588-3-git-send-email-omar.luna@linaro.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory reserved to dump the xfrm policy includes multiple padding
-bytes added by the compiler for alignment (padding bytes in struct
-xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
-memset(0) before filling the buffer to avoid the heap info leak.
+On Wed, 12 Sep 2012, Omar Ramirez Luna wrote:
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
----
- net/xfrm/xfrm_user.c |    1 +
- 1 file changed, 1 insertion(+)
+> Add mmu hwmod data for iva and isp.
+> 
+> Due to compatibility an ifdef CONFIG_OMAP_IOMMU_IVA2 needs to be
+> propagated (previously on iommu resource info) to hwmod data in OMAP3,
+> so users of iommu and tidspbridge can avoid issues of two modules
+> managing mmu data/irqs/resets; this until tidspbridge can be migrated
+> to iommu framework.
+> 
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index c1f15b5..7511427 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -1318,6 +1318,7 @@ static void copy_from_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy
- 
- static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
- 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
- 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
--- 
-1.7.10.4
+Thanks, queued for 3.7.
 
+- Paul
