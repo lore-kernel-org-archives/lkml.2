@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2ISCgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 22:36:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46705 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab2ISCgg (ORCPT
+	id S1755495Ab2ISChO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 22:37:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56430 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755369Ab2ISChH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 22:36:36 -0400
-Message-ID: <50592FB1.7000800@kdau.com>
-Date: Tue, 18 Sep 2012 19:36:33 -0700
-From: Kevin Daughtridge <kevin@kdau.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 18 Sep 2012 22:37:07 -0400
+Date: Tue, 18 Sep 2012 22:37:02 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Liam Girdwood <lrg@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
+Message-ID: <20120919023702.GG8832@opensource.wolfsonmicro.com>
+References: <201208151518.q7FFILAM011604@latitude.olech.com>
+ <20120827165057.GK4339@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032CC96A@NB-EX-MBX02.diasemi.com>
+ <20120917104017.GB5401@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032CC993@NB-EX-MBX02.diasemi.com>
+ <20120917111550.GE5401@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032CC9BB@NB-EX-MBX02.diasemi.com>
+ <20120917113248.GF5401@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032CC9D3@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Kevin Daughtridge <kevin@kdau.com>
-Subject: [PATCH v2] HID: leave dev_rdesc unmodified and use it for comparisons
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51032CC9D3@NB-EX-MBX02.diasemi.com>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_rdesc member of the hid_device structure is meant to store the original
-report descriptor received from the device, but it is currently passed to any
-report_fixup method before it is copied to the rdesc member. This patch moves
-the kmemdup to before, not after, the report_fixup call, keeping dev_rdesc
-unchanged.
+On Mon, Sep 17, 2012 at 12:07:11PM +0000, Opensource [Anthony Olech] wrote:
 
-usbhid's hid_post_reset checks the report descriptor currently returned by the
-device against a descriptor that may have been modified by a driver's
-report_fixup method. That leaves some devices nonfunctional after a resume, with
-a "reset_resume error 1" reported. This patch checks the new descriptor against
-the unmodified dev_rdesc instead.
+> > > Can you suggest a future proofed way of using the new regulator API
+> > > that would solve my problem?
 
-BugLink:http://bugs.launchpad.net/bugs/1049623
-Signed-off-by: Kevin Daughtridge<kevin@kdau.com>
----
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -775,12 +775,14 @@ int hid_open_report(struct hid_device *d
-  		return -ENODEV;
-  	size = device->dev_rsize;
-  
-+	start = kmemdup(start, size, GFP_KERNEL);
-+	if (start == NULL)
-+		return -ENOMEM;
-+
-  	if (device->driver->report_fixup)
-  		start = device->driver->report_fixup(device, start, &size);
-  
--	device->rdesc = kmemdup(start, size, GFP_KERNEL);
--	if (device->rdesc == NULL)
--		return -ENOMEM;
-+	device->rdesc = start;
-  	device->rsize = size;
-  
-  	parser = vzalloc(sizeof(struct hid_parser));
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1436,7 +1436,7 @@ static int hid_post_reset(struct usb_int
-  		kfree(rdesc);
-  		return 1;
-  	}
--	status = memcmp(rdesc, hid->rdesc, hid->rsize);
-+	status = memcmp(rdesc, hid->dev_rdesc, hid->rsize);
-  	kfree(rdesc);
-  	if (status != 0) {
-  		dbg_hid("report descriptor changed\n");
+> > As I said you should set the voltage as part of the set voltage operation.
 
+> So I will have to write my own set_voltage_sel() callback instead of using
+> the default regulator_set_voltage_sel_regmap() ??
+
+Yes.
+
+> Well, I did try hard to use your defaults, but I suppose there is nothing to
+> stop me calling regulator_set_voltage_sel_regmap() explicitly as the first
+> part of my set_voltage_sel() callback before setting the ramp_enable bit.
+> Then my implemenation of the set_voltage_time_sel() callback needs to
+> just simply return the ramp time.
+
+The point with using the framework stuff is that you should factor out
+common code, if what you have is not common code then don't do crazy
+things in other ops to try to paper over that.
