@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab2ISWiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 18:38:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43071 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab2ISWiI (ORCPT
+	id S1752694Ab2ISWjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 18:39:14 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:53231 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752627Ab2ISWid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 18:38:08 -0400
-Date: Thu, 20 Sep 2012 08:37:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] PCI: Provide a default pcibios_update_irq()
-Message-Id: <20120920083731.b99255eb8fdeea908d34ed2f@canb.auug.org.au>
-In-Reply-To: <1347880974-13615-2-git-send-email-thierry.reding@avionic-design.de>
-References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
-	<1347880974-13615-2-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm"
+	Wed, 19 Sep 2012 18:38:33 -0400
+Message-ID: <1348094309.2636.80.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 5/6] xfrm_user: ensure user supplied esn replay window
+ is valid
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mathias Krause <minipli@googlemail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Martin Willi <martin@revosec.ch>
+Date: Wed, 19 Sep 2012 23:38:29 +0100
+In-Reply-To: <1348090423-32665-6-git-send-email-minipli@googlemail.com>
+References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	 <1348090423-32665-6-git-send-email-minipli@googlemail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-09-19 at 23:33 +0200, Mathias Krause wrote:
+> The current code fails to ensure that the netlink message actually
+> contains as many bytes as the header indicates. If a user creates a new
+> state or updates an existing one but does not supply the bytes for the
+> whole ESN replay window, the kernel copies random heap bytes into the
+> replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
+> netlink attribute. This leads to following issues:
+> 
+> 1. The replay window has random bits set confusing the replay handling
+>    code later on.
+> 
+> 2. A malicious user could use this flaw to leak up to ~3.5kB of heap
+>    memory when she has access to the XFRM netlink interface (requires
+>    CAP_NET_ADMIN).
 
-Hi,
+Where does this limit come from?  Is that just the standard size netlink
+skb?
 
-On Mon, 17 Sep 2012 13:22:54 +0200 Thierry Reding <thierry.reding@avionic-d=
-esign.de> wrote:
+I'm a little worried that the user-provided
+xfrm_replay_state_esn::bmp_len is not being directly validated anywhere.
+Currently xfrm_replay_state_esn_len() may overflow, and as its return
+type is int it may unexpectedly return a negative value.
+
+[...]
+> --- a/net/xfrm/xfrm_user.c
+> +++ b/net/xfrm/xfrm_user.c
+[...]
+> @@ -370,14 +378,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
+>  					 struct nlattr *rp)
+>  {
+>  	struct xfrm_replay_state_esn *up;
+> +	size_t ulen;
+
+I would normally expect to see sizes declared as size_t but mixing
+size_t and int in comparisons tends to result in bugs.  So I think this
+should to be int, matching the return types of nla_len() and
+xfrm_replay_state_esn_len() (and apparently all lengths in netlink...)
+
+>  	if (!replay_esn || !rp)
+>  		return 0;
+>  
+>  	up = nla_data(rp);
+> +	ulen = xfrm_replay_state_esn_len(up);
 >
-> diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
-> index 270ae7b..3d61ce3 100644
-> --- a/drivers/pci/setup-irq.c
-> +++ b/drivers/pci/setup-irq.c
-> @@ -17,6 +17,11 @@
->  #include <linux/ioport.h>
->  #include <linux/cache.h>
-> =20
-> +void __weak pcibios_update_irq(struct pci_dev *dev, int irq)
-> +{
-> +	dev_dbg(&dev->dev, "Assigning IRQ %02d\n", irq);
-> +	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
-> +}
-> =20
->  static void
->  pdev_fixup_irq(struct pci_dev *dev,
+> -	if (xfrm_replay_state_esn_len(replay_esn) !=
+> -			xfrm_replay_state_esn_len(up))
+> +	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
+>  		return -EINVAL;
+>  
+>  	return 0;
+> @@ -388,22 +397,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
+>  				       struct nlattr *rta)
+>  {
+>  	struct xfrm_replay_state_esn *p, *pp, *up;
+> +	size_t klen, ulen;
 
-Didn't we have a problem with some compiler versions when the weak
-definition was in the same file as the call (there is a call to this
-function in drivers/pci/setup-irq.c)?
+Also int, for the same reason.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>  	if (!rta)
+>  		return 0;
+>  
+>  	up = nla_data(rta);
+> +	klen = xfrm_replay_state_esn_len(up);
+> +	ulen = nla_len(rta) > sizeof(*up) ? klen : sizeof(*up);
+[...]
 
---Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm
-Content-Type: application/pgp-signature
+I understand that this is correct since verify_replay() previously
+checked that nla_len(rta) is either == sizeof(*up) or >= klen.  But
+would it not be more obviously correct to test nla_len(rta) >= klen?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Ben.
 
-iQIcBAEBCAAGBQJQWkkrAAoJEECxmPOUX5FEW9wP/RZUlNoHKF/hdMIqgBXmqu9j
-ziwT/7xAnOx2PyPXzlr360bi/PMcjIv3oqf4DHv1tBxYe7tzxS9j1M2Moq8UHiWW
-1wOj+EXsgex73bIKtudojQojTpY9lZML9cdD5ki6zxvIEZTynAH4dSdomk2knPxw
-er3HuNnawQIA4iad+FF4IFp9ojKsduCCRHEGzgC0sfLm1zT/pKgT/jQjZYjdWtKy
-cTujkETaHoMG6rZdnUwmmZryGHWtPUAlWVyg9BDebJfIL32zzU66lQlpIFREyTnI
-zmOrfeJ4Ypw/B0NRUvEMQbUZJtRk7L/ovddItq9NNWHgYn5pznuJOlTaPQb9owOd
-i4oOZguBUyIQL92SrzMMXjxkx5RaBf8dtgGwvdvvCGv5F48Cnr3eCbQN5YQL08xQ
-fek/sjc5izX0MbNjKYw4twCrOwYVpd6Hj7W8L0lhZ0NgFZIoXQi8zTmEjDtf5cHw
-heVKZnH2zdtboYaiIB6utdl1/20mrq6YUd4yuQxwGpc9LveCkPxpPZ1fwTYJj6Fq
-sjabH0KJVKmHTKr3LJg6xFKNh98p+Z3PlVAz4Ac6JTfCWLroBb9df9XAbHZ5kUZd
-Q8RvTloTEYY6hiYKVUn7QF6iO7fUxYuY8/7s8HBhGEyJrwCrVJTpFCOgm7ySBwO5
-fqCAlk6bhtq1THZ3WZZh
-=VZA6
------END PGP SIGNATURE-----
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
---Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm--
