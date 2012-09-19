@@ -1,118 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2ISLc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:32:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57017 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab2ISLcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:32:24 -0400
-Date: Wed, 19 Sep 2012 13:32:14 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] workqueue: reimplement work_on_cpu() using system_wq
-In-Reply-To: <20120918195746.GE8474@google.com>
-Message-ID: <alpine.LNX.2.00.1209191330190.31149@pobox.suse.cz>
-References: <20120918195746.GE8474@google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754735Ab2ISLf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:35:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45512 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab2ISLfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:35:25 -0400
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org, mfm@muteddisk.com, dan.carpenter@oracle.com
+Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin <navinp@cdac.in>
+Subject: [PATCH v2] staging: usbip: vhci_hcd: Fixed oops during removal of vhci_hcd
+Date: Wed, 19 Sep 2012 17:04:51 +0530
+Message-Id: <1348054491-3969-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Tejun Heo wrote:
+From: navin <navinp@cdac.in>
 
-> >From 760824d48d8a1f302b80367681ada19836d93521 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Tue, 18 Sep 2012 12:48:43 -0700
-> 
-> The existing work_on_cpu() implementation is hugely inefficient.  It
-> creates a new kthread, execute that single function and then let the
-> kthread die on each invocation.
-> 
-> Now that system_wq can handle concurrent executions, there's no
-> advantage of doing this.  Reimplement work_on_cpu() using system_wq
-> which makes it simpler and way more efficient.
+In response to "usbip detach -p [port_number]" user command,vhci_shutdown_connection() gets
+executed which kills tcp_tx,tcp_rx kernel threads but doesn't set thread pointers to NULL.
+so, at the time of vhci_hcd removal vhci_shutdown_connection() again tries to kill kernel
+threads which are already killed.
 
-Makes sense. I have tested that after dropping your conversion of APM 
-on_cpu0() and using this one instead, everything works.
+[  312.220259] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  312.220313] IP: [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[  312.220349] PGD 5b7be067 PUD 5b7dc067 PMD 0
+[  312.220388] Oops: 0000 [#1] SMP
+[  312.220415] Modules linked in: vhci_hcd(O-) usbip_host(O) usbip_core(O) uas usb_storage joydev parport_pc bnep rfcomm ppdev binfmt_misc
+snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event snd_seq
+ath9k mac80211 ath9k_common ath9k_hw snd_timer snd_seq_device snd ath i915 drm_kms_helper drm psmouse cfg80211 coretemp soundcore lpc_ich i2c_algo_bit
+snd_page_alloc video intel_ips wmi btusb mac_hid bluetooth ideapad_laptop lp sparse_keymap serio_raw mei microcode parport r8169
+[  312.220862] CPU 0
+[  312.220882] Pid: 2095, comm: usbip_eh Tainted: G           O 3.6.0-rc3+ #2 LENOVO 20042                           /Base Board Product Name
+[  312.220938] RIP: 0010:[<ffffffff8108186f>]  [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[  312.220979] RSP: 0018:ffff88004d6ebdb0  EFLAGS: 00010282
+[  312.221008] RAX: 0000000000000000 RBX: ffff880041c4db40 RCX: ffff88005ad52230
+[  312.221041] RDX: 0000000000000034 RSI: 0000000000000286 RDI: 0000000000000000
+[  312.221074] RBP: ffff88004d6ebdc0 R08: ffff88004d6ea000 R09: 0000000000000000
+[  312.221107] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+[  312.221144] R13: 0000000000000000 R14: ffff88005ad521d8 R15: ffff88004d6ebea0
+[  312.221177] FS:  0000000000000000(0000) GS:ffff880077400000(0000) knlGS:0000000000000000
+[  312.221214] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  312.221241] CR2: 0000000000000000 CR3: 000000005b7b9000 CR4: 00000000000007f0
+[  312.221277] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  312.221309] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  312.221342] Process usbip_eh (pid: 2095, threadinfo ffff88004d6ea000, task ffff88004d44db40)
+[  312.221384] Stack:
+[  312.221396]  ffff88004d6ebdc0 ffff880041c4db40 ffff88004d6ebde0 ffffffff81052aaa
+[  312.221442]  ffff880041c4db40 0000000000000000 ffff88004d6ebe10 ffffffff8107a148
+[  312.221487]  ffff88005ad521f0 ffff88005ad52228 ffff88004d44db40 ffff88005ad521d8
+[  312.221536] Call Trace:
+[  312.221556]  [<ffffffff81052aaa>] __put_task_struct+0x4a/0x140
+[  312.221587]  [<ffffffff8107a148>] kthread_stop+0x108/0x110
+[  312.221616]  [<ffffffffa0412569>] vhci_shutdown_connection+0x49/0x2b4 [vhci_hcd]
+[  312.221657]  [<ffffffffa0139920>] event_handler_loop+0x70/0x140 [usbip_core]
+[  312.221692]  [<ffffffff8107ad30>] ? add_wait_queue+0x60/0x60
+[  312.221721]  [<ffffffffa01398b0>] ? usbip_stop_eh+0x30/0x30 [usbip_core]
+[  312.221754]  [<ffffffff8107a453>] kthread+0x93/0xa0
+[  312.221784]  [<ffffffff81670e84>] kernel_thread_helper+0x4/0x10
+[  312.221814]  [<ffffffff8107a3c0>] ? flush_kthread_worker+0xb0/0xb0
+[  312.223589]  [<ffffffff81670e80>] ? gs_change+0x13/0x13
+[  312.225360] Code: 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 58 04 00 00 48 89 fb 48 8b bf 50 04 00 00
+<8b> 00 48 c7 83 50 04 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
+[  312.229663] RIP  [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[  312.231696]  RSP <ffff88004d6ebdb0>
+[  312.233648] CR2: 0000000000000000
+[  312.256464] ---[ end trace 1971ce612a167279 ]---
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: navin patidar <navinp@cdac.in>
+---
+ drivers/staging/usbip/vhci_hcd.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-Acked-by: Jiri Kosina <jkosina@suse.cz>
-
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
-> Applying to wq/for-3.7.
-> 
-> Thanks.
-> 
->  kernel/workqueue.c |   25 ++++++++-----------------
->  1 files changed, 8 insertions(+), 17 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 3e324aa..737ab01 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -3624,18 +3624,17 @@ static int __cpuinit workqueue_cpu_down_callback(struct notifier_block *nfb,
->  #ifdef CONFIG_SMP
->  
->  struct work_for_cpu {
-> -	struct completion completion;
-> +	struct work_struct work;
->  	long (*fn)(void *);
->  	void *arg;
->  	long ret;
->  };
->  
-> -static int do_work_for_cpu(void *_wfc)
-> +static void work_for_cpu_fn(struct work_struct *work)
->  {
-> -	struct work_for_cpu *wfc = _wfc;
-> +	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
-> +
->  	wfc->ret = wfc->fn(wfc->arg);
-> -	complete(&wfc->completion);
-> -	return 0;
->  }
->  
->  /**
-> @@ -3650,19 +3649,11 @@ static int do_work_for_cpu(void *_wfc)
->   */
->  long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
->  {
-> -	struct task_struct *sub_thread;
-> -	struct work_for_cpu wfc = {
-> -		.completion = COMPLETION_INITIALIZER_ONSTACK(wfc.completion),
-> -		.fn = fn,
-> -		.arg = arg,
-> -	};
-> +	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
->  
-> -	sub_thread = kthread_create(do_work_for_cpu, &wfc, "work_for_cpu");
-> -	if (IS_ERR(sub_thread))
-> -		return PTR_ERR(sub_thread);
-> -	kthread_bind(sub_thread, cpu);
-> -	wake_up_process(sub_thread);
-> -	wait_for_completion(&wfc.completion);
-> +	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-> +	schedule_work_on(cpu, &wfc.work);
-> +	flush_work(&wfc.work);
->  	return wfc.ret;
->  }
->  EXPORT_SYMBOL_GPL(work_on_cpu);
-> -- 
-> 1.7.7.3
-> 
-
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 12a9a5f..67358d4 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -804,11 +804,14 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
+ 	}
+ 
+ 	/* kill threads related to this sdev, if v.c. exists */
+-	if (vdev->ud.tcp_rx)
++	if (vdev->ud.tcp_rx) {
+ 		kthread_stop_put(vdev->ud.tcp_rx);
+-	if (vdev->ud.tcp_tx)
++		vdev->ud.tcp_rx = NULL;
++	}
++	if (vdev->ud.tcp_tx) {
+ 		kthread_stop_put(vdev->ud.tcp_tx);
+-
++		vdev->ud.tcp_tx = NULL;
++	}
+ 	pr_info("stop threads\n");
+ 
+ 	/* active connection is closed */
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
