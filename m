@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2ISTDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:03:20 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19612 "EHLO
+	id S933139Ab2ISTDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:03:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19591 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756945Ab2ISSzX (ORCPT
+	with ESMTP id S1756933Ab2ISSzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:23 -0400
+	Wed, 19 Sep 2012 14:55:22 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 17/40] PCI: Use __pci_bus_size_bridges() directly in pci_assign_unassigned_bus_resources()
-Date: Wed, 19 Sep 2012 11:54:31 -0700
-Message-Id: <1348080894-23412-18-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 09/40] x86, PCI: Let pcibios_allocate_bus_resources() take bus instead
+Date: Wed, 19 Sep 2012 11:54:23 -0700
+Message-Id: <1348080894-23412-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
@@ -28,38 +28,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now __pci_bus_size_bridges() will not include self bridge.
-So we don't need to have our own version in
- pci_assign_unassigned_bus_resources anymore.
+Will need call the same code for one single root bus during hot add.
+So try to make it take bus instead of bus_list.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-bus.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ arch/x86/pci/i386.c |   38 +++++++++++++++++++++++++-------------
+ 1 files changed, 25 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 85f7ec73..56155c9 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1558,17 +1558,11 @@ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 5817cf2..84696ed 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -215,16 +215,15 @@ static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
+ 	}
+ }
  
- void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
+-static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++static void __init pcibios_allocate_bus_resources(struct pci_bus *bus)
  {
--	struct pci_dev *dev;
- 	LIST_HEAD(add_list); /* list of resources that
- 					want additional resources */
+-	struct pci_bus *bus;
++	struct pci_bus *child;
  
- 	down_read(&pci_bus_sem);
--	list_for_each_entry(dev, &bus->devices, bus_list)
--		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
--		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
--			if (dev->subordinate)
--				__pci_bus_size_bridges(dev->subordinate,
--						 &add_list, true);
-+	__pci_bus_size_bridges(bus, &add_list, false);
- 	up_read(&pci_bus_sem);
- 	__pci_bus_assign_resources(bus, &add_list, NULL);
- 	BUG_ON(!list_empty(&add_list));
+ 	/* Depth-First Search on bus tree */
+-	list_for_each_entry(bus, bus_list, node) {
+-		if (bus->self)
+-			pcibios_allocate_bridge_resources(bus->self);
+-		pcibios_allocate_bus_resources(&bus->children);
+-	}
++	if (bus->self)
++		pcibios_allocate_bridge_resources(bus->self);
++	list_for_each_entry(child, &bus->children, node)
++		pcibios_allocate_bus_resources(child);
+ }
+ 
+ struct pci_check_idx_range {
+@@ -285,12 +284,18 @@ static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ 	}
+ }
+ 
+-static void __init pcibios_allocate_resources(int pass)
++static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
+ {
+-	struct pci_dev *dev = NULL;
++	struct pci_dev *dev;
++	struct pci_bus *child;
+ 
+-	for_each_pci_dev(dev)
++	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		pcibios_allocate_dev_resources(dev, pass);
++
++		child = dev->subordinate;
++		if (child)
++			pcibios_allocate_resources(child, pass);
++	}
+ }
+ 
+ static int __init pcibios_assign_resources(void)
+@@ -323,10 +328,17 @@ static int __init pcibios_assign_resources(void)
+ 
+ void __init pcibios_resource_survey(void)
+ {
++	struct pci_bus *bus;
++
+ 	DBG("PCI: Allocating resources\n");
+-	pcibios_allocate_bus_resources(&pci_root_buses);
+-	pcibios_allocate_resources(0);
+-	pcibios_allocate_resources(1);
++
++	list_for_each_entry(bus, &pci_root_buses, node)
++		pcibios_allocate_bus_resources(bus);
++
++	list_for_each_entry(bus, &pci_root_buses, node)
++		pcibios_allocate_resources(bus, 0);
++	list_for_each_entry(bus, &pci_root_buses, node)
++		pcibios_allocate_resources(bus, 1);
+ 
+ 	e820_reserve_resources_late();
+ 	/*
 -- 
 1.7.7
 
