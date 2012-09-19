@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab2ISOHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:07:38 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:2331 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754492Ab2ISOHf (ORCPT
+	id S1751996Ab2ISOJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:09:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40251 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087Ab2ISOJV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:07:35 -0400
-Date: Wed, 19 Sep 2012 14:07:33 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v3 05/13] Add a __GFP_KMEMCG flag
-In-Reply-To: <505976B5.6090801@parallels.com>
-Message-ID: <00000139dedaeb71-1199f5a3-c122-460e-a1d8-74174a9d96db-000000@email.amazonses.com>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-6-git-send-email-glommer@parallels.com> <00000139d9ea69c6-109249c2-5176-4a1e-b000-4c076d05844d-000000@email.amazonses.com> <505976B5.6090801@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Sep 2012 10:09:21 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: RE: [RFC - PATCH] base:pm: prepare driver for common clock framework
+Thread-Topic: [RFC - PATCH] base:pm: prepare driver for common clock
+ framework
+Thread-Index: AQHNkscGQnhzdlyu5EK+tSnspVAZNJeQ+O4AgADArxA=
+Date: Wed, 19 Sep 2012 14:09:14 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+References: <1347661174-15404-1-git-send-email-m-karicheri2@ti.com>
+ <201209182334.08229.rjw@sisk.pl>
+In-Reply-To: <201209182334.08229.rjw@sisk.pl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Sep 2012, Glauber Costa wrote:
+>> -----Original Message-----
+>> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+>> Sent: Tuesday, September 18, 2012 5:34 PM
+>> To: Karicheri, Muralidharan
+>> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
+>> mturquette@linaro.org; Magnus Damm; Linux-sh list
+>> Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
+>> 
+>> On Saturday, September 15, 2012, Murali Karicheri wrote:
+>> > As part of my work to migrate davinci SoC code to
+>> > use common clk framework, I encountered an issue with this driver
+>> > which is calling clk_enable() and clk_disable() without prepare()/
+>> > unprepare(). This change is needed to enable common clock migration
+>> > for davinci SoCs.
+>> >
+>> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> 
+>> There are other users of this code than davinci.  For example, sh
+>> and ARM/shmobile both use it.  Have you verified that your changes will
+>> work for them too?
+>> 
+Rafael,
 
-> On 09/18/2012 07:06 PM, Christoph Lameter wrote:
-> > On Tue, 18 Sep 2012, Glauber Costa wrote:
-> >
-> >> +++ b/include/linux/gfp.h
-> >> @@ -35,6 +35,11 @@ struct vm_area_struct;
-> >>  #else
-> >>  #define ___GFP_NOTRACK		0
-> >>  #endif
-> >> +#ifdef CONFIG_MEMCG_KMEM
-> >> +#define ___GFP_KMEMCG		0x400000u
-> >> +#else
-> >> +#define ___GFP_KMEMCG		0
-> >> +#endif
-> >
-> > Could you leave __GFP_MEMCG a simple definition and then define GFP_MEMCG
-> > to be zer0 if !MEMCG_KMEM? I think that would be cleaner and the
-> > __GFP_KMEMCHECK another case that would be good to fix up.
-> >
-> >
-> >
-> I can, but what does this buy us?
+Technically do you agree with the changes or do I need to get it reviewed by someone in particular? I have no way of verifying if this works for sh and ARM/shmobile. I have copied this RFC patch to the list showed up by scripts/get_maintainer.pl list. Any idea how I can get this patch reviewed by the sh and ARM/shmobile maintainers and get it tested as well? This is required for DaVinci for sure unless there is an alternate way of doing this. Well, then that is the idea of sending an RFC patch.
 
-All the numeric values should be defined with __ unconditionally so that
-they can be used in future context. Note the comment above the __GFP_XX
-which says "Do not use this directly".
+-Murali
 
-> Also, in any case, this can be done incrementally, and for the other
-> flag as well, as you describe.
-
-There is only one other flag that does not follow the scheme. I'd
-appreciate it if you could submit a patch to fix up the __GFP_NOTRACK
-conditional there.
-
-There is no need to do this incrementally. Do it the right way
-immediately.
+>> Rafael
+>> 
+>> 
+>> > diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+>> > index eb78e96..9d8fde7 100644
+>> > --- a/drivers/base/power/clock_ops.c
+>> > +++ b/drivers/base/power/clock_ops.c
+>> > @@ -99,7 +99,7 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
+>> >
+>> >  	if (ce->status < PCE_STATUS_ERROR) {
+>> >  		if (ce->status == PCE_STATUS_ENABLED)
+>> > -			clk_disable(ce->clk);
+>> > +			clk_disable_unprepare(ce->clk);
+>> >
+>> >  		if (ce->status >= PCE_STATUS_ACQUIRED)
+>> >  			clk_put(ce->clk);
+>> > @@ -396,7 +396,7 @@ static void enable_clock(struct device *dev, const char
+>> *con_id)
+>> >
+>> >  	clk = clk_get(dev, con_id);
+>> >  	if (!IS_ERR(clk)) {
+>> > -		clk_enable(clk);
+>> > +		clk_prepare_enable(clk);
+>> >  		clk_put(clk);
+>> >  		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
+>> >  	}
+>> > @@ -413,7 +413,7 @@ static void disable_clock(struct device *dev, const char
+>> *con_id)
+>> >
+>> >  	clk = clk_get(dev, con_id);
+>> >  	if (!IS_ERR(clk)) {
+>> > -		clk_disable(clk);
+>> > +		clk_disable_unprepare(clk);
+>> >  		clk_put(clk);
+>> >  		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
+>> >  	}
+>> >
 
