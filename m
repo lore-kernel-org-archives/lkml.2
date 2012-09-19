@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab2ISTEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:04:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19517 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756230Ab2ISSzR (ORCPT
+	id S933135Ab2ISTEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:04:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47863 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756471Ab2ISSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Sep 2012 14:55:17 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,101 +16,77 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 08/40] x86, PCI: Separate pcibios_allocate_dev_resources()
-Date: Wed, 19 Sep 2012 11:54:22 -0700
-Message-Id: <1348080894-23412-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 11/40] PCI, x86: Add pcibios_fw_addr_done
+Date: Wed, 19 Sep 2012 11:54:25 -0700
+Message-Id: <1348080894-23412-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thus pcibios_allocate_resources() could more simple and clean
+Use it to skip not needed function after pcibios_fw_addr_list_del is called.
+
+for pci root bus hot add, we will need to use pcibios_allocate_dev_resources(),
+and don't want to mess up with fw_addr.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   42 +++++++++++++++++++++++-------------------
- 1 files changed, 23 insertions(+), 19 deletions(-)
+ arch/x86/pci/i386.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 9800362..5817cf2 100644
+index 42dd755..edfc376 100644
 --- a/arch/x86/pci/i386.c
 +++ b/arch/x86/pci/i386.c
-@@ -232,9 +232,8 @@ struct pci_check_idx_range {
- 	int end;
- };
+@@ -51,6 +51,7 @@ struct pcibios_fwaddrmap {
  
--static void __init pcibios_allocate_resources(int pass)
-+static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- {
--	struct pci_dev *dev = NULL;
- 	int idx, disabled, i;
- 	u16 command;
- 	struct resource *r;
-@@ -246,14 +245,13 @@ static void __init pcibios_allocate_resources(int pass)
- #endif
- 	};
+ static LIST_HEAD(pcibios_fwaddrmappings);
+ static DEFINE_SPINLOCK(pcibios_fwaddrmap_lock);
++static bool pcibios_fw_addr_done;
  
--	for_each_pci_dev(dev) {
--		pci_read_config_word(dev, PCI_COMMAND, &command);
--		for (i = 0; i < ARRAY_SIZE(idx_range); i++)
-+	pci_read_config_word(dev, PCI_COMMAND, &command);
-+	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
- 		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
- 			r = &dev->resource[idx];
--			if (r->parent)		/* Already allocated */
-+			if (r->parent)	/* Already allocated */
- 				continue;
--			if (!r->start)		/* Address not assigned at all */
-+			if (!r->start)	/* Address not assigned at all */
- 				continue;
- 			if (r->flags & IORESOURCE_IO)
- 				disabled = !(command & PCI_COMMAND_IO);
-@@ -272,23 +270,29 @@ static void __init pcibios_allocate_resources(int pass)
- 				}
- 			}
- 		}
--		if (!pass) {
--			r = &dev->resource[PCI_ROM_RESOURCE];
--			if (r->flags & IORESOURCE_ROM_ENABLE) {
--				/* Turn the ROM off, leave the resource region,
--				 * but keep it unregistered. */
--				u32 reg;
--				dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
--				r->flags &= ~IORESOURCE_ROM_ENABLE;
--				pci_read_config_dword(dev,
--						dev->rom_base_reg, &reg);
--				pci_write_config_dword(dev, dev->rom_base_reg,
-+	if (!pass) {
-+		r = &dev->resource[PCI_ROM_RESOURCE];
-+		if (r->flags & IORESOURCE_ROM_ENABLE) {
-+			/* Turn the ROM off, leave the resource region,
-+			 * but keep it unregistered. */
-+			u32 reg;
-+			dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
-+			r->flags &= ~IORESOURCE_ROM_ENABLE;
-+			pci_read_config_dword(dev, dev->rom_base_reg, &reg);
-+			pci_write_config_dword(dev, dev->rom_base_reg,
- 						reg & ~PCI_ROM_ADDRESS_ENABLE);
--			}
- 		}
- 	}
+ /* Must be called with 'pcibios_fwaddrmap_lock' lock held. */
+ static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
+@@ -72,6 +73,9 @@ pcibios_save_fw_addr(struct pci_dev *dev, int idx, resource_size_t fw_addr)
+ 	unsigned long flags;
+ 	struct pcibios_fwaddrmap *map;
+ 
++	if (pcibios_fw_addr_done)
++		return;
++
+ 	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
+ 	map = pcibios_fwaddrmap_lookup(dev);
+ 	if (!map) {
+@@ -97,6 +101,9 @@ resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
+ 	struct pcibios_fwaddrmap *map;
+ 	resource_size_t fw_addr = 0;
+ 
++	if (pcibios_fw_addr_done)
++		return fw_addr;
++
+ 	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
+ 	map = pcibios_fwaddrmap_lookup(dev);
+ 	if (map)
+@@ -106,7 +113,7 @@ resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
+ 	return fw_addr;
  }
  
-+static void __init pcibios_allocate_resources(int pass)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	for_each_pci_dev(dev)
-+		pcibios_allocate_dev_resources(dev, pass);
-+}
-+
- static int __init pcibios_assign_resources(void)
+-static void pcibios_fw_addr_list_del(void)
++static void __init pcibios_fw_addr_list_del(void)
  {
- 	struct pci_dev *dev = NULL;
+ 	unsigned long flags;
+ 	struct pcibios_fwaddrmap *entry, *next;
+@@ -118,6 +125,7 @@ static void pcibios_fw_addr_list_del(void)
+ 		kfree(entry);
+ 	}
+ 	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
++	pcibios_fw_addr_done = true;
+ }
+ 
+ static int
 -- 
 1.7.7
 
