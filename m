@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab2ISSjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:39:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57449 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab2ISSi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:38:58 -0400
-Date: Wed, 19 Sep 2012 11:38:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Andre Przywara <andre.przywara@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: linux-next: manual merge of the workqueues tree with the pm
- tree
-Message-ID: <20120919183853.GM8474@google.com>
-References: <20120919135625.875ebc4d68279b26f2375150@canb.auug.org.au>
+	id S1756889Ab2ISSqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:46:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756470Ab2ISSqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 14:46:46 -0400
+Date: Wed, 19 Sep 2012 21:48:18 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 2/2] kvm: Add resampling irqfds for level triggered
+ interrupts
+Message-ID: <20120919184818.GB312@redhat.com>
+References: <20120918031156.12021.27838.stgit@bling.home>
+ <20120918031626.12021.90083.stgit@bling.home>
+ <50598975.50503@redhat.com>
+ <1348078993.28860.37.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120919135625.875ebc4d68279b26f2375150@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1348078993.28860.37.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 01:56:25PM +1000, Stephen Rothwell wrote:
-> Hi Tejun,
+On Wed, Sep 19, 2012 at 12:23:13PM -0600, Alex Williamson wrote:
+> On Wed, 2012-09-19 at 11:59 +0300, Avi Kivity wrote:
+> > On 09/18/2012 06:16 AM, Alex Williamson wrote:
+> > > @@ -92,6 +156,43 @@ irqfd_shutdown(struct work_struct *work)
+> > >  	 */
+> > >  	flush_work_sync(&irqfd->inject);
+> > >  
+> > > +	if (irqfd->resampler) {
+> > > +		struct _irqfd_resampler *resampler = irqfd->resampler;
+> > > +		struct kvm *kvm = resampler->kvm;
+> > > +
+> > > +		mutex_lock(&kvm->irq_lock);
+> > > +		spin_lock_irq(&irqfd->kvm->irqfds.lock);
+> > > +
+> > > +		list_del_rcu(&irqfd->resampler_list);
+> > > +
+> > > +		/*
+> > > +		 * On removal of the last irqfd in the resampler list,
+> > > +		 * remove the resampler and unregister the irq ack
+> > > +		 * notifier.  It's possible to race the ack of the final
+> > > +		 * injection here, so manually de-assert the gsi to avoid
+> > > +		 * leaving an unmanaged, asserted interrupt line.
+> > > +		 */
+> > > +		if (list_empty(&resampler->irqfds)) {
+> > > +			list_del(&resampler->list);
+> > > +			__kvm_unregister_irq_ack_notifier(kvm,
+> > > +							  &resampler->notifier);
+> > > +			kvm_set_irq(kvm, KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
+> > > +				    resampler->notifier.gsi, 0);
+> > > +			kfree(resampler);
+> > 
+> > Is this rcu safe?
 > 
-> Today's linux-next merge of the workqueues tree got a conflict in
-> drivers/cpufreq/powernow-k8.c between commit e1f0b8e9b04a ("cpufreq:
-> Remove support for hardware P-state chips from powernow-k8") from the pm
-> tree and commit 5d7efe7bf90f ("cpufreq/powernow-k8: workqueue user
-> shouldn't migrate the kworker to another CPU") from the workqueues tree.
+> No it's not and unfortunately this also points out another race in
+> trying to use a single source ID...
 > 
-> I fixed it up (I think - see below) and can carry the fix as necessary
-> (no action is required).
+> > > +		}
+> > > +
+> > > +		spin_unlock_irq(&irqfd->kvm->irqfds.lock);
+> > > +		mutex_unlock(&kvm->irq_lock);
+> > > +
+> > > +		/*
+> > > +		 * Both list_del_rcu & __kvm_unregister_irq_ack_notifier
+> > > +		 * require an rcu grace period/
+> > > +		 */
+> > > +		synchronize_rcu();
+> 
+> The kfree can't be done until here and we also have to assume that ack
+> notifies are firing until here.  That means that between the
+> mutex_unlock and the end of synchronize_rcu another resampling irqfd can
+> be registered, post an interrupt, and have it de-asserted by the wrong
+> resampler.  Maybe the conversion wasn't as clean as I first thought :(
+> > Quite ugly to expose the internals this way.
+> 
+> Yep.  I don't know how to clean it up though; between all the different
+> rcu operations and locks, it's a mess.  Thanks,
+> 
+> Alex
 
-Yeap, looks correct to me.  FYI, the change is likely to be pulled
-into 3.6-rc6 soonish.
-
-Thanks.
+Add another mutex for the resamplers, keep it during the whole
+operation? This also removes the need for exposing the internals.
+If you do pls document lock nesting rules.
 
 -- 
-tejun
+MST
