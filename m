@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2ISF3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 01:29:37 -0400
-Received: from ares07.inai.de ([5.9.24.206]:48614 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab2ISF3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 01:29:34 -0400
-Date: Wed, 19 Sep 2012 07:29:29 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Tatyana Brokhman <tlinder@codeaurora.org>, axboe@kernel.dk,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH 2/2] block: Adding ROW scheduling algorithm
-In-Reply-To: <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LNX.2.01.1209190718030.29967@nerf07.vanv.qr>
-References: <1344166241-18708-1-git-send-email-tlinder@codeaurora.org> <1344166241-18708-3-git-send-email-tlinder@codeaurora.org> <x49wr1cdlmg.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1753548Ab2ISFas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 01:30:48 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41892 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab2ISFah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 01:30:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120919045038.GA2248@netboy.at.omicron.at>
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
+ <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
+ <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 18 Sep 2012 22:30:15 -0700
+Message-ID: <CALCETrUoU+MPnV2kuy4UmAfHvSVtfXBt-zQ=QAvhZx3qXgTvXQ@mail.gmail.com>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Monday 2012-08-06 18:35, Jeff Moyer wrote:
->Tatyana Brokhman writes:
+On Tue, Sep 18, 2012 at 9:50 PM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> On Tue, Sep 18, 2012 at 11:29:50AM -0700, John Stultz wrote:
+>> I believe its mostly historical, but on some architectures that
+>> history has become an established ABI, making it technical.
 >
->> This patch adds the implementation of a new scheduling algorithm - ROW.
->> The policy of this algorithm is to prioritize READ requests over WRITE
->> as much as possible without starving the WRITE requests.
+> Fine, but what do you mean by "ABI?" Are you talking about magic
+> addresses for functions?
 >
->Perhaps you could start off by describing the workload, and describing
->why the existing I/O schedulers do not perform well.
+> Without knowing the dirty details, what I imagine is a jump/branch
+> from the arch-specific code into the common implementation.
 
-My setup is a 1 GB RAM Atom N450 netbook, combined with the use of
-dm-crypt for the 5400 rpm disk, which limits the effective write
-throughput to somewhere around 20–26 MB/s. Now try this:
+I suspect (based mostly on speculation) that this is possible for
+everything except ia64.  ia64 looks like it uses a highly magical
+syscall entry, where user code jumps to a special address for *all*
+syscalls, and that code does some kind of partial kernel entry.  Very
+careful asm code can run in that weird state, and that code implements
+gettimeofday.  Now, if that code could return back to normal execution
+and jump to a vdso, it could use common code, I guess.
 
-  ddrescue /dev/zero ~/bluntfile (or)
+This assumes that all architectures that want to use vclock_gettime,
+etc are capable of sharing a page of read-only kernel memory with
+userspace at a fixed address or can otherwise make the VVAR macro
+work.  The only architectures I actually understand are x86-{32,64},
+which can.  I don't think anyone cares about x86-32 enough to
+implement it, though.
 
-  (remote)# >nullfile
-  (remote)# truncate -s 10G nullfile
-  (local)# rsync -HPavz remote:nullfile .
-
-The transfer rates of ddrescue/rsync first show 50–60 MB/s. Wait
-until writeout is forced - which is after ~700–800 MB in my case when
-all buffers are full. The transfer rates then drop to the
-aforementioned 20–26 MB/s.
-
-In the so-loaded system, try to start an xterm (preferably by the use
-of a shortcut, or starting one from another xterm). The wait time for
-the shell prompt to appear is then the measure for interactivity,
-with lower being better.
-
-I have casually observed that ROW has 1/4th of the wait time in this
-heavy disk write scenario (around 5 s) for the shell to start up than
-with CFQ (20–21 s). "Casual" meaning I had a clock with 1.0 s
-granularity beside me and ran this for like 3 times for each
-scheduler, averaging it out.
+--Andy
