@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab2ISJu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 05:50:28 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:47708 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab2ISJuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 05:50:24 -0400
-Message-ID: <50599541.9080604@panasas.com>
-Date: Wed, 19 Sep 2012 12:49:53 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1756005Ab2ISJzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 05:55:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15142 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755586Ab2ISJzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 05:55:08 -0400
+X-IronPort-AV: E=Sophos;i="4.80,448,1344182400"; 
+   d="scan'208";a="5871509"
+Message-ID: <505996F8.1020506@cn.fujitsu.com>
+Date: Wed, 19 Sep 2012 17:57:12 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
-Subject: Re: [ 16/46] NFSv4.1: Remove a bogus BUG_ON() in nfs4_layoutreturn_done
-References: <20120912233817.662663809@linuxfoundation.org> <20120912233819.364182315@linuxfoundation.org> <1347813183.13258.286.camel@deadeye.wl.decadent.org.uk> <20120916163703.GA7871@kroah.com> <4FA345DA4F4AE44899BD2B03EEEC2FA908FC6732@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908FC6732@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] workqueue: Keep activate-order equals to queue_work()-order
+References: <1347957414-6692-1-git-send-email-laijs@cn.fujitsu.com> <1347957414-6692-2-git-send-email-laijs@cn.fujitsu.com> <20120918170519.GB8474@google.com>
+In-Reply-To: <20120918170519.GB8474@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/19 17:55:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/09/19 17:55:22,
+	Serialize complete at 2012/09/19 17:55:22
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2012 04:05 PM, Myklebust, Trond wrote:
-
->> -----Original Message-----
->> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
->> Sent: Sunday, September 16, 2012 12:37 PM
->> To: Ben Hutchings
->> Cc: Myklebust, Trond; linux-kernel@vger.kernel.org;
->> stable@vger.kernel.org; Boaz Harrosh; Tigran Mkrtchyan
->> Subject: Re: [ 16/46] NFSv4.1: Remove a bogus BUG_ON() in
->> nfs4_layoutreturn_done
+On 09/19/2012 01:05 AM, Tejun Heo wrote:
+> On Tue, Sep 18, 2012 at 04:36:53PM +0800, Lai Jiangshan wrote:
+>> The whole workqueue.c keeps activate-order equals to queue_work()-order
+>> in any given cwq except workqueue_set_max_active().
 >>
->> On Sun, Sep 16, 2012 at 05:33:03PM +0100, Ben Hutchings wrote:
->>> On Wed, 2012-09-12 at 16:39 -0700, Greg Kroah-Hartman wrote:
->>>> From: Greg KH <gregkh@linuxfoundation.org>
->>>>
->>>> 3.0-stable review patch.  If anyone has any objections, please let me
->> know.
->>>>
->>>> ------------------
->>>>
->>>> From: Trond Myklebust <Trond.Myklebust@netapp.com>
->>>>
->>>> commit 47fbf7976e0b7d9dcdd799e2a1baba19064d9631 upstream.
->>>>
->>>> Ever since commit 0a57cdac3f (NFSv4.1 send layoutreturn to fence
->>>> disconnected data server) we've been sending layoutreturn calls
->>>> while there is potentially still outstanding I/O to the data
->>>> servers. The reason we do this is to avoid races between replayed
->>>> writes to the MDS and the original writes to the DS.
->>>>
->>>> When this happens, the BUG_ON() in nfs4_layoutreturn_done can be
->>>> triggered because it assumes that we would never call layoutreturn
->>>> without knowing that all I/O to the DS is finished. The fix is to
->>>> remove the BUG_ON() now that the assumptions behind the test are
->>>> obsolete.
->>>>
->>>> Reported-by: Boaz Harrosh <bharrosh@panasas.com>
->>>> Reported-by: Tigran Mkrtchyan <tigran.mkrtchyan@desy.de>
->>>> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> [...]
->>>
->>> The upstream commit has:
->>>
->>>     Cc: stable@vger.kernel.org [>=3.5]
->>>
->>> and so I ignored it for 3.2.  Is it actually needed for the earlier
->>> stable series?
+>> If this order is not kept, something may be not good:
 >>
->> Crud, I missed that somehow :(
+>> first_work_fn() { release some resource; }
+>> second_work_fn() { wait and request the resource; use resource; }
 >>
->> Trond, should I revert this in 3.0 and 3.4 stable kernels?
+>> 1. user queues the first work.	# ->max_active is low, is queued on ->delayed_works.
+>> 2. someone increases the >max_active via workqueue_set_max_active()
+>> 3. user queues the second work.	# queued on cwq->pool.
+>>
+>> When the second work is launched to execute, it waits the first work
+>> to release the resource. But the first work is still in ->delayed_works,
+>> it waits the first work to finish and them it can be activated.
+>>
+>> It is bad. we fix it by activating the first work in the step 2.
+>>
+>> I can't fully determine that it is workqueue's responsibility
+>> or the user's responsibility.
+>> If it is workqueue's responsibility, the patch needs go to -stable.
+>> If it is user's responsibility. it is a nice cleanup, it can go to for-next.
+>> I prefer it is workqueue's responsibility.
 > 
-> Hi Greg,
+> Unless max_active == 1, workqueue doesn't give any guarantee on
+> execution order.  I don't think we need to care about this.
 > 
-> Applying it to those kernels should be unnecessary but harmless, so if you've already applied them then I'd say just keep them.
 > 
-> Cheers
->   Trond
+
+(disorder of execution is OK for current WQ. because we can launch new worker
+to execute the next work if the previous one is waiting something)
+
+But I concern activate-order, not execution order. A non-delayed work
+may delay a delayed work for ever, and if a non-delayed work needs something
+which will be produced by delayed one, the two work may wait each other.
+
+{
+a subsystem queues a work to release resource.
+and them
+a subsystem queues a work to use the resource.
+}
+Is this behavior acceptable?
+
+If this is acceptable, and if the first queued work go to ->delayed_works,
+and a userspace user issues workqueue_set_max_active() via sysctl
+before the second queuing. thus the second queued work will be activated
+immediately. since the second work is activated,
+the first work can't be activated before the first work finished.
+thus the two work may wait each other.
 
 
-Trond hi
+All of this is abnormal thought. and it is not a real problem, merging them
+as cleanup is enough.
 
-I do hit this with objects layout also in 3.2.
-I know that in files-layout it only hits post 3.5
-But we've been using layout-return since 3.0
-
-Thanks
-Boaz
+Thanks,
+Lai
