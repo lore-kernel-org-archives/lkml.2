@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab2ISRea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:34:30 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:57778 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756701Ab2ISRe1 (ORCPT
+	id S932784Ab2ISRgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:36:23 -0400
+Received: from nm23-vm6.bullet.mail.ird.yahoo.com ([212.82.109.235]:45816 "HELO
+	nm23-vm6.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932268Ab2ISRgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:34:27 -0400
-Date: Wed, 19 Sep 2012 20:29:40 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Sonasath, Moiz" <m-sonasath@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] usb: dwc3: Fix gadget pullup in SS mode
-Message-ID: <20120919172939.GC7784@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1348054229-27362-1-git-send-email-kishon@ti.com>
- <1348054229-27362-3-git-send-email-kishon@ti.com>
- <20120919115306.GG3772@arwen.pp.htv.fi>
- <CAEgRx2zOVn0zV39-cuPuj4n4HRgQmywy_NY4KTe0qEgeC+NEkw@mail.gmail.com>
- <20120919160450.GA7510@arwen.pp.htv.fi>
- <CAEgRx2yXStORBknr2hoMcobMO8wFGuKr4bvzZwEQHQQcHVH76Q@mail.gmail.com>
- <20120919172442.GA7784@arwen.pp.htv.fi>
+	Wed, 19 Sep 2012 13:36:21 -0400
+X-Yahoo-Newman-Id: 422784.27468.bm@smtp120.mail.ird.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: BAE3huUVM1k_cUOB2EsF8wRJ9rXb9u9QNs3WvGB8UK.XsCg
+ l4XIApTo.23Htl9X6KSlzbU6dN8AFODetK.DEBYsZqy0GpEkj_PvYjtZhTwV
+ Jxezjq2CMZGs7PU7JXwUdw6l9c6iEGgip5hel3yci6cl2FoPP1dlDJbGfceR
+ ADGjPK6snGZAF4JVMPnX3zeuaZd71LUAnT_laFV6E4Ot2TK77RLLhcQgIt2j
+ SDW8gxOplbx0WRDwsjlxxYFyuCRyjmOtM3JHyZPl.QgvrvysBqtARpCZH_m.
+ offAgpu9l2_nQiOAcJamptwou8QZppnBJDf1wRGGKMhiV4N3Y3rGc8RUgIQ1
+ d.hvdIFlnXCDq.kK2iLWqoDBjkKpEyVP_GoYsRWdHChouFww9FVueWEBjlMX
+ .jVQ0R7VWaxiGMR5hfObEkw--
+X-Yahoo-SMTP: 5Vuzu2WswBCxMnJ0hjKohBcp6M6Es6bt5AQ-
+Message-ID: <505A0293.4070708@yahoo.com>
+Date: Wed, 19 Sep 2012 18:36:19 +0100
+From: Paul Parsons <lost.distance@yahoo.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
-Content-Disposition: inline
-In-Reply-To: <20120919172442.GA7784@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cbou@mail.ru, dwmw2@infradead.org
+CC: philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] pda_power: ac_draw used before set
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When I reboot my iPAQ hx4700 in its cradle, the battery will not begin
+to charge even though the AC supply is connected. Charging will start
+only after the PDA power driver is tickled by some other power event,
+such as reseating the iPAQ in its cradle or connecting the USB cable.
 
---hOcCNbCCxyk/YU74
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The problem lies in pda_power_probe(), where ac_draw is used by the call
+to update_charger() before being set by the call to regulator_get().
 
-Hi again,
+Moving the regulator_get() call to before the update_charger() call
+fixes the problem.
 
-On Wed, Sep 19, 2012 at 08:24:44PM +0300, Felipe Balbi wrote:
-> > > at minimum this should've come with a proper revision check anyway.
-> > >
-> >=20
-> > Actually most of it is under a rev check :)
->=20
-> fair enough.
+Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>
+---
+  drivers/power/pda_power.c |   16 +++++++++-------
+  1 files changed, 9 insertions(+), 7 deletions(-)
 
-one extra comment here. That revision check is not related to the
-silicon errata you mention. That revision check is there because the bit
-definition of that particular register has changed a little bit, so
-we're just handling a slightly different programming model between older
-and newer revisions.
+diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+index 7312f26..d3be834d 100644
+--- a/drivers/power/pda_power.c
++++ b/drivers/power/pda_power.c
+@@ -281,6 +281,14 @@ static int pda_power_probe(struct platform_device 
+*pdev)
+  			goto init_failed;
+  	}
 
---=20
-balbi
++	ac_draw = regulator_get(dev, "ac_draw");
++	if (IS_ERR(ac_draw)) {
++		dev_dbg(dev, "couldn't get ac_draw regulator\n");
++		ret = PTR_ERR(ac_draw);
++		ac_draw = NULL;
++		goto ac_draw_failed;
++	}
++
+  	update_status();
+  	update_charger();
 
---hOcCNbCCxyk/YU74
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+@@ -309,13 +317,6 @@ static int pda_power_probe(struct platform_device 
+*pdev)
+  		pda_psy_usb.num_supplicants = pdata->num_supplicants;
+  	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQWgEDAAoJEIaOsuA1yqRE0YMP/0QnYGsHl/TJqh4iyowMnLk4
-mU88PfxHpN1o/KynAj/R+hVpizQaOprohV3r3EFVg9AEF/c4NOY5ZUWh3TkCvQC6
-eAhBPL+hh7ki54C9yfYNJhLXZB/YH6JFSoZ+JrSZT96gbWSWvOf8vSt/mVwQ7cpt
-jYHC6OZKATyKEGs8H+CLrmyEsx04vxMVN33YIr7osVTREd8E2j5ZYlROGsecAd2F
-csgsz+Utuah8NZz+HH2kFfNUVBGNloT8G3dfgD5DnNNI9KBCj1j9Upc6Wgk9FRfV
-XydcvrllD0gCxhJZPJn+x73spmqDUTjL5GBiqS/xoh7n/VNOI2Mx2C8EcgVlm79f
-RXgyYmUw6kHJLMPA4T8mMOOjX3mI3GsDyug9PklNY8lc4fnMjzInW5zWxA3n8hXZ
-3AlvKtsKYf+KKx4jQg09n+YghOOmNmt/mGIJQFqvaz9IeT82JQ90yCdCYqkmOjhF
-zqxjpDarm7CyrFFemURPst2IVbmHVDY35N0gE+1cgHgbh6a3y8MGE1ChvHg7FQrY
-oPPqs0iaxRBZAfxfs/L+r7wGdXxOp1C1+/DVxSYyB2mQXL0mp6bM2FMHquHht/Cn
-pPqrQhXXdlw1OI7q7Fni0Hme0WzgBHbKSu0eo+RApJX7YVyzGy6NX4VZtvW/+weH
-F8O1eYOPrK3snoupRE3x
-=JG2n
------END PGP SIGNATURE-----
-
---hOcCNbCCxyk/YU74--
+-	ac_draw = regulator_get(dev, "ac_draw");
+-	if (IS_ERR(ac_draw)) {
+-		dev_dbg(dev, "couldn't get ac_draw regulator\n");
+-		ac_draw = NULL;
+-		ret = PTR_ERR(ac_draw);
+-	}
+-
+  #ifdef CONFIG_USB_OTG_UTILS
+  	transceiver = usb_get_phy(USB_PHY_TYPE_USB2);
+  	if (!IS_ERR_OR_NULL(transceiver)) {
+@@ -415,6 +416,7 @@ ac_supply_failed:
+  		regulator_put(ac_draw);
+  		ac_draw = NULL;
+  	}
++ac_draw_failed:
+  	if (pdata->exit)
+  		pdata->exit(dev);
+  init_failed:
+-- 
+1.7.8.6
