@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab2ISB0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 21:26:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40158 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab2ISB0b (ORCPT
+	id S1752336Ab2ISB3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 21:29:39 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:44642 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2ISB3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 21:26:31 -0400
-Date: Tue, 18 Sep 2012 22:26:23 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [ 117/135] NFS: return error from decode_getfh in decode open
-Message-ID: <20120919012623.GA17910@herton-Z68MA-D2H-B3>
-References: <20120917003625.784119135@decadent.org.uk>
- <20120917003642.413673073@decadent.org.uk>
+	Tue, 18 Sep 2012 21:29:37 -0400
+Subject: [PATCH] x86: Don't clobber top of pt_regs in nested NMI
+To: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+From: Salman Qazi <sqazi@google.com>
+Date: Tue, 18 Sep 2012 18:29:35 -0700
+Message-ID: <20120919012935.23551.12099.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120917003642.413673073@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 01:38:22AM +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> 
-> I'm not sure whether my expansion of the fix is correct here.
-> 
-> ------------------
-> 
-> From: Weston Andros Adamson <dros@netapp.com>
-> 
-> commit 01913b49cf1dc6409a07dd2a4cc6af2e77f3c410 upstream.
-> 
-> If decode_getfh failed, nfs4_xdr_dec_open would return 0 since the last
-> decode_* call must have succeeded.
-> 
-> Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> [bwh: Backported to 3.2: this function makes two more function calls
->  (no longer present in mainline) with the same issue, so fix them up
->  similarly.]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  fs/nfs/nfs4xdr.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> --- a/fs/nfs/nfs4xdr.c
-> +++ b/fs/nfs/nfs4xdr.c
-> @@ -6113,12 +6113,15 @@ static int nfs4_xdr_dec_open(struct rpc_
->  	status = decode_open(xdr, res);
->  	if (status)
->  		goto out;
-> -	if (decode_getfh(xdr, &res->fh) != 0)
-> +	status = decode_getfh(xdr, &res->fh);
-> +	if (status)
->  		goto out;
-> -	if (decode_getfattr(xdr, res->f_attr, res->server,
-> -				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
-> +	status = decode_getfattr(xdr, res->f_attr, res->server,
-> +				 !RPC_IS_ASYNC(rqstp->rq_task));
+The nested NMI modifies the place (instruction, flags and stack)
+that the first NMI will iret to.  However, the copy of registers
+modified is exactly the one that is the part of pt_regs in
+the first NMI.  This can change the behaviour of the first NMI.
 
-I'm also not sure about the expansion of the fix here, not knowing very
-much about nfs. It seems that the code in some cases want to discard the
-status from decode_getfattr, for example nfs4_xdr_dec_rename is one case
-which does the same. Is it ok to return the status of decode_getfattr on
-nfs4_xdr_dec_open here? Or should it remain like it was before?
+In particular, Google's arch_trigger_all_cpu_backtrace handler
+also prints regions of memory surrounding addresses appearing in
+registers.  This results in handled exceptions, after which nested NMIs
+start coming in.  These nested NMIs change the value of registers
+in pt_regs.  This can cause the original NMI handler to produce
+incorrect output.
 
-> +	if (status)
->  		goto out;
-> -	if (decode_restorefh(xdr) != 0)
-> +	status = decode_restorefh(xdr);
-> +	if (status)
->  		goto out;
->  	decode_getfattr(xdr, res->dir_attr, res->server,
->  			!RPC_IS_ASYNC(rqstp->rq_task));
+We solve this problem by introducing an extra copy of the iret
+registers that are exclusively a part of pt_regs and are not modified
+elsewhere.  The downside is that the do_nmi function can no longer
+change the control flow, as any values it writes to these five
+registers will be discarded.
 
--- 
-[]'s
-Herton
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ arch/x86/kernel/entry_64.S |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 69babd8..40ddb6d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1724,6 +1724,18 @@ repeat_nmi:
+ end_repeat_nmi:
+ 
+ 	/*
++	 * We went a running NMI handling routine to have a consistent
++	 * picture of register state.  This should hold true even if
++	 * there is a nested NMI.  Therefore, we let the nested NMI
++	 * play with the previous copy of these registers and leave this
++	 * new copy unmodified for do_nmi()
++	 */
++	.rept 5
++	pushq_cfi 4*8(%rsp)
++	.endr
++	CFI_DEF_CFA_OFFSET SS+8-RIP
++
++	/*
+ 	 * Everything below this point can be preempted by a nested
+ 	 * NMI if the first NMI took an exception and reset our iret stack
+ 	 * so that we repeat another NMI.
+@@ -1771,7 +1783,13 @@ nmi_swapgs:
+ nmi_restore:
+ 	RESTORE_ALL 8
+ 	/* Clear the NMI executing stack variable */
+-	movq $0, 10*8(%rsp)
++	movq $0, 15*8(%rsp)
++
++	/* Pop the extra copy of iret context that was saved above
++	 * just for do_nmi()
++	 */
++	addq $5*8, %rsp
++
+ 	jmp irq_return
+ 	CFI_ENDPROC
+ END(nmi)
+
