@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2ISJGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 05:06:50 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:53989 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab2ISJGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 05:06:49 -0400
-X-AuditID: b753bd60-932c5ba0000047ca-8a-50598aa31023
-X-AuditID: b753bd60-932c5ba0000047ca-8a-50598aa31023
-Subject: [PATCH] x86: Distinguish TLB shootdown interrupts from other
- functions call interrupts
-To: x86@kernel.org
-From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Cc: Alex Shi <alex.shi@intel.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 19 Sep 2012 18:04:17 +0900
-Message-ID: <20120919090417.24381.87388.stgit@hpxw>
-User-Agent: StGit/0.16
+	id S1754192Ab2ISJHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 05:07:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752815Ab2ISJHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 05:07:12 -0400
+Date: Wed, 19 Sep 2012 12:08:45 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 2/2] kvm: Add resampling irqfds for level triggered
+ interrupts
+Message-ID: <20120919090845.GA26517@redhat.com>
+References: <20120918031156.12021.27838.stgit@bling.home>
+ <20120918031626.12021.90083.stgit@bling.home>
+ <50598975.50503@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50598975.50503@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As TLB shootdown requests to other CPU cores are now done using function call
-interrupts, TLB shootdowns entry in /proc/interrupts is always shown as 0.
+On Wed, Sep 19, 2012 at 11:59:33AM +0300, Avi Kivity wrote:
+> > @@ -247,9 +383,36 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  		/* This fd is used for another irq already. */
+> >  		ret = -EBUSY;
+> >  		spin_unlock_irq(&kvm->irqfds.lock);
+> > +		mutex_unlock(&kvm->irq_lock);
+> >  		goto fail;
+> >  	}
+> >  
+> > +	if (resampler) {
+> > +		struct _irqfd_resampler *resampler_tmp;
+> > +
+> > +		/*
+> > +		 * Re-use a resampler if it's already registered on the
+> > +		 * gsi we need.  Free the one we created above if found,
+> > +		 * otherwise add to the list and setup the irq ack notifier.
+> > +		 */
+> > +		list_for_each_entry(resampler_tmp,
+> > +				    &kvm->irqfds.resamplers, list) {
+> > +			if (resampler_tmp->notifier.gsi == irqfd->gsi) {
+> > +				irqfd->resampler = resampler_tmp;
+> > +				break;
+> > +			}
+> > +		}
+> > +
+> > +		if (irqfd->resampler == resampler) {
+> > +			list_add(&resampler->list, &kvm->irqfds.resamplers);
+> > +			__kvm_register_irq_ack_notifier(kvm,
+> > +							&resampler->notifier);
+> > +		} else
+> > +			kfree(resampler);
+> > +
+> > +		list_add_rcu(&irqfd->resampler_list, &irqfd->resampler->irqfds);
+> > +	}
+> > +
+> 
+> Whoa.  Can't we put the resampler entry somewhere we don't need to
+> search for it?  Like a kvm_kernel_irq_routing_entry, that's indexed by
+> gsi already (kvm_irq_routing_table::rt_entries[gsi]).
 
-This behavior change was introduced by commit 52aec3308db8 ("x86/tlb:
-replace INVALIDATE_TLB_VECTOR by CALL_FUNCTION_VECTOR").
+I'm not sure why would we bother optimizing this,
+but if we do, I guess we could look for the irq notifier
+which is already indexed by gsi.
 
-This patch reverts TLB shootdowns entry in /proc/interrupts to count TLB
-shootdowns separately from the other function call interrupts.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/hardirq.h |    2 +-
- arch/x86/kernel/irq.c          |    5 +++--
- arch/x86/mm/tlb.c              |    3 +++
- 3 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
-index d3895db..af60ab5 100644
---- a/arch/x86/include/asm/hardirq.h
-+++ b/arch/x86/include/asm/hardirq.h
-@@ -18,7 +18,7 @@ typedef struct {
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
--	unsigned int irq_tlb_count;
-+	unsigned int irq_tlb_count;	/* double-counted in irq_call_count */
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	unsigned int irq_thermal_count;
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index d44f782..6dfa8b1 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -92,7 +92,8 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
-+					irq_stats(j)->irq_tlb_count);
- 	seq_printf(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
-@@ -147,7 +148,7 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- #ifdef CONFIG_SMP
- 	sum += irq_stats(cpu)->irq_resched_count;
- 	sum += irq_stats(cpu)->irq_call_count;
--	sum += irq_stats(cpu)->irq_tlb_count;
-+	/* irq_tlb_count is already added to irq_call_count */
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	sum += irq_stats(cpu)->irq_thermal_count;
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 613cd83..0a054db 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -98,6 +98,9 @@ static void flush_tlb_func(void *info)
- {
- 	struct flush_tlb_info *f = info;
- 
-+	/* irq_call_cnt is also incremented; be subtracted on display */
-+	inc_irq_stat(irq_tlb_count);
-+
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
- 
-
+> 
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
