@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab2ISVkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:40:14 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:37118 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab2ISVkL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:40:11 -0400
-Date: Wed, 19 Sep 2012 23:40:07 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: Greg KH <greg@kroah.com>
-Subject: [Patch v4] ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
-Message-ID: <0ea79bd0-ff8e-44ce-9dba-e9e9ea300678@shmail0>
-In-Reply-To: <93adca3f-6a22-45b7-a159-32bb6622efb5@shmail0>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1752194Ab2ISVod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:44:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752001Ab2ISVoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 17:44:32 -0400
+Date: Wed, 19 Sep 2012 17:41:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.6rc6 slab corruption.
+Message-ID: <20120919214112.GA15027@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+	Suzuki Poulose <suzuki@in.ibm.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+References: <20120918143504.GA30585@redhat.com>
+ <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
+ <20120918185310.GA27689@redhat.com>
+ <5059D015.2020104@linux.vnet.ibm.com>
+ <CA+55aFwuO_8Wy6C7rALajiK2Pro84BrfzmKHpARx4EfG8qNMhw@mail.gmail.com>
+ <alpine.DEB.2.00.1209191340410.6273@chino.kir.corp.google.com>
 MIME-Version: 1.0
-X-Originating-IP: [77.7.73.0]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209191340410.6273@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves drivers/usb/serial/ezusb.c to drivers/usb/misc/and
-adapts Makefiles and Kconfigs switching from bool to tristate for CONFIG_USB_EZUSB
+On Wed, Sep 19, 2012 at 02:27:37PM -0700, David Rientjes wrote:
+ > On Wed, 19 Sep 2012, Linus Torvalds wrote:
+ > 
+ > > > Create a 350 processes reading /sys/kernel/debug/kvm/spinlocks/histo_blocked
+ > > > file simultaneously in while loop for more than 3 hours on my box.
+ > > 
+ > > You need to open the file a single time, and then after that sinelg
+ > > open (either threaded or with fork()) do multiple concurrent copies
+ > > something like
+ > > 
+ > >    for (;;) {
+ > >       char buf[1024];
+ > >       lseek(fd, 0, SEEK_SET);
+ > 
+ > These are non-seekable files, so this will always fail.  That makes the 
+ > race much more difficult to trigger: the read needs to call 
+ > u32_array_read() with both threads finding *ppos == 0 and then race 
+ > between the kfree() and resetting of file->private_data pointer.
+ > 
+ >  [ I'm surprised that Dave was able to trigger this so often that he has 
+ >    800MB of log. ]
 
-Signed-off-by: René Bürgel <rene.buergel@sohard.de>
----
-diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
-index 1bfcd02..1c63b54 100644
---- a/drivers/usb/misc/Kconfig
-+++ b/drivers/usb/misc/Kconfig
-@@ -244,3 +244,7 @@ config USB_YUREX
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called yurex.
- 
-+config USB_EZUSB
-+	tristate "Functions for loading firmware on EZUSB chips"
-+	help
-+	    Say Y here if you need EZUSB device support.
-diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
-index 796ce7e..f1f7815 100644
---- a/drivers/usb/misc/Makefile
-+++ b/drivers/usb/misc/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_USB_CYPRESS_CY7C63)	+= cypress_cy7c63.o
- obj-$(CONFIG_USB_CYTHERM)		+= cytherm.o
- obj-$(CONFIG_USB_EMI26)			+= emi26.o
- obj-$(CONFIG_USB_EMI62)			+= emi62.o
-+obj-$(CONFIG_USB_EZUSB)			+= ezusb.o
- obj-$(CONFIG_USB_FTDI_ELAN)		+= ftdi-elan.o
- obj-$(CONFIG_USB_IDMOUSE)		+= idmouse.o
- obj-$(CONFIG_USB_IOWARRIOR)		+= iowarrior.o
-diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/misc/ezusb.c
-similarity index 100%
-rename from drivers/usb/serial/ezusb.c
-rename to drivers/usb/misc/ezusb.c
-diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-index 325d291..73b5e6f 100644
---- a/drivers/usb/serial/Kconfig
-+++ b/drivers/usb/serial/Kconfig
-@@ -42,11 +42,6 @@ config USB_SERIAL_CONSOLE
- 
- 	  If unsure, say N.
- 
--config USB_EZUSB
--	bool "Functions for loading firmware on EZUSB chips"
--	help
--	    Say Y here if you need EZUSB device support.
--
- config USB_SERIAL_GENERIC
- 	bool "USB Generic Serial Driver"
- 	help
-diff --git a/drivers/usb/serial/Makefile b/drivers/usb/serial/Makefile
-index 1dc483a..12b56bb 100644
---- a/drivers/usb/serial/Makefile
-+++ b/drivers/usb/serial/Makefile
-@@ -9,7 +9,6 @@ obj-$(CONFIG_USB_SERIAL)			+= usbserial.o
- usbserial-y := usb-serial.o generic.o bus.o
- 
- usbserial-$(CONFIG_USB_SERIAL_CONSOLE)	+= console.o
--usbserial-$(CONFIG_USB_EZUSB)		+= ezusb.o
- 
- obj-$(CONFIG_USB_SERIAL_AIRCABLE)		+= aircable.o
- obj-$(CONFIG_USB_SERIAL_ARK3116)		+= ark3116.o
+Brainfart. 800Kb. Still, lots.
+
+	Dave
+
