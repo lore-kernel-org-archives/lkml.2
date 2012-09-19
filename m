@@ -1,244 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab2ISHyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 03:54:05 -0400
-Received: from ams-iport-4.cisco.com ([144.254.224.147]:23856 "EHLO
-	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2ISHyC (ORCPT
+	id S1754764Ab2ISIAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 04:00:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50807 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab2ISH76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 03:54:02 -0400
-X-IronPort-AV: E=Sophos;i="4.80,447,1344211200"; 
-   d="scan'208";a="8151830"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v4] media: v4l2-ctrl: add a helper function to add standard control with driver specific menu
-Date: Wed, 19 Sep 2012 09:53:45 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-doc@vger.kernel.org, "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Rob Landley <rob@landley.net>
-References: <1347994478-31784-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1347994478-31784-1-git-send-email-prabhakar.lad@ti.com>
+	Wed, 19 Sep 2012 03:59:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA more precisely
+Date: Wed, 19 Sep 2012 07:59:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com> <20120918124918.GK2505@amd.com> <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+In-Reply-To: <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201209190953.45560.hverkuil@xs4all.nl>
+Message-Id: <201209190759.46174.arnd@arndb.de>
+X-Provags-ID: V02:K0:0anadbv9l+/qm4XgN9ycsM5X8/GgeI5iQH3n3Gi/lMJ
+ VP05hKIcwbNLYXuYb66borXgnPpTALSxANgh/lEawZ3/acCzl3
+ Gh+P8cyezfJ8xyFni8X2GXZPu8lCJI3qefvTDJTkwZMe3jWcBk
+ YeWqX8EXqClBOHYov1QXACNB+ZMJDfCIHeYysZGVp2qtYH6CW4
+ up39fPgF99aIbGzKBORyTH3MgmxJHOZxyaYXj5Q4BLLigIS7IR
+ +FqL5AwujDd74f5D2uqJLyzcoCL0e4OsQZWnYXB7AHvZlVf5yU
+ kEUkHhxiJ7rPnpOM34yJlAnfmYCFY7gsYSlWwyhMc/SwszCgHN
+ O9zkQt38VQTtgmnOD3sM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-I found some grammar issues, but also some (small) things that should be changed.
-
-
-On Tue 18 September 2012 20:54:38 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Wednesday 19 September 2012, Hiroshi Doyu wrote:
+> I guess that it would work. Originally I thought that using DMA-API
+> and IOMMU-API together in driver might be kind of layering violation
+> since IOMMU-API itself is used in DMA-API. Only DMA-API used in driver
+> might be cleaner. Considering that DMA API traditionally handling
+> anonymous {bus,iova} address only, introducing the concept of
+> specific address in DMA API may not be so encouraged, though.
 > 
-> Add helper function v4l2_ctrl_new_std_menu_items(), which adds
-> a standard menu control, with driver specific menu.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Rob Landley <rob@landley.net>
-> ---
-> Changes for v4:
-> 1: Rather then adding a function to modify the menu, added a helper
->    function, that creates a new standard control with user specific
->    menu.
-> 
-> Changes for v3:
-> 1: Fixed style/grammer issues as pointed by Hans.
->    Thanks Hans for providing the description.
-> 
-> Changes for v2:
-> 1: Fixed review comments from Hans, to have return type as
->    void, add WARN_ON() for fail conditions, allow this fucntion
->    to modify the menu of custom controls.
-> 
->  Documentation/video4linux/v4l2-controls.txt |   25 ++++++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c        |   28 +++++++++++++++++++++++++++
->  include/media/v4l2-ctrls.h                  |   23 ++++++++++++++++++++++
->  3 files changed, 76 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/video4linux/v4l2-controls.txt b/Documentation/video4linux/v4l2-controls.txt
-> index 43da22b..ad8e172 100644
-> --- a/Documentation/video4linux/v4l2-controls.txt
-> +++ b/Documentation/video4linux/v4l2-controls.txt
-> @@ -136,11 +136,25 @@ Or alternatively for integer menu controls, by calling v4l2_ctrl_new_int_menu:
->  			const struct v4l2_ctrl_ops *ops,
->  			u32 id, s32 max, s32 def, const s64 *qmenu_int);
->  
-> +Standard menu controls with driver specific menu are added by calling
+> It would be nice to listen how other SoCs have solved similar needs.
 
-with driver -> with a driver
+In general, I would recommend using only the IOMMU API when you have a device
+driver that needs to control the bus virtual address space and that manages
+a device that resides in its own IOMMU context. I would recommend using
+only the dma-mapping API when you have a device that lives in a shared
+bus virtual address space with other devices, and then never ask for
+a specific bus virtual address.
 
-> +v4l2_ctrl_new_std_menu_items:
-> +
-> +	struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(
-> +		struct v4l2_ctrl_handler *hdl,
-> +		const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
-> +		s32 skip_mask, s32 def, const char * const *qmenu_user);
+Can you explain what devices you see that don't fit in one of those two
+categories?
 
-I would recommend that qmenu_user is just renamed to qmenu.
-The _user suffix suggests that this is a userspace-provided menu, which
-is not the case.
-
-> +
->  These functions are typically called right after the v4l2_ctrl_handler_init:
->  
->  	static const s64 exp_bias_qmenu[] = {
->  	       -2, -1, 0, 1, 2
->  	};
-> +	static const char * const test_pattern[] = {
-> +		"Disabled",
-> +		"Vertical Bars",
-> +		"Solid Black",
-> +		"Solid White",
-> +	};
->  
->  	v4l2_ctrl_handler_init(&foo->ctrl_handler, nr_of_controls);
->  	v4l2_ctrl_new_std(&foo->ctrl_handler, &foo_ctrl_ops,
-> @@ -156,6 +170,9 @@ These functions are typically called right after the v4l2_ctrl_handler_init:
->  			ARRAY_SIZE(exp_bias_qmenu) - 1,
->  			ARRAY_SIZE(exp_bias_qmenu) / 2 - 1,
->  			exp_bias_qmenu);
-> +	v4l2_ctrl_new_std_menu_items(&foo->ctrl_handler, &foo_ctrl_ops,
-> +			V4L2_CID_TEST_PATTERN, ARRAY_SIZE(test_pattern) - 1, 0,
-> +			0, test_pattern);
->  	...
->  	if (foo->ctrl_handler.error) {
->  		int err = foo->ctrl_handler.error;
-> @@ -185,6 +202,14 @@ v4l2_ctrl_new_std_menu in that it doesn't have the mask argument and takes
->  as the last argument an array of signed 64-bit integers that form an exact
->  menu item list.
->  
-> +The v4l2_ctrl_new_std_menu_items funtion is very similar as
-
-funtion -> function
-similar as -> similar to
-
-> +v4l2_ctrl_new_std_menu but takes a extra parameter qmenu_user, which is
-
-a extra -> an extra
-
-> +driver specific menu but yet a standard menu control.
-
-the driver specific menu for an otherwise standard menu control.
-
-> +A good example for this control is the test pattern control for
-> +capture/display/sensors devices that have the capability to generate test
-> +patterns. These test patterns are hardware specific, so the contents of the
-> +menu will vary from device to device.
-> +
->  Note that if something fails, the function will return NULL or an error and
->  set ctrl_handler->error to the error code. If ctrl_handler->error was already
->  set, then it will just return and do nothing. This is also true for
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index d731422..9ac1b75 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -1649,6 +1649,34 @@ struct v4l2_ctrl *v4l2_ctrl_new_std_menu(struct v4l2_ctrl_handler *hdl,
->  }
->  EXPORT_SYMBOL(v4l2_ctrl_new_std_menu);
->  
-> +/* Helper function for standard menu controls with user defined menu */
-> +struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(struct v4l2_ctrl_handler *hdl,
-> +			const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
-> +			s32 mask, s32 def, const char * const *qmenu_user)
-> +{
-> +	const char * const *qmenu = v4l2_ctrl_get_menu(id);
-> +	const char *name;
-> +	enum v4l2_ctrl_type type;
-> +	s32 min;
-> +	s32 step;
-> +	u32 flags;
-> +
-> +	if (!qmenu) {
-
-This test should be inverted: if (qmenu)
-
-Add a comment that v4l2_ctrl_new_std_menu_items() may only be called for
-standard controls *without* a standard menu.
-
-> +		handler_set_err(hdl, -EINVAL);
-> +		return NULL;
-> +	}
-> +
-> +	v4l2_ctrl_fill(id, &name, &type, &min, &max, &step, &def, &flags);
-> +	if (type != V4L2_CTRL_TYPE_MENU) {
-> +		handler_set_err(hdl, -EINVAL);
-> +		return NULL;
-> +	}
-> +	return v4l2_ctrl_new(hdl, ops, id, name, type,
-> +			     0, max, mask, def, flags, qmenu_user, NULL, NULL);
-> +
-> +}
-> +EXPORT_SYMBOL(v4l2_ctrl_new_std_menu_items);
-> +
->  /* Helper function for standard integer menu controls */
->  struct v4l2_ctrl *v4l2_ctrl_new_int_menu(struct v4l2_ctrl_handler *hdl,
->  			const struct v4l2_ctrl_ops *ops,
-> diff --git a/include/media/v4l2-ctrls.h b/include/media/v4l2-ctrls.h
-> index 776605f..e0dd392 100644
-> --- a/include/media/v4l2-ctrls.h
-> +++ b/include/media/v4l2-ctrls.h
-> @@ -351,6 +351,29 @@ struct v4l2_ctrl *v4l2_ctrl_new_std_menu(struct v4l2_ctrl_handler *hdl,
->  			const struct v4l2_ctrl_ops *ops,
->  			u32 id, s32 max, s32 mask, s32 def);
->  
-> +/** v4l2_ctrl_new_std_menu_items() - Create a new standard V4L2 menu control
-> +  * with driver specific menu.
-> +  * @hdl:	The control handler.
-> +  * @ops:	The control ops.
-> +  * @id:	The control ID.
-> +  * @max:	The control's maximum value.
-> +  * @mask:	The control's skip mask for menu controls. This makes it
-> +  *		easy to skip menu items that are not valid. If bit X is set,
-> +  *		then menu item X is skipped. Of course, this only works for
-> +  *		menus with <= 32 menu items. There are no menus that come
-> +  *		close to that number, so this is OK. Should we ever need more,
-> +  *		then this will have to be extended to a u64 or a bit array.
-> +  * @def:	The control's default value.
-> +  * @qmenu_user:The new menu.
-> +  *
-> +  * Same as v4l2_ctrl_new_std_menu().but @qmenu_user will be the menu to
-
-.but -> , but
-
-'will be the driver specific menu of this control.'
-
-> +  * which the control will be pointing to.
-> +  *
-> +  */
-> +struct v4l2_ctrl *v4l2_ctrl_new_std_menu_items(struct v4l2_ctrl_handler *hdl,
-> +			const struct v4l2_ctrl_ops *ops, u32 id, s32 max,
-> +			s32 mask, s32 def, const char * const *qmenu_user);
-> +
->  /** v4l2_ctrl_new_int_menu() - Create a new standard V4L2 integer menu control.
->    * @hdl:	The control handler.
->    * @ops:	The control ops.
-> 
-
-Regards,
-
-	Hans
+	Arnd
