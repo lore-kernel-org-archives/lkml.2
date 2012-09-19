@@ -1,1796 +1,867 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2ISGZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 02:25:46 -0400
-Received: from davicom.com.tw ([202.39.11.22]:37220 "EHLO mail.davicom.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab2ISGZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 02:25:43 -0400
-X-Greylist: delayed 1654 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 02:25:41 EDT
-From: =?big5?B?QWxsZW4gSHVhbmcgKLbAsLau5ik=?= 
-	<allen_huang@davicom.com.tw>
-To: <linux-kernel@vger.kernel.org>
-Cc: "'Michael Chen'" <michael_chen@mail.davicom.com.tw>,
-        "'Charles'" <charles_tsai@davicom.com.tw>,
-        "'Joseph Chang'" <joseph_chang@mail.davicom.com.tw>
-Subject: Davicom DM9000C driver 
-Date: Wed, 19 Sep 2012 13:58:08 +0800
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0011_01CD966E.CC5824B0"
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-thread-index: Ac2Ulv6Ig5XUXgeGQRGhzYK7/f2cggBfInggAAAhx1AABFjYwA==
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
-Message-Id: <20120919055333.3ECF95F94D@mail.davicom.com.tw>
+	id S1755987Ab2ISG07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 02:26:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51963 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab2ISG0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 02:26:52 -0400
+Date: Wed, 19 Sep 2012 16:26:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for Sept 19
+Message-Id: <20120919162643.907ddda75e198f060e4e83fe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Sep_2012_16_26_43_+1000_Sz/v5=H2dX30m09S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
-
-------=_NextPart_000_0011_01CD966E.CC5824B0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 7bit
-
-Hi,
-
-I'm Allen Huang from Davicom. We are hereby opensourcing the linux
-driver for our DM9000C. 
-
-We would appreciate any comments that you have on our driver and
-whether it is ready to go into the kernel. Please see DM9000C driver in the
-attachment.
-
-Best regards, 
-
-Allen
-
-
-------=_NextPart_000_0011_01CD966E.CC5824B0
-Content-Type: application/octet-stream;
-	name="dm9000_KT2.6.31.c"
+--Signature=_Wed__19_Sep_2012_16_26_43_+1000_Sz/v5=H2dX30m09S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="dm9000_KT2.6.31.c"
 
-/*=0A=
- *      Davicom DM9000 Fast Ethernet driver for Linux.=0A=
- * 	Copyright (C) 1997  Sten Wang=0A=
- *=0A=
- * 	This program is free software; you can redistribute it and/or=0A=
- * 	modify it under the terms of the GNU General Public License=0A=
- * 	as published by the Free Software Foundation; either version 2=0A=
- * 	of the License, or (at your option) any later version.=0A=
- *=0A=
- * 	This program is distributed in the hope that it will be useful,=0A=
- * 	but WITHOUT ANY WARRANTY; without even the implied warranty of=0A=
- * 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the=0A=
- * 	GNU General Public License for more details.=0A=
- *=0A=
- * (C) Copyright 1997-1998 DAVICOM Semiconductor,Inc. All Rights =
-Reserved.=0A=
- *=0A=
- * Additional updates, Copyright:=0A=
- *	Ben Dooks <ben@simtec.co.uk>=0A=
- *	Sascha Hauer <s.hauer@pengutronix.de>=0A=
- *  =0A=
- * 2010.07.20 V_R1 1.Write PHY Reg27 =3D 0xE100=0A=
- *								 2.Just enable PHY once after GPIO setting in =
-dm9000_init_dm9000()=0A=
- *								 3.Remove power down PHY in dm9000_shutdown()=0A=
- * 2010.07.20 V_R2 1.Delay 20ms after PHY power on=0A=
- *								 2.Reset PHY after PHY power on in dm9000_init_dm9000()=0A=
- * 2012.06.05 KT2.6.31_R2 1. Add the solution to fix the power-on FIFO =
-data bytes shift issue! (Wr NCR 0x03)=0A=
- */=0A=
-=0A=
-#include <linux/module.h>=0A=
-#include <linux/ioport.h>=0A=
-#include <linux/netdevice.h>=0A=
-#include <linux/etherdevice.h>=0A=
-#include <linux/init.h>=0A=
-#include <linux/skbuff.h>=0A=
-#include <linux/version.h>=0A=
-#include <linux/spinlock.h>=0A=
-#include <linux/crc32.h>=0A=
-#include <linux/mii.h>=0A=
-#include <linux/ethtool.h>=0A=
-#include <linux/dm9000.h>=0A=
-#include <linux/delay.h>=0A=
-#include <linux/platform_device.h>=0A=
-#include <linux/irq.h>=0A=
-=0A=
-#include <asm/delay.h>=0A=
-#include <asm/irq.h>=0A=
-#include <asm/io.h>=0A=
-=0A=
-#include "dm9000.h"=0A=
-=0A=
-/* Board/System/Debug information/definition ---------------- */=0A=
-=0A=
-#define DM9000_PHY		0x40	/* PHY address 0x01 */=0A=
-=0A=
-#define CARDNAME	"dm9000"=0A=
-#define DRV_VERSION	"2.6.31"=0A=
-=0A=
-/*=0A=
- * Transmit timeout, default 5 seconds.=0A=
- */=0A=
-static int watchdog =3D 5000;=0A=
-module_param(watchdog, int, 0400);=0A=
-MODULE_PARM_DESC(watchdog, "transmit timeout in milliseconds");=0A=
-=0A=
-/* DM9000 register address locking.=0A=
- *=0A=
- * The DM9000 uses an address register to control where data written=0A=
- * to the data register goes. This means that the address register=0A=
- * must be preserved over interrupts or similar calls.=0A=
- *=0A=
- * During interrupt and other critical calls, a spinlock is used to=0A=
- * protect the system, but the calls themselves save the address=0A=
- * in the address register in case they are interrupting another=0A=
- * access to the device.=0A=
- *=0A=
- * For general accesses a lock is provided so that calls which are=0A=
- * allowed to sleep are serialised so that the address register does=0A=
- * not need to be saved. This lock also serves to serialise access=0A=
- * to the EEPROM and PHY access registers which are shared between=0A=
- * these two devices.=0A=
- */=0A=
-=0A=
-/* The driver supports the original DM9000E, and now the two newer=0A=
- * devices, DM9000A and DM9000B.=0A=
- */=0A=
-=0A=
-enum dm9000_type {=0A=
-	TYPE_DM9000E,	/* original DM9000 */=0A=
-	TYPE_DM9000A,=0A=
-	TYPE_DM9000B=0A=
-};=0A=
-=0A=
-/* Structure/enum declaration ------------------------------- */=0A=
-typedef struct board_info {=0A=
-=0A=
-	void __iomem	*io_addr;	/* Register I/O base address */=0A=
-	void __iomem	*io_data;	/* Data I/O address */=0A=
-	u16		 irq;		/* IRQ */=0A=
-=0A=
-	u16		tx_pkt_cnt;=0A=
-	u16		queue_pkt_len;=0A=
-	u16		queue_start_addr;=0A=
-	u16		dbug_cnt;=0A=
-	u8		io_mode;		/* 0:word, 2:byte */=0A=
-	u8		phy_addr;=0A=
-	u8		imr_all;=0A=
-=0A=
-	unsigned int	flags;=0A=
-	unsigned int	in_suspend :1;=0A=
-	int		debug_level;=0A=
-=0A=
-	enum dm9000_type type;=0A=
-=0A=
-	void (*inblk)(void __iomem *port, void *data, int length);=0A=
-	void (*outblk)(void __iomem *port, void *data, int length);=0A=
-	void (*dumpblk)(void __iomem *port, int length);=0A=
-=0A=
-	struct device	*dev;	     /* parent device */=0A=
-=0A=
-	struct resource	*addr_res;   /* resources found */=0A=
-	struct resource *data_res;=0A=
-	struct resource	*addr_req;   /* resources requested */=0A=
-	struct resource *data_req;=0A=
-	struct resource *irq_res;=0A=
-=0A=
-	struct mutex	 addr_lock;	/* phy and eeprom access lock */=0A=
-=0A=
-	struct delayed_work phy_poll;=0A=
-	struct net_device  *ndev;=0A=
-=0A=
-	spinlock_t	lock;=0A=
-=0A=
-	struct mii_if_info mii;=0A=
-	u32		msg_enable;=0A=
-} board_info_t;=0A=
-=0A=
-static void=0A=
-dm9000_phy_write(struct net_device *dev,=0A=
-		 int phyaddr_unused, int reg, int value);=0A=
-=0A=
-/* debug code */=0A=
-=0A=
-#define dm9000_dbg(db, lev, msg...) do {		\=0A=
-	if ((lev) < CONFIG_DM9000_DEBUGLEVEL &&		\=0A=
-	    (lev) < db->debug_level) {			\=0A=
-		dev_dbg(db->dev, msg);			\=0A=
-	}						\=0A=
-} while (0)=0A=
-=0A=
-static inline board_info_t *to_dm9000_board(struct net_device *dev)=0A=
-{=0A=
-	return netdev_priv(dev);=0A=
-}=0A=
-=0A=
-/* DM9000 network board routine ---------------------------- */=0A=
-=0A=
-static void=0A=
-dm9000_reset(board_info_t * db)=0A=
-{=0A=
-	dev_dbg(db->dev, "resetting device\n");=0A=
-=0A=
-	/* RESET device */=0A=
-	writeb(DM9000_NCR, db->io_addr);=0A=
-	udelay(200);=0A=
-	writeb(NCR_RST, db->io_data);=0A=
-	udelay(200);=0A=
-}=0A=
-=0A=
-/*=0A=
- *   Read a byte from I/O port=0A=
- */=0A=
-static u8=0A=
-ior(board_info_t * db, int reg)=0A=
-{=0A=
-	writeb(reg, db->io_addr);=0A=
-	return readb(db->io_data);=0A=
-}=0A=
-=0A=
-/*=0A=
- *   Write a byte to I/O port=0A=
- */=0A=
-=0A=
-static void=0A=
-iow(board_info_t * db, int reg, int value)=0A=
-{=0A=
-	writeb(reg, db->io_addr);=0A=
-	writeb(value, db->io_data);=0A=
-}=0A=
-=0A=
-/* routines for sending block to chip */=0A=
-=0A=
-static void dm9000_outblk_8bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	writesb(reg, data, count);=0A=
-}=0A=
-=0A=
-static void dm9000_outblk_16bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	writesw(reg, data, (count+1) >> 1);=0A=
-}=0A=
-=0A=
-static void dm9000_outblk_32bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	writesl(reg, data, (count+3) >> 2);=0A=
-}=0A=
-=0A=
-/* input block from chip to memory */=0A=
-=0A=
-static void dm9000_inblk_8bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	readsb(reg, data, count);=0A=
-}=0A=
-=0A=
-=0A=
-static void dm9000_inblk_16bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	readsw(reg, data, (count+1) >> 1);=0A=
-}=0A=
-=0A=
-static void dm9000_inblk_32bit(void __iomem *reg, void *data, int count)=0A=
-{=0A=
-	readsl(reg, data, (count+3) >> 2);=0A=
-}=0A=
-=0A=
-/* dump block from chip to null */=0A=
-=0A=
-static void dm9000_dumpblk_8bit(void __iomem *reg, int count)=0A=
-{=0A=
-	int i;=0A=
-	int tmp;=0A=
-=0A=
-	for (i =3D 0; i < count; i++)=0A=
-		tmp =3D readb(reg);=0A=
-}=0A=
-=0A=
-static void dm9000_dumpblk_16bit(void __iomem *reg, int count)=0A=
-{=0A=
-	int i;=0A=
-	int tmp;=0A=
-=0A=
-	count =3D (count + 1) >> 1;=0A=
-=0A=
-	for (i =3D 0; i < count; i++)=0A=
-		tmp =3D readw(reg);=0A=
-}=0A=
-=0A=
-static void dm9000_dumpblk_32bit(void __iomem *reg, int count)=0A=
-{=0A=
-	int i;=0A=
-	int tmp;=0A=
-=0A=
-	count =3D (count + 3) >> 2;=0A=
-=0A=
-	for (i =3D 0; i < count; i++)=0A=
-		tmp =3D readl(reg);=0A=
-}=0A=
-=0A=
-/* dm9000_set_io=0A=
- *=0A=
- * select the specified set of io routines to use with the=0A=
- * device=0A=
- */=0A=
-=0A=
-static void dm9000_set_io(struct board_info *db, int byte_width)=0A=
-{=0A=
-	/* use the size of the data resource to work out what IO=0A=
-	 * routines we want to use=0A=
-	 */=0A=
-=0A=
-	switch (byte_width) {=0A=
-	case 1:=0A=
-		db->dumpblk =3D dm9000_dumpblk_8bit;=0A=
-		db->outblk  =3D dm9000_outblk_8bit;=0A=
-		db->inblk   =3D dm9000_inblk_8bit;=0A=
-		break;=0A=
-=0A=
-=0A=
-	case 3:=0A=
-		dev_dbg(db->dev, ": 3 byte IO, falling back to 16bit\n");=0A=
-	case 2:=0A=
-		db->dumpblk =3D dm9000_dumpblk_16bit;=0A=
-		db->outblk  =3D dm9000_outblk_16bit;=0A=
-		db->inblk   =3D dm9000_inblk_16bit;=0A=
-		break;=0A=
-=0A=
-	case 4:=0A=
-	default:=0A=
-		db->dumpblk =3D dm9000_dumpblk_32bit;=0A=
-		db->outblk  =3D dm9000_outblk_32bit;=0A=
-		db->inblk   =3D dm9000_inblk_32bit;=0A=
-		break;=0A=
-	}=0A=
-}=0A=
-=0A=
-static void dm9000_schedule_poll(board_info_t *db)=0A=
-{=0A=
-	if (db->type =3D=3D TYPE_DM9000E)=0A=
-		schedule_delayed_work(&db->phy_poll, HZ * 2);=0A=
-}=0A=
-=0A=
-static int dm9000_ioctl(struct net_device *dev, struct ifreq *req, int =
-cmd)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	if (!netif_running(dev))=0A=
-		return -EINVAL;=0A=
-=0A=
-	return generic_mii_ioctl(&dm->mii, if_mii(req), cmd, NULL);=0A=
-}=0A=
-=0A=
-static unsigned int=0A=
-dm9000_read_locked(board_info_t *db, int reg)=0A=
-{=0A=
-	unsigned long flags;=0A=
-	unsigned int ret;=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-	ret =3D ior(db, reg);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	return ret;=0A=
-}=0A=
-=0A=
-static int dm9000_wait_eeprom(board_info_t *db)=0A=
-{=0A=
-	unsigned int status;=0A=
-	int timeout =3D 8;	/* wait max 8msec */=0A=
-=0A=
-	/* The DM9000 data sheets say we should be able to=0A=
-	 * poll the ERRE bit in EPCR to wait for the EEPROM=0A=
-	 * operation. From testing several chips, this bit=0A=
-	 * does not seem to work.=0A=
-	 *=0A=
-	 * We attempt to use the bit, but fall back to the=0A=
-	 * timeout (which is why we do not return an error=0A=
-	 * on expiry) to say that the EEPROM operation has=0A=
-	 * completed.=0A=
-	 */=0A=
-=0A=
-	while (1) {=0A=
-		status =3D dm9000_read_locked(db, DM9000_EPCR);=0A=
-=0A=
-		if ((status & EPCR_ERRE) =3D=3D 0)=0A=
-			break;=0A=
-=0A=
-		msleep(1);=0A=
-=0A=
-		if (timeout-- < 0) {=0A=
-			dev_dbg(db->dev, "timeout waiting EEPROM\n");=0A=
-			break;=0A=
-		}=0A=
-	}=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-/*=0A=
- *  Read a word data from EEPROM=0A=
- */=0A=
-static void=0A=
-dm9000_read_eeprom(board_info_t *db, int offset, u8 *to)=0A=
-{=0A=
-	unsigned long flags;=0A=
-=0A=
-	if (db->flags & DM9000_PLATF_NO_EEPROM) {=0A=
-		to[0] =3D 0xff;=0A=
-		to[1] =3D 0xff;=0A=
-		return;=0A=
-	}=0A=
-=0A=
-	mutex_lock(&db->addr_lock);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	iow(db, DM9000_EPAR, offset);=0A=
-	iow(db, DM9000_EPCR, EPCR_ERPRR);=0A=
-=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	dm9000_wait_eeprom(db);=0A=
-=0A=
-	/* delay for at-least 150uS */=0A=
-	msleep(1);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	iow(db, DM9000_EPCR, 0x0);=0A=
-=0A=
-	to[0] =3D ior(db, DM9000_EPDRL);=0A=
-	to[1] =3D ior(db, DM9000_EPDRH);=0A=
-=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	mutex_unlock(&db->addr_lock);=0A=
-}=0A=
-=0A=
-/*=0A=
- * Write a word data to SROM=0A=
- */=0A=
-static void=0A=
-dm9000_write_eeprom(board_info_t *db, int offset, u8 *data)=0A=
-{=0A=
-	unsigned long flags;=0A=
-=0A=
-	if (db->flags & DM9000_PLATF_NO_EEPROM)=0A=
-		return;=0A=
-=0A=
-	mutex_lock(&db->addr_lock);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-	iow(db, DM9000_EPAR, offset);=0A=
-	iow(db, DM9000_EPDRH, data[1]);=0A=
-	iow(db, DM9000_EPDRL, data[0]);=0A=
-	iow(db, DM9000_EPCR, EPCR_WEP | EPCR_ERPRW);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	dm9000_wait_eeprom(db);=0A=
-=0A=
-	mdelay(1);	/* wait at least 150uS to clear */=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-	iow(db, DM9000_EPCR, 0);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	mutex_unlock(&db->addr_lock);=0A=
-}=0A=
-=0A=
-/* ethtool ops */=0A=
-=0A=
-static void dm9000_get_drvinfo(struct net_device *dev,=0A=
-			       struct ethtool_drvinfo *info)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	strcpy(info->driver, CARDNAME);=0A=
-	strcpy(info->version, DRV_VERSION);=0A=
-	strcpy(info->bus_info, to_platform_device(dm->dev)->name);=0A=
-}=0A=
-=0A=
-static u32 dm9000_get_msglevel(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	return dm->msg_enable;=0A=
-}=0A=
-=0A=
-static void dm9000_set_msglevel(struct net_device *dev, u32 value)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	dm->msg_enable =3D value;=0A=
-}=0A=
-=0A=
-static int dm9000_get_settings(struct net_device *dev, struct =
-ethtool_cmd *cmd)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	mii_ethtool_gset(&dm->mii, cmd);=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static int dm9000_set_settings(struct net_device *dev, struct =
-ethtool_cmd *cmd)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-=0A=
-	return mii_ethtool_sset(&dm->mii, cmd);=0A=
-}=0A=
-=0A=
-static int dm9000_nway_reset(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-	return mii_nway_restart(&dm->mii);=0A=
-}=0A=
-=0A=
-static u32 dm9000_get_link(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-	u32 ret;=0A=
-=0A=
-	if (dm->flags & DM9000_PLATF_EXT_PHY)=0A=
-		ret =3D mii_link_ok(&dm->mii);=0A=
-	else=0A=
-		ret =3D dm9000_read_locked(dm, DM9000_NSR) & NSR_LINKST ? 1 : 0;=0A=
-=0A=
-	return ret;=0A=
-}=0A=
-=0A=
-#define DM_EEPROM_MAGIC		(0x444D394B)=0A=
-=0A=
-static int dm9000_get_eeprom_len(struct net_device *dev)=0A=
-{=0A=
-	return 128;=0A=
-}=0A=
-=0A=
-static int dm9000_get_eeprom(struct net_device *dev,=0A=
-			     struct ethtool_eeprom *ee, u8 *data)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-	int offset =3D ee->offset;=0A=
-	int len =3D ee->len;=0A=
-	int i;=0A=
-=0A=
-	/* EEPROM access is aligned to two bytes */=0A=
-=0A=
-	if ((len & 1) !=3D 0 || (offset & 1) !=3D 0)=0A=
-		return -EINVAL;=0A=
-=0A=
-	if (dm->flags & DM9000_PLATF_NO_EEPROM)=0A=
-		return -ENOENT;=0A=
-=0A=
-	ee->magic =3D DM_EEPROM_MAGIC;=0A=
-=0A=
-	for (i =3D 0; i < len; i +=3D 2)=0A=
-		dm9000_read_eeprom(dm, (offset + i) / 2, data + i);=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static int dm9000_set_eeprom(struct net_device *dev,=0A=
-			     struct ethtool_eeprom *ee, u8 *data)=0A=
-{=0A=
-	board_info_t *dm =3D to_dm9000_board(dev);=0A=
-	int offset =3D ee->offset;=0A=
-	int len =3D ee->len;=0A=
-	int i;=0A=
-=0A=
-	/* EEPROM access is aligned to two bytes */=0A=
-=0A=
-	if ((len & 1) !=3D 0 || (offset & 1) !=3D 0)=0A=
-		return -EINVAL;=0A=
-=0A=
-	if (dm->flags & DM9000_PLATF_NO_EEPROM)=0A=
-		return -ENOENT;=0A=
-=0A=
-	if (ee->magic !=3D DM_EEPROM_MAGIC)=0A=
-		return -EINVAL;=0A=
-=0A=
-	for (i =3D 0; i < len; i +=3D 2)=0A=
-		dm9000_write_eeprom(dm, (offset + i) / 2, data + i);=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static const struct ethtool_ops dm9000_ethtool_ops =3D {=0A=
-	.get_drvinfo		=3D dm9000_get_drvinfo,=0A=
-	.get_settings		=3D dm9000_get_settings,=0A=
-	.set_settings		=3D dm9000_set_settings,=0A=
-	.get_msglevel		=3D dm9000_get_msglevel,=0A=
-	.set_msglevel		=3D dm9000_set_msglevel,=0A=
-	.nway_reset		=3D dm9000_nway_reset,=0A=
-	.get_link		=3D dm9000_get_link,=0A=
- 	.get_eeprom_len		=3D dm9000_get_eeprom_len,=0A=
- 	.get_eeprom		=3D dm9000_get_eeprom,=0A=
- 	.set_eeprom		=3D dm9000_set_eeprom,=0A=
-};=0A=
-=0A=
-static void dm9000_show_carrier(board_info_t *db,=0A=
-				unsigned carrier, unsigned nsr)=0A=
-{=0A=
-	struct net_device *ndev =3D db->ndev;=0A=
-	unsigned ncr =3D dm9000_read_locked(db, DM9000_NCR);=0A=
-=0A=
-	if (carrier)=0A=
-		dev_info(db->dev, "%s: link up, %dMbps, %s-duplex, no LPA\n",=0A=
-			 ndev->name, (nsr & NSR_SPEED) ? 10 : 100,=0A=
-			 (ncr & NCR_FDX) ? "full" : "half");=0A=
-	else=0A=
-		dev_info(db->dev, "%s: link down\n", ndev->name);=0A=
-}=0A=
-=0A=
-=0A=
-static unsigned char dm9000_type_to_char(enum dm9000_type type)=0A=
-{=0A=
-	switch (type) {=0A=
-	case TYPE_DM9000E: return 'e';=0A=
-	case TYPE_DM9000A: return 'a';=0A=
-	case TYPE_DM9000B: return 'b';=0A=
-	}=0A=
-=0A=
-	return '?';=0A=
-}=0A=
-=0A=
-static void=0A=
-dm9000_poll_work(struct work_struct *w)=0A=
-{=0A=
-	struct delayed_work *dw =3D container_of(w, struct delayed_work, work);=0A=
-	board_info_t *db =3D container_of(dw, board_info_t, phy_poll);=0A=
-	struct net_device *ndev =3D db->ndev;=0A=
-=0A=
-//JJ2=0A=
-//	if (db->flags & DM9000_PLATF_SIMPLE_PHY &&=0A=
-//	    !(db->flags & DM9000_PLATF_EXT_PHY)) {=0A=
-//  =3D=0A=
-		if(1){						=0A=
-		unsigned nsr =3D dm9000_read_locked(db, DM9000_NSR);=0A=
-		unsigned old_carrier =3D netif_carrier_ok(ndev) ? 1 : 0;=0A=
-		unsigned new_carrier;=0A=
-=0A=
-		new_carrier =3D (nsr & NSR_LINKST) ? 1 : 0;=0A=
-=0A=
-		if (old_carrier !=3D new_carrier) {=0A=
-			=0A=
-			if (new_carrier)=0A=
-			  printk(KERN_INFO "[dm9000%c %s Ethernet Driver, V%s]: =
-Link-Up!!\n",dm9000_type_to_char(db->type), CARDNAME, DRV_VERSION); //JJ2=0A=
-			else=0A=
-			  printk(KERN_INFO "[%s Ethernet Driver, V%s]: Link-Down!!\n", =
-CARDNAME, DRV_VERSION); //JJ2=0A=
-			=0A=
-			if (netif_msg_link(db))=0A=
-				dm9000_show_carrier(db, new_carrier, nsr);=0A=
-=0A=
-			if (!new_carrier)=0A=
-				netif_carrier_off(ndev);=0A=
-			else=0A=
-				netif_carrier_on(ndev);=0A=
-		}=0A=
-	} else=0A=
-		mii_check_media(&db->mii, netif_msg_link(db), 0);=0A=
-	=0A=
-	if (netif_running(ndev))=0A=
-		dm9000_schedule_poll(db);=0A=
-}=0A=
-=0A=
-/* dm9000_release_board=0A=
- *=0A=
- * release a board, and any mapped resources=0A=
- */=0A=
-=0A=
-static void=0A=
-dm9000_release_board(struct platform_device *pdev, struct board_info *db)=0A=
-{=0A=
-	/* unmap our resources */=0A=
-=0A=
-	iounmap(db->io_addr);=0A=
-	iounmap(db->io_data);=0A=
-=0A=
-	/* release the resources */=0A=
-=0A=
-	release_resource(db->data_req);=0A=
-	kfree(db->data_req);=0A=
-=0A=
-	release_resource(db->addr_req);=0A=
-	kfree(db->addr_req);=0A=
-}=0A=
-=0A=
-=0A=
-=0A=
-/*=0A=
- *  Set DM9000 multicast address=0A=
- */=0A=
-static void=0A=
-dm9000_hash_table(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	struct dev_mc_list *mcptr =3D dev->mc_list;=0A=
-	int mc_cnt =3D dev->mc_count;=0A=
-	int i, oft;=0A=
-	u32 hash_val;=0A=
-	u16 hash_table[4];=0A=
-	u8 rcr =3D RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;=0A=
-	unsigned long flags;=0A=
-=0A=
-	dm9000_dbg(db, 1, "entering %s\n", __func__);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	for (i =3D 0, oft =3D DM9000_PAR; i < 6; i++, oft++)=0A=
-		iow(db, oft, dev->dev_addr[i]);=0A=
-=0A=
-	/* Clear Hash Table */=0A=
-	for (i =3D 0; i < 4; i++)=0A=
-		hash_table[i] =3D 0x0;=0A=
-=0A=
-	/* broadcast address */=0A=
-	hash_table[3] =3D 0x8000;=0A=
-=0A=
-	if (dev->flags & IFF_PROMISC)=0A=
-		rcr |=3D RCR_PRMSC;=0A=
-=0A=
-	if (dev->flags & IFF_ALLMULTI)=0A=
-		rcr |=3D RCR_ALL;=0A=
-=0A=
-	/* the multicast address in Hash Table : 64 bits */=0A=
-	for (i =3D 0; i < mc_cnt; i++, mcptr =3D mcptr->next) {=0A=
-		hash_val =3D ether_crc_le(6, mcptr->dmi_addr) & 0x3f;=0A=
-		hash_table[hash_val / 16] |=3D (u16) 1 << (hash_val % 16);=0A=
-	}=0A=
-=0A=
-	/* Write the hash table to MAC MD table */=0A=
-	for (i =3D 0, oft =3D DM9000_MAR; i < 4; i++) {=0A=
-		iow(db, oft++, hash_table[i]);=0A=
-		iow(db, oft++, hash_table[i] >> 8);=0A=
-	}=0A=
-=0A=
-	iow(db, DM9000_RCR, rcr);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-}=0A=
-=0A=
-/*=0A=
- * Initilize dm9000 board=0A=
- */=0A=
-static void=0A=
-dm9000_init_dm9000(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	unsigned int imr;=0A=
-=0A=
-	dm9000_dbg(db, 1, "entering %s\n", __func__);=0A=
-=0A=
-	/* I/O mode */=0A=
-	db->io_mode =3D ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode =
-*/=0A=
-=0A=
-	/* GPIO0 on pre-activate PHY */=0A=
-//V_R1	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */=0A=
-	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */=0A=
-	iow(db, DM9000_GPR, 0);	/* Enable PHY */=0A=
-        mdelay(20);  //V_R2=0A=
-=0A=
-	dm9000_phy_write(dev, 0, 0, 0x8000); //V_R2 reset PHY=0A=
-        mdelay (20);=0A=
-=0A=
-=0A=
-//	if (db->flags & DM9000_PLATF_EXT_PHY)=0A=
-//		iow(db, DM9000_NCR, NCR_EXT_PHY);=0A=
-=0A=
-	/* Program operating register */=0A=
-	iow(db, DM9000_TCR, 0);	        /* TX Polling clear */=0A=
-	iow(db, DM9000_BPTR, 0x3f);	/* Less 3Kb, 200us */=0A=
-	iow(db, DM9000_FCR, 0xff);	/* Flow Control */=0A=
-	iow(db, DM9000_SMCR, 0);        /* Special Mode */=0A=
-	/* clear TX status */=0A=
-	iow(db, DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);=0A=
-	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */=0A=
-=0A=
-	/* Set address filter table */=0A=
-	dm9000_hash_table(dev);=0A=
-=0A=
-	imr =3D IMR_PAR | IMR_PTM | IMR_PRM;=0A=
-	if (db->type !=3D TYPE_DM9000E)=0A=
-		imr |=3D IMR_LNKCHNG;=0A=
-=0A=
-	db->imr_all =3D imr;=0A=
-=0A=
-	/* Enable TX/RX interrupt mask */=0A=
-	iow(db, DM9000_IMR, imr);=0A=
-=0A=
-	/* Init Driver variable */=0A=
-	db->tx_pkt_cnt =3D 0;=0A=
-	db->queue_pkt_len =3D 0;=0A=
-	dev->trans_start =3D 0;=0A=
-	=0A=
-	dm9000_phy_write(dev, 0, 27, 0xE100); //V_R1=0A=
-}=0A=
-=0A=
-/* Our watchdog timed out. Called by the networking layer */=0A=
-static void dm9000_timeout(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	u8 reg_save;=0A=
-	unsigned long flags;=0A=
-=0A=
-	/* Save previous register address */=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	netif_stop_queue(dev);=0A=
-	printk(KERN_INFO "[%s Ethernet Driver, V%s]: Timeout!!\n", CARDNAME, =
-DRV_VERSION); //JJ1=0A=
-	dm9000_reset(db);=0A=
-	dm9000_init_dm9000(dev);=0A=
-	/* We can accept TX packets again */=0A=
-	dev->trans_start =3D jiffies;=0A=
-	netif_wake_queue(dev);=0A=
-=0A=
-	/* Restore previous register address */=0A=
-	writeb(reg_save, db->io_addr);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-}=0A=
-=0A=
-/*=0A=
- *  Hardware start transmission.=0A=
- *  Send a packet to media from the upper layer.=0A=
- */=0A=
-static int=0A=
-dm9000_start_xmit(struct sk_buff *skb, struct net_device *dev)=0A=
-{=0A=
-	unsigned long flags;=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-=0A=
-	dm9000_dbg(db, 3, "%s:\n", __func__);=0A=
-=0A=
-	if (db->tx_pkt_cnt > 1)=0A=
-		return 1;=0A=
-=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	/* Move data to DM9000 TX RAM */=0A=
-	writeb(DM9000_MWCMD, db->io_addr);=0A=
-=0A=
-	(db->outblk)(db->io_data, skb->data, skb->len);=0A=
-	dev->stats.tx_bytes +=3D skb->len;=0A=
-=0A=
-	db->tx_pkt_cnt++;=0A=
-	/* TX control: First packet immediately send, second packet queue */=0A=
-	if (db->tx_pkt_cnt =3D=3D 1) {=0A=
-		/* Set TX length to DM9000 */=0A=
-		iow(db, DM9000_TXPLL, skb->len);=0A=
-		iow(db, DM9000_TXPLH, skb->len >> 8);=0A=
-=0A=
-		/* Issue TX polling command */=0A=
-		iow(db, DM9000_TCR, TCR_TXREQ);	/* Cleared after TX complete */=0A=
-=0A=
-		dev->trans_start =3D jiffies;	/* save the time stamp */=0A=
-	} else {=0A=
-		/* Second packet */=0A=
-		db->queue_pkt_len =3D skb->len;=0A=
-		netif_stop_queue(dev);=0A=
-	}=0A=
-=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	/* free this SKB */=0A=
-	dev_kfree_skb(skb);=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-/*=0A=
- * DM9000 interrupt handler=0A=
- * receive the packet to upper layer, free the transmitted packet=0A=
- */=0A=
-=0A=
-static void dm9000_tx_done(struct net_device *dev, board_info_t *db)=0A=
-{=0A=
-	int tx_status =3D ior(db, DM9000_NSR);	/* Got TX status */=0A=
-=0A=
-	if (tx_status & (NSR_TX2END | NSR_TX1END)) {=0A=
-		/* One packet sent complete */=0A=
-		db->tx_pkt_cnt--;=0A=
-		dev->stats.tx_packets++;=0A=
-=0A=
-		if (netif_msg_tx_done(db))=0A=
-			dev_dbg(db->dev, "tx done, NSR %02x\n", tx_status);=0A=
-=0A=
-		/* Queue packet check & send */=0A=
-		if (db->tx_pkt_cnt > 0) {=0A=
-			iow(db, DM9000_TXPLL, db->queue_pkt_len);=0A=
-			iow(db, DM9000_TXPLH, db->queue_pkt_len >> 8);=0A=
-			iow(db, DM9000_TCR, TCR_TXREQ);=0A=
-			dev->trans_start =3D jiffies;=0A=
-		}=0A=
-		netif_wake_queue(dev);=0A=
-	}=0A=
-}=0A=
-=0A=
-struct dm9000_rxhdr {=0A=
-	u8	RxPktReady;=0A=
-	u8	RxStatus;=0A=
-	__le16	RxLen;=0A=
-} __attribute__((__packed__));=0A=
-=0A=
-/*=0A=
- *  Received a packet and pass to upper layer=0A=
- */=0A=
-static void=0A=
-dm9000_rx(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	struct dm9000_rxhdr rxhdr;=0A=
-	struct sk_buff *skb;=0A=
-	u8 rxbyte, *rdptr;=0A=
-	bool GoodPacket;=0A=
-	int RxLen;=0A=
-=0A=
-	/* Check packet ready or not */=0A=
-	do {=0A=
-		ior(db, DM9000_MRCMDX);	/* Dummy read */=0A=
-=0A=
-		/* Get most updated data */=0A=
-		rxbyte =3D readb(db->io_data);=0A=
-=0A=
-		/* Status check: this byte must be 0 or 1 */=0A=
-		if (rxbyte > DM9000_PKT_RDY) {=0A=
-			dev_warn(db->dev, "status check fail: %d\n", rxbyte);=0A=
-			iow(db, DM9000_RCR, 0x00);	/* Stop Device */=0A=
-			iow(db, DM9000_ISR, IMR_PAR);	/* Stop INT request */=0A=
-			return;=0A=
-		}=0A=
-=0A=
-		if (rxbyte !=3D DM9000_PKT_RDY)=0A=
-			return;=0A=
-=0A=
-		/* A packet ready now  & Get status/length */=0A=
-		GoodPacket =3D true;=0A=
-		writeb(DM9000_MRCMD, db->io_addr);=0A=
-=0A=
-		(db->inblk)(db->io_data, &rxhdr, sizeof(rxhdr));=0A=
-=0A=
-		RxLen =3D le16_to_cpu(rxhdr.RxLen);=0A=
-=0A=
-		if (netif_msg_rx_status(db))=0A=
-			dev_dbg(db->dev, "RX: status %02x, length %04x\n",=0A=
-				rxhdr.RxStatus, RxLen);=0A=
-=0A=
-		/* Packet Status check */=0A=
-		if (RxLen < 0x40) {=0A=
-			GoodPacket =3D false;=0A=
-			if (netif_msg_rx_err(db))=0A=
-				dev_dbg(db->dev, "RX: Bad Packet (runt)\n");=0A=
-		}=0A=
-=0A=
-		if (RxLen > DM9000_PKT_MAX) {=0A=
-			dev_dbg(db->dev, "RST: RX Len:%x\n", RxLen);=0A=
-		}=0A=
-=0A=
-		/* rxhdr.RxStatus is identical to RSR register. */=0A=
-		if (rxhdr.RxStatus & (RSR_FOE | RSR_CE | RSR_AE |=0A=
-				      RSR_PLE | RSR_RWTO |=0A=
-				      RSR_LCS | RSR_RF)) {=0A=
-			GoodPacket =3D false;=0A=
-			if (rxhdr.RxStatus & RSR_FOE) {=0A=
-				if (netif_msg_rx_err(db))=0A=
-					dev_dbg(db->dev, "fifo error\n");=0A=
-				dev->stats.rx_fifo_errors++;=0A=
-				printk(KERN_INFO "[%s Ethernet Driver, V%s]: FIFO Over Flow!!\n", =
-CARDNAME, DRV_VERSION); //JJ1=0A=
-			}=0A=
-			if (rxhdr.RxStatus & RSR_CE) {=0A=
-				if (netif_msg_rx_err(db))=0A=
-					dev_dbg(db->dev, "crc error\n");=0A=
-				dev->stats.rx_crc_errors++;=0A=
-			}=0A=
-			if (rxhdr.RxStatus & RSR_RF) {=0A=
-				if (netif_msg_rx_err(db))=0A=
-					dev_dbg(db->dev, "length error\n");=0A=
-				dev->stats.rx_length_errors++;=0A=
-			}=0A=
-		}=0A=
-=0A=
-		/* Move data from DM9000 */=0A=
-		if (GoodPacket=0A=
-		    && ((skb =3D dev_alloc_skb(RxLen + 4)) !=3D NULL)) {=0A=
-			skb_reserve(skb, 2);=0A=
-			rdptr =3D (u8 *) skb_put(skb, RxLen - 4);=0A=
-=0A=
-			/* Read received packet from RX SRAM */=0A=
-=0A=
-			(db->inblk)(db->io_data, rdptr, RxLen);=0A=
-			dev->stats.rx_bytes +=3D RxLen;=0A=
-=0A=
-			/* Pass to upper layer */=0A=
-			skb->protocol =3D eth_type_trans(skb, dev);=0A=
-			netif_rx(skb);=0A=
-			dev->stats.rx_packets++;=0A=
-=0A=
-		} else {=0A=
-			/* need to dump the packet's data */=0A=
-=0A=
-			(db->dumpblk)(db->io_data, RxLen);=0A=
-		}=0A=
-	} while (rxbyte =3D=3D DM9000_PKT_RDY);=0A=
-}=0A=
-=0A=
-static irqreturn_t dm9000_interrupt(int irq, void *dev_id)=0A=
-{=0A=
-	struct net_device *dev =3D dev_id;=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	int int_status;=0A=
-	unsigned long flags;=0A=
-	u8 reg_save;=0A=
-=0A=
-	dm9000_dbg(db, 3, "entering %s\n", __func__);=0A=
-=0A=
-	/* A real interrupt coming */=0A=
-=0A=
-	/* holders of db->lock must always block IRQs */=0A=
-	spin_lock_irqsave(&db->lock, flags);=0A=
-=0A=
-	/* Save previous register address */=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-=0A=
-	/* Disable all interrupts */=0A=
-	iow(db, DM9000_IMR, IMR_PAR);=0A=
-=0A=
-	/* Got DM9000 interrupt status */=0A=
-	int_status =3D ior(db, DM9000_ISR);	/* Got ISR */=0A=
-	iow(db, DM9000_ISR, int_status);	/* Clear ISR status */=0A=
-=0A=
-	if (netif_msg_intr(db))=0A=
-		dev_dbg(db->dev, "interrupt status %02x\n", int_status);=0A=
-=0A=
-	/* Received the coming packet */=0A=
-	if (int_status & ISR_PRS)=0A=
-		dm9000_rx(dev);=0A=
-=0A=
-	/* Trnasmit Interrupt check */=0A=
-	if (int_status & ISR_PTS)=0A=
-		dm9000_tx_done(dev, db);=0A=
-=0A=
-	if (db->type !=3D TYPE_DM9000E) {=0A=
-		if (int_status & ISR_LNKCHNG) {=0A=
-			/* fire a link-change request */=0A=
-			schedule_delayed_work(&db->phy_poll, 1);=0A=
-		}=0A=
-	}=0A=
-=0A=
-	/* Re-enable interrupt mask */=0A=
-	iow(db, DM9000_IMR, db->imr_all);=0A=
-=0A=
-	/* Restore previous register address */=0A=
-	writeb(reg_save, db->io_addr);=0A=
-=0A=
-	 spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	return IRQ_HANDLED;=0A=
-}=0A=
-=0A=
-#ifdef CONFIG_NET_POLL_CONTROLLER=0A=
-/*=0A=
- *Used by netconsole=0A=
- */=0A=
-static void dm9000_poll_controller(struct net_device *dev)=0A=
-{=0A=
-	disable_irq(dev->irq);=0A=
-	dm9000_interrupt(dev->irq, dev);=0A=
-	enable_irq(dev->irq);=0A=
-}=0A=
-#endif=0A=
-=0A=
-/*=0A=
- *  Open the interface.=0A=
- *  The interface is opened whenever "ifconfig" actives it.=0A=
- */=0A=
-static int=0A=
-dm9000_open(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	unsigned long irqflags =3D db->irq_res->flags & IRQF_TRIGGER_MASK;=0A=
-=0A=
-	if (netif_msg_ifup(db))=0A=
-		dev_dbg(db->dev, "enabling %s\n", dev->name);=0A=
-=0A=
-	/* If there is no IRQ type specified, default to something that=0A=
-	 * may work, and tell the user that this is a problem */=0A=
-=0A=
-	if (irqflags =3D=3D IRQF_TRIGGER_NONE)=0A=
-		dev_warn(db->dev, "WARNING: no IRQ resource flags set.\n");=0A=
-=0A=
-	irqflags |=3D IRQF_SHARED;=0A=
-=0A=
-	if (request_irq(dev->irq, &dm9000_interrupt, irqflags, dev->name, dev))=0A=
-		return -EAGAIN;=0A=
-=0A=
-	/* Initialize DM9000 board */=0A=
-	dm9000_reset(db);=0A=
-	dm9000_init_dm9000(dev);=0A=
-=0A=
-	/* Init driver variable */=0A=
-	db->dbug_cnt =3D 0;=0A=
-=0A=
-	mii_check_media(&db->mii, netif_msg_link(db), 1);=0A=
-	netif_start_queue(dev);=0A=
-	=0A=
-	dm9000_schedule_poll(db);=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-/*=0A=
- * Sleep, either by using msleep() or if we are suspending, then=0A=
- * use mdelay() to sleep.=0A=
- */=0A=
-static void dm9000_msleep(board_info_t *db, unsigned int ms)=0A=
-{=0A=
-	if (db->in_suspend)=0A=
-		mdelay(ms);=0A=
-	else=0A=
-		msleep(ms);=0A=
-}=0A=
-=0A=
-/*=0A=
- *   Read a word from phyxcer=0A=
- */=0A=
-static int=0A=
-dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	unsigned long flags;=0A=
-	unsigned int reg_save;=0A=
-	int ret;=0A=
-=0A=
-	mutex_lock(&db->addr_lock);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock,flags);=0A=
-=0A=
-	/* Save previous register address */=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-=0A=
-	/* Fill the phyxcer register into REG_0C */=0A=
-	iow(db, DM9000_EPAR, DM9000_PHY | reg);=0A=
-=0A=
-	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);	/* Issue phyxcer read =
-command */=0A=
-=0A=
-	writeb(reg_save, db->io_addr);=0A=
-	spin_unlock_irqrestore(&db->lock,flags);=0A=
-=0A=
-	dm9000_msleep(db, 1);		/* Wait read complete */=0A=
-=0A=
-	spin_lock_irqsave(&db->lock,flags);=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-=0A=
-	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */=0A=
-=0A=
-	/* The read data keeps on REG_0D & REG_0E */=0A=
-	ret =3D (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);=0A=
-=0A=
-	/* restore the previous address */=0A=
-	writeb(reg_save, db->io_addr);=0A=
-	spin_unlock_irqrestore(&db->lock,flags);=0A=
-=0A=
-	mutex_unlock(&db->addr_lock);=0A=
-=0A=
-	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);=0A=
-	return ret;=0A=
-}=0A=
-=0A=
-/*=0A=
- *   Write a word to phyxcer=0A=
- */=0A=
-static void=0A=
-dm9000_phy_write(struct net_device *dev,=0A=
-		 int phyaddr_unused, int reg, int value)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-	unsigned long flags;=0A=
-	unsigned long reg_save;=0A=
-=0A=
-	dm9000_dbg(db, 5, "phy_write[%02x] =3D %04x\n", reg, value);=0A=
-	mutex_lock(&db->addr_lock);=0A=
-=0A=
-	spin_lock_irqsave(&db->lock,flags);=0A=
-=0A=
-	/* Save previous register address */=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-=0A=
-	/* Fill the phyxcer register into REG_0C */=0A=
-	iow(db, DM9000_EPAR, DM9000_PHY | reg);=0A=
-=0A=
-	/* Fill the written data into REG_0D & REG_0E */=0A=
-	iow(db, DM9000_EPDRL, value);=0A=
-	iow(db, DM9000_EPDRH, value >> 8);=0A=
-=0A=
-	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write =
-command */=0A=
-=0A=
-	writeb(reg_save, db->io_addr);=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-=0A=
-	dm9000_msleep(db, 1);		/* Wait write complete */=0A=
-=0A=
-	spin_lock_irqsave(&db->lock,flags);=0A=
-	reg_save =3D readb(db->io_addr);=0A=
-=0A=
-	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */=0A=
-=0A=
-	/* restore the previous address */=0A=
-	writeb(reg_save, db->io_addr);=0A=
-=0A=
-	spin_unlock_irqrestore(&db->lock, flags);=0A=
-	mutex_unlock(&db->addr_lock);=0A=
-}=0A=
-=0A=
-static void=0A=
-dm9000_shutdown(struct net_device *dev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(dev);=0A=
-=0A=
-	/* RESET device */=0A=
-	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET);	/* PHY RESET */=0A=
-//V_R1	iow(db, DM9000_GPR, 0x01);	/* Power-Down PHY */=0A=
-	iow(db, DM9000_IMR, IMR_PAR);	/* Disable all interrupt */=0A=
-	iow(db, DM9000_RCR, 0x00);	/* Disable RX */=0A=
-}=0A=
-=0A=
-/*=0A=
- * Stop the interface.=0A=
- * The interface is stopped when it is brought.=0A=
- */=0A=
-static int=0A=
-dm9000_stop(struct net_device *ndev)=0A=
-{=0A=
-	board_info_t *db =3D netdev_priv(ndev);=0A=
-=0A=
-	if (netif_msg_ifdown(db))=0A=
-		dev_dbg(db->dev, "shutting down %s\n", ndev->name);=0A=
-=0A=
-	cancel_delayed_work_sync(&db->phy_poll);=0A=
-=0A=
-	netif_stop_queue(ndev);=0A=
-	netif_carrier_off(ndev);=0A=
-=0A=
-	/* free interrupt */=0A=
-	free_irq(ndev->irq, ndev);=0A=
-=0A=
-	dm9000_shutdown(ndev);=0A=
-=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-#define res_size(_r) (((_r)->end - (_r)->start) + 1)=0A=
-=0A=
-static const struct net_device_ops dm9000_netdev_ops =3D {=0A=
-         .ndo_open =3D dm9000_open,=0A=
-         .ndo_stop =3D dm9000_stop,=0A=
-         .ndo_start_xmit =3D dm9000_start_xmit,=0A=
-         .ndo_tx_timeout =3D dm9000_timeout,=0A=
-         .ndo_set_multicast_list =3D dm9000_hash_table,=0A=
-         .ndo_do_ioctl =3D dm9000_ioctl,=0A=
-         .ndo_change_mtu =3D eth_change_mtu,=0A=
-         .ndo_validate_addr =3D eth_validate_addr,=0A=
-         .ndo_set_mac_address =3D eth_mac_addr,=0A=
-    #ifdef CONFIG_NET_POLL_CONTROLLER=0A=
-         .ndo_poll_controller =3D dm9000_poll_controller,=0A=
-    #endif=0A=
-};=0A=
-=0A=
-=0A=
-/*=0A=
- * Search DM9000 board, allocate space and register it=0A=
- */=0A=
-static int __devinit=0A=
-dm9000_probe(struct platform_device *pdev)=0A=
-{=0A=
-	struct dm9000_plat_data *pdata =3D pdev->dev.platform_data;=0A=
-	struct board_info *db;	/* Point a board information structure */=0A=
-	struct net_device *ndev;=0A=
-	const unsigned char *mac_src;=0A=
-	int ret =3D 0;=0A=
-	int iosize;=0A=
-	int i;=0A=
-	u32 id_val;=0A=
-=0A=
-	/* Init network device */=0A=
-	ndev =3D alloc_etherdev(sizeof(struct board_info));=0A=
-	if (!ndev) {=0A=
-		dev_err(&pdev->dev, "could not allocate device.\n");=0A=
-		return -ENOMEM;=0A=
-	}=0A=
-=0A=
-	SET_NETDEV_DEV(ndev, &pdev->dev);=0A=
-=0A=
-	dev_dbg(&pdev->dev, "dm9000_probe()\n");=0A=
-	 ndev->netdev_ops =3D &dm9000_netdev_ops;=0A=
-	/* setup board info structure */=0A=
-	db =3D netdev_priv(ndev);=0A=
-	memset(db, 0, sizeof(*db));=0A=
-=0A=
-	db->dev =3D &pdev->dev;=0A=
-	db->ndev =3D ndev;=0A=
-=0A=
-	spin_lock_init(&db->lock);=0A=
-	mutex_init(&db->addr_lock);=0A=
-=0A=
-	INIT_DELAYED_WORK(&db->phy_poll, dm9000_poll_work);=0A=
-=0A=
-	db->addr_res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);=0A=
-	db->data_res =3D platform_get_resource(pdev, IORESOURCE_MEM, 1);=0A=
-	db->irq_res  =3D platform_get_resource(pdev, IORESOURCE_IRQ, 0);=0A=
-=0A=
-	if (db->addr_res =3D=3D NULL || db->data_res =3D=3D NULL ||=0A=
-	    db->irq_res =3D=3D NULL) {=0A=
-		dev_err(db->dev, "insufficient resources\n");=0A=
-		ret =3D -ENOENT;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	iosize =3D res_size(db->addr_res);=0A=
-	db->addr_req =3D request_mem_region(db->addr_res->start, iosize,=0A=
-					  pdev->name);=0A=
-=0A=
-	if (db->addr_req =3D=3D NULL) {=0A=
-		dev_err(db->dev, "cannot claim address reg area\n");=0A=
-		ret =3D -EIO;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	db->io_addr =3D ioremap(db->addr_res->start, iosize);=0A=
-=0A=
-	if (db->io_addr =3D=3D NULL) {=0A=
-		dev_err(db->dev, "failed to ioremap address reg\n");=0A=
-		ret =3D -EINVAL;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	iosize =3D res_size(db->data_res);=0A=
-	db->data_req =3D request_mem_region(db->data_res->start, iosize,=0A=
-					  pdev->name);=0A=
-=0A=
-	if (db->data_req =3D=3D NULL) {=0A=
-		dev_err(db->dev, "cannot claim data reg area\n");=0A=
-		ret =3D -EIO;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	db->io_data =3D ioremap(db->data_res->start, iosize);=0A=
-=0A=
-	if (db->io_data =3D=3D NULL) {=0A=
-		dev_err(db->dev, "failed to ioremap data reg\n");=0A=
-		ret =3D -EINVAL;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	/* fill in parameters for net-dev structure */=0A=
-	ndev->base_addr =3D (unsigned long)db->io_addr;=0A=
-	ndev->irq	=3D db->irq_res->start;=0A=
-	//Stone add=0A=
-	printk("[dm9] %s ndev->irq=3D%x \n",__func__,ndev->irq);=0A=
-=0A=
-	/* ensure at least we have a default set of IO routines */=0A=
-	dm9000_set_io(db, iosize);=0A=
-=0A=
-	/* check to see if anything is being over-ridden */=0A=
-	if (pdata !=3D NULL) {=0A=
-		/* check to see if the driver wants to over-ride the=0A=
-		 * default IO width */=0A=
-=0A=
-		if (pdata->flags & DM9000_PLATF_8BITONLY)=0A=
-			dm9000_set_io(db, 1);=0A=
-=0A=
-		if (pdata->flags & DM9000_PLATF_16BITONLY)=0A=
-			dm9000_set_io(db, 2);=0A=
-=0A=
-		if (pdata->flags & DM9000_PLATF_32BITONLY)=0A=
-			dm9000_set_io(db, 4);=0A=
-=0A=
-		/* check to see if there are any IO routine=0A=
-		 * over-rides */=0A=
-=0A=
-		if (pdata->inblk !=3D NULL)=0A=
-			db->inblk =3D pdata->inblk;=0A=
-=0A=
-		if (pdata->outblk !=3D NULL)=0A=
-			db->outblk =3D pdata->outblk;=0A=
-=0A=
-		if (pdata->dumpblk !=3D NULL)=0A=
-			db->dumpblk =3D pdata->dumpblk;=0A=
-=0A=
-		db->flags =3D pdata->flags;=0A=
-	}=0A=
-=0A=
-#ifdef CONFIG_DM9000_FORCE_SIMPLE_PHY_POLL=0A=
-	db->flags |=3D DM9000_PLATF_SIMPLE_PHY;=0A=
-#endif=0A=
-=0A=
-//Stone add=0A=
-//	dm9000_reset(db);=0A=
-  iow(db, DM9000_NCR, 0x03);=0A=
-=0A=
-	/* try multiple times, DM9000 sometimes gets the read wrong */=0A=
-	for (i =3D 0; i < 8; i++) {=0A=
-		id_val  =3D ior(db, DM9000_VIDL);=0A=
-		id_val |=3D (u32)ior(db, DM9000_VIDH) << 8;=0A=
-		id_val |=3D (u32)ior(db, DM9000_PIDL) << 16;=0A=
-		id_val |=3D (u32)ior(db, DM9000_PIDH) << 24;=0A=
-=0A=
-		printk("[dm9].%d read id 0x%08x\n", i+1, id_val);=0A=
-		=0A=
-		if (id_val =3D=3D DM9000_ID)=0A=
-			break;=0A=
-		dev_err(db->dev, "read wrong id 0x%08x\n", id_val);=0A=
-	}=0A=
-	=0A=
-	printk(KERN_INFO "[%s Ethernet Driver, V%s]: KV=3D %d.%d.%d !!\n", =
-CARDNAME, DRV_VERSION,  //JJ1 =0A=
-	                            (LINUX_VERSION_CODE>>16 & 0xff),=0A=
-	                            (LINUX_VERSION_CODE>>8 & 0xff),=0A=
-	                            (LINUX_VERSION_CODE & 0xff) ); //#define =
-KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))=0A=
-	printk(KERN_INFO "[%s Ethernet Driver, V%s]: ChipID=3D 0x%x !!\n", =
-CARDNAME, DRV_VERSION, id_val ); // JJ1=0A=
-=0A=
-	if (id_val !=3D DM9000_ID) {=0A=
-		dev_err(db->dev, "wrong id: 0x%08x\n", id_val);=0A=
-		ret =3D -ENODEV;=0A=
-		goto out;=0A=
-	}=0A=
-=0A=
-	/* Identify what type of DM9000 we are working on */=0A=
-=0A=
-	id_val =3D ior(db, DM9000_CHIPR);=0A=
-	dev_dbg(db->dev, "dm9000 revision 0x%02x\n", id_val);=0A=
-	printk(KERN_INFO "[DM9000]dm9000 revision 0x%02x\n", id_val); //V_R1=0A=
-=0A=
-	switch (id_val) {=0A=
-	case CHIPR_DM9000A:=0A=
-		db->type =3D TYPE_DM9000A;=0A=
-		break;=0A=
-	case CHIPR_DM9000B:=0A=
-		db->type =3D TYPE_DM9000B;=0A=
-		break;=0A=
-	default:=0A=
-		dev_dbg(db->dev, "ID %02x =3D> defaulting to DM9000E\n", id_val);=0A=
-		db->type =3D TYPE_DM9000E;=0A=
-	}=0A=
-=0A=
-	/* from this point we assume that we have found a DM9000 */=0A=
-=0A=
-	/* driver system function */=0A=
-	ether_setup(ndev);=0A=
-	=0A=
-#if LINUX_VERSION_CODE >=3D KERNEL_VERSION(2,6,31)=0A=
-			ndev->netdev_ops =3D &dm9000_netdev_ops; // new kernel 2.6.31 =0A=
-			ndev->watchdog_timeo	=3D msecs_to_jiffies(watchdog);	=0A=
-	 		ndev->ethtool_ops	 =3D &dm9000_ethtool_ops;=0A=
-#else=0A=
-	ndev->open		 =3D &dm9000_open;=0A=
-	ndev->hard_start_xmit    =3D &dm9000_start_xmit;=0A=
-	ndev->tx_timeout         =3D &dm9000_timeout;=0A=
-	ndev->watchdog_timeo =3D msecs_to_jiffies(watchdog);=0A=
-	ndev->stop		 =3D &dm9000_stop;=0A=
-	ndev->set_multicast_list =3D &dm9000_hash_table;=0A=
-	ndev->ethtool_ops	 =3D &dm9000_ethtool_ops;=0A=
-	ndev->do_ioctl		 =3D &dm9000_ioctl;=0A=
-#endif=0A=
-=0A=
-=0A=
-#ifdef CONFIG_NET_POLL_CONTROLLER=0A=
-	ndev->poll_controller	 =3D &dm9000_poll_controller;=0A=
-#endif=0A=
-=0A=
-	db->msg_enable       =3D NETIF_MSG_LINK;=0A=
-	db->mii.phy_id_mask  =3D 0x1f;=0A=
-	db->mii.reg_num_mask =3D 0x1f;=0A=
-	db->mii.force_media  =3D 0;=0A=
-	db->mii.full_duplex  =3D 0;=0A=
-	db->mii.dev	     =3D ndev;=0A=
-	db->mii.mdio_read    =3D dm9000_phy_read;=0A=
-	db->mii.mdio_write   =3D dm9000_phy_write;=0A=
-=0A=
-	mac_src =3D "eeprom";=0A=
-=0A=
-	/* try reading the node address from the attached EEPROM */=0A=
-	for (i =3D 0; i < 6; i +=3D 2)=0A=
-		dm9000_read_eeprom(db, i / 2, ndev->dev_addr+i);=0A=
-=0A=
-	if (!is_valid_ether_addr(ndev->dev_addr) && pdata !=3D NULL) {=0A=
-		mac_src =3D "platform data";=0A=
-		memcpy(ndev->dev_addr, pdata->dev_addr, 6);=0A=
-	}=0A=
-=0A=
-	if (!is_valid_ether_addr(ndev->dev_addr)) {=0A=
-		/* try reading from mac */=0A=
-		=0A=
-		mac_src =3D "chip";=0A=
-=0A=
-		static unsigned char mac_addr[6] =3D {0x00,0x11,0x22,0x33,0x44,0x55};=0A=
-		static unsigned char mac_tmp[6] =3D {0xff,0xff,0xff,0xff,0xff,0xff};=0A=
-		for (i =3D 0; i < 6; i++)=0A=
-			ndev->dev_addr[i] =3D ior(db, i+DM9000_PAR);=0A=
-=0A=
-		// Mark Chang 20100521=0A=
-		// -------------------=0A=
-		if (!memcmp(ndev->dev_addr, mac_tmp, 6))=0A=
-			memcpy(ndev->dev_addr, mac_addr, 6);=0A=
-	}=0A=
-=0A=
-	if (!is_valid_ether_addr(ndev->dev_addr))=0A=
-		dev_warn(db->dev, "%s: Invalid ethernet MAC address. Please "=0A=
-			 "set using ifconfig\n", ndev->name);=0A=
-=0A=
-	platform_set_drvdata(pdev, ndev);=0A=
-	ret =3D register_netdev(ndev);=0A=
-=0A=
-	if (ret =3D=3D 0)=0A=
-		printk(KERN_INFO "%s: dm9000%c at %p,%p IRQ %d MAC: %pM (%s)\n",=0A=
-		       ndev->name, dm9000_type_to_char(db->type),=0A=
-		       db->io_addr, db->io_data, ndev->irq,=0A=
-		       ndev->dev_addr, mac_src);=0A=
-	return 0;=0A=
-=0A=
-out:=0A=
-	dev_err(db->dev, "not found (%d).\n", ret);=0A=
-=0A=
-	dm9000_release_board(pdev, db);=0A=
-	free_netdev(ndev);=0A=
-=0A=
-	return ret;=0A=
-}=0A=
-=0A=
-static int=0A=
-dm9000_drv_suspend(struct platform_device *dev, pm_message_t state)=0A=
-{=0A=
-	struct net_device *ndev =3D platform_get_drvdata(dev);=0A=
-	board_info_t *db;=0A=
-=0A=
-	if (ndev) {=0A=
-		db =3D netdev_priv(ndev);=0A=
-		db->in_suspend =3D 1;=0A=
-=0A=
-		if (netif_running(ndev)) {=0A=
-			netif_device_detach(ndev);=0A=
-			dm9000_shutdown(ndev);=0A=
-		}=0A=
-	}=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static int=0A=
-dm9000_drv_resume(struct platform_device *dev)=0A=
-{=0A=
-	struct net_device *ndev =3D platform_get_drvdata(dev);=0A=
-	board_info_t *db =3D netdev_priv(ndev);=0A=
-=0A=
-	if (ndev) {=0A=
-=0A=
-		if (netif_running(ndev)) {=0A=
-			dm9000_reset(db);=0A=
-			dm9000_init_dm9000(ndev);=0A=
-=0A=
-			netif_device_attach(ndev);=0A=
-		}=0A=
-=0A=
-		db->in_suspend =3D 0;=0A=
-	}=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static int __devexit=0A=
-dm9000_drv_remove(struct platform_device *pdev)=0A=
-{=0A=
-	struct net_device *ndev =3D platform_get_drvdata(pdev);=0A=
-=0A=
-	platform_set_drvdata(pdev, NULL);=0A=
-=0A=
-	unregister_netdev(ndev);=0A=
-	dm9000_release_board(pdev, (board_info_t *) netdev_priv(ndev));=0A=
-	free_netdev(ndev);		/* free device structure */=0A=
-=0A=
-	dev_dbg(&pdev->dev, "released and freed device\n");=0A=
-	return 0;=0A=
-}=0A=
-=0A=
-static struct platform_driver dm9000_driver =3D {=0A=
-	.driver	=3D {=0A=
-		.name    =3D "dm9000",=0A=
-		.owner	 =3D THIS_MODULE,=0A=
-	},=0A=
-	.probe   =3D dm9000_probe,=0A=
-	.remove  =3D __devexit_p(dm9000_drv_remove),=0A=
-	.suspend =3D dm9000_drv_suspend,=0A=
-	.resume  =3D dm9000_drv_resume,=0A=
-};=0A=
-=0A=
-static int __init=0A=
-dm9000_init(void)=0A=
-{=0A=
-	printk(KERN_INFO "%s Ethernet Driver, V%s\n", CARDNAME, DRV_VERSION);=0A=
-=0A=
-	return platform_driver_register(&dm9000_driver);=0A=
-}=0A=
-=0A=
-static void __exit=0A=
-dm9000_cleanup(void)=0A=
-{=0A=
-	platform_driver_unregister(&dm9000_driver);=0A=
-}=0A=
-=0A=
-module_init(dm9000_init);=0A=
-module_exit(dm9000_cleanup);=0A=
-=0A=
-MODULE_AUTHOR("Sascha Hauer, Ben Dooks");=0A=
-MODULE_DESCRIPTION("Davicom DM9000 network driver");=0A=
-MODULE_LICENSE("GPL");=0A=
-MODULE_ALIAS("platform:dm9000");=0A=
+Hi all,
 
-------=_NextPart_000_0011_01CD966E.CC5824B0
-Content-Type: application/octet-stream;
-	name="dm9000_KT2.6.31.h"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="dm9000_KT2.6.31.h"
+Changes since 201209018:
 
-/*=0A=
- * dm9000 Ethernet=0A=
- */=0A=
-=0A=
-#ifndef _DM9000X_H_=0A=
-#define _DM9000X_H_=0A=
-=0A=
-#define DM9000_ID		0x90000A46=0A=
-=0A=
-/* although the registers are 16 bit, they are 32-bit aligned.=0A=
- */=0A=
-=0A=
-#define DM9000_NCR             0x00=0A=
-#define DM9000_NSR             0x01=0A=
-#define DM9000_TCR             0x02=0A=
-#define DM9000_TSR1            0x03=0A=
-#define DM9000_TSR2            0x04=0A=
-#define DM9000_RCR             0x05=0A=
-#define DM9000_RSR             0x06=0A=
-#define DM9000_ROCR            0x07=0A=
-#define DM9000_BPTR            0x08=0A=
-#define DM9000_FCTR            0x09=0A=
-#define DM9000_FCR             0x0A=0A=
-#define DM9000_EPCR            0x0B=0A=
-#define DM9000_EPAR            0x0C=0A=
-#define DM9000_EPDRL           0x0D=0A=
-#define DM9000_EPDRH           0x0E=0A=
-#define DM9000_WCR             0x0F=0A=
-=0A=
-#define DM9000_PAR             0x10=0A=
-#define DM9000_MAR             0x16=0A=
-=0A=
-#define DM9000_GPCR	       0x1e=0A=
-#define DM9000_GPR             0x1f=0A=
-#define DM9000_TRPAL           0x22=0A=
-#define DM9000_TRPAH           0x23=0A=
-#define DM9000_RWPAL           0x24=0A=
-#define DM9000_RWPAH           0x25=0A=
-=0A=
-#define DM9000_VIDL            0x28=0A=
-#define DM9000_VIDH            0x29=0A=
-#define DM9000_PIDL            0x2A=0A=
-#define DM9000_PIDH            0x2B=0A=
-=0A=
-#define DM9000_CHIPR           0x2C=0A=
-#define DM9000_SMCR            0x2F=0A=
-=0A=
-#define CHIPR_DM9000A	       0x19=0A=
-#define CHIPR_DM9000B	       0x1A  //V_R1 0x1B=0A=
-=0A=
-#define DM9000_MRCMDX          0xF0=0A=
-#define DM9000_MRCMD           0xF2=0A=
-#define DM9000_MRRL            0xF4=0A=
-#define DM9000_MRRH            0xF5=0A=
-#define DM9000_MWCMDX          0xF6=0A=
-#define DM9000_MWCMD           0xF8=0A=
-#define DM9000_MWRL            0xFA=0A=
-#define DM9000_MWRH            0xFB=0A=
-#define DM9000_TXPLL           0xFC=0A=
-#define DM9000_TXPLH           0xFD=0A=
-#define DM9000_ISR             0xFE=0A=
-#define DM9000_IMR             0xFF=0A=
-=0A=
-#define NCR_EXT_PHY         (1<<7)=0A=
-#define NCR_WAKEEN          (1<<6)=0A=
-#define NCR_FCOL            (1<<4)=0A=
-#define NCR_FDX             (1<<3)=0A=
-#define NCR_LBK             (3<<1)=0A=
-#define NCR_RST	            (1<<0)=0A=
-=0A=
-#define NSR_SPEED           (1<<7)=0A=
-#define NSR_LINKST          (1<<6)=0A=
-#define NSR_WAKEST          (1<<5)=0A=
-#define NSR_TX2END          (1<<3)=0A=
-#define NSR_TX1END          (1<<2)=0A=
-#define NSR_RXOV            (1<<1)=0A=
-=0A=
-#define TCR_TJDIS           (1<<6)=0A=
-#define TCR_EXCECM          (1<<5)=0A=
-#define TCR_PAD_DIS2        (1<<4)=0A=
-#define TCR_CRC_DIS2        (1<<3)=0A=
-#define TCR_PAD_DIS1        (1<<2)=0A=
-#define TCR_CRC_DIS1        (1<<1)=0A=
-#define TCR_TXREQ           (1<<0)=0A=
-=0A=
-#define TSR_TJTO            (1<<7)=0A=
-#define TSR_LC              (1<<6)=0A=
-#define TSR_NC              (1<<5)=0A=
-#define TSR_LCOL            (1<<4)=0A=
-#define TSR_COL             (1<<3)=0A=
-#define TSR_EC              (1<<2)=0A=
-=0A=
-#define RCR_WTDIS           (1<<6)=0A=
-#define RCR_DIS_LONG        (1<<5)=0A=
-#define RCR_DIS_CRC         (1<<4)=0A=
-#define RCR_ALL	            (1<<3)=0A=
-#define RCR_RUNT            (1<<2)=0A=
-#define RCR_PRMSC           (1<<1)=0A=
-#define RCR_RXEN            (1<<0)=0A=
-=0A=
-#define RSR_RF              (1<<7)=0A=
-#define RSR_MF              (1<<6)=0A=
-#define RSR_LCS             (1<<5)=0A=
-#define RSR_RWTO            (1<<4)=0A=
-#define RSR_PLE             (1<<3)=0A=
-#define RSR_AE              (1<<2)=0A=
-#define RSR_CE              (1<<1)=0A=
-#define RSR_FOE             (1<<0)=0A=
-=0A=
-#define FCTR_HWOT(ot)	(( ot & 0xf ) << 4 )=0A=
-#define FCTR_LWOT(ot)	( ot & 0xf )=0A=
-=0A=
-#define IMR_PAR             (1<<7)=0A=
-#define IMR_ROOM            (1<<3)=0A=
-#define IMR_ROM             (1<<2)=0A=
-#define IMR_PTM             (1<<1)=0A=
-#define IMR_PRM             (1<<0)=0A=
-=0A=
-#define ISR_ROOS            (1<<3)=0A=
-#define ISR_ROS             (1<<2)=0A=
-#define ISR_PTS             (1<<1)=0A=
-#define ISR_PRS             (1<<0)=0A=
-#define ISR_CLR_STATUS      (ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS)=0A=
-=0A=
-#define EPCR_REEP           (1<<5)=0A=
-#define EPCR_WEP            (1<<4)=0A=
-#define EPCR_EPOS           (1<<3)=0A=
-#define EPCR_ERPRR          (1<<2)=0A=
-#define EPCR_ERPRW          (1<<1)=0A=
-#define EPCR_ERRE           (1<<0)=0A=
-=0A=
-#define GPCR_GEP_CNTL       (1<<0)=0A=
-=0A=
-#define DM9000_PKT_RDY		0x01	/* Packet ready to receive */=0A=
-#define DM9000_PKT_MAX		1536	/* Received packet max size */=0A=
-=0A=
-/* DM9000A / DM9000B definitions */=0A=
-=0A=
-#define IMR_LNKCHNG		(1<<5)=0A=
-#define IMR_UNDERRUN		(1<<4)=0A=
-=0A=
-#define ISR_LNKCHNG		(1<<5)=0A=
-#define ISR_UNDERRUN		(1<<4)=0A=
-=0A=
-#endif /* _DM9000X_H_ */=0A=
-=0A=
+The bluetooth tree gained a build failure so I used the version from
+next-20120918.
 
-------=_NextPart_000_0011_01CD966E.CC5824B0--
+The workqueues tree gained a conflict against the pm tree.
 
+The usb tree gained a conflict against the tty tree and a build failure
+for which I applied a merge fix patch.
+
+The staging tree gained a conflict against the usb tree.
+
+The signal tree gained a conflict against the sh tree.
+
+The akpm tree lost a few problematic patches.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
+sparc64 and arm defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 200 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+Gortmaker for triage and bug fixes.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master (925a6f0 Merge tag 'hwspinlock-3.6-fix' of git://git.=
+kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock)
+Merging fixes/master (9023a40 Merge tag 'mmc-fixes-for-3.5-rc4' of git://gi=
+t.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+Merging kbuild-current/rc-fixes (6c7080a firmware: fix directory creation r=
+ule matching with make 3.82)
+Merging arm-current/fixes (6f7dad7 Merge branch 'clkdev' into fixes)
+Merging m68k-current/for-linus (3be7184 m68k: Add missing RCU idle APIs on =
+idle loop)
+Merging powerpc-merge/merge (636802e powerpc: Don't use __put_user() in pat=
+ch_instruction)
+Merging sparc/master (5698bd7 Linux 3.6-rc6)
+Merging net/master (59d86c7 e1000: Small packets may get corrupted during p=
+adding by HW)
+Merging sound-current/for-linus (5d037f9 Merge tag 'asoc-3.6' of git://git.=
+kernel.org/pub/scm/linux/kernel/git/broonie/sound into for-linus)
+Merging pci-current/for-linus (0ff9514 PCI: Don't print anything while deco=
+ding is disabled)
+Merging wireless/master (e020a83 brcmfmac: Fix big endian host configuratio=
+n data.)
+Merging driver-core.current/driver-core-linus (5698bd7 Linux 3.6-rc6)
+Merging tty.current/tty-linus (5698bd7 Linux 3.6-rc6)
+Merging usb.current/usb-linus (5698bd7 Linux 3.6-rc6)
+Merging staging.current/staging-linus (5698bd7 Linux 3.6-rc6)
+Merging char-misc.current/char-misc-linus (fea7a08 Linux 3.6-rc3)
+Merging input-current/for-linus (6f4d038 Input: wacom - add support for EMR=
+ on Cintiq 24HD touch)
+Merging md-current/for-linus (58e94ae md/raid1: close some possible races o=
+n write errors during resync)
+Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
+og_d_path prefix)
+Merging crypto-current/master (9b2f4cb crypto: authenc - Fix crash with zer=
+o-length assoc data)
+Merging ide/master (9974e43 ide: fix generic_ide_suspend/resume Oops)
+Merging dwmw2/master (244dc4e Merge git://git.infradead.org/users/dwmw2/ran=
+dom-2.6)
+Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
+to inline functions)
+Merging irqdomain-current/irqdomain/merge (15e06bf irqdomain: Fix debugfs f=
+ormatting)
+Merging devicetree-current/devicetree/merge (4e8383b of: release node fix f=
+or of_parse_phandle_with_args)
+Merging spi-current/spi/merge (d1c185b of/spi: Fix SPI module loading by us=
+ing proper "spi:" modalias prefixes.)
+Merging gpio-current/gpio/merge (96b7064 gpio/tca6424: merge I2C transactio=
+ns, remove cast)
+Merging arm/for-next (18824d9 Merge branches 'arch-timers', 'atags', 'cache=
+-l2x0', 'clkdev', 'fixes', 'integrator', 'misc' and 'opcodes' into for-next)
+Merging arm-perf/for-next/perf (b90c4b9 Merge branch 'hw-breakpoint' into f=
+or-next/perf)
+CONFLICT (content): Merge conflict in arch/arm/kernel/hw_breakpoint.c
+Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
+Merging xilinx/arm-next (b85a3ef ARM: Xilinx: Adding Xilinx board support)
+Merging arm64/upstream (3807422 arm64: MAINTAINERS update)
+Merging blackfin/for-linus (6895f97 kbuild: add symbol prefix arg to kallsy=
+ms)
+Merging c6x/for-linux-next (55d512e Linux 3.6-rc5)
+Merging cris/for-next (2608747 CRIS: Remove VCS simulator specific code)
+Merging hexagon/linux-next (5042ab9 various Kconfig cleanup and old platfor=
+m build code removal)
+Merging ia64/next (36a45e7 [IA64] kexec: Move the dereference below the NUL=
+L test)
+Merging m68k/for-next (f82735d m68k: Use PTR_RET rather than if(IS_ERR(...)=
+) + PTR_ERR)
+Merging m68knommu/for-next (42ec574 m68knommu: use "r", not "i" constraint =
+in cacheflus asm's)
+Merging microblaze/next (a01ee16 Merge branch 'for-linus' of git://git.open=
+-osd.org/linux-open-osd)
+Merging mips/mips-for-linux-next (f50296d Merge branch 'next/p3/trace' into=
+ mips-for-linux-next)
+Merging openrisc/for-upstream (807607f openrisc: delay: fix handling of cou=
+nter overflow)
+Merging parisc/for-next (5b24c42 [PARISC] fix personality flag check in cop=
+y_thread())
+Merging s390/features (dfc09c0 s390/cmpxchg,percpu: implement cmpxchg_doubl=
+e())
+Merging sh/sh-latest (5e071e2 sh: Fix up TIF_NOTIFY_RESUME sans TIF_SIGPEND=
+ING handling.)
+Merging sparc-next/master (65d5fcf sparc64: Fix IV handling bug in des_spar=
+c64_cbc_decrypt)
+Merging tile/master (bdc0077 Merge tag 'scsi-misc' of git://git.kernel.org/=
+pub/scm/linux/kernel/git/jejb/scsi)
+Merging unicore32/unicore32 (e4baa56 UniCore32-bugfix: Remove definitions i=
+n asm/bug.h to solve difference between native and cross compiler)
+Merging xtensa/for_next (499d9ec xtensa: ISS: exit simulator in case of hal=
+t or panic)
+Merging ceph/master (1fe5e99 rbd: create rbd_refresh_helper())
+Merging cifs/for-next (748b679 cifs: fix return value in cifsConvertToUTF16)
+Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
+kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
+Merging ecryptfs/next (0d7614f Linux 3.6-rc1)
+Merging ext3/for_next (09e05d4 jbd: Fix assertion failure in commit code du=
+e to lacking transaction credits)
+Merging ext4/dev (c9b92530 ext4: make orphan functions be no-op in no-journ=
+al mode)
+Merging fuse/for-next (c7a3f5e fuse: Move CUSE Kconfig entry from fs/Kconfi=
+g into fs/fuse/Kconfig)
+Merging gfs2/master (a8b7d6c GFS2: Fix infinite loop in rbm_find)
+CONFLICT (content): Merge conflict in fs/gfs2/rgrp.c
+Merging jfs/jfs-next (84f4141 jfs: Fix do_div precision in commit b40c2e66)
+Merging logfs/master (ab2ec19 logfs: fix possible memory leak in logfs_mtd_=
+can_write_buf())
+Merging nfs/linux-next (87359d5 SUNRPC: Ensure that the TCP socket is close=
+d when in CLOSE_WAIT)
+Merging nfsd/nfsd-next (fac7a17 nfsd4: cast readlink() bug argument)
+Merging ocfs2/linux-next (4538df6 ocfs2: Don't spam on -EDQUOT.)
+Merging omfs/for-next (976d167 Linux 3.1-rc9)
+Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
+block_size and block_log match)
+Merging v9fs/for-next (552aad0 9P: Fix race between p9_write_work() and p9_=
+fd_request())
+Merging ubifs/linux-next (3668b70 UBIFS: print less)
+Merging xfs/for-next (4026c9f xfs: stop the sync worker before xfs_unmountf=
+s)
+Merging vfs/for-next (61a1384 fanotify: sanitize failure exits in copy_even=
+t_to_user())
+Merging pci/next (8704936 Merge branch 'pci/konstantin-sysfs' into next)
+Merging powerpc/next (caa1d63 Merge remote-tracking branch 'kumar/next' int=
+o next)
+Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
+Merging mpc5xxx/next (9d9fd88 powerpc/mpc52xx_lpbfifo: optionally defer fif=
+o transfer start)
+Merging galak/next (905e75c powerpc/fsl-pci: Unify pci/pcie initialization =
+code)
+Merging hid/for-next (a549d1d Merge branch 'upstream' into for-next)
+Merging quilt/i2c (3969d54 i2c: Make I2C available on UML)
+Merging i2c-embedded/i2c-embedded/for-next (2bdbfa9 i2c: davinci: preparati=
+on for switch to common clock framework)
+Merging quilt/jdelvare-hwmon (820d1e2 hwmon: (coretemp) Use get_online_cpus=
+ to avoid races involving CPU hotplug)
+Merging hwmon-staging/hwmon-next (adfe56c hwmon: (lm70) Simplify show_name =
+function)
+Merging v4l-dvb/master (624bfcc Merge /home/v4l/v4l/patchwork)
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx27_visstrim=
+_m10.c
+Merging kbuild/for-next (c781288 Merge branches 'kbuild/kbuild', 'kbuild/kc=
+onfig' and 'kbuild/misc' into kbuild/for-next)
+Merging kconfig/for-next (45f4c81 localmodconfig: Use my variable for loop =
+in streamline_config.pl)
+Merging libata/NEXT (633de4c [libata] export ata_dev_set_feature())
+Merging infiniband/for-next (7ae9a51 Merge branches 'cma', 'cxgb4', 'ipoib'=
+, 'mlx4', 'qib' and 'srp' into for-next)
+Merging pstore/master (65f8c95 pstore/ftrace: Convert to its own enable/dis=
+able debugfs knob)
+Merging acpi/next (9d0b01a Merge branches 'delete-gts-bfs', 'misc', 'novell=
+-bugzilla-757888-numa' and 'osc-pcie' into base)
+Merging cpuidle/cpuidle-next (3cf7997 acpi: intel_idle : break dependency b=
+etween modules)
+CONFLICT (content): Merge conflict in include/linux/cpuidle.h
+CONFLICT (add/add): Merge conflict in drivers/cpuidle/coupled.c
+Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
+ the debug tools' makefiles)
+Merging thermal/next (2de237a thermal: exynos: Use devm_* functions)
+Merging ieee1394/for-next (e3cbd92 firewire: core: document is_local sysfs =
+attribute)
+Merging ubi/linux-next (9bfd58f UBI: fix trivial typo 'it' =3D> 'is')
+Merging dlm/next (2b75bc9 dlm: check the maximum size of a request from use=
+r)
+Merging scsi/for-next (cea6340 Merge branch 'misc' into for-next)
+CONFLICT (content): Merge conflict in drivers/scsi/qla2xxx/qla_nx.c
+CONFLICT (content): Merge conflict in drivers/scsi/ipr.c
+Merging target-updates/for-next (37bb789 target: fix return code in target_=
+core_init_configfs error path)
+Merging target-merge/for-next-merge (d987569 Linux 3.6-rc2)
+Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
+Merging isci/all (6734092 isci: add a couple __iomem annotations)
+Merging slave-dma/next (0274788 DMA: PL330: return ENOMEM instead of 0 from=
+ pl330_alloc_chan_resources)
+Merging dmaengine/next (a2bd114 netdma: adding alignment check for NETDMA o=
+ps)
+Merging net-next/master (adccff3 net/tipc/name_table.c: Remove unecessary s=
+emicolon)
+CONFLICT (content): Merge conflict in net/socket.c
+CONFLICT (content): Merge conflict in net/ipv4/route.c
+CONFLICT (content): Merge conflict in net/ipv4/fib_frontend.c
+Applying: net: cope with sock_alloc_file() API change
+Merging wireless-next/master (7a5f799 rtlwifi: Remove EXPERIMENTAL as pre-r=
+equisite for the drivers)
+Merging bluetooth/master (493969c Bluetooth: Add support for BCM20702A0 [04=
+ca, 2003])
+$ git reset --hard HEAD^
+Merging refs/next/20120918/bluetooth
+Merging mtd/master (2361f73 Merge tag 'v3.6-rc2' of git://git.kernel.org/pu=
+b/scm/linux/kernel/git/torvalds/linux)
+Merging l2-mtd/master (a124642 mtd: basic (read only) driver for BCMA seria=
+l flash)
+Merging crypto/master (821873a hwrng: mxc-rnga - Access data via structure)
+CONFLICT (content): Merge conflict in crypto/Kconfig
+Merging drm/drm-next (0b2443e drm/edid: limit printk when facing bad edid)
+CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_dma.c
+Merging sound/for-next (4b527b6 ALSA: hda - limit internal mic boost for As=
+us X202E)
+Merging sound-asoc/for-next (6058cc1 Merge branch 'for-3.7' into asoc-next)
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx27_visstrim=
+_m10.c
+Merging quilt/rr (a082636 drivers/virtio/virtio_pci.c: fix error return cod=
+e)
+CONFLICT (content): Merge conflict in arch/xtensa/Kconfig
+CONFLICT (content): Merge conflict in arch/s390/Kconfig
+CONFLICT (content): Merge conflict in arch/mips/kernel/module.c
+CONFLICT (content): Merge conflict in arch/alpha/Kconfig
+Merging input/next (caaa357 Input: Add KD[GS]KBDIACRUC ioctls to the compat=
+ible list)
+Merging input-mt/for-next (3ef0b1a Input: bcm5974 - Convert to MT-B)
+Merging cgroup/for-next (c0a93e2 Merge branch 'for-3.7-hierarchy' into for-=
+next)
+Merging block/for-next (3406fea Merge branch 'for-3.7/drivers' into for-nex=
+t)
+Merging quilt/device-mapper (e56559b Use the recently-added bio front_pad f=
+ield to allocate struct dm_target_io.)
+Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
+ence)
+Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
+Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
+Merging mmc/mmc-next (86621dc mmc: sdhci-s3c: Add device tree support)
+Merging kgdb/kgdb-next (15d7ea0 kgdboc: Accept either kbd or kdb to activat=
+e the vga + keyboard kdb shell)
+Merging slab/for-next (8162231 Merge branch 'slab/next' into for-next)
+Merging uclinux/for-next (5e442a4 Revert "proc: fix races against execve() =
+of /proc/PID/fd**")
+Merging md/for-next (4f75eef raid: replace list_for_each_continue_rcu with =
+new interface)
+Merging mfd/for-next (4adcefd mfd: anatop-mfd: remove anatop driver)
+CONFLICT (content): Merge conflict in drivers/regulator/anatop-regulator.c
+CONFLICT (content): Merge conflict in drivers/mfd/tc3589x.c
+CONFLICT (content): Merge conflict in drivers/mfd/88pm860x-core.c
+CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/reg=
+ulator/tps6586x.txt
+Merging battery/master (2815b78 power_supply: Add new power supply properti=
+es CHARGE_CURRENT/VOLTAGE_MAX)
+Merging fbdev/fbdev-next (75435c7 video: exynos_dp: move setting analog par=
+ameter and interrupt to after sw reset)
+Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
+et_par)
+Merging omap_dss2/for-next (6659145 Merge branch 'fbdev-for-linus' of git:/=
+/github.com/schandinat/linux-2.6)
+Merging regulator/for-next (be9bfd9 Merge branch 'regulator-drivers' into r=
+egulator-next)
+CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/reg=
+ulator/tps6586x.txt
+Merging security/next (e7c568e ima: audit log hashes)
+Merging selinux/master (c2d7b24 Merge tag 'v3.4' into 20120409)
+Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
+Merging watchdog/master (b232a70 watchdog: move the dereference below the N=
+ULL test)
+Merging dwmw2-iommu/master (c3b92c8 Linux 3.1)
+Merging iommu/next (6f286cc Merge branches 'iommu/fixes' and 'arm/tegra' in=
+to next)
+Merging vfio/next (d987569 Linux 3.6-rc2)
+Merging osd/linux-next (b8017d2 exofs: check for allocation failure in uri_=
+store())
+Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
+ument)
+Merging trivial/for-next (527a136 btrfs: fix trivial typo for the comment o=
+f BTRFS_FREE_INO_OBJECTID)
+CONFLICT (content): Merge conflict in drivers/video/backlight/88pm860x_bl.c
+CONFLICT (content): Merge conflict in drivers/scsi/ipr.c
+Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
+Merging pm/linux-next (27665d7 Merge branch 'pm-cpuidle-next' into linux-ne=
+xt)
+Merging apm/for-next (fb9d78a Merge branch 'for-linus' of git://git.kernel.=
+org/pub/scm/linux/kernel/git/jikos/apm)
+Merging fsnotify/for-next (1aec9c0 inotify: automatically restart syscalls)
+CONFLICT (content): Merge conflict in kernel/audit_tree.c
+Merging edac/linux_next (a92cdec Merge branch 'devel' into next)
+Merging edac-amd/for-next (305f1c3 Merge branch '3.3-pci_device_id' into ed=
+ac-for-next)
+CONFLICT (content): Merge conflict in drivers/edac/amd64_edac.c
+CONFLICT (content): Merge conflict in Documentation/edac.txt
+Merging devicetree/devicetree/next (efd68e7 devicetree: add helper inline f=
+or retrieving a node's full name)
+Merging dt-rh/for-next (ee67016 of: i2c: add support for wakeup-source prop=
+erty)
+Merging spi/spi/next (d8e328b spi: Add "spi:" prefix to modalias attribute =
+of spi devices)
+Merging spi-mb/spi-next (337ef8d Merge branch 'spi-drivers' into spi-next)
+CONFLICT (content): Merge conflict in drivers/mmc/host/mxs-mmc.c
+Merging tip/auto-latest (2f93bbc Merge branch 'linus')
+CONFLICT (content): Merge conflict in arch/s390/Kconfig
+CONFLICT (content): Merge conflict in arch/Kconfig
+Merging rcu/rcu/next (5e9c338 rcu: Shrink RCU based on number of CPUs)
+CONFLICT (content): Merge conflict in kernel/sched/core.c
+CONFLICT (content): Merge conflict in kernel/rcutree_plugin.h
+CONFLICT (content): Merge conflict in kernel/rcutree.h
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+CONFLICT (content): Merge conflict in arch/Kconfig
+Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
+_show)
+Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
+estep exceptions)
+Merging kmemleak/kmemleak (4878677 kmemleak: do not leak object after tree =
+insertion error)
+Merging kvm/linux-next (ecba9a5 KVM: x86: lapic: Clean up find_highest_vect=
+or() and count_vectors())
+CONFLICT (content): Merge conflict in arch/x86/kvm/i8259.c
+CONFLICT (content): Merge conflict in arch/s390/include/asm/processor.h
+Merging kvm-ppc/kvm-ppc-next (a805aef KVM: Move some PPC ioctl definitions =
+to the correct place)
+Merging oprofile/for-next (61bccf1 oprofile: Remove 'WQ on CPUx, prefer CPU=
+y' warning)
+Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
+kernel/git/steve/gfs2-3.0-fixes)
+Merging xen-two/linux-next (b6fb969 Merge branch 'stable/for-linus-3.7' int=
+o linux-next)
+Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
+Merging percpu/for-next (61011677 Merge tag 'dlm-3.5' of git://git.kernel.o=
+rg/pub/scm/linux/kernel/git/teigland/linux-dlm)
+Merging workqueues/for-next (7bd51c1 Merge branch 'for-3.6-fixes' into for-=
+next)
+CONFLICT (content): Merge conflict in drivers/video/omap2/displays/panel-ta=
+al.c
+CONFLICT (content): Merge conflict in drivers/isdn/mISDN/hwchannel.c
+CONFLICT (modify/delete): drivers/hid/hid-picolcd.c deleted in HEAD and mod=
+ified in workqueues/for-next. Version workqueues/for-next of drivers/hid/hi=
+d-picolcd.c left in tree.
+CONFLICT (content): Merge conflict in drivers/cpufreq/powernow-k8.c
+$ git rm -f drivers/hid/hid-picolcd.c
+Merging drivers-x86/linux-next (455f38c eeepc-laptop: fix device reference =
+count leakage in eeepc_rfkill_hotplug())
+Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
+wpoison)
+Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
+o away)
+Merging regmap/for-next (e9bfb35 Merge branch 'regmap-irq' into regmap-next)
+Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
+Merging leds/for-next (8b7cfbe leds: Add new LED driver for lm3642 chips)
+Merging driver-core/driver-core-next (666f355 device and dynamic_debug: Use=
+ dev_vprintk_emit and dev_printk_emit)
+Applying: extcon: adc_jack: update for INIT_DELAYED_WORK_DEFERRABLE name ch=
+ange
+Merging tty/tty-next (5de6934 tty/serial: put (EXPERIMENTAL) marking back o=
+n N_GSM and SERIAL_IFX6X60)
+Merging usb/usb-next (45c2da6 USB: EHCI: Tegra: Fix wrong register definiti=
+on)
+CONFLICT (content): Merge conflict in drivers/usb/serial/mos7840.c
+CONFLICT (content): Merge conflict in drivers/usb/serial/mos7720.c
+CONFLICT (content): Merge conflict in drivers/usb/serial/kl5kusb105.c
+CONFLICT (content): Merge conflict in drivers/usb/serial/io_ti.c
+CONFLICT (content): Merge conflict in drivers/usb/serial/io_edgeport.c
+CONFLICT (content): Merge conflict in drivers/usb/serial/digi_acceleport.c
+Applying: USB: serial: fix vizzini driver for move of the termios object
+Merging staging/staging-next (ba753e4 Staging: remove CONFIG_EXPERIMENTAL d=
+ependancies)
+CONFLICT (content): Merge conflict in drivers/staging/serqt_usb2/serqt_usb2=
+.c
+CONFLICT (content): Merge conflict in drivers/staging/omap-thermal/omap-the=
+rmal-common.c
+CONFLICT (content): Merge conflict in drivers/staging/ipack/devices/ipoctal=
+.c
+Applying: HID: sensors: fix up for mfd_add_devices() API change
+Merging char-misc/char-misc-next (6592921 char/misc: remove CONFIG_EXPERIME=
+NTAL dependencies)
+Merging tmem/linux-next (15773b6 Merge branch 'stable/for-linus-3.6' into l=
+inux-next)
+Merging writeback/writeback-for-next (0e2f2b2 writeback: correct comment fo=
+r move_expired_inodes())
+Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
+ boot interface)
+Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
+Merging pinctrl/for-next (01194d6 ARM: ux500: tidy up pin sleep modes)
+Merging vhost/linux-next (e0953c8 tun: experimental zero copy tx support)
+CONFLICT (content): Merge conflict in drivers/net/tun.c
+Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
+t memblock allocation using reverse free area iterator)
+Merging remoteproc/for-next (2e37abb remoteproc: create a 'recovery' debugf=
+s entry)
+Merging irqdomain/irqdomain/next (f5a1ad0 irqdomain: Improve diagnostics wh=
+en a domain mapping fails)
+Merging gpio/gpio/next (ddf343f Merge branch 'for-linus' of git://git.kerne=
+l.org/pub/scm/linux/kernel/git/s390/linux)
+Merging gpio-lw/for-next (78c703f Merge branch 'devel' into for-next)
+Merging arm-soc/for-next (f895567 Merge branch 'next/cleanup' into for-next)
+CONFLICT (content): Merge conflict in drivers/w1/masters/omap_hdq.c
+CONFLICT (content): Merge conflict in drivers/video/omap2/dss/dispc.c
+CONFLICT (content): Merge conflict in drivers/usb/host/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/tidspbridge/core/wdt.c
+CONFLICT (content): Merge conflict in drivers/mtd/nand/Kconfig
+CONFLICT (content): Merge conflict in drivers/mmc/host/omap.c
+CONFLICT (content): Merge conflict in drivers/input/keyboard/omap-keypad.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-omap.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/cpu-db8500.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/clk-imx51-imx53.c
+Merging ep93xx/ep93xx-for-next (70f0f7c Merge branch 'ep93xx-fixes' into ep=
+93xx-for-next)
+Merging ixp4xx/next (1d2d793 ixp4xx: Declare MODULE_FIRMWARE usage)
+Merging msm/for-next (fe3a47b ARM: msm: Allow 8960 and 8660 to compile toge=
+ther)
+CONFLICT (rename/delete): arch/arm/mach-vt8500/include/mach/restart.h delet=
+ed in msm/for-next and renamed in HEAD. Version HEAD of arch/arm/mach-vt850=
+0/include/mach/restart.h left in tree.
+Merging renesas/next (2e2e9d5 Merge branch 'heads/boards' into next)
+Merging samsung/for-next (5779e9a Merge branch 'v3.7-samsung-fixes-1' into =
+for-next)
+CONFLICT (content): Merge conflict in drivers/pinctrl/Makefile
+Merging tegra/for-next (67b68bf Merge branch 'for-3.7/dmaengine' into for-n=
+ext)
+CONFLICT (modify/delete): arch/arm/mach-tegra/devices.c deleted in tegra/fo=
+r-next and modified in HEAD. Version HEAD of arch/arm/mach-tegra/devices.c =
+left in tree.
+$ git rm -f arch/arm/mach-tegra/devices.c
+Merging kvmtool/master (3a7d5bc kvm tools: support build-time checks)
+Merging dma-mapping/dma-mapping-next (5306ea4 Merge branch 'next-cleanup' i=
+nto HEAD)
+CONFLICT (content): Merge conflict in arch/arm/boot/dts/highbank.dts
+CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ata=
+/ahci-platform.txt
+Merging pwm/for-next (7b27c16 pwm: i.MX: fix clock lookup)
+Merging dma-buf/for-next (55d512e Linux 3.6-rc5)
+Merging userns/for-next (5fce5e0 userns: Convert drm to use kuid and kgid a=
+nd struct pid where appropriate)
+Merging ktest/for-next (648a182 ktest: Allow a test to override REBOOT_ON_S=
+UCCESS)
+Merging signal/for-next (d966e9f alpha: don't open-code trace_report_syscal=
+l_{enter,exit})
+CONFLICT (content): Merge conflict in arch/x86/kernel/signal.c
+CONFLICT (content): Merge conflict in arch/sh/kernel/entry-common.S
+CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh5/entry.S
+CONFLICT (content): Merge conflict in arch/m32r/include/asm/Kbuild
+CONFLICT (content): Merge conflict in arch/h8300/include/asm/Kbuild
+CONFLICT (content): Merge conflict in arch/cris/include/asm/Kbuild
+Merging clk/clk-next (494bfec clk: add of_clk_src_onecell_get() support)
+Merging random/dev (d2e7c96 random: mix in architectural randomness in extr=
+act_buf())
+Merging scsi-post-merge/merge-base:master ()
+$ git checkout akpm
+Applying: idr: rename MAX_LEVEL to MAX_IDR_LEVEL
+Applying: idr-rename-max_level-to-max_idr_level-fix
+Applying: idr-rename-max_level-to-max_idr_level-fix-fix-2
+Applying: idr-rename-max_level-to-max_idr_level-fix-3
+Applying: CRIS: Fix I/O macros
+Applying: selinux: fix sel_netnode_insert() suspicious rcu dereference
+Applying: vfs: d_obtain_alias() needs to use "/" as default name.
+Applying: x86 cpu_hotplug: unmap cpu2node when the cpu is hotremoved
+Applying: acpi_memhotplug.c: fix memory leak when memory device is unbound =
+from the module acpi_memhotplug
+Applying: acpi_memhotplug.c: free memory device if acpi_memory_enable_devic=
+e() failed
+Applying: acpi_memhotplug.c: remove memory info from list before freeing it
+Applying: acpi_memhotplug.c: don't allow to eject the memory device if it i=
+s being used
+Applying: acpi_memhotplug.c: bind the memory device when the driver is bein=
+g loaded
+Applying: acpi_memhotplug.c: auto bind the memory device which is hotplugge=
+d before the driver is loaded
+Applying: arch/x86/platform/iris/iris.c: register a platform device and a p=
+latform driver
+Applying: x86 numa: don't check if node is NUMA_NO_NODE
+Applying: audit.h: replace defines with C stubs
+Applying: mn10300: only add -mmem-funcs to KBUILD_CFLAGS if gcc supports it
+Applying: drivers/dma/dmaengine.c: lower the priority of 'failed to get' dm=
+a channel message
+Applying: pcmcia: move unbind/rebind into dev_pm_ops.complete
+Applying: drm/i915: optimize DIV_ROUND_CLOSEST() call
+Applying: timeconst.pl: remove deprecated defined(@array)
+Applying: time: don't inline EXPORT_SYMBOL functions
+Applying: checksyscalls: fix "here document" handling
+Applying: kbuild: make: fix if_changed when command contains backslashes
+Applying: h8300: select generic atomic64_t support
+Applying: unicore32: select generic atomic64_t support
+Applying: readahead: fault retry breaks mmap file read random detection
+Applying: drivers/scsi/atp870u.c: fix bad use of udelay
+Applying: cciss: cleanup bitops usage
+Applying: cciss: use check_signature()
+Applying: block: store partition_meta_info.uuid as a string
+Applying: init: reduce PARTUUID min length to 1 from 36
+Applying: block: partition: msdos: provide UUIDs for partitions
+Applying: vfs: increment iversion when a file is truncated
+Applying: fs: push rcu_barrier() from deactivate_locked_super() to filesyst=
+ems
+Applying: mm/page_alloc.c: remove duplicate check
+Applying: slab: fix DEBUG=3D=3D0 warning
+Applying: mm: remove __GFP_NO_KSWAPD
+Applying: x86, pat: remove the dependency on 'vm_pgoff' in track/untrack pf=
+n vma routines
+Applying: x86, pat: separate the pfn attribute tracking for remap_pfn_range=
+ and vm_insert_pfn
+Applying: x86-pat-separate-the-pfn-attribute-tracking-for-remap_pfn_range-a=
+nd-vm_insert_pfn-fix
+Applying: mm, x86, pat: rework linear pfn-mmap tracking
+Applying: mm: introduce arch-specific vma flag VM_ARCH_1
+Applying: mm: kill vma flag VM_INSERTPAGE
+Applying: mm: kill vma flag VM_CAN_NONLINEAR
+Applying: mm: use mm->exe_file instead of first VM_EXECUTABLE vma->vm_file
+Applying: mm: kill vma flag VM_EXECUTABLE and mm->num_exe_file_vmas
+Applying: mm: prepare VM_DONTDUMP for using in drivers
+Applying: mm: kill vma flag VM_RESERVED and mm->reserved_vm counter
+Applying: mm-kill-vma-flag-vm_reserved-and-mm-reserved_vm-counter-fix
+Applying: mm: fix nonuniform page status when writing new file with small b=
+uffer
+Applying: mm-fix-nonuniform-page-status-when-writing-new-file-with-small-bu=
+ffer-fix
+Applying: mm-fix-nonuniform-page-status-when-writing-new-file-with-small-bu=
+ffer-fix-fix
+Applying: mm/mmap.c: replace find_vma_prepare() with clearer find_vma_links=
+()
+Applying: mm-mmapc-replace-find_vma_prepare-with-clearer-find_vma_links fix
+Applying: mm: compaction: update comment in try_to_compact_pages
+Applying: mm: vmscan: scale number of pages reclaimed by reclaim/compaction=
+ based on failures
+Applying: mm-vmscan-scale-number-of-pages-reclaimed-by-reclaim-compaction-b=
+ased-on-failures-fix
+Applying: mm: compaction: capture a suitable high-order page immediately wh=
+en it is made available
+Applying: Revert "mm: mempolicy: Let vma_merge and vma_split handle vma->vm=
+_policy linkages"
+Applying: mempolicy: remove mempolicy sharing
+Applying: mempolicy: fix a race in shared_policy_replace()
+Applying: mempolicy: fix refcount leak in mpol_set_shared_policy()
+Applying: mempolicy: fix a memory corruption by refcount imbalance in alloc=
+_pages_vma()
+Applying: mempolicy-fix-a-memory-corruption-by-refcount-imbalance-in-alloc_=
+pages_vma-v2
+Applying: mm: mmu_notifier: fix inconsistent memory between secondary MMU a=
+nd host
+Applying: mm-mmu_notifier-fix-inconsistent-memory-between-secondary-mmu-and=
+-host-fix
+Applying: mm: mmu_notifier: have mmu_notifiers use a global SRCU so they ma=
+y safely schedule
+Applying: mm/mmu_notifier: init notifier if necessary
+Applying: mm/mmu_notifier: init notifier if necessary
+Applying: mm/vmscan: fix error number for failed kthread
+Applying: oom: remove deprecated oom_adj
+Applying: mm: hugetlb: add arch hook for clearing page flags before enterin=
+g pool
+Applying: mm: adjust final #endif position in mm/internal.h
+Applying: thp: fix the count of THP_COLLAPSE_ALLOC
+Applying: thp: remove unnecessary check in start_khugepaged
+Applying: thp: move khugepaged_mutex out of khugepaged
+Applying: thp: remove unnecessary khugepaged_thread check
+Applying: thp: remove wake_up_interruptible in the exit path
+Applying: thp: remove some code depend on CONFIG_NUMA
+Applying: thp: merge page pre-alloc in khugepaged_loop into khugepaged_do_s=
+can
+Applying: thp: release page in page pre-alloc path
+Applying: thp: introduce khugepaged_prealloc_page and khugepaged_alloc_page
+Applying: thp: remove khugepaged_loop
+Applying: thp: use khugepaged_enabled to remove duplicate code
+Applying: thp: remove unnecessary set_recommended_min_free_kbytes
+Applying: mm: fix potential anon_vma locking issue in mprotect()
+Applying: thp, x86: introduce HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Applying: thp: remove assumptions on pgtable_t type
+Applying: thp: introduce pmdp_invalidate()
+Applying: thp: make MADV_HUGEPAGE check for mm->def_flags
+Applying: thp, s390: thp splitting backend for s390
+Applying: thp, s390: thp pagetable pre-allocation for s390
+Applying: thp, s390: disable thp for kvm host on s390
+Applying: thp, s390: architecture backend for thp on s390
+Applying: ipc/mqueue: remove unnecessary rb_init_node() calls
+Applying: rbtree: reference Documentation/rbtree.txt for usage instructions
+Applying: rbtree: empty nodes have no color
+Applying: rbtree-empty-nodes-have-no-color-fix
+Applying: rbtree: fix incorrect rbtree node insertion in fs/proc/proc_sysct=
+l.c
+Applying: rbtree: move some implementation details from rbtree.h to rbtree.c
+Applying: rbtree: fix jffs2 build issue due to renamed __rb_parent_color fi=
+eld
+Applying: rbtree: performance and correctness test
+Applying: rbtree-performance-and-correctness-test-fix
+Applying: rbtree: break out of rb_insert_color loop after tree rotation
+Applying: rbtree: adjust root color in rb_insert_color() only when necessary
+Applying: rbtree: low level optimizations in rb_insert_color()
+Applying: rbtree: adjust node color in __rb_erase_color() only when necessa=
+ry
+Applying: perf tools: fix build for another rbtree.c change
+Applying: rbtree: optimize case selection logic in __rb_erase_color()
+Applying: rbtree: low level optimizations in __rb_erase_color()
+Applying: rbtree: coding style adjustments
+Applying: rbtree: optimize fetching of sibling node
+Applying: rbtree test: fix sparse warning about 64-bit constant
+Applying: rbtree: add __rb_change_child() helper function
+Applying: rbtree: place easiest case first in rb_erase()
+Applying: rbtree: handle 1-child recoloring in rb_erase() instead of rb_era=
+se_color()
+Applying: rbtree: low level optimizations in rb_erase()
+Applying: rbtree: augmented rbtree test
+Applying: rbtree: faster augmented rbtree manipulation
+Applying: rbtree: remove prior augmented rbtree implementation
+Applying: rbtree: add RB_DECLARE_CALLBACKS() macro
+Applying: rbtree: add prio tree and interval tree tests
+Applying: mm: replace vma prio_tree with an interval tree
+Applying: kmemleak: use rbtree instead of prio tree
+Applying: prio_tree: remove
+Applying: rbtree: move augmented rbtree functionality to rbtree_augmented.h
+Applying: mm: interval tree updates
+Applying: mm anon rmap: remove anon_vma_moveto_tail
+Applying: mm anon rmap: replace same_anon_vma linked list with an interval =
+tree.
+Applying: mm rmap: remove vma_address check for address inside vma
+Applying: mm: add CONFIG_DEBUG_VM_RB build option
+Applying: mm: avoid taking rmap locks in move_ptes()
+Applying: memory-hotplug: build zonelists when offlining pages
+Applying: mm: mmu_notifier: make the mmu_notifier srcu static
+Applying: mm: cma: discard clean pages during contiguous allocation instead=
+ of migration
+Applying: mm: page_alloc: use get_freepage_migratetype() instead of page_pr=
+ivate()
+Applying: mm: remain migratetype in freed page
+Applying: memory-hotplug: bug fix race between isolation and allocation
+Applying: memory-hotplug: fix pages missed by race rather than failing
+Applying: memory-hotplug-fix-pages-missed-by-race-rather-than-failng-fix
+Applying: atomic: implement generic atomic_dec_if_positive()
+Applying: atomic-implement-generic-atomic_dec_if_positive-fix
+Applying: swap: add a simple detector for inappropriate swapin readahead
+Applying: swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix
+Applying: mm/memblock: reduce overhead in binary search
+Applying: mm/memblock: use existing interface to set nid
+Applying: mm/memblock: cleanup early_node_map[] related comments
+Applying: mm: compaction: abort compaction loop if lock is contended or run=
+ too long
+Applying: mm-compaction-abort-compaction-loop-if-lock-is-contended-or-run-t=
+oo-long-fix
+Applying: mm: compaction: check lock contention first before taking lock
+Applying: mm/hugetlb.c: remove duplicate inclusion of header file
+Applying: mm/page_alloc: refactor out __alloc_contig_migrate_alloc()
+Applying: mm-page_alloc-refactor-out-__alloc_contig_migrate_alloc-checkpatc=
+h-fixes
+Applying: memory-hotplug: don't replace lowmem pages with highmem
+Applying: thp: khugepaged_prealloc_page() forgot to reset the page alloc in=
+dicator
+Applying: mm: compaction: move fatal signal check out of compact_checklock_=
+irqsave
+Applying: mm: compaction: Update try_to_compact_pages()kerneldoc comment
+Applying: frv: kill used but uninitialized variable
+Applying: score: select generic atomic64_t support
+Applying: drivers/misc/lis3lv02d: add generic DT matching code
+Applying: drivers/misc/lis3lv02d/lis3lv02d_spi.c: add DT matching table pas=
+sthru code
+Applying: lis3: lis3lv02d_spi.c: include linux/of.h
+Applying: cross-arch: don't corrupt personality flags upon exec()
+Applying: tile: fix personality bits handling upon exec()
+Applying: kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+Applying: lib: vsprintf: optimize division by 10 for small integers
+Applying: lib: vsprintf: optimize division by 10000
+Applying: lib: vsprintf: optimize put_dec_trunc8()
+Applying: lib: vsprintf: fix broken comments
+Applying: lib/vsprintf: update documentation to cover all of %p[Mm][FR]
+Applying: MAINTAINERS: update gpio subsystem file list
+Applying: MAINTAINERS: add defconfig file to IMX section
+Applying: MAINTAINERS: Update gianfar_ptp after renaming
+Applying: drivers/video/backlight/pwm_bl.c: add device tree support for Low=
+ Threshold Brightness
+Applying: drivers/video/backlight/da9052_bl.c: use usleep_range() instead o=
+f msleep() for small sleeps
+Applying: drivers/video/backlight/ltv350qv.c: use usleep_range() instead of=
+ msleep() for small sleeps
+Applying: drivers/video/backlight/kb3886_bl.c: use usleep_range() instead o=
+f msleep() for small sleeps
+Applying: backlight: lp855x: add FAST bit description for LP8556
+Applying: backlight: add Backlight driver for lm3630 chip
+Applying: backlight-add-backlight-driver-for-lm3630-chip-fix
+Applying: backlight: add new lm3639 backlight driver
+Applying: backlight-add-new-lm3639-backlight-driver-fix
+Applying: backlight-add-new-lm3639-backlight-driver-fix-2
+Applying: backlight: remove ProGear driver
+Applying: drivers/video/backlight/pwm_bl.c: use devm_pwm_get()
+Applying: lib/parser.c: avoid overflow in match_number()
+Applying: lib-parserc-avoid-overflow-in-match_number-fix
+Applying: lib/Kconfig.debug: adjust hard-lockup related Kconfig options
+Applying: lib/gcd.c: prevent possible div by 0
+Applying: compat_ioctl: Remove unused local typedef
+Applying: drivers/firmware/dmi_scan.c: check dmi version when get system uu=
+id
+Applying: drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid=
+-fix
+Applying: drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it =
+exists
+Applying: drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-ex=
+ists-checkpatch-fixes
+Applying: checkpatch: check utf-8 content from a commit log when it's missi=
+ng from charset
+Applying: checkpatch: update suggested printk conversions
+Applying: checkpatch: check networking specific block comment style
+Applying: CodingStyle: add networking specific block comment style
+Applying: epoll: support for disabling items, and a self-test app
+Applying: drivers/rtc/rtc-isl1208.c: add support for the ISL1218
+Applying: rtc-proc: permit the /proc/driver/rtc device to use other devices
+Applying: rtc: add Dallas DS2404 driver
+Applying: rtc-add-dallas-ds2404-driver-fix
+Applying: rtc: snvs: add Freescale rtc-snvs driver
+Applying: rtc: snvs: change timeout to use a fixed number of loop
+Applying: rtc: recycle id when unloading a rtc driver
+Applying: drivers/rtc/rtc-at91sam9.c: use module_platform_driver() macro
+Applying: rtc: tps65910: add RTC driver for TPS65910 PMIC RTC
+Applying: rtc: add MAX8907 RTC driver
+Applying: rtc: kconfig: remove unnecessary dependencies.
+Applying: drivers/rtc/rtc-jz4740.c: fix IRQ error check
+Applying: drivers/rtc/rtc-spear.c: fix several error checks
+Applying: rtc: rc5t583: add ricoh rc5t583 RTC driver
+Applying: drivers/rtc/rtc-coh901331.c: use clk_prepare_enable() and clk_dis=
+able_unprepare()
+Applying: rtc: rtc-mxc: adapt to the new i.mx clock framework
+Applying: rtc: rtc-mxc: convert to module_platform_driver
+Applying: rtc_sysfs_show_hctosys(): display 0 if resume failed
+Applying: rtc_sysfs_show_hctosys-return-0-if-resume-failed-fix
+Applying: rtc_sysfs_show_hctosys-return-0-if-resume-failed-fix-fix
+Applying: fat: use accessor function for msdos_dir_entry 'start'
+Applying: fat (exportfs): move NFS support code
+Applying: fat (exportfs): fix dentry reconnection
+Applying: fs/fat: fix a checkpatch issue in namei_msdos.c
+Applying: fs/fat: fix some checkpatch issues in fat.h
+Applying: fs/fat: chang indentation of some comments in fat.h
+Applying: fs/fat: fix two checkpatch issues in cache.c
+Applying: fs/fat: fix some small checkpatch issues in dir.c
+Applying: fs/fat: fix all other checkpatch issues in dir.c
+Applying: fs-fat-fix-all-other-checkpatch-issues-in-dirc-fix
+Applying: fs/fat: fix checkpatch issues in fatent.c
+Applying: fat: no need to reset EOF in ent_put for FAT32
+Applying: fat: simplify writeback_inode()
+Applying: fat-simplify-writeback_inode-checkpatch-fixes
+Applying: fat-simplify-writeback_inode-checkpatch-fixes-fix
+Applying: device_cgroup: add "deny_all" in dev_cgroup structure
+Applying: device_cgroup: introduce dev_whitelist_clean()
+Applying: device_cgroup: convert device_cgroup internally to policy + excep=
+tions
+Applying: device_cgroup: rename whitelist to exception list
+Applying: coredump: prevent double-free on an error path in core dumper
+Applying: coredump: move core dump functionality into its own file
+Applying: coredump: make core dump functionality optional
+Applying: fs: amended coredump-related sysctl functions
+Applying: coredump-make-core-dump-functionality-optional-fix-fix
+Applying: coredump: update coredump-related headers
+Applying: proc: return -ENOMEM when inode allocation failed
+Applying: proc: no need to initialize proc_inode->fd in proc_get_inode()
+Applying: proc: use kzalloc instead of kmalloc and memset
+Applying: proc-use-kzalloc-instead-of-kmalloc-and-memset-fix
+Applying: proc_sysctl.c: use BUG_ON instead of BUG
+Applying: fs/proc/root.c: use NULL instead of 0 for pointer
+Applying: kdump: remove unneeded include
+Applying: ipc/sem.c: alternatives to preempt_disable()
+Applying: rapidio/tsi721: modify mport name assignment
+Applying: nbd: add set flags ioctl
+Applying: nbd: handle discard requests
+Applying: aoe: for performance support larger packet payloads
+Applying: aoe: kernel thread handles I/O completions for simple locking
+Applying: aoe: cleanup an allocation a bit
+Applying: aoe: become I/O request queue handler for increased user control
+Applying: aoe: use a kernel thread for transmissions
+Applying: aoe: use packets that work with the smallest-MTU local interface
+Applying: aoe: failover remote interface based on aoe_deadsecs parameter
+Applying: aoe: do revalidation steps in order
+Applying: aoe: disallow unsupported AoE minor addresses
+Applying: aoe: associate frames with the AoE storage target
+Applying: aoe: increase net_device reference count while using it
+Applying: aoe: remove unused code and add cosmetic improvements
+Applying: aoe: update internal version number to 49
+Applying: aoe: update copyright year in touched files
+Applying: aoe: update documentation with new URL and VM settings reference
+Applying: taskstats: cgroupstats_user_cmd() may leak on error
+Applying: kernel/resource.c: fix stack overflow in __reserve_region_with_sp=
+lit()
+Applying: lib/decompress.c add __init to decompress_method and data
+Merging akpm/master (7db5e9e lib/decompress.c add __init to decompress_meth=
+od and data)
+
+--Signature=_Wed__19_Sep_2012_16_26_43_+1000_Sz/v5=H2dX30m09S
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWWWjAAoJEECxmPOUX5FELLsP/2M6bAFzQZ8DFK4QvPN27DHk
+WP93yaqKr3WNrUuvzsgvqi1n6CVEOIY0d5c2biicHm0HejRFjflyjhs6IXLBdImg
+GS+tiP2HaWDPI6V4944N84HspxewEtl9hOA99dyKVdlzzTD2FPRIy66a4lGYg5ql
+tK0JRabev0REeBkWBc0AV7uAbUVXVEIx10BvOZAMFifMXFL6PsABiSCi3Wo/6HZG
+cDmRTeNRWMTV1hE6/K1xjlDEf+14gxWwK5u0eRY4bHNubKENu7ZGrh8kk04XhbGn
+0Z9xlH9RvecOwmiAAgRo/Tz50OeVHKAATDDLcEoRsejCzbJr9f78+2z4QewCj6FI
+pPFbG0SJC2ae/sU14YGzxg+pAfcLqJS/JW9Aeuaj65Ogj2HkslFIkxb9AsKuIGSI
+SvHLwmYioY408ZsgU5XdfY5Knp909ue79Wn52DwP1v2WA6RdiWkoxschEvXkqET9
+dVCk9e0cdwASZbIdhJCDLsYJ6ZsyhdnGbe/bJIx8fhHnKN8+Hv/064LLO4/6c5NE
+rEkHidTlPhJWf9kqESILrkMz2lDcSGQuw5koORgzqeoh8WFsV+f0ZGocRtBtWx+y
+B2ElRuNk0GnKwryLWaudzwqUJQgDgjZBCgKx1ClOzGFuOocBMYKb859gDJptjoeF
+FwfxG/lgnhUqjYHLRGDY
+=GGQA
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_Sep_2012_16_26_43_+1000_Sz/v5=H2dX30m09S--
