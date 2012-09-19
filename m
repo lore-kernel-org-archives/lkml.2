@@ -1,110 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2ISL5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:57:41 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:16801 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab2ISL4n (ORCPT
+	id S1756305Ab2ISL6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:58:01 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:40736 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756142Ab2ISL54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:56:43 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
-CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 7/9] net/macb: ethtool interface: add register dump feature
-Date: Wed, 19 Sep 2012 13:55:20 +0200
-Message-ID: <20ebfb29f6f4a84d8ba20553e2d81cd456f438de.1348055112.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
-References: <cover.1348055112.git.nicolas.ferre@atmel.com>
+	Wed, 19 Sep 2012 07:57:56 -0400
+Date: Wed, 19 Sep 2012 14:53:10 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Moiz Sonasath <m-sonasath@ti.com>
+Subject: Re: [PATCH 2/4] usb: dwc3: Fix gadget pullup in SS mode
+Message-ID: <20120919115306.GG3772@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1348054229-27362-1-git-send-email-kishon@ti.com>
+ <1348054229-27362-3-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Enx9fNJ0XV5HaWRu"
+Content-Disposition: inline
+In-Reply-To: <1348054229-27362-3-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add macb_get_regs() ethtool function and its helper function:
-macb_get_regs_len().
-The version field is deduced from the IP revision which gives the
-"MACB or GEM" information. An additional version field is reserved.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
----
- drivers/net/ethernet/cadence/macb.c | 40 +++++++++++++++++++++++++++++++++++++
- drivers/net/ethernet/cadence/macb.h |  3 +++
- 2 files changed, 43 insertions(+)
+--Enx9fNJ0XV5HaWRu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 5758a1c..2c4358e 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1265,9 +1265,49 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
- 	return phy_ethtool_sset(phydev, cmd);
- }
- 
-+static int macb_get_regs_len(struct net_device *netdev)
-+{
-+	return MACB_GREGS_NBR * sizeof(u32);
-+}
-+
-+static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
-+			  void *p)
-+{
-+	struct macb *bp = netdev_priv(dev);
-+	unsigned int tail, head;
-+	u32 *regs_buff = p;
-+
-+	regs->version = (macb_readl(bp, MID) & ((1 << MACB_REV_SIZE) - 1))
-+			| MACB_GREGS_VERSION;
-+
-+	tail = macb_tx_ring_wrap(bp->tx_tail);
-+	head = macb_tx_ring_wrap(bp->tx_head);
-+
-+	regs_buff[0]  = macb_readl(bp, NCR);
-+	regs_buff[1]  = macb_or_gem_readl(bp, NCFGR);
-+	regs_buff[2]  = macb_readl(bp, NSR);
-+	regs_buff[3]  = macb_readl(bp, TSR);
-+	regs_buff[4]  = macb_readl(bp, RBQP);
-+	regs_buff[5]  = macb_readl(bp, TBQP);
-+	regs_buff[6]  = macb_readl(bp, RSR);
-+	regs_buff[7]  = macb_readl(bp, IMR);
-+
-+	regs_buff[8]  = tail;
-+	regs_buff[9]  = head;
-+	regs_buff[10] = macb_tx_dma(bp, tail);
-+	regs_buff[11] = macb_tx_dma(bp, head);
-+
-+	if (macb_is_gem(bp)) {
-+		regs_buff[12] = gem_readl(bp, USRIO);
-+		regs_buff[13] = gem_readl(bp, DMACFG);
-+	}
-+}
-+
- static const struct ethtool_ops macb_ethtool_ops = {
- 	.get_settings		= macb_get_settings,
- 	.set_settings		= macb_set_settings,
-+	.get_regs_len		= macb_get_regs_len,
-+	.get_regs		= macb_get_regs,
- 	.get_link		= ethtool_op_get_link,
- };
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 8a4ee2f..5be5900 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -10,6 +10,9 @@
- #ifndef _MACB_H
- #define _MACB_H
- 
-+#define MACB_GREGS_NBR 16
-+#define MACB_GREGS_VERSION 1
-+
- /* MACB register offsets */
- #define MACB_NCR				0x0000
- #define MACB_NCFGR				0x0004
--- 
-1.7.11.3
+Hi,
 
+On Wed, Sep 19, 2012 at 05:00:27PM +0530, Kishon Vijay Abraham I wrote:
+> From: Moiz Sonasath <m-sonasath@ti.com>
+>=20
+> For the gadget pullup functionality to work in
+> SS mode it requires a particular sequence of
+> toggling the run-stop bit. Here is the required
+> sequence:
+>=20
+> - Set DCTL[31]
+> - Clear DCTL[31]
+> - Clear OMAP5430_CONTROL_CORE__PHY_POWER_USB[14]
+> - Clear DCTL[8:5] =3D 0x00
+> - Set DCTL[8:5] =3D 0x05
+> - Wait 25 Ms
+> - Set DCTL[31]
+> - Set OMAP5430_CONTROL_CORE__PHY_POWER_USB[14]
+>=20
+> Tested rigourously the gadget pull-up functionality
+> in bot HS and SS modes.
+>=20
+> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+
+this needs to split into three patches:
+
+add new poweron field, implement it on omap-usb3, use it on
+dwc3/gadget.c
+
+btw, I don't think the changes to run_stop bit are necessary and if they
+are, that'd either be a silicon errata or it would've been mentioned on
+the databook. I don't remember seeing that on the databook so I'm
+assuming that this is caused by a bad use of the PHY.
+
+Why that mdelay(25) ? why 25 ms ? That's quite a long time, actually.
+
+> ---
+>  drivers/usb/dwc3/gadget.c   |   21 +++++++++++++++------
+>  drivers/usb/phy/omap-usb3.c |   16 ++++++++++++++++
+>  include/linux/usb/phy.h     |   10 +++++++++-
+>  3 files changed, 40 insertions(+), 7 deletions(-)
+>=20
+> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+> index 58fdfad..bcc0102 100644
+> --- a/drivers/usb/dwc3/gadget.c
+> +++ b/drivers/usb/dwc3/gadget.c
+> @@ -49,6 +49,7 @@
+> =20
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> +#include <linux/usb/otg.h>
+> =20
+>  #include "core.h"
+>  #include "gadget.h"
+> @@ -1417,19 +1418,27 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc,=
+ int is_on)
+>  	reg =3D dwc3_readl(dwc->regs, DWC3_DCTL);
+>  	if (is_on) {
+>  		if (dwc->revision <=3D DWC3_REVISION_187A) {
+> -			reg &=3D ~DWC3_DCTL_TRGTULST_MASK;
+> -			reg |=3D DWC3_DCTL_TRGTULST_RX_DET;
+> +			reg &=3D ~DWC3_DCTL_ULSTCHNGREQ_MASK;
+> +			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> +			reg |=3D DWC3_DCTL_ULSTCHNG_RX_DETECT;
+> +			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> +			mdelay(25);
+> +			reg |=3D DWC3_DCTL_RUN_STOP;
+> +			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> +			usb_phy_poweron(dwc->usb3_phy);
+>  		}
+> =20
+> -		if (dwc->revision >=3D DWC3_REVISION_194A)
+> +		if (dwc->revision >=3D DWC3_REVISION_194A) {
+>  			reg &=3D ~DWC3_DCTL_KEEP_CONNECT;
+> -		reg |=3D DWC3_DCTL_RUN_STOP;
+> +			reg |=3D DWC3_DCTL_RUN_STOP;
+> +			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> +		}
+>  	} else {
+>  		reg &=3D ~DWC3_DCTL_RUN_STOP;
+> +		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> +		usb_phy_shutdown(dwc->usb3_phy);
+>  	}
+> =20
+> -	dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+
+I'd prefer to hold all values on the variable and write only one.
+
+--=20
+balbi
+
+--Enx9fNJ0XV5HaWRu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQWbIiAAoJEIaOsuA1yqREADEP/jVLnZElEph4rnD1fK54nz9B
+8aKEy9MmBIyN5FrqktmeWKzVU5kmMDZ3rCaDcq0hkepUlBCIZYzrj2671IZfG4UK
+bCLztVZnyhY9rfH/51GGjhaMrog44A8iDUpENV8FS6iBHt00EjVAE2Vh2rtXHDy+
+LJxjkCL73IPaCyfcLXjffmPrJRt+5NyfL0UrhvPSwuREnLreOJ/nIKLxERkRv7xA
+SJqtDXuE73Xq78JqRwqCXU97Ax8/Zn458fFeS2l12Sz16S8L4RaE+rq4TmNvRGK4
+mTZ3OoRniFewc0Z6OW0AfXcz5NVJlhs0+3XUblDVqF7m6gL1CiRPHOBBFD4MlpQT
+6bD21ZxyOJn32NKkVFYmZOt/li49ZI/l0h9O9Nu3A783HPryBCRjKbS84KTwvGXk
+ARcc1N/kZlsj1JfVqYTgeAkdqGDjscvxOCPOhhNhuxDv3PzK2dJNp42Mr9vbuCHl
+PlMmPNRFEPL7YkjGbr74Fu0DxTuTsWmuKAVkwF+wrjpBdmwGr3K9IA3bsIJKEYrW
+osVdexoI8Q0ztLC33vZk+85PvjG1u/Gui7nqO7PHaHMG2TXvqWfRwZOJOdGG2orw
+/ikoueXv1hJzXvpuMTq42ez0FRHWF7MEvf3LLdKf1XshcVEI0YZjbfWHmINAkpNm
+XHe8gqNZKE+kvEZzU2hY
+=zgsO
+-----END PGP SIGNATURE-----
+
+--Enx9fNJ0XV5HaWRu--
