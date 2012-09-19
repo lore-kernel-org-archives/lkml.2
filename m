@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2ISOXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:23:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51597 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752285Ab2ISOXi convert rfc822-to-8bit (ORCPT
+	id S1754206Ab2ISO0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:26:36 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36244 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab2ISO0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:23:38 -0400
-Subject: Re: [RFC][PATCH 1/3] iommu/fsl: Store iommu domain information pointer in archdata.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1348060632-12997-2-git-send-email-b16395@freescale.com>
-Date: Wed, 19 Sep 2012 08:50:14 -0500
-Cc: <iommu@lists.linux-foundation.org>, <joerg.roedel@amd.com>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5BDB4D18-CB0D-4EBA-B38F-A278B7C00A61@kernel.crashing.org>
-References: <1348060632-12997-1-git-send-email-b16395@freescale.com> <1348060632-12997-2-git-send-email-b16395@freescale.com>
-To: "<b16395@freescale.com>" <b16395@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+	Wed, 19 Sep 2012 10:26:35 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [RFC PATCH 1/2] binfmt_elf: Fix corner case kfree of uninitialized
+ data
+To: linux-kernel@vger.kernel.org
+Date: Wed, 19 Sep 2012 15:44:35 +0100
+Message-ID: <20120919144410.16893.57933.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Could do with double checking...
 
-On Sep 19, 2012, at 8:17 AM, <b16395@freescale.com> <b16395@freescale.com> wrote:
+From: Alan Cox <alan@linux.intel.com>
 
-> From: Varun Sethi <Varun.Sethi@freescale.com>
-> 
-> Add a new field in the device (powerpc) archdata structure for storing iommu domain
-> information pointer. This pointer is stored when the device is attached to a particular
-> domain.
-> 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
-> arch/powerpc/include/asm/device.h |    4 ++++
-> 1 files changed, 4 insertions(+), 0 deletions(-)
+If elf_core_dump is called and fill_note_info fails in the kmalloc then
+it returns 0 but has not yet initialised all the needed fields. As a result
+we do a kfree(randomness) after correctly skipping the thread data.
 
-Not too familiar, but what does the IBM Server IOMMU do for iommu_domain?
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-> 
-> diff --git a/arch/powerpc/include/asm/device.h b/arch/powerpc/include/asm/device.h
-> index 77e97dd..6dc79fe 100644
-> --- a/arch/powerpc/include/asm/device.h
-> +++ b/arch/powerpc/include/asm/device.h
-> @@ -28,6 +28,10 @@ struct dev_archdata {
-> 		void		*iommu_table_base;
-> 	} dma_data;
-> 
-> +	/* IOMMU domain information pointer. This would be set
-> +	 * when this device is attached to an iommu_domain.
-> +	 */
-> +	void			*iommu_domain;
-> #ifdef CONFIG_SWIOTLB
-> 	dma_addr_t		max_direct_dma_addr;
-> #endif
-> -- 
-> 1.7.4.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ fs/binfmt_elf.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 1b4efbc..bf6d82b 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1492,8 +1492,10 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	info->thread = NULL;
+ 
+ 	psinfo = kmalloc(sizeof(*psinfo), GFP_KERNEL);
+-	if (psinfo == NULL)
++	if (psinfo == NULL) {
++		info->psinfo.data = NULL;	/* So we don't free this wrongly */
+ 		return 0;
++        }
+ 
+ 	fill_note(&info->psinfo, "CORE", NT_PRPSINFO, sizeof(*psinfo), psinfo);
+ 
 
