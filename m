@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab2ISQ53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:57:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51608 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab2ISQ50 (ORCPT
+	id S1756720Ab2ISQ5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:57:44 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53632 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756269Ab2ISQ5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:57:26 -0400
-Date: Wed, 19 Sep 2012 09:54:47 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 07/11] tty/serial: Add kgdb_nmi driver
-Message-ID: <20120919165447.GA6316@lizard>
-References: <20120913150133.GA16238@lizard>
- <1347548615-18227-7-git-send-email-anton.vorontsov@linaro.org>
- <5059B200.9040706@windriver.com>
+	Wed, 19 Sep 2012 12:57:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5059B200.9040706@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120917113423.GA28759@kroah.com>
+References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120917113423.GA28759@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 19 Sep 2012 10:57:15 -0600
+Message-ID: <CAErSpo4q7KYn3bvNQ0wAXV=+PRAFH_c=MgOLOTDKgaNCjE_aXg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] PCI: Keep pci_fixup_irqs() around after init
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 06:52:32AM -0500, Jason Wessel wrote:
-[...]
-> > --- a/drivers/tty/serial/kgdboc.c
-> > +++ b/drivers/tty/serial/kgdboc.c
-> > @@ -145,6 +145,8 @@ __setup("kgdboc=", kgdboc_option_setup);
-> >  
-> >  static void cleanup_kgdboc(void)
-> >  {
-> > +	if (kgdb_unregister_nmi_console())
-> > +		return;
-> >  	kgdboc_unregister_kbd();
-> >  	if (configured == 1)
-> >  		kgdb_unregister_io_module(&kgdboc_io_ops);
-> > @@ -198,6 +200,10 @@ do_register:
-> >  	if (err)
-> >  		goto noconfig;
-> >  
-> > +	err = kgdb_register_nmi_console();
-> > +	if (err)
-> > +		goto noconfig;
-> > +
-> 
-> Just one question on this one, what do you expect to happen, or how
-> does this work when you use a different serial port for example on a
-> board that has a real serial port and an FIQ port?   It was not
-> obvious that there was a path to check if the port you are
-> registering is an FIQ enabled port and then call the
-> kgdb_register_nmi_console at that point.
+On Mon, Sep 17, 2012 at 5:34 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Sep 17, 2012 at 01:22:53PM +0200, Thierry Reding wrote:
+>> Remove the __init annotations in order to keep pci_fixup_irqs() around
+>> after init (e.g. for hotplug). This requires the same change for the
+>> implementation of pcibios_update_irq() on all architectures. While at
+>> it, all __devinit annotations are removed as well, since they will be
+>> useless now that HOTPLUG is always on.
+>>
+>> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>> ---
+>> Changes in v2:
+>> - remove __init and __devinit annotations altogether
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Yes, it works perfectly fine. If the port is not FIQ-enabled (which,
-technically, can be enabled later -- it's just not implemented), then
-ttyNMI just won't able to receive data.
+I applied these (both 1/2 and 2/2) to my "next" branch.  Thanks!
 
-The reason why I register nmi console in KGDB code (as opposite to arch
-code), is the dependcy: the port should be initialized before it can be
-used as ttyNMI. We could place the ttyNMI registration code into
-late_initcall in arch/, and check for dbg_io_ops, but that is ugly by
-itself, plus dbg_io_ops can change.
-
-But with your kgdb_arch->enable_nmi suggestion (which I'll surely
-implement), we can skip the registration at least for the cases when
-the arch doesn't have this feature.
-
-Thanks!
-
-Anton.
+Bjorn
