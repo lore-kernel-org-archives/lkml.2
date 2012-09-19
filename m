@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab2ISUJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:09:57 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:52325 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab2ISUJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:09:55 -0400
-Date: Wed, 19 Sep 2012 23:09:53 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mfd: introduce retu-mfd driver
-Message-ID: <20120919200953.GB2063@blackmetal.musicnaut.iki.fi>
-References: <1346703805-31598-1-git-send-email-aaro.koskinen@iki.fi>
- <1346703805-31598-3-git-send-email-aaro.koskinen@iki.fi>
- <20120919160230.GK28670@sortiz-mobl>
+	id S1751592Ab2ISULP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:11:15 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34569 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab2ISULM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 16:11:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH] cpufreq: OMAP: Check IS_ERR() instead of NULL for omap_device_get_by_hwmod_name
+Date: Wed, 19 Sep 2012 22:17:42 +0200
+User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <1347932747.6562.3.camel@phoenix> <201209182052.57414.rjw@sisk.pl> <877grqj6qw.fsf@deeprootsystems.com>
+In-Reply-To: <877grqj6qw.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919160230.GK28670@sortiz-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209192217.42157.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday, September 19, 2012, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > On Tuesday, September 18, 2012, Axel Lin wrote:
+> >> omap_device_get_by_hwmod_name() returns ERR_PTR on error.
+> >> 
+> >> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> >
+> > Kevin, should I take this?
+> 
+> Yes, please.
+> 
+> Acked-by: Kevin Hilman <khilman@ti.com>
 
-On Wed, Sep 19, 2012 at 06:02:30PM +0200, Samuel Ortiz wrote:
-> On Mon, Sep 03, 2012 at 11:23:23PM +0300, Aaro Koskinen wrote:
-> > Retu is a multi-function device found on Nokia Internet Tablets
-> > implementing at least watchdog, RTC, headset detection and power button
-> > functionality.
-> > 
-> > This patch implements minimum functionality providing register access,
-> > IRQ handling and power off functions.
-> > 
-> > Cc: sameo@linux.intel.com
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> > ---
-> >  drivers/mfd/Kconfig      |    8 +
-> >  drivers/mfd/Makefile     |    1 +
-> >  drivers/mfd/retu-mfd.c   |  347 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/retu.h |   22 +++
-> >  4 files changed, 378 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/mfd/retu-mfd.c
-> >  create mode 100644 include/linux/mfd/retu.h
-> Now with the IRQ chip code, using the regmap APIs would be even more
-> benefitial.
+Done.
 
-Thanks for feedback, I'll look into this.
-
-A.
+Thanks,
+Rafael
