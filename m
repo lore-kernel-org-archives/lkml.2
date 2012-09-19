@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab2ISLYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:24:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62209 "EHLO mga11.intel.com"
+	id S1753553Ab2ISLZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:25:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58207 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab2ISLYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:24:30 -0400
+	id S1751562Ab2ISLZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:25:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
-   d="scan'208";a="224007204"
-Date: Wed, 19 Sep 2012 13:23:15 +0200
+   d="scan'208";a="194483465"
+Date: Wed, 19 Sep 2012 13:25:46 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: NeilBrown <neilb@suse.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] mfd: twl: Move PWM driver to PWM framework
-Message-ID: <20120919112315.GA8138@sortiz-mobl>
-References: <1347956991-16088-1-git-send-email-thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: broonie@opensource.wolfsonmicro.com, ldewangan@nvidia.com,
+        bilhuang@nvidia.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH REPOST] mfd: max8907: add power off control
+Message-ID: <20120919112546.GB8138@sortiz-mobl>
+References: <1348008679-20582-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347956991-16088-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1348008679-20582-1-git-send-email-swarren@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Hi Stephen,
 
-On Tue, Sep 18, 2012 at 10:29:49AM +0200, Thierry Reding wrote:
-> Hi,
+On Tue, Sep 18, 2012 at 04:51:19PM -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> This mini series replaces the twl_has_*() macros by the equivalent
-> standard IS_ENABLED() macro and moves the PWM driver to the PWM
-> framework.
+> Add DT property "maxim,system-power-controller" to indicate whether the
+> PMIC is in charge of controlling the system power. If this is set, the
+> driver will provide the pm_power_off() function.
 > 
-> I'll take the second patch through the PWM tree but would like to have
-> some Acked-bys from people that know and have the hardware and can
-> verify that I haven't broken anything.
-> 
-> Thierry
-> 
-> Thierry Reding (2):
->   mfd: twl: Replace twl_has_*() macros by IS_ENABLED()
->   pwm: Move TWL6030 PWM driver to PWM framework
-Both patches applied now, thanks.
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Samuel, I'm not sure if you have this in your list to process or not, nor
+> if you prefer a patch to be reposted vs. a response to the original email;
+> Mark Brown requested that for him at least I repost rather than reply, so
+> I'm giving that a go everywhere.
+Thanks for reposting. Patch is applied to my for-next branch now.
 
 Cheers,
 Samuel.
