@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2ISLf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:35:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45512 "EHLO
+	id S1754745Ab2ISLiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:38:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39975 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2ISLfZ (ORCPT
+	with ESMTP id S1751987Ab2ISLiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:35:25 -0400
+	Wed, 19 Sep 2012 07:38:01 -0400
 From: navin patidar <navinp@cdac.in>
 To: gregkh@linuxfoundation.org, mfm@muteddisk.com, dan.carpenter@oracle.com
 Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin <navinp@cdac.in>
-Subject: [PATCH v2] staging: usbip: vhci_hcd: Fixed oops during removal of vhci_hcd
-Date: Wed, 19 Sep 2012 17:04:51 +0530
-Message-Id: <1348054491-3969-1-git-send-email-navinp@cdac.in>
+Subject: [PATCH v2] staging: usbip: stub_dev: Fixed oops during removal of usbip_host
+Date: Wed, 19 Sep 2012 17:07:27 +0530
+Message-Id: <1348054647-4016-1-git-send-email-navinp@cdac.in>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,83 +21,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: navin <navinp@cdac.in>
 
-In response to "usbip detach -p [port_number]" user command,vhci_shutdown_connection() gets
-executed which kills tcp_tx,tcp_rx kernel threads but doesn't set thread pointers to NULL.
-so, at the time of vhci_hcd removal vhci_shutdown_connection() again tries to kill kernel
-threads which are already killed.
+stub_shutdown_connection() should set kernel thread pointers to NULL after killing them.
+so that at the time of usbip_host removal stub_shutdown_connection() doesn't try to kill kernel threads
+which are already killed.
 
-[  312.220259] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  312.220313] IP: [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[  312.220349] PGD 5b7be067 PUD 5b7dc067 PMD 0
-[  312.220388] Oops: 0000 [#1] SMP
-[  312.220415] Modules linked in: vhci_hcd(O-) usbip_host(O) usbip_core(O) uas usb_storage joydev parport_pc bnep rfcomm ppdev binfmt_misc
-snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event snd_seq
-ath9k mac80211 ath9k_common ath9k_hw snd_timer snd_seq_device snd ath i915 drm_kms_helper drm psmouse cfg80211 coretemp soundcore lpc_ich i2c_algo_bit
-snd_page_alloc video intel_ips wmi btusb mac_hid bluetooth ideapad_laptop lp sparse_keymap serio_raw mei microcode parport r8169
-[  312.220862] CPU 0
-[  312.220882] Pid: 2095, comm: usbip_eh Tainted: G           O 3.6.0-rc3+ #2 LENOVO 20042                           /Base Board Product Name
-[  312.220938] RIP: 0010:[<ffffffff8108186f>]  [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[  312.220979] RSP: 0018:ffff88004d6ebdb0  EFLAGS: 00010282
-[  312.221008] RAX: 0000000000000000 RBX: ffff880041c4db40 RCX: ffff88005ad52230
-[  312.221041] RDX: 0000000000000034 RSI: 0000000000000286 RDI: 0000000000000000
-[  312.221074] RBP: ffff88004d6ebdc0 R08: ffff88004d6ea000 R09: 0000000000000000
-[  312.221107] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
-[  312.221144] R13: 0000000000000000 R14: ffff88005ad521d8 R15: ffff88004d6ebea0
-[  312.221177] FS:  0000000000000000(0000) GS:ffff880077400000(0000) knlGS:0000000000000000
-[  312.221214] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  312.221241] CR2: 0000000000000000 CR3: 000000005b7b9000 CR4: 00000000000007f0
-[  312.221277] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  312.221309] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  312.221342] Process usbip_eh (pid: 2095, threadinfo ffff88004d6ea000, task ffff88004d44db40)
-[  312.221384] Stack:
-[  312.221396]  ffff88004d6ebdc0 ffff880041c4db40 ffff88004d6ebde0 ffffffff81052aaa
-[  312.221442]  ffff880041c4db40 0000000000000000 ffff88004d6ebe10 ffffffff8107a148
-[  312.221487]  ffff88005ad521f0 ffff88005ad52228 ffff88004d44db40 ffff88005ad521d8
-[  312.221536] Call Trace:
-[  312.221556]  [<ffffffff81052aaa>] __put_task_struct+0x4a/0x140
-[  312.221587]  [<ffffffff8107a148>] kthread_stop+0x108/0x110
-[  312.221616]  [<ffffffffa0412569>] vhci_shutdown_connection+0x49/0x2b4 [vhci_hcd]
-[  312.221657]  [<ffffffffa0139920>] event_handler_loop+0x70/0x140 [usbip_core]
-[  312.221692]  [<ffffffff8107ad30>] ? add_wait_queue+0x60/0x60
-[  312.221721]  [<ffffffffa01398b0>] ? usbip_stop_eh+0x30/0x30 [usbip_core]
-[  312.221754]  [<ffffffff8107a453>] kthread+0x93/0xa0
-[  312.221784]  [<ffffffff81670e84>] kernel_thread_helper+0x4/0x10
-[  312.221814]  [<ffffffff8107a3c0>] ? flush_kthread_worker+0xb0/0xb0
-[  312.223589]  [<ffffffff81670e80>] ? gs_change+0x13/0x13
-[  312.225360] Code: 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 58 04 00 00 48 89 fb 48 8b bf 50 04 00 00
+[ 1504.312158] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[ 1504.315833] IP: [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[ 1504.317688] PGD 41f1c067 PUD 41d0f067 PMD 0
+[ 1504.319611] Oops: 0000 [#2] SMP
+[ 1504.321480] Modules linked in: vhci_hcd(O) usbip_host(O-) usbip_core(O) uas usb_storage joydev parport_pc bnep rfcomm ppdev binfmt_misc
+snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event
+snd_seq ath9k mac80211 ath9k_common ath9k_hw snd_timer snd_seq_device snd ath i915 drm_kms_helper drm psmouse cfg80211 coretemp soundcore
+lpc_ich i2c_algo_bit snd_page_alloc video intel_ips wmi btusb mac_hid bluetooth ideapad_laptop lp sparse_keymap serio_raw mei microcode parport r8169
+[ 1504.329666] CPU 1
+[ 1504.329687] Pid: 2434, comm: usbip_eh Tainted: G      D    O 3.6.0-rc31+ #2 LENOVO 20042                           /Base Board Product Name
+[ 1504.333502] RIP: 0010:[<ffffffff8108186f>]  [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[ 1504.335371] RSP: 0018:ffff880041c7fdd0  EFLAGS: 00010282
+[ 1504.337226] RAX: 0000000000000000 RBX: ffff880041c2db40 RCX: ffff880041e4ae50
+[ 1504.339101] RDX: 0000000000000044 RSI: 0000000000000286 RDI: 0000000000000000
+[ 1504.341027] RBP: ffff880041c7fde0 R08: ffff880041c7e000 R09: 0000000000000000
+[ 1504.342934] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+[ 1504.344840] R13: 0000000000000000 R14: ffff88004d448000 R15: ffff880041c7fea0
+[ 1504.346743] FS:  0000000000000000(0000) GS:ffff880077440000(0000) knlGS:0000000000000000
+[ 1504.348671] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1504.350612] CR2: 0000000000000000 CR3: 0000000041d0d000 CR4: 00000000000007e0
+[ 1504.352723] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1504.354734] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1504.356737] Process usbip_eh (pid: 2434, threadinfo ffff880041c7e000, task ffff88004d448000)
+[ 1504.358711] Stack:
+[ 1504.360635]  ffff880041c7fde0 ffff880041c2db40 ffff880041c7fe00 ffffffff81052aaa
+[ 1504.362589]  ffff880041c2db40 0000000000000000 ffff880041c7fe30 ffffffff8107a148
+[ 1504.364539]  ffff880041e4ae10 ffff880041e4ae00 ffff88004d448000 ffff88004d448000
+[ 1504.366470] Call Trace:
+[ 1504.368368]  [<ffffffff81052aaa>] __put_task_struct+0x4a/0x140
+[ 1504.370307]  [<ffffffff8107a148>] kthread_stop+0x108/0x110
+[ 1504.370312]  [<ffffffffa040da4e>] stub_shutdown_connection+0x3e/0x1b0 [usbip_host]
+[ 1504.370315]  [<ffffffffa03fd920>] event_handler_loop+0x70/0x140 [usbip_core]
+[ 1504.370318]  [<ffffffff8107ad30>] ? add_wait_queue+0x60/0x60
+[ 1504.370320]  [<ffffffffa03fd8b0>] ? usbip_stop_eh+0x30/0x30 [usbip_core]
+[ 1504.370322]  [<ffffffff8107a453>] kthread+0x93/0xa0
+[ 1504.370327]  [<ffffffff81670e84>] kernel_thread_helper+0x4/0x10
+[ 1504.370330]  [<ffffffff8107a3c0>] ? flush_kthread_worker+0xb0/0xb0
+[ 1504.370332]  [<ffffffff81670e80>] ? gs_change+0x13/0x13
+[ 1504.370351] Code: 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 58 04 00 00 48 89 fb 48 8b bf 50 04 00 00
 <8b> 00 48 c7 83 50 04 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
-[  312.229663] RIP  [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[  312.231696]  RSP <ffff88004d6ebdb0>
-[  312.233648] CR2: 0000000000000000
-[  312.256464] ---[ end trace 1971ce612a167279 ]---
+[ 1504.370353] RIP  [<ffffffff8108186f>] exit_creds+0x1f/0x70
+[ 1504.370353]  RSP <ffff880041c7fdd0>
+[ 1504.370354] CR2: 0000000000000000
+[ 1504.401376] ---[ end trace 1971ce612a16727a ]---
 
 Signed-off-by: navin patidar <navinp@cdac.in>
 ---
- drivers/staging/usbip/vhci_hcd.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/staging/usbip/stub_dev.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 12a9a5f..67358d4 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -804,11 +804,14 @@ static void vhci_shutdown_connection(struct usbip_device *ud)
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index 92ced35..c8d79a7 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -187,10 +187,14 @@ static void stub_shutdown_connection(struct usbip_device *ud)
  	}
  
- 	/* kill threads related to this sdev, if v.c. exists */
--	if (vdev->ud.tcp_rx)
-+	if (vdev->ud.tcp_rx) {
- 		kthread_stop_put(vdev->ud.tcp_rx);
--	if (vdev->ud.tcp_tx)
-+		vdev->ud.tcp_rx = NULL;
+ 	/* 1. stop threads */
+-	if (ud->tcp_rx)
++	if (ud->tcp_rx) {
+ 		kthread_stop_put(ud->tcp_rx);
+-	if (ud->tcp_tx)
++		ud->tcp_rx = NULL;
 +	}
-+	if (vdev->ud.tcp_tx) {
- 		kthread_stop_put(vdev->ud.tcp_tx);
--
-+		vdev->ud.tcp_tx = NULL;
++	if (ud->tcp_tx) {
+ 		kthread_stop_put(ud->tcp_tx);
++		ud->tcp_tx = NULL;
 +	}
- 	pr_info("stop threads\n");
  
- 	/* active connection is closed */
+ 	/*
+ 	 * 2. close the socket
 -- 
 1.7.9.5
 
