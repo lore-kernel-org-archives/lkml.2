@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab2ISLiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:38:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39975 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab2ISLiB (ORCPT
+	id S1754876Ab2ISLmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:42:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13063 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab2ISLmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:38:01 -0400
-From: navin patidar <navinp@cdac.in>
-To: gregkh@linuxfoundation.org, mfm@muteddisk.com, dan.carpenter@oracle.com
-Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin <navinp@cdac.in>
-Subject: [PATCH v2] staging: usbip: stub_dev: Fixed oops during removal of usbip_host
-Date: Wed, 19 Sep 2012 17:07:27 +0530
-Message-Id: <1348054647-4016-1-git-send-email-navinp@cdac.in>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 19 Sep 2012 07:42:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 19 Sep 2012 04:40:30 -0700
+Date: Wed, 19 Sep 2012 14:41:37 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
+ more precisely
+Message-ID: <20120919144137.384ef624c6aec331bd39a278@nvidia.com>
+In-Reply-To: <201209190759.46174.arnd@arndb.de>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
+	<20120918124918.GK2505@amd.com>
+	<20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+	<201209190759.46174.arnd@arndb.de>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: navin <navinp@cdac.in>
+Hi Arnd,
 
-stub_shutdown_connection() should set kernel thread pointers to NULL after killing them.
-so that at the time of usbip_host removal stub_shutdown_connection() doesn't try to kill kernel threads
-which are already killed.
+On Wed, 19 Sep 2012 09:59:45 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-[ 1504.312158] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1504.315833] IP: [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[ 1504.317688] PGD 41f1c067 PUD 41d0f067 PMD 0
-[ 1504.319611] Oops: 0000 [#2] SMP
-[ 1504.321480] Modules linked in: vhci_hcd(O) usbip_host(O-) usbip_core(O) uas usb_storage joydev parport_pc bnep rfcomm ppdev binfmt_misc
-snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event
-snd_seq ath9k mac80211 ath9k_common ath9k_hw snd_timer snd_seq_device snd ath i915 drm_kms_helper drm psmouse cfg80211 coretemp soundcore
-lpc_ich i2c_algo_bit snd_page_alloc video intel_ips wmi btusb mac_hid bluetooth ideapad_laptop lp sparse_keymap serio_raw mei microcode parport r8169
-[ 1504.329666] CPU 1
-[ 1504.329687] Pid: 2434, comm: usbip_eh Tainted: G      D    O 3.6.0-rc31+ #2 LENOVO 20042                           /Base Board Product Name
-[ 1504.333502] RIP: 0010:[<ffffffff8108186f>]  [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[ 1504.335371] RSP: 0018:ffff880041c7fdd0  EFLAGS: 00010282
-[ 1504.337226] RAX: 0000000000000000 RBX: ffff880041c2db40 RCX: ffff880041e4ae50
-[ 1504.339101] RDX: 0000000000000044 RSI: 0000000000000286 RDI: 0000000000000000
-[ 1504.341027] RBP: ffff880041c7fde0 R08: ffff880041c7e000 R09: 0000000000000000
-[ 1504.342934] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
-[ 1504.344840] R13: 0000000000000000 R14: ffff88004d448000 R15: ffff880041c7fea0
-[ 1504.346743] FS:  0000000000000000(0000) GS:ffff880077440000(0000) knlGS:0000000000000000
-[ 1504.348671] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1504.350612] CR2: 0000000000000000 CR3: 0000000041d0d000 CR4: 00000000000007e0
-[ 1504.352723] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1504.354734] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1504.356737] Process usbip_eh (pid: 2434, threadinfo ffff880041c7e000, task ffff88004d448000)
-[ 1504.358711] Stack:
-[ 1504.360635]  ffff880041c7fde0 ffff880041c2db40 ffff880041c7fe00 ffffffff81052aaa
-[ 1504.362589]  ffff880041c2db40 0000000000000000 ffff880041c7fe30 ffffffff8107a148
-[ 1504.364539]  ffff880041e4ae10 ffff880041e4ae00 ffff88004d448000 ffff88004d448000
-[ 1504.366470] Call Trace:
-[ 1504.368368]  [<ffffffff81052aaa>] __put_task_struct+0x4a/0x140
-[ 1504.370307]  [<ffffffff8107a148>] kthread_stop+0x108/0x110
-[ 1504.370312]  [<ffffffffa040da4e>] stub_shutdown_connection+0x3e/0x1b0 [usbip_host]
-[ 1504.370315]  [<ffffffffa03fd920>] event_handler_loop+0x70/0x140 [usbip_core]
-[ 1504.370318]  [<ffffffff8107ad30>] ? add_wait_queue+0x60/0x60
-[ 1504.370320]  [<ffffffffa03fd8b0>] ? usbip_stop_eh+0x30/0x30 [usbip_core]
-[ 1504.370322]  [<ffffffff8107a453>] kthread+0x93/0xa0
-[ 1504.370327]  [<ffffffff81670e84>] kernel_thread_helper+0x4/0x10
-[ 1504.370330]  [<ffffffff8107a3c0>] ? flush_kthread_worker+0xb0/0xb0
-[ 1504.370332]  [<ffffffff81670e80>] ? gs_change+0x13/0x13
-[ 1504.370351] Code: 0b 0f 0b 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 58 04 00 00 48 89 fb 48 8b bf 50 04 00 00
-<8b> 00 48 c7 83 50 04 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
-[ 1504.370353] RIP  [<ffffffff8108186f>] exit_creds+0x1f/0x70
-[ 1504.370353]  RSP <ffff880041c7fdd0>
-[ 1504.370354] CR2: 0000000000000000
-[ 1504.401376] ---[ end trace 1971ce612a16727a ]---
+> On Wednesday 19 September 2012, Hiroshi Doyu wrote:
+> > I guess that it would work. Originally I thought that using DMA-API
+> > and IOMMU-API together in driver might be kind of layering violation
+> > since IOMMU-API itself is used in DMA-API. Only DMA-API used in driver
+> > might be cleaner. Considering that DMA API traditionally handling
+> > anonymous {bus,iova} address only, introducing the concept of
+> > specific address in DMA API may not be so encouraged, though.
+> > 
+> > It would be nice to listen how other SoCs have solved similar needs.
+> 
+> In general, I would recommend using only the IOMMU API when you have a device
+> driver that needs to control the bus virtual address space and that manages
+> a device that resides in its own IOMMU context. I would recommend using
+> only the dma-mapping API when you have a device that lives in a shared
+> bus virtual address space with other devices, and then never ask for
+> a specific bus virtual address.
+> 
+> Can you explain what devices you see that don't fit in one of those two
+> categories?
 
-Signed-off-by: navin patidar <navinp@cdac.in>
----
- drivers/staging/usbip/stub_dev.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+I think that the above fis, but I'll continue to explain our case a little
+bit more below:
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 92ced35..c8d79a7 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -187,10 +187,14 @@ static void stub_shutdown_connection(struct usbip_device *ud)
- 	}
- 
- 	/* 1. stop threads */
--	if (ud->tcp_rx)
-+	if (ud->tcp_rx) {
- 		kthread_stop_put(ud->tcp_rx);
--	if (ud->tcp_tx)
-+		ud->tcp_rx = NULL;
-+	}
-+	if (ud->tcp_tx) {
- 		kthread_stop_put(ud->tcp_tx);
-+		ud->tcp_tx = NULL;
-+	}
- 
- 	/*
- 	 * 2. close the socket
--- 
-1.7.9.5
+In Tegra, there's a few dozen of IOMMU'able devices. Each of them can
+be configured to enable/disable IOMMU. Also some IOMMU Address Space
+IDs(ASID) can be assigned to each device respectively. Some of devices
+are just traditional ones to use traditional dma-mapping API only,
+like normal SD/MMC. Some of devices require some specific IOVA address
+for reset vector and MMIO. For example, Tegra has another ARM(ARM7) as
+such. For traditional devices, dma mapping API is so nice that driver
+doesn't have to be aware of IOMMU. The same dma mapping API works
+with/without IOMMU.
 
+If both devices are attached to the same mapping, IOMMU-API and
+dma-mapping API would be used together from different
+devices. Technically this can be avoided to assign different maps to
+each device, though.
