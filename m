@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab2ISR7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:59:13 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:38237 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932823Ab2ISR7J (ORCPT
+	id S932904Ab2ISSFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:05:42 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35817 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791Ab2ISSFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:59:09 -0400
-Message-ID: <505A07C4.7080601@xenotime.net>
-Date: Wed, 19 Sep 2012 10:58:28 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 19 Sep 2012 14:05:41 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH -next] staging: fix silicom dependencies and build errors
-References: <20120919162643.907ddda75e198f060e4e83fe@canb.auug.org.au>
-In-Reply-To: <20120919162643.907ddda75e198f060e4e83fe@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+In-Reply-To: <1348039748-32111-1-git-send-email-minchan@kernel.org>
+References: <1348039748-32111-1-git-send-email-minchan@kernel.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 19 Sep 2012 14:05:20 -0400
+Message-ID: <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
+Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Shaohua Li <shli@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
+> During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
+> are increasing so that kernel are hang out.
+>
+> The cause is that when we do memory-hotadd after memory-remove,
+> __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
+> without draining vm_stat_diff of all CPU.
+>
+> This patch fixes it.
 
-Fix kconfig dependencies in silicom.  Fixes these build errors:
+zone_pcp_update() is called from online pages path. but IMHO,
+the statistics should be drained offline path. isn't it?
 
-ERROR: "init_net" [drivers/staging/silicom/bypasslib/bypass.ko] undefined!
-ERROR: "register_netdevice_notifier" [drivers/staging/silicom/bpctl_mod.ko] undefined!
-ERROR: "unregister_netdevice_notifier" [drivers/staging/silicom/bpctl_mod.ko] undefined!
-ERROR: "init_net" [drivers/staging/silicom/bpctl_mod.ko] undefined!
-ERROR: "netdev_info" [drivers/net/mii.ko] undefined!
-ERROR: "netif_carrier_on" [drivers/net/mii.ko] undefined!
-ERROR: "netif_carrier_off" [drivers/net/mii.ko] undefined!
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/staging/silicom/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- linux-next-20120919.orig/drivers/staging/silicom/Kconfig
-+++ linux-next-20120919/drivers/staging/silicom/Kconfig
-@@ -19,7 +19,7 @@ if NET_VENDOR_SILICOM
- 
- config SBYPASS
- 	tristate "Silicom BypassCTL library support"
--	depends on PCI
-+	depends on PCI && NET
- 	depends on m
- 	---help---
- 	  If you have a network (Ethernet) controller of this type, say Y
-@@ -29,7 +29,7 @@ config SBYPASS
- 
- config BPCTL
- 	tristate "Silicom BypassCTL net support"
--	depends on PCI
-+	depends on PCI && NET
- 	depends on m
- 	select SBYPASS
- 	select NET_CORE
+thanks.
