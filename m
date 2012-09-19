@@ -1,225 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2ISVxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:53:35 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:58088 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab2ISVxd (ORCPT
+	id S1752531Ab2ISV5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:57:53 -0400
+Received: from us-mx3.synaptics.com ([12.239.217.85]:25519 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab2ISV5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:53:33 -0400
-Date: Wed, 19 Sep 2012 14:52:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Ying Han <yinghan@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mm: clear_page_mlock in page_remove_rmap
-In-Reply-To: <20120919171811.GR1560@cmpxchg.org>
-Message-ID: <alpine.LSU.2.00.1209191347360.28400@eggly.anvils>
-References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils> <alpine.LSU.2.00.1209182053520.11632@eggly.anvils> <20120919171811.GR1560@cmpxchg.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 19 Sep 2012 17:57:50 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Wed, 19 Sep 2012 14:27:36 -0700
+Message-ID: <505A3FDD.1050006@synaptics.com>
+Date: Wed, 19 Sep 2012 14:57:49 -0700
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandra Chin <alexandra.chin@tw.synaptics.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>
+Subject: Re: [PATCH] Input: Add new driver into Input Subsystem for Synaptics
+ DS4 touchscreen I2C devices
+References: <CC51EC7B5B7F984AA566DC102237848896F57221@hkdcw-mail1.synaptics-inc.local> <CACRpkdah8jqHRVRiA35H8eSugPkWuAZES_0J+OmmBr2yR07nZw@mail.gmail.com>
+In-Reply-To: <CACRpkdah8jqHRVRiA35H8eSugPkWuAZES_0J+OmmBr2yR07nZw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Sep 2012, Johannes Weiner wrote:
-> On Tue, Sep 18, 2012 at 08:55:21PM -0700, Hugh Dickins wrote:
-> > We had thought that pages could no longer get freed while still marked
-> > as mlocked; but Johannes Weiner posted this program to demonstrate that
-> > truncating an mlocked private file mapping containing COWed pages is
-> > still mishandled:
-> > 
-> > #include <sys/types.h>
-> > #include <sys/mman.h>
-> > #include <sys/stat.h>
-> > #include <stdlib.h>
-> > #include <unistd.h>
-> > #include <fcntl.h>
-> > #include <stdio.h>
-> > 
-> > int main(void)
-> > {
-> > 	char *map;
-> > 	int fd;
-> > 
-> > 	system("grep mlockfreed /proc/vmstat");
-> > 	fd = open("chigurh", O_CREAT|O_EXCL|O_RDWR);
-> > 	unlink("chigurh");
-> > 	ftruncate(fd, 4096);
-> > 	map = mmap(NULL, 4096, PROT_WRITE, MAP_PRIVATE, fd, 0);
-> > 	map[0] = 11;
-> > 	mlock(map, sizeof(fd));
-> > 	ftruncate(fd, 0);
-> > 	close(fd);
-> > 	munlock(map, sizeof(fd));
-> > 	munmap(map, 4096);
-> > 	system("grep mlockfreed /proc/vmstat");
-> > 	return 0;
-> > }
-> > 
-> > The anon COWed pages are not caught by truncation's clear_page_mlock()
-> > of the pagecache pages; but unmap_mapping_range() unmaps them, so we
-> > ought to look out for them there in page_remove_rmap().  Indeed, why
-> > should truncation or invalidation be doing the clear_page_mlock() when
-> > removing from pagecache?  mlock is a property of mapping in userspace,
-> > not a propertly of pagecache: an mlocked unmapped page is nonsensical.
-> 
-> property?
+On 09/16/2012 03:33 PM, Linus Walleij wrote:
+> On Sun, Sep 16, 2012 at 11:56 AM, Alexandra Chin
+> <alexandra.chin@tw.synaptics.com> wrote:
+>
+>> Synaptics DS4 touchscreen driver implements a generic driver supporting I2C
+>> protocol for Synaptics Design Studio 4 (DS4) family of Touchscreen Controllers
+>> which include the following:
+>>
+>> - S32xX series
+>> - S730X series
+>> - S22xx series
+>>
+>> The driver supports multifinger pointing functionality and power management.
+>> The driver is based on the original work submitted by
+>> Linus Walleij <linus.walleij@stericsson.com> and
+>> Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>.
+>
+> Naveen's driver is sitting in drivers/staging/ste_rmi4 right now because
+> Christopher Heiny is working on a RMI4 bus driver, and wanted to
+> merge that.
+>
+> I am happy with this being merged for now if the plan is
+> to eventually replace it with Christopher's (et al) driver,
+> if it's not going to disturb the other driver in the end.
+>
+> How are Synaptics planning to handle the transition?
+> (I assume you are coordinated... not always the case in
+> big companies, I know from experience :-)
+>
+> Remember to keep Henrik Rydberg in the loop on touch
+> controllers.
 
-Indeed :) thanks.  I'll not post a v2 just for this, I'll have a peep
-when/if it goes into akpm's tree, in the hope that he might turn out
-to have magically corrected it on the way (thank you, Andrew).
+Hi Linus,
 
-> 
-> > --- 3.6-rc6.orig/mm/memory.c	2012-09-18 15:38:08.000000000 -0700
-> > +++ 3.6-rc6/mm/memory.c	2012-09-18 17:51:02.871288773 -0700
-> > @@ -1576,12 +1576,12 @@ split_fallthrough:
-> >  		if (page->mapping && trylock_page(page)) {
-> >  			lru_add_drain();  /* push cached pages to LRU */
-> >  			/*
-> > -			 * Because we lock page here and migration is
-> > -			 * blocked by the pte's page reference, we need
-> > -			 * only check for file-cache page truncation.
-> > +			 * Because we lock page here, and migration is
-> > +			 * blocked by the pte's page reference, and we
-> > +			 * know the page is still mapped, we don't even
-> > +			 * need to check for file-cache page truncation.
-> >  			 */
-> > -			if (page->mapping)
-> > -				mlock_vma_page(page);
-> > +			mlock_vma_page(page);
-> >  			unlock_page(page);
-> 
-> So I don't see a reason for checking for truncation in current code,
-> but I also had a hard time figuring out from git history and list
-> archives when this was ever "needed" (flu brain does not help).
+The RMI4 bus driver will continue to be developed by my team, with the 
+intent that it will support all RMI4 functions as well as all Synaptics 
+RMI4 products, and the goal of eventual inclusion in the kernel. 
+However, as you've noted elsewhere, this is taking a while. :-)
 
-Thanks a lot for looking through all these.
+In the meantime, there is a perceived customer pull for a limited 
+functionality product/platform specific "thin driver".  Alexandra's team 
+has been working on such a driver, resulting in her patch submission 
+from a couple of days ago.  They really would like to see both our 
+drivers being adopted into the kernel. This will enable them to support 
+all our customers effectively and provide our customers with the best 
+flexibility possible. Going forward, Synaptics will continue to 
+maintain, support and upgrade these drivers for future touch controller 
+platforms as well.
 
-But my unflued brain curses your flued brain for asking hard questions
-that mine has such difficulty answering.  So, please get well soon!
-
-I do believe you're right that it was unnecessary even before my patch.
-
-I came to look at it (and spent a long time pondering this very block)
-because I had already removed the page->mapping checks from the
-munlocking cases.  Without giving any thought as to whether the NULL
-case could actually occur in those, it was clearly wrong to skip
-munlocking if NULL did occur (after my other changes anyway:
-I didn't stop to work out if they were right before or not).
-
-A more interesting question, I think, is whether that mlocking block
-actually needs the trylock_page and unlock_page: holding the pte
-lock there in follow_page gives a lot of security.  I did not decide
-one way or another (just as I simply updated the comment to reflect
-the change being made, without rethinking it all): it simply needed
-more time and thought than I had to give it, could be done separately
-later, and would have delayed getting these patches out.
-
-> 
-> My conclusion is that it started out as a fix for when an early draft
-> of putback_lru_page dropped the page lock on truncated pages, but at
-
-I don't recall the history of putback_lru_page at all, that sounds an
-odd thing for it to have done.  Your question prompted me to look back
-at old 2008 saved mail (though I've not looked at marc.info), but I
-didn't find the crucial stage where the page->mapping check got added
-(but there is a comment that Kosaki-san had fixed a truncate race).
-
-I believe it used to be necessary (or at least advisable) because
-there was a get_user_pages to pin the pages to be mlocked, quite
-separate from the loop down those pages to mlock them: it was a
-real possibility that the pages could be truncated between those.
-
-> the time b291f00 "mlock: mlocked pages are unevictable" went into the
-> tree it was merely an optimization anymore to avoid moving pages
-> between lists when they are to be freed soon anyway.
-
-I doubt it was ever intended as an optimization: too rare a case to
-optimize for.  I think it just got carried over when the mlocking moved
-inside the get_user_pages, because removing it would have required more
-thought - in just the same way as I'm leaving the trylock_page.
-
-> 
-> Is this correct?
-> 
-> > --- 3.6-rc6.orig/mm/mlock.c	2012-09-18 15:38:08.000000000 -0700
-> > +++ 3.6-rc6/mm/mlock.c	2012-09-18 17:51:02.871288773 -0700
-> > @@ -51,13 +51,10 @@ EXPORT_SYMBOL(can_do_mlock);
-> >  /*
-> >   *  LRU accounting for clear_page_mlock()
-> >   */
-> > -void __clear_page_mlock(struct page *page)
-> > +void clear_page_mlock(struct page *page)
-> >  {
-> > -	VM_BUG_ON(!PageLocked(page));
-> > -
-> > -	if (!page->mapping) {	/* truncated ? */
-> > +	if (!TestClearPageMlocked(page))
-> >  		return;
-> > -	}
-> >  
-> >  	dec_zone_page_state(page, NR_MLOCK);
-> >  	count_vm_event(UNEVICTABLE_PGCLEARED);
-> > @@ -290,14 +287,7 @@ void munlock_vma_pages_range(struct vm_a
-> >  		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP);
-> >  		if (page && !IS_ERR(page)) {
-> >  			lock_page(page);
-> > -			/*
-> > -			 * Like in __mlock_vma_pages_range(),
-> > -			 * because we lock page here and migration is
-> > -			 * blocked by the elevated reference, we need
-> > -			 * only check for file-cache page truncation.
-> > -			 */
-> > -			if (page->mapping)
-> > -				munlock_vma_page(page);
-> > +			munlock_vma_page(page);
-> >  			unlock_page(page);
-> >  			put_page(page);
-> >  		}
-> > --- 3.6-rc6.orig/mm/rmap.c	2012-09-18 16:39:50.000000000 -0700
-> > +++ 3.6-rc6/mm/rmap.c	2012-09-18 17:51:02.871288773 -0700
-> > @@ -1203,7 +1203,10 @@ void page_remove_rmap(struct page *page)
-> >  	} else {
-> >  		__dec_zone_page_state(page, NR_FILE_MAPPED);
-> >  		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
-> > +		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> >  	}
-> > +	if (unlikely(PageMlocked(page)))
-> > +		clear_page_mlock(page);
-> >  	/*
-> >  	 * It would be tidy to reset the PageAnon mapping here,
-> >  	 * but that might overwrite a racing page_add_anon_rmap
-> > @@ -1213,6 +1216,7 @@ void page_remove_rmap(struct page *page)
-> >  	 * Leaving it set also helps swapoff to reinstate ptes
-> >  	 * faster for those pages still in swapcache.
-> >  	 */
-> > +	return;
-> >  out:
-> >  	if (!anon)
-> >  		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> 
-> Would it be cleaner to fold this into the only goto site left?  One
-> certain upside of that would be the fantastic comment about leaving
-> page->mapping intact being the last operation in this function again :-)
-
-Yes and no: I wanted to do that, but look again and you'll see
-that there are actually two "goto out"s there.
-
-I dislike the way page_remove_rmap() looks these days, and have
-contemplated splitting it into anon and file subfunctions; but
-not been satisfied with the result of that either.  And I admit
-that this latest patch does not make it prettier.
-
-I find the (very necessary) mem_cgroup_begin/end_update_page_stat()
-particularly constricting, and some things depend upon how those are
-implemented (what locks might get taken).  I do have a patch to make
-them somewhat easier to work with (I never find time to review its
-memory barriers, and it doesn't seem urgent), but page_remove_rmap()
-remains just as ugly even with that change.
-
-Hugh
+						Chris
