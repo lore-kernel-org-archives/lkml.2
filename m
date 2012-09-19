@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab2ISUrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:47:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34626 "EHLO ogre.sisk.pl"
+	id S1751961Ab2ISUuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:50:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11978 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab2ISUrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:47:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
-Date: Wed, 19 Sep 2012 22:53:45 +0200
-User-Agent: KMail/1.13.6 (Linux/3.6.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>
-References: <1347661174-15404-1-git-send-email-m-karicheri2@ti.com> <201209182334.08229.rjw@sisk.pl> <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
-In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+	id S1751787Ab2ISUux convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 16:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,450,1344236400"; 
+   d="scan'208";a="208139313"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+Thread-Topic: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+Thread-Index: AQHNlSCi1Gm2yTybzE29LLvKjxM6jZePqUAAgAAItoCAASiHAIAAB8cAgACtdICAAMPXgIAACP+AgAAODoCAAAj4gP//sI5g
+Date: Wed, 19 Sep 2012 20:50:51 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D43167@ORSMSX108.amr.corp.intel.com>
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
+ <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
+ <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at>
+ <5059F367.5020104@linaro.org> <20120919170347.GA2232@netboy.at.omicron.at>
+ <505A06BD.6000406@linaro.org>
+ <CALCETrUAiLXvxYMnNDvdUSFkno+v+P_XGirOYch-k8dUG05jpw@mail.gmail.com>
+In-Reply-To: <CALCETrUAiLXvxYMnNDvdUSFkno+v+P_XGirOYch-k8dUG05jpw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209192253.45722.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 19, 2012, Karicheri, Muralidharan wrote:
-> >> -----Original Message-----
-> >> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> >> Sent: Tuesday, September 18, 2012 5:34 PM
-> >> To: Karicheri, Muralidharan
-> >> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
-> >> mturquette@linaro.org; Magnus Damm; Linux-sh list
-> >> Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
-> >> 
-> >> On Saturday, September 15, 2012, Murali Karicheri wrote:
-> >> > As part of my work to migrate davinci SoC code to
-> >> > use common clk framework, I encountered an issue with this driver
-> >> > which is calling clk_enable() and clk_disable() without prepare()/
-> >> > unprepare(). This change is needed to enable common clock migration
-> >> > for davinci SoCs.
-> >> >
-> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> >> 
-> >> There are other users of this code than davinci.  For example, sh
-> >> and ARM/shmobile both use it.  Have you verified that your changes will
-> >> work for them too?
-> >> 
-> Rafael,
-> 
-> Technically do you agree with the changes or do I need to get it reviewed
-> by someone in particular?
+> Does anything except the vDSO actually use the vDSO data page?  It's
+> mapped as part of the vDSO image (i.e. at a non-constant address), and
+> it's not immediate obvious how userspace would locate that page.
 
-You may ask the people on the linux-sh list to review your patch, but there's
-no guarantee that anyone will have the time to do that.
+Just for reference - on ia64 the address of the entry point for the magic
+fast system call page is passed to each applications via the "auxv" structure
+that exec(2) drops at the top of stack after args/env in the AT_SYSINFO
+entry. Apps look for it to find out where to jump for fast system call entry
+(if it isn't there, they fall back to regular slow syscall path).
 
-> I have no way of verifying if this works for sh and
-> ARM/shmobile. I have copied this RFC patch to the list showed up by
-> scripts/get_maintainer.pl list.
+Same method could be used to provide the address of a magic read-only
+for users page that kernel fills with stuff for simple system calls.
 
-Well, you can send whatever you like as an RFC, but if you request that the
-patch be merged, it should be submitted without the "RFC" in the subject.
-
-> Any idea how I can get this patch reviewed by
-> the sh and ARM/shmobile maintainers and get it tested as well? This is
-> required for DaVinci for sure unless there is an alternate way of doing this.
-> Well, then that is the idea of sending an RFC patch.
-
-The general rule is that if you want a change to be made in the core, you
-have to make sure that your change won't cause problems to happen to
-anyone.  If you don't do that and your change turns out to cause problems
-to happen after it's been applied, it will be reverted anyway.
-
-Thanks,
-Rafael
+-Tony
