@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab2ISSzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:55:22 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47776 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab2ISSzM (ORCPT
+	id S933129Ab2ISTDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:03:20 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19612 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab2ISSzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:12 -0400
+	Wed, 19 Sep 2012 14:55:23 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,57 +16,50 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/40] PCI, x86: clear initial value for root info resources
-Date: Wed, 19 Sep 2012 11:54:16 -0700
-Message-Id: <1348080894-23412-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 17/40] PCI: Use __pci_bus_size_bridges() directly in pci_assign_unassigned_bus_resources()
+Date: Wed, 19 Sep 2012 11:54:31 -0700
+Message-Id: <1348080894-23412-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found one system one root bus hot remove get panic.
-Panic happens when try to release hostbridge resource.
-
-It turns out that resource get reject during put into resource tree
-because of conflicts.
-Also that resource parent pointer have random value.
-
-That invalid value cause it pass through check __release_pci_root_info
-and panic in release_resource.
-
-Try to use kzalloc instead.
+Now __pci_bus_size_bridges() will not include self bridge.
+So we don't need to have our own version in
+ pci_assign_unassigned_bus_resources anymore.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
 ---
- arch/x86/pci/acpi.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/pci/setup-bus.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 505acdd..192397c 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -305,7 +305,6 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 	res->flags = flags;
- 	res->start = start;
- 	res->end = end;
--	res->child = NULL;
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 85f7ec73..56155c9 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1558,17 +1558,11 @@ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
  
- 	if (!pci_use_crs) {
- 		dev_printk(KERN_DEBUG, &info->bridge->dev,
-@@ -434,7 +433,7 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
+ {
+-	struct pci_dev *dev;
+ 	LIST_HEAD(add_list); /* list of resources that
+ 					want additional resources */
  
- 	size = sizeof(*info->res) * info->res_num;
- 	info->res_num = 0;
--	info->res = kmalloc(size, GFP_KERNEL);
-+	info->res = kzalloc(size, GFP_KERNEL);
- 	if (!info->res)
- 		return;
- 
+ 	down_read(&pci_bus_sem);
+-	list_for_each_entry(dev, &bus->devices, bus_list)
+-		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+-		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
+-			if (dev->subordinate)
+-				__pci_bus_size_bridges(dev->subordinate,
+-						 &add_list, true);
++	__pci_bus_size_bridges(bus, &add_list, false);
+ 	up_read(&pci_bus_sem);
+ 	__pci_bus_assign_resources(bus, &add_list, NULL);
+ 	BUG_ON(!list_empty(&add_list));
 -- 
 1.7.7
 
