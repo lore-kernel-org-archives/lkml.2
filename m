@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab2ISEqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 00:46:46 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51727 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab2ISEqp (ORCPT
+	id S1754985Ab2ISErq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 00:47:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52456 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab2ISErA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 00:46:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: hongfeng <hongfeng@marvell.com>
-Cc: akpm@linux-foundation.org, gorcunov@openvz.org, keescook@chromium.org,
-        serge.hallyn@canonical.com, linux-kernel@vger.kernel.org
-References: <1348025233-13412-1-git-send-email-hongfeng@marvell.com>
-Date: Tue, 18 Sep 2012 21:46:35 -0700
-In-Reply-To: <1348025233-13412-1-git-send-email-hongfeng@marvell.com>
-	(hongfeng@marvell.com's message of "Wed, 19 Sep 2012 11:27:13 +0800")
-Message-ID: <87fw6eaac4.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 19 Sep 2012 00:47:00 -0400
+Date: Wed, 19 Sep 2012 05:46:51 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: James Morris <jmorris@namei.org>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: IMA policy search speedup
+Message-ID: <20120919044651.GY13973@ZenIV.linux.org.uk>
+References: <CALLzPKZqw05_4V6NQeo-A6xOza2P4g6mqxDJnv7f-ktovj_HpQ@mail.gmail.com>
+ <alpine.LRH.2.02.1209191419410.29525@tundra.namei.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+gb7HUqZnfgnnQlpc7Xgd7+8oQigWyTUQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XM_Evil_Numbers_Gen maybe a phone number spam
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;hongfeng <hongfeng@marvell.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] poweroff: fix bug in orderly_poweroff
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1209191419410.29525@tundra.namei.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hongfeng <hongfeng@marvell.com> writes:
+On Wed, Sep 19, 2012 at 02:21:56PM +1000, James Morris wrote:
+> On Tue, 18 Sep 2012, Kasatkin, Dmitry wrote:
+> 
+> > I looked to <linux/fs.h> and found that there is a possibility to to
+> > add additional flag for sb->s_flags.
+> > For example
+> > 
+> > #define MS_NOT_IMA              (1<<25) /* NOT_IMA */
+> > #define IS_I_NOT_IMA(inode)   __IS_FLG(inode, MS_NOT_IMA)
+> > 
+> > 
+> > Another way is to add additional dedicated integrity related member to
+> > the sb structure.
+> > struct super_block {
+> > ...
+> > #ifdef CONFIG_INTEGRITY
+> >       int s_integrity;
+> > #endif
+> > };
+> > 
+> > Obviously there are only few super blocks in the system and few bytes
+> > will not harm.
+> 
+> The flag seems better than adding a new struct member.  Why would you need 
+> an int for this?
 
-> orderly_poweroff is trying to poweroff platform by two steps:
-> step 1: Call userspace application to poweroff
-> step 2: If userspace poweroff fail, then do a force power off if force param is set.
->
-> The bug here is, step 1 is always successful with param UMH_NO_WAIT,
+Per-superblock bit would be a bit better, but I really hate the way we have
+them mixed up between superblock ->s_flags bits and mount(2) action weirdly
+encoded into flags thing.  If we are going to touch that thing, how about
+separate S_... bits, with MS_... crap left only for mount(2) decoding?  Mapped
+to S_... when needed.
 
-This code has existed for 5 years.  Is this a recent regression?  Why
-has no one complained before?
-
-It looks to me that step 2 is:
-step 2: If we can not launch the userspace poweroff fail.
-
-> should change to UMH_WAIT_PROC which will monitor the return value
-> ofuserspace application.
-
-Is it safe to block indefinitely in the callers waiting for userspace?
-
-If the caller is not running in a kernel thread then we can easily get
-into a case where the userspace caller will block waiting for us when we
-are waiting for the userspace caller.
-
-I don't want to impeded progress but I don't see the evidence that this
-change is good enough.
-
-
-> Change-Id: I2f9ebbb90c0c2443780080ec9507c8d004e5da74
-> Signed-off-by: Feng Hong <hongfeng@marvell.com>
-> ---
->  kernel/sys.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 241507f..1b30b30 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -2204,7 +2204,7 @@ static int __orderly_poweroff(void)
->  		return -ENOMEM;
->  	}
->  
-> -	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
-> +	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_PROC,
->  				      NULL, argv_cleanup, NULL);
->  	if (ret == -ENOMEM)
->  		argv_free(argv);
+The really messy part is that right now we silently ignore all the unknown
+bits in mount(2) flags argument ;-/  It's *not* a widely used syscall, but
+still - changing that in a non-trivial way is potential userland breakage.
