@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab2ISTEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:04:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47905 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910Ab2ISSzU (ORCPT
+	id S933211Ab2ISTE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:04:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19513 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756159Ab2ISSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:20 -0400
+	Wed, 19 Sep 2012 14:55:17 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 12/40] PCI, x86: Remove __init for hw/fw allocated functions
-Date: Wed, 19 Sep 2012 11:54:26 -0700
-Message-Id: <1348080894-23412-13-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 05/40] PCI: Add root bus children dev's res to fail list
+Date: Wed, 19 Sep 2012 11:54:19 -0700
+Message-Id: <1348080894-23412-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
@@ -28,71 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will need it for hot add path.
+We can stop according to try number now and do not need to use root_bus checking
+as stop sign anymore.
+Also in extreme case we could need to reallocate device just under bus 0.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/pci/setup-bus.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index edfc376..1806e91 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -201,7 +201,7 @@ EXPORT_SYMBOL(pcibios_align_resource);
-  *	    as well.
-  */
- 
--static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
-+static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
- {
- 	int idx;
- 	struct resource *r;
-@@ -223,7 +223,7 @@ static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 	}
- }
- 
--static void __init pcibios_allocate_bus_resources(struct pci_bus *bus)
-+static void pcibios_allocate_bus_resources(struct pci_bus *bus)
- {
- 	struct pci_bus *child;
- 
-@@ -239,7 +239,7 @@ struct pci_check_idx_range {
- 	int end;
- };
- 
--static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
-+static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- {
- 	int idx, disabled, i;
- 	u16 command;
-@@ -292,7 +292,7 @@ static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- 	}
- }
- 
--static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
-+static void pcibios_allocate_resources(struct pci_bus *bus, int pass)
- {
- 	struct pci_dev *dev;
- 	struct pci_bus *child;
-@@ -306,7 +306,7 @@ static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
- 	}
- }
- 
--static void __init pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
-+static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
- {
- 	struct resource *r;
- 
-@@ -324,7 +324,7 @@ static void __init pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
- 		r->start = 0;
- 	}
- }
--static void __init pcibios_allocate_rom_resources(struct pci_bus *bus)
-+static void pcibios_allocate_rom_resources(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	struct pci_bus *child;
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 1e808ca..9e625d84 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -283,7 +283,7 @@ static void assign_requested_resources_sorted(struct list_head *head,
+ 		idx = res - &dev_res->dev->resource[0];
+ 		if (resource_size(res) &&
+ 		    pci_assign_resource(dev_res->dev, idx)) {
+-			if (fail_head && !pci_is_root_bus(dev_res->dev->bus)) {
++			if (fail_head) {
+ 				/*
+ 				 * if the failed res is for ROM BAR, and it will
+ 				 * be enabled later, don't add it to the list
 -- 
 1.7.7
 
