@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab2ISNgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:36:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58270 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab2ISNfz (ORCPT
+	id S1753045Ab2ISNiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:38:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49312 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab2ISNix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:35:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 17/24] ARM: OMAP: use __iomem pointers for MMIO
-Date: Wed, 19 Sep 2012 13:35:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <felipe.balbi@nokia.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, sricharan <r.sricharan@ti.com>
-References: <1347658492-11608-1-git-send-email-arnd@arndb.de> <20120916203850.GI4521@atomide.com> <20120917212506.GB11762@atomide.com>
-In-Reply-To: <20120917212506.GB11762@atomide.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209191335.48051.arnd@arndb.de>
-X-Provags-ID: V02:K0:plMAfJfxDvN8p5Sgy+7RI+3xno0BSG9gLLBrj404S+w
- 9M2QaRyBnP3NbzVKxSqxHPtKRATkbOMpckYqsvfYSjfilaKttW
- Tt25fnYBEY1zfERk919dPrgGXnZkpgDf8+G2mpxu/mmMhSX+5I
- W0eeCGT3eXQozAlERZDKOxovoAKMQ3nJToNW7QoBXDhF4rTKB6
- YCm6Zvk1GrlI2/aKT2gI7JELsRpaIltVORaXj+QwuQysK8DXv7
- SFTIcD7Ukye/wY8MUwT1KOGgNlNW10DkK5D6k7+4eyu/17uKV+
- tLsAsdOEAwNYxxbPASj8lxCJ1TuZMWTyhE4QgYvN2puL58duuW
- z149tlC2xvI9tPeAHaaY=
+	Wed, 19 Sep 2012 09:38:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
+Subject: [PATCH] xen/boot: Disable BIOS SMP MP table search.
+Date: Wed, 19 Sep 2012 09:27:49 -0400
+Message-Id: <1348061269-19133-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 September 2012, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [120916 13:39]:
-> > * Arnd Bergmann <arnd@arndb.de> [120915 13:15]:
-> > > On Saturday 15 September 2012, Tony Lindgren wrote:
-> > > > With my patches, this is now all omap1 specific and
-> > > > moved to arch/arm/mach-omap1/include/mach/hardware.h.
-> > > > It's probably easiest to just update this patch on
-> > > > top of the hardware.h changes I've done.
-> > > 
-> > > Yes, sounds good. Do you want to send a patch for that
-> > > and let me drop this one then?
-> > 
-> > Yes I can pick this one and update it against one of my
-> > branches to avoid merge conflicts.
-> 
-> This applies against mach-omap1/include/mach/hardware.h
-> with some fuzz so no issues there.
-> 
-> But I think we should not apply it as these are physical
-> addresses, not virtual addresses for omap1.
+As the initial domain we are able to search/map certain regions
+of memory to harvest configuration data. For all low-level we
+use ACPI tables - for interrupts we use exclusively ACPI _PRT
+(so DSDT) and MADT for INT_SRC_OVR.
 
-Right, I misread what is actually going on here because the
-only driver I looked at treated the address as a virtual
-address pointer.
+The SMP MP table is not used at all. As a matter of fact we do
+not even support machines that only have SMP MP but no ACPI tables.
 
-> We have IOMEM already in use for omap_read/write because of:
-> 
-> #define OMAP1_IO_ADDRESS(pa)    IOMEM((pa) - OMAP1_IO_OFFSET)
-> 
-> I think the right solution is to eventually get rid of
-> omap_read/write for omap1 also and replace them with ioremap
-> + readl/writel.
+Lets follow how Moorestown does it and just disable searching
+for BIOS SMP tables.
 
-Agreed.
+This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
 
-> Or am I missing something?
+9f->100 for 1:1 PTE
+Freeing 9f-100 pfn range: 97 pages freed
+1-1 mapping on 9f->100
+.. snip..
+e820: BIOS-provided physical RAM map:
+Xen: [mem 0x0000000000000000-0x000000000009efff] usable
+Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
+Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
+.. snip..
+Scan for SMP in [mem 0x00000000-0x000003ff]
+Scan for SMP in [mem 0x0009fc00-0x0009ffff]
+Scan for SMP in [mem 0x000f0000-0x000fffff]
+found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
+(XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 0000000000100461 for l1e_owner=0, pg_owner=0
+(XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
+. snip..
+Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP ProLiant BL680c G5
+.. snip..
+Call Trace:
+ [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
+ [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
+ [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
+ [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
+ [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81abca7f>] start_kernel+0x90/0x390
+ [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
+ [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
+(XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
 
-I did not see any new warnings for omap1, but I did see this
-on omap2plus_defconfig:
+which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
+(which is what early_ioremap sticks as a flag) - which meant
+we would get MFN 0xFF (pte ff461, which is OK), and then it would
+also map 0x100 (b/c ioremap tries to get page aligned request, and
+it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
+as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
+bypasses the P2M lookup we would happily set the PTE to 1000461.
+Xen would deny the request since we do not have access to the
+Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
+0x80140.
 
-drivers/watchdog/omap_wdt.c: In function 'omap_wdt_ioctl':
-drivers/watchdog/omap_wdt.c:222:4: error: passing argument 1 of '__raw_readw' makes pointer from integer without a cast [-Werror]
-arch/arm/include/asm/io.h:71:90: note: expected 'const volatile void *' but argument is of type 'unsigned int'
+CC: stable@kernel.org
+Fixes-Oracle-Bugzilla: https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-It seems I misinterpreted this, and it's actually a bug in the watchdog
-driver that should be fixed using this patch instead (and backport it
-to stable)
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 9642d4a..1fbe75a 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1452,6 +1452,10 @@ asmlinkage void __init xen_start_kernel(void)
+ 		pci_request_acs();
+ 
+ 		xen_acpi_sleep_register();
++
++		/* Avoid searching for BIOS MP tables */
++		x86_init.mpparse.find_smp_config = x86_init_noop;
++		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+ 	}
+ #ifdef CONFIG_PCI
+ 	/* PCI BIOS service won't work from a PV guest. */
+-- 
+1.7.7.6
 
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index fceec4f..7b45802 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -218,9 +218,11 @@ static long omap_wdt_ioctl(struct file *file, unsigned int cmd,
- 	case WDIOC_GETSTATUS:
- 		return put_user(0, (int __user *)arg);
- 	case WDIOC_GETBOOTSTATUS:
-+#ifdef CONFIG_ARCH_OMAP1
- 		if (cpu_is_omap16xx())
--			return put_user(__raw_readw(ARM_SYSST),
-+			return put_user(omap_readw(ARM_SYSST),
- 					(int __user *)arg);
-+#endif
- 		if (cpu_is_omap24xx())
- 			return put_user(omap_prcm_get_reset_sources(),
- 					(int __user *)arg);
-
-This bug seems to have been introduced in 2008 by 9f69e3b0c "[WATCHDOG]
-omap_wdt.c: another ioremap() fix" without anyone ever noticing and now
-got caught. Of course it should be replaced by something better when
-omap_read/write is finally getting removed.
-
-I'll drop my omap patch for now, because it's obviously wrong, and let
-you guys figure out what to do about the watchdog driver.
-
-	Arnd
