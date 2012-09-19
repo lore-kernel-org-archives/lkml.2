@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab2ISPOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:14:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52643 "EHLO
+	id S1755497Ab2ISPO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:14:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52653 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab2ISPOH (ORCPT
+	with ESMTP id S1754695Ab2ISPOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:14:07 -0400
-Date: Wed, 19 Sep 2012 08:13:09 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-e2nofbmj4uf0ykgsytxvt9pu@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
-        david.daney@cavium.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, david.daney@cavium.com,
-        dsahern@gmail.com, tglx@linutronix.de
+	Wed, 19 Sep 2012 11:14:23 -0400
+Date: Wed, 19 Sep 2012 08:14:04 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-721b3112f5882a6de7b86b9bef5813c80d1223de@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1347431706-7839-1-git-send-email-namhyung@kernel.org>
+References: <1347431706-7839-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Define _GNU_SOURCE in Makefile
-Git-Commit-ID: c055875b7091a301e2b1107ef8914b7d24e12fb0
+Subject: [tip:perf/core] perf hists browser: Fix output for 100.00%
+Git-Commit-ID: 721b3112f5882a6de7b86b9bef5813c80d1223de
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,67 +29,176 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:13:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:14:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c055875b7091a301e2b1107ef8914b7d24e12fb0
-Gitweb:     http://git.kernel.org/tip/c055875b7091a301e2b1107ef8914b7d24e12fb0
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 12 Sep 2012 14:29:40 -0300
+Commit-ID:  721b3112f5882a6de7b86b9bef5813c80d1223de
+Gitweb:     http://git.kernel.org/tip/721b3112f5882a6de7b86b9bef5813c80d1223de
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 12 Sep 2012 15:35:05 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Sep 2012 15:49:10 -0300
+CommitDate: Fri, 14 Sep 2012 15:49:45 -0300
 
-tools lib traceevent: Define _GNU_SOURCE in Makefile
+perf hists browser: Fix output for 100.00%
 
-For the reasons stated on:
+Current hpp format functions assume that the output will fit to 6
+character including % sign (XX.YY%) so used "%5.2f%%" as a format
+string.  However it might be the case if collapsing resulted in a single
+entry which has 100.00% (7 character) of period. In this case the output
+will be shifted by 1 character.
 
-  commit 0a84f00
-  Author: David Daney <david.daney@cavium.com>
-
-    perf tools: Fix broken build by defining _GNU_SOURCE in Makefile
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: David Daney <david.daney@cavium.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-e2nofbmj4uf0ykgsytxvt9pu@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1347431706-7839-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile      |    2 +-
- tools/lib/traceevent/event-parse.c |    1 -
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/hists.c |    2 +-
+ tools/perf/ui/gtk/browser.c    |    2 +-
+ tools/perf/ui/hist.c           |   28 ++++++++++++++--------------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 14131cb..04d959f 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -129,7 +129,7 @@ CFLAGS ?= -g -Wall
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 5a5739b..1178317 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -571,7 +571,7 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
+ {									\
+ 	double percent = 100.0 * he->_field / hpp->total_period;	\
+ 	*(double *)hpp->ptr = percent;					\
+-	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);	\
++	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
+ }
  
- # Append required CFLAGS
- override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
--override CFLAGS += $(udis86-flags)
-+override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
+ HPP__COLOR_FN(overhead, period)
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 55acba6..7ff99ec 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -56,7 +56,7 @@ static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
+ 	markup = perf_gtk__get_percent_color(percent);				\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf, hpp->size, "%s", markup);		\
+-	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%5.2f%%", percent); 	\
++	ret += scnprintf(hpp->buf + ret, hpp->size - ret, "%6.2f%%", percent); 	\
+ 	if (markup)								\
+ 		ret += scnprintf(hpp->buf + ret, hpp->size - ret, "</span>"); 	\
+ 										\
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 407e855..e3f8cd4 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -33,13 +33,13 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 			percent = 0.0;
+ 	}
  
- ifeq ($(VERBOSE),1)
-   Q =
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 2c54cdd..77ebeb8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -24,7 +24,6 @@
-  *  Frederic Weisbecker gave his permission to relicense the code to
-  *  the Lesser General Public License.
-  */
--#define _GNU_SOURCE
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
+ 
+ 	if (hpp->ptr) {
+ 		struct hists *old_hists = hpp->ptr;
+@@ -57,52 +57,52 @@ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ 
+ static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
+ }
+ 
+ static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_us(struct perf_hpp *hpp)
+ {
+-	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, "user");
+ }
+ 
+ static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
+ {
+-	return 6;
++	return 7;
+ }
+ 
+ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
+ }
+ 
+ static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -121,14 +121,14 @@ static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+@@ -147,14 +147,14 @@ static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
+ }
+ 
+ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
+ 
+ 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
