@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab2ISMo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 08:44:26 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:43807 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756394Ab2ISMoV (ORCPT
+	id S1756433Ab2ISMvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 08:51:36 -0400
+Received: from [216.32.180.184] ([216.32.180.184]:4961 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752852Ab2ISMvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 08:44:21 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 08:44:21 EDT
-Message-ID: <5059B892.4030806@synopsys.com>
-Date: Wed, 19 Sep 2012 17:50:34 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 19 Sep 2012 08:51:33 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
+X-WSS-ID: 0MALKZW-01-5KC-02
+X-M-MSG: 
+Date: Wed, 19 Sep 2012 14:50:20 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA more
+ precisely
+Message-ID: <20120919125020.GQ2505@amd.com>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
+ <20120918124918.GK2505@amd.com>
+ <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+ <201209190759.46174.arnd@arndb.de>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] status of execve() work - per-architecture patches solicited
-References: <20120907182004.GE13973@ZenIV.linux.org.uk>
-In-Reply-To: <20120907182004.GE13973@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.112]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201209190759.46174.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 September 2012 11:50 PM, Al Viro wrote:
-> 	To architecture maintainers: please, review the current
-> situation in git.kernel.org/pub/scm/linux/kernel/git/viro/signal #execve2
-> and consider sending the corresponding patches for missing architectures.
+On Wed, Sep 19, 2012 at 07:59:45AM +0000, Arnd Bergmann wrote:
+> On Wednesday 19 September 2012, Hiroshi Doyu wrote:
+> > I guess that it would work. Originally I thought that using DMA-API
+> > and IOMMU-API together in driver might be kind of layering violation
+> > since IOMMU-API itself is used in DMA-API. Only DMA-API used in driver
+> > might be cleaner. Considering that DMA API traditionally handling
+> > anonymous {bus,iova} address only, introducing the concept of
+> > specific address in DMA API may not be so encouraged, though.
+> > 
+> > It would be nice to listen how other SoCs have solved similar needs.
 > 
-> 	What's getting done is unification of sys_execve()/kernel_execve()
-> into arch-independent code.  x86, alpha, arm, s390, um and ppc are already
-> converted in #execve2.  The plan is:
+> In general, I would recommend using only the IOMMU API when you have a device
+> driver that needs to control the bus virtual address space and that manages
+> a device that resides in its own IOMMU context. I would recommend using
+> only the dma-mapping API when you have a device that lives in a shared
+> bus virtual address space with other devices, and then never ask for
+> a specific bus virtual address.
 > 
-> * provide a new primitive - ret_from_kernel_execve(); it takes two pointers
-> to struct pt_regs, one being the normal location of pt_regs for a userland
-> process, another - new pt_regs just filled by do_execve().  It should copy
-> the latter to the former and bugger off to userland.  Called from generic
-> kernel_execve() implementation (see fs/exec.c in #execve2).  It almost always
-> has to be done in assembler - normally it does equivalent of something
-> along the lines of
-> 	memmove(normal, new, sizeof(struct pt_regs))
-> 	sp = normal, or whatever is needed to get a valid stack
-> frame (e.g. on s390 there's ->back_chain that needs to be set to
-> NULL)
-> 	set other registers ret_from_sys_call expects to be set (e.g.
-> i386 syscall entry has current_thread_info() value cached in %ebp and
-> since it's a callee-saved register there, ret_from_sys_call expects to
-> find that value still in %ebp, so we need to set it); basically, check
-> what has to be set in ret_from_fork - it tends to jump to the same place.
-> 	goto ret_from_sys_call, or whatever the equivalent is called on
-> particular architecture.
-> * define __ARCH_WANT_KERNEL_EXECVE in unistd.h, remove your old kernel_execve()
-> * pull whatever work you'd been doing *after* do_execve() call in your
-> sys_execve() (most of the architectures don't do anything after that anyway)
-> into start_thread(); that's the point of no return for execve(2) and if we
-> get there, we'll either succeed or get killed with SIGKILL.  The same goes
-> for compat variant of execve(), with s/start_thread/compat_start_thread/.
-> * define __ARCH_WANT_SYS_EXECVE in unistd.h, kill your sys_execve() and
-> compat counterpart (if any).
-> * if there's a better way to calculate task_pt_regs(current), you can provide
-> it in your ptrace.h - macro should be called current_pt_regs(); it's optional.
-> 
-> 	Status: x86, arm, um, s390 - converted, tested, seem to work. alpha
-> and ppc - need testing.  The rest - hadn't touched yet.  unicore32 and
-> blackfin should be trivial to convert (they are doing kernel_execve() in
-> that manner already).  Other may be more or less tricky - depends on how
-> gnarly their return from syscall path happens to be.  I'll do what I can
-> and test what I can (some on emulators, some on real hardware), but for quite
-> a few architectures I've no way to test.  Nor am I fond of sniffing dozens
-> of variants of assembler glue, to put it mildly.
-> 
-> 	Patches and/or help with testing setups would be very welcome.
-> 
+> Can you explain what devices you see that don't fit in one of those two
+> categories?
 
+Well, I don't think that a driver should limit to one of these 2 APIs. A
+driver can very well use the IOMMU-API during initialization (for
+example to map the firmware to an address the device expects it to be)
+and use the DMA-API later during normal operation to exchange data with
+the device.
 
-Hi Al,
+When a device driver would only use the IOMMU-API and needs small
+DMA-able areas it has to re-implement something like the DMA-API
+(basically an address allocator) for that. So I don't see a reason why
+both can't be used in a device driver.
 
-It must be noted that despite having seemingly independent
-__ARCH_WANT_(KERNEL|SYS)_EXECVE, arches which have a kernel syscall trap
-based kernel_execve(), e.g. MIPS, can't implement __ARCH_WANT_SYS_EXECVE
-alone - they need to first convert
-to __ARCH_WANT_KERNEL_EXECVE as well (although it probably doesn't make
-sense for anyone to just implement one - but in terms of staging -
-having only one, breaks stuff IMHO).
+Regards,
 
-The reason being, for non converted kernel_execve(), the call-stack
-leading to sys_execve (e.g. init_post -> run_init_process ->
-kernel_execve ->..)  would cause the pt_regs layout to be slightly
-offsetted from bottom of stack - not exactly where
-current_pt_regs()/task_pt_regs(current) would point to in general. Thus
-on return path the update by start_thread() won't be visible to asm glue
-at expected location.
+	Joerg
 
-I ran into this myself - when doing the execve switch for ARC Linux port
-(currently being "pre-reviewed" by tglx before submission to lkml).
+-- 
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
--Vineet
