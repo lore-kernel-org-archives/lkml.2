@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2ISRLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:11:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34751 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab2ISRLc (ORCPT
+	id S932688Ab2ISRL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:11:56 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56351 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615Ab2ISRLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:11:32 -0400
-Date: Wed, 19 Sep 2012 10:11:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, arnd@arndb.de, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between
- DT and non-DT boots
-Message-ID: <20120919171126.GA16730@core.coreip.homeip.net>
-References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdaKa=NAObnjJyifhxyqu3Hcgj7Fxqi=bdNFqbm7V_8cSw@mail.gmail.com>
- <20120914080347.GB3374@gmail.com>
- <CACRpkdbntZ2k+2mi7=nCL2RV+YcbYi=wbK2RaDKsKNKqsCxMOA@mail.gmail.com>
+	Wed, 19 Sep 2012 13:11:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbntZ2k+2mi7=nCL2RV+YcbYi=wbK2RaDKsKNKqsCxMOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348040735-3897-1-git-send-email-minchan@kernel.org>
+References: <1348040735-3897-1-git-send-email-minchan@kernel.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 19 Sep 2012 13:04:56 -0400
+X-Google-Sender-Auth: RYL-_2nphcotrfCVymhYFyuKZas
+Message-ID: <CAHGf_=rY-1R+68BWqW4653r_=AYkgE1CfM7wvSyvdSXRwjraUA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 01:22:06PM +0200, Linus Walleij wrote:
-> On Fri, Sep 14, 2012 at 10:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Thu, Sep 13, 2012 at 11:35:43AM +0200, Linus Walleij wrote:
-> >>
-> >> Not having this patch in v3.6-rcN gives the following boot noise (and
-> >> the key does not work):
-> >>
-> >> ------------[ cut here ]------------
-> >> WARNING: at /home/elinwal/linux-stericsson/kernel/irq/irqdomain.c:137
-> >> irq_domain_legacy_revmap+0x20/0x48()
-> (...)
-> > I haven't tested this, but I think this patch should be pulled out
-> > of -next and pushed into the -rcs to fix the issue you see above.
-> > The real fix along with the revert to this patch also resides in
-> > -next and will be applied during the next merge window.
-> 
-> Dmitry, can you fix this?
-> 
-> v3.6-rc6 is regressing on us...
+On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
+> When I looked at zone stat mismatch problem, I found
+> migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
+> if check_range fails.
+>
+> It can make system hang out.
+>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/mempolicy.c |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 3d64b36..6bf0860 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+>
+>         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+>                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+> -       if (IS_ERR(vma))
+> -               return PTR_ERR(vma);
+> -
+> -       if (!list_empty(&pagelist)) {
+> +       if (IS_ERR(vma)) {
+> +               err = PTR_ERR(vma);
+> +               goto out;
+> +       }
+> +       if (!list_empty(&pagelist))
+>                 err = migrate_pages(&pagelist, new_node_page, dest,
+>                                                         false, MIGRATE_SYNC);
+> -               if (err)
+> -                       putback_lru_pages(&pagelist);
+> -       }
+> -
+> +out:
+> +       if (err)
+> +               putback_lru_pages(&pagelist);
 
-OK, I'll revert and send a pull request tonight.
+Good catch!
+This is a regression since following commit. So, I doubt we need
+all or nothing semantics. Can we revert it instead? (and probably
+we need more kind comment for preventing an accident)
 
-Thanks.
 
--- 
-Dmitry
+commit 0def08e3acc2c9c934e4671487029aed52202d42
+Author: Vasiliy Kulikov <segooon@gmail.com>
+Date:   Tue Oct 26 14:21:32 2010 -0700
+
+    mm/mempolicy.c: check return code of check_range
