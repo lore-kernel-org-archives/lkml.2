@@ -1,104 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab2ISNiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:38:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49312 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab2ISNix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:38:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
-Subject: [PATCH] xen/boot: Disable BIOS SMP MP table search.
-Date: Wed, 19 Sep 2012 09:27:49 -0400
-Message-Id: <1348061269-19133-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1753724Ab2ISNkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:40:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab2ISNka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 09:40:30 -0400
+Message-ID: <5059CB11.2000804@redhat.com>
+Date: Wed, 19 Sep 2012 16:39:29 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: habanero@linux.vnet.ibm.com
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [RFC][PATCH] Improving directed yield scalability for PLE handler
+References: <504A37B0.7020605@linux.vnet.ibm.com>  <1347046931.7332.51.camel@oc2024037011.ibm.com>  <20120908084345.GU30238@linux.vnet.ibm.com>  <1347283005.10325.55.camel@oc6622382223.ibm.com>  <1347293035.2124.22.camel@twins>  <20120910165653.GA28033@linux.vnet.ibm.com>  <1347297124.2124.42.camel@twins>  <1347307972.7332.78.camel@oc2024037011.ibm.com>  <504ED54E.6040608@linux.vnet.ibm.com>  <1347388061.19098.20.camel@oc2024037011.ibm.com>  <20120913114813.GA11797@linux.vnet.ibm.com>  <1347571858.5586.44.camel@oc2024037011.ibm.com>  <50559400.8030203@redhat.com> <1347937398.10325.190.camel@oc6622382223.ibm.com>
+In-Reply-To: <1347937398.10325.190.camel@oc6622382223.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the initial domain we are able to search/map certain regions
-of memory to harvest configuration data. For all low-level we
-use ACPI tables - for interrupts we use exclusively ACPI _PRT
-(so DSDT) and MADT for INT_SRC_OVR.
+On 09/18/2012 06:03 AM, Andrew Theurer wrote:
+> On Sun, 2012-09-16 at 11:55 +0300, Avi Kivity wrote:
+>> On 09/14/2012 12:30 AM, Andrew Theurer wrote:
+>> 
+>> > The concern I have is that even though we have gone through changes to
+>> > help reduce the candidate vcpus we yield to, we still have a very poor
+>> > idea of which vcpu really needs to run.  The result is high cpu usage in
+>> > the get_pid_task and still some contention in the double runqueue lock.
+>> > To make this scalable, we either need to significantly reduce the
+>> > occurrence of the lock-holder preemption, or do a much better job of
+>> > knowing which vcpu needs to run (and not unnecessarily yielding to vcpus
+>> > which do not need to run).
+>> > 
+>> > On reducing the occurrence:  The worst case for lock-holder preemption
+>> > is having vcpus of same VM on the same runqueue.  This guarantees the
+>> > situation of 1 vcpu running while another [of the same VM] is not.  To
+>> > prove the point, I ran the same test, but with vcpus restricted to a
+>> > range of host cpus, such that any single VM's vcpus can never be on the
+>> > same runqueue.  In this case, all 10 VMs' vcpu-0's are on host cpus 0-4,
+>> > vcpu-1's are on host cpus 5-9, and so on.  Here is the result:
+>> > 
+>> > kvm_cpu_spin, and all
+>> > yield_to changes, plus
+>> > restricted vcpu placement:  8823 +/- 3.20%   much, much better
+>> > 
+>> > On picking a better vcpu to yield to:  I really hesitate to rely on
+>> > paravirt hint [telling us which vcpu is holding a lock], but I am not
+>> > sure how else to reduce the candidate vcpus to yield to.  I suspect we
+>> > are yielding to way more vcpus than are prempted lock-holders, and that
+>> > IMO is just work accomplishing nothing.  Trying to think of way to
+>> > further reduce candidate vcpus....
+>> 
+>> I wouldn't say that yielding to the "wrong" vcpu accomplishes nothing.
+>> That other vcpu gets work done (unless it is in pause loop itself) and
+>> the yielding vcpu gets put to sleep for a while, so it doesn't spend
+>> cycles spinning.  While we haven't fixed the problem at least the guest
+>> is accomplishing work, and meanwhile the real lock holder may get
+>> naturally scheduled and clear the lock.
+> 
+> OK, yes, if the other thread gets useful work done, then it is not
+> wasteful.  I was thinking of the worst case scenario, where any other
+> vcpu would likely spin as well, and the host side cpu-time for switching
+> vcpu threads was not all that productive.  Well, I suppose it does help
+> eliminate potential lock holding vcpus; it just seems to be not that
+> efficient or fast enough.
 
-The SMP MP table is not used at all. As a matter of fact we do
-not even support machines that only have SMP MP but no ACPI tables.
+If we have N-1 vcpus spinwaiting on 1 vcpu, with N:1 overcommit then
+yes, we must iterate over N-1 vcpus until we find Mr. Right.  Eventually
+it's not-a-timeslice will expire and we go through this again.  If
+N*y_yield is comparable to the timeslice, we start losing efficiency.
+Because of lock contention, t_yield can scale with the number of host
+cpus.  So in this worst case, we get quadratic behaviour.
 
-Lets follow how Moorestown does it and just disable searching
-for BIOS SMP tables.
+One way out is to increase the not-a-timeslice.  Can we get spinning
+vcpus to do that for running vcpus, if they cannot find a
+runnable-but-not-running vcpu?
 
-This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
+That's not guaranteed to help, if we boost a running vcpu too much it
+will skew how vcpu runtime is distributed even after the lock is released.
 
-9f->100 for 1:1 PTE
-Freeing 9f-100 pfn range: 97 pages freed
-1-1 mapping on 9f->100
-.. snip..
-e820: BIOS-provided physical RAM map:
-Xen: [mem 0x0000000000000000-0x000000000009efff] usable
-Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
-Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
-.. snip..
-Scan for SMP in [mem 0x00000000-0x000003ff]
-Scan for SMP in [mem 0x0009fc00-0x0009ffff]
-Scan for SMP in [mem 0x000f0000-0x000fffff]
-found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
-(XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 0000000000100461 for l1e_owner=0, pg_owner=0
-(XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
-. snip..
-Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP ProLiant BL680c G5
-.. snip..
-Call Trace:
- [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
- [<ffffffff81624731>] ? printk+0x48/0x4a
- [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
- [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
- [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
- [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
- [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
- [<ffffffff81624731>] ? printk+0x48/0x4a
- [<ffffffff81abca7f>] start_kernel+0x90/0x390
- [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
- [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
-(XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
+> 
+>> The main problem with this theory is that the experiments don't seem to
+>> bear it out.
+> 
+> Granted, my test case is quite brutal.  It's nothing but over-committed
+> VMs which always have some spin lock activity.  However, we really
+> should try to fix the worst case scenario.
 
-which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
-(which is what early_ioremap sticks as a flag) - which meant
-we would get MFN 0xFF (pte ff461, which is OK), and then it would
-also map 0x100 (b/c ioremap tries to get page aligned request, and
-it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
-as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
-bypasses the P2M lookup we would happily set the PTE to 1000461.
-Xen would deny the request since we do not have access to the
-Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
-0x80140.
+Yes.  And other guests may not scale as well as Linux, so they may show
+this behaviour more often.
 
-CC: stable@kernel.org
-Fixes-Oracle-Bugzilla: https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+>>   So maybe one of the assumptions is wrong - the yielding
+>> vcpu gets scheduled early.  That could be the case if the two vcpus are
+>> on different runqueues - you could be changing the relative priority of
+>> vcpus on the target runqueue, but still remain on top yourself.  Is this
+>> possible with the current code?
+>> 
+>> Maybe we should prefer vcpus on the same runqueue as yield_to targets,
+>> and only fall back to remote vcpus when we see it didn't help.
+>> 
+>> Let's examine a few cases:
+>> 
+>> 1. spinner on cpu 0, lock holder on cpu 0
+>> 
+>> win!
+>> 
+>> 2. spinner on cpu 0, random vcpu(s) (or normal processes) on cpu 0
+>> 
+>> Spinner gets put to sleep, random vcpus get to work, low lock contention
+>> (no double_rq_lock), by the time spinner gets scheduled we might have won
+>> 
+>> 3. spinner on cpu 0, another spinner on cpu 0
+>> 
+>> Worst case, we'll just spin some more.  Need to detect this case and
+>> migrate something in.
+> 
+> Well, we can certainly experiment and see what we get.
+> 
+> IMO, the key to getting this working really well on the large VMs is
+> finding the lock-holding cpu -quickly-.  What I think is happening is
+> that we go through a relatively long process to get to that one right
+> vcpu.  I guess I need to find a faster way to get there.
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 9642d4a..1fbe75a 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1452,6 +1452,10 @@ asmlinkage void __init xen_start_kernel(void)
- 		pci_request_acs();
- 
- 		xen_acpi_sleep_register();
-+
-+		/* Avoid searching for BIOS MP tables */
-+		x86_init.mpparse.find_smp_config = x86_init_noop;
-+		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
- 	}
- #ifdef CONFIG_PCI
- 	/* PCI BIOS service won't work from a PV guest. */
+pvspinlocks will find the right one, every time.  Otherwise I see no way
+to do this.
+
 -- 
-1.7.7.6
-
+error compiling committee.c: too many arguments to function
