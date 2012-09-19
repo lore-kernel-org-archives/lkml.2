@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab2ISNap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:30:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37040 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab2ISNan (ORCPT
+	id S1756357Ab2ISNcb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:32:31 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37439 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2ISNc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:30:43 -0400
-Subject: Re: [PATCH] tools lib traceevent: Handle alloc_arg failure
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>
-In-Reply-To: <1348058460.13080.52.camel@gandalf.local.home>
-References: <87boh23epi.fsf@sejong.aot.lge.com>
-	 <1348037109-17252-1-git-send-email-namhyung@kernel.org>
-	 <20120919114258.GA16696@gmail.com> <1348057609.1644.9.camel@leonhard>
-	 <1348058460.13080.52.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Sep 2012 22:30:35 +0900
-Message-ID: <1348061435.1470.4.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Wed, 19 Sep 2012 09:32:27 -0400
+Date: Wed, 19 Sep 2012 14:32:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] status of execve() work - per-architecture patches
+ solicited
+Message-ID: <20120919133226.GZ13973@ZenIV.linux.org.uk>
+References: <20120907182004.GE13973@ZenIV.linux.org.uk>
+ <5059B892.4030806@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5059B892.4030806@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Wed, Sep 19, 2012 at 05:50:34PM +0530, Vineet Gupta wrote:
 
-2012-09-19 (수), 08:41 -0400, Steven Rostedt:
-> On Wed, 2012-09-19 at 21:26 +0900, Namhyung Kim wrote:
-> > Yeah, I agree.  But I wanted to add a bit more helpful (to developers)
-> > info - function name and line number - rather than just "not enough
-> > memory" message.  Maybe we could change do_warning to emit such info
-> > automatically.
+> Hi Al,
 > 
-> But these only fail if you run out of memory for the tool. In that case,
-> I don't think it's that important which allocation failed.
+> It must be noted that despite having seemingly independent
+> __ARCH_WANT_(KERNEL|SYS)_EXECVE, arches which have a kernel syscall trap
+> based kernel_execve(), e.g. MIPS, can't implement __ARCH_WANT_SYS_EXECVE
+> alone - they need to first convert
+> to __ARCH_WANT_KERNEL_EXECVE as well (although it probably doesn't make
+> sense for anyone to just implement one - but in terms of staging -
+> having only one, breaks stuff IMHO).
 
-Okay, I'll send v2 tomorrow according to Ingo's suggestion.
-
-Thanks,
-Namhyung
-
-
+Of course - that's the reason for kernel_execve() being pulled into the
+mix at all.  Unified sys_execve() relies on not using a trap to do
+kernel_execve(); it's not exactly the same thing as having it done
+by generic instance in fs/exec.c (e.g. some architectures were already
+doing it that way, with their own instances, some in asm glue, some
+in C) but it is a prerequisite.
