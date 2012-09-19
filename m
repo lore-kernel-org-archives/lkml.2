@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2ISP0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:26:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52931 "EHLO
+	id S932164Ab2ISP1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:27:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52960 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab2ISP0V (ORCPT
+	with ESMTP id S1754790Ab2ISP12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:26:21 -0400
-Date: Wed, 19 Sep 2012 08:26:02 -0700
+	Wed, 19 Sep 2012 11:27:28 -0400
+Date: Wed, 19 Sep 2012 08:26:58 -0700
 From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-314d9f63f385096580e9e2a06eaa0745d92fe4ac@git.kernel.org>
+Message-ID: <tip-7ae92e744e3fb389afb1e24920ecda331d360c61@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
         a.p.zijlstra@chello.nl, jolsa@redhat.com, zheng.z.yan@intel.com,
-        tglx@linutronix.de
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1347263631-23175-2-git-send-email-zheng.z.yan@intel.com>
-References: <1347263631-23175-2-git-send-email-zheng.z.yan@intel.com>
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, zheng.z.yan@intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1347263631-23175-3-git-send-email-zheng.z.yan@intel.com>
+References: <1347263631-23175-3-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add cpumask for uncore pmu
-Git-Commit-ID: 314d9f63f385096580e9e2a06eaa0745d92fe4ac
+Subject: [tip:perf/core] perf stat: Check PMU cpumask file
+Git-Commit-ID: 7ae92e744e3fb389afb1e24920ecda331d360c61
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,109 +31,338 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:26:08 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:27:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  314d9f63f385096580e9e2a06eaa0745d92fe4ac
-Gitweb:     http://git.kernel.org/tip/314d9f63f385096580e9e2a06eaa0745d92fe4ac
+Commit-ID:  7ae92e744e3fb389afb1e24920ecda331d360c61
+Gitweb:     http://git.kernel.org/tip/7ae92e744e3fb389afb1e24920ecda331d360c61
 Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Mon, 10 Sep 2012 15:53:49 +0800
+AuthorDate: Mon, 10 Sep 2012 15:53:50 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 17 Sep 2012 13:11:43 -0300
+CommitDate: Mon, 17 Sep 2012 13:12:02 -0300
 
-perf/x86: Add cpumask for uncore pmu
+perf stat: Check PMU cpumask file
 
-This patch adds a cpumask file to the uncore pmu sysfs directory.  The
-cpumask file contains one active cpu for every socket.
+If user doesn't explicitly specify CPU list, perf-stat only collects
+events on CPUs listed in the PMU cpumask file.
 
-Signed-off-by: "Yan, Zheng" <zheng.z.yan@intel.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: "Yah, Zheng" <zheng.z.yan@intel.com>
 Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1347263631-23175-2-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1347263631-23175-3-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   28 ++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    6 +++-
- 2 files changed, 29 insertions(+), 5 deletions(-)
+ tools/perf/builtin-stat.c      |   30 ++++++++++++++++++++----------
+ tools/perf/util/cpumap.c       |   22 +++++++++++++++-------
+ tools/perf/util/cpumap.h       |    2 +-
+ tools/perf/util/evsel.h        |    1 +
+ tools/perf/util/parse-events.c |   18 ++++++++++++++----
+ tools/perf/util/pmu.c          |   30 ++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h          |    1 +
+ 7 files changed, 82 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 0a55710..62ec3e6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
- 	return ret;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 3c43a35..e0f65fe 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -215,6 +215,16 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+ 	evsel->priv = NULL;
  }
  
-+static ssize_t uncore_get_attr_cpumask(struct device *dev,
-+				struct device_attribute *attr, char *buf)
++static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
 +{
-+	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
-+
-+	buf[n++] = '\n';
-+	buf[n] = '\0';
-+	return n;
++	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
 +}
 +
-+static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
++static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
++{
++	return perf_evsel__cpus(evsel)->nr;
++}
 +
-+static struct attribute *uncore_pmu_attrs[] = {
-+	&dev_attr_cpumask.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group uncore_pmu_attr_group = {
-+	.attrs = uncore_pmu_attrs,
-+};
-+
- static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
- {
- 	int ret;
-@@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
- 		free_percpu(type->pmus[i].box);
- 	kfree(type->pmus);
- 	type->pmus = NULL;
--	kfree(type->attr_groups[1]);
--	type->attr_groups[1] = NULL;
-+	kfree(type->events_group);
-+	type->events_group = NULL;
- }
+ static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+ static struct stats runtime_cycles_stats[MAX_NR_CPUS];
+ static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
+@@ -246,7 +256,7 @@ retry:
+ 		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
  
- static void __init uncore_types_exit(struct intel_uncore_type **types)
-@@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
+ 	if (perf_target__has_cpu(&target)) {
+-		ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus);
++		ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
+ 		if (ret)
+ 			goto check_ret;
+ 		return 0;
+@@ -327,7 +337,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+ 	u64 *count = counter->counts->aggr.values;
+ 	int i;
  
--		type->attr_groups[1] = events_group;
-+		type->events_group = events_group;
+-	if (__perf_evsel__read(counter, evsel_list->cpus->nr,
++	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
+ 			       evsel_list->threads->nr, scale) < 0)
+ 		return -1;
+ 
+@@ -356,7 +366,7 @@ static int read_counter(struct perf_evsel *counter)
+ 	u64 *count;
+ 	int cpu;
+ 
+-	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
++	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+ 		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+ 			return -1;
+ 
+@@ -495,12 +505,12 @@ static int run_perf_stat(int argc __maybe_unused, const char **argv)
+ 	if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list->entries, node) {
+ 			read_counter(counter);
+-			perf_evsel__close_fd(counter, evsel_list->cpus->nr, 1);
++			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
+ 		}
+ 	} else {
+ 		list_for_each_entry(counter, &evsel_list->entries, node) {
+ 			read_counter_aggr(counter);
+-			perf_evsel__close_fd(counter, evsel_list->cpus->nr,
++			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
+ 					     evsel_list->threads->nr);
+ 		}
+ 	}
+@@ -538,7 +548,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			evsel_list->cpus->map[cpu], csv_sep);
++			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+ 
+ 	fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
+ 
+@@ -750,7 +760,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			evsel_list->cpus->map[cpu], csv_sep);
++			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+ 	else
+ 		cpu = 0;
+ 
+@@ -911,14 +921,14 @@ static void print_counter(struct perf_evsel *counter)
+ 	u64 ena, run, val;
+ 	int cpu;
+ 
+-	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
++	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+ 		val = counter->counts->cpu[cpu].val;
+ 		ena = counter->counts->cpu[cpu].ena;
+ 		run = counter->counts->cpu[cpu].run;
+ 		if (run == 0 || ena == 0) {
+ 			fprintf(output, "CPU%*d%s%*s%s%*s",
+ 				csv_output ? 0 : -4,
+-				evsel_list->cpus->map[cpu], csv_sep,
++				perf_evsel__cpus(counter)->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+ 				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+ 				csv_sep,
+@@ -1217,7 +1227,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	list_for_each_entry(pos, &evsel_list->entries, node) {
+ 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+-		    perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
++		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+ 			goto out_free_fd;
  	}
  
-+	type->pmu_group = &uncore_pmu_attr_group;
- 	type->pmus = pmus;
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index adc72f0..2b32ffa 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -38,24 +38,19 @@ static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
+ 	return cpus;
+ }
+ 
+-static struct cpu_map *cpu_map__read_all_cpu_map(void)
++struct cpu_map *cpu_map__read(FILE *file)
+ {
+ 	struct cpu_map *cpus = NULL;
+-	FILE *onlnf;
+ 	int nr_cpus = 0;
+ 	int *tmp_cpus = NULL, *tmp;
+ 	int max_entries = 0;
+ 	int n, cpu, prev;
+ 	char sep;
+ 
+-	onlnf = fopen("/sys/devices/system/cpu/online", "r");
+-	if (!onlnf)
+-		return cpu_map__default_new();
+-
+ 	sep = 0;
+ 	prev = -1;
+ 	for (;;) {
+-		n = fscanf(onlnf, "%u%c", &cpu, &sep);
++		n = fscanf(file, "%u%c", &cpu, &sep);
+ 		if (n <= 0)
+ 			break;
+ 		if (prev >= 0) {
+@@ -95,6 +90,19 @@ static struct cpu_map *cpu_map__read_all_cpu_map(void)
+ 		cpus = cpu_map__default_new();
+ out_free_tmp:
+ 	free(tmp_cpus);
++	return cpus;
++}
++
++static struct cpu_map *cpu_map__read_all_cpu_map(void)
++{
++	struct cpu_map *cpus = NULL;
++	FILE *onlnf;
++
++	onlnf = fopen("/sys/devices/system/cpu/online", "r");
++	if (!onlnf)
++		return cpu_map__default_new();
++
++	cpus = cpu_map__read(onlnf);
+ 	fclose(onlnf);
+ 	return cpus;
+ }
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index c415185..17b5264 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -11,7 +11,7 @@ struct cpu_map {
+ struct cpu_map *cpu_map__new(const char *cpu_list);
+ struct cpu_map *cpu_map__dummy_new(void);
+ void cpu_map__delete(struct cpu_map *map);
+-
++struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+ 
+ #endif /* __PERF_CPUMAP_H */
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index dc40fe3..93876ba 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -66,6 +66,7 @@ struct perf_evsel {
+ 		void		*func;
+ 		void		*data;
+ 	} handler;
++	struct cpu_map		*cpus;
+ 	unsigned int		sample_size;
+ 	bool 			supported;
+ 	/* parse modifier helper */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 44afcf4..bf5d033 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -239,8 +239,11 @@ const char *event_type(int type)
+ 	return "unknown";
+ }
+ 
+-static int add_event(struct list_head **_list, int *idx,
+-		     struct perf_event_attr *attr, char *name)
++
++
++static int __add_event(struct list_head **_list, int *idx,
++		       struct perf_event_attr *attr,
++		       char *name, struct cpu_map *cpus)
+ {
+ 	struct perf_evsel *evsel;
+ 	struct list_head *list = *_list;
+@@ -260,6 +263,7 @@ static int add_event(struct list_head **_list, int *idx,
+ 		return -ENOMEM;
+ 	}
+ 
++	evsel->cpus = cpus;
+ 	if (name)
+ 		evsel->name = strdup(name);
+ 	list_add_tail(&evsel->node, list);
+@@ -267,6 +271,12 @@ static int add_event(struct list_head **_list, int *idx,
  	return 0;
- fail:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 5b81c18..e68a455 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -369,10 +369,12 @@ struct intel_uncore_type {
- 	struct intel_uncore_pmu *pmus;
- 	struct intel_uncore_ops *ops;
- 	struct uncore_event_desc *event_descs;
--	const struct attribute_group *attr_groups[3];
-+	const struct attribute_group *attr_groups[4];
- };
+ }
  
--#define format_group attr_groups[0]
-+#define pmu_group attr_groups[0]
-+#define format_group attr_groups[1]
-+#define events_group attr_groups[2]
++static int add_event(struct list_head **_list, int *idx,
++		     struct perf_event_attr *attr, char *name)
++{
++	return __add_event(_list, idx, attr, name, NULL);
++}
++
+ static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
+ {
+ 	int i, j;
+@@ -607,8 +617,8 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 	if (perf_pmu__config(pmu, &attr, head_config))
+ 		return -EINVAL;
  
- struct intel_uncore_ops {
- 	void (*init_box)(struct intel_uncore_box *);
+-	return add_event(list, idx, &attr,
+-			 pmu_event_name(head_config));
++	return __add_event(list, idx, &attr, pmu_event_name(head_config),
++			   pmu->cpus);
+ }
+ 
+ int parse_events__modifier_group(struct list_head *list,
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 6631d82..8a2229d 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -9,6 +9,7 @@
+ #include "util.h"
+ #include "pmu.h"
+ #include "parse-events.h"
++#include "cpumap.h"
+ 
+ #define EVENT_SOURCE_DEVICE_PATH "/bus/event_source/devices/"
+ 
+@@ -253,6 +254,33 @@ static void pmu_read_sysfs(void)
+ 	closedir(dir);
+ }
+ 
++static struct cpu_map *pmu_cpumask(char *name)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++	FILE *file;
++	struct cpu_map *cpus;
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
++		return NULL;
++
++	snprintf(path, PATH_MAX,
++		 "%s/bus/event_source/devices/%s/cpumask", sysfs, name);
++
++	if (stat(path, &st) < 0)
++		return NULL;
++
++	file = fopen(path, "r");
++	if (!file)
++		return NULL;
++
++	cpus = cpu_map__read(file);
++	fclose(file);
++	return cpus;
++}
++
+ static struct perf_pmu *pmu_lookup(char *name)
+ {
+ 	struct perf_pmu *pmu;
+@@ -275,6 +303,8 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 	if (!pmu)
+ 		return NULL;
+ 
++	pmu->cpus = pmu_cpumask(name);
++
+ 	pmu_aliases(name, &aliases);
+ 
+ 	INIT_LIST_HEAD(&pmu->format);
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 47f68d3..53c7794 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -28,6 +28,7 @@ struct perf_pmu__alias {
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	struct cpu_map *cpus;
+ 	struct list_head format;
+ 	struct list_head aliases;
+ 	struct list_head list;
