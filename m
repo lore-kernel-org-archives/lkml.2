@@ -1,322 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab2ISAAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 20:00:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44653 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab2ISAAU (ORCPT
+	id S1754270Ab2ISAAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 20:00:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35572 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab2ISAAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 20:00:20 -0400
-Date: Tue, 18 Sep 2012 17:00:08 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-0ca5bd0d886578ad0afeceaa83458c0f35cb3c6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1343171129-2747-3-git-send-email-suresh.b.siddha@intel.com>
-References: <1343171129-2747-3-git-send-email-suresh.b.siddha@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86, fpu: Consolidate inline asm routines for saving
- /restoring fpu state
-Git-Commit-ID: 0ca5bd0d886578ad0afeceaa83458c0f35cb3c6b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 18 Sep 2012 17:00:14 -0700 (PDT)
+	Tue, 18 Sep 2012 20:00:49 -0400
+Date: Wed, 19 Sep 2012 10:00:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Avi Kivity <avi@redhat.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Haggai Eran <haggaie@mellanox.com>, linux-mm@kvack.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>
+Subject: Re: qemu-kvm loops after kernel udpate
+Message-Id: <20120919100034.ceaee306e24e00cdf6f1e92e@canb.auug.org.au>
+In-Reply-To: <20120918124646.02aaee4f.akpm@linux-foundation.org>
+References: <504F7ED8.1030702@suse.cz>
+	<20120911190303.GA3626@amt.cnet>
+	<504F93F1.2060005@suse.cz>
+	<50504299.2050205@redhat.com>
+	<50504439.3050700@suse.cz>
+	<5050453B.6040702@redhat.com>
+	<5050D048.4010704@suse.cz>
+	<5051AE8B.7090904@redhat.com>
+	<5058CE2F.7030302@suse.cz>
+	<20120918124646.02aaee4f.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Sep_2012_10_00_34_+1000_uc+_0H1uZfS_.Vln"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0ca5bd0d886578ad0afeceaa83458c0f35cb3c6b
-Gitweb:     http://git.kernel.org/tip/0ca5bd0d886578ad0afeceaa83458c0f35cb3c6b
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Tue, 24 Jul 2012 16:05:28 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 18 Sep 2012 15:51:26 -0700
+--Signature=_Wed__19_Sep_2012_10_00_34_+1000_uc+_0H1uZfS_.Vln
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86, fpu: Consolidate inline asm routines for saving/restoring fpu state
+Hi Andrew,
 
-Consolidate x86, x86_64 inline asm routines saving/restoring fpu state
-using config_enabled().
+On Tue, 18 Sep 2012 12:46:46 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> hm, thanks.  This will probably take some time to resolve so I think
+> I'll drop
+>=20
+> mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock.patch
+> mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock-fix.p=
+atch
+> mm-move-all-mmu-notifier-invocations-to-be-done-outside-the-pt-lock-fix-f=
+ix.patch
+> mm-wrap-calls-to-set_pte_at_notify-with-invalidate_range_start-and-invali=
+date_range_end.patch
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1343171129-2747-3-git-send-email-suresh.b.siddha@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/fpu-internal.h |  182 +++++++++++++++--------------------
- arch/x86/include/asm/xsave.h        |    6 +-
- arch/x86/kernel/xsave.c             |    4 +-
- 3 files changed, 80 insertions(+), 112 deletions(-)
+Should I attempt to remove these from the akpm tree in linux-next today?
+Or should I just wait for a new mmotm?
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 6f59543..016acb3 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -97,34 +97,24 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
- 	__sanitize_i387_state(tsk);
- }
- 
--#ifdef CONFIG_X86_64
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
--{
--	int err;
--
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxrstorq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "m" (*fx), "0" (0));
--#else
--	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "R" (fx), "m" (*fx), "0" (0));
--#endif
--	return err;
-+#define check_insn(insn, output, input...)				\
-+({									\
-+	int err;							\
-+	asm volatile("1:" #insn "\n\t"					\
-+		     "2:\n"						\
-+		     ".section .fixup,\"ax\"\n"				\
-+		     "3:  movl $-1,%[err]\n"				\
-+		     "    jmp  2b\n"					\
-+		     ".previous\n"					\
-+		     _ASM_EXTABLE(1b, 3b)				\
-+		     : [err] "=r" (err), output				\
-+		     : "0"(0), input);					\
-+	err;								\
-+})
-+
-+static inline int fsave_user(struct i387_fsave_struct __user *fx)
-+{
-+	return check_insn(fnsave %[fx]; fwait,  [fx] "=m" (*fx), "m" (*fx));
- }
- 
- static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
-@@ -140,90 +130,73 @@ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
- 	if (unlikely(err))
- 		return -EFAULT;
- 
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxsaveq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), [fx] "=m" (*fx)
--		     : "0" (0));
--#else
--	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), "=m" (*fx)
--		     : [fx] "R" (fx), "0" (0));
--#endif
--	if (unlikely(err) &&
--	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
--		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
--	return err;
-+	if (config_enabled(CONFIG_X86_32))
-+		return check_insn(fxsave %[fx], [fx] "=m" (*fx), "m" (*fx));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		return check_insn(fxsaveq %[fx], [fx] "=m" (*fx), "m" (*fx));
-+
-+	/* See comment in fpu_fxsave() below. */
-+	return check_insn(rex64/fxsave (%[fx]), "=m" (*fx), [fx] "R" (fx));
- }
- 
--static inline void fpu_fxsave(struct fpu *fpu)
-+static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- {
--	/* Using "rex64; fxsave %0" is broken because, if the memory operand
--	   uses any extended registers for addressing, a second REX prefix
--	   will be generated (to the assembler, rex64 followed by semicolon
--	   is a separate instruction), and hence the 64-bitness is lost. */
-+	if (config_enabled(CONFIG_X86_32))
-+		return check_insn(fxrstor %[fx], "=m" (*fx), [fx] "m" (*fx));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		return check_insn(fxrstorq %[fx], "=m" (*fx), [fx] "m" (*fx));
- 
--#ifdef CONFIG_AS_FXSAVEQ
--	/* Using "fxsaveq %0" would be the ideal choice, but is only supported
--	   starting with gas 2.16. */
--	__asm__ __volatile__("fxsaveq %0"
--			     : "=m" (fpu->state->fxsave));
--#else
--	/* Using, as a workaround, the properly prefixed form below isn't
--	   accepted by any binutils version so far released, complaining that
--	   the same type of prefix is used twice if an extended register is
--	   needed for addressing (fix submitted to mainline 2005-11-21).
--	asm volatile("rex64/fxsave %0"
--		     : "=m" (fpu->state->fxsave));
--	   This, however, we can work around by forcing the compiler to select
--	   an addressing mode that doesn't require extended registers. */
--	asm volatile("rex64/fxsave (%[fx])"
--		     : "=m" (fpu->state->fxsave)
--		     : [fx] "R" (&fpu->state->fxsave));
--#endif
-+	/* See comment in fpu_fxsave() below. */
-+	return check_insn(rex64/fxrstor (%[fx]), "=m" (*fx), [fx] "R" (fx),
-+			  "m" (*fx));
- }
- 
--int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--			compat_sigset_t *set, struct pt_regs *regs);
--int ia32_setup_frame(int sig, struct k_sigaction *ka,
--		     compat_sigset_t *set, struct pt_regs *regs);
--
--#else  /* CONFIG_X86_32 */
--
--/* perform fxrstor iff the processor has extended states, otherwise frstor */
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
-+static inline int frstor_checking(struct i387_fsave_struct *fx)
- {
--	/*
--	 * The "nop" is needed to make the instructions the same
--	 * length.
--	 */
--	alternative_input(
--		"nop ; frstor %1",
--		"fxrstor %1",
--		X86_FEATURE_FXSR,
--		"m" (*fx));
--
--	return 0;
-+	return check_insn(frstor %[fx], "=m" (*fx), [fx] "m" (*fx));
- }
- 
- static inline void fpu_fxsave(struct fpu *fpu)
- {
--	asm volatile("fxsave %[fx]"
--		     : [fx] "=m" (fpu->state->fxsave));
-+	if (config_enabled(CONFIG_X86_32))
-+		asm volatile( "fxsave %[fx]" : [fx] "=m" (fpu->state->fxsave));
-+	else if (config_enabled(CONFIG_AS_FXSAVEQ))
-+		asm volatile("fxsaveq %0" : "=m" (fpu->state->fxsave));
-+	else {
-+		/* Using "rex64; fxsave %0" is broken because, if the memory
-+		 * operand uses any extended registers for addressing, a second
-+		 * REX prefix will be generated (to the assembler, rex64
-+		 * followed by semicolon is a separate instruction), and hence
-+		 * the 64-bitness is lost.
-+		 *
-+		 * Using "fxsaveq %0" would be the ideal choice, but is only
-+		 * supported starting with gas 2.16.
-+		 *
-+		 * Using, as a workaround, the properly prefixed form below
-+		 * isn't accepted by any binutils version so far released,
-+		 * complaining that the same type of prefix is used twice if
-+		 * an extended register is needed for addressing (fix submitted
-+		 * to mainline 2005-11-21).
-+		 *
-+		 *  asm volatile("rex64/fxsave %0" : "=m" (fpu->state->fxsave));
-+		 *
-+		 * This, however, we can work around by forcing the compiler to
-+		 * select an addressing mode that doesn't require extended
-+		 * registers.
-+		 */
-+		asm volatile( "rex64/fxsave (%[fx])"
-+			     : "=m" (fpu->state->fxsave)
-+			     : [fx] "R" (&fpu->state->fxsave));
-+	}
- }
-+#ifdef CONFIG_X86_64
-+
-+int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-+			compat_sigset_t *set, struct pt_regs *regs);
-+int ia32_setup_frame(int sig, struct k_sigaction *ka,
-+		     compat_sigset_t *set, struct pt_regs *regs);
-+
-+#else  /* CONFIG_X86_32 */
- 
- #define ia32_setup_frame	__setup_frame
- #define ia32_setup_rt_frame	__setup_rt_frame
-@@ -272,17 +245,14 @@ static inline int __save_init_fpu(struct task_struct *tsk)
- 	return fpu_save_init(&tsk->thread.fpu);
- }
- 
--static inline int fpu_fxrstor_checking(struct fpu *fpu)
--{
--	return fxrstor_checking(&fpu->state->fxsave);
--}
--
- static inline int fpu_restore_checking(struct fpu *fpu)
- {
- 	if (use_xsave())
--		return fpu_xrstor_checking(fpu);
-+		return fpu_xrstor_checking(&fpu->state->xsave);
-+	else if (use_fxsr())
-+		return fxrstor_checking(&fpu->state->fxsave);
- 	else
--		return fpu_fxrstor_checking(fpu);
-+		return frstor_checking(&fpu->state->fsave);
- }
- 
- static inline int restore_fpu_checking(struct task_struct *tsk)
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 8a1b6f9..aaac810 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -42,9 +42,8 @@ extern int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 			    void __user *fpstate,
- 			    struct _fpx_sw_bytes *sw);
- 
--static inline int fpu_xrstor_checking(struct fpu *fpu)
-+static inline int fpu_xrstor_checking(struct xsave_struct *fx)
- {
--	struct xsave_struct *fx = &fpu->state->xsave;
- 	int err;
- 
- 	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
-@@ -84,9 +83,6 @@ static inline int xsave_user(struct xsave_struct __user *buf)
- 			     : [err] "=r" (err)
- 			     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
- 			     : "memory");
--	if (unlikely(err) && __clear_user(buf, xstate_size))
--		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
- 	return err;
- }
- 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 9e1a8a7..7a3d4df 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -176,8 +176,10 @@ int save_i387_xstate(void __user *buf)
- 		else
- 			err = fxsave_user(buf);
- 
--		if (err)
-+		if (unlikely(err)) {
-+			__clear_user(buf, xstate_size);
- 			return err;
-+		}
- 		user_fpu_end();
- 	} else {
- 		sanitize_i387_state(tsk);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__19_Sep_2012_10_00_34_+1000_uc+_0H1uZfS_.Vln
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWQsiAAoJEECxmPOUX5FEFVcP/iYZ7jzsrAtWazgRuu17ijeo
+Sgnwd/Cn3zPirVmMSV/j8hWZ4vSxZ5LTRG5N3bs9Qzjl4eH5/ZvjEYP/ymFTBBss
+6EVACwRLc8FEiiDk882LUwvthJnuc69KyJgGPhiX5kiUp/WiVwtMy+NFUFXLsS6f
+19rm+WThxcm/27KmNiQOLqUO8O8DdFbItuCtA5PXxZGy8r1bjMsLgqgKPNYDTFu1
+NnqI69zENZywOo4JqKGIDJGraoO3w4KPoDTYvbNgxACJ5wZ9ocRV6xMXuuhiXc4Q
+TsXwXi4n4HxBwpHoBLag3VZ4ftlNI6rejcfpksz7jzHZndWJ3TxzRmOAiz/EBFye
+4lYBZX1m6mDG5EtIQ918lf1StQySyhFSTS1+YHumtFGwf/TnKrEMveIzUgRfkvB4
+IYZtbrUHYyep27+1VqDVDIFUZUCIjtwaerQmFYgfoOfRqFoIr4KTVTtlYHs84sh1
+zB23Xtn67pKwdlB377nOmKU+Iog3XHRLN3SekBTBcaJ/Q9D4EEiSY5ubikcB3pB3
+nu3NjzFmbgJB/y3uuE4EciD8wVDUB8R++phYXO/ZJ+O4L8oYuy6FeklZO7ZT5qsf
+zAOMppLhVpmKSnSZh/utIeyqB6hcz4OY/In5Uf8vOEsjQqdYSZERcVlfG+nhGUYw
+yrNJyursnYet7pMzNz6B
+=xfy/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_Sep_2012_10_00_34_+1000_uc+_0H1uZfS_.Vln--
