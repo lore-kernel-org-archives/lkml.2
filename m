@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab2ISODN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:03:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50410 "EHLO mx2.suse.de"
+	id S1755612Ab2ISOEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:04:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50469 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753587Ab2ISODL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:03:11 -0400
-Date: Wed, 19 Sep 2012 16:03:08 +0200
+	id S1754629Ab2ISOD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 10:03:59 -0400
+Date: Wed, 19 Sep 2012 16:03:57 +0200
 From: Michal Hocko <mhocko@suse.cz>
 To: Tejun Heo <tj@kernel.org>
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
@@ -20,9 +20,8 @@ Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         Neil Horman <nhorman@tuxdriver.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 2.6.32] memcg: warn on deeper hierarchies with
- use_hierarchy==0
-Message-ID: <20120919140308.GB5398@dhcp22.suse.cz>
+Subject: [PATCH 3.0] memcg: warn on deeper hierarchies with use_hierarchy==0
+Message-ID: <20120919140357.GC5398@dhcp22.suse.cz>
 References: <20120913205827.GO7677@google.com>
  <20120914150306.GQ28039@dhcp22.suse.cz>
  <20120919140203.GA5398@dhcp22.suse.cz>
@@ -35,8 +34,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->From 34be56e3e7e4f9c31381ce35247e0a0b7f972874 Mon Sep 17 00:00:00 2001
+>From 9364396ddc0c8843fce3a7fda0255b39ba7e4f31 Mon Sep 17 00:00:00 2001
 From: Michal Hocko <mhocko@suse.cz>
 Date: Tue, 4 Sep 2012 15:55:03 +0200
 Subject: [PATCH] memcg: warn on deeper hierarchies with use_hierarchy==0
@@ -86,13 +84,13 @@ Signed-off-by: Michal Hocko <mhocko@suse.cz>
  1 file changed, 5 insertions(+)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f99f599..b61c34b 100644
+index e013b8e..d8ec0cd 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3106,6 +3106,11 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	} else {
+@@ -4976,6 +4976,11 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
  		parent = mem_cgroup_from_cont(cont->parent);
  		mem->use_hierarchy = parent->use_hierarchy;
+ 		mem->oom_kill_disable = parent->oom_kill_disable;
 +		WARN_ONCE(!mem->use_hierarchy && parent != root_mem_cgroup,
 +				"Creating hierarchies with use_hierarchy==0 "
 +				"(flat hierarchy) is considered deprecated. "
@@ -104,3 +102,6 @@ index f99f599..b61c34b 100644
 -- 
 1.7.10.4
 
+-- 
+Michal Hocko
+SUSE Labs
