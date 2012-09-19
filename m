@@ -1,139 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab2ISOrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:47:39 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:41187 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753490Ab2ISOrf (ORCPT
+	id S1754646Ab2ISOtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:49:12 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:45780 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab2ISOtI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:47:35 -0400
-Date: Wed, 19 Sep 2012 17:42:49 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: balbi@ti.com, Kishon Vijay Abraham I <kishon@ti.com>,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] usb: phy: omap-usb2: enable 960Mhz clock for omap5
-Message-ID: <20120919144247.GB7004@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1348054229-27362-1-git-send-email-kishon@ti.com>
- <1348054229-27362-5-git-send-email-kishon@ti.com>
- <20120919115647.GI3772@arwen.pp.htv.fi>
- <5059DA6D.4070205@pengutronix.de>
+	Wed, 19 Sep 2012 10:49:08 -0400
+From: "Ortiz, Lance E" <lance.oritz@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: "rob@landley.net" <rob@landley.net>, "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH] ACPI: Add new sysfs interface to export device
+ description
+Thread-Topic: [PATCH] ACPI: Add new sysfs interface to export device
+ description
+Thread-Index: AQHNjRYoOZ04aBsO5UmZ6uBY8gFgqJeRObwAgACPnRA=
+Date: Wed, 19 Sep 2012 14:27:48 +0000
+Message-ID: <A961433CDFF2F640A2866803152E61F950D1B50A@G9W0753.americas.hpqcorp.net>
+References: <1347035296-8882-1-git-send-email-lance.ortiz@hp.com>
+ <50595BF0.2010002@jp.fujitsu.com>
+In-Reply-To: <50595BF0.2010002@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
-Content-Disposition: inline
-In-Reply-To: <5059DA6D.4070205@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Comment Below...
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Yasuaki Ishimatsu [mailto:isimatu.yasuaki@jp.fujitsu.com]
+> Sent: Tuesday, September 18, 2012 11:45 PM
+> To: Ortiz, Lance E
+> Cc: rob@landley.net; lenb@kernel.org; linux-doc@vger.kernel.org; linux-
+> kernel@vger.kernel.org; linux-acpi@vger.kernel.org
+> Subject: Re: [PATCH] ACPI: Add new sysfs interface to export device
+> description
+> 
+> Hi Lance,
+> 
+> 2012/09/08 1:28, Lance Ortiz wrote:
+> > Add support to export the device description obtained from the ACPI
+> _STR
+> > method, if one exists for a device, to user-space via a sysfs
+> interface.
+> > This new interface provides a standard and platform neutral way for
+> users
+> > to obtain the description text stored in the ACPI _STR method.  If no
+> > _STR method exists for the device, no sysfs 'description' file will
+> be
+> > created.  The 'description' file will be located in the /sys/devices/
+> > directory using the device's path.
+> >
+> > /sys/device/<bus>/<bridge path>/<device
+> path>.../firmware_node/description
+> >
+> > Example:
+> >
+> >
+> /sys/devices/pci0000:00/0000:00.07.0/0000:0e:00.0/firmware_node/descrip
+> tion
+> >
+> > It can also be located using the ACPI device path, for example:
+> >
+> >
+> /sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/PNP0A08:00/device:13/dev
+> ice:15/description
+> >
+> /sys/devices/LNXSYSTM:00/device:00/ACPI0004:00/ACPI0004:01/ACPI0007:02/
+> description
+> >
+> > Execute the 'cat' command on the 'description' file to obtain the
+> > description string for that device.
+> >
+> > This patch also includes documentation describing how the new sysfs
+> > interface works
+> >
+> > Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+> > ---
+> 
+> Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> There is a comment as follows.
+> 
+> >   .../ABI/testing/sysfs-devices-firmware_node        |   17 ++++++
+> >   drivers/acpi/scan.c                                |   58
+> +++++++++++++++++++-
+> >   include/acpi/acpi_bus.h                            |    1 +
+> >   3 files changed, 74 insertions(+), 2 deletions(-)
+> >   create mode 100644 Documentation/ABI/testing/sysfs-devices-
+> firmware_node
+> >
+> > diff --git a/Documentation/ABI/testing/sysfs-devices-firmware_node
+> b/Documentation/ABI/testing/sysfs-devices-firmware_node
+> > new file mode 100644
+> > index 0000000..46badc9
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-devices-firmware_node
+> > @@ -0,0 +1,17 @@
+> > +What:		/sys/devices/.../firmware_node/
+> > +Date:		September 2012
+> > +Contact:	<>
+> > +Description:
+> > +		The /sys/devices/.../firmware_node directory contains
+> attributes
+> > +		allowing the user space to check and modify some firmware
+> > +		related properties of given device.
+> > +
+> > +What:		/sys/devices/.../firmware_node/description
+> > +Date:		September 2012
+> > +Contact:	Lance Ortiz <lance.ortiz@hp.com>
+> > +Description:
+> > +		The /sys/devices/.../firmware/description attribute
+> contains a string
+> > +		that describes the device as provided by the _STR method in
+> the ACPI
+> > +		namespace.  This attribute is read-only.  If the device
+> does not have
+> > +		an _STR method associated with it in the ACPI namespace,
+> this
+> > +		attribute is not present.
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index c8a1f3b..c9c91e1 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -10,6 +10,7 @@
+> >   #include <linux/signal.h>
+> >   #include <linux/kthread.h>
+> >   #include <linux/dmi.h>
+> > +#include <linux/nls.h>
+> >
+> >   #include <acpi/acpi_drivers.h>
+> >
+> > @@ -192,8 +193,38 @@ end:
+> >   }
+> >   static DEVICE_ATTR(path, 0444, acpi_device_path_show, NULL);
+> >
+> > +/* sysfs file that shows description text from the ACPI _STR method
+> */
+> > +static ssize_t description_show(struct device *dev,
+> > +				struct device_attribute *attr,
+> > +				char *buf) {
+> > +	struct acpi_device *acpi_dev = to_acpi_device(dev);
+> > +	int result;
+> > +
+> > +	if (acpi_dev->pnp.str_obj == NULL) {
+> > +		result = sprintf(buf, "No Description\n");
+> > +		goto end;
+> > +	}
+> > +
+> > +	/*
+> > +	 * The _STR object contains a Unicode identifier for a device.
+> > +	 * We need to convert to utf-8 so it can be displayed.
+> > +	 */
+> > +	result = utf16s_to_utf8s(
+> > +		(wchar_t *)acpi_dev->pnp.str_obj->buffer.pointer,
+> > +		acpi_dev->pnp.str_obj->buffer.length,
+> > +		UTF16_LITTLE_ENDIAN, buf,
+> > +		PAGE_SIZE);
+> > +
+> > +	buf[result++] = '\n';
+> > +
+> > +end:
+> > +	return result;
+> > +}
+> > +static DEVICE_ATTR(description, 0444, description_show, NULL);
+> > +
+> >   static int acpi_device_setup_files(struct acpi_device *dev)
+> >   {
+> > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+> >   	acpi_status status;
+> >   	acpi_handle temp;
+> >   	int result = 0;
+> > @@ -217,6 +248,21 @@ static int acpi_device_setup_files(struct
+> acpi_device *dev)
+> >   			goto end;
+> >   	}
+> >
+> > +	/*
+> > +	 * If device has _STR, 'description' file is created
+> > +	 */
+> > +	status = acpi_get_handle(dev->handle, "_STR", &temp);
+> > +	if (ACPI_SUCCESS(status)) {
+> > +		status = acpi_evaluate_object(dev->handle, "_STR",
+> > +					NULL, &buffer);
+> > +		if (ACPI_FAILURE(status))
+> > +			buffer.pointer = NULL;
+> > +		dev->pnp.str_obj = buffer.pointer;
+> > +		result = device_create_file(&dev->dev,
+> &dev_attr_description);
+> 
+> A description sysfs is created even if "acpi_evaluate_object()" fails.
+> Why do you create it in this case?
+> 
+> Thanks,
+> Yasuaki Ishimatsu
 
-On Wed, Sep 19, 2012 at 04:45:01PM +0200, Marc Kleine-Budde wrote:
-> On 09/19/2012 01:56 PM, Felipe Balbi wrote:
-> > On Wed, Sep 19, 2012 at 05:00:29PM +0530, Kishon Vijay Abraham I wrote:
-> >> "usb_otg_ss_refclk960m" is needed by usb2 phy present in omap5. For
-> >> omap4, the clk_get of this clock will fail since it does not have this
-> >> clock.
-> >>
-> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >> ---
-> >>  Documentation/devicetree/bindings/usb/usb-phy.txt |    3 +++
-> >>  drivers/usb/phy/omap-usb2.c                       |   28 ++++++++++++=
-++++++++-
-> >>  2 files changed, 30 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Docum=
-entation/devicetree/bindings/usb/usb-phy.txt
-> >> index 7c5fd89..d5626de 100644
-> >> --- a/Documentation/devicetree/bindings/usb/usb-phy.txt
-> >> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
-> >> @@ -24,6 +24,9 @@ Required properties:
-> >>  add the address of control module phy power register until a driver f=
-or
-> >>  control module is added
-> >> =20
-> >> +Optional properties:
-> >> + - has960mhzclk: should be added if the phy needs 960mhz clock
-> >> +
-> >>  This is usually a subnode of ocp2scp to which it is connected.
-> >> =20
-> >>  usb3phy@4a084400 {
-> >> diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
-> >> index d36c282..d6612ba 100644
-> >> --- a/drivers/usb/phy/omap-usb2.c
-> >> +++ b/drivers/usb/phy/omap-usb2.c
-> >> @@ -146,6 +146,7 @@ static int __devinit omap_usb2_probe(struct platfo=
-rm_device *pdev)
-> >>  	struct omap_usb			*phy;
-> >>  	struct usb_otg			*otg;
-> >>  	struct resource			*res;
-> >> +	struct device_node		*np =3D pdev->dev.of_node;
-> >> =20
-> >>  	phy =3D devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
-> >>  	if (!phy) {
-> >> @@ -190,6 +191,15 @@ static int __devinit omap_usb2_probe(struct platf=
-orm_device *pdev)
-> >>  	}
-> >>  	clk_prepare(phy->wkupclk);
-> >> =20
-> >> +	if (of_property_read_bool(np, "has960mhzclk")) {
-> >> +		phy->optclk =3D devm_clk_get(phy->dev, "usb_otg_ss_refclk960m");
-> >> +		if (IS_ERR(phy->optclk)) {
-> >> +			dev_err(&pdev->dev, "unable to get refclk960m\n");
-> >> +			return PTR_ERR(phy->optclk);
-> >> +		}
-> >> +		clk_prepare(phy->optclk);
-> >> +	}
-> >=20
-> > instead, can't you just always try to get the clock but ignore the error
-> > if it fails ?
->=20
-> On imx we add no-op dummy clocks, so that the drivers will always find
-> all needed clocks. If a clk_get fails it's an error.
+Yasuaki,
 
-It's an error from a clk API point of view, it doesn't mean device can't
-work without that optional clock. Drivers are free to treat errors
-however they like, even by ignoring it and defaulting to some other
-behavior.
+First of all, thank you for reviewing and testing my patch.
 
-Adding dummy clocks just bloats the kernel with useless data IMHO.
+To address your comment, I was trying to differentiate between the existence of the _STR method and the failure to evaluate it.  If an STR method exists, we create the sysfs file.  If it fails to evaluate, we will see "No Description" when we read the file.  This would indicate that something is wrong as opposed to the system not having an _STR.  If you feel that this is unnecessary, or should be done differently let me know.
 
-my 2 cents.
+Lance
 
---=20
-balbi
+> 
+> > +		if (result)
+> > +			goto end;
+> > +	}
+> > +
+> >           /*
+> >            * If device has _EJ0, 'eject' file is created that is used
+> to trigger
+> >            * hot-removal function from userland.
+> > @@ -234,8 +280,16 @@ static void acpi_device_remove_files(struct
+> acpi_device *dev)
+> >   	acpi_handle temp;
+> >
+> >   	/*
+> > -	 * If device has _EJ0, 'eject' file is created that is used to
+> trigger
+> > -	 * hot-removal function from userland.
+> > +	 * If device has _STR, remove 'description' file
+> > +	 */
+> > +	status = acpi_get_handle(dev->handle, "_STR", &temp);
+> > +	if (ACPI_SUCCESS(status)) {
+> > +		if (dev->pnp.str_obj != NULL)
+> > +			kfree(dev->pnp.str_obj);
+> > +		device_remove_file(&dev->dev, &dev_attr_description);
+> > +	}
+> > +	/*
+> > +	 * If device has _EJ0, remove 'eject' file.
+> >   	 */
+> >   	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
+> >   	if (ACPI_SUCCESS(status))
+> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> > index 9e6e1c6..12172d5 100644
+> > --- a/include/acpi/acpi_bus.h
+> > +++ b/include/acpi/acpi_bus.h
+> > @@ -209,6 +209,7 @@ struct acpi_device_pnp {
+> >   	struct list_head ids;		/* _HID and _CIDs */
+> >   	acpi_device_name device_name;	/* Driver-determined */
+> >   	acpi_device_class device_class;	/*        "          */
+> > +	union acpi_object *str_obj;	/* unicode string for _STR method
+> */
+> >   };
+> >
+> >   #define acpi_device_bid(d)	((d)->pnp.bus_id)
+> >
+> 
 
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQWdnnAAoJEIaOsuA1yqRE2moQAIC69bYUfeCAKXjVZUhQNLuN
-zjEH0oacrXZkQZG1tovtawIBxEoS2pR5r71ILaf4sc03ZV8d98KXYS7ZO6BDFZCi
-zUZ9zw32MLGK/NTjkOgm0HL8OgPrLyMvQXeKw5XgiYPqig6wrqw3kb6cvHdwlJd6
-hxDdtqehTU+u2IPRORZccC3fLIMTzNhE1AhDCOGpx7UujDN2qGPv3l6YFLwF/JtB
-1E0pm/8ox1EMZuDi9LeacIB3Qg8Of2n1y2xpnXwBnVVtxK4gXBPTj69C9yDUq2XU
-uDMb6fZxFHgDVbH5jlJgJsO7dUMenhjj1VgeHiJaS+BaA30j4nmKFfsxus4ftzJH
-E4GbDnPuAkswqml0nJI9yAQtu9Umd4dQQCjcKfhdvSpoSjiU5Ynzg9mb8MdcEYXu
-PZsO1FgGZDBQRVQPfAXnufPtYwFTAQKSzawCMycSGO07z+flmpPmcXz+bbvmy2T+
-HoUyHsV7S/xlZEAXNCUXWPKLR/lYiPW2zjiF+HGHW7F3dDvATCw0X7lE8Dxe9auv
-5Ao6jawkpvTXUtSyNXyuc+gN4i21GoADU/82aUm4ldg8AQ7yGps0W3q/M4jz6vYo
-0fe8VuffyPP8uJlPeefDHFIqu/6kbfZU6hgFNhZJbLCGQt4kfvURgauN5rNBBY8V
-gTuC6gxlovuOzgniIIhl
-=alp/
------END PGP SIGNATURE-----
-
---3uo+9/B/ebqu+fSQ--
