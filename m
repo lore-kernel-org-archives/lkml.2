@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab2ISUib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:38:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33021 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab2ISUia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:38:30 -0400
-Date: Thu, 20 Sep 2012 05:38:21 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-Message-ID: <20120919203821.GB2425@barrios>
-References: <1348040735-3897-1-git-send-email-minchan@kernel.org>
- <CAHGf_=rY-1R+68BWqW4653r_=AYkgE1CfM7wvSyvdSXRwjraUA@mail.gmail.com>
- <20120919182810.GB1569@cmpxchg.org>
-MIME-Version: 1.0
+	id S1751898Ab2ISUj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:39:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:34395 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab2ISUj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 16:39:57 -0400
+Date: Wed, 19 Sep 2012 22:39:42 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Joe Perches <joe@perches.com>
+Cc: Adil Mujeeb <mujeeb.adil@gmail.com>, willy@meta-x.org,
+        gregkh@linuxfoundation.org, evel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: panel: Fixed a macro coding style issue
+Message-ID: <20120919203942.GB413@1wt.eu>
+References: <1348083460-7920-1-git-send-email-mujeeb.adil@gmail.com> <1348083898.2055.8.camel@joe2Laptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120919182810.GB1569@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1348083898.2055.8.camel@joe2Laptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
-
-On Wed, Sep 19, 2012 at 02:28:10PM -0400, Johannes Weiner wrote:
-> On Wed, Sep 19, 2012 at 01:04:56PM -0400, KOSAKI Motohiro wrote:
-> > On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > When I looked at zone stat mismatch problem, I found
-> > > migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
-> > > if check_range fails.
-> 
-> This is a bit misleading.  It's not that the stats would be
-> inaccurate, it's that the pages would be leaked from the LRU, no?
-> 
-> > > It can make system hang out.
-> 
-> Did you spot this by code review only or did you actually run into
-> this?  Because...
-
-Just by code review during the bug of memory-hotplug.
-
-> 
-> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > Cc: Mel Gorman <mgorman@suse.de>
-> > > Cc: Christoph Lameter <cl@linux.com>
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  mm/mempolicy.c |   16 ++++++++--------
-> > >  1 file changed, 8 insertions(+), 8 deletions(-)
-> > >
-> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > > index 3d64b36..6bf0860 100644
-> > > --- a/mm/mempolicy.c
-> > > +++ b/mm/mempolicy.c
-> > > @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
-> > >
-> > >         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
-> > >                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
-> > > -       if (IS_ERR(vma))
-> > > -               return PTR_ERR(vma);
-> > > -
-> > > -       if (!list_empty(&pagelist)) {
-> > > +       if (IS_ERR(vma)) {
-> > > +               err = PTR_ERR(vma);
-> > > +               goto out;
-> > > +       }
-> > > +       if (!list_empty(&pagelist))
-> > >                 err = migrate_pages(&pagelist, new_node_page, dest,
-> > >                                                         false, MIGRATE_SYNC);
-> > > -               if (err)
-> > > -                       putback_lru_pages(&pagelist);
-> > > -       }
-> > > -
-> > > +out:
-> > > +       if (err)
-> > > +               putback_lru_pages(&pagelist);
+On Wed, Sep 19, 2012 at 12:44:58PM -0700, Joe Perches wrote:
+> On Thu, 2012-09-20 at 01:07 +0530, Adil Mujeeb wrote:
+> > Removed do {} while (0) loop for a single statement macros
 > > 
-> > Good catch!
-> > This is a regression since following commit. So, I doubt we need
-> > all or nothing semantics. Can we revert it instead? (and probably
-> > we need more kind comment for preventing an accident)
-> 
-> I think it makes sense to revert.  Not because of the semantics, but I
-> just don't see how check_range() could even fail for this callsite:
-> 
-> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
->    find_vma()
-> 
-> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
->    and so can not fail
-> 
-> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
->    continue until addr == end, so we never fail with -EIO
-> 
-> > commit 0def08e3acc2c9c934e4671487029aed52202d42
-> > Author: Vasiliy Kulikov <segooon@gmail.com>
-> > Date:   Tue Oct 26 14:21:32 2010 -0700
+> > Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
+> > ---
+> >  linux-3.6-rc6/drivers/staging/panel/panel.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
 > > 
-> >     mm/mempolicy.c: check return code of check_range
+> > diff --git a/linux-3.6-rc6/drivers/staging/panel/panel.c b/linux-3.6-rc6/drivers/staging/panel/panel.c
+> > index 39f9982..d9fec5b 100644
+> > --- a/linux-3.6-rc6/drivers/staging/panel/panel.c
+> > +++ b/linux-3.6-rc6/drivers/staging/panel/panel.c
+> > @@ -137,8 +137,8 @@
+> >  #define r_ctr(x)        (parport_read_control((x)->port))
+> >  #define r_dtr(x)        (parport_read_data((x)->port))
+> >  #define r_str(x)        (parport_read_status((x)->port))
+> > -#define w_ctr(x, y)     do { parport_write_control((x)->port, (y)); } while (0)
+> > -#define w_dtr(x, y)     do { parport_write_data((x)->port, (y)); } while (0)
+> > +#define w_ctr(x, y)     (parport_write_control((x)->port, (y)))
+> > +#define w_dtr(x, y)     (parport_write_data((x)->port, (y)))
 > 
-> We don't use this code to "check" the range, we use it to collect
-> migrate pages.  There is no failure case.
+> Unnecessary parentheses too.
+> It might be better to use static inlines instead.
 
-Right. I will send revert patch when I go to office.
-Thanks for the pointing out.
+Agreed. We already got bugs in the cyrix register manipulation for
+years because of the use of macros which caused registers to be set
+in the wrong order, let's not redo that mistake again.
 
--- 
-Kind Regards,
-Minchan Kim
+Willy
+
