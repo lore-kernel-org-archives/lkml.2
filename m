@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab2ISRtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:49:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40153 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab2ISRtN (ORCPT
+	id S932853Ab2ISRt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:49:29 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:38705 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791Ab2ISRt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:49:13 -0400
+	Wed, 19 Sep 2012 13:49:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org
-Subject: [PATCH] PCI, x86: clear initial value for root info resources
-Date: Wed, 19 Sep 2012 10:49:00 -0700
-Message-Id: <1348076941-410-1-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH] PCI, ia64: clear initial value for root info resources
+Date: Wed, 19 Sep 2012 10:49:01 -0700
+Message-Id: <1348076941-410-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <CAE9FiQW0PpBU0N9VzJyNKK9PvaUwokCYeB6w_j4mcN9EV0geLQ@mail.gmail.com>
+In-Reply-To: <1348076941-410-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQW0PpBU0N9VzJyNKK9PvaUwokCYeB6w_j4mcN9EV0geLQ@mail.gmail.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+ <1348076941-410-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found one system one root bus hot remove get panic.
-Panic happens when try to release hostbridge resource.
+after
+	PCI, ia64: clear initial value for root info resources
 
-It turns out that resource get reject during put into resource tree
-because of conflicts.
-Also that resource parent pointer have random value.
-
-That invalid value cause it pass through check __release_pci_root_info
-and panic in release_resource.
-
-Try to use kzalloc instead.
+change ia64 code accordingly, because later ia64 will support root bus removal too.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 
 ---
- arch/x86/pci/acpi.c |    3 +--
+ arch/ia64/pci/pci.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-Index: linux-2.6/arch/x86/pci/acpi.c
+Index: linux-2.6/arch/ia64/pci/pci.c
 ===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -305,7 +305,6 @@ setup_resource(struct acpi_resource *acp
- 	res->flags = flags;
- 	res->start = start;
- 	res->end = end;
--	res->child = NULL;
+--- linux-2.6.orig/arch/ia64/pci/pci.c
++++ linux-2.6/arch/ia64/pci/pci.c
+@@ -295,7 +295,6 @@ static __devinit acpi_status add_window(
+ 	window->resource.flags = flags;
+ 	window->resource.start = addr.minimum + offset;
+ 	window->resource.end = window->resource.start + addr.address_length - 1;
+-	window->resource.child = NULL;
+ 	window->offset = offset;
  
- 	if (!pci_use_crs) {
- 		dev_printk(KERN_DEBUG, &info->bridge->dev,
-@@ -434,7 +433,7 @@ probe_pci_root_info(struct pci_root_info
- 
- 	size = sizeof(*info->res) * info->res_num;
- 	info->res_num = 0;
--	info->res = kmalloc(size, GFP_KERNEL);
-+	info->res = kzalloc(size, GFP_KERNEL);
- 	if (!info->res)
- 		return;
- 
+ 	if (insert_resource(root, &window->resource)) {
+@@ -357,7 +356,7 @@ pci_acpi_scan_root(struct acpi_pci_root
+ 			&windows);
+ 	if (windows) {
+ 		controller->window =
+-			kmalloc_node(sizeof(*controller->window) * windows,
++			kzalloc_node(sizeof(*controller->window) * windows,
+ 				     GFP_KERNEL, controller->node);
+ 		if (!controller->window)
+ 			goto out2;
