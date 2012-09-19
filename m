@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab2ISWjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 18:39:14 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:53231 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752627Ab2ISWid (ORCPT
+	id S1752627Ab2ISWn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 18:43:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52508 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab2ISWn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 18:38:33 -0400
-Message-ID: <1348094309.2636.80.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 5/6] xfrm_user: ensure user supplied esn replay window
- is valid
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Mathias Krause <minipli@googlemail.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Martin Willi <martin@revosec.ch>
-Date: Wed, 19 Sep 2012 23:38:29 +0100
-In-Reply-To: <1348090423-32665-6-git-send-email-minipli@googlemail.com>
-References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
-	 <1348090423-32665-6-git-send-email-minipli@googlemail.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+	Wed, 19 Sep 2012 18:43:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, lizefan@huawei.com
+Cc: peterz@infradead.org, glommer@parallels.com, mhocko@suse.cz,
+        kay.sievers@vrfy.org, mzxreary@0pointer.de, davej@redhat.com,
+        ben@decadent.org.uk, pjt@google.com
+Subject: [PATCHSET RFC] cpu,cpuacct: make cpu serve cpuacct files and deprecate cpuacct
+Date: Wed, 19 Sep 2012 15:43:42 -0700
+Message-Id: <1348094625-4471-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 23:33 +0200, Mathias Krause wrote:
-> The current code fails to ensure that the netlink message actually
-> contains as many bytes as the header indicates. If a user creates a new
-> state or updates an existing one but does not supply the bytes for the
-> whole ESN replay window, the kernel copies random heap bytes into the
-> replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
-> netlink attribute. This leads to following issues:
-> 
-> 1. The replay window has random bits set confusing the replay handling
->    code later on.
-> 
-> 2. A malicious user could use this flaw to leak up to ~3.5kB of heap
->    memory when she has access to the XFRM netlink interface (requires
->    CAP_NET_ADMIN).
+Hello,
 
-Where does this limit come from?  Is that just the standard size netlink
-skb?
+This is an attempt at allowing quick deprecation and removal of
+cpuacct.  The patchset makes cpu serve the same cpuacct.* files and
+updates cgroup core such that it ignores cpuacct if requested to be
+co-mounted with cpu whether CONFIG_CGROUP_CPUACCT is enabled or not.
 
-I'm a little worried that the user-provided
-xfrm_replay_state_esn::bmp_len is not being directly validated anywhere.
-Currently xfrm_replay_state_esn_len() may overflow, and as its return
-type is int it may unexpectedly return a negative value.
+This de-couples cpuacct deprecation on kernel side from userland
+transition as long as userland is co-mounting cpu and cpuacct.  In
+this series, cpuacct implementation is simply copied into cpu, the
+goal being to provide base for proper optimization (most likely
+periodic collection of stats across the hierarchy).
 
-[...]
-> --- a/net/xfrm/xfrm_user.c
-> +++ b/net/xfrm/xfrm_user.c
-[...]
-> @@ -370,14 +378,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
->  					 struct nlattr *rp)
->  {
->  	struct xfrm_replay_state_esn *up;
-> +	size_t ulen;
+I didn't try to maintain everything the same.  /proc/cgroups and
+/proc/PID/cgroup may mis-represent or miss cpuacct entry.  Faking it
+completely is doable too but I'd like to keep it as simple as
+possible.
 
-I would normally expect to see sizes declared as size_t but mixing
-size_t and int in comparisons tends to result in bugs.  So I think this
-should to be int, matching the return types of nla_len() and
-xfrm_replay_state_esn_len() (and apparently all lengths in netlink...)
+* If cpuacct is not used, nothing changes of course.
 
->  	if (!replay_esn || !rp)
->  		return 0;
->  
->  	up = nla_data(rp);
-> +	ulen = xfrm_replay_state_esn_len(up);
->
-> -	if (xfrm_replay_state_esn_len(replay_esn) !=
-> -			xfrm_replay_state_esn_len(up))
-> +	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
->  		return -EINVAL;
->  
->  	return 0;
-> @@ -388,22 +397,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
->  				       struct nlattr *rta)
->  {
->  	struct xfrm_replay_state_esn *p, *pp, *up;
-> +	size_t klen, ulen;
+* If cpuacct is requested to be co-mounted with cpu, cpuacct is not
+  used.  It doesn't matter whether CONFIG_CGROUP_CPUACCT is enabled or
+  not.  cpu will provide cpusage.* statistics.
 
-Also int, for the same reason.
+* If cpuacct is requested to be mounted separately and cpuacct is
+  enabled, cgroup whines before mounting it.  If cpuacct is disabled,
+  it fails.
 
->  	if (!rta)
->  		return 0;
->  
->  	up = nla_data(rta);
-> +	klen = xfrm_replay_state_esn_len(up);
-> +	ulen = nla_len(rta) > sizeof(*up) ? klen : sizeof(*up);
-[...]
+I think the resulting behavior isn't too crazy and it should allow us
+to remove anything cpuacct related fairly soon.
 
-I understand that this is correct since verify_replay() previously
-checked that nla_len(rta) is either == sizeof(*up) or >= klen.  But
-would it not be more obviously correct to test nla_len(rta) >= klen?
+Longer term, I'd prefer to be able to drop the compatibility hack from
+cgroup core too although I don't think that's too urgent.  I think
+userland can either create symlinks for compatibility -
+e.g. /sys/fs/cgroup/cpuacct and /sys/fs/cgroup/cpu,cpucct both
+pointing to /sys/fs/cgroup/cpu - whether cpuacct exists or not, or
+just ignore anything cpuacct related.
 
-Ben.
+This series is based on for-3.7-hierarchy 8c7f6edbda0 ("cgroup: mark
+subsystems with broken hierarchy...") and also available in the
+following git branch.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-deprecate-cpuacct
 
+ include/linux/cgroup.h   |    1 
+ init/Kconfig             |   11 ++
+ kernel/cgroup.c          |   57 ++++++++++++-
+ kernel/sched/core.c      |  196 ++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/fair.c      |    1 
+ kernel/sched/rt.c        |    1 
+ kernel/sched/sched.h     |    7 +
+ kernel/sched/stop_task.c |    1 
+ 8 files changed, 269 insertions(+), 6 deletions(-)
+
+Thanks.
+
+--
+tejun
