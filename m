@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab2ISLpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:45:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58226 "EHLO mx2.suse.de"
+	id S1755211Ab2ISLsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:48:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab2ISLpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:45:19 -0400
-Date: Wed, 19 Sep 2012 13:45:11 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 6/7 v2] HID: picoLCD: drop version check during probe
-In-Reply-To: <20120917202108.3e39dedb@neptune.home>
-Message-ID: <alpine.LNX.2.00.1209191344500.31149@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home> <20120730213859.063173c1@neptune.home> <alpine.LNX.2.00.1208151015220.7026@pobox.suse.cz> <20120819185631.3a984aa4@neptune.home> <20120917202108.3e39dedb@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752014Ab2ISLsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:48:21 -0400
+Date: Wed, 19 Sep 2012 13:50:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@hack.frob.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Pedro Alves <palves@redhat.com>
+Subject: Re: [PATCH -mm v2] coredump: extend core dump note section to
+	contain file names of mapped files
+Message-ID: <20120919115016.GA9437@redhat.com>
+References: <1347980129-1510-1-git-send-email-vda.linux@googlemail.com> <20120918165819.583252C0A4@topped-with-meat.com> <20120918172720.GA26606@redhat.com> <20120918174729.GA27841@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120918174729.GA27841@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Sep 2012, Bruno Prémont wrote:
-
-> You seem not to have applied this one yet (it doesn't show up in picolcd
-> branch).
+On 09/18, Oleg Nesterov wrote:
+>
+> Hmm. And I just noticed that 'filename = ""' case does not verify
+> there is a room to write a single '\0' :/
 > 
-> Could you please apply it?
-> (or did I miss locking changes making it obsolete?)
+> So, afaics you also need
+> 
+> 	- if (-ENAMETOOLONG)
+> 	+ if (-ENAMETOOLONG || !remaining)
 
-No, sorry, I lost that one. Applied now.
+No, please ignore.
 
-Have you and David made any progress with the locking?
+d_path() always starts with prepend("\0", 1), it should always
+return ENAMETOOLONG if !remaining.
 
--- 
-Jiri Kosina
-SUSE Labs
+Oleg.
+
