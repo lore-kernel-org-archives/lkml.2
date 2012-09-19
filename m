@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab2ISErq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 00:47:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52456 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab2ISErA (ORCPT
+	id S1754870Ab2ISEuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 00:50:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53211 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab2ISEuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 00:47:00 -0400
-Date: Wed, 19 Sep 2012 05:46:51 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: IMA policy search speedup
-Message-ID: <20120919044651.GY13973@ZenIV.linux.org.uk>
-References: <CALLzPKZqw05_4V6NQeo-A6xOza2P4g6mqxDJnv7f-ktovj_HpQ@mail.gmail.com>
- <alpine.LRH.2.02.1209191419410.29525@tundra.namei.org>
+	Wed, 19 Sep 2012 00:50:51 -0400
+Date: Wed, 19 Sep 2012 06:50:39 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+Message-ID: <20120919045038.GA2248@netboy.at.omicron.at>
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
+ <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
+ <5057BE59.3050903@linaro.org>
+ <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1209191419410.29525@tundra.namei.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5058BD9E.30909@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 02:21:56PM +1000, James Morris wrote:
-> On Tue, 18 Sep 2012, Kasatkin, Dmitry wrote:
-> 
-> > I looked to <linux/fs.h> and found that there is a possibility to to
-> > add additional flag for sb->s_flags.
-> > For example
-> > 
-> > #define MS_NOT_IMA              (1<<25) /* NOT_IMA */
-> > #define IS_I_NOT_IMA(inode)   __IS_FLG(inode, MS_NOT_IMA)
-> > 
-> > 
-> > Another way is to add additional dedicated integrity related member to
-> > the sb structure.
-> > struct super_block {
-> > ...
-> > #ifdef CONFIG_INTEGRITY
-> >       int s_integrity;
-> > #endif
-> > };
-> > 
-> > Obviously there are only few super blocks in the system and few bytes
-> > will not harm.
-> 
-> The flag seems better than adding a new struct member.  Why would you need 
-> an int for this?
+On Tue, Sep 18, 2012 at 11:29:50AM -0700, John Stultz wrote:
+> I believe its mostly historical, but on some architectures that
+> history has become an established ABI, making it technical.
 
-Per-superblock bit would be a bit better, but I really hate the way we have
-them mixed up between superblock ->s_flags bits and mount(2) action weirdly
-encoded into flags thing.  If we are going to touch that thing, how about
-separate S_... bits, with MS_... crap left only for mount(2) decoding?  Mapped
-to S_... when needed.
+Fine, but what do you mean by "ABI?" Are you talking about magic
+addresses for functions?
 
-The really messy part is that right now we silently ignore all the unknown
-bits in mount(2) flags argument ;-/  It's *not* a widely used syscall, but
-still - changing that in a non-trivial way is potential userland breakage.
+Without knowing the dirty details, what I imagine is a jump/branch
+from the arch-specific code into the common implementation.
+
+Can that be done?
+
+Thanks,
+Richard
