@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab2ISQxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:53:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44202 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756272Ab2ISQxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:53:10 -0400
-Message-ID: <5059F872.3080203@kdau.com>
-Date: Wed, 19 Sep 2012 09:53:06 -0700
-From: Kevin Daughtridge <kevin@kdau.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756213Ab2ISQ4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:56:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25806 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753424Ab2ISQ4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:56:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,450,1344236400"; 
+   d="scan'208";a="224145592"
+Date: Wed, 19 Sep 2012 18:56:00 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mike Turquette <mturquette@ti.com>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Philippe Begnic <philippe.begnic@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Rickard Andersson <rickard.andersson@stericsson.com>
+Subject: Re: [PATCH 3/4] mfd: dbx500: Provide a more accurate smp_twd clock
+Message-ID: <20120919165600.GP28670@sortiz-mobl>
+References: <1346415691-13371-1-git-send-email-ulf.hansson@stericsson.com>
+ <1346415691-13371-4-git-send-email-ulf.hansson@stericsson.com>
+ <20120919160251.GM28670@sortiz-mobl>
+ <20120919164231.17033.27762@nucleus>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>
-CC: Henrik Rydberg <rydberg@euromail.se>, Kevin Daughtridge <kevin@kdau.com>,
-        linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] HID: leave dev_rdesc unmodified and use it for comparisons
-References: <50592FB1.7000800@kdau.com> <50597CAD.7010801@suse.cz>
-In-Reply-To: <50597CAD.7010801@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919164231.17033.27762@nucleus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/12 01:05 N.U., Jiri Slaby wrote:
-> AFAICS this is incorrect. Some drivers return pointers to their own 
-> static structure from their .report_fixup. Hence there are two problems:
-> * leak, because kmemdup'ped start is never freed
-> * invalid free -- kfree(device->rdesc) will try to free a static 
-> structure regards, 
+Hi Mike,
 
-On 09/19/12 04:55 N.U., Jiri Kosina wrote:
-> How do you avoid memory leak on 'start' here? 
+On Wed, Sep 19, 2012 at 09:42:31AM -0700, Mike Turquette wrote:
+> Quoting Samuel Ortiz (2012-09-19 09:02:51)
+> > Hi Ulf,
+> > 
+> > On Fri, Aug 31, 2012 at 02:21:30PM +0200, Ulf Hansson wrote:
+> > > From: Michel Jaouen <michel.jaouen@stericsson.com>
+> > > 
+> > > The local timer clock is based on ARM subsystem clock. This patch
+> > > obtains a more exact value of that clock by reading PRCMU registers.
+> > > Using this increases the accuracy of the local timer events.
+> > > 
+> > > Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > > Signed-off-by: Rickard Andersson <rickard.andersson@stericsson.com>
+> > > Signed-off-by: Michel Jaouen <michel.jaouen@stericsson.com>
+> > > ---
+> > >  drivers/mfd/db8500-prcmu.c       |   42 ++++++++++++++++++++++++++++++++++++++
+> > >  drivers/mfd/dbx500-prcmu-regs.h  |    4 +++-
+> > >  include/linux/mfd/dbx500-prcmu.h |    1 +
+> > >  3 files changed, 46 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> > > index 4f74529..e7f9539 100644
+> > > --- a/drivers/mfd/db8500-prcmu.c
+> > > +++ b/drivers/mfd/db8500-prcmu.c
+> > > @@ -418,6 +418,9 @@ static struct {
+> > >  
+> > >  static atomic_t ac_wake_req_state = ATOMIC_INIT(0);
+> > >  
+> > > +/* Functions definition */
+> > > +static void compute_armss_rate(void);
+> > > +
+> > I'm not a big fan of forward declarations, but I still applied your patch to
+> > my for-next branch. Thanks.
+> > 
+> 
+> Samuel,
+> 
+> Not sure if you were Cc'd on the rest of the patches in this series but
+> after some discussion (see patch #1) I took all four patches into
+> clk-next, including the MFD change.  This was done first week of
+> September.  At this point those patches have shifted into my stable
+> branch that I have promised not to rebase (for arm-soc dependencies).
+> 
+> Are you OK with me taking this patch through the clk-next branch?
+Yes, I'm fine with it.
 
-Hmm. I hadn't noticed that the other drivers are returning a static 
-structure. In that case, it seems that report_fixup itself is broken 
-from a memory perspective, in that it returns pointers to inconsistent 
-storage types depending on the driver. (As evidenced by how my first 
-patch version would have also caused invalid frees that weren't evident 
-from the declaration in hid.h.) I see two options:
+Cheers,
+Samuel.
 
-1. Ugly workaround: make a temporary copy of the dev_rdesc, give it to 
-report_fixup, make a copy of the return, store that copy in rdesc, free 
-the temporary copy. Though ugly, this would at least involve the 
-smallest diff.
-
-2. Standardize the behavior of the drivers' report_fixup 
-implementations. Given that some of them need to change the size of the 
-descriptor, modifying the passed structure is not an option. Probably 
-all of them should return a newly allocated structure, either a modified 
-copy of the input or a copy of their static, that can then be stored 
-directly in rdesc. Especially since report_fixup is only ever called 
-right before a copy is going to be taken anyway. (Adding constness to a 
-parameter isn't considered a severe ABI break, is it?)
-
-Thoughts?
-
--Kevin
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
