@@ -1,206 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab2ISWBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 18:01:12 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36832 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2ISWBK (ORCPT
+	id S1752578Ab2ISWES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 18:04:18 -0400
+Received: from nm9-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.139]:34061 "HELO
+	nm9-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752373Ab2ISWEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 18:01:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH 01/14] davinci: vpfe: add dm3xx IPIPEIF hardware support module
-Date: Thu, 20 Sep 2012 00:01:45 +0200
-Message-ID: <2048611.Sb6fiWUyvr@avalon>
-User-Agent: KMail/4.9.1 (Linux/3.3.8-gentoo; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1347626804-5703-2-git-send-email-prabhakar.lad@ti.com>
-References: <1347626804-5703-1-git-send-email-prabhakar.lad@ti.com> <1347626804-5703-2-git-send-email-prabhakar.lad@ti.com>
+	Wed, 19 Sep 2012 18:04:16 -0400
+X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 18:04:16 EDT
+X-Yahoo-Newman-Id: 368354.86779.bm@omp1003.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: TUGNF0oVM1lr3rSLQgHUOpFfKPPjSfXrRr1hFrAKouaalhY
+ Fn0bc7WbsulOL0RvF.7aDXwQkIscK2wGafw5bWP4_GGGiehbwu7i6tYZCxgH
+ s0udDHKisGyUSIDh0.hloHUcG70OsHQ24s.3lSyXN2sJEMEAnhgc8JWIkWjD
+ won4PQoBZTffSw.oCTVVQz8xhpp3SA6YmUchuyWMZRFm9aXsMu5RYPR.ZAHa
+ DO.oufnt5cwBUxuL9c.WsY.38f3ghczf3HEOU01VQbWPViUHo6kZM0_Zud0V
+ xEj4AGK1dyo8C1WDQd_VLyuWfS2cE3eh9g6tVEqcGq4669PiUEiU7ET80p6I
+ xqpnxz1U3PyZ6LpGYD0AKWlkE8ULdiJfvto0jvdJgGxaZxg2i1wIYdJdLqal
+ sFjW40W68VrXAGYuHf_HdPgk-
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <505A3EAB.2030002@att.net>
+Date: Wed, 19 Sep 2012 16:52:43 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Where to put test code?
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+I'm putting the finishing touches on the generic red-black tree test
+code, but I'm uncertain about where to place it exactly.
 
-Thanks for the patch.
+I haven't finished the test module just yet, but the idea is that the
+tests can be run in userspace as well as kernelspace to make it easier
+to test on multiple compilers.  It has some common sources files (used
+by in both places) and then specific code for both user- and
+kernel-space that I currently have as follows:
 
-On Friday 14 September 2012 18:16:31 Prabhakar Lad wrote:
-> From: Manjunath Hadli <manjunath.hadli@ti.com>
-> 
-> add support for dm3xx IPIPEIF hardware setup. This is the
-> lowest software layer for the dm3x vpfe driver which directly
-> accesses hardware. Add support for features like default
-> pixel correction, dark frame substraction and hardware setup.
-> 
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> ---
->  drivers/media/platform/davinci/dm3xx_ipipeif.c |  318 +++++++++++++++++++++
->  drivers/media/platform/davinci/dm3xx_ipipeif.h |  262 +++++++++++++++++++
->  include/linux/dm3xx_ipipeif.h                  |   62 +++++
+tools/testing/selftests/grbtree/       - common.{c,h}
+tools/testing/selftests/grbtree/user   - user-space main.c, Makefile, etc.
+tools/testing/selftests/grbtree/module - kernel-space grbtest.c,
+Makefile, etc.
 
+Would this be correct or should the common & module code go some place
+else and then just have the user-space code under
+tools/testing/selftests/grbtest?
 
->  3 files changed, 642 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/platform/davinci/dm3xx_ipipeif.c
->  create mode 100644 drivers/media/platform/davinci/dm3xx_ipipeif.h
->  create mode 100644 include/linux/dm3xx_ipipeif.h
-> 
-> diff --git a/drivers/media/platform/davinci/dm3xx_ipipeif.c
-> b/drivers/media/platform/davinci/dm3xx_ipipeif.c new file mode 100644
-> index 0000000..7961a74
-> --- /dev/null
-> +++ b/drivers/media/platform/davinci/dm3xx_ipipeif.c
+Thanks
+Daniel
 
-[snip]
-
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/v4l2-mediabus.h>
-> +#include <linux/platform_device.h>
-
-Just a side note, I usually sort headers alphabetically, but feel free to use 
-whatever convention you like.
-
-> +#include "dm3xx_ipipeif.h"
-> +
-> +static void *__iomem ipipeif_base_addr;
-
-That's not good. You shouldn't have global constants like that. The value 
-should instead be stored in your device structure, that you will need to pass 
-around to all functions.
-
-> +static inline u32 regr_if(u32 offset)
-> +{
-> +	return readl(ipipeif_base_addr + offset);
-> +}
-> +
-> +static inline void regw_if(u32 val, u32 offset)
-> +{
-> +	writel(val, ipipeif_base_addr + offset);
-> +}
-
-Maybe ipipeif_read() and ipipeif_write() ?
-
-> +void ipipeif_set_enable()
-> +{
-> +	regw_if(1, IPIPEIF_ENABLE);
-> +}
-
-Please define constants in a header file for register values, masks and shifts 
-instead of hardcoding the raw numbers.
-
-[snip]
-
-> +static int __devinit dm3xx_ipipeif_probe(struct platform_device *pdev)
-> +{
-> +	static resource_size_t  res_len;
-> +	struct resource *res;
-> +	int status;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res)
-> +		return -ENOENT;
-> +
-> +	res_len = resource_size(res);
-> +
-> +	res = request_mem_region(res->start, res_len, res->name);
-> +	if (!res)
-> +		return -EBUSY;
-> +
-> +	ipipeif_base_addr = ioremap_nocache(res->start, res_len);
-> +	if (!ipipeif_base_addr) {
-> +		status = -EBUSY;
-> +		goto fail;
-> +	}
-> +	return 0;
-> +
-> +fail:
-> +	release_mem_region(res->start, res_len);
-> +
-> +	return status;
-> +}
-> +
-> +static int dm3xx_ipipeif_remove(struct platform_device *pdev)
-> +{
-> +	struct resource *res;
-> +
-> +	iounmap(ipipeif_base_addr);
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (res)
-> +		release_mem_region(res->start, resource_size(res));
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver dm3xx_ipipeif_driver = {
-> +	.driver = {
-> +		.name   = "dm3xx_ipipeif",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.remove = __devexit_p(dm3xx_ipipeif_remove),
-> +	.probe = dm3xx_ipipeif_probe,
-> +};
-> +
-> +static int dm3xx_ipipeif_init(void)
-> +{
-> +	return platform_driver_register(&dm3xx_ipipeif_driver);
-> +}
-> +
-> +static void dm3xx_ipipeif_exit(void)
-> +{
-> +	platform_driver_unregister(&dm3xx_ipipeif_driver);
-> +}
-> +
-> +module_init(dm3xx_ipipeif_init);
-> +module_exit(dm3xx_ipipeif_exit);
-
-I'm not sure to like this. You're registering a module for a device that 
-essentially sits there without doing anything, except providing functions that 
-can be called by other modules.
-
-I somehow feel that the way the code is split amongst the different layers 
-isn't optimal. Could you briefly explain the rationale behind the current 
-architecture ?
-
-(BTW, please use the module_platform_driver() macro instead of 
-module_init/module_exit)
-
-[snip]
-
-> diff --git a/include/linux/dm3xx_ipipeif.h b/include/linux/dm3xx_ipipeif.h
-> new file mode 100644
-> index 0000000..1c1a830
-> --- /dev/null
-> +++ b/include/linux/dm3xx_ipipeif.h
-
-[snip]
-
-> +#include <media/davinci/vpfe_types.h>
-> +#include <media/davinci/vpfe.h>
-
-This header file defines part of the userspace API, but includes media/ 
-headers that are not exported to userspace.
-
-Header files should be split between 3 directories:
-
-- Definitions required by platform data used to go to media/ but the new 
-include/linux/platform_data/ directory might be preferred nowadays. I have no 
-strong opinion on this, as other headers are already in media/ you can 
-probably keep using it for now.
-
-- Definitions requires by userspace should go to include/linux/
-
-- The rest should go to drivers/media/platform/davinci/.
-
--- 
-Regards,
-
-Laurent Pinchart
 
