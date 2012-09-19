@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2ISEbt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 00:31:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47706 "EHLO
+	id S1753594Ab2ISEfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 00:35:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42757 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2ISEbq (ORCPT
+	with ESMTP id S1751399Ab2ISEfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 00:31:46 -0400
-Date: Wed, 19 Sep 2012 14:31:36 +1000
+	Wed, 19 Sep 2012 00:35:07 -0400
+Date: Wed, 19 Sep 2012 14:35:05 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build failure after merge of the usb tree
-Message-Id: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
+        Devendra Naga <devendra.aaru@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the usb tree
+Message-Id: <20120919143505.76e9d77d320ed278f7ce4798@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Sep_2012_14_31_36_+1000_6_zg4=x9TP1pEa09"
+ boundary="Signature=_Wed__19_Sep_2012_14_35_05_+1000_m2e_oT7qMrt_lL0O"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Sep_2012_14_31_36_+1000_6_zg4=x9TP1pEa09
+--Signature=_Wed__19_Sep_2012_14_35_05_+1000_m2e_oT7qMrt_lL0O
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
-After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/serqt_usb2/serqt_usb2.c between commit e8656b02ef35
+("USB: serial: serqt_usb2: remove dbg() usage") from the usb tree and
+commit 623c2bb2c59a ("staging: serqt_usb2: fix dbg print when kzalloc
+failed to allocate qt_port") from the staging tree.
 
-drivers/usb/serial/vizzini.c: In function 'vizzini_set_termios':
-drivers/usb/serial/vizzini.c:454:22: error: invalid type argument of '->' (=
-have 'struct ktermios')
-
-Caused by commit c05fecb1d57e ("USB: serial: add vizzini driver")
-interacting with commit adc8d746caa6 ("tty: move the termios object into
-the tty") from the tty tree.
-
-I added the following merge fix patch and can carry it as necessary:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 19 Sep 2012 14:27:39 +1000
-Subject: [PATCH] USB: serial: fix vizzini driver for move of the termios
- object
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/usb/serial/vizzini.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/serial/vizzini.c b/drivers/usb/serial/vizzini.c
-index 2ac48fe..253eaf8 100644
---- a/drivers/usb/serial/vizzini.c
-+++ b/drivers/usb/serial/vizzini.c
-@@ -451,7 +451,7 @@ static void vizzini_set_termios(struct tty_struct *tty_=
-param,
- 	unsigned int             format_size, format_parity, format_stop, flow, g=
-pio_mode;
- 	struct tty_struct       *tty =3D port->port.tty;
-=20
--	cflag =3D tty->termios->c_cflag;
-+	cflag =3D tty->termios.c_cflag;
-=20
- 	portdata->clocal =3D ((cflag & CLOCAL) !=3D 0);
-=20
---=20
-1.7.10.280.gaa39
-
+The former removes the line changed by the latter, so I just did that (no
+action is required).
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__19_Sep_2012_14_31_36_+1000_6_zg4=x9TP1pEa09
+--Signature=_Wed__19_Sep_2012_14_35_05_+1000_m2e_oT7qMrt_lL0O
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQWUqoAAoJEECxmPOUX5FED7AP/0Yyle9P1PxY6Tbj8nF+M8lm
-wD3C/9388FFdOk7m9IiAKX97Np/dD/2WroIxEZnOX1r9YE1zOU23OlSFxQ8XLeqW
-8sThRLJjrJfcx88GEw+yVxOpcseHIy/S6/vrM5SV5N5Cqw1Tl8FF8qzaxrsiU9nt
-XHplBO1a1RaIpBYMdoac/UmX20P0mpGEBzg9yaVR8XZ/EGl8gJ29zNSb+OLPVALz
-UV1riJwzuVmHks5XFXV7p1CXXmLhwO6NlyEkHb009QSR9L7vWR8A9cmBsyCL403J
-7jTHtXjYeeqO2A/hzkvHNv3JrWpycCB2DKUDqVIlULK3irVpwBe1FMoOuT2Bpwvl
-5XYdU5hm1waTZJcQKXVwPNrAdyhJjf6+L+TBY8MiaKbIIf6/zMF8M0DE8KLVfEDp
-1qfHYWcpHaqmY7X9oMTTu7C1UhqOuhpk2hGdaiqzUQYH8mWXewBW4Cf1yyWe9GNF
-wXpcYVeDPEuF8JCQq7eLCZeN3aGLaqifeyOwqPsIz2Uou7wTEfPM/PpZW5e/ivNn
-ZbLGtyM7HQY6Si25yZwyYfFLZIjxze6fjOIWyAolJ2y6rs460XJfv5nV651LoAYj
-MQEXXLot12RL0XoF8YLxpcYYBj+Qs20ho9NbpQcubYErneArDKLiWqB6lsyKZbH5
-8Gj+/l8Lgjf6gJE9m4wy
-=eGF5
+iQIcBAEBCAAGBQJQWUt5AAoJEECxmPOUX5FE40AQAI1Zo5wnKWiHv3C8JRf1xFtc
+ejOekieAnb61N8+NbIV6oGIPF1UihLaaiJqqV1y7tP0PFjkfWOOnyJt9+nZO3q2c
+C4H94XrniS7qPuAZ/i2AlDXl+NgGuxjRX2+kh1zFtJnYKG3xy0S/coMVbESBDIHD
+9kXv053upMaowMYN4xaD9YbSrr98/smF24PlkUEjojlQNR6WBTNpADiB5M01tfR3
+fGpVXGHDsxiUDuCqFNAwrAKq4RnRbq9C26QxRKljOXlaDmRO4BbYALH3K/o6LUvO
+ikL6PcPSgbKeQlT7d01QFnOWe3X6zXXyvVSdFF8ShDuVoU3a4H4XwxF2M33qlhiQ
+fcXNXnaOcGQfpor2JqSCjU9/WG1DhxD+2Pci2P6K3edNSZKTAfLRcd0aiXWuZIpN
+Z/fp0Sq4NhJfiiDy/5BkGEQEdaV8YqYlgtqKTWZtxFV66/RAFQb8MYiUFU0lI9UR
+RrGa46K+6Y6S7GXhXrY4Zss+teTL620FqYBdQnLwEc63Z3OSir58kOSB0axgq9+T
+W08JHd+9cWcIKTEW0n1hvcAfPms+sI56K4AztcM8UXJPPgZpSzuUToxrdORHx1IQ
+IJVevzPLAc5bf9GyumrvUXnlyqPfJFft0RwqjcBL1VB8JkRLhkG7rF96na8ud4Nj
++NN/u9C57LHSN79svxuX
+=snvO
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__19_Sep_2012_14_31_36_+1000_6_zg4=x9TP1pEa09--
+--Signature=_Wed__19_Sep_2012_14_35_05_+1000_m2e_oT7qMrt_lL0O--
