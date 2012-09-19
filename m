@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2ISNyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:54:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753609Ab2ISNyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:54:33 -0400
-Message-ID: <1348062872.28860.24.camel@bling.home>
-Subject: Re: [PATCH v10 2/2] kvm: Add resampling irqfds for level triggered
- interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 19 Sep 2012 07:54:32 -0600
-In-Reply-To: <50598C1D.4050206@redhat.com>
-References: <20120918031156.12021.27838.stgit@bling.home>
-	 <20120918031626.12021.90083.stgit@bling.home> <50598975.50503@redhat.com>
-	 <20120919090845.GA26517@redhat.com> <50598C1D.4050206@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755450Ab2ISNyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:54:52 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36202 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2ISNyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 09:54:50 -0400
+Date: Wed, 19 Sep 2012 14:59:25 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20120919145925.35e95b5a@pyramind.ukuu.org.uk>
+In-Reply-To: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
+References: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 12:10 +0300, Avi Kivity wrote:
-> On 09/19/2012 12:08 PM, Michael S. Tsirkin wrote:
-> 
-> >> Whoa.  Can't we put the resampler entry somewhere we don't need to
-> >> search for it?  Like a kvm_kernel_irq_routing_entry, that's indexed by
-> >> gsi already (kvm_irq_routing_table::rt_entries[gsi]).
-> > 
-> > I'm not sure why would we bother optimizing this,
-> 
-> Not optimizing, simplifying.
-> 
-> > but if we do, I guess we could look for the irq notifier
-> > which is already indexed by gsi.
-> 
-> It's not, it's looked up in a list.
+On Wed, 19 Sep 2012 14:31:36 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/usb/serial/vizzini.c: In function 'vizzini_set_termios':
+> drivers/usb/serial/vizzini.c:454:22: error: invalid type argument of '->' (have 'struct ktermios')
+> 
+> Caused by commit c05fecb1d57e ("USB: serial: add vizzini driver")
+> interacting with commit adc8d746caa6 ("tty: move the termios object into
+> the tty") from the tty tree.
+> 
+> I added the following merge fix patch and can carry it as necessary:
 
-I'm not sure it's a simplification because to index by gsi we suddenly
-need to care how many gsis there are.  I believe that currently means we
-have to assume an ioapic.  Creating a dumb list is a little bit of
-overhead, but we get to stay blissfully unaware of the gsi
-implementation.  Practically we're looking at a list of 4 entries, maybe
-a few times that when we expose more PCI root bridges to the guest.
-Thanks,
+Vizzini seems to have teleported into Greg's tree. Greg - it's got a pile
+of other bugs in it plus complete bogus comments and the like. You don't
+seem to have every posted it to the lists for comment or if you did it
+didn't turn up here ?
 
-Alex
-
+Alan
