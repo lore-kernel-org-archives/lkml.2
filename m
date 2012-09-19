@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2ISPZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:25:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58604 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab2ISPZX (ORCPT
+	id S1756275Ab2ISPZc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:25:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52915 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2ISPZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:25:23 -0400
-Message-ID: <5059E3DF.6020906@wwwdotorg.org>
-Date: Wed, 19 Sep 2012 09:25:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 19 Sep 2012 11:25:28 -0400
+Date: Wed, 19 Sep 2012 08:25:06 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-60e5c706b3ea56f87afc2a4a3096118d28f9cc24@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, robert.richter@amd.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <87txv28spl.fsf_-_@sejong.aot.lge.com>
+References: <87txv28spl.fsf_-_@sejong.aot.lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf report:
+  Add missing perf_hpp__init for pipe-mode
+Git-Commit-ID: 60e5c706b3ea56f87afc2a4a3096118d28f9cc24
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] dt: Document general interrupt controller bindings
-References: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:25:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 02:57 AM, Thierry Reding wrote:
-> In order to use a device as interrupt controller, it needs to be marked
-> with the DT interrupt-controller property. This commit adds rudimentary
-> documentation about the required standard properties and describes the
-> most commonly used interrupt specifiers.
+Commit-ID:  60e5c706b3ea56f87afc2a4a3096118d28f9cc24
+Gitweb:     http://git.kernel.org/tip/60e5c706b3ea56f87afc2a4a3096118d28f9cc24
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 13 Sep 2012 13:14:30 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 17 Sep 2012 13:11:33 -0300
 
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> @@ -0,0 +1,94 @@
-> +Specifying interrupt information for devices
-> +============================================
-> +
-> +1) Interrupt user nodes
-> +-----------------------
+perf report: Add missing perf_hpp__init for pipe-mode
 
-s/user/client/? Bike-shedding a little I suppose.
+The perf_hpp__init() function was only called from setup_browser() so
+that the pipe-mode missed the initialization thus didn't respond to
+related options.  Fix it.
 
-> +
-> +A device that generates interrupts can specify the interrupt controller to
-> +which the interrupts are routed by passing the controller's phandle in the
-> +"interrupt-parent" property.
-> +
-> +The "interrupts" property is a list of specifiers that describe each of the
-> +interrupts. See section 2 below for details.
+Reported-by: Robert Richter <robert.richter@amd.com>
+Tested-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-tip-commits@vger.kernel.org
+Link: http://lkml.kernel.org/r/87txv28spl.fsf_-_@sejong.aot.lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-This should probably mention that interrupt-parent cascades from parent
-nodes. How about the following instead:
-
-Nodes that describe devices which generate interrupts must contain an
-"interrupts" property. This property must contain a list of interrupt
-specifiers, one per output interrupt. The format of the interrupt
-specifier is determined by the interrupt controller to which the
-interrupts are routed; see section 2 below for details.
-
-The interrupt-parent property is used to define the controller to which
-interrupts are routed; it contains a single phandle referring to the
-interrupt controller node. This property may be specified in any
-interrupt client node, or in any parent node of the device.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index b6696dd..1da243d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -689,8 +689,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	if (strcmp(report.input_name, "-") != 0)
+ 		setup_browser(true);
+-	else
++	else {
+ 		use_browser = 0;
++		perf_hpp__init(false, false);
++	}
+ 
+ 	setup_sorting(report_usage, options);
+ 
