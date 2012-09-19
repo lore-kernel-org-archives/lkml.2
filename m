@@ -1,127 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab2ISRIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:08:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54000 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab2ISRII (ORCPT
+	id S932682Ab2ISRKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:10:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50809 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab2ISRKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:08:08 -0400
-Date: Wed, 19 Sep 2012 10:07:50 -0700
-From: tip-bot for Peter Senna Tschudin <peter.senna@gmail.com>
-Message-ID: <tip-4b8073e467e6a66b6a5a8e799d28bc3b243c0d78@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peter.senna@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peter.senna@gmail.com, tglx@linutronix.de
-In-Reply-To: <1347986174-30287-7-git-send-email-peter.senna@gmail.com>
-References: <1347986174-30287-7-git-send-email-peter.senna@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] arch/x86: Remove unecessary semicolons
-Git-Commit-ID: 4b8073e467e6a66b6a5a8e799d28bc3b243c0d78
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Sep 2012 13:10:07 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 10:07:57 -0700 (PDT)
+In-Reply-To: <5059D015.2020104@linux.vnet.ibm.com>
+References: <20120918143504.GA30585@redhat.com> <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
+ <20120918185310.GA27689@redhat.com> <5059D015.2020104@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 19 Sep 2012 10:09:45 -0700
+X-Google-Sender-Auth: lLMVrLyufMdcCoKRK7GdHIBmeRA
+Message-ID: <CA+55aFwuO_8Wy6C7rALajiK2Pro84BrfzmKHpARx4EfG8qNMhw@mail.gmail.com>
+Subject: Re: 3.6rc6 slab corruption.
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4b8073e467e6a66b6a5a8e799d28bc3b243c0d78
-Gitweb:     http://git.kernel.org/tip/4b8073e467e6a66b6a5a8e799d28bc3b243c0d78
-Author:     Peter Senna Tschudin <peter.senna@gmail.com>
-AuthorDate: Tue, 18 Sep 2012 18:36:14 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 19 Sep 2012 17:32:48 +0200
+On Wed, Sep 19, 2012 at 7:00 AM, Raghavendra K T
+<raghavendra.kt@linux.vnet.ibm.com> wrote:
+>
+> Create a 350 processes reading /sys/kernel/debug/kvm/spinlocks/histo_blocked
+> file simultaneously in while loop for more than 3 hours on my box.
 
-arch/x86: Remove unecessary semicolons
+You need to open the file a single time, and then after that sinelg
+open (either threaded or with fork()) do multiple concurrent copies
+something like
 
-Found by http://coccinelle.lip6.fr/
+   for (;;) {
+      char buf[1024];
+      lseek(fd, 0, SEEK_SET);
+      read(fd, buf, sizeof(buf));
+   }
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: avi@redhat.com
-Cc: mtosatti@redhat.com
-Cc: a.p.zijlstra@chello.nl
-Cc: rusty@rustcorp.com.au
-Cc: masami.hiramatsu.pt@hitachi.com
-Cc: suresh.b.siddha@intel.com
-Cc: joerg.roedel@amd.com
-Cc: agordeev@redhat.com
-Cc: yinghai@kernel.org
-Cc: bhelgaas@google.com
-Cc: liuj97@gmail.com
-Link: http://lkml.kernel.org/r/1347986174-30287-7-git-send-email-peter.senna@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/alternative.c  |    4 ++--
- arch/x86/kernel/apic/apic.c    |    2 +-
- arch/x86/kvm/vmx.c             |    2 +-
- arch/x86/pci/mmconfig-shared.c |    2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
+or similar. But it's important that they all share the same struct file.
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index ced4534..3318b1e 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -317,7 +317,7 @@ static void alternatives_smp_lock(const s32 *start, const s32 *end,
- 		/* turn DS segment override prefix into lock prefix */
- 		if (*ptr == 0x3e)
- 			text_poke(ptr, ((unsigned char []){0xf0}), 1);
--	};
-+	}
- 	mutex_unlock(&text_mutex);
- }
- 
-@@ -338,7 +338,7 @@ static void alternatives_smp_unlock(const s32 *start, const s32 *end,
- 		/* turn lock prefix into DS segment override prefix */
- 		if (*ptr == 0xf0)
- 			text_poke(ptr, ((unsigned char []){0x3E}), 1);
--	};
-+	}
- 	mutex_unlock(&text_mutex);
- }
- 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 24deb30..b17416e 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1934,7 +1934,7 @@ void smp_error_interrupt(struct pt_regs *regs)
- 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
- 		i++;
- 		v1 >>= 1;
--	};
-+	}
- 
- 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index b1eb202..b06737d 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4543,7 +4543,7 @@ static int handle_cr(struct kvm_vcpu *vcpu)
- 				vcpu->run->exit_reason = KVM_EXIT_SET_TPR;
- 				return 0;
- 			}
--		};
-+		}
- 		break;
- 	case 2: /* clts */
- 		handle_clts(vcpu);
-diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-index 937bcec..704b9ec 100644
---- a/arch/x86/pci/mmconfig-shared.c
-+++ b/arch/x86/pci/mmconfig-shared.c
-@@ -585,7 +585,7 @@ static int __init pci_parse_mcfg(struct acpi_table_header *header)
- 	while (i >= sizeof(struct acpi_mcfg_allocation)) {
- 		entries++;
- 		i -= sizeof(struct acpi_mcfg_allocation);
--	};
-+	}
- 	if (entries == 0) {
- 		pr_err(PREFIX "MMCONFIG has no entries\n");
- 		return -ENODEV;
+It's also likely to make it easier to trigger the race if you have a
+kernel with preemption enabled.
+
+And you need to have SLAB debugging enabled to actually *see* the
+messages. Otherwise you'll have just (possibly silent) corruption or a
+memory leak.
+
+              Linus
