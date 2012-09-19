@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab2ISTAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:00:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19691 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983Ab2ISSza (ORCPT
+	id S933067Ab2ISTAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:00:40 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48037 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756991Ab2ISSza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Sep 2012 14:55:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,81 +16,53 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 19/40] PCI, sysfs: Clean up rescan/remove with schedule_callback
-Date: Wed, 19 Sep 2012 11:54:33 -0700
-Message-Id: <1348080894-23412-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 27/40] ACPI: acpi_bus_trim to support two steps.
+Date: Wed, 19 Sep 2012 11:54:41 -0700
+Message-Id: <1348080894-23412-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change to use three return according to Bjorn.
+current all acpi_bus_trim callers have rmdevice to 1.
+that means it will remove all acpi devices.
 
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+When 0, is passed, it will keep one parent.
+
+For root bus hotremove support, we need to have pci device removed before
+acpi devices.
+
+So try to keep all acpi devices, and only stop drivers with them.
+
+This change should be safe because all current callers all have 1 passed.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org
 ---
- drivers/pci/pci-sysfs.c |   25 ++++++++++++++-----------
- 1 files changed, 14 insertions(+), 11 deletions(-)
+ drivers/acpi/scan.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 60e04b2..b308558 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -340,7 +340,7 @@ static ssize_t
- remove_store(struct device *dev, struct device_attribute *dummy,
- 	     const char *buf, size_t count)
- {
--	int ret = 0;
-+	int err;
- 	unsigned long val;
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index d1ecca2..d1a1f25 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1539,10 +1539,7 @@ int acpi_bus_trim(struct acpi_device *start, int rmdevice)
+ 			child = parent;
+ 			parent = parent->parent;
  
- 	if (strict_strtoul(buf, 0, &val) < 0)
-@@ -349,10 +349,13 @@ remove_store(struct device *dev, struct device_attribute *dummy,
- 	/* An attribute cannot be unregistered by one of its own methods,
- 	 * so we have to use this roundabout approach.
- 	 */
--	if (val)
--		ret = device_schedule_callback(dev, remove_callback);
--	if (ret)
--		count = ret;
-+	if (!val)
-+		return count;
-+
-+	err = device_schedule_callback(dev, remove_callback);
-+	if (err)
-+		return err;
-+
- 	return count;
- }
+-			if (level == 0)
+-				err = acpi_bus_remove(child, rmdevice);
+-			else
+-				err = acpi_bus_remove(child, 1);
++			err = acpi_bus_remove(child, rmdevice);
  
-@@ -372,17 +375,17 @@ static ssize_t
- dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
- 		 const char *buf, size_t count)
- {
--	int ret = 0;
-+	int err;
- 	unsigned long val;
- 
- 	if (strict_strtoul(buf, 0, &val) < 0)
- 		return -EINVAL;
-+	if (!val)
-+		return count;
- 
--	if (val)
--		ret = device_schedule_callback(dev, bus_rescan_callback);
--
--	if (ret)
--		count = ret;
-+	err = device_schedule_callback(dev, bus_rescan_callback);
-+	if (err)
-+		return err;
- 
- 	return count;
- }
+ 			continue;
+ 		}
 -- 
 1.7.7
 
