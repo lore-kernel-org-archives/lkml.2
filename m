@@ -1,165 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2ISXrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 19:47:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46209 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab2ISXrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 19:47:10 -0400
-Date: Thu, 20 Sep 2012 09:46:48 +1000
-From: NeilBrown <neilb@suse.de>
-To: hank <pyu@redhat.com>
-Cc: miku@iki.fi, jakob@ostenfeld.dk, ptb@it.uc3m.es,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug
- in fix_read_error function
-Message-ID: <20120920094648.3997ecac@notabene.brown>
-In-Reply-To: <50517B51.4000805@redhat.com>
-References: <5045708C.10705@redhat.com>
-	<505144D0.4080908@redhat.com>
-	<20120913154417.3f886f8d@notabene.brown>
-	<50517B51.4000805@redhat.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/C3Uxdg0ZpWqjcSFQ_5g2fNn"; protocol="application/pgp-signature"
+	id S1753170Ab2ISXrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 19:47:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57843 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab2ISXrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 19:47:12 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: [PATCH 05/11] tty/serial/amba-pl011: Implement poll_init callback
+Date: Wed, 19 Sep 2012 16:41:56 -0700
+Message-Id: <1348098122-11041-5-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.11.5
+In-Reply-To: <20120919234003.GA24143@lizard>
+References: <20120919234003.GA24143@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/C3Uxdg0ZpWqjcSFQ_5g2fNn
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The callback is used to initialize the hardware, nothing else should be
+done, i.e. we should not request interrupts (but we can and do unmask
+some of them, as they might be useful for NMI entry).
 
-On Thu, 13 Sep 2012 14:21:05 +0800 hank <pyu@redhat.com> wrote:
+As a side-effect, the patch also fixes a division by zero[1] when booting
+with kgdboc options specified (e.g. kgdboc=ttyAMA0,115200n8). The issue
+happens because serial core calls set_termios callback, but the driver
+doesn't know clock frequency, and thus cannot calculate proper baud rate
+values.
 
-> On 09/13/2012 01:44 PM, NeilBrown wrote:
->=20
-> > On Thu, 13 Sep 2012 10:28:32 +0800 hank <pyu@redhat.com> wrote:
-> >=20
-> >> On 09/04/2012 11:07 AM, hank wrote:
-> >>
-> >>> From 0ba5879082544dc3aa13807087563b1258124b1e Mon Sep 17 00:00:00 2001
-> >>> From: hank <pyu@redhat.com>
-> >>> Date: Tue, 4 Sep 2012 10:23:45 +0800
-> >>> Subject: [PATCH 1/1] drivers/md/raid1.c: fix NULL pointer bug in
-> >>>  fix_read_error function
-> >>>
-> >>> in fix_read_error function, the conf->mirrors[read_disk].rdev may
-> >>> become NULL, as in this function, rdev->nr_pending may be zero, anyone
-> >>> can delete it. So should check if it is NULL before use.
-> >>>
-> >>> Signed-off-by: hank <pyu@redhat.com>
-> >>> ---
-> >>>  drivers/md/raid1.c |    2 +-
-> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> >>> index 611b5f7..fd8de28 100644
-> >>> --- a/drivers/md/raid1.c
-> >>> +++ b/drivers/md/raid1.c
-> >>> @@ -2005,7 +2005,7 @@ static void fix_read_error(struct r1conf *conf,=
- int read_disk,
-> >>>  		if (!success) {
-> >>>  			/* Cannot read from anywhere - mark it bad */
-> >>>  			struct md_rdev *rdev =3D conf->mirrors[read_disk].rdev;
-> >>> -			if (!rdev_set_badblocks(rdev, sect, s, 0))
-> >>> +			if (!rdev || !rdev_set_badblocks(rdev, sect, s, 0))
-> >>>  				md_error(mddev, rdev);
-> >>>  			break;
-> >>>  		}
-> >>
-> >>
-> >>
-> >> Anyone can review this patch? I think it is a bug and should be fixed.
-> >=20
-> > I agree there is a bug there but I don't think this is the right fix.
-> > If rdev could be NULL there, then it could also be NULL in
-> > 		md_error(mddev, conf->mirrors[r1_bio->read_disk].rdev);
-> > in handle_read_error().
-> > I think we should just hold on to the reference to the rdev until we are
-> > done with it, like the follow.
-> >=20
-> > Would you agree?
-> >=20
-> > Thanks,
-> > NeilBrown
-> >=20
-> > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> > index 611b5f7..eb1f8a3 100644
-> > --- a/drivers/md/raid1.c
-> > +++ b/drivers/md/raid1.c
-> > @@ -333,9 +333,10 @@ static void raid1_end_read_request(struct bio *bio=
-, int error)
-> >  		spin_unlock_irqrestore(&conf->device_lock, flags);
-> >  	}
-> > =20
-> > -	if (uptodate)
-> > +	if (uptodate) {
-> >  		raid_end_bio_io(r1_bio);
-> > -	else {
-> > +		rdev_dec_pending(conf->mirrors[mirror].rdev, conf->mddev);
-> > +	} else {
-> >  		/*
-> >  		 * oops, read error:
-> >  		 */
-> > @@ -349,9 +350,8 @@ static void raid1_end_read_request(struct bio *bio,=
- int error)
-> >  			(unsigned long long)r1_bio->sector);
-> >  		set_bit(R1BIO_ReadError, &r1_bio->state);
-> >  		reschedule_retry(r1_bio);
-> > +		/* don't drop the reference on read_disk yet */
-> >  	}
-> > -
-> > -	rdev_dec_pending(conf->mirrors[mirror].rdev, conf->mddev);
-> >  }
-> > =20
-> >  static void close_write(struct r1bio *r1_bio)
-> > @@ -2220,6 +2220,7 @@ static void handle_read_error(struct r1conf *conf=
-, struct r1bio *r1_bio)
-> >  		unfreeze_array(conf);
-> >  	} else
-> >  		md_error(mddev, conf->mirrors[r1_bio->read_disk].rdev);
-> > +	rdev_dec_pending(conf->mirrors[r1_bio->read_disk].rdev, conf->mddev);
-> > =20
-> >  	bio =3D r1_bio->bios[r1_bio->read_disk];
-> >  	bdevname(bio->bi_bdev, b);
->=20
->=20
-> The md_error function will check if rdev is NULL, if it is NULL,
-> md_error will return directly, so I think it is doesn't matther if we
-> pass a NULL rdev to md_error function.
->=20
-> But anyway, I can't find any problem in your patch, it is correct doubtle=
-ss.
+[1]
+WARNING: at drivers/tty/serial/serial_core.c:400 uart_get_baud_rate+0xe8/0x14c()
+Modules linked in:
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c0020ae8>] (warn_slowpath_common+0x4c/0x64)
+[<c0020ae8>] (warn_slowpath_common+0x4c/0x64) from [<c0020b1c>] (warn_slowpath_null+0x1c/0x24)
+[<c0020b1c>] (warn_slowpath_null+0x1c/0x24) from [<c0185ed8>] (uart_get_baud_rate+0xe8/0x14c)
+[<c0185ed8>] (uart_get_baud_rate+0xe8/0x14c) from [<c0187078>] (pl011_set_termios+0x48/0x278)
+[<c0187078>] (pl011_set_termios+0x48/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
+---[ end trace 7d41c9186f342c40 ]---
+Division by zero in kernel.
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c014546c>] (Ldiv0+0x8/0x10)
+[<c014546c>] (Ldiv0+0x8/0x10) from [<c0187098>] (pl011_set_termios+0x68/0x278)
+[<c0187098>] (pl011_set_termios+0x68/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
+Division by zero in kernel.
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c014546c>] (Ldiv0+0x8/0x10)
+[<c014546c>] (Ldiv0+0x8/0x10) from [<c0183a98>] (uart_update_timeout+0x4c/0x5c)
+[<c0183a98>] (uart_update_timeout+0x4c/0x5c) from [<c01870f8>] (pl011_set_termios+0xc8/0x278)
+[<c01870f8>] (pl011_set_termios+0xc8/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
 
-Thanks.
-I've queued it for the next merge window.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/tty/serial/amba-pl011.c | 44 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 33 insertions(+), 11 deletions(-)
 
-Thanks,
-NeilBrown
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index cede938..45137e4 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1309,10 +1309,9 @@ static void pl011_put_poll_char(struct uart_port *port,
+ 
+ #endif /* CONFIG_CONSOLE_POLL */
+ 
+-static int pl011_startup(struct uart_port *port)
++static int pl011_hwinit(struct uart_port *port)
+ {
+ 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+-	unsigned int cr;
+ 	int retval;
+ 
+ 	/* Optionaly enable pins to be muxed in and configured */
+@@ -1337,6 +1336,37 @@ static int pl011_startup(struct uart_port *port)
+ 	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+ 
+ 	/*
++	 * Save interrupts enable mask, and enable RX interrupts in case if
++	 * the interrupt is used for NMI entry.
++	 */
++	uap->im = readw(uap->port.membase + UART011_IMSC);
++	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
++
++	if (uap->port.dev->platform_data) {
++		struct amba_pl011_data *plat;
++
++		plat = uap->port.dev->platform_data;
++		if (plat->init)
++			plat->init();
++	}
++	return 0;
++ out:
++	return retval;
++}
++
++static int pl011_startup(struct uart_port *port)
++{
++	struct uart_amba_port *uap = (struct uart_amba_port *)port;
++	unsigned int cr;
++	int retval;
++
++	retval = pl011_hwinit(port);
++	if (retval)
++		goto clk_dis;
++
++	writew(uap->im, uap->port.membase + UART011_IMSC);
++
++	/*
+ 	 * Allocate the IRQ
+ 	 */
+ 	retval = request_irq(uap->port.irq, pl011_int, 0, "uart-pl011", uap);
+@@ -1395,19 +1425,10 @@ static int pl011_startup(struct uart_port *port)
+ 	writew(uap->im, uap->port.membase + UART011_IMSC);
+ 	spin_unlock_irq(&uap->port.lock);
+ 
+-	if (uap->port.dev->platform_data) {
+-		struct amba_pl011_data *plat;
+-
+-		plat = uap->port.dev->platform_data;
+-		if (plat->init)
+-			plat->init();
+-	}
+-
+ 	return 0;
+ 
+  clk_dis:
+ 	clk_disable_unprepare(uap->clk);
+- out:
+ 	return retval;
+ }
+ 
+@@ -1688,6 +1709,7 @@ static struct uart_ops amba_pl011_pops = {
+ 	.config_port	= pl011_config_port,
+ 	.verify_port	= pl011_verify_port,
+ #ifdef CONFIG_CONSOLE_POLL
++	.poll_init     = pl011_hwinit,
+ 	.poll_get_char = pl011_get_poll_char,
+ 	.poll_put_char = pl011_put_poll_char,
+ #endif
+-- 
+1.7.11.5
 
-
---Sig_/C3Uxdg0ZpWqjcSFQ_5g2fNn
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUFpZaDnsnt1WYoG5AQI6Ew//WlvrNWJ+Tupu/MMLYtX0O2lwo2P7X00c
-Yuzdrz8VCsndkdd5bnNQUWrlqn1x1ywiool7uQCKIVCPFOVtBf+hWAUpw+4l8E0m
-/DPs29eXcj0J3y2xEQuZabMsuLD9zlZO7Od37N4vSEz3ilXw+qdpkMzTTLbpPyQl
-JOuIZ2oFdvEY6+msemxrDw7Zfc4OLKhkAxIcBtYAHK7unDJK8S5tL6UKEOiOxxnh
-jbqmLWEdEk/j/C+Viqss8XPSxseti4en3I2hiwPtMUcVT5qSRHdHpE+i8s5isBS7
-DwnUZ4wCGTP+quQs1m9wSWquilAX66o6Lh2Ufim/iNri8446rni94jAmAgNx3tEm
-mqPXb1Pg9UP7V3i/TLrCUffYavC4tqXI+rbeFxUofrnRLquGumUBHwV4J2OE426M
-/vvEZjV21Qfuhd8vmHmdHnqcosjOAtSowgMXRZnOpTNiDK7El1QfgUo3R9G6jnbK
-fq1qldlHL7oYjowJ+nVLHMUonjPRDDANzCc4oGs6nkL7m76iiEfA6cjBFHsFaAFC
-oRdfti76lcNTvyg/2jhNyxOMNFGjw3nJhDXJkr66q1sp0/fRKUjlsYhhYL4o64TI
-FTlMZd0X/BIJtne2c+Pf4RCutw3L5mtgX+G6+VjanJ7PI1PbYBRKmNuIw8UO6p2x
-+mwj09NgE1w=
-=GDDg
------END PGP SIGNATURE-----
-
---Sig_/C3Uxdg0ZpWqjcSFQ_5g2fNn--
