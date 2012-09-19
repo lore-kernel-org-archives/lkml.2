@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2ISPXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:23:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52863 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab2ISPXp (ORCPT
+	id S1756201Ab2ISPYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:24:00 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:52880 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754200Ab2ISPX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:23:45 -0400
-Date: Wed, 19 Sep 2012 08:23:15 -0700
-From: tip-bot for Feng Tang <feng.tang@intel.com>
-Message-ID: <tip-59cbea229473350168930941986ebe5bf685cc23@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, andi@firstfloor.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        feng.tang@intel.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, andi@firstfloor.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        feng.tang@intel.com, mingo@elte.hu
-In-Reply-To: <1347007349-3102-4-git-send-email-feng.tang@intel.com>
-References: <1347007349-3102-4-git-send-email-feng.tang@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf scripts: Add event_analyzing_sample-record/
- report
-Git-Commit-ID: 59cbea229473350168930941986ebe5bf685cc23
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:23:20 -0700 (PDT)
+	Wed, 19 Sep 2012 11:23:57 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18NvGMFcWANlAvoqlQsom6D5/6tZ+Ju50SslDVtkM
+	hAqLgZgmluAhB4
+Message-ID: <1348068230.4457.152.camel@marge.simpson.net>
+Subject: Re: 20% performance drop on PostgreSQL 9.2 from kernel 3.5.3 to
+ 3.6-rc5 on AMD chipsets - bisected
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Nikolay Ulyanitsky <lystor@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 19 Sep 2012 17:23:50 +0200
+In-Reply-To: <20120919145454.GA18327@gmail.com>
+References: <CA+Medix98MHYzpKSDKKWf7Wew0H4zDFsUS74LrhsP2Lxemd3Mw@mail.gmail.com>
+	 <20120914212717.GA29307@liondog.tnic>
+	 <CA+55aFwn3UhTDDch4+-=9=T3rHpDvqphY+NLtf2Ljq-7eG+gYw@mail.gmail.com>
+	 <1347680006.4340.142.camel@marge.simpson.net>
+	 <m24nmzz2f8.fsf@firstfloor.org>
+	 <1347727001.7029.37.camel@marge.simpson.net>
+	 <20120915223212.4174a314@pyramind.ukuu.org.uk>
+	 <1347770100.6952.31.camel@marge.simpson.net>
+	 <1348058119.4457.129.camel@marge.simpson.net>
+	 <20120919145454.GA18327@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  59cbea229473350168930941986ebe5bf685cc23
-Gitweb:     http://git.kernel.org/tip/59cbea229473350168930941986ebe5bf685cc23
-Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Fri, 7 Sep 2012 16:42:25 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 17 Sep 2012 13:11:15 -0300
+On Wed, 2012-09-19 at 16:54 +0200, Ingo Molnar wrote: 
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > On Sun, 2012-09-16 at 06:35 +0200, Mike Galbraith wrote:
+> > 
+> > > Oh, while I'm thinking about it, there's another scenario 
+> > > that could cause the select_idle_sibling() change to affect 
+> > > pgbench on largeish packages, but it boils down to 
+> > > preemption odds as well.  IIRC pgbench _was_ at least 1:N, 
+> > > ie one process driving the whole load.  Waker of many 
+> > > (singularly bad idea as a way to generate load) being 
+> > > preempted by it's wakees stalls the whole load, so expensive 
+> > > spreading of wakees to the four winds ala WAKE_BALANCE 
+> > > becomes attractive, that pain being markedly less intense 
+> > > than having multiple cores go idle while creator or work 
+> > > waits for one.
+> > 
+> > Enabling SMT on little E5620 box says that's the deal.  
+> > pgbench as run is 1:N, and all you have to do is disable 
+> > select_idle_sibling() entirely to see that for _this_ (~odd) 
+> > load, max spread and lower wakeup latency for the mother of 
+> > all work itself is a good thing.
+> > 
+> > pgbench -i pgbench && pgbench -c $N -T 10 pgbench
+> > 
+> > N=   1     2     4     8    16    32    64
+> >   1336  2482  3752  3485  3327  2928  2290  virgin 3.6.0-rc6
+> >   1408  2457  3363  3070  2938  2368  1757  +revert reverted 
+> >   1310  2492  2487  2729  2186   975   874  +revert + select_idle_sibling() disabled
+> >   1407  2505  3422  3137  3093  2828  2250  +revert + schedctl -B /etc/init.d/postgresql restart
+> >   1321  2403  2515  2759  2420  2301  1894  +revert + schedctl -B /etc/init.d/postgresql restart + select_idle_sibling() disabled
+> > 
+> > Hohum, damned if ya do, damned if ya don't.  Damn.
+> 
+> As a test, could you mark that 'big PostgreSQL central work 
+> queue process' with some high priority (renice -20?), to make 
+> sure it's never preempted by wakees? Does that recover 
+> performance as well?
 
-perf scripts: Add event_analyzing_sample-record/report
+schedctl -B started postgress SCHED_BATCH, so pgbench won't be preempted
+since it's the only SCHED_NORMAL task left in the lot.  All others are
+postmaster, and SCHED_BATCH.
 
-So that event_analyzing_sample.py can be shown by "perf script -l"
+-Mike
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1347007349-3102-4-git-send-email-feng.tang@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- .../python/bin/event_analyzing_sample-record       |    8 ++++++++
- .../python/bin/event_analyzing_sample-report       |    3 +++
- 2 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/scripts/python/bin/event_analyzing_sample-record b/tools/perf/scripts/python/bin/event_analyzing_sample-record
-new file mode 100644
-index 0000000..5ce652d
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/event_analyzing_sample-record
-@@ -0,0 +1,8 @@
-+#!/bin/bash
-+
-+#
-+# event_analyzing_sample.py can cover all type of perf samples including
-+# the tracepoints, so no special record requirements, just record what
-+# you want to analyze.
-+#
-+perf record $@
-diff --git a/tools/perf/scripts/python/bin/event_analyzing_sample-report b/tools/perf/scripts/python/bin/event_analyzing_sample-report
-new file mode 100644
-index 0000000..0941fc9
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/event_analyzing_sample-report
-@@ -0,0 +1,3 @@
-+#!/bin/bash
-+# description: analyze all perf samples
-+perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/event_analyzing_sample.py
