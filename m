@@ -1,65 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2ISQdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:33:11 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52619 "EHLO e8.ny.us.ibm.com"
+	id S932635Ab2ISQdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:33:17 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16437 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932328Ab2ISQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:33:05 -0400
-Message-ID: <5059F367.5020104@linaro.org>
-Date: Wed, 19 Sep 2012 09:31:35 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S932613Ab2ISQdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:33:14 -0400
+Subject: [PATCH 10/11] fuse: optimize fuse_get_user_pages()
+To: miklos@szeredi.hu
+From: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Date: Wed, 19 Sep 2012 20:33:22 +0400
+Message-ID: <20120919163317.29482.48472.stgit@maximpc.sw.ru>
+In-Reply-To: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
+References: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
- issue in timekeeping core
-References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org> <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com> <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at> <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at>
-In-Reply-To: <20120919045038.GA2248@netboy.at.omicron.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12091916-9360-0000-0000-00000AD5A1EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2012 09:50 PM, Richard Cochran wrote:
-> On Tue, Sep 18, 2012 at 11:29:50AM -0700, John Stultz wrote:
->> I believe its mostly historical, but on some architectures that
->> history has become an established ABI, making it technical.
-> Fine, but what do you mean by "ABI?" Are you talking about magic
-> addresses for functions?
-On powerpc, I mean magic addresses where userland can find structures 
-that it can use to calculate time.
+Let fuse_get_user_pages() pack as many iov-s to a single fuse_req as
+possible. This is very beneficial in case of iov[] consisting of many
+iov-s of relatively small sizes (e.g. PAGE_SIZE).
 
-On ia64 I mean the fsyscall method (which is arch specific).
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+---
+ fs/fuse/file.c |   94 +++++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 58 insertions(+), 36 deletions(-)
 
-> Without knowing the dirty details, what I imagine is a jump/branch
-> from the arch-specific code into the common implementation.
->
-> Can that be done?
-In the two cases above, what you suggest unfortunately isn't possible 
-(at least to my understanding - arch maintainers jump in to correct me).
-
-With powerpc, there is no arch specific kernel code involved, its just a 
-data structure the kernel exports that is accessible to userland. The 
-execution logic lives in userland libraries, or sometimes application 
-code itself.
-
-With ia64's fsyscall, its a special mode that limits what you can do and 
-which registers you access. So you couldn't just jump to other code 
-while in that mode.
-
-But maybe someone has a neat idea on how to get around this?
-
-thanks
--john
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index db9efb5..5b0fa5d 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1047,13 +1047,24 @@ static void fuse_release_user_pages(struct fuse_req *req, int write)
+ 	}
+ }
+ 
+-static inline void fuse_page_descs_length_init(struct fuse_req *req)
++static inline void fuse_page_descs_length_init(struct fuse_req *req,
++					       unsigned i, int n)
+ {
+-	int i;
++	while (n-- > 0)
++		req->page_descs[i + n].length = PAGE_SIZE -
++			req->page_descs[i + n].offset;
++}
+ 
+-	for (i = 0; i < req->num_pages; i++)
+-		req->page_descs[i].length = PAGE_SIZE -
+-			req->page_descs[i].offset;
++static inline unsigned long fuse_get_ua(const struct iovec *iov,
++					size_t iov_offset)
++{
++	return (unsigned long)iov->iov_base + iov_offset;
++}
++
++static inline size_t fuse_get_fr_sz(const struct iovec *iov, size_t iov_offset,
++				    size_t max_size)
++{
++	return min_t(size_t, iov->iov_len - iov_offset, max_size);
+ }
+ 
+ static int fuse_get_user_pages(struct fuse_req *req,
+@@ -1062,14 +1073,12 @@ static int fuse_get_user_pages(struct fuse_req *req,
+ 			       size_t *iov_offset_p,
+ 			       size_t *nbytesp, int write)
+ {
+-	size_t nbytes = *nbytesp;
+-	size_t frag_size = min_t(size_t, nbytes, (*iov_pp)->iov_len - *iov_offset_p);
+-	unsigned long user_addr = (unsigned long)(*iov_pp)->iov_base + *iov_offset_p;
+-	unsigned offset = user_addr & ~PAGE_MASK;
+-	int npages;
++	size_t nbytes = 0;  /* # bytes already packed in req */
+ 
+ 	/* Special case for kernel I/O: can copy directly into the buffer */
+ 	if (segment_eq(get_fs(), KERNEL_DS)) {
++		unsigned long user_addr = fuse_get_ua(*iov_pp, *iov_offset_p);
++
+ 		if (write)
+ 			req->in.args[1].value = (void *) user_addr;
+ 		else
+@@ -1077,42 +1086,55 @@ static int fuse_get_user_pages(struct fuse_req *req,
+ 
+ 		(*iov_pp)++;
+ 		(*nr_segs_p)--;
+-		*nbytesp = frag_size;
++		*nbytesp = fuse_get_fr_sz(*iov_pp, *iov_offset_p, *nbytesp);
+ 		return 0;
+ 	}
+ 
+-	nbytes = min_t(size_t, frag_size, FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT);
+-	npages = (nbytes + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	npages = clamp(npages, 1, FUSE_MAX_PAGES_PER_REQ);
+-	npages = get_user_pages_fast(user_addr, npages, !write, req->pages);
+-	if (npages < 0)
+-		return npages;
++	while (nbytes < *nbytesp && req->num_pages < FUSE_MAX_PAGES_PER_REQ) {
++		int npages;
++		unsigned long user_addr = fuse_get_ua(*iov_pp, *iov_offset_p);
++		unsigned offset = user_addr & ~PAGE_MASK;
++		size_t frag_size = fuse_get_fr_sz(*iov_pp, *iov_offset_p,
++						  *nbytesp - nbytes);
+ 
+-	req->num_pages = npages;
+-	req->page_descs[0].offset = offset;
+-	fuse_page_descs_length_init(req);
++		int n = FUSE_MAX_PAGES_PER_REQ - req->num_pages;
++		frag_size = min_t(size_t, frag_size, n << PAGE_SHIFT);
+ 
+-	if (write)
+-		req->in.argpages = 1;
+-	else
+-		req->out.argpages = 1;
++		npages = (frag_size + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		npages = clamp(npages, 1, n);
+ 
+-	nbytes = (req->num_pages << PAGE_SHIFT) - req->page_descs[0].offset;
++		npages = get_user_pages_fast(user_addr, npages, !write,
++					     &req->pages[req->num_pages]);
++		if (npages < 0)
++			return npages;
+ 
+-	if (frag_size < nbytes)
+-		req->page_descs[req->num_pages - 1].length -=
+-			nbytes - frag_size;
++		frag_size = min_t(size_t, frag_size,
++				  (npages << PAGE_SHIFT) - offset);
++		nbytes += frag_size;
+ 
+-	*nbytesp = min(frag_size, nbytes);
++		if (frag_size < (*iov_pp)->iov_len - *iov_offset_p) {
++			*iov_offset_p += frag_size;
++		} else {
++			(*iov_pp)++;
++			(*nr_segs_p)--;
++			*iov_offset_p = 0;
++		}
+ 
+-	if (*nbytesp < (*iov_pp)->iov_len - *iov_offset_p) {
+-		*iov_offset_p += *nbytesp;
+-	} else {
+-		(*iov_pp)++;
+-		(*nr_segs_p)--;
+-		*iov_offset_p = 0;
++		req->page_descs[req->num_pages].offset = offset;
++		fuse_page_descs_length_init(req, req->num_pages, npages);
++
++		req->num_pages += npages;
++		req->page_descs[req->num_pages - 1].length -=
++			(npages << PAGE_SHIFT) - offset - frag_size;
+ 	}
+ 
++	if (write)
++		req->in.argpages = 1;
++	else
++		req->out.argpages = 1;
++
++	*nbytesp = nbytes;
++
+ 	return 0;
+ }
+ 
+@@ -1954,7 +1976,7 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+ 	}
+ 	memcpy(req->pages, pages, sizeof(req->pages[0]) * num_pages);
+ 	req->num_pages = num_pages;
+-	fuse_page_descs_length_init(req);
++	fuse_page_descs_length_init(req, 0, req->num_pages);
+ 
+ 	/* okay, let's send it to the client */
+ 	req->in.h.opcode = FUSE_IOCTL;
 
