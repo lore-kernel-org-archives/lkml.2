@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2ISVod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:44:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab2ISVoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:44:32 -0400
-Date: Wed, 19 Sep 2012 17:41:12 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
-Subject: Re: 3.6rc6 slab corruption.
-Message-ID: <20120919214112.GA15027@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-	Suzuki Poulose <suzuki@in.ibm.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
-References: <20120918143504.GA30585@redhat.com>
- <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
- <20120918185310.GA27689@redhat.com>
- <5059D015.2020104@linux.vnet.ibm.com>
- <CA+55aFwuO_8Wy6C7rALajiK2Pro84BrfzmKHpARx4EfG8qNMhw@mail.gmail.com>
- <alpine.DEB.2.00.1209191340410.6273@chino.kir.corp.google.com>
+	id S1752256Ab2ISVrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:47:19 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62317 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2ISVrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 17:47:17 -0400
+Message-ID: <505A3D77.8030009@gmail.com>
+Date: Wed, 19 Sep 2012 23:47:35 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209191340410.6273@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [Patch 3/7] smpboot: Provide infrastructure for percpu hotplug
+ threads
+References: <20120716103749.122800930@linutronix.de> <20120716103948.352501068@linutronix.de>
+In-Reply-To: <20120716103948.352501068@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 02:27:37PM -0700, David Rientjes wrote:
- > On Wed, 19 Sep 2012, Linus Torvalds wrote:
- > 
- > > > Create a 350 processes reading /sys/kernel/debug/kvm/spinlocks/histo_blocked
- > > > file simultaneously in while loop for more than 3 hours on my box.
- > > 
- > > You need to open the file a single time, and then after that sinelg
- > > open (either threaded or with fork()) do multiple concurrent copies
- > > something like
- > > 
- > >    for (;;) {
- > >       char buf[1024];
- > >       lseek(fd, 0, SEEK_SET);
- > 
- > These are non-seekable files, so this will always fail.  That makes the 
- > race much more difficult to trigger: the read needs to call 
- > u32_array_read() with both threads finding *ppos == 0 and then race 
- > between the kfree() and resetting of file->private_data pointer.
- > 
- >  [ I'm surprised that Dave was able to trigger this so often that he has 
- >    800MB of log. ]
+Hi Thomas,
 
-Brainfart. 800Kb. Still, lots.
+On 07/16/2012 12:42 PM, Thomas Gleixner wrote:
+> Provide a generic interface for setting up and tearing down percpu
+> threads.
+> 
+> On registration the threads for already online cpus are created and
+> started. On deregistration (modules) the threads are stoppped.
+> 
+> During hotplug operations the threads are created, started, parked and
+> unparked. The datastructure for registration provides a pointer to
+> percpu storage space and optional setup, cleanup, park, unpark
+> functions. These functions are called when the thread state changes.
+> 
+> Each implementation has to provide a function which is queried and
+> returns whether the thread should run and the thread function itself.
+> 
+> The core code handles all state transitions and avoids duplicated code
+> in the call sites.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
 
-	Dave
+This patch seems to cause the following BUG() on KVM guests with large amount of
+VCPUs:
 
+[    0.511760] ------------[ cut here ]------------
+[    0.511761] kernel BUG at kernel/smpboot.c:134!
+[    0.511764] invalid opcode: 0000 [#3] PREEMPT SMP DEBUG_PAGEALLOC
+[    0.511779] CPU 0
+[    0.511780] Pid: 70, comm: watchdog/10 Tainted: G      D W
+3.6.0-rc6-next-20120919-sasha-00001-gb54aafe #365
+[    0.511783] RIP: 0010:[<ffffffff81141676>]  [<ffffffff81141676>]
+smpboot_thread_fn+0x196/0x2e0
+[    0.511785] RSP: 0018:ffff88000cf4bdd0  EFLAGS: 00010206
+[    0.511786] RAX: 0000000000000000 RBX: ffff88000cf58000 RCX: 0000000000000000
+[    0.511787] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
+[    0.511788] RBP: ffff88000cf4be30 R08: 0000000000000000 R09: 0000000000000001
+[    0.511789] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88000cdb9ff0
+[    0.511790] R13: ffffffff84c60920 R14: 000000000000000a R15: ffff88000cf58000
+[    0.511792] FS:  0000000000000000(0000) GS:ffff88000d200000(0000)
+knlGS:0000000000000000
+[    0.511794] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    0.511795] CR2: 00000000ffffffff CR3: 0000000004c26000 CR4: 00000000000406f0
+[    0.511801] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    0.511805] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    0.511807] Process watchdog/10 (pid: 70, threadinfo ffff88000cf4a000, task
+ffff88000cf58000)
+[    0.511808] Stack:
+[    0.511822]  ffff88000cf4bfd8 ffff88000cf4bfd8 0000000000000000 0000000000000000
+[    0.511833]  ffff88000cf4be00 ffffffff839eace5 ffff88000cf4be30 ffff88000cdd1c68
+[    0.511844]  ffff88000cdb9ff0 ffffffff811414e0 0000000000000000 0000000000000000
+[    0.511845] Call Trace:
+[    0.511852]  [<ffffffff839eace5>] ? schedule+0x55/0x60
+[    0.511857]  [<ffffffff811414e0>] ? __smpboot_create_thread+0xf0/0xf0
+[    0.511863]  [<ffffffff81135c13>] kthread+0xe3/0xf0
+[    0.511867]  [<ffffffff839eb463>] ? wait_for_common+0x143/0x180
+[    0.511873]  [<ffffffff839ef044>] kernel_thread_helper+0x4/0x10
+[    0.511878]  [<ffffffff839ed3b4>] ? retint_restore_args+0x13/0x13
+[    0.511883]  [<ffffffff81135b30>] ? insert_kthread_work+0x90/0x90
+[    0.511888]  [<ffffffff839ef040>] ? gs_change+0x13/0x13
+[    0.511916] Code: 24 04 02 00 00 00 0f 1f 80 00 00 00 00 e8 b3 46 ff ff e9 b6
+fe ff ff 66 0f 1f 44 00 00 45 8b 34 24 e8 ff 72 8a 00 41 39 c6 74 0a <0f> 0b 0f
+1f 84 00 00 00 00 00 41 8b 44 24 04 85 c0 74 0f 83 f8
+[    0.511919] RIP  [<ffffffff81141676>] smpboot_thread_fn+0x196/0x2e0
+[    0.511920]  RSP <ffff88000cf4bdd0>
+[    0.511922] ---[ end trace 127920ef70923ae1 ]---
+
+I'm starting the guest with numa=fake=10, so vcpu 0 ends up on the same (fake)
+node as vcpu 10, and while digging into the bug, it seems that the issue is that
+vcpu10's thread gets scheduled on vcpu0.
+
+Beyond that I don't really understand what's wrong...
+
+
+Thanks,
+Sasha
