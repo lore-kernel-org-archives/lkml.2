@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2ISQvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:51:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64168 "EHLO
+	id S932498Ab2ISQxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:53:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44202 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756272Ab2ISQve (ORCPT
+	with ESMTP id S1756272Ab2ISQxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:51:34 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: OMAP: Check IS_ERR() instead of NULL for omap_device_get_by_hwmod_name
-Organization: Deep Root Systems, LLC
-References: <1347932747.6562.3.camel@phoenix> <201209182052.57414.rjw@sisk.pl>
-Date: Wed, 19 Sep 2012 09:51:35 -0700
-In-Reply-To: <201209182052.57414.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Tue, 18 Sep 2012 20:52:57 +0200")
-Message-ID: <877grqj6qw.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 19 Sep 2012 12:53:10 -0400
+Message-ID: <5059F872.3080203@kdau.com>
+Date: Wed, 19 Sep 2012 09:53:06 -0700
+From: Kevin Daughtridge <kevin@kdau.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>
+CC: Henrik Rydberg <rydberg@euromail.se>, Kevin Daughtridge <kevin@kdau.com>,
+        linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] HID: leave dev_rdesc unmodified and use it for comparisons
+References: <50592FB1.7000800@kdau.com> <50597CAD.7010801@suse.cz>
+In-Reply-To: <50597CAD.7010801@suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On 09/19/12 01:05 N.U., Jiri Slaby wrote:
+> AFAICS this is incorrect. Some drivers return pointers to their own 
+> static structure from their .report_fixup. Hence there are two problems:
+> * leak, because kmemdup'ped start is never freed
+> * invalid free -- kfree(device->rdesc) will try to free a static 
+> structure regards, 
 
-> On Tuesday, September 18, 2012, Axel Lin wrote:
->> omap_device_get_by_hwmod_name() returns ERR_PTR on error.
->> 
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Kevin, should I take this?
+On 09/19/12 04:55 N.U., Jiri Kosina wrote:
+> How do you avoid memory leak on 'start' here? 
 
-Yes, please.
+Hmm. I hadn't noticed that the other drivers are returning a static 
+structure. In that case, it seems that report_fixup itself is broken 
+from a memory perspective, in that it returns pointers to inconsistent 
+storage types depending on the driver. (As evidenced by how my first 
+patch version would have also caused invalid frees that weren't evident 
+from the declaration in hid.h.) I see two options:
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+1. Ugly workaround: make a temporary copy of the dev_rdesc, give it to 
+report_fixup, make a copy of the return, store that copy in rdesc, free 
+the temporary copy. Though ugly, this would at least involve the 
+smallest diff.
 
-Thanks,
+2. Standardize the behavior of the drivers' report_fixup 
+implementations. Given that some of them need to change the size of the 
+descriptor, modifying the passed structure is not an option. Probably 
+all of them should return a newly allocated structure, either a modified 
+copy of the input or a copy of their static, that can then be stored 
+directly in rdesc. Especially since report_fixup is only ever called 
+right before a copy is going to be taken anyway. (Adding constness to a 
+parameter isn't considered a severe ABI break, is it?)
 
-Kevin
+Thoughts?
 
-
+-Kevin
