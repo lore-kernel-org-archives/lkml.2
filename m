@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab2ISSXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:23:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab2ISSXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:23:14 -0400
-Message-ID: <1348078993.28860.37.camel@bling.home>
-Subject: Re: [PATCH v10 2/2] kvm: Add resampling irqfds for level triggered
- interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 19 Sep 2012 12:23:13 -0600
-In-Reply-To: <50598975.50503@redhat.com>
-References: <20120918031156.12021.27838.stgit@bling.home>
-	 <20120918031626.12021.90083.stgit@bling.home> <50598975.50503@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755347Ab2ISS0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:26:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62262 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab2ISS0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 14:26:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <505A06BD.6000406@linaro.org>
+References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
+ <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
+ <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at>
+ <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at>
+ <5059F367.5020104@linaro.org> <20120919170347.GA2232@netboy.at.omicron.at> <505A06BD.6000406@linaro.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 19 Sep 2012 11:26:11 -0700
+Message-ID: <CALCETrUAiLXvxYMnNDvdUSFkno+v+P_XGirOYch-k8dUG05jpw@mail.gmail.com>
+Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
+ issue in timekeeping core
+To: John Stultz <john.stultz@linaro.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 11:59 +0300, Avi Kivity wrote:
-> On 09/18/2012 06:16 AM, Alex Williamson wrote:
-> > @@ -92,6 +156,43 @@ irqfd_shutdown(struct work_struct *work)
-> >  	 */
-> >  	flush_work_sync(&irqfd->inject);
-> >  
-> > +	if (irqfd->resampler) {
-> > +		struct _irqfd_resampler *resampler = irqfd->resampler;
-> > +		struct kvm *kvm = resampler->kvm;
-> > +
-> > +		mutex_lock(&kvm->irq_lock);
-> > +		spin_lock_irq(&irqfd->kvm->irqfds.lock);
-> > +
-> > +		list_del_rcu(&irqfd->resampler_list);
-> > +
-> > +		/*
-> > +		 * On removal of the last irqfd in the resampler list,
-> > +		 * remove the resampler and unregister the irq ack
-> > +		 * notifier.  It's possible to race the ack of the final
-> > +		 * injection here, so manually de-assert the gsi to avoid
-> > +		 * leaving an unmanaged, asserted interrupt line.
-> > +		 */
-> > +		if (list_empty(&resampler->irqfds)) {
-> > +			list_del(&resampler->list);
-> > +			__kvm_unregister_irq_ack_notifier(kvm,
-> > +							  &resampler->notifier);
-> > +			kvm_set_irq(kvm, KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID,
-> > +				    resampler->notifier.gsi, 0);
-> > +			kfree(resampler);
-> 
-> Is this rcu safe?
+On Wed, Sep 19, 2012 at 10:54 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On 09/19/2012 10:03 AM, Richard Cochran wrote:
+>>
+>> On Wed, Sep 19, 2012 at 09:31:35AM -0700, John Stultz wrote:
+>>>
+>>> With powerpc, there is no arch specific kernel code involved, its
+>>> just a data structure the kernel exports that is accessible to
+>>> userland. The execution logic lives in userland libraries, or
+>>> sometimes application code itself.
+>>
+>> I took a brief look at arch/powerpc/kernel/vdso32/gettimeofday.S and
+>> arch/powerpc/kernel/vdso64/gettimeofday.S, and I see what looks a lot
+>> like functions
+>
+> Sorry, yes. My statement wasn't subtle enough (and I may be confusing my
+> history).
+>
+> You are right, there is arch specific code involved, but the data structure
+> that is exported is considered part of the abi since some applications
+> access it directly.
+>
+> See the comments and structure in:
+> arch/powerpc/include/asm/vdso_datapage.h
+>
+>
+>
+>> $ find arch/powerpc/kernel/vdso* -name gettimeofday.S|xargs grep
+>> FUNCTION_BEGIN
+>>
+>>
+>> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+>>
+>> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+>>
+>> arch/powerpc/kernel/vdso32/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+>>
+>> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_gettimeofday)
+>>
+>> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_gettime)
+>>
+>> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__kernel_clock_getres)
+>> arch/powerpc/kernel/vdso64/gettimeofday.S:V_FUNCTION_BEGIN(__do_get_tspec)
+>>
+>> and I wonder whether these could be done in C instead.
+>
+>
+> Possibly, but I suspect they're in asm for performance reasons.
+>
+> Paul/Ben: Do you have any thoughts here?
+>
 
-No it's not and unfortunately this also points out another race in
-trying to use a single source ID...
+Does anything except the vDSO actually use the vDSO data page?  It's
+mapped as part of the vDSO image (i.e. at a non-constant address), and
+it's not immediate obvious how userspace would locate that page.
 
-> > +		}
-> > +
-> > +		spin_unlock_irq(&irqfd->kvm->irqfds.lock);
-> > +		mutex_unlock(&kvm->irq_lock);
-> > +
-> > +		/*
-> > +		 * Both list_del_rcu & __kvm_unregister_irq_ack_notifier
-> > +		 * require an rcu grace period/
-> > +		 */
-> > +		synchronize_rcu();
+FWIW, this is kind of cute and is not obviously worse than the way
+that x86-64 does it, other than the possible ABI issue.
+Pros:
+ - vDSO code could use RIP-relative addressing instead of absolute
+addressing, although I'm not sure whether there's actually a RIP +
+16-bit offset encoding, so this might not be a win
+ - Avoids a read-only page at a constant address
+ - The mapping is per-process, so evil tricks could be used to shove,
+say, pid in there.  This is almost certainly not worth it, especially
+given the odd things that clone can do and that glibc already ought to
+cache the pid.
+Cons:
+ - If ptrace or mprotect pokes that page, the clock stops for that process.
+ - Lots of complexity for minimal gain.
 
-The kfree can't be done until here and we also have to assume that ack
-notifies are firing until here.  That means that between the
-mutex_unlock and the end of synchronize_rcu another resampling irqfd can
-be registered, post an interrupt, and have it de-asserted by the wrong
-resampler.  Maybe the conversion wasn't as clean as I first thought :(
+In any case, it looks like #define VVAR(x) vdso_data->x would work on
+ppc, although the vvar specification mechanism would not work.
 
-> Quite ugly to expose the internals this way.
-
-Yep.  I don't know how to clean it up though; between all the different
-rcu operations and locks, it's a mess.  Thanks,
-
-Alex
-
+--Andy
