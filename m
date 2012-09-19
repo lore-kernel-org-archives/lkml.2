@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab2ISCWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 22:22:12 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:27695
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650Ab2ISCWI (ORCPT
+	id S1755334Ab2ISCgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 22:36:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46705 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350Ab2ISCgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 22:22:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 19 Sep 2012 10:45:30 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        <alsa-devel@alsa-project.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Ricardo Neri <ricardo.neri@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Barry Song <baohua.song@csr.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vista Silicon <javier.martin@vista-silicon.com>,
-        Zhangfei Gao <zhangfei.gao@marvell.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH v3 04/15] dmaengine: Pass flags via
- device_prep_dma_cyclic() callback
-Message-ID: <20120919024528.GA6460@S2100-06.ap.freescale.net>
-References: <1347624358-25582-1-git-send-email-peter.ujfalusi@ti.com>
- <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 18 Sep 2012 22:36:36 -0400
+Message-ID: <50592FB1.7000800@kdau.com>
+Date: Tue, 18 Sep 2012 19:36:33 -0700
+From: Kevin Daughtridge <kevin@kdau.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1347624358-25582-5-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Kevin Daughtridge <kevin@kdau.com>
+Subject: [PATCH v2] HID: leave dev_rdesc unmodified and use it for comparisons
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 03:05:47PM +0300, Peter Ujfalusi wrote:
-> Change the parameter list of device_prep_dma_cyclic() so the DMA drivers
-> can receive the flags coming from clients.
-> This feature can be used during audio operation to disable all audio
-> related interrupts when the DMA_PREP_INTERRUPT is cleared from the flags.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> CC: Nicolas Ferre <nicolas.ferre@atmel.com>
-> CC: Barry Song <baohua.song@csr.com>
-> CC: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> CC: Vista Silicon <javier.martin@vista-silicon.com>
-> CC: Zhangfei Gao <zhangfei.gao@marvell.com>
-> CC: Shawn Guo <shawn.guo@linaro.org>
-> CC: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-...
->  drivers/dma/imx-dma.c         | 2 +-
->  drivers/dma/imx-sdma.c        | 2 +-
-...
->  drivers/dma/mxs-dma.c         | 2 +-
+The dev_rdesc member of the hid_device structure is meant to store the original
+report descriptor received from the device, but it is currently passed to any
+report_fixup method before it is copied to the rdesc member. This patch moves
+the kmemdup to before, not after, the report_fixup call, keeping dev_rdesc
+unchanged.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+usbhid's hid_post_reset checks the report descriptor currently returned by the
+device against a descriptor that may have been modified by a driver's
+report_fixup method. That leaves some devices nonfunctional after a resume, with
+a "reset_resume error 1" reported. This patch checks the new descriptor against
+the unmodified dev_rdesc instead.
+
+BugLink:http://bugs.launchpad.net/bugs/1049623
+Signed-off-by: Kevin Daughtridge<kevin@kdau.com>
+---
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -775,12 +775,14 @@ int hid_open_report(struct hid_device *d
+  		return -ENODEV;
+  	size = device->dev_rsize;
+  
++	start = kmemdup(start, size, GFP_KERNEL);
++	if (start == NULL)
++		return -ENOMEM;
++
+  	if (device->driver->report_fixup)
+  		start = device->driver->report_fixup(device, start, &size);
+  
+-	device->rdesc = kmemdup(start, size, GFP_KERNEL);
+-	if (device->rdesc == NULL)
+-		return -ENOMEM;
++	device->rdesc = start;
+  	device->rsize = size;
+  
+  	parser = vzalloc(sizeof(struct hid_parser));
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1436,7 +1436,7 @@ static int hid_post_reset(struct usb_int
+  		kfree(rdesc);
+  		return 1;
+  	}
+-	status = memcmp(rdesc, hid->rdesc, hid->rsize);
++	status = memcmp(rdesc, hid->dev_rdesc, hid->rsize);
+  	kfree(rdesc);
+  	if (status != 0) {
+  		dbg_hid("report descriptor changed\n");
 
