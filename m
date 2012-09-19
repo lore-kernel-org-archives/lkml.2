@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab2ISRQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:16:25 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:12425
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756142Ab2ISRQY (ORCPT
+	id S932728Ab2ISRRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:17:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37566 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab2ISRRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:16:24 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zz936eId6f1izz1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MALXB6-01-7YS-02
-X-M-MSG: 
-Date: Wed, 19 Sep 2012 19:16:10 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] microcode fix for 3.6-rc7
-Message-ID: <20120919171610.GM4577@aftab.osrc.amd.com>
+	Wed, 19 Sep 2012 13:17:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <CAErSpo7DJgtxCF2ubw4rwxcSQh-BkivQLJDsqJOGU32pcmTTnw@mail.gmail.com>
+References: <1347670122-25824-1-git-send-email-yinghai@kernel.org>
+	<1347670122-25824-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo5LMj=wPwYgJfk97hfx9b03fPHZXEvdR6gV2somBTD+4A@mail.gmail.com>
+	<CAE9FiQUxt1kx_SpRWt5eMKvUXuUXwJrd9USeT+WMbCWkDDaQZQ@mail.gmail.com>
+	<CAErSpo7DJgtxCF2ubw4rwxcSQh-BkivQLJDsqJOGU32pcmTTnw@mail.gmail.com>
+Date: Wed, 19 Sep 2012 10:17:05 -0700
+X-Google-Sender-Auth: WEm2UvERJt8vO5XtYck2p0gHgG0
+Message-ID: <CAE9FiQW0PpBU0N9VzJyNKK9PvaUwokCYeB6w_j4mcN9EV0geLQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI, x86: clear initial value for root info resources
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Wed, Sep 19, 2012 at 6:12 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> yes, but they don't support pci_set_host_bridge_release yet. so they
+>> should not meet this problem yet.
+>
+> Why should we wait to fix that bug until later?  I'm not interested in
+> debugging this in the future.  If you fix a bug, you should always try
+> to fix other occurrences of the same bug at the same time.
 
-please pull this fix from Dan Carpenter which goes ontop of
-tip/x86/microcode. It would be best if it goes in during the upcoming
-merge window along with the rest from tip/x86/microcode so that we don't
-have any breakages.
-
-Thanks.
-
-The following changes since commit 2efb05e8e9fa3510044e007b90263c73b6a83f84:
-
-  x86, microcode, AMD: Rewrite patch application procedure (2012-08-22 16:16:29 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_fix_3.7
-
-for you to fetch changes up to 2d297480037e1d9100ca504737820c1bf65db6c0:
-
-  x86, microcode, AMD: Fix use after free in free_cache() (2012-09-19 18:06:25 +0200)
-
-----------------------------------------------------------------
-A small list usage correction from Dan Carpenter.
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      x86, microcode, AMD: Fix use after free in free_cache()
-
- arch/x86/kernel/microcode_amd.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+ok, will update the patch.
