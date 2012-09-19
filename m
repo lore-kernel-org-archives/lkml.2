@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2ISKuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 06:50:39 -0400
-Received: from mga06.intel.com ([134.134.136.21]:64319 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751573Ab2ISKug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 06:50:36 -0400
+	id S1753697Ab2ISKv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 06:51:26 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35793 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352Ab2ISKu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 06:50:59 -0400
+Date: Wed, 19 Sep 2012 12:50:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] plist: Make plist test announcements KERN_DEBUG
+Message-ID: <20120919105053.GB4577@aftab.osrc.amd.com>
+References: <1347446330-6378-1-git-send-email-bp@amd64.org>
+ <1347455750.10751.36.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20120919044651.GY13973@ZenIV.linux.org.uk>
-References: <CALLzPKZqw05_4V6NQeo-A6xOza2P4g6mqxDJnv7f-ktovj_HpQ@mail.gmail.com>
-	<alpine.LRH.2.02.1209191419410.29525@tundra.namei.org>
-	<20120919044651.GY13973@ZenIV.linux.org.uk>
-Date: Wed, 19 Sep 2012 13:50:34 +0300
-Message-ID: <CALLzPKZyS3x4=Qt26L8a2zVf3o7DkYEPPJr+Tzt=Tj7mDCtXFQ@mail.gmail.com>
-Subject: Re: IMA policy search speedup
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: James Morris <jmorris@namei.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347455750.10751.36.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 7:46 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Wed, Sep 19, 2012 at 02:21:56PM +1000, James Morris wrote:
->> On Tue, 18 Sep 2012, Kasatkin, Dmitry wrote:
->>
->> > I looked to <linux/fs.h> and found that there is a possibility to to
->> > add additional flag for sb->s_flags.
->> > For example
->> >
->> > #define MS_NOT_IMA              (1<<25) /* NOT_IMA */
->> > #define IS_I_NOT_IMA(inode)   __IS_FLG(inode, MS_NOT_IMA)
->> >
->> >
->> > Another way is to add additional dedicated integrity related member to
->> > the sb structure.
->> > struct super_block {
->> > ...
->> > #ifdef CONFIG_INTEGRITY
->> >       int s_integrity;
->> > #endif
->> > };
->> >
->> > Obviously there are only few super blocks in the system and few bytes
->> > will not harm.
->>
->> The flag seems better than adding a new struct member.  Why would you need
->> an int for this?
->
-> Per-superblock bit would be a bit better, but I really hate the way we have
-> them mixed up between superblock ->s_flags bits and mount(2) action weirdly
-> encoded into flags thing.  If we are going to touch that thing, how about
-> separate S_... bits, with MS_... crap left only for mount(2) decoding?  Mapped
-> to S_... when needed.
->
-> The really messy part is that right now we silently ignore all the unknown
-> bits in mount(2) flags argument ;-/  It's *not* a widely used syscall, but
-> still - changing that in a non-trivial way is potential userland breakage.
+On Wed, Sep 12, 2012 at 09:15:50AM -0400, Steven Rostedt wrote:
+> On Wed, 2012-09-12 at 12:38 +0200, Borislav Petkov wrote:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > 
+> > They show up in dmesg
+> > 
+> > [    4.041094] start plist test
+> > [    4.045804] end plist test
+> > 
+> > without a lot of meaning so hide them behind debug loglevel.
+> > 
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Indeed it is quite messy.
-My understanding is that S_ flags are inode->i_flags. Would it be also
-a bit confusing?
-Do you suggest to add additional superblock flags attribute? What
-could be moved there?
+Anyone willing to pick this one up? Maybe akpm?
 
-- Dmitry
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
