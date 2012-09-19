@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab2ISQcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:32:01 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37865 "EHLO relay.sw.ru"
+	id S932524Ab2ISQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:32:09 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:14418 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab2ISQb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:31:58 -0400
-Subject: [PATCH 04/11] fuse: rework fuse_readpages()
+	id S932353Ab2ISQcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:32:04 -0400
+Subject: [PATCH 05/11] fuse: rework fuse_perform_write()
 To: miklos@szeredi.hu
 From: Maxim Patlasov <mpatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Wed, 19 Sep 2012 20:32:16 +0400
-Message-ID: <20120919163208.29482.51571.stgit@maximpc.sw.ru>
+Date: Wed, 19 Sep 2012 20:32:25 +0400
+Message-ID: <20120919163221.29482.8405.stgit@maximpc.sw.ru>
 In-Reply-To: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
 References: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -23,72 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch uses 'nr_pages' argument of fuse_readpages() as heuristics for the
-number of page pointers to allocate.
-
-This can be improved further by taking in consideration fc->max_read and gaps
-between page indices, but it's not clear whether it's worthy or not.
+The patch allocates as many page pointers in fuse_req as needed to cover
+interval [pos .. pos+len-1]. Inline helper fuse_wr_pages() is introduced
+to hide this cumbersome arithmetic.
 
 Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- fs/fuse/file.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ fs/fuse/file.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 214e13e..a618371 100644
+index a618371..d72d638 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -641,6 +641,7 @@ struct fuse_fill_data {
- 	struct fuse_req *req;
- 	struct file *file;
- 	struct inode *inode;
-+	unsigned nr_pages;
- };
+@@ -881,11 +881,19 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+ 		if (!fc->big_writes)
+ 			break;
+ 	} while (iov_iter_count(ii) && count < fc->max_write &&
+-		 req->num_pages < FUSE_MAX_PAGES_PER_REQ && offset == 0);
++		 req->num_pages < req->max_pages && offset == 0);
  
- static int fuse_readpages_fill(void *_data, struct page *page)
-@@ -656,16 +657,25 @@ static int fuse_readpages_fill(void *_data, struct page *page)
- 	    (req->num_pages == FUSE_MAX_PAGES_PER_REQ ||
- 	     (req->num_pages + 1) * PAGE_CACHE_SIZE > fc->max_read ||
- 	     req->pages[req->num_pages - 1]->index + 1 != page->index)) {
-+		int nr_alloc = min_t(unsigned, data->nr_pages,
-+				     FUSE_MAX_PAGES_PER_REQ);
- 		fuse_send_readpages(req, data->file);
--		data->req = req = fuse_get_req(fc, FUSE_MAX_PAGES_PER_REQ);
-+		data->req = req = fuse_get_req(fc, nr_alloc);
- 		if (IS_ERR(req)) {
- 			unlock_page(page);
- 			return PTR_ERR(req);
- 		}
- 	}
-+
-+	if (WARN_ON(req->num_pages >= req->max_pages)) {
-+		fuse_put_request(fc, req);
-+		return -EIO;
-+	}
-+
- 	page_cache_get(page);
- 	req->pages[req->num_pages] = page;
- 	req->num_pages++;
-+	data->nr_pages--;
- 	return 0;
+ 	return count > 0 ? count : err;
  }
  
-@@ -676,6 +686,7 @@ static int fuse_readpages(struct file *file, struct address_space *mapping,
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_fill_data data;
- 	int err;
-+	int nr_alloc = min_t(unsigned, nr_pages, FUSE_MAX_PAGES_PER_REQ);
++static inline unsigned fuse_wr_pages(loff_t pos, size_t len)
++{
++	return min_t(unsigned,
++		     ((pos + len - 1) >> PAGE_CACHE_SHIFT) -
++		     (pos >> PAGE_CACHE_SHIFT) + 1,
++		     FUSE_MAX_PAGES_PER_REQ);
++}
++
+ static ssize_t fuse_perform_write(struct file *file,
+ 				  struct address_space *mapping,
+ 				  struct iov_iter *ii, loff_t pos)
+@@ -901,8 +909,9 @@ static ssize_t fuse_perform_write(struct file *file,
+ 	do {
+ 		struct fuse_req *req;
+ 		ssize_t count;
++		unsigned nr_pages = fuse_wr_pages(pos, iov_iter_count(ii));
  
- 	err = -EIO;
- 	if (is_bad_inode(inode))
-@@ -683,7 +694,8 @@ static int fuse_readpages(struct file *file, struct address_space *mapping,
- 
- 	data.file = file;
- 	data.inode = inode;
--	data.req = fuse_get_req(fc, FUSE_MAX_PAGES_PER_REQ);
-+	data.req = fuse_get_req(fc, nr_alloc);
-+	data.nr_pages = nr_pages;
- 	err = PTR_ERR(data.req);
- 	if (IS_ERR(data.req))
- 		goto out;
+-		req = fuse_get_req(fc, FUSE_MAX_PAGES_PER_REQ);
++		req = fuse_get_req(fc, nr_pages);
+ 		if (IS_ERR(req)) {
+ 			err = PTR_ERR(req);
+ 			break;
 
