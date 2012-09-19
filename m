@@ -1,96 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2ISJbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 05:31:32 -0400
-Received: from mailout3.hostsharing.net ([176.9.242.54]:48120 "EHLO
-	mailout3.hostsharing.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab2ISJba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 05:31:30 -0400
-X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 05:31:30 EDT
-Date: Wed, 19 Sep 2012 11:20:39 +0200
-From: Elimar Riesebieter <riesebie@lxtec.de>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [regression] __d_unalias() should refuse to move mountpoints
-Message-ID: <20120919092039.GA4387@galadriel.home.lxtec.de>
-Mail-Followup-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <504F692C.7050902@canonical.com>
+	id S1755517Ab2ISJcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 05:32:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55318 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754715Ab2ISJco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 05:32:44 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH v3 3/3] ARM: dts: omap: Add usb_otg and glue data
+Date: Wed, 19 Sep 2012 15:02:08 +0530
+Message-ID: <1348047128-25692-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348047128-25692-1-git-send-email-kishon@ti.com>
+References: <1348047128-25692-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
-Content-Disposition: inline
-In-Reply-To: <504F692C.7050902@canonical.com>
-Organization: LXTEC
-User-Agent: Mutt/1.5.21+lxtec (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add usb otg data node in omap4/omap3 device tree file. Also update
+the node with board specific setting in omapx-<board>.dts file.
+The dt data specifies among others the interface type (ULPI or UTMI), mode
+which is mostly OTG, power that specifies the amount of power this can supply
+when in host mode.
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap3-beagle-xm.dts |    6 ++++++
+ arch/arm/boot/dts/omap3-evm.dts       |    6 ++++++
+ arch/arm/boot/dts/omap3-overo.dtsi    |    6 ++++++
+ arch/arm/boot/dts/omap3.dtsi          |   11 +++++++++++
+ arch/arm/boot/dts/omap4-panda.dts     |    6 ++++++
+ arch/arm/boot/dts/omap4-sdp.dts       |    6 ++++++
+ arch/arm/boot/dts/omap4.dtsi          |   12 ++++++++++++
+ 7 files changed, 53 insertions(+)
 
-* Maarten Lankhorst <maarten.lankhorst@canonical.com> [2012-09-11 18:39 +02=
-00]:
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index c38cf76..ca37f19 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -113,3 +113,9 @@
+ 	 */
+ 	ti,pulldowns = <0x03a1c4>;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+index e8ba1c2..afb9ba9 100644
+--- a/arch/arm/boot/dts/omap3-evm.dts
++++ b/arch/arm/boot/dts/omap3-evm.dts
+@@ -59,3 +59,9 @@
+ &twl_gpio {
+ 	ti,use-leds;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3-overo.dtsi b/arch/arm/boot/dts/omap3-overo.dtsi
+index 89808ce..4b3d157 100644
+--- a/arch/arm/boot/dts/omap3-overo.dtsi
++++ b/arch/arm/boot/dts/omap3-overo.dtsi
+@@ -55,3 +55,9 @@
+ &twl_gpio {
+ 	ti,use-leds;
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index f38ea87..5c7324b 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -300,5 +300,16 @@
+ 			ti,buffer-size = <128>;
+ 			ti,hwmods = "mcbsp5";
+ 		};
++
++		usb_otg_hs: usb_otg_hs@480ab000 {
++			compatible = "ti,omap3-musb";
++			reg = <0x480ab000 0x1000>;
++			interrupts = <0 92 0x4>, <0 93 0x4>;
++			interrupt-names = "mc", "dma";
++			ti,hwmods = "usb_otg_hs";
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 6640fd9..c3ff134 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -141,3 +141,9 @@
+ &twl_usb_comparator {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 406dab1..22f7ec1 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -353,3 +353,9 @@
+ &twl_usb_comparator {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 5d1c484..79611b4 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -430,5 +430,17 @@
+ 			hw-caps-ll-interface;
+ 			hw-caps-temp-alert;
+ 		};
++
++		usb_otg_hs: usb_otg_hs@4a0ab000 {
++			compatible = "ti,omap4-musb";
++			reg = <0x4a0ab000 0x7ff>,
++			      <0x4a00233c 0x4>; /* TO BE REMOVED:SCM Register */
++			interrupts = <0 92 0x4>, <0 93 0x4>;
++			interrupt-names = "mc", "dma";
++			ti,hwmods = "usb_otg_hs";
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++		};
+ 	};
+ };
+-- 
+1.7.9.5
 
-> Hey Al,
->=20
-> Your vfs commit ee3efa91e240f513898050ef305a49a653c8ed90 caused my laptop
-> with a nfs root filesystem to stop working.
->=20
-> My testcase is simply booting through netboot with / and ~/nfs as separate
-> nfs filesystems, then doing 'ls ~/nfs' followed by 'ls ~' in a gnome-term=
-inal
-> window, then I get:
->=20
-> ls: cannot access nfs: Device or resource busy
->=20
-> Similar things seem to happen with ls /, /dev /proc and /sys will no long=
-er work.
->=20
-> Reverting this patch seems to make things work again.
-
-I have to revert the commit as well to get my mounts working.
-Without I have the same probs as described here [0].
-
-There is no fix in 3.6-rc6. There should be one before final
-release?
-
-Thanks
-Elimar
-
-[0] http://www.spinics.net/lists/linux-nfs/msg32378.html
-
---=20
-  The path to source is always uphill!
-                                -unknown-
-
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQWY5mAAoJED2rN0233PG7ui0QAKMAlkhmVhQXmvB5Fm8VS0++
-zecU9sjenlvx/YkKXC87X/TBgmbdQNwTPqghNwEwZlmLhley/X5vgTwEwIBuAG7w
-KqJrfRPtYX1grvpI8ASeHzSVqbgoHyexdsN887CxJMiGDzt+6Dxr5HZ0N/d5RHxR
-9tEEujgLK1TG5fdIT03uYb6xzE+gk4JUHfEE//aEDNbf22sqn9YdUB5NssXUl+va
-MfyOfgW3JPfwgWSt/lknLVY9IiZlFhodLVHW/jBCY0eU9DZDiEDYwWasPekEJFtt
-st8rkwkslgJuImrdVVXOJ6jtkO2NwVOOqQ8RtEzbiVZCv7c12WJ9HtKLK2nB56B9
-XYiDsXRe3zLQjBiCPeIMFCtlGRGnoUUfe5soEY4wyaUfwy+5n6T//2TspvazSYuw
-qIM6NR5jY9JVQlJ4RSVcFjA5zvU46vMZdBLsQd062RX9kAIHFE24S6cg3TuCgPRy
-Vn8thcU9/YoNWId0uslHrCdSgTXWofBj3SPXNmieaFsC7akMBsOuF9Knd6HwmLka
-+fZy3HOYL6ZrURWdePuhZlo3SJDQ5VY0ccQKjTPULcsV4LHaLrvpA536gaV1cJ/4
-CkvFol1bf+rslDMBCQMd28YbDBmr6XAP/rpxJAhpAENAiAQmmvZ50ZoBuI1oF6uY
-+S9OvsS+8jFTdBIrxtMP
-=Rsom
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
