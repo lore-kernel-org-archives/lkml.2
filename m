@@ -1,210 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751033Ab2ISTZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:25:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35598 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab2ISTZG (ORCPT
+	id S1750931Ab2IST1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:27:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:45606 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab2IST1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 15:25:06 -0400
-Message-ID: <505A1C0D.3050906@suse.cz>
-Date: Wed, 19 Sep 2012 21:25:01 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20120904 Thunderbird/16.0
+	Wed, 19 Sep 2012 15:27:47 -0400
+Date: Wed, 19 Sep 2012 15:16:54 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: Re: 3.6rc6 slab corruption.
+Message-ID: <20120919191652.GA14631@phenom.dumpdata.com>
+References: <20120918143504.GA30585@redhat.com>
+ <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com>
+ <20120918192338.GA25845@phenom.dumpdata.com>
+ <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com>
+ <20120918203713.GB19300@phenom.dumpdata.com>
+ <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Shachar Shemesh <shachar@liveu.tv>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        kzak@redhat.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] tty ldisc: Close/Reopen race prevention should check
- the proper flag
-References: <4FEFF3DF.9000909@liveu.tv> <20120706212430.GA454@kroah.com> <4FF94BC6.3000704@liveu.tv> <20120709164402.GA14592@kroah.com> <4FFBB575.6050602@liveu.tv>
-In-Reply-To: <4FFBB575.6050602@liveu.tv>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: multipart/mixed;
- boundary="------------040306050204040008060706"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040306050204040008060706
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 07/10/2012 06:54 AM, Shachar Shemesh wrote:
-> From: Shachar Shemesh <shachar@liveu.tv>
+On Tue, Sep 18, 2012 at 01:49:52PM -0700, Linus Torvalds wrote:
+> On Tue, Sep 18, 2012 at 1:37 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >
+> > 30 words. ~360 + 29 spaces + NULL = 390?
 > 
-> Commit acfa747b introduced the TTY_HUPPING flag to distinguish
-> closed TTY from currently closing ones. The test in tty_set_ldisc
-> still remained pointing at the old flag. This causes pppd to
-> sometimes lapse into uninterruptible sleep when killed and
-> restarted.
+> Just allocate the max then. That's tiny.
 > 
-> Signed-off-by: Shachar Shemesh <shachar@liveu.tv>
-> ---
-> Tested with 3.2.20 kernel.
-> 
-> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> index 24b95db..a662a24 100644
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -658,7 +658,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
->  		goto enable;
->  	}
->  
-> -	if (test_bit(TTY_HUPPED, &tty->flags)) {
-> +	if (test_bit(TTY_HUPPING, &tty->flags)) {
->  		/* We were raced by the hangup method. It will have stomped
->  		   the ldisc data and closed the ldisc down */
->  		clear_bit(TTY_LDISC_CHANGING, &tty->flags);
+> And it's actually just 330: max ten characters for an unsigned 32-bit number.
 
-Yes, that makes the issue go away, but does not seem to be right too.
-There are two issues I see:
-* TTY_HUPPED has no use now. That is incorrect. Here should be a test
-for both flags, I think.
-* The change forces the set_ldisc path to always re-open the ldisc even
-if it the terminal is HUPPED.
+Linus,
+Could you take a look at these two patches to see if I missed anything?
+Thank you.
 
-The bug is not in the kernel. It was in login(1) (util-linux). And it
-should be fixed by now. See:
-http://git.kernel.org/?p=utils/util-linux/util-linux.git;a=commitdiff;h=2e7035646eb85851171cc2e989bfa858a4f00cd4
+>From 0806b133b5b28081adf23d0d04a99636ed3b861b Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 19 Sep 2012 11:23:01 -0400
+Subject: [PATCH 1/2] debugfs: Add lock for u32_array_read
 
+Dave Jones spotted that the u32_array_read was doing something funny:
 
-I'm for an in-fact revert of the patch. But temporarily I would still
-return EIO. However let's do it even after the reopen is done, so that
-we get rid of the user-visible regression. Like in the attached patch.
-The regression was introduced by commit c65c9bc3e (tty: rewrite the
-ldisc locking). That is !three! years ago. And that is suspicious in itself.
+=============================================================================
+BUG kmalloc-64 (Not tainted): Redzone overwritten
+-----------------------------------------------------------------------------
 
+INFO: 0xffff88001f4b4970-0xffff88001f4b4977. First byte 0xbb instead of 0xcc
+INFO: Allocated in u32_array_read+0xd1/0x110 age=0 cpu=6 pid=32767
+        __slab_alloc+0x516/0x5a5
+        __kmalloc+0x213/0x2c0
+        u32_array_read+0xd1/0x110
+.. snip..
+INFO: Freed in u32_array_read+0x99/0x110 age=0 cpu=0 pid=32749
+        __slab_free+0x3f/0x3bf
+        kfree+0x2d5/0x310
+        u32_array_read+0x99/0x110
 
-BTW Why pppd thinks it is a good idea to ignore EIO from TIOCSETD ioctl?
+Linus tracked it down and found out that "debugfs is racy for that case
+[read calls in parallel on the debugfs]. At least the file->private_data
+accesses are, for the case of that "u32_array" case.
 
-regards,
--- 
-js
-suse labs
+In fact it is racy in ...  the whole "file->private_data" access ..
+If you have multiple readers on the same file, the whole
 
---------------040306050204040008060706
-Content-Type: text/x-patch;
- name="0001-TTY-forbid-setting-ldisc-on-HUPPED-tty-step-1.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-TTY-forbid-setting-ldisc-on-HUPPED-tty-step-1.patch"
+	if (file->private_data) {
+		kfree(file->private_data);
+		file->private_data = NULL;
+	}
 
->From b3e5a7f778be46b4b8dd38d5565010755ccafd67 Mon Sep 17 00:00:00 2001
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Wed, 19 Sep 2012 20:23:59 +0200
-Subject: [PATCH 1/1] TTY: forbid setting ldisc on HUPPED tty, step 1
+	file->private_data = format_array_alloc("%u", data->array,
+                                                              data->elements);
 
-Commit c65c9bc3e (tty: rewrite the ldisc locking) introduced a check
-into tty_set_ldisc whether the terminal is already hung. In that case
-it returns -EIO.
+thing is just a disaster waiting to happen." He suggested
+putting a lock which this patch does.
 
-Later, commit aa3c8af86 (tty ldisc: Close/Reopen race prevention
-should check the proper flag) effectively disabled the check by
-replacing HUPPED by HUPPING flag. Those are two different flags and
-the former check was actually correct. In principle we revert here to
-the previous behavior plus we add a check if we are HUPPING. Because
-it makes no sense to change ldisc when some other thread is making a
-HUP but it had to unlock BTM temporarily.
+The consequence of this is that it will trigger more spinlock usage,
+as this particular debugfs is used to provide a histogram of spinlock
+contention. But memory corruption is a worst offender then that.
 
-The bug which commit aa3c8af86 above tried to avoid lays in fact in
-login(1). It was fixed by util-linux commit 2e7035646 (login: close
-tty before vhangup()) already. It was reproducible for example by the
-following setup:
-1) add a user ppp with shell set to /usr/bin/pppd
-2) run agetty on ttyS0 to wait for a user
-3) user connects via modem on ttyS0, types ppp to getty
-4) 'login ppp' is executed
-5) login performs hangup without properly closing ttyS0
-6) login executes pppd
-7) pppd does TIOCSETD attempt to N_PPP
-8) kernel denies step 7) as ttyS0 is HUPPED
-9) pppd calls some N_PPP ldisc's ioctls regardless -- uninterruptible
-   sleep in tty_ioctl, trying to have a ref on tty->ldisc
-
-Now to sum up the fixes:
-* The fix in util-linux is that 5 is changed to properly close all
-  ttyS0 instances.
-* The workaround from commit aa3c8af86 was that 8) succeeds.
-* This patch is the same as aa3c8af86 except we still return -EIO and
-  warn the user this will not be supported in the future. This is
-  because we do not want to have a user-visible regression here.
-
-"Step 1" because step two would be to immediatelly return -EIO like in
-the attached false branch in the patch.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Shachar Shemesh <shachar@liveu.tv>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Reported-by: Dave Jones <davej@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- drivers/tty/tty_ldisc.c | 37 ++++++++++++++++++++++++++++---------
- 1 file changed, 28 insertions(+), 9 deletions(-)
+ fs/debugfs/file.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index f4e6754..7cca3fd 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -563,6 +563,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	struct tty_ldisc *o_ldisc, *new_ldisc;
- 	int work, o_work = 0;
- 	struct tty_struct *o_tty;
-+	int retval_hupped = 0;
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 2340f69..c6d9088 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -524,6 +524,7 @@ EXPORT_SYMBOL_GPL(debugfs_create_blob);
+ struct array_data {
+ 	void *array;
+ 	u32 elements;
++	struct mutex lock;
+ };
  
- 	new_ldisc = tty_ldisc_get(ldisc);
- 	if (IS_ERR(new_ldisc))
-@@ -659,14 +660,32 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 		goto enable;
- 	}
+ static int u32_array_open(struct inode *inode, struct file *file)
+@@ -580,6 +581,7 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+ 	struct array_data *data = inode->i_private;
+ 	size_t size;
  
--	if (test_bit(TTY_HUPPING, &tty->flags)) {
--		/* We were raced by the hangup method. It will have stomped
--		   the ldisc data and closed the ldisc down */
--		clear_bit(TTY_LDISC_CHANGING, &tty->flags);
--		mutex_unlock(&tty->ldisc_mutex);
--		tty_ldisc_put(new_ldisc);
--		tty_unlock(tty);
--		return -EIO;
-+	if (test_bit(TTY_HUPPED, &tty->flags) ||
-+			test_bit(TTY_HUPPING, &tty->flags)) {
-+		/*
-+		 * Until login(1) is fixed everywhere, let's fall through.
-+		 * Change to goto with -EIO after 3.10.
-+		 */
-+		if (1) {
-+			char ttyn[64], comm[TASK_COMM_LEN];
-+			printk_ratelimited(KERN_WARNING "%s: %s calls TIOCSETD on a hung TTY (%s). This is deprecated and will stop working soon.\n",
-+					__func__, get_task_comm(comm, current),
-+					tty_name(tty, ttyn));
-+			retval_hupped = -EIO;
-+		} else {
-+			/*
-+			 * We were raced by the hangup method. It will have
-+			 * stomped the ldisc data and closed the ldisc down
-+			 */
-+			tty_ldisc_put(new_ldisc);
-+			retval = -EIO;
-+			/*
-+			 * We have to enable the original ldisc so that
-+			 * processes see N_TTY and fail instead of waiting
-+			 * infinitely.
-+			 */
-+			goto enable;
-+		}
- 	}
++	mutex_lock(&data->lock);
+ 	if (*ppos == 0) {
+ 		if (file->private_data) {
+ 			kfree(file->private_data);
+@@ -594,8 +596,10 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+ 	if (file->private_data)
+ 		size = strlen(file->private_data);
  
- 	/* Shutdown the current discipline. */
-@@ -709,7 +728,7 @@ enable:
- 		schedule_work(&o_tty->port->buf.work);
- 	mutex_unlock(&tty->ldisc_mutex);
- 	tty_unlock(tty);
--	return retval;
-+	return retval ? : retval_hupped;
+-	return simple_read_from_buffer(buf, len, ppos,
++	size = simple_read_from_buffer(buf, len, ppos,
+ 					file->private_data, size);
++	mutex_unlock(&data->lock);
++	return size;
  }
  
- /**
+ static int u32_array_release(struct inode *inode, struct file *file)
+@@ -643,6 +647,7 @@ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+ 
+ 	data->array = array;
+ 	data->elements = elements;
++	mutex_init(&data->lock);
+ 
+ 	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
+ }
 -- 
-1.7.12
+1.7.7.6
 
 
---------------040306050204040008060706--
+
+
+>From c3937cb7144a6ead80e6aabee89420645945a926 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 19 Sep 2012 14:04:22 -0400
+Subject: [PATCH 2/2] debugfs: Pre-allocate u32 array to thwart a race.
+
+Linus spotted via code inspection "bug is slightly subtler
+and probably harder to hit (but also harder to fix):
+
+The whole format_array_alloc() code is one buggy piece of sh*t,
+since afaik there is nothing that guarantees that the values cannot
+change. So the notion of "let's format the output once to know how big
+it is, and then a second time to actually print things into the array
+we just allocated based on the first time" is pure and utter garbage,
+afaik."
+
+This patch fixes this by pre-allocating the buffer to the maximum
+size during debugfs initialization by the driver. We print %u values,
+so the math is pretty straightforward: 10 bytes for the maximum
+that %u can use (4294967295) + spaces for the number of elements
+and \n\0. We also add an extra byte to compensate for the
+data->len == size check which we would hit if all of the array
+entries were of their maximum size (-1U).
+
+If we end up using exactly up to the size we allocated (this includes
+the extra byte), then we allocate a new buffer twice the size.
+And if we fail again, we print a warning as snprintf is doing
+something silly.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ fs/debugfs/file.c |   66 ++++++++++++++++++++++------------------------------
+ 1 files changed, 28 insertions(+), 38 deletions(-)
+
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c6d9088..4c59200 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -524,12 +524,13 @@ EXPORT_SYMBOL_GPL(debugfs_create_blob);
+ struct array_data {
+ 	void *array;
+ 	u32 elements;
++	ssize_t len;
++	char *buf;
+ 	struct mutex lock;
+ };
+ 
+ static int u32_array_open(struct inode *inode, struct file *file)
+ {
+-	file->private_data = NULL;
+ 	return nonseekable_open(inode, file);
+ }
+ 
+@@ -560,20 +561,6 @@ static size_t format_array(char *buf, size_t bufsize, const char *fmt,
+ 	return ret;
+ }
+ 
+-static char *format_array_alloc(const char *fmt, u32 *array,
+-						u32 array_size)
+-{
+-	size_t len = format_array(NULL, 0, fmt, array, array_size);
+-	char *ret;
+-
+-	ret = kmalloc(len, GFP_KERNEL);
+-	if (ret == NULL)
+-		return NULL;
+-
+-	format_array(ret, len, fmt, array, array_size);
+-	return ret;
+-}
+-
+ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+ 			      loff_t *ppos)
+ {
+@@ -582,37 +569,33 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+ 	size_t size;
+ 
+ 	mutex_lock(&data->lock);
+-	if (*ppos == 0) {
+-		if (file->private_data) {
+-			kfree(file->private_data);
+-			file->private_data = NULL;
+-		}
+-
+-		file->private_data = format_array_alloc("%u", data->array,
+-							      data->elements);
++	if (*ppos == 0)
++		size = format_array(data->buf, data->len - 1 /* for \0 */,
++				    "%u", data->array, data->elements);
++	else
++		size = strlen(data->buf);
++
++	if (size == data->len) {
++		char *p = krealloc(data->buf, data->len * 2, GFP_KERNEL);
++		if (ZERO_OR_NULL_PTR(p))
++			goto out;
++		data->buf = p;
++		data->len *= 2;
++		size = format_array(data->buf, data->len - 1 /* for \0 */,
++				    "%u", data->array, data->elements);
++		/* It keeps on growing! Early pre-allocation MUST be wrong. */
++		WARN_ON(size == data->len);
+ 	}
+-
+-	size = 0;
+-	if (file->private_data)
+-		size = strlen(file->private_data);
+-
++out:
+ 	size = simple_read_from_buffer(buf, len, ppos,
+-					file->private_data, size);
++					data->buf, size);
+ 	mutex_unlock(&data->lock);
+ 	return size;
+ }
+ 
+-static int u32_array_release(struct inode *inode, struct file *file)
+-{
+-	kfree(file->private_data);
+-
+-	return 0;
+-}
+-
+ static const struct file_operations u32_array_fops = {
+ 	.owner	 = THIS_MODULE,
+ 	.open	 = u32_array_open,
+-	.release = u32_array_release,
+ 	.read	 = u32_array_read,
+ 	.llseek  = no_llseek,
+ };
+@@ -648,7 +631,14 @@ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+ 	data->array = array;
+ 	data->elements = elements;
+ 	mutex_init(&data->lock);
+-
++	data->len = elements * 10 /* max value for %u */ +
++		    elements - 1 /* spaces */ + 2 /* \n\0 */ +
++		    1 /* to thwart the size == data->len check. */;
++	data->buf = kmalloc(data->len, GFP_KERNEL);
++	if (!data->buf) {
++		kfree(data);
++		return ERR_PTR(-ENOMEM);
++	}
+ 	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
+-- 
+1.7.7.6
+
