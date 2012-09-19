@@ -1,52 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab2ISL3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:29:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42907 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab2ISL3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:29:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
-   d="scan'208";a="207802202"
-Date: Wed, 19 Sep 2012 13:28:32 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olalilja@yahoo.se, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com
-Subject: Re: [PATCH 4/7] mfd: ab8500-core: Apply the AB8500 CODEC's
- compatible string to its MFD cell
-Message-ID: <20120919112832.GJ8138@sortiz-mobl>
-References: <1343392734-11805-1-git-send-email-lee.jones@linaro.org>
- <1343392734-11805-5-git-send-email-lee.jones@linaro.org>
+	id S1754899Ab2ISLbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:31:02 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34369 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab2ISLay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:30:54 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <kishon@ti.com>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: Moiz Sonasath <m-sonasath@ti.com>
+Subject: [PATCH 2/4] usb: dwc3: Fix gadget pullup in SS mode
+Date: Wed, 19 Sep 2012 17:00:27 +0530
+Message-ID: <1348054229-27362-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348054229-27362-1-git-send-email-kishon@ti.com>
+References: <1348054229-27362-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343392734-11805-5-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+From: Moiz Sonasath <m-sonasath@ti.com>
 
-On Fri, Jul 27, 2012 at 01:38:51PM +0100, Lee Jones wrote:
-> Provide a compatible string for the AB8500 CODEC to aid in
-> configuration property look-up from its associated Device Tree
-> node.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/ab8500-core.c |    1 +
->  1 file changed, 1 insertion(+)
-Applied, thanks.
+For the gadget pullup functionality to work in
+SS mode it requires a particular sequence of
+toggling the run-stop bit. Here is the required
+sequence:
 
-Cheers,
-Samuel.
+- Set DCTL[31]
+- Clear DCTL[31]
+- Clear OMAP5430_CONTROL_CORE__PHY_POWER_USB[14]
+- Clear DCTL[8:5] = 0x00
+- Set DCTL[8:5] = 0x05
+- Wait 25 Ms
+- Set DCTL[31]
+- Set OMAP5430_CONTROL_CORE__PHY_POWER_USB[14]
 
+Tested rigourously the gadget pull-up functionality
+in bot HS and SS modes.
+
+Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/dwc3/gadget.c   |   21 +++++++++++++++------
+ drivers/usb/phy/omap-usb3.c |   16 ++++++++++++++++
+ include/linux/usb/phy.h     |   10 +++++++++-
+ 3 files changed, 40 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 58fdfad..bcc0102 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -49,6 +49,7 @@
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
++#include <linux/usb/otg.h>
+ 
+ #include "core.h"
+ #include "gadget.h"
+@@ -1417,19 +1418,27 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on)
+ 	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+ 	if (is_on) {
+ 		if (dwc->revision <= DWC3_REVISION_187A) {
+-			reg &= ~DWC3_DCTL_TRGTULST_MASK;
+-			reg |= DWC3_DCTL_TRGTULST_RX_DET;
++			reg &= ~DWC3_DCTL_ULSTCHNGREQ_MASK;
++			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++			reg |= DWC3_DCTL_ULSTCHNG_RX_DETECT;
++			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++			mdelay(25);
++			reg |= DWC3_DCTL_RUN_STOP;
++			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++			usb_phy_poweron(dwc->usb3_phy);
+ 		}
+ 
+-		if (dwc->revision >= DWC3_REVISION_194A)
++		if (dwc->revision >= DWC3_REVISION_194A) {
+ 			reg &= ~DWC3_DCTL_KEEP_CONNECT;
+-		reg |= DWC3_DCTL_RUN_STOP;
++			reg |= DWC3_DCTL_RUN_STOP;
++			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++		}
+ 	} else {
+ 		reg &= ~DWC3_DCTL_RUN_STOP;
++		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++		usb_phy_shutdown(dwc->usb3_phy);
+ 	}
+ 
+-	dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+-
+ 	do {
+ 		reg = dwc3_readl(dwc->regs, DWC3_DSTS);
+ 		if (is_on) {
+diff --git a/drivers/usb/phy/omap-usb3.c b/drivers/usb/phy/omap-usb3.c
+index 4dc84ca..26402d5 100644
+--- a/drivers/usb/phy/omap-usb3.c
++++ b/drivers/usb/phy/omap-usb3.c
+@@ -212,6 +212,20 @@ static int omap_usb3_init(struct usb_phy *x)
+ 	return 0;
+ }
+ 
++static void omap_usb3_poweron(struct usb_phy *x)
++{
++	struct omap_usb *phy = phy_to_omapusb(x);
++
++	omap5_usb_phy_power(phy, 1);
++}
++
++static void omap_usb3_shutdown(struct usb_phy *x)
++{
++	struct omap_usb *phy = phy_to_omapusb(x);
++
++	omap5_usb_phy_power(phy, 0);
++}
++
+ static int __devinit omap_usb3_probe(struct platform_device *pdev)
+ {
+ 	struct omap_usb			*phy;
+@@ -253,6 +267,8 @@ static int __devinit omap_usb3_probe(struct platform_device *pdev)
+ 	phy->phy.dev		= phy->dev;
+ 	phy->phy.label		= "omap-usb3";
+ 	phy->phy.init		= omap_usb3_init;
++	phy->phy.poweron	= omap_usb3_poweron;
++	phy->phy.shutdown	= omap_usb3_shutdown;
+ 	phy->phy.set_suspend	= omap_usb3_suspend;
+ 
+ 	phy->is_suspended	= 1;
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 06b5bae..aaa8e16 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -86,8 +86,9 @@ struct usb_phy {
+ 	/* to support controllers that have multiple transceivers */
+ 	struct list_head	head;
+ 
+-	/* initialize/shutdown the OTG controller */
++	/* initialize/poweron/shutdown the OTG controller */
+ 	int	(*init)(struct usb_phy *x);
++	void    (*poweron)(struct usb_phy *x);
+ 	void	(*shutdown)(struct usb_phy *x);
+ 
+ 	/* effective for B devices, ignored for A-peripheral */
+@@ -135,6 +136,13 @@ usb_phy_init(struct usb_phy *x)
+ }
+ 
+ static inline void
++usb_phy_poweron(struct usb_phy *x)
++{
++	if (x->poweron)
++		x->poweron(x);
++}
++
++static inline void
+ usb_phy_shutdown(struct usb_phy *x)
+ {
+ 	if (x->shutdown)
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
