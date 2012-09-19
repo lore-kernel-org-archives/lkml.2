@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2ISO7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:59:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23208 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab2ISO7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:59:12 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: jaxboe@fusionio.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] block: make struct block_device cacheline_aligned
-References: <x49lig686kv.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 19 Sep 2012 10:59:09 -0400
-In-Reply-To: <x49lig686kv.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Wed, 19 Sep 2012 09:50:40 -0400")
-Message-ID: <x498vc683eq.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754371Ab2ISPKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:10:47 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41861 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2ISPKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 11:10:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Originating-IP: [2001:470:1f05:1640:24c8:79b5:efe7:d61c]
+In-Reply-To: <201209191458.00531.arnd@arndb.de>
+References: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
+	<20120917215128.GF11762@atomide.com>
+	<201209191458.00531.arnd@arndb.de>
+Date: Wed, 19 Sep 2012 08:10:43 -0700
+Message-ID: <CAOesGMgHr4pnqerTm=bL8K5cwYxX6Ry9waEOc4H4y3xBzCFkMQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to drivers/bus/
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
-
-> Hi,
+On Wed, Sep 19, 2012 at 7:58 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 17 September 2012, Tony Lindgren wrote:
+>> * Santosh Shilimkar <santosh.shilimkar@ti.com> [120914 02:21]:
+>> > OMAP interconnect drivers are used for the interconnect error handling.
+>> > Since they are bus driver, lets move it to newly created drivers/bus.
+>> >
+>> > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > Cc: Tony Lindgren <tony@atomide.com>
+>> > Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+>> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> > ---
+>> > Patch just moves OMAP interconnect drivers as is to the newly created
+>> > driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
+>> > tree and test on all OMAP boards.
+>>
+>> Great, looks like this should not conflict with other
+>> omap patches queued, so Arnd should probably take this into
+>> the bus branch:
+>>
+>> Acked-by: Tony Lindgren <tony@atomide.com>
 >
-> When testing against a pcie ssd or a ramdisk, making the block device
-> structure cacheline_aligned provided a significant increase in
-> performance:
-
-Self-NACK on this one.  This results in a ton of warnings:
-
-include/linux/fs.h:727: warning: ???__section__??? attribute does not
-apply to types
-In file included from include/linux/debugfs.h:18,
-                 from kernel/trace/trace_probe.h:28,
-                 from kernel/trace/trace_kprobe.c:23:
-include/linux/fs.h:727: warning: ???__section__??? attribute does not
-apply to types
-
-And that leaves me with the task of figuring out if/why this actually
-helps.
-
-Cheers,
-Jeff
+> Ok, added to the branch. In the future please Cc both Olof and me when submitting
+> patches for inclusion.
 >
+> Olof: I figured it would be easier if I just add this one than relaying it to
+> you.
+
+Sounds good, thanks for the heads up.
+
+
+-Olof
