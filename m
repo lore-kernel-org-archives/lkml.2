@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab2ISPYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:24:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52882 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab2ISPYi (ORCPT
+	id S1756160Ab2ISPZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:25:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58604 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab2ISPZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:24:38 -0400
-Date: Wed, 19 Sep 2012 08:24:11 -0700
-From: tip-bot for Feng Tang <feng.tang@intel.com>
-Message-ID: <tip-e5f3705e62b03251797a5173024184bfc223599d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, andi@firstfloor.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        feng.tang@intel.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, andi@firstfloor.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        feng.tang@intel.com, mingo@elte.hu
-In-Reply-To: <1347007349-3102-5-git-send-email-feng.tang@intel.com>
-References: <1347007349-3102-5-git-send-email-feng.tang@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf scripts: Export a find_scripts() function
-Git-Commit-ID: e5f3705e62b03251797a5173024184bfc223599d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Sep 2012 11:25:23 -0400
+Message-ID: <5059E3DF.6020906@wwwdotorg.org>
+Date: Wed, 19 Sep 2012 09:25:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:24:17 -0700 (PDT)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] dt: Document general interrupt controller bindings
+References: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5f3705e62b03251797a5173024184bfc223599d
-Gitweb:     http://git.kernel.org/tip/e5f3705e62b03251797a5173024184bfc223599d
-Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Fri, 7 Sep 2012 16:42:26 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 17 Sep 2012 13:11:26 -0300
+On 09/19/2012 02:57 AM, Thierry Reding wrote:
+> In order to use a device as interrupt controller, it needs to be marked
+> with the DT interrupt-controller property. This commit adds rudimentary
+> documentation about the required standard properties and describes the
+> most commonly used interrupt specifiers.
 
-perf scripts: Export a find_scripts() function
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> @@ -0,0 +1,94 @@
+> +Specifying interrupt information for devices
+> +============================================
+> +
+> +1) Interrupt user nodes
+> +-----------------------
 
-So that other perf commands/browser has a way to dig out the available
-scripts info in system, this is a preparation for the script browser.
+s/user/client/? Bike-shedding a little I suppose.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1347007349-3102-5-git-send-email-feng.tang@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-script.c |   55 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h        |    1 +
- 2 files changed, 56 insertions(+), 0 deletions(-)
+> +
+> +A device that generates interrupts can specify the interrupt controller to
+> +which the interrupts are routed by passing the controller's phandle in the
+> +"interrupt-parent" property.
+> +
+> +The "interrupts" property is a list of specifiers that describe each of the
+> +interrupts. See section 2 below for details.
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 76577e6..1be843a 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1032,6 +1032,61 @@ static int list_available_scripts(const struct option *opt __maybe_unused,
- 	exit(0);
- }
- 
-+/*
-+ * Return -1 if none is found, otherwise the actual scripts number.
-+ *
-+ * Currently the only user of this function is the script browser, which
-+ * will list all statically runnable scripts, select one, execute it and
-+ * show the output in a perf browser.
-+ */
-+int find_scripts(char **scripts_array, char **scripts_path_array)
-+{
-+	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-+	char scripts_path[MAXPATHLEN];
-+	DIR *scripts_dir, *lang_dir;
-+	char lang_path[MAXPATHLEN];
-+	char *temp;
-+	int i = 0;
-+
-+	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
-+
-+	scripts_dir = opendir(scripts_path);
-+	if (!scripts_dir)
-+		return -1;
-+
-+	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
-+		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
-+			 lang_dirent.d_name);
-+#ifdef NO_LIBPERL
-+		if (strstr(lang_path, "perl"))
-+			continue;
-+#endif
-+#ifdef NO_LIBPYTHON
-+		if (strstr(lang_path, "python"))
-+			continue;
-+#endif
-+
-+		lang_dir = opendir(lang_path);
-+		if (!lang_dir)
-+			continue;
-+
-+		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
-+			/* Skip those real time scripts: xxxtop.p[yl] */
-+			if (strstr(script_dirent.d_name, "top."))
-+				continue;
-+			sprintf(scripts_path_array[i], "%s/%s", lang_path,
-+				script_dirent.d_name);
-+			temp = strchr(script_dirent.d_name, '.');
-+			snprintf(scripts_array[i],
-+				(temp - script_dirent.d_name) + 1,
-+				"%s", script_dirent.d_name);
-+			i++;
-+		}
-+	}
-+
-+	return i;
-+}
-+
- static char *get_script_path(const char *script_root, const char *suffix)
- {
- 	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b382bd5..3ea74ed 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -36,4 +36,5 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
- 
-+extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
+This should probably mention that interrupt-parent cascades from parent
+nodes. How about the following instead:
+
+Nodes that describe devices which generate interrupts must contain an
+"interrupts" property. This property must contain a list of interrupt
+specifiers, one per output interrupt. The format of the interrupt
+specifier is determined by the interrupt controller to which the
+interrupts are routed; see section 2 below for details.
+
+The interrupt-parent property is used to define the controller to which
+interrupts are routed; it contains a single phandle referring to the
+interrupt controller node. This property may be specified in any
+interrupt client node, or in any parent node of the device.
