@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab2ISBUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 21:20:51 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:40540 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2ISBUu (ORCPT
+	id S1752252Ab2ISB0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 21:26:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40158 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab2ISB0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 21:20:50 -0400
-Message-ID: <50591D09.9070307@linux.vnet.ibm.com>
-Date: Wed, 19 Sep 2012 06:46:57 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 18 Sep 2012 21:26:31 -0400
+Date: Tue, 18 Sep 2012 22:26:23 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [ 117/135] NFS: return error from decode_getfh in decode open
+Message-ID: <20120919012623.GA17910@herton-Z68MA-D2H-B3>
+References: <20120917003625.784119135@decadent.org.uk>
+ <20120917003642.413673073@decadent.org.uk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: 3.6rc6 slab corruption.
-References: <20120918143504.GA30585@redhat.com> <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com> <20120918192338.GA25845@phenom.dumpdata.com> <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com> <20120918203713.GB19300@phenom.dumpdata.com> <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12091901-6102-0000-0000-000002408BD5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120917003642.413673073@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 02:19 AM, Linus Torvalds wrote:
-> On Tue, Sep 18, 2012 at 1:37 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com>  wrote:
->>
->> 30 words. ~360 + 29 spaces + NULL = 390?
->
-> Just allocate the max then. That's tiny.
->
-> And it's actually just 330: max ten characters for an unsigned 32-bit number.
->
+On Mon, Sep 17, 2012 at 01:38:22AM +0100, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> I'm not sure whether my expansion of the fix is correct here.
+> 
+> ------------------
+> 
+> From: Weston Andros Adamson <dros@netapp.com>
+> 
+> commit 01913b49cf1dc6409a07dd2a4cc6af2e77f3c410 upstream.
+> 
+> If decode_getfh failed, nfs4_xdr_dec_open would return 0 since the last
+> decode_* call must have succeeded.
+> 
+> Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> [bwh: Backported to 3.2: this function makes two more function calls
+>  (no longer present in mainline) with the same issue, so fix them up
+>  similarly.]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  fs/nfs/nfs4xdr.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- a/fs/nfs/nfs4xdr.c
+> +++ b/fs/nfs/nfs4xdr.c
+> @@ -6113,12 +6113,15 @@ static int nfs4_xdr_dec_open(struct rpc_
+>  	status = decode_open(xdr, res);
+>  	if (status)
+>  		goto out;
+> -	if (decode_getfh(xdr, &res->fh) != 0)
+> +	status = decode_getfh(xdr, &res->fh);
+> +	if (status)
+>  		goto out;
+> -	if (decode_getfattr(xdr, res->f_attr, res->server,
+> -				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
+> +	status = decode_getfattr(xdr, res->f_attr, res->server,
+> +				 !RPC_IS_ASYNC(rqstp->rq_task));
 
-Okay, I think you meant 32*11 = 352 chars.
+I'm also not sure about the expansion of the fix here, not knowing very
+much about nfs. It seems that the code in some cases want to discard the
+status from decode_getfattr, for example nfs4_xdr_dec_rename is one case
+which does the same. Is it ok to return the status of decode_getfattr on
+nfs4_xdr_dec_open here? Or should it remain like it was before?
 
+> +	if (status)
+>  		goto out;
+> -	if (decode_restorefh(xdr) != 0)
+> +	status = decode_restorefh(xdr);
+> +	if (status)
+>  		goto out;
+>  	decode_getfattr(xdr, res->dir_attr, res->server,
+>  			!RPC_IS_ASYNC(rqstp->rq_task));
+
+-- 
+[]'s
+Herton
