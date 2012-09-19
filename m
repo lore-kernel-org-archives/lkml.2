@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2ISS3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:29:24 -0400
-Received: from noserose.net ([66.220.18.76]:60081 "HELO noserose.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754208Ab2ISS3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:29:22 -0400
-Message-Id: <1348079358.4585@cat.he.net>
-From: Ed Cashin <ecashin@coraid.com>
-Date: Tue, 18 Sep 2012 20:20:36 -0400
-Subject: [PATCH] net: do not disable sg for AoE
-To: davem@davemloft.net
-Cc: ecashin@coraid.com, akpm@linux-foundation.org, jesse@nicira.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756789Ab2ISSce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:32:34 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:34949 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab2ISScd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 14:32:33 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoepAFoPWlBV5h1yPGdsb2JhbABFhSGFI7B5AQF/GQEBAQEfGQ0ngiABAQQBOhwjBQsIA0YUJQoaiBAKqG2SMxSLKIE0bIMhYAOSM4MwhXCDRolUgVgBIg
+X-IronPort-AV: E=Sophos;i="4.80,450,1344204000"; 
+   d="scan'208";a="117968432"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 19 Sep 2012 20:32:31 +0200
+To: Kevin Daughtridge <kevin@kdau.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] HID: leave dev_rdesc unmodified and use it for
+ comparisons
+Message-ID: <20120919183231.GA603@polaris.bitmath.org>
+References: <50592FB1.7000800@kdau.com>
+ <50597CAD.7010801@suse.cz>
+ <5059F872.3080203@kdau.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5059F872.3080203@kdau.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A change in a series of VLAN-related changes appears to have
-inadvertently disabled the use of the scatter gather feature of
-network cards for transmission of non-IP ethernet protocols like ATA
-over Ethernet (AoE).  Below is a reference to the commit that
-introduces a "harmonize_features" function that turns off scatter
-gather when the NIC does not support hardware checksumming for the
-ethernet protocol of an sk buff.
+Hi Kevin,
 
-  commit f01a5236bd4b140198fbcc550f085e8361fd73fa
-  Author: Jesse Gross <jesse@nicira.com>
-  Date:   Sun Jan 9 06:23:31 2011 +0000
+Thanks for looking to this.
 
-      net offloading: Generalize netif_get_vlan_features().
+> Hmm. I hadn't noticed that the other drivers are returning a static
+> structure. In that case, it seems that report_fixup itself is broken
+> from a memory perspective, in that it returns pointers to
+> inconsistent storage types depending on the driver.
 
-The can_checksum_protocol function is not equipped to consider a
-protocol that does not require checksumming.  Calling it for a
-protocol that requires no checksum is inappropriate.
+The driver can either modify the existing buffer, of return a pointer
+to a buffer managed by the driver. The former requires a kmemdup
+before, the latter a kmemdup after.
 
-The patch below has harmonize_features call can_checksum_protocol when
-the protocol needs a checksum, so that the network layer is not forced
-to perform unnecessary skb linearization on the transmission of AoE
-packets.  Unnecessary linearization results in decreased performance
-and increased memory pressure, as reported here:
+> 1. Ugly workaround: make a temporary copy of the dev_rdesc, give it
+> to report_fixup, make a copy of the return, store that copy in
+> rdesc, free the temporary copy. Though ugly, this would at least
+> involve the smallest diff.
 
-  http://www.spinics.net/lists/linux-mm/msg15184.html
+Yes, it is correct and ugly, in no particular order.
 
-The problem has probably not been widely experienced yet, because
-only recently has the kernel.org-distributed aoe driver acquired the
-ability to use payloads of over a page in size, with the patchset
-recently included in the mm tree:
+> 2. Standardize the behavior of the drivers' report_fixup
+> implementations. Given that some of them need to change the size of
+> the descriptor, modifying the passed structure is not an option.
+> Probably all of them should return a newly allocated structure,
+> either a modified copy of the input or a copy of their static, that
+> can then be stored directly in rdesc. Especially since report_fixup
+> is only ever called right before a copy is going to be taken anyway.
 
-  https://lkml.org/lkml/2012/8/28/140
+Relying on the returned pointer to be properly alloc'd is not a good
+idea, in particular since it changes semantics rather drastically.
 
-The coraid.com-distributed aoe driver already could use payloads of
-greater than a page in size, but its users generally do not use the
-newest kernels.
+Since the current function performs two different things, perhaps
+there should be two different functions instead.
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- net/core/dev.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> (Adding constness to a parameter isn't considered a severe ABI
+> break, is it?)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d7fe32c..5531159 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2134,7 +2134,8 @@ static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
- static netdev_features_t harmonize_features(struct sk_buff *skb,
- 	__be16 protocol, netdev_features_t features)
- {
--	if (!can_checksum_protocol(features, protocol)) {
-+	if (protocol != htons(ETH_P_AOE) &&
-+	    !can_checksum_protocol(features, protocol)) {
- 		features &= ~NETIF_F_ALL_CSUM;
- 		features &= ~NETIF_F_SG;
- 	} else if (illegal_highdma(skb->dev, skb)) {
--- 
-1.7.2.5
+Inside the kernel there is no ABI. Go wild.
 
+Thanks,
+Henrik
