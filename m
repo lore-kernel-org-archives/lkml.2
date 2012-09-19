@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2ISQFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:05:52 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:33719 "EHLO slimlogic.co.uk"
+	id S932263Ab2ISQG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:06:29 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23280 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756583Ab2ISQFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:05:51 -0400
-Message-ID: <5059ED5C.6020006@slimlogic.co.uk>
-Date: Wed, 19 Sep 2012 17:05:48 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1756487Ab2ISQG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:06:27 -0400
+Subject: [PATCH v5 01/10] ipc: remove forced assignment of selected message
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
+        jmorris@namei.org, linux-driver@qlogic.com,
+        linux-security-module@vger.kernel.org, hughd@google.com,
+        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk,
+        james.l.morris@oracle.com, catalin.marinas@arm.com,
+        casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
+        jitendra.kalsaria@qlogic.com, devel@openvz.org
+Date: Wed, 19 Sep 2012 20:05:31 +0400
+Message-ID: <20120919160531.11254.48182.stgit@localhost6.localdomain6>
+In-Reply-To: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
+References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, peter.ujfalusi@ti.com, s-guiriec@ti.com
-Subject: Re: [PATCH 0/6] some small cleanups for palmas and DT support
-References: <1346154460-20031-1-git-send-email-gg@slimlogic.co.uk> <20120919153044.GJ28670@sortiz-mobl>
-In-Reply-To: <20120919153044.GJ28670@sortiz-mobl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/12 16:30, Samuel Ortiz wrote:
-> Hi Graeme,
->
-> On Tue, Aug 28, 2012 at 01:47:34PM +0200, Graeme Gregory wrote:
->> This series does a couple of small improvements to the palmas mfd and
->> regulator drivers. It does a little re-organisation of the header file
->> to better implement DT in regulator driver and then add DT handling.
-> I applied those 6 patches:
->
-> - I fixed patch #2 comment.
-> - I'm queueing it up for 3.7 but I'm expecting you to provide me with a
->   follow up patch documenting the new device tree bindings.
-> - I included patch #6, although I'd really like to get Mark's ACK for it.
->   Also, I add to add a #include <linux/of.h> for it to build on !DT platforms.
->
-> Cheers,
-> Samuel.
->
-Thanks Samuel.
+This is a cleanup patch. The assignment is redundant.
 
-I had meant to send a V2 with that documentation update that Mark noted
-was missing but work got busy on another project. I shall try and get
-follow-up patch to you ASAP.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ ipc/msg.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Graeme
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 7385de2..f3bfbb8 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -787,7 +787,6 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+ 			    !security_msg_queue_msgrcv(msq, walk_msg, current,
+ 						       msgtyp, mode)) {
+ 
+-				msg = walk_msg;
+ 				if (mode == SEARCH_LESSEQUAL &&
+ 						walk_msg->m_type != 1) {
+ 					msg = walk_msg;
 
