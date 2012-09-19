@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2ISPK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:10:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52587 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab2ISPKp (ORCPT
+	id S1755088Ab2ISPLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:11:04 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:19569 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754790Ab2ISPK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:10:45 -0400
-Date: Wed, 19 Sep 2012 08:10:20 -0700
-From: tip-bot for Hyeoncheol Lee <hyc.lee@gmail.com>
-Message-ID: <tip-7b0295b3db20a89b3296673871858b9ab6b68404@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, hyc.lee@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, masami.hiramatsu.pt@hitachi.com, hyc.lee@gmail.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
-References: <CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Add union member access support
-Git-Commit-ID: 7b0295b3db20a89b3296673871858b9ab6b68404
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Sep 2012 11:10:59 -0400
+Message-ID: <1348067454.4836.56.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v2 4/9] net/macb: remove macb_get_drvinfo()
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>,
+        <linux-arm-kernel@lists.infradead.org>, <plagnioj@jcrosoft.com>,
+        <patrice.vilchez@atmel.com>, <linux-kernel@vger.kernel.org>
+Date: Wed, 19 Sep 2012 16:10:54 +0100
+In-Reply-To: <3fbd9b0eb1e255eccd14ad43044e146776baa963.1348055112.git.nicolas.ferre@atmel.com>
+References: <cover.1348055112.git.nicolas.ferre@atmel.com>
+	 <3fbd9b0eb1e255eccd14ad43044e146776baa963.1348055112.git.nicolas.ferre@atmel.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 19 Sep 2012 08:10:26 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7b0295b3db20a89b3296673871858b9ab6b68404
-Gitweb:     http://git.kernel.org/tip/7b0295b3db20a89b3296673871858b9ab6b68404
-Author:     Hyeoncheol Lee <hyc.lee@gmail.com>
-AuthorDate: Wed, 12 Sep 2012 16:57:45 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Sep 2012 15:48:08 -0300
+On Wed, 2012-09-19 at 13:55 +0200, Nicolas Ferre wrote:
+> This function has little meaning so remove it altogether and
+> let ethtool core fill in the fields automatically.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.c | 11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 2948553..31f945c 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -1217,20 +1217,9 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+>  	return phy_ethtool_sset(phydev, cmd);
+>  }
+>  
+> -static void macb_get_drvinfo(struct net_device *dev,
+> -			     struct ethtool_drvinfo *info)
+> -{
+> -	struct macb *bp = netdev_priv(dev);
+> -
+> -	strcpy(info->driver, bp->pdev->dev.driver->name);
+> -	strcpy(info->version, "$Revision: 1.14 $");
+> -	strcpy(info->bus_info, dev_name(&bp->pdev->dev));
+> -}
+> -
+>  static const struct ethtool_ops macb_ethtool_ops = {
+>  	.get_settings		= macb_get_settings,
+>  	.set_settings		= macb_set_settings,
+> -	.get_drvinfo		= macb_get_drvinfo,
+>  	.get_link		= ethtool_op_get_link,
+>  };
+>  
 
-perf probe: Add union member access support
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Union members can be accessed with '.' or '->' like data structure
-member access
-
-Signed-off-by: Hyunchul Lee <hyc.lee@gmail.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/CANFS6baeuSBxPGQ8SUZWZErJ2bWs-Nojg+FSo138E1QK8bJJig@mail.gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/probe-finder.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 526ba56..1daf5c1 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -525,8 +525,10 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 			return -ENOENT;
- 		}
- 		/* Verify it is a data structure  */
--		if (dwarf_tag(&type) != DW_TAG_structure_type) {
--			pr_warning("%s is not a data structure.\n", varname);
-+		tag = dwarf_tag(&type);
-+		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
-+			pr_warning("%s is not a data structure nor an union.\n",
-+				   varname);
- 			return -EINVAL;
- 		}
- 
-@@ -539,8 +541,9 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 			*ref_ptr = ref;
- 	} else {
- 		/* Verify it is a data structure  */
--		if (tag != DW_TAG_structure_type) {
--			pr_warning("%s is not a data structure.\n", varname);
-+		if (tag != DW_TAG_structure_type && tag != DW_TAG_union_type) {
-+			pr_warning("%s is not a data structure nor an union.\n",
-+				   varname);
- 			return -EINVAL;
- 		}
- 		if (field->name[0] == '[') {
-@@ -567,10 +570,15 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 	}
- 
- 	/* Get the offset of the field */
--	ret = die_get_data_member_location(die_mem, &offs);
--	if (ret < 0) {
--		pr_warning("Failed to get the offset of %s.\n", field->name);
--		return ret;
-+	if (tag == DW_TAG_union_type) {
-+		offs = 0;
-+	} else {
-+		ret = die_get_data_member_location(die_mem, &offs);
-+		if (ret < 0) {
-+			pr_warning("Failed to get the offset of %s.\n",
-+				   field->name);
-+			return ret;
-+		}
- 	}
- 	ref->offset += (long)offs;
- 
