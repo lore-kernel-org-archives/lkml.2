@@ -1,80 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2ISLwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:52:21 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56158 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab2ISLwT convert rfc822-to-8bit (ORCPT
+	id S1755601Ab2ISLww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:52:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43452 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab2ISLws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:52:19 -0400
+	Wed, 19 Sep 2012 07:52:48 -0400
+Message-ID: <5059B1E5.8020406@windriver.com>
+Date: Wed, 19 Sep 2012 06:52:05 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20120918140213.GA27463@arwen.pp.htv.fi>
-References: <1347972050-3509-1-git-send-email-sourav.poddar@ti.com>
-	<20120918140213.GA27463@arwen.pp.htv.fi>
-Date: Wed, 19 Sep 2012 14:52:18 +0300
-Message-ID: <CANOLnONC1oDN3yu=ipao2A6MfuSkZfROVPewWLLEM5fNTKipxQ@mail.gmail.com>
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: balbi@ti.com
-Cc: Sourav Poddar <sourav.poddar@ti.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, tony@atomide.com, khilman@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, paul@pwsan.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <kernel-team@android.com>, <kgdb-bugreport@lists.sourceforge.net>,
+        <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 01/11] kernel/debug: Mask KGDB NMI upon entry
+References: <20120913150133.GA16238@lizard> <1347548615-18227-1-git-send-email-anton.vorontsov@linaro.org>
+In-Reply-To: <1347548615-18227-1-git-send-email-anton.vorontsov@linaro.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 5:02 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Tue, Sep 18, 2012 at 06:10:50PM +0530, Sourav Poddar wrote:
->> Greg's tty-next is not booting on 2420 based N800. The failure is
->> observed at serial init itself. The reason might be that n800 tries to
->> resume even though it is not suspended before.
->>
->> Reported-by: Paul Walmsley <paul@pwsan.com>
->> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->
-> FWIW:
->
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
->
-> Paul does this fix the issue for you ? Note that it depends on a
-> previous patch Sourav sent [1]
->
-> [1] http://marc.info/?l=linux-omap&m=134796819607889&w=2
->
-> There's one thing that gets my attention, though, why only n800 would
-> fail here ?
->
-> I wonder if we should be using:
->
-> pm_runtime_set_active(dev);
-> pm_runtime_get_enable(dev);
->
-> to prevent our runtime_resume() to be called from probe, but Sourav
-> tested and it doesn't work on BeagleBoard, but it works on PandaBoard.
->
-> Does it ring any bell ??
+On 09/13/2012 10:03 AM, Anton Vorontsov wrote:
+> The new arch callback should manage NMIs that usually cause KGDB to
+> enter. That is, not all NMIs should be enabled/disabled, but only
+> those that issue kgdb_handle_exception().
+> 
+> We must mask it as serial-line interrupt can be used as an NMI, so
+> if the original KGDB-entry cause was say a breakpoint, then every
+> input to KDB console will cause KGDB to reenter, which we don't want.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  include/linux/kgdb.h      | 23 +++++++++++++++++++++++
+>  kernel/debug/debug_core.c | 36 +++++++++++++++++++++++++++++++++---
+>  2 files changed, 56 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+> index c4d2fc1..3b111a6 100644
+> --- a/include/linux/kgdb.h
+> +++ b/include/linux/kgdb.h
+> @@ -221,6 +221,29 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+>   */
+>  extern void kgdb_arch_late(void);
+>  
+> +/**
+> + *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
+> + *	@on: Flag to either enable or disable an NMI
+> + *
+> + *	This is an architecture-specific "back-end" for kgdb_enable_nmi(). The
+> + *	call does not count disable/enable requests, do not use it directly.
+> + */
+> +extern void kgdb_arch_enable_nmi(bool on);
 
-Well I guess it's normal resume callback is called during probe as
-pm_runtime_get_sync() is called there, and according to documentation
-[1], devices are assumed to be suspended before probe is called.
+I realize this is more of a clean up, and this doesn't necessarily
+have to gate the acceptance of these patches to the mainline, but I
+would like to not see us using the kgdb_arch_enable_nmi() as a weak
+function.  This belongs in:
 
-According to [1], pm_runtime_set_active() should be called before
-pm_runtime_enable() to indicate to the core that device is active
-during probe if that's the case, I guess this means
-pm_runtime_get_sync() is not needed in that case, but I'm not sure
-what's the actual serial state during probe nowadays.
+struct kgdb_arch {
+	...
+	void enable_nmi(bool on);
+}
 
-[1] chapter 5 of Documentation/power/runtime_pm.txt:
-The initial runtime PM status of all devices is 'suspended', but it
-need not reflect the actual physical state of the device. Thus, if the
-device is initially active (i.e. it is able to process I/O), its
-runtime PM status must be changed to 'active', with the help of
-pm_runtime_set_active(), before pm_runtime_enable() is called for the
-device.
 
--- 
-Gražvydas
+> +
+> +/**
+> + *	kgdb_enable_nmi - Enable or disable KGDB-entry NMI
+> + *	@on: Flag to either enable or disable an NMI
+> + *
+> + *	This function manages NMIs that usually cause KGDB to enter. That is,
+> + *	not all NMIs should be enabled or disabled, but only those that issue
+> + *	kgdb_handle_exception().
+> + *
+> + *	The call counts disable requests, and thus allows to nest disables.
+> + *	But trying to enable already enabled NMI is an error. The call returns
+> + *	1 if NMI has been actually enabled after the call, and a value <= 0 if
+> + *	it is still disabled.
+> + */
+> +extern int kgdb_enable_nmi(bool on);
+
+
+Clearly you need something arch specific here.  With respect to the
+atomic math, it is not clear that would be the case for this function
+unilaterally accross other architectures.  This comment block and the
+"implementation" code belong in the arch stub: arch/kernel/arm/kgdb.c
+The whole kgdb_enable_nmi can go away if using the struct kgdb_arch
+callbacks
+
+
+> --- a/kernel/debug/debug_core.c
+> +++ b/kernel/debug/debug_core.c
+> @@ -214,6 +214,30 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
+>  	return 0;
+>  }
+>  
+> +void __weak kgdb_arch_enable_nmi(bool on)
+> +{
+> +}
+> +
+> +int kgdb_enable_nmi(bool on)
+> +{
+> +	static atomic_t cnt;
+> +	int ret;
+> +
+> +	ret = atomic_add_return(on ? 1 : -1, &cnt);
+> +	if (ret > 1 && on) {
+> +		/*
+> +		 * There should be only one instance that calls this function
+> +		 * in "enable, disable" order. All other users must call
+> +		 * disable first, then enable. If not, something is wrong.
+> +		 */
+> +		WARN_ON(1);
+> +		return 1;
+> +	}
+> +
+> +	kgdb_arch_enable_nmi(ret > 0);
+> +	return ret;
+> +}
+> +
+>  /*
+>   * Some architectures need cache flushes when we set/clear a
+>   * breakpoint:
+> @@ -672,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+>  {
+>  	struct kgdb_state kgdb_var;
+>  	struct kgdb_state *ks = &kgdb_var;
+> +	int ret = 0;
+> +
+> +	kgdb_enable_nmi(0);
+
+
+With what I mentioned before this becomes:
+
+	if (arch_kgdb_ops->enable_nmi)
+		arch_kgdb_ops->enable_nmi(0)
+
+
+>  
+>  	ks->cpu			= raw_smp_processor_id();
+>  	ks->ex_vector		= evector;
+> @@ -681,11 +708,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+>  	ks->linux_regs		= regs;
+>  
+>  	if (kgdb_reenter_check(ks))
+> -		return 0; /* Ouch, double exception ! */
+> +		goto out; /* Ouch, double exception ! */
+>  	if (kgdb_info[ks->cpu].enter_kgdb != 0)
+> -		return 0;
+> +		goto out;
+>  
+> -	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+> +	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+> +out:
+> +	kgdb_enable_nmi(1);
+
+
+Becomes:
+	if (arch_kgdb_ops->enable_nmi)
+		arch_kgdb_ops->enable_nmi(1)
+
+
+> +	return ret;
+>  }
+>  
+>  int kgdb_nmicallback(int cpu, void *regs)
+> 
+
+
+Cheers,
+Jason.
