@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab2ISURt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:17:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55419 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab2ISURr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:17:47 -0400
-Date: Thu, 20 Sep 2012 05:17:38 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Shaohua Li <shli@fusionio.com>
-Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
-Message-ID: <20120919201738.GA2425@barrios>
-References: <1348039748-32111-1-git-send-email-minchan@kernel.org>
- <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751735Ab2ISUWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:22:53 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:33928 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab2ISUWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 16:22:51 -0400
+Date: Wed, 19 Sep 2012 13:22:48 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, mlindner@marvell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch net] sky2: fix rx filter setup on link up
+Message-ID: <20120919132248.5fced1c7@s6510.linuxnetplumber.net>
+In-Reply-To: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KOSAKI,
+Rather than saving and restoring values, why not just redo the
+full setup? This would also determine if the change was a result
+of something outside the driver.
 
-On Wed, Sep 19, 2012 at 02:05:20PM -0400, KOSAKI Motohiro wrote:
-> On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
-> > are increasing so that kernel are hang out.
-> >
-> > The cause is that when we do memory-hotadd after memory-remove,
-> > __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
-> > without draining vm_stat_diff of all CPU.
-> >
-> > This patch fixes it.
-> 
-> zone_pcp_update() is called from online pages path. but IMHO,
-> the statistics should be drained offline path. isn't it?
 
-It isn't necessary because statistics is right until we reset it to zero
-in online path.
-Do you have something on your mind that we have to drain it in offline path?
-
-> 
-> thanks.
-
--- 
-Kind Regards,
-Minchan Kim
+--- a/drivers/net/ethernet/marvell/sky2.c	2012-09-18 21:12:01.156438131 -0700
++++ b/drivers/net/ethernet/marvell/sky2.c	2012-09-19 13:20:40.373620276 -0700
+@@ -2201,6 +2201,8 @@ static void sky2_link_up(struct sky2_por
+ 
+ 	sky2_enable_rx_tx(sky2);
+ 
++	sky2_set_multicast(sky2->netdev);
++
+ 	gm_phy_write(hw, port, PHY_MARV_INT_MASK, PHY_M_DEF_MSK);
+ 
+ 	netif_carrier_on(sky2->netdev);
