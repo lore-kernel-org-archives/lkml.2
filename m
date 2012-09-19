@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab2ISTFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:05:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47846 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab2ISSzQ (ORCPT
+	id S1757243Ab2ISTGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:06:07 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19491 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab2ISSzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:16 -0400
+	Wed, 19 Sep 2012 14:55:15 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,88 +16,108 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 07/40] x86, PCI: Separate pcibios_allocate_bridge_resources()
-Date: Wed, 19 Sep 2012 11:54:21 -0700
-Message-Id: <1348080894-23412-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/40] PCI: Split out stop_bus_device and remove_bus_dev again.
+Date: Wed, 19 Sep 2012 11:54:20 -0700
+Message-Id: <1348080894-23412-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thus pcibios_allocate_bus_resources() could more simple and clean
+So later could use them for pci root bus hotplug support.
+
+Also restore old behavoir: stop all at first then remove all.
+
+-v2: only split the functions.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   46 ++++++++++++++++++++++++----------------------
- 1 files changed, 24 insertions(+), 22 deletions(-)
+ drivers/pci/remove.c |   51 ++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 35 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index dd8ca6f..9800362 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -193,34 +193,36 @@ EXPORT_SYMBOL(pcibios_align_resource);
-  *	    as well.
-  */
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 4f9ca91..513972f 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -56,25 +56,13 @@ void pci_remove_bus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
  
--static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
-+static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
+-/**
+- * pci_stop_and_remove_bus_device - remove a PCI device and any children
+- * @dev: the device to remove
+- *
+- * Remove a PCI device from the device lists, informing the drivers
+- * that the device has been removed.  We also remove any subordinate
+- * buses and children in a depth-first manner.
+- *
+- * For each device we remove, delete the device structure from the
+- * device lists, remove the /proc entry, and notify userspace
+- * (/sbin/hotplug).
+- */
+-void pci_stop_and_remove_bus_device(struct pci_dev *dev)
++static void pci_stop_bus_device(struct pci_dev *dev)
  {
--	struct pci_bus *bus;
--	struct pci_dev *dev;
- 	int idx;
- 	struct resource *r;
+ 	struct pci_bus *bus = dev->subordinate;
+ 	struct pci_dev *child, *tmp;
  
-+	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
-+		r = &dev->resource[idx];
-+		if (!r->flags)
-+			continue;
-+		if (!r->start || pci_claim_resource(dev, idx) < 0) {
-+			/*
-+			 * Something is wrong with the region.
-+			 * Invalidate the resource to prevent
-+			 * child resource allocations in this
-+			 * range.
-+			 */
-+			r->start = r->end = 0;
-+			r->flags = 0;
-+		}
+ 	/*
+-	 * Removing an SR-IOV PF device removes all the associated VFs,
++	 * Stopping an SR-IOV PF device removes all the associated VFs,
+ 	 * which will update the bus->devices list and confuse the
+ 	 * iterator.  Therefore, iterate in reverse so we remove the VFs
+ 	 * first, then the PF.
+@@ -82,13 +70,44 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+ 	if (bus) {
+ 		list_for_each_entry_safe_reverse(child, tmp,
+ 						 &bus->devices, bus_list)
+-			pci_stop_and_remove_bus_device(child);
++			pci_stop_bus_device(child);
 +	}
++
++	pci_stop_dev(dev);
 +}
 +
-+static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++static void pci_remove_bus_device(struct pci_dev *dev)
 +{
-+	struct pci_bus *bus;
++	struct pci_bus *bus = dev->subordinate;
++	struct pci_dev *child, *tmp;
 +
- 	/* Depth-First Search on bus tree */
- 	list_for_each_entry(bus, bus_list, node) {
--		if ((dev = bus->self)) {
--			for (idx = PCI_BRIDGE_RESOURCES;
--			    idx < PCI_NUM_RESOURCES; idx++) {
--				r = &dev->resource[idx];
--				if (!r->flags)
--					continue;
--				if (!r->start ||
--				    pci_claim_resource(dev, idx) < 0) {
--					/*
--					 * Something is wrong with the region.
--					 * Invalidate the resource to prevent
--					 * child resource allocations in this
--					 * range.
--					 */
--					r->start = r->end = 0;
--					r->flags = 0;
--				}
--			}
--		}
-+		if (bus->self)
-+			pcibios_allocate_bridge_resources(bus->self);
- 		pcibios_allocate_bus_resources(&bus->children);
++	if (bus) {
++		list_for_each_entry_safe(child, tmp,
++					 &bus->devices, bus_list)
++			pci_remove_bus_device(child);
+ 
+ 		pci_remove_bus(bus);
+ 		dev->subordinate = NULL;
  	}
+ 
+-	pci_stop_dev(dev);
+ 	pci_destroy_dev(dev);
  }
++
++/**
++ * pci_stop_and_remove_bus_device - remove a PCI device and any children
++ * @dev: the device to remove
++ *
++ * Remove a PCI device from the device lists, informing the drivers
++ * that the device has been removed.  We also remove any subordinate
++ * buses and children in a depth-first manner.
++ *
++ * For each device we remove, delete the device structure from the
++ * device lists, remove the /proc entry, and notify userspace
++ * (/sbin/hotplug).
++ */
++void pci_stop_and_remove_bus_device(struct pci_dev *dev)
++{
++	pci_stop_bus_device(dev);
++	pci_remove_bus_device(dev);
++}
+ EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
 -- 
 1.7.7
 
