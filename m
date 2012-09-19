@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab2ISJM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 05:12:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39769 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab2ISJMy (ORCPT
+	id S1755441Ab2ISJbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 05:31:32 -0400
+Received: from mailout3.hostsharing.net ([176.9.242.54]:48120 "EHLO
+	mailout3.hostsharing.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab2ISJba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 05:12:54 -0400
+	Wed, 19 Sep 2012 05:31:30 -0400
+X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 05:31:30 EDT
+Date: Wed, 19 Sep 2012 11:20:39 +0200
+From: Elimar Riesebieter <riesebie@lxtec.de>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [regression] __d_unalias() should refuse to move mountpoints
+Message-ID: <20120919092039.GA4387@galadriel.home.lxtec.de>
+Mail-Followup-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	al viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <504F692C.7050902@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <20120918123331.6ca5833c.akpm@linux-foundation.org>
-References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
- <1347382036-18455-3-git-send-email-will.deacon@arm.com> <20120915133833.GA32398@linux-mips.org>
- <20120918123331.6ca5833c.akpm@linux-foundation.org>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Wed, 19 Sep 2012 10:12:28 +0100
-X-Google-Sender-Auth: rE22KXbEtQsWf0rEZo-xJXhviWY
-Message-ID: <CAHkRjk7uCZZvA_Ubq7vgkAV2r-vMNHxs+hZmvf+99ks+4v7isA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
- passing in mm/huge_memory.c
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Will Deacon <will.deacon@arm.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mhocko@suse.cz,
-        Steve Capper <steve.capper@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <504F692C.7050902@canonical.com>
+Organization: LXTEC
+User-Agent: Mutt/1.5.21+lxtec (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 September 2012 20:33, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Sat, 15 Sep 2012 15:38:33 +0200
-> Ralf Baechle <ralf@linux-mips.org> wrote:
->> On Tue, Sep 11, 2012 at 05:47:15PM +0100, Will Deacon wrote:
->> > The update_mmu_cache() takes a pointer (to pte_t by default) as the last
->> > argument but the huge_memory.c passes a pmd_t value. The patch changes
->> > the argument to the pmd_t * pointer.
->> >
->> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
->> > Signed-off-by: Steve Capper <steve.capper@arm.com>
->> > Signed-off-by: Will Deacon <will.deacon@arm.com>
->> > ---
->> >  mm/huge_memory.c |    6 +++---
->> >  1 files changed, 3 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->> > index 57c4b93..4aa6d02 100644
->> > --- a/mm/huge_memory.c
->> > +++ b/mm/huge_memory.c
->> > @@ -934,7 +934,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->> >             entry = pmd_mkyoung(orig_pmd);
->> >             entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
->> >             if (pmdp_set_access_flags(vma, haddr, pmd, entry,  1))
->> > -                   update_mmu_cache(vma, address, entry);
->> > +                   update_mmu_cache(vma, address, pmd);
->>
->> Documentation/cachetlb.txt will need an update as well.  Currently it says:
->>
->> 5) void update_mmu_cache(struct vm_area_struct *vma,
->>                          unsigned long address, pte_t *ptep)
->
-> Yes please.
 
-Should we just use a generic (void *) for the last argument or force a
-cast in mm/huge_memory.c?
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ralf's point is that transparent huge page code calls update_mmu_cache
-with a (pmd_t *) as the last argument. This could make sense for THP
-as it assumes that huge pages can only be created at the pmd level.
-But that's unlike mm/hugetlb.c which casts huge page types to pte_t,
-even though on ARM they are implemented at the pmd level.
+* Maarten Lankhorst <maarten.lankhorst@canonical.com> [2012-09-11 18:39 +02=
+00]:
 
-On ARM (with VIPT caches) update_mmu_cache() is empty like on x86,
-though a static inline rather than macro.
+> Hey Al,
+>=20
+> Your vfs commit ee3efa91e240f513898050ef305a49a653c8ed90 caused my laptop
+> with a nfs root filesystem to stop working.
+>=20
+> My testcase is simply booting through netboot with / and ~/nfs as separate
+> nfs filesystems, then doing 'ls ~/nfs' followed by 'ls ~' in a gnome-term=
+inal
+> window, then I get:
+>=20
+> ls: cannot access nfs: Device or resource busy
+>=20
+> Similar things seem to happen with ls /, /dev /proc and /sys will no long=
+er work.
+>=20
+> Reverting this patch seems to make things work again.
 
--- 
-Catalin
+I have to revert the commit as well to get my mounts working.
+Without I have the same probs as described here [0].
+
+There is no fix in 3.6-rc6. There should be one before final
+release?
+
+Thanks
+Elimar
+
+[0] http://www.spinics.net/lists/linux-nfs/msg32378.html
+
+--=20
+  The path to source is always uphill!
+                                -unknown-
+
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWY5mAAoJED2rN0233PG7ui0QAKMAlkhmVhQXmvB5Fm8VS0++
+zecU9sjenlvx/YkKXC87X/TBgmbdQNwTPqghNwEwZlmLhley/X5vgTwEwIBuAG7w
+KqJrfRPtYX1grvpI8ASeHzSVqbgoHyexdsN887CxJMiGDzt+6Dxr5HZ0N/d5RHxR
+9tEEujgLK1TG5fdIT03uYb6xzE+gk4JUHfEE//aEDNbf22sqn9YdUB5NssXUl+va
+MfyOfgW3JPfwgWSt/lknLVY9IiZlFhodLVHW/jBCY0eU9DZDiEDYwWasPekEJFtt
+st8rkwkslgJuImrdVVXOJ6jtkO2NwVOOqQ8RtEzbiVZCv7c12WJ9HtKLK2nB56B9
+XYiDsXRe3zLQjBiCPeIMFCtlGRGnoUUfe5soEY4wyaUfwy+5n6T//2TspvazSYuw
+qIM6NR5jY9JVQlJ4RSVcFjA5zvU46vMZdBLsQd062RX9kAIHFE24S6cg3TuCgPRy
+Vn8thcU9/YoNWId0uslHrCdSgTXWofBj3SPXNmieaFsC7akMBsOuF9Knd6HwmLka
++fZy3HOYL6ZrURWdePuhZlo3SJDQ5VY0ccQKjTPULcsV4LHaLrvpA536gaV1cJ/4
+CkvFol1bf+rslDMBCQMd28YbDBmr6XAP/rpxJAhpAENAiAQmmvZ50ZoBuI1oF6uY
++S9OvsS+8jFTdBIrxtMP
+=Rsom
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
