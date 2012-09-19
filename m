@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab2ISTEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:04:51 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47863 "EHLO
+	id S1754335Ab2ISTFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:05:42 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47846 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab2ISSzR (ORCPT
+	with ESMTP id S1755723Ab2ISSzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:17 -0400
+	Wed, 19 Sep 2012 14:55:16 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 11/40] PCI, x86: Add pcibios_fw_addr_done
-Date: Wed, 19 Sep 2012 11:54:25 -0700
-Message-Id: <1348080894-23412-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 07/40] x86, PCI: Separate pcibios_allocate_bridge_resources()
+Date: Wed, 19 Sep 2012 11:54:21 -0700
+Message-Id: <1348080894-23412-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
@@ -28,65 +28,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use it to skip not needed function after pcibios_fw_addr_list_del is called.
-
-for pci root bus hot add, we will need to use pcibios_allocate_dev_resources(),
-and don't want to mess up with fw_addr.
+Thus pcibios_allocate_bus_resources() could more simple and clean
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/i386.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ arch/x86/pci/i386.c |   46 ++++++++++++++++++++++++----------------------
+ 1 files changed, 24 insertions(+), 22 deletions(-)
 
 diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 42dd755..edfc376 100644
+index dd8ca6f..9800362 100644
 --- a/arch/x86/pci/i386.c
 +++ b/arch/x86/pci/i386.c
-@@ -51,6 +51,7 @@ struct pcibios_fwaddrmap {
+@@ -193,34 +193,36 @@ EXPORT_SYMBOL(pcibios_align_resource);
+  *	    as well.
+  */
  
- static LIST_HEAD(pcibios_fwaddrmappings);
- static DEFINE_SPINLOCK(pcibios_fwaddrmap_lock);
-+static bool pcibios_fw_addr_done;
- 
- /* Must be called with 'pcibios_fwaddrmap_lock' lock held. */
- static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
-@@ -72,6 +73,9 @@ pcibios_save_fw_addr(struct pci_dev *dev, int idx, resource_size_t fw_addr)
- 	unsigned long flags;
- 	struct pcibios_fwaddrmap *map;
- 
-+	if (pcibios_fw_addr_done)
-+		return;
-+
- 	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
- 	map = pcibios_fwaddrmap_lookup(dev);
- 	if (!map) {
-@@ -97,6 +101,9 @@ resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
- 	struct pcibios_fwaddrmap *map;
- 	resource_size_t fw_addr = 0;
- 
-+	if (pcibios_fw_addr_done)
-+		return fw_addr;
-+
- 	spin_lock_irqsave(&pcibios_fwaddrmap_lock, flags);
- 	map = pcibios_fwaddrmap_lookup(dev);
- 	if (map)
-@@ -106,7 +113,7 @@ resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx)
- 	return fw_addr;
- }
- 
--static void pcibios_fw_addr_list_del(void)
-+static void __init pcibios_fw_addr_list_del(void)
+-static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
  {
- 	unsigned long flags;
- 	struct pcibios_fwaddrmap *entry, *next;
-@@ -118,6 +125,7 @@ static void pcibios_fw_addr_list_del(void)
- 		kfree(entry);
- 	}
- 	spin_unlock_irqrestore(&pcibios_fwaddrmap_lock, flags);
-+	pcibios_fw_addr_done = true;
- }
+-	struct pci_bus *bus;
+-	struct pci_dev *dev;
+ 	int idx;
+ 	struct resource *r;
  
- static int
++	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
++		r = &dev->resource[idx];
++		if (!r->flags)
++			continue;
++		if (!r->start || pci_claim_resource(dev, idx) < 0) {
++			/*
++			 * Something is wrong with the region.
++			 * Invalidate the resource to prevent
++			 * child resource allocations in this
++			 * range.
++			 */
++			r->start = r->end = 0;
++			r->flags = 0;
++		}
++	}
++}
++
++static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
++{
++	struct pci_bus *bus;
++
+ 	/* Depth-First Search on bus tree */
+ 	list_for_each_entry(bus, bus_list, node) {
+-		if ((dev = bus->self)) {
+-			for (idx = PCI_BRIDGE_RESOURCES;
+-			    idx < PCI_NUM_RESOURCES; idx++) {
+-				r = &dev->resource[idx];
+-				if (!r->flags)
+-					continue;
+-				if (!r->start ||
+-				    pci_claim_resource(dev, idx) < 0) {
+-					/*
+-					 * Something is wrong with the region.
+-					 * Invalidate the resource to prevent
+-					 * child resource allocations in this
+-					 * range.
+-					 */
+-					r->start = r->end = 0;
+-					r->flags = 0;
+-				}
+-			}
+-		}
++		if (bus->self)
++			pcibios_allocate_bridge_resources(bus->self);
+ 		pcibios_allocate_bus_resources(&bus->children);
+ 	}
+ }
 -- 
 1.7.7
 
