@@ -1,76 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab2ISLtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:49:12 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33340 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab2ISLtJ (ORCPT
+	id S1755504Ab2ISLtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:49:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43363 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752014Ab2ISLtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:49:09 -0400
-Message-ID: <5059B0EF.5020905@mvista.com>
-Date: Wed, 19 Sep 2012 15:47:59 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Wed, 19 Sep 2012 07:49:39 -0400
+Date: Wed, 19 Sep 2012 07:49:34 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, lrg@ti.com, rpurdie@rpsys.net,
+        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] mfd: update on 88pm860x and max8925
+Message-ID: <20120919114933.GX8832@opensource.wolfsonmicro.com>
+References: <1347855552-26213-1-git-send-email-haojian.zhuang@gmail.com>
+ <20120919112614.GE8138@sortiz-mobl>
 MIME-Version: 1.0
-To: Kevin Daughtridge <kevin@kdau.com>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: [PATCH v2] HID: leave dev_rdesc unmodified and use it for comparisons
-References: <50592FB1.7000800@kdau.com>
-In-Reply-To: <50592FB1.7000800@kdau.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919112614.GE8138@sortiz-mobl>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Sep 19, 2012 at 01:26:14PM +0200, Samuel Ortiz wrote:
 
-On 19-09-2012 6:36, Kevin Daughtridge wrote:
+> I applied the 5 first patches.
+> For the regulator one, I'd like to get Mark's ACK as well.
 
-> The dev_rdesc member of the hid_device structure is meant to store the original
-> report descriptor received from the device, but it is currently passed to any
-> report_fixup method before it is copied to the rdesc member. This patch moves
-> the kmemdup to before, not after, the report_fixup call, keeping dev_rdesc
-> unchanged.
-
-> usbhid's hid_post_reset checks the report descriptor currently returned by the
-> device against a descriptor that may have been modified by a driver's
-> report_fixup method. That leaves some devices nonfunctional after a resume, with
-> a "reset_resume error 1" reported. This patch checks the new descriptor against
-> the unmodified dev_rdesc instead.
-
-> BugLink:http://bugs.launchpad.net/bugs/1049623
-> Signed-off-by: Kevin Daughtridge<kevin@kdau.com>
-
-    Need space before the email. I've checked your original mail, it's not my 
-Thunderbird this time (which does this kind of damage while quoting).
-
-> ---
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -775,12 +775,14 @@ int hid_open_report(struct hid_device *d
->           return -ENODEV;
->       size = device->dev_rsize;
->
-> +    start = kmemdup(start, size, GFP_KERNEL);
-> +    if (start == NULL)
-> +        return -ENOMEM;
-> +
->       if (device->driver->report_fixup)
->           start = device->driver->report_fixup(device, start, &size);
->
-> -    device->rdesc = kmemdup(start, size, GFP_KERNEL);
-> -    if (device->rdesc == NULL)
-> -        return -ENOMEM;
-> +    device->rdesc = start;
->       device->rsize = size;
->
->       parser = vzalloc(sizeof(struct hid_parser));
-
-    It still seems like the patch is whitespace damaged, but in another way: 
-to every line satrting with space, another spece was added.
-
-WBR, Sergei
-
+I'm still waiting for an update on what the depdencies in the rest of
+the series are.
