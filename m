@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab2ISNYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:24:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36170 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab2ISNYK (ORCPT
+	id S1756199Ab2ISNap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:30:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37040 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2ISNan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 09:24:10 -0400
-Date: Wed, 19 Sep 2012 14:29:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jaeden Amero <jaeden.amero@ni.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND RESEND] compat_ioctl: Add RS-485 IOCTLs to the
- list
-Message-ID: <20120919142903.5d7058ed@pyramind.ukuu.org.uk>
-In-Reply-To: <1347994803-11032-1-git-send-email-jaeden.amero@ni.com>
-References: <1345578069-13372-1-git-send-email-jaeden.amero@ni.com>
-	<1347994803-11032-1-git-send-email-jaeden.amero@ni.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 19 Sep 2012 09:30:43 -0400
+Subject: Re: [PATCH] tools lib traceevent: Handle alloc_arg failure
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung.kim@lge.com>
+In-Reply-To: <1348058460.13080.52.camel@gandalf.local.home>
+References: <87boh23epi.fsf@sejong.aot.lge.com>
+	 <1348037109-17252-1-git-send-email-namhyung@kernel.org>
+	 <20120919114258.GA16696@gmail.com> <1348057609.1644.9.camel@leonhard>
+	 <1348058460.13080.52.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Sep 2012 22:30:35 +0900
+Message-ID: <1348061435.1470.4.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012 14:00:03 -0500
-Jaeden Amero <jaeden.amero@ni.com> wrote:
+Hi Steve,
 
-> The RS-485 TIOCSRS485 and TIOCGRS485 ioctls are 32-bit compatible, so
-> in order to call them on 64-bit systems from 32-bit user mode, we add
-> them to the ioctl pointer list as compatible ioctls.
+2012-09-19 (수), 08:41 -0400, Steven Rostedt:
+> On Wed, 2012-09-19 at 21:26 +0900, Namhyung Kim wrote:
+> > Yeah, I agree.  But I wanted to add a bit more helpful (to developers)
+> > info - function name and line number - rather than just "not enough
+> > memory" message.  Maybe we could change do_warning to emit such info
+> > automatically.
 > 
-> Signed-off-by: Jaeden Amero <jaeden.amero@ni.com>
+> But these only fail if you run out of memory for the tool. In that case,
+> I don't think it's that important which allocation failed.
 
-Added to my tty pile as nobody seems to be able to decide who owns this
+Okay, I'll send v2 tomorrow according to Ingo's suggestion.
+
+Thanks,
+Namhyung
+
+
