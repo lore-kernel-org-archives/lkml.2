@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab2ISTGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:06:25 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47818 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab2ISSzO (ORCPT
+	id S932949Ab2ISTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:09:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49148 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab2ISTJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:14 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, x86 <x86@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/40] PCI, acpiphp: Add is_hotplug_bridge detection
-Date: Wed, 19 Sep 2012 11:54:18 -0700
-Message-Id: <1348080894-23412-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
- <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 19 Sep 2012 15:09:57 -0400
+Date: Wed, 19 Sep 2012 21:09:52 +0200
+From: Lee Jones <ljkenny@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [rtc-linux] [PATCH 1/1] drivers/rtc/rtc-ab8500.c: Revoke Device
+ Tree enablement
+Message-ID: <20120919190952.GB2753@gmail.com>
+References: <1344527828-6283-1-git-send-email-lee.jones@linaro.org>
+ <1344527828-6283-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZa-72QogrZ-P5jbDHTTX64babZo3ydjzfgC-4LWUBfMg@mail.gmail.com>
+ <20120831110818.GA5962@gmail.com>
+ <CACRpkdat3zj_47r7ENz7Qv3N8cNOSKDV+k5em9DjOhkNycy9gQ@mail.gmail.com>
+ <CACRpkdbXwLXoWL+PS-wJ9cbztC-jWhyc=vr+98ffg70f6coaiQ@mail.gmail.com>
+ <20120919160302.GN28670@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120919160302.GN28670@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When system support hotplug bridge with children hotplug slots, we need to make sure
-that parent bridge get preallocated resource so later when device is plugged into
-children slot, those children devices will get resource allocated.
+> > > Sam: do you agree?
+> I'd love to see the patch first :)
+> Could you please bounce it to me ?
 
-We do not meet this problem, because for pcie hotplug card, when acpiphp is used,
-pci_scan_bridge will set that for us when detect hotplug bit in slot cap.
+I'll help. :)
 
-Reported-and-tested-by: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Jason Baron <jbaron@redhat.com>
----
- drivers/pci/hotplug/acpiphp_glue.c |   27 ++++++++++++++++++++++++++-
- 1 files changed, 26 insertions(+), 1 deletions(-)
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Thu Aug 9 13:28:19 2012 +0100
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 7be4ca5..085eec7 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -783,6 +783,29 @@ static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
- 	}
+    drivers/rtc/rtc-ab8500.c: Revoke Device Tree enablement
+    
+    All AB8500 devices are now registered via MFD core, so Device Tree
+    capability is no longer required for probing. Here we pull the DT
+    match table to ensure we're no longer probed during Device Tree
+    start-up.
+    
+    CC: Alessandro Zummo <a.zummo@towertech.it>
+    CC: rtc-linux@googlegroups.com
+    Acked-by: Linus Walleij <linus.walleij@linaro.org>
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+diff --git a/drivers/rtc/rtc-ab8500.c b/drivers/rtc/rtc-ab8500.c
+index bf3c2f6..2e5970f 100644
+--- a/drivers/rtc/rtc-ab8500.c
++++ b/drivers/rtc/rtc-ab8500.c
+@@ -462,16 +462,10 @@ static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
+   return 0;
  }
  
-+static void check_hotplug_bridge(struct acpiphp_slot *slot, struct pci_dev *dev)
-+{
-+	struct acpiphp_func *func;
-+
-+	if (!dev->subordinate)
-+		return;
-+
-+	/* quirk, or pcie could set it already */
-+	if (dev->is_hotplug_bridge)
-+		return;
-+
-+	if (PCI_SLOT(dev->devfn) != slot->device)
-+		return;
-+
-+	list_for_each_entry(func, &slot->funcs, sibling) {
-+		if (PCI_FUNC(dev->devfn) == func->function) {
-+			/* check if this bridge has ejectable slots */
-+			if ((detect_ejectable_slots(func->handle) > 0))
-+				dev->is_hotplug_bridge = 1;
-+			break;
-+		}
-+	}
-+}
- /**
-  * enable_device - enable, configure a slot
-  * @slot: slot to be enabled
-@@ -817,8 +840,10 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
- 			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 				max = pci_scan_bridge(bus, dev, max, pass);
--				if (pass && dev->subordinate)
-+				if (pass && dev->subordinate) {
-+					check_hotplug_bridge(slot, dev);
- 					pci_bus_size_bridges(dev->subordinate);
-+				}
- 			}
- 		}
- 	}
--- 
-1.7.7
+-static const struct of_device_id ab8500_rtc_match[] = {
+-	{ .compatible = "stericsson,ab8500-rtc", },
+-	{}
+-};
+-
+ static struct platform_driver ab8500_rtc_driver = {
+ 	.driver = {
+ 		.name = "ab8500-rtc",
+ 		      .owner = THIS_MODULE,
+-		      	     .of_match_table = ab8500_rtc_match,
+ 			     },
+ 			     .probe	= ab8500_rtc_probe,
+ 			     .remove = __devexit_p(ab8500_rtc_remove),
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
