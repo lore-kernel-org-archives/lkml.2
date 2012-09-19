@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab2ISD77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 23:59:59 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62134 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab2ISD76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 23:59:58 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Tue, 18 Sep 2012 22:59:57 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] linux/kernel.h: Fix warning seen with W=1 due to change in DIV_ROUND_CLOSEST
-Date: Tue, 18 Sep 2012 21:00:09 -0700
-Message-Id: <1348027209-29710-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	id S1751247Ab2ISEAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 00:00:37 -0400
+Received: from mail.digium.com ([216.207.245.2]:49563 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab2ISEAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 00:00:35 -0400
+Date: Tue, 18 Sep 2012 22:53:06 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+To: Xie Shaohui-B21989 <B21989@freescale.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "avorontsov@mvista.com" <avorontsov@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
+Message-ID: <20120919035306.GF24873@digium.com>
+References: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
+ <20120914182137.GD18672@digium.com>
+ <ED492CCEAF882048BC2237DE806547C9079E171E@039-SN2MPN1-012.039d.mgd.msft.net>
+ <20120919030438.GE24873@digium.com>
+ <ED492CCEAF882048BC2237DE806547C9079E3F3D@039-SN2MPN1-012.039d.mgd.msft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ED492CCEAF882048BC2237DE806547C9079E3F3D@039-SN2MPN1-012.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit b6d86d3d (Fix DIV_ROUND_CLOSEST to support negative dividends),
-the following warning is seen if the kernel is compiled with W=1 (-Wextra):
+On Wed, Sep 19, 2012 at 03:43:35AM +0000, Xie Shaohui-B21989 wrote:
+> > On Mon, Sep 17, 2012 at 10:32:59AM +0000, Xie Shaohui-B21989 wrote:
+> > >
+> > > BTW: seems you are using a different kernel tree with mine.
+> > 
+> > On the chance that I missing something important: Why do you say
+> > I was running a different kernel tree? I was against 3.6-rc2
+> > when I original hit the problem.
+>
+> [S.H] I'm using 3.6-rc4, and some codes in your patch I did not
+> find them in 3.6-rc4.
 
-warning: comparison of unsigned expression >= 0 is always true
+Is it because there were three patches in the series?
 
-The warning is due to the test '((typeof(x))-1) >= 0', which is used to detect
-if the variable type is unsigned. Research on the web suggests that the warning
-disappears if '>' instead of '>=' is used for the comparison.
+  [1/3] https://lkml.org/lkml/2012/9/14/473
+  [2/3] https://lkml.org/lkml/2012/9/14/469
+  [3/3] https://lkml.org/lkml/2012/9/14/474
 
-Tests after changing the macro along that line show that the warning is gone,
-and that the result is still correct:
+They are also the last three commits on my edac_debug_v2 branch
+here, which is on top of 3.6-rc6:
 
-i=-4: DIV_ROUND_CLOSEST(i, 2)=-2
-i=-3: DIV_ROUND_CLOSEST(i, 2)=-2
-i=-2: DIV_ROUND_CLOSEST(i, 2)=-1
-i=-1: DIV_ROUND_CLOSEST(i, 2)=-1
-i=0: DIV_ROUND_CLOSEST(i, 2)=0
-i=1: DIV_ROUND_CLOSEST(i, 2)=1
-i=2: DIV_ROUND_CLOSEST(i, 2)=1
-i=3: DIV_ROUND_CLOSEST(i, 2)=2
-i=4: DIV_ROUND_CLOSEST(i, 2)=2
+https://github.com/sruffell/linux/commits/edac_debug_v2/
 
-Code size is the same as before.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- include/linux/kernel.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 594b419..2451f1f 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -91,7 +91,7 @@
- {							\
- 	typeof(x) __x = x;				\
- 	typeof(divisor) __d = divisor;			\
--	(((typeof(x))-1) >= 0 || (__x) >= 0) ?		\
-+	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
- 		(((__x) + ((__d) / 2)) / (__d)) :	\
- 		(((__x) - ((__d) / 2)) / (__d));	\
- }							\
--- 
-1.7.9.7
-
+Cheers,
+Shaun
