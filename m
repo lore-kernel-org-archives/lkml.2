@@ -1,294 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2ISGyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 02:54:07 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59752 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab2ISGyC (ORCPT
+	id S1752532Ab2ISGz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 02:55:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56395 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab2ISGz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 02:54:02 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-ce-50596c08c26c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] tools lib traceevent: Handle alloc_arg failure
-Date: Wed, 19 Sep 2012 15:45:09 +0900
-Message-Id: <1348037109-17252-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <87boh23epi.fsf@sejong.aot.lge.com>
-References: <87boh23epi.fsf@sejong.aot.lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 19 Sep 2012 02:55:26 -0400
+Date: Wed, 19 Sep 2012 08:55:11 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Greg Ungerer <gerg@snapgear.com>,
+        dedekind1@gmail.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH] clk: Make the managed clk functions generically available
+Message-ID: <20120919065510.GA3213@avionic-0098.mockup.avionic-design.de>
+References: <20120910003913.GM13739@n2100.arm.linux.org.uk>
+ <504F4E36.20309@metafoo.de>
+ <1347375033.27206.3.camel@sauron.fi.intel.com>
+ <504FE633.2090304@snapgear.com>
+ <5050F3DB.1050202@metafoo.de>
+ <20120915213151.GM12245@n2100.arm.linux.org.uk>
+ <20120918080037.GA15982@avionic-0098.mockup.avionic-design.de>
+ <20120918093536.GV12245@n2100.arm.linux.org.uk>
+ <20120918112555.GA21004@avionic-0098.mockup.avionic-design.de>
+ <20120918204014.GY12245@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Disposition: inline
+In-Reply-To: <20120918204014.GY12245@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:2rSQjrhlymQlmwddnElG4motc3EykHtuLGIj7h5L9DK
+ fQtKHOsTbXNQ49aRaeVl3OIkZy8YoY4iffBN2ghgsHj79W4d9s
+ XYQngj0stCbHAWBNHeGUGbqkj54A4NnZoKVxW5nYaPu1tiCkA3
+ FZ4bRfNzHfnpTZjNhop+/67Y7jwEShfXGPPS2cJmWSR3IxFqyj
+ jS0VgnHKmwiKqpyuc/2E/A9gPREbPzYGldxsTjjgasTrUw9Zqc
+ 37km4c7tLgNrXTTJMQLCSFZRjVCFzov6aJrRKS07meaSONl8TQ
+ uZNxHnnY4Z7mLgG2lQkSXD2T2WL0ibcunhue5Y+TwUQfKTpvWj
+ oYVmlMNdV158P3Z3InL3HIiPe8jrqEDN9kG3ClnmQ3IjsuqC0N
+ 5MXK+9p6gbhloebnnqtqfGXSXyuw48lODk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
 
-Now alloc_arg returns NULL if memory allocation failed, it should be
-handled on callsites properly.
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c | 98 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 98 insertions(+)
+On Tue, Sep 18, 2012 at 09:40:14PM +0100, Russell King - ARM Linux wrote:
+> On Tue, Sep 18, 2012 at 01:25:55PM +0200, Thierry Reding wrote:
+> > On Tue, Sep 18, 2012 at 10:35:36AM +0100, Russell King - ARM Linux wrot=
+e:
+> > > On Tue, Sep 18, 2012 at 10:00:37AM +0200, Thierry Reding wrote:
+> > > > On Sat, Sep 15, 2012 at 10:31:52PM +0100, Russell King - ARM Linux =
+wrote:
+> > > > > On Wed, Sep 12, 2012 at 10:43:07PM +0200, Lars-Peter Clausen wrot=
+e:
+> > > > > > I wouldn't mind having this merged sooner rather than later, th=
+ere is at least
+> > > > > > one driver in next which is currently broken due to the missing=
+ devm_clk_get.
+> > > > > > Russell what's your plan for the patch? Maybe under the given c=
+ircumstances it
+> > > > > > makes sense to let it go through the m68k tree.
+> > > > >=20
+> > > > > Ok, I've merged it but there was no indication in the patch that =
+it was
+> > > > > supposed to be a fix... there's no cc: to stable.  Does it need t=
+o go to
+> > > > > stable?  When was this brokenness introduced?  What's the story f=
+or the
+> > > > > m68k bit?
+>=20
+> I said abouve "I've merged it" - that means, I've put it in my
+> tree...
+>=20
+> > > > What tree is this supposed to go through? I've checked your ARM tre=
+e as
+> > > > well as Mike's clock tree but neither seem to carry this patch. The
+> > > > reason I ask is because I want to take a patch series that converts=
+ the
+> > > > Unicore32 PWM code to the PWM framework into linux-next but it depe=
+nds
+> > > > on this patch as well.
+> > >=20
+> > > It /is/ in my tree (you'll notice that it is in linux-next.)  You're
+> > > probably looking at my Linaro tree instead, which doesn't carry
+> > > anything which isn't about to be sent to Linus.
+> >=20
+> > I must be blind then. next-20120918 doesn't have it. And looking at your
+> > tree here[0] doesn't show the commit either.
+>=20
+> Hmm, it's possible I didn't push the tree out... well, I have done so
+> now, so it should be visible from tonight onwards and should be in
+> -next sometime during the next couple of days (it seems to take a
+> couple of days between me pushing stuff out one evening to stuff
+> appearing in -next because of the timezones and timing of sfr's pulls.)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index e8e0fe0443a4..ee4fa1912542 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1565,6 +1565,14 @@ process_cond(struct event_format *event, struct print_arg *top, char **tok)
- 	left = alloc_arg();
- 	right = alloc_arg();
- 
-+	if (!arg || !left || !right) {
-+		do_warning("%s: not enough memory!", __func__);
-+		/* arg will be freed at out_free */
-+		free_arg(left);
-+		free_arg(right);
-+		goto out_free;
-+	}
-+
- 	arg->type = PRINT_OP;
- 	arg->op.left = left;
- 	arg->op.right = right;
-@@ -1607,6 +1615,12 @@ process_array(struct event_format *event, struct print_arg *top, char **tok)
- 	char *token = NULL;
- 
- 	arg = alloc_arg();
-+	if (!arg) {
-+		do_warning("%s: not enough memory!", __func__);
-+		/* '*tok' is set to top->op.op.  No need to free. */
-+		*tok = NULL;
-+		return EVENT_ERROR;
-+	}
- 
- 	*tok = NULL;
- 	type = process_arg(event, arg, &token);
-@@ -1726,10 +1740,18 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 		/* make an empty left */
- 		left = alloc_arg();
-+		if (!left) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 		left->type = PRINT_NULL;
- 		arg->op.left = left;
- 
- 		right = alloc_arg();
-+		if (!right) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 		arg->op.right = right;
- 
- 		/* do not free the token, it belongs to an op */
-@@ -1739,6 +1761,10 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	} else if (strcmp(token, "?") == 0) {
- 
- 		left = alloc_arg();
-+		if (!left) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 		/* copy the top arg to the left */
- 		*left = *arg;
- 
-@@ -1766,6 +1792,10 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		   strcmp(token, "!=") == 0) {
- 
- 		left = alloc_arg();
-+		if (!left) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 
- 		/* copy the top arg to the left */
- 		*left = *arg;
-@@ -1808,12 +1838,20 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		}
- 
- 		right = alloc_arg();
-+		if (!right) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 		type = process_arg_token(event, right, tok, type);
- 		arg->op.right = right;
- 
- 	} else if (strcmp(token, "[") == 0) {
- 
- 		left = alloc_arg();
-+		if (!left) {
-+			do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+			goto out_free;
-+		}
- 		*left = *arg;
- 
- 		arg->type = PRINT_OP;
-@@ -2201,6 +2239,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 			break;
- 
- 		arg = alloc_arg();
-+		if (!arg)
-+			goto out_free;
- 
- 		free_token(token);
- 		type = process_arg(event, arg, &token);
-@@ -2227,6 +2267,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 
- 		free_arg(arg);
- 		arg = alloc_arg();
-+		if (!arg)
-+			goto out_free;
- 
- 		free_token(token);
- 		type = process_arg(event, arg, &token);
-@@ -2271,6 +2313,10 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 	arg->type = PRINT_FLAGS;
- 
- 	field = alloc_arg();
-+	if (!field) {
-+		do_warning("%s: not enough memory!", __func__);
-+		goto out_free;
-+	}
- 
- 	type = process_arg(event, field, &token);
- 
-@@ -2318,6 +2364,10 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 	arg->type = PRINT_SYMBOL;
- 
- 	field = alloc_arg();
-+	if (!field) {
-+		do_warning("%s: not enough memory!", __func__);
-+		goto out_free;
-+	}
- 
- 	type = process_arg(event, field, &token);
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
-@@ -2350,6 +2400,11 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 	arg->type = PRINT_HEX;
- 
- 	field = alloc_arg();
-+	if (!field) {
-+		do_warning("%s: not enough memory!", __func__);
-+		goto out_free;
-+	}
-+
- 	type = process_arg(event, field, &token);
- 
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
-@@ -2360,6 +2415,12 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 	free_token(token);
- 
- 	field = alloc_arg();
-+	if (!field) {
-+		do_warning("%s: not enough memory!", __func__);
-+		*tok = NULL;
-+		return EVENT_ERROR;
-+	}
-+
- 	type = process_arg(event, field, &token);
- 
- 	if (test_type_token(type, token, EVENT_DELIM, ")"))
-@@ -2417,6 +2478,12 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
- 
- 	free_token(token);
- 	arg = alloc_arg();
-+	if (!field) {
-+		do_warning("%s: not enough memory!", __func__);
-+		*tok = NULL;
-+		return EVENT_ERROR;
-+	}
-+
- 	type = process_arg(event, arg, &token);
- 	if (type == EVENT_ERROR)
- 		goto out_free_arg;
-@@ -2476,6 +2543,10 @@ process_paren(struct event_format *event, struct print_arg *arg, char **tok)
- 		}
- 
- 		item_arg = alloc_arg();
-+		if (!item_arg) {
-+			do_warning("%s: not enough memory!", __func__);
-+			goto out_free;
-+		}
- 
- 		arg->type = PRINT_TYPE;
- 		arg->typecast.type = arg->atom.atom;
-@@ -2571,6 +2642,11 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	next_arg = &(arg->func.args);
- 	for (i = 0; i < func->nr_args; i++) {
- 		farg = alloc_arg();
-+		if (!farg) {
-+			do_warning("%s: not enough memory!", __func__);
-+			return EVENT_ERROR;
-+		}
-+
- 		type = process_arg(event, farg, &token);
- 		if (i < (func->nr_args - 1))
- 			test = ",";
-@@ -2737,6 +2813,10 @@ static int event_read_print_args(struct event_format *event, struct print_arg **
- 		}
- 
- 		arg = alloc_arg();
-+		if (!arg) {
-+			do_warning("%s: not enough memory!", __func__);
-+			return -1;
-+		}
- 
- 		type = process_arg(event, arg, &token);
- 
-@@ -3635,6 +3715,10 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	 * The first arg is the IP pointer.
- 	 */
- 	args = alloc_arg();
-+	if (!args) {
-+		do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+		return NULL;
-+	}
- 	arg = args;
- 	arg->next = NULL;
- 	next = &arg->next;
-@@ -3697,6 +3781,11 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				val = pevent_read_number(pevent, bptr, vsize);
- 				bptr += vsize;
- 				arg = alloc_arg();
-+				if (!arg) {
-+					do_warning("%s(%d): not enough memory!",
-+						   __func__, __LINE__);
-+					goto out_free;
-+				}
- 				arg->next = NULL;
- 				arg->type = PRINT_ATOM;
- 				if (asprintf(&arg->atom.atom, "%lld", val) < 0) {
-@@ -3715,6 +3804,11 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				break;
- 			case 's':
- 				arg = alloc_arg();
-+				if (!arg) {
-+					do_warning("%s(%d): not enough memory!",
-+						   __func__, __LINE__);
-+					goto out_free;
-+				}
- 				arg->next = NULL;
- 				arg->type = PRINT_BSTRING;
- 				arg->string.string = strdup(bptr);
-@@ -4876,6 +4970,10 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
- 		list = &event->print_fmt.args;
- 		for (field = event->format.fields; field; field = field->next) {
- 			arg = alloc_arg();
-+			if (!arg) {
-+				event->flags |= EVENT_FL_FAILED;
-+				return PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED;
-+			}
- 			arg->type = PRINT_FIELD;
- 			arg->field.name = strdup(field->name);
- 			if (!arg->field.name) {
--- 
-1.7.11.4
+Okay, I see it both in your tree and in linux-next now. Thanks!
 
+Thierry
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQWWxOAAoJEN0jrNd/PrOhrvEP/1MGEbTNfLOJenwc5VvkXaJj
+FtdagDJlUsmFr4dayjtWVItm6tEqp7Ahrdbsui14xUMV2VuFxAcOnqQQ8WTZ5E9e
+O1jxTCzUK9VC24M1U3w/xq6swIzaSrlp1/j5Bfi3z2tRRLM/b8wHn453sN39k35u
+owZDIUVlN5ll9VZenM6LcDyZDHwv9Sw5jcZUEjxMXCwnDSU+FUbQqmSkBxi98sUD
+jY7vuXmX9a4q8GdEL7Ar8JctQZsf+ZYKKjeQcHuI2Cg0R14eyCP0vcW1S3/O2Fu+
+Cuj85l22PNP+zQNXOSVByAQ9YgnflMLueZ/udA7kn74OLMpgPC2GZkQjOcDW7yF6
+2Hl4UD+e4KKHGxWeLi3jS74rRSlJejHPxKO9xiT2Bm8btYrI8nzedTyod0jlfQIL
+GtYSB0hVlokctNU4ozt3z2hkS//GtXJSZZ5hhN50faI5S4kzQZAwjzN5Mt1ck0nO
+reug0hCvmbrEfU9bEqYvo+VcCdjD+QmfSWfEt4HXZne9eUzibKKJ1SxghvP64+0E
+agCYa+D9ONMaHYb+O4G4LLLACBG9xHhkgA35wrxLSQQnXkHkIiAHO70y9lqhGC6x
+lJQ0yNVnLUyajtZR7Y8cPcWNIvqns0OYMdt+WWRA1qcj12Gn/DLROomd0RRKIAEc
+t/SaDDpDrOvS/YfPOWRe
+=Pu2i
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
