@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab2ISL4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:56:05 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:16676 "EHLO
+	id S932190Ab2ISL4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:56:38 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16801 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab2ISL4B (ORCPT
+	with ESMTP id S1755429Ab2ISL4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:56:01 -0400
+	Wed, 19 Sep 2012 07:56:36 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
 CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
         <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
         <linux-kernel@vger.kernel.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 1/9] net/macb: Add support for Gigabit Ethernet mode
-Date: Wed, 19 Sep 2012 13:55:14 +0200
-Message-ID: <2a96e330d7952f6d2fd61b62c25bc4bed43413a2.1348055112.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 2/9] net/macb: memory barriers cleanup
+Date: Wed, 19 Sep 2012 13:55:15 +0200
+Message-ID: <44c58f2fdddf8f1521a032f331907149bd6bdb99.1348055112.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
 References: <cover.1348055112.git.nicolas.ferre@atmel.com>
@@ -25,85 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Vilchez <patrice.vilchez@atmel.com>
+From: Havard Skinnemoen <havard@skinnemoen.net>
 
-Add Gigabit Ethernet mode to GEM cadence IP and enable RGMII connection.
+Remove a couple of unneeded barriers and document the remaining ones.
 
-Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
+Signed-off-by: Havard Skinnemoen <havard@skinnemoen.net>
+[nicolas.ferre@atmel.com: split patch in topics]
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 15 ++++++++++++---
- drivers/net/ethernet/cadence/macb.h |  4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/cadence/macb.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index c4834c2..56375e2 100644
+index 56375e2..313cba2 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -152,13 +152,17 @@ static void macb_handle_link_change(struct net_device *dev)
+@@ -369,7 +369,9 @@ static void macb_tx(struct macb *bp)
  
- 			reg = macb_readl(bp, NCFGR);
- 			reg &= ~(MACB_BIT(SPD) | MACB_BIT(FD));
-+			if (macb_is_gem(bp))
-+				reg &= ~GEM_BIT(GBE);
+ 		BUG_ON(skb == NULL);
  
- 			if (phydev->duplex)
- 				reg |= MACB_BIT(FD);
- 			if (phydev->speed == SPEED_100)
- 				reg |= MACB_BIT(SPD);
-+			if (phydev->speed == SPEED_1000)
-+				reg |= GEM_BIT(GBE);
++		/* Make hw descriptor updates visible to CPU */
+ 		rmb();
++
+ 		bufstat = bp->tx_ring[tail].ctrl;
  
--			macb_writel(bp, NCFGR, reg);
-+			macb_or_gem_writel(bp, NCFGR, reg);
- 
- 			bp->speed = phydev->speed;
- 			bp->duplex = phydev->duplex;
-@@ -213,7 +217,10 @@ static int macb_mii_probe(struct net_device *dev)
+ 		if (!(bufstat & MACB_BIT(TX_USED)))
+@@ -412,7 +414,10 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 			if (frag == last_frag)
+ 				break;
+ 		}
++
++		/* Make descriptor updates visible to hardware */
+ 		wmb();
++
+ 		return 1;
  	}
  
- 	/* mask with MAC supported features */
--	phydev->supported &= PHY_BASIC_FEATURES;
-+	if (macb_is_gem(bp))
-+		phydev->supported &= PHY_GBIT_FEATURES;
-+	else
-+		phydev->supported &= PHY_BASIC_FEATURES;
+@@ -433,12 +438,14 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 					       frag_len);
+ 		offset += RX_BUFFER_SIZE;
+ 		bp->rx_ring[frag].addr &= ~MACB_BIT(RX_USED);
+-		wmb();
  
- 	phydev->advertising = phydev->supported;
- 
-@@ -1377,7 +1384,9 @@ static int __init macb_probe(struct platform_device *pdev)
- 		bp->phy_interface = err;
+ 		if (frag == last_frag)
+ 			break;
  	}
  
--	if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
-+	if (bp->phy_interface == PHY_INTERFACE_MODE_RGMII)
-+		macb_or_gem_writel(bp, USRIO, GEM_BIT(RGMII));
-+	else if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
- #if defined(CONFIG_ARCH_AT91)
- 		macb_or_gem_writel(bp, USRIO, (MACB_BIT(RMII) |
- 					       MACB_BIT(CLKEN)));
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 335e288..f69ceef 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -145,6 +145,8 @@
- #define MACB_IRXFCS_SIZE			1
++	/* Make descriptor updates visible to hardware */
++	wmb();
++
+ 	skb->protocol = eth_type_trans(skb, bp->dev);
  
- /* GEM specific NCFGR bitfields. */
-+#define GEM_GBE_OFFSET				10
-+#define GEM_GBE_SIZE				1
- #define GEM_CLK_OFFSET				18
- #define GEM_CLK_SIZE				3
- #define GEM_DBW_OFFSET				21
-@@ -246,6 +248,8 @@
- /* Bitfields in USRIO (AT91) */
- #define MACB_RMII_OFFSET			0
- #define MACB_RMII_SIZE				1
-+#define GEM_RGMII_OFFSET			0	/* GEM gigabit mode */
-+#define GEM_RGMII_SIZE				1
- #define MACB_CLKEN_OFFSET			1
- #define MACB_CLKEN_SIZE				1
+ 	bp->stats.rx_packets++;
+@@ -458,6 +465,8 @@ static void discard_partial_frame(struct macb *bp, unsigned int begin,
  
+ 	for (frag = begin; frag != end; frag = NEXT_RX(frag))
+ 		bp->rx_ring[frag].addr &= ~MACB_BIT(RX_USED);
++
++	/* Make descriptor updates visible to hardware */
+ 	wmb();
+ 
+ 	/*
+@@ -476,7 +485,9 @@ static int macb_rx(struct macb *bp, int budget)
+ 	for (; budget > 0; tail = NEXT_RX(tail)) {
+ 		u32 addr, ctrl;
+ 
++		/* Make hw descriptor updates visible to CPU */
+ 		rmb();
++
+ 		addr = bp->rx_ring[tail].addr;
+ 		ctrl = bp->rx_ring[tail].ctrl;
+ 
+@@ -671,6 +682,8 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	bp->tx_ring[entry].addr = mapping;
+ 	bp->tx_ring[entry].ctrl = ctrl;
++
++	/* Make newly initialized descriptor visible to hardware */
+ 	wmb();
+ 
+ 	entry = NEXT_TX(entry);
+@@ -779,9 +792,6 @@ static void macb_init_rings(struct macb *bp)
+ 
+ static void macb_reset_hw(struct macb *bp)
+ {
+-	/* Make sure we have the write buffer for ourselves */
+-	wmb();
+-
+ 	/*
+ 	 * Disable RX and TX (XXX: Should we halt the transmission
+ 	 * more gracefully?)
 -- 
 1.7.11.3
 
