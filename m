@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab2ISQdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:33:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26362 "EHLO relay.sw.ru"
+	id S932650Ab2ISQdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:33:55 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:11925 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab2ISQdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:33:21 -0400
-Subject: [PATCH 11/11] fuse: optimize __fuse_direct_io()
+	id S932359Ab2ISQcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:32:45 -0400
+Subject: [PATCH 08/11] fuse: use req->page_descs[] for argpages cases
 To: miklos@szeredi.hu
 From: Maxim Patlasov <mpatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Wed, 19 Sep 2012 20:33:31 +0400
-Message-ID: <20120919163327.29482.56965.stgit@maximpc.sw.ru>
+Date: Wed, 19 Sep 2012 20:33:03 +0400
+Message-ID: <20120919163300.29482.26231.stgit@maximpc.sw.ru>
 In-Reply-To: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
 References: <20120919161559.29482.55120.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -23,79 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__fuse_direct_io() allocates fuse-requests by calling fuse_get_req(fc, n). The
-patch calculates 'n' based on iov[] array. This is useful because allocating
-FUSE_MAX_PAGES_PER_REQ page pointers and descriptors for each fuse request
-would be waste of memory in case of iov-s of smaller size.
+Previously, anyone who set flag 'argpages' only filled req->pages[] and set
+per-request page_offset. This patch re-works all cases where argpages=1 to
+fill req->page_descs[] properly.
+
+Having req->page_descs[] filled properly allows to re-work fuse_copy_pages()
+to copy page fragments described by req->page_descs[]. This will be useful
+for next patches optimizing direct_IO.
 
 Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- fs/fuse/file.c |   27 +++++++++++++++++++++++----
- 1 files changed, 23 insertions(+), 4 deletions(-)
+ fs/fuse/cuse.c |    1 +
+ fs/fuse/dev.c  |    7 +++----
+ fs/fuse/dir.c  |    1 +
+ fs/fuse/file.c |   20 ++++++++++++++++++++
+ 4 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 5b0fa5d..5ecab19 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1090,14 +1090,14 @@ static int fuse_get_user_pages(struct fuse_req *req,
- 		return 0;
+diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
+index 2f1d5dd..38efe69 100644
+--- a/fs/fuse/cuse.c
++++ b/fs/fuse/cuse.c
+@@ -441,6 +441,7 @@ static int cuse_send_init(struct cuse_conn *cc)
+ 	req->out.argvar = 1;
+ 	req->out.argpages = 1;
+ 	req->pages[0] = page;
++	req->page_descs[0].length = req->out.args[1].size;
+ 	req->num_pages = 1;
+ 	req->end = cuse_process_init_reply;
+ 	fuse_request_send_background(fc, req);
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index ea63d39..21b6272 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -888,11 +888,11 @@ static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
+ {
+ 	unsigned i;
+ 	struct fuse_req *req = cs->req;
+-	unsigned offset = req->page_descs[0].offset;
+-	unsigned count = min(nbytes, (unsigned) PAGE_SIZE - offset);
+ 
+ 	for (i = 0; i < req->num_pages && (nbytes || zeroing); i++) {
+ 		int err;
++		unsigned offset = req->page_descs[i].offset;
++		unsigned count = min(nbytes, req->page_descs[i].length);
+ 
+ 		err = fuse_copy_page(cs, &req->pages[i], offset, count,
+ 				     zeroing);
+@@ -900,8 +900,6 @@ static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
+ 			return err;
+ 
+ 		nbytes -= count;
+-		count = min(nbytes, (unsigned) PAGE_SIZE);
+-		offset = 0;
  	}
- 
--	while (nbytes < *nbytesp && req->num_pages < FUSE_MAX_PAGES_PER_REQ) {
-+	while (nbytes < *nbytesp && req->num_pages < req->max_pages) {
- 		int npages;
- 		unsigned long user_addr = fuse_get_ua(*iov_pp, *iov_offset_p);
- 		unsigned offset = user_addr & ~PAGE_MASK;
- 		size_t frag_size = fuse_get_fr_sz(*iov_pp, *iov_offset_p,
- 						  *nbytesp - nbytes);
- 
--		int n = FUSE_MAX_PAGES_PER_REQ - req->num_pages;
-+		int n = req->max_pages - req->num_pages;
- 		frag_size = min_t(size_t, frag_size, n << PAGE_SHIFT);
- 
- 		npages = (frag_size + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
-@@ -1138,6 +1138,24 @@ static int fuse_get_user_pages(struct fuse_req *req,
  	return 0;
  }
+@@ -1611,6 +1609,7 @@ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
  
-+static inline int fuse_iov_npages(const struct iovec *iov,
-+				  unsigned long nr_segs, size_t iov_offset)
+ 		this_num = min_t(unsigned, num, PAGE_CACHE_SIZE - offset);
+ 		req->pages[req->num_pages] = page;
++		req->page_descs[req->num_pages].length = this_num;
+ 		req->num_pages++;
+ 
+ 		num -= this_num;
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 1929bfb..95e4016 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1179,6 +1179,7 @@ static int fuse_readdir(struct file *file, void *dstbuf, filldir_t filldir)
+ 	req->out.argpages = 1;
+ 	req->num_pages = 1;
+ 	req->pages[0] = page;
++	req->page_descs[0].length = PAGE_SIZE;
+ 	fuse_read_fill(req, file, file->f_pos, PAGE_SIZE, FUSE_READDIR);
+ 	fuse_request_send(fc, req);
+ 	nbytes = req->out.args[0].size;
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index b68cf3b..8a1f833 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -555,6 +555,7 @@ static int fuse_readpage(struct file *file, struct page *page)
+ 	req->out.argpages = 1;
+ 	req->num_pages = 1;
+ 	req->pages[0] = page;
++	req->page_descs[0].length = count;
+ 	num_read = fuse_send_read(req, file, pos, count, NULL);
+ 	err = req->out.h.error;
+ 	fuse_put_request(fc, req);
+@@ -674,6 +675,7 @@ static int fuse_readpages_fill(void *_data, struct page *page)
+ 
+ 	page_cache_get(page);
+ 	req->pages[req->num_pages] = page;
++	req->page_descs[req->num_pages].length = PAGE_SIZE;
+ 	req->num_pages++;
+ 	data->nr_pages--;
+ 	return 0;
+@@ -869,6 +871,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+ 
+ 		err = 0;
+ 		req->pages[req->num_pages] = page;
++		req->page_descs[req->num_pages].length = tmp;
+ 		req->num_pages++;
+ 
+ 		iov_iter_advance(ii, tmp);
+@@ -1044,6 +1047,15 @@ static void fuse_release_user_pages(struct fuse_req *req, int write)
+ 	}
+ }
+ 
++static inline void fuse_page_descs_length_init(struct fuse_req *req)
 +{
-+	int npages = 0;
++	int i;
 +
-+	while (nr_segs-- > 0 && npages < FUSE_MAX_PAGES_PER_REQ) {
-+		unsigned long user_addr = fuse_get_ua(iov, iov_offset);
-+		unsigned offset = user_addr & ~PAGE_MASK;
-+		size_t frag_size = iov->iov_len - iov_offset;
-+
-+		npages += (frag_size + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		iov++;
-+		iov_offset = 0;
-+	}
-+
-+	return min(npages, FUSE_MAX_PAGES_PER_REQ);
++	for (i = 0; i < req->num_pages; i++)
++		req->page_descs[i].length = PAGE_SIZE -
++			req->page_descs[i].offset;
 +}
 +
- static ssize_t __fuse_direct_io(struct file *file, const struct iovec *iov,
- 				unsigned long nr_segs, size_t count,
- 				loff_t *ppos, int write)
-@@ -1150,7 +1168,7 @@ static ssize_t __fuse_direct_io(struct file *file, const struct iovec *iov,
- 	struct fuse_req *req;
- 	size_t iov_offset = 0;
+ static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
+ 			       size_t *nbytesp, int write)
+ {
+@@ -1071,6 +1083,7 @@ static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
  
--	req = fuse_get_req(fc, FUSE_MAX_PAGES_PER_REQ);
-+	req = fuse_get_req(fc, fuse_iov_npages(iov, nr_segs, iov_offset));
- 	if (IS_ERR(req))
- 		return PTR_ERR(req);
+ 	req->num_pages = npages;
+ 	req->page_descs[0].offset = offset;
++	fuse_page_descs_length_init(req);
  
-@@ -1186,7 +1204,8 @@ static ssize_t __fuse_direct_io(struct file *file, const struct iovec *iov,
- 			break;
- 		if (count) {
- 			fuse_put_request(fc, req);
--			req = fuse_get_req(fc, FUSE_MAX_PAGES_PER_REQ);
-+			req = fuse_get_req(fc,
-+				fuse_iov_npages(iov, nr_segs, iov_offset));
- 			if (IS_ERR(req))
- 				break;
- 		}
+ 	if (write)
+ 		req->in.argpages = 1;
+@@ -1078,6 +1091,11 @@ static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
+ 		req->out.argpages = 1;
+ 
+ 	nbytes = (req->num_pages << PAGE_SHIFT) - req->page_descs[0].offset;
++
++	if (*nbytesp < nbytes)
++		req->page_descs[req->num_pages - 1].length -=
++			nbytes - *nbytesp;
++
+ 	*nbytesp = min(*nbytesp, nbytes);
+ 
+ 	return 0;
+@@ -1315,6 +1333,7 @@ static int fuse_writepage_locked(struct page *page)
+ 	req->num_pages = 1;
+ 	req->pages[0] = tmp_page;
+ 	req->page_descs[0].offset = 0;
++	req->page_descs[0].length = PAGE_SIZE;
+ 	req->end = fuse_writepage_end;
+ 	req->inode = inode;
+ 
+@@ -1901,6 +1920,7 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+ 	}
+ 	memcpy(req->pages, pages, sizeof(req->pages[0]) * num_pages);
+ 	req->num_pages = num_pages;
++	fuse_page_descs_length_init(req);
+ 
+ 	/* okay, let's send it to the client */
+ 	req->in.h.opcode = FUSE_IOCTL;
 
