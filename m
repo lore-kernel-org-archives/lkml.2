@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2ISJzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 05:55:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:15142 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755586Ab2ISJzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 05:55:08 -0400
-X-IronPort-AV: E=Sophos;i="4.80,448,1344182400"; 
-   d="scan'208";a="5871509"
-Message-ID: <505996F8.1020506@cn.fujitsu.com>
-Date: Wed, 19 Sep 2012 17:57:12 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] workqueue: Keep activate-order equals to queue_work()-order
-References: <1347957414-6692-1-git-send-email-laijs@cn.fujitsu.com> <1347957414-6692-2-git-send-email-laijs@cn.fujitsu.com> <20120918170519.GB8474@google.com>
-In-Reply-To: <20120918170519.GB8474@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/19 17:55:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/19 17:55:22,
-	Serialize complete at 2012/09/19 17:55:22
+	id S1756025Ab2ISJ5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 05:57:41 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:33973 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754916Ab2ISJ5j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 05:57:39 -0400
+Subject: Re: [PATCH 3/3] i2c: OMAP fix driver initialization message
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <5058CA65.5080408@ti.com>
+Date: Wed, 19 Sep 2012 12:57:34 +0300
+Cc: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>, Tony Lindgren <tony@atomide.com>
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <942374D7-2A8D-4C15-BA6D-3931CE11F8D9@antoniou-consulting.com>
+References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com> <1348070841-23354-4-git-send-email-panto@antoniou-consulting.com> <5058CA65.5080408@ti.com>
+To: a0919096 <b-cousson@ti.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 01:05 AM, Tejun Heo wrote:
-> On Tue, Sep 18, 2012 at 04:36:53PM +0800, Lai Jiangshan wrote:
->> The whole workqueue.c keeps activate-order equals to queue_work()-order
->> in any given cwq except workqueue_set_max_active().
->>
->> If this order is not kept, something may be not good:
->>
->> first_work_fn() { release some resource; }
->> second_work_fn() { wait and request the resource; use resource; }
->>
->> 1. user queues the first work.	# ->max_active is low, is queued on ->delayed_works.
->> 2. someone increases the >max_active via workqueue_set_max_active()
->> 3. user queues the second work.	# queued on cwq->pool.
->>
->> When the second work is launched to execute, it waits the first work
->> to release the resource. But the first work is still in ->delayed_works,
->> it waits the first work to finish and them it can be activated.
->>
->> It is bad. we fix it by activating the first work in the step 2.
->>
->> I can't fully determine that it is workqueue's responsibility
->> or the user's responsibility.
->> If it is workqueue's responsibility, the patch needs go to -stable.
->> If it is user's responsibility. it is a nice cleanup, it can go to for-next.
->> I prefer it is workqueue's responsibility.
+Hi Benoit,
+
+On Sep 18, 2012, at 10:24 PM, a0919096 wrote:
+
+> Hi Panto,
 > 
-> Unless max_active == 1, workqueue doesn't give any guarantee on
-> execution order.  I don't think we need to care about this.
+> That patch is good, but a similar one was already posted by Florian.
+> https://patchwork.kernel.org/patch/1392671/
 > 
+> Checking the email thread it seems that Wolfram	pulled it.
+> 
+> Regards,
+> Benoit
 > 
 
-(disorder of execution is OK for current WQ. because we can launch new worker
-to execute the next work if the previous one is waiting something)
+Great. One less thing to look after :)
 
-But I concern activate-order, not execution order. A non-delayed work
-may delay a delayed work for ever, and if a non-delayed work needs something
-which will be produced by delayed one, the two work may wait each other.
+Regards
 
-{
-a subsystem queues a work to release resource.
-and them
-a subsystem queues a work to use the resource.
-}
-Is this behavior acceptable?
+-- Pantelis
 
-If this is acceptable, and if the first queued work go to ->delayed_works,
-and a userspace user issues workqueue_set_max_active() via sysctl
-before the second queuing. thus the second queued work will be activated
-immediately. since the second work is activated,
-the first work can't be activated before the first work finished.
-thus the two work may wait each other.
+> On 9/19/2012 11:07 AM, Pantelis Antoniou wrote:
+>> The message spit out when the i2c-omap driver load is printing
+>> the platform device's id as a bus number. However when booting
+>> from OF id is -1, which is not so nice.
+>> 
+>> Fix it by printing the adapter number.
+>> 
+>> [    0.210467] omap_i2c 44e0b000.i2c: bus -1 rev2.4.0 at 400 kHz
+>> 	vs
+>> [    0.210467] omap_i2c 44e0b000.i2c: bus 0 rev2.4.0 at 400 kHz
+>> 
+>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>> ---
+>>  drivers/i2c/busses/i2c-omap.c | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+>> index f722478..87bb705 100644
+>> --- a/drivers/i2c/busses/i2c-omap.c
+>> +++ b/drivers/i2c/busses/i2c-omap.c
+>> @@ -1178,9 +1178,6 @@ omap_i2c_probe(struct platform_device *pdev)
+>>  		goto err_unuse_clocks;
+>>  	}
+>> 
+>> -	dev_info(dev->dev, "bus %d rev%d.%d.%d at %d kHz\n", pdev->id,
+>> -		 dev->dtrev, dev->rev >> 4, dev->rev & 0xf, dev->speed);
+>> -
+>>  	adap = &dev->adapter;
+>>  	i2c_set_adapdata(adap, dev);
+>>  	adap->owner = THIS_MODULE;
+>> @@ -1204,6 +1201,9 @@ omap_i2c_probe(struct platform_device *pdev)
+>>  	if (IS_ERR(pinctrl))
+>>  		dev_warn(dev->dev, "pins are not configured from the driver\n");
+>> 
+>> +	dev_info(dev->dev, "bus %d rev%d.%d.%d at %d kHz\n", adap->nr,
+>> +		 dev->dtrev, dev->rev >> 4, dev->rev & 0xf, dev->speed);
+>> +
+>>  	pm_runtime_mark_last_busy(dev->dev);
+>>  	pm_runtime_put_autosuspend(dev->dev);
+>> 
+>> 
+> 
 
-
-All of this is abnormal thought. and it is not a real problem, merging them
-as cleanup is enough.
-
-Thanks,
-Lai
