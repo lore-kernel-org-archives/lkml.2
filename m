@@ -1,80 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab2ISLoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:44:54 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.36]:42630 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab2ISLox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:44:53 -0400
-X-Greylist: delayed 1600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 07:44:52 EDT
-Message-ID: <5059A9F0.2070409@cape-horn-eng.com>
-Date: Wed, 19 Sep 2012 13:18:08 +0200
-From: Richard Ems <richard.ems@cape-horn-eng.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	id S1755331Ab2ISLpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:45:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752142Ab2ISLpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:45:19 -0400
+Date: Wed, 19 Sep 2012 13:45:11 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 6/7 v2] HID: picoLCD: drop version check during probe
+In-Reply-To: <20120917202108.3e39dedb@neptune.home>
+Message-ID: <alpine.LNX.2.00.1209191344500.31149@pobox.suse.cz>
+References: <20120730213656.0a9f6d30@neptune.home> <20120730213859.063173c1@neptune.home> <alpine.LNX.2.00.1208151015220.7026@pobox.suse.cz> <20120819185631.3a984aa4@neptune.home> <20120917202108.3e39dedb@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Fwd: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and nfs4_lookup_revalidate
-References: <503361AF.8030707@cape-horn-eng.com>
-In-Reply-To: <503361AF.8030707@cape-horn-eng.com>
-X-Enigmail-Version: 1.4.4
-X-Forwarded-Message-Id: <503361AF.8030707@cape-horn-eng.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Df-Sender: cmljaGFyZC5lbXNAY2FwZS1ob3JuLWVuZy5jb20=
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, 17 Sep 2012, Bruno Pr√©mont wrote:
 
-I still don't see this patch in the 3.5.x series.
-Will it make it into 3.5.5?
-
-Thanks,
-Richard
-
-
--------- Original Message --------
-Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
-nfs4_lookup_revalidate
-Date: Tue, 21 Aug 2012 12:23:43 +0200
-From: Richard Ems <richard.ems@cape-horn-eng.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org
-
-On 08/15/2012 10:49 PM, Trond Myklebust wrote:
-> This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
-> calling down to the dentry revalidation code with a NULL pointer
-> to struct nameidata.
+> You seem not to have applied this one yet (it doesn't show up in picolcd
+> branch).
 > 
-> It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-> to ->d_revalidate())
-> 
-> Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Could you please apply it?
+> (or did I miss locking changes making it obsolete?)
 
+No, sorry, I lost that one. Applied now.
 
-Hi Trond,
-
-I don't see this patch going into 3.5.3 at
-http://www.kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.3-rc1.gz
-.
-Shouldn't it be included in 3.5.3 ?
-
-Thanks,
-Richard
-
+Have you and David made any progress with the locking?
 
 -- 
-Richard Ems       mail: Richard.Ems@Cape-Horn-Eng.com
-
-Cape Horn Engineering S.L.
-C/ Dr. J.J. DÛmine 1, 5∫ piso
-46011 Valencia
-Tel : +34 96 3242923 / Fax 924
-http://www.cape-horn-eng.com
-
-
+Jiri Kosina
+SUSE Labs
