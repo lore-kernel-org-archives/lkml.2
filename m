@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2ISDMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 23:12:12 -0400
-Received: from mail.digium.com ([216.207.245.2]:47645 "EHLO mail.digium.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab2ISDMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 23:12:08 -0400
-Date: Tue, 18 Sep 2012 22:04:38 -0500
-From: Shaun Ruffell <sruffell@digium.com>
-To: Xie Shaohui-B21989 <B21989@freescale.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "avorontsov@mvista.com" <avorontsov@mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
-Message-ID: <20120919030438.GE24873@digium.com>
-References: <1347533729-5893-1-git-send-email-Shaohui.Xie@freescale.com>
- <20120914182137.GD18672@digium.com>
- <ED492CCEAF882048BC2237DE806547C9079E171E@039-SN2MPN1-012.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ED492CCEAF882048BC2237DE806547C9079E171E@039-SN2MPN1-012.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754208Ab2ISDSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 23:18:33 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48173 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753752Ab2ISDSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 23:18:30 -0400
+From: hongfeng <hongfeng@marvell.com>
+To: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, gregkh@linuxfoundation.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hongfeng <hongfeng@marvell.com>, Raul Xiong <xjian@marvell.com>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] PM / Sleep: use resume event when call dpm_resume_early
+Date: Wed, 19 Sep 2012 11:17:54 +0800
+Message-Id: <1348024674-13050-1-git-send-email-hongfeng@marvell.com>
+X-Mailer: git-send-email 1.7.1
+X-OriginalArrivalTime: 19 Sep 2012 03:18:07.0100 (UTC) FILETIME=[637983C0:01CD9615]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 10:32:59AM +0000, Xie Shaohui-B21989 wrote:
-> > -----Original Message-----
-> > From: Shaun Ruffell [mailto:sruffell@digium.com]
-> > Sent: Saturday, September 15, 2012 2:22 AM
-> > To: Xie Shaohui-B21989
-> > Cc: linux-edac@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
-> > akpm@linux-foundation.org; avorontsov@mvista.com; linux-
-> > kernel@vger.kernel.org; grant.likely@secretlab.ca
-> > Subject: Re: [PATCH] edac/85xx: fix error handle of mpc85xx_mc_err_probe
-> > 
-> > On Thu, Sep 13, 2012 at 06:55:29PM +0800, Shaohui Xie wrote:
-> > > Error handle in case of DDR ECC off is wrong, sysfs entries
-> > > have not been created, so edac_mc_free which frees a mci
-> > > instance should not be called.
-> > > Also, free mci's memory in this case.
-> > 
-> > Jus FYI: I ran into the same error in edac_mc_free() which I
-> > resolved in a slightly different way in some patches I sent
-> > previously. [1]
-> > 
-> > [1] https://lkml.org/lkml/2012/9/14/475
->
-> [S.H] Thanks! I did not aware of this patch when one of my
-> colleague asked me to have a look at the issue, It could save me
-> some time if I saw this patch earlier. :(
-> 
-> BTW: seems you are using a different kernel tree with mine.
+When dpm_suspend_noirq fail, state is PMSG_SUSPEND,
+should change to PMSG_RESUME when dpm_resume_early is called
 
-On the chance that I missing something important: Why do you say I
-was running a different kernel tree? I was against 3.6-rc2 when I
-original hit the problem.
+Change-Id: If815218d4934b4648e330235ab1ae26e713284bd
+Signed-off-by: Feng Hong <hongfeng@marvell.com>
+Signed-off-by: Raul Xiong <xjian@marvell.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ drivers/base/power/main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 0113adc..2700f2e 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -996,7 +996,7 @@ int dpm_suspend_end(pm_message_t state)
+ 
+ 	error = dpm_suspend_noirq(state);
+ 	if (error) {
+-		dpm_resume_early(state);
++		dpm_resume_early(resume_event(state));
+ 		return error;
+ 	}
+ 
+-- 
+1.7.0.4
+
