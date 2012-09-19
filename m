@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2ISH3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 03:29:10 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52493 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab2ISH3H (ORCPT
+	id S1754863Ab2ISHae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 03:30:34 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64437 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab2ISHac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 03:29:07 -0400
-Date: Wed, 19 Sep 2012 09:29:02 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] Perf: bfd.h/libbfd detection fails with recent binutils
-Message-ID: <20120919072902.GA262@x4>
+	Wed, 19 Sep 2012 03:30:32 -0400
+Date: Wed, 19 Sep 2012 09:30:27 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] [RESEND] console: implement lockdep support for
+ console_lock
+Message-ID: <20120919073027.GB1676@bremse>
+Mail-Followup-To: Jani Nikula <jani.nikula@linux.intel.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1347923013-4253-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1347923013-4253-2-git-send-email-daniel.vetter@ffwll.ch>
+ <87627b9453.fsf@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87627b9453.fsf@intel.com>
+X-Operating-System: Linux bremse 3.6.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent binutils I get:
+On Tue, Sep 18, 2012 at 10:33:28AM +0300, Jani Nikula wrote:
+> On Tue, 18 Sep 2012, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > +#ifdef CONFIG_LOCKDEP
+> > +struct lockdep_map console_lock_dep_map = {
+> > +	.name = "console_lock"
+> > +};
+> > +#endif
+> 
+> static?
 
- perf % make
-Makefile:668: No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demanglin
-
-That happens because bfd.h now contains:
-
-#if !defined PACKAGE && !defined PACKAGE_VERSION
-#error config.h must be included before this header
-#endif
-
-I've reopened a bug in the hope that this check will be deleted:
-http://sourceware.org/bugzilla/show_bug.cgi?id=14243
-
-But in the meantime, the following patch fixes the problem
-
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 35655c3..5604664 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -644,7 +644,7 @@ else
- 		EXTLIBS += -liberty
- 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-         else
--		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
- 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
- 		ifeq ($(has_bfd),y)
- 			EXTLIBS += -lbfd
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 1fe733a..50a0912 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -26,6 +26,7 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
- 	return NULL;
- }
- #else
-+#define PACKAGE 'perf'
- #include <bfd.h>
- #endif
- #endif
-
+Yeah, static. I'm travelling atm, so will take a while to resend ...
+-Daniel
 -- 
-Markus
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
