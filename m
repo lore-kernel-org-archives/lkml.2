@@ -1,40 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab2ISHJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 03:09:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41790 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab2ISHJD (ORCPT
+	id S1754377Ab2ISHJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 03:09:15 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:41846 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753877Ab2ISHJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 03:09:03 -0400
+	Wed, 19 Sep 2012 03:09:10 -0400
+Message-ID: <50596F8F.60506@ti.com>
+Date: Wed, 19 Sep 2012 12:39:03 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1209181319191.25146@chino.kir.corp.google.com>
-References: <20120918150543.GA14718@redhat.com>
-	<00000139da509650-e5756e3f-f538-4735-afcd-c3c8ac9035b7-000000@email.amazonses.com>
-	<alpine.DEB.2.00.1209181227190.25146@chino.kir.corp.google.com>
-	<20120918195412.GB27689@redhat.com>
-	<alpine.DEB.2.00.1209181319191.25146@chino.kir.corp.google.com>
-Date: Wed, 19 Sep 2012 10:09:01 +0300
-X-Google-Sender-Auth: -uDynAbcBLQBrY342aaKFIBFEWg
-Message-ID: <CAOJsxLGHgeCx1vB80-=KxRVEmNn2xACQmHs3STwr-c5OgZ6nSQ@mail.gmail.com>
-Subject: Re: Taint kernel when we detect a corrupted slab.
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 2/3] OMAP i2c: pinctrl-ify i2c-omap.c
+References: <1348070841-23354-1-git-send-email-panto@antoniou-consulting.com> <1348070841-23354-3-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1348070841-23354-3-git-send-email-panto@antoniou-consulting.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Sep 2012, Dave Jones wrote:
->> It doesn't seem worth adding a new taint flag for this, so just re-use
->> the one from 'bad page'
->>
->> Signed-off-by: Dave Jones <davej@redhat.com>
-
-On Tue, Sep 18, 2012 at 11:19 PM, David Rientjes <rientjes@google.com> wrote:
-> Acked-by: David Rientjes <rientjes@google.com>
-
-Applied, thanks!
+On Wednesday 19 September 2012 09:37 PM, Pantelis Antoniou wrote:
+>  #include <linux/pm_runtime.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/err.h>
+err.h include may be removed.
