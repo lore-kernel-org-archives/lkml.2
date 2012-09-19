@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab2ISS7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:59:31 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19771 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab2ISSzh (ORCPT
+	id S1757114Ab2ISTAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:00:43 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48035 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756987Ab2ISSza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:37 -0400
+	Wed, 19 Sep 2012 14:55:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,77 +16,49 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 29/40] PCI, ACPI: Add alloc_acpi_hp_work()
-Date: Wed, 19 Sep 2012 11:54:43 -0700
-Message-Id: <1348080894-23412-30-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 26/40] PCI, ACPI: del root bus prt
+Date: Wed, 19 Sep 2012 11:54:40 -0700
+Message-Id: <1348080894-23412-27-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will use it with acpiphp and pci_root_hp events handling
+corresponding to add path.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
 ---
- drivers/acpi/osl.c      |   21 +++++++++++++++++++++
- include/acpi/acpiosxf.h |    9 +++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/acpi/pci_root.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 9eaf708..0719fa7 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -1592,3 +1592,24 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 92ec5c9..b72c85c 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -650,6 +650,8 @@ static int acpi_pci_root_start(struct acpi_device *device)
+ 
+ static int acpi_pci_root_remove(struct acpi_device *device, int type)
  {
- 	__acpi_os_prepare_sleep = func;
- }
-+
-+void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
-+			void (*func)(struct work_struct *work))
-+{
-+	struct acpi_hp_work *hp_work;
-+	int ret;
-+
-+	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
-+	if (!hp_work)
-+		return;
-+
-+	hp_work->handle = handle;
-+	hp_work->type = type;
-+	hp_work->context = context;
-+
-+	INIT_WORK(&hp_work->work, func);
-+	ret = queue_work(kacpi_hotplug_wq, &hp_work->work);
-+	if (!ret)
-+		kfree(hp_work);
-+}
-+EXPORT_SYMBOL(alloc_acpi_hp_work);
-diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-index 0650f5f..6ff92ea 100644
---- a/include/acpi/acpiosxf.h
-+++ b/include/acpi/acpiosxf.h
-@@ -196,6 +196,15 @@ void acpi_os_fixed_event_count(u32 fixed_event_number);
-  */
- extern struct workqueue_struct *kacpi_hotplug_wq;
- 
-+struct acpi_hp_work {
-+	struct work_struct work;
++	acpi_status status;
 +	acpi_handle handle;
-+	u32 type;
-+	void *context;
-+};
-+void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
-+			void (*func)(struct work_struct *work));
-+
- acpi_thread_id acpi_os_get_thread_id(void);
+ 	struct acpi_pci_root *root = acpi_driver_data(device);
  
- acpi_status
+ 	/* that root bus could be removed already */
+@@ -664,6 +666,10 @@ static int acpi_pci_root_remove(struct acpi_device *device, int type)
+ 	device_set_run_wake(root->bus->bridge, false);
+ 	pci_acpi_remove_bus_pm_notifier(device);
+ 
++	status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
++	if (ACPI_SUCCESS(status))
++		acpi_pci_irq_del_prt(root->bus);
++
+ 	dev_printk(KERN_DEBUG, &device->dev,
+ 		"freeing acpi_pci_root, will remove pci root bus at first");
+ 	pci_remove_root_bus(root->bus);
 -- 
 1.7.7
 
