@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab2ISQ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:57:16 -0400
+	id S932604Ab2ISQ53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:57:29 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:51608 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab2ISQ5N (ORCPT
+	with ESMTP id S1756570Ab2ISQ50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:57:13 -0400
-Date: Wed, 19 Sep 2012 09:57:07 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Input and HID updates for 3.7, version 4
-Message-ID: <20120919165706.GA16286@core.coreip.homeip.net>
-References: <1346528835-363-1-git-send-email-rydberg@euromail.se>
- <20120910190226.GA877@polaris.bitmath.org>
- <alpine.LNX.2.00.1209102248250.22683@pobox.suse.cz>
- <5556929.93aC5q4087@dtor-d630.eng.vmware.com>
- <20120914192554.GA6498@polaris.bitmath.org>
- <20120915153323.GA1391@polaris.bitmath.org>
- <alpine.LNX.2.00.1209181328500.31149@pobox.suse.cz>
- <20120918161956.GA1539@polaris.bitmath.org>
+	Wed, 19 Sep 2012 12:57:26 -0400
+Date: Wed, 19 Sep 2012 09:54:47 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 07/11] tty/serial: Add kgdb_nmi driver
+Message-ID: <20120919165447.GA6316@lizard>
+References: <20120913150133.GA16238@lizard>
+ <1347548615-18227-7-git-send-email-anton.vorontsov@linaro.org>
+ <5059B200.9040706@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120918161956.GA1539@polaris.bitmath.org>
+In-Reply-To: <5059B200.9040706@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 06:19:56PM +0200, Henrik Rydberg wrote:
-> On Tue, Sep 18, 2012 at 01:29:29PM +0200, Jiri Kosina wrote:
-> > On Sat, 15 Sep 2012, Henrik Rydberg wrote:
-> > 
-> > > Ok, here is version 4 of the patchset. Rather than sending out all the
-> > > patches again, the diff to linux-next is given below, and the
-> > > refreshed tree can be pulled from
-> > > 
-> > >   git://github.com/rydberg/linux.git maybe
-> > > 
-> > > All Dmitry's comments are addressed. Changes in short:
-> > > 
-> > > * Also move 'slot' to input_mt
-> > > * Oops fix amended
-> > > * New patch to allow driver pressure handling
-> > > * Keep the synaptics specials in bcm5974
-> > > 
-> > > Needless to say, I want to move this tree to linux-next soonish, so if
-> > > there are more comments coming, I would appreciate a heads-up.
-> > 
-> > So if Dmitry has Acked all the input patches and I am going to take it, 
-> > could you please send me either a proper pull request, or the patch series 
-> > via e-mail, so that I could apply it?
+On Wed, Sep 19, 2012 at 06:52:32AM -0500, Jason Wessel wrote:
+[...]
+> > --- a/drivers/tty/serial/kgdboc.c
+> > +++ b/drivers/tty/serial/kgdboc.c
+> > @@ -145,6 +145,8 @@ __setup("kgdboc=", kgdboc_option_setup);
+> >  
+> >  static void cleanup_kgdboc(void)
+> >  {
+> > +	if (kgdb_unregister_nmi_console())
+> > +		return;
+> >  	kgdboc_unregister_kbd();
+> >  	if (configured == 1)
+> >  		kgdb_unregister_io_module(&kgdboc_io_ops);
+> > @@ -198,6 +200,10 @@ do_register:
+> >  	if (err)
+> >  		goto noconfig;
+> >  
+> > +	err = kgdb_register_nmi_console();
+> > +	if (err)
+> > +		goto noconfig;
+> > +
 > 
-> Absolutely, a pull request is the plan, but I have not heard anything
-> from Dmitry yet. Dmitry, no news is good news?
+> Just one question on this one, what do you expect to happen, or how
+> does this work when you use a different serial port for example on a
+> board that has a real serial port and an FIQ port?   It was not
+> obvious that there was a path to check if the port you are
+> registering is an FIQ enabled port and then call the
+> kgdb_register_nmi_console at that point.
 
-Yep, and sorry for the delay.
+Yes, it works perfectly fine. If the port is not FIQ-enabled (which,
+technically, can be enabled later -- it's just not implemented), then
+ttyNMI just won't able to receive data.
 
--- 
-Dmitry
+The reason why I register nmi console in KGDB code (as opposite to arch
+code), is the dependcy: the port should be initialized before it can be
+used as ttyNMI. We could place the ttyNMI registration code into
+late_initcall in arch/, and check for dbg_io_ops, but that is ugly by
+itself, plus dbg_io_ops can change.
+
+But with your kgdb_arch->enable_nmi suggestion (which I'll surely
+implement), we can skip the registration at least for the cases when
+the arch doesn't have this feature.
+
+Thanks!
+
+Anton.
