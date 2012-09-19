@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2ISL4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:56:38 -0400
+	id S1756168Ab2ISL4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:56:48 -0400
 Received: from eusmtp01.atmel.com ([212.144.249.243]:16801 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab2ISL4g (ORCPT
+	with ESMTP id S1755133Ab2ISL4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:56:36 -0400
+	Wed, 19 Sep 2012 07:56:39 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
 CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
         <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
         <linux-kernel@vger.kernel.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 2/9] net/macb: memory barriers cleanup
-Date: Wed, 19 Sep 2012 13:55:15 +0200
-Message-ID: <44c58f2fdddf8f1521a032f331907149bd6bdb99.1348055112.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 4/9] net/macb: remove macb_get_drvinfo()
+Date: Wed, 19 Sep 2012 13:55:17 +0200
+Message-ID: <3fbd9b0eb1e255eccd14ad43044e146776baa963.1348055112.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
 References: <cover.1348055112.git.nicolas.ferre@atmel.com>
@@ -25,96 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Havard Skinnemoen <havard@skinnemoen.net>
+This function has little meaning so remove it altogether and
+let ethtool core fill in the fields automatically.
 
-Remove a couple of unneeded barriers and document the remaining ones.
-
-Signed-off-by: Havard Skinnemoen <havard@skinnemoen.net>
-[nicolas.ferre@atmel.com: split patch in topics]
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/cadence/macb.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 56375e2..313cba2 100644
+index 2948553..31f945c 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -369,7 +369,9 @@ static void macb_tx(struct macb *bp)
+@@ -1217,20 +1217,9 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	return phy_ethtool_sset(phydev, cmd);
+ }
  
- 		BUG_ON(skb == NULL);
- 
-+		/* Make hw descriptor updates visible to CPU */
- 		rmb();
-+
- 		bufstat = bp->tx_ring[tail].ctrl;
- 
- 		if (!(bufstat & MACB_BIT(TX_USED)))
-@@ -412,7 +414,10 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 			if (frag == last_frag)
- 				break;
- 		}
-+
-+		/* Make descriptor updates visible to hardware */
- 		wmb();
-+
- 		return 1;
- 	}
- 
-@@ -433,12 +438,14 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 					       frag_len);
- 		offset += RX_BUFFER_SIZE;
- 		bp->rx_ring[frag].addr &= ~MACB_BIT(RX_USED);
--		wmb();
- 
- 		if (frag == last_frag)
- 			break;
- 	}
- 
-+	/* Make descriptor updates visible to hardware */
-+	wmb();
-+
- 	skb->protocol = eth_type_trans(skb, bp->dev);
- 
- 	bp->stats.rx_packets++;
-@@ -458,6 +465,8 @@ static void discard_partial_frame(struct macb *bp, unsigned int begin,
- 
- 	for (frag = begin; frag != end; frag = NEXT_RX(frag))
- 		bp->rx_ring[frag].addr &= ~MACB_BIT(RX_USED);
-+
-+	/* Make descriptor updates visible to hardware */
- 	wmb();
- 
- 	/*
-@@ -476,7 +485,9 @@ static int macb_rx(struct macb *bp, int budget)
- 	for (; budget > 0; tail = NEXT_RX(tail)) {
- 		u32 addr, ctrl;
- 
-+		/* Make hw descriptor updates visible to CPU */
- 		rmb();
-+
- 		addr = bp->rx_ring[tail].addr;
- 		ctrl = bp->rx_ring[tail].ctrl;
- 
-@@ -671,6 +682,8 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	bp->tx_ring[entry].addr = mapping;
- 	bp->tx_ring[entry].ctrl = ctrl;
-+
-+	/* Make newly initialized descriptor visible to hardware */
- 	wmb();
- 
- 	entry = NEXT_TX(entry);
-@@ -779,9 +792,6 @@ static void macb_init_rings(struct macb *bp)
- 
- static void macb_reset_hw(struct macb *bp)
- {
--	/* Make sure we have the write buffer for ourselves */
--	wmb();
+-static void macb_get_drvinfo(struct net_device *dev,
+-			     struct ethtool_drvinfo *info)
+-{
+-	struct macb *bp = netdev_priv(dev);
 -
- 	/*
- 	 * Disable RX and TX (XXX: Should we halt the transmission
- 	 * more gracefully?)
+-	strcpy(info->driver, bp->pdev->dev.driver->name);
+-	strcpy(info->version, "$Revision: 1.14 $");
+-	strcpy(info->bus_info, dev_name(&bp->pdev->dev));
+-}
+-
+ static const struct ethtool_ops macb_ethtool_ops = {
+ 	.get_settings		= macb_get_settings,
+ 	.set_settings		= macb_set_settings,
+-	.get_drvinfo		= macb_get_drvinfo,
+ 	.get_link		= ethtool_op_get_link,
+ };
+ 
 -- 
 1.7.11.3
 
