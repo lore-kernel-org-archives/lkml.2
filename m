@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2ISDCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 23:02:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51892 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2ISDCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 23:02:08 -0400
-Date: Wed, 19 Sep 2012 13:01:55 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] 3 fixes for md in 3.6.
-Message-ID: <20120919130155.1f783b29@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Jf/JA9IjtsIZk_EpG9pInJf"; protocol="application/pgp-signature"
+	id S1754019Ab2ISDCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 23:02:39 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44960 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab2ISDCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Sep 2012 23:02:38 -0400
+X-AuditID: 9c930179-b7bfcae0000020b4-a7-505935cb2c77
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/4] tools lib traceevent: Use calloc were applicable
+References: <1347915049-19093-1-git-send-email-acme@infradead.org>
+	<1347915049-19093-3-git-send-email-acme@infradead.org>
+Date: Wed, 19 Sep 2012 11:54:01 +0900
+In-Reply-To: <1347915049-19093-3-git-send-email-acme@infradead.org> (Arnaldo
+	Carvalho de Melo's message of "Mon, 17 Sep 2012 17:50:47 -0300")
+Message-ID: <87boh23epi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Jf/JA9IjtsIZk_EpG9pInJf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 17 Sep 2012 17:50:47 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+> Replacing the equivalent open coded malloc + memset bits.
+>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Link: http://lkml.kernel.org/n/tip-598fjtjbzal4wxh7fp0yv0q1@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/lib/traceevent/event-parse.c |   44 ++++++++++++------------------------
+>  1 file changed, 14 insertions(+), 30 deletions(-)
+>
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 278f989..5e38d2f 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -117,14 +117,7 @@ void breakpoint(void)
+>  
+>  struct print_arg *alloc_arg(void)
+>  {
+> -	struct print_arg *arg;
+> -
+> -	arg = malloc_or_die(sizeof(*arg));
+> -	if (!arg)
+> -		return NULL;
+> -	memset(arg, 0, sizeof(*arg));
+> -
+> -	return arg;
+> +	return calloc(1, sizeof(struct print_arg));
+>  }
 
-The following changes since commit 55d512e245bc7699a8800e23df1a24195dd08217:
+This requires every callsite of the function should handle allocation
+failure.
 
-  Linux 3.6-rc5 (2012-09-08 16:43:45 -0700)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md/ tags/md-3.6-fixes
-
-for you to fetch changes up to 6dafab6b1383e912cd252fa809570b484eb6e0dc:
-
-  md: make sure metadata is updated when spares are activated or removed. (=
-2012-09-19 12:54:22 +1000)
-
-----------------------------------------------------------------
-3 fixes for md in 3.6.
-
-One reverts a recent patch which turns out to not be such a good
-idea.
-Other two fix minor bugs with the new (since 3.3) 'replacement' code
-and have been tagged for -stable.
-
-----------------------------------------------------------------
-NeilBrown (3):
-      Revert "md/raid5: For odirect-write performance, do not set STRIPE_PR=
-EREAD_ACTIVE."
-      md/raid5: fix calculate of 'degraded' when a replacement becomes acti=
-ve.
-      md: make sure metadata is updated when spares are activated or remove=
-d.
-
- drivers/md/md.c    | 6 +++++-
- drivers/md/raid5.c | 6 +++++-
- 2 files changed, 10 insertions(+), 2 deletions(-)
-
---Sig_/Jf/JA9IjtsIZk_EpG9pInJf
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUFk1oznsnt1WYoG5AQKgBxAAmz0bWhgOYKOSh2nYpbTDSUBCfYtRKRAT
-hklr3yeCKP+yUSdQ4ctSumLH0BIlsFyihyxDDVHOfIBjqQnCKYOdu7UVf+mJBbwl
-wUji6QkXxAB9m2q/NuHlb8nPHn9Oyrq5zp05IqfTwSZNdw2M4UJQuDWWmgTWuZzZ
-m0Dy2Fcjn65Sr9cdGY14RMlFMXZwaa+CmxOFFlOAaiqGSWN2kkwuZv23nVOXb4Yp
-FBDKCHmbFAwKDgGXGaBaNahgMd0Wva4LIgjUkLAdz/0u1NfIPxb2W5Si1CpJ59wY
-lOVVFObe18sONV6LqrTFFzMBPVTt5ofmdZJ6qVt/EwP4vf6p2+N21aTGuryOzD8C
-XX6eTLO2yan2fcEVkWMtK1j4pAdeMZm2KoekK6KOq0TPx2o9kWZwIoR+Zjavs8rI
-l3ZAevhJybvWNh1Ew2Ha1PFMHKQAth9IdYmdjOXbfVaPkMqP4ZqfMavWJG6tCXuR
-0N+WSPpDKLbdmgFsVTg3qymgs51/0jiZpVnWcK9gw7dNo26bOdW4VB1oyehgDZrW
-IELETWhUaOBg3G/XjC2yUFxFjL3o9NugKoV/5NzuHzpRlu97o1Sznjxr00/3Kivy
-JgwsyYG06tBP4o/GpZ+uZea4mnAHVFvsPjIAGaF5f0/AN93jZHQ4ywAeh5JJfmi5
-1u8Wa7RvEtw=
-=43WA
------END PGP SIGNATURE-----
-
---Sig_/Jf/JA9IjtsIZk_EpG9pInJf--
+Thanks,
+Namhyung
