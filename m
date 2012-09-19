@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2ISDpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 23:45:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4283 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab2ISDpJ (ORCPT
+	id S1754665Ab2ISDqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 23:46:04 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62784 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab2ISDqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 23:45:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 18 Sep 2012 20:45:06 -0700
-From: Jim Lin <jilin@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jim Lin <jilin@nvidia.com>
-Subject: [PATCH v2 1/1] USB: EHCI: Tegra: Fix wrong register definition
-Date: Wed, 19 Sep 2012 11:48:50 +0800
-Message-ID: <1348026530-17327-1-git-send-email-jilin@nvidia.com>
-X-Mailer: git-send-email 1.7.3
+	Tue, 18 Sep 2012 23:46:00 -0400
+Date: Tue, 18 Sep 2012 20:45:21 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Sasha Levin <levinsasha928@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: blk, mm: lockdep irq lock inversion in linux-next
+In-Reply-To: <alpine.LSU.2.00.1209171634560.6827@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1209182027280.11632@eggly.anvils>
+References: <5054878F.1030908@gmail.com> <20120917162248.d998afe3.akpm@linux-foundation.org> <alpine.LSU.2.00.1209171634560.6827@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the issue that EHCI registers, hostpc[0] and usbmode_ex,
-are not correctly accessed on Tegra3 platform.
+On Mon, 17 Sep 2012, Hugh Dickins wrote:
+> On Mon, 17 Sep 2012, Andrew Morton wrote:
+> > On Sat, 15 Sep 2012 15:50:07 +0200
+> > Sasha Levin <levinsasha928@gmail.com> wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > While fuzzing with trinity within a KVM tools guest on a linux-next kernel, I
+> > > got the lockdep warning at the bottom of this mail.
+> > > 
+> > > I've tried figuring out where it was introduced, but haven't found any sign that
+> > > any of the code in that area changed recently, so I'm probably missing something...
+> > > 
+> > > 
+> > > [ 157.966399] =========================================================
+> > > [ 157.968523] [ INFO: possible irq lock inversion dependency detected ]
+> > > [ 157.970029] 3.6.0-rc5-next-20120914-sasha-00001-g802bf6c-dirty #340 Tainted: G W
+> > > [ 157.970029] ---------------------------------------------------------
+> > > [ 157.970029] trinity-child38/6642 just changed the state of lock:
+> > > [ 157.970029] (&(&mapping->tree_lock)->rlock){+.+...}, at: [<ffffffff8120cafc>]
+> > > invalidate_inode_pages2_range+0x20c/0x3c0
+> > > [ 157.970029] but this lock was taken by another, SOFTIRQ-safe lock in the past:
+> > > [ 157.970029] (&(&new->queue_lock)->rlock){..-...}
+> > > 
+> > > [snippage]
+> > 
+> > gack, what a mess.  Thanks for the report.  AFAICT, what has happened is:
+> > 
+> > invalidate_complete_page2()
+> > ->spin_lock_irq(&mapping->tree_lock)
+> > ->clear_page_mlock()
+> >   __clear_page_mlock()
+> >   ->isolate_lru_page()
+> >     ->spin_lock_irq(&zone->lru_lock)
+> >     ->spin_unlock_irq(&zone->lru_lock)
+> > 
+> > whoops.  isolate_lru_page() just enabled local interrupts while we're
+> > holding ->tree_lock, which is supposed to be an irq-save lock.  And in
+> > a rather obscure way, lockdep caught it.
+> 
+> Congratulations on deciphering the lockdep report, I soon gave up.
+> 
+> But it looks like a bigger problem than your patch addresses:
+> both filemap.c and rmap.c document tree_lock as nesting within
+> lru_lock; and although it's possible that time has changed that,
+> I doubt it.
+> 
+> I think invalidate_complete_page2() is simply wrong to be calling
+> clear_page_mlock() while holding mapping->tree_lock (other callsites
+> avoid doing so).  Maybe it should do a preliminary PageDirty test,
+> then clear_page_mlock(), then take mapping->tree_lock, then repeat
+> PageDirty test, without worrying about the odd case when it might
+> clear mlock but then decide to back off the page.
+> 
+> Oh, hold on, that reminds me: a few months ago I was putting together
+> a tidy-up patch near there, and it seemed to me inappropriate to be
+> clearing mlock down in truncate/invalidate, that belongs better to
+> when unmapping the page, doesn't it?
+> 
+> I'll look that out and try to finish it off.
 
-Signed-off-by: Jim Lin <jilin@nvidia.com>
----
-Changes in v2:
-- Modify array size for reserved4[] only.
-- Note that defining hostpc[0] is for a variable-length object.
- 
- include/linux/usb/ehci_def.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I've completed that now, will send you a patchset of 4 in a moment.
 
-diff --git a/include/linux/usb/ehci_def.h b/include/linux/usb/ehci_def.h
-index de4b9ed..b3c9d1b 100644
---- a/include/linux/usb/ehci_def.h
-+++ b/include/linux/usb/ehci_def.h
-@@ -171,7 +171,7 @@ struct ehci_regs {
- #define USBMODE_CM_HC	(3<<0)		/* host controller mode */
- #define USBMODE_CM_IDLE	(0<<0)		/* idle state */
- 
--	u32		reserved4[7];
-+	u32		reserved4[6];
- 
- /* Moorestown has some non-standard registers, partially due to the fact that
-  * its EHCI controller has both TT and LPM support. HOSTPCx are extensions to
--- 
-1.7.3
+The tidy-ups went rather beyond what we'd want to put in 3.6 or Cc stable
+for this, so 1/4 is a one-liner to move up the offending clear_page_mlock(),
+(which I think should replace your "mm: isolate_lru_page(): don't enable
+local interrupts"), then the rest go on to make more sense of it.
+Against 3.6-rc6: just the last gives a trivial reject on mmotm.
 
+[PATCH 1/4] mm: fix invalidate_complete_page2 lock ordering
+[PATCH 2/4] mm: remove vma arg from page_evictable
+[PATCH 3/4] mm: clear_page_mlock in page_remove_rmap
+[PATCH 4/4] mm: remove free_page_mlock
+
+ Documentation/vm/unevictable-lru.txt |   10 ++-------
+ include/linux/swap.h                 |    2 -
+ include/linux/vm_event_item.h        |    2 -
+ mm/internal.h                        |   12 ++---------
+ mm/ksm.c                             |    2 -
+ mm/memory.c                          |   10 ++++-----
+ mm/mlock.c                           |   16 ++------------
+ mm/page_alloc.c                      |   17 ---------------
+ mm/rmap.c                            |    6 ++++-
+ mm/swap.c                            |    2 -
+ mm/truncate.c                        |    3 --
+ mm/vmscan.c                          |   27 ++++++++-----------------
+ mm/vmstat.c                          |    2 -
+ 13 files changed, 33 insertions(+), 78 deletions(-)
+
+Hugh
