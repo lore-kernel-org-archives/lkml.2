@@ -1,71 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab2ISHXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 03:23:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54251 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab2ISHXD (ORCPT
+	id S1754739Ab2ISH0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 03:26:38 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55010 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab2ISH0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 03:23:03 -0400
-Date: Wed, 19 Sep 2012 17:22:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (slab
- tree related)
-Message-Id: <20120919172254.ffc05a2c401f64143f930c67@canb.auug.org.au>
-In-Reply-To: <alpine.LFD.2.02.1209190957330.2390@tux.localdomain>
-References: <20120911161923.10299045655dd4c84f96f4b3@canb.auug.org.au>
-	<00000139b6e13c92-97adf129-be2c-4b74-9559-0a92c10b9eda-000000@email.amazonses.com>
-	<alpine.LFD.2.02.1209190957330.2390@tux.localdomain>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Sep_2012_17_22_54_+1000_eW9mfCH5mTHzYBua"
+	Wed, 19 Sep 2012 03:26:35 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-39-505973a8d8f0
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Shaohua Li <shli@fusionio.com>
+Subject: [PATCH] memory-hotplug: fix zone stat mismatch
+Date: Wed, 19 Sep 2012 16:29:08 +0900
+Message-Id: <1348039748-32111-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Sep_2012_17_22_54_+1000_eW9mfCH5mTHzYBua
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
+are increasing so that kernel are hang out.
 
-Hi Pekka,
+The cause is that when we do memory-hotadd after memory-remove,
+__zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
+without draining vm_stat_diff of all CPU.
 
-On Wed, 19 Sep 2012 09:57:58 +0300 (EEST) Pekka Enberg <penberg@kernel.org>=
- wrote:
->
-> P.S. Guys, please use penberg@kernel.org email address. I missed this=20
-> patch because I don't read this mailbox.
+This patch fixes it.
 
-I have now changed the contact address I have listed for you.
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+Andrew, I think it's a candidate of stable but didn't Cced
+stable.
+Please send this patch to stable if reviewer couldn't find
+any fault when you merge.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks.
 
---Signature=_Wed__19_Sep_2012_17_22_54_+1000_eW9mfCH5mTHzYBua
-Content-Type: application/pgp-signature
+ include/linux/vmstat.h |    4 ++++
+ mm/page_alloc.c        |    1 +
+ mm/vmstat.c            |   12 ++++++++++++
+ 3 files changed, 17 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index ad2cfd5..5d31876 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -198,6 +198,8 @@ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
+ void refresh_cpu_vm_stats(int);
+ void refresh_zone_stat_thresholds(void);
+ 
++void drain_zonestat(struct zone *zone, struct per_cpu_pageset *);
++
+ int calculate_pressure_threshold(struct zone *zone);
+ int calculate_normal_threshold(struct zone *zone);
+ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+@@ -251,6 +253,8 @@ static inline void __dec_zone_page_state(struct page *page,
+ static inline void refresh_cpu_vm_stats(int cpu) { }
+ static inline void refresh_zone_stat_thresholds(void) { }
+ 
++static inline void drain_zonestat(struct zone *zone,
++			struct per_cpu_pageset *pset) { }
+ #endif		/* CONFIG_SMP */
+ 
+ extern const char * const vmstat_text[];
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ab58346..5d005c8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5904,6 +5904,7 @@ static int __meminit __zone_pcp_update(void *data)
+ 		local_irq_save(flags);
+ 		if (pcp->count > 0)
+ 			free_pcppages_bulk(zone, pcp->count, pcp);
++		drain_zonestat(zone, pset);
+ 		setup_pageset(pset, batch);
+ 		local_irq_restore(flags);
+ 	}
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index b3e3b9d..d4cc1c2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -495,6 +495,18 @@ void refresh_cpu_vm_stats(int cpu)
+ 			atomic_long_add(global_diff[i], &vm_stat[i]);
+ }
+ 
++void drain_zonestat(struct zone *zone, struct per_cpu_pageset *pset)
++{
++	int i;
++
++	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
++		if (pset->vm_stat_diff[i]) {
++			int v = pset->vm_stat_diff[i];
++			pset->vm_stat_diff[i] = 0;
++			atomic_long_add(v, &zone->vm_stat[i]);
++			atomic_long_add(v, &vm_stat[i]);
++		}
++}
+ #endif
+ 
+ #ifdef CONFIG_NUMA
+-- 
+1.7.9.5
 
-iQIcBAEBCAAGBQJQWXLOAAoJEECxmPOUX5FE2+EP/RJSkFbFdOfAKBKyHzb/U3Sg
-WLo2uj474Ycuv6jc9axtya8d2u1m+cSGKAYnrck0W3i68XoX/6teXrsZWpEOwTx1
-pMGre8MjGp4V9agU/y0wcB0PnRnqzfmss9F09eTfKBEJ1gfKVncv+RFYIIyc5qjq
-JHdAnQUcg4nYUnNm/78e+tFGlo8JdbzUeKquzQ2bh5MauLbHLSgHCp+MnhE6VsFm
-0z44MGUoJXFnwJNBGza+aEa/+ywG+q4Bujiw44GQRuR0OxcEPKX1XtrAb65ngFg5
-oqJ88umzx0WRjSBu+x18P5jg7MAbZypPpP2kon5xXJ+z+WwKGZ/bIMYIRoJpNtnO
-C+QhKz3q8umuB9gsDOmYi+pHd8fDkL9yN5v+aRKBNHyFpX+EAzJNOKfCyAuEZfyo
-GbSX7Qx9ewevNu2CsCl5RB7hHzbgNYH6tgImlwBRHTWtzTcYgCZLWZufGrsfPAcv
-Kf7Jm3guVVFBoVA9LZ28Q7hl6OB1Plm25kyUz6fOeaafhJ8EVwLWVRfN1QqTd+Co
-stqzOk+ZJie8NiLfISnZ4Aib6in+ZVDFGCJN329E35zx/clfdyHRcK+90ewR7NZ/
-URtRQqwDhddSpdFztL+HmNoXp9REaA0rrtzToYZ3aN4clnRhE6+/I3xSc2Zk8jlD
-fvk7CIcegebyERyIhTii
-=w77V
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Sep_2012_17_22_54_+1000_eW9mfCH5mTHzYBua--
