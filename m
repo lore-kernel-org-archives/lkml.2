@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab2ISVrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:47:19 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62317 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab2ISVrR (ORCPT
+	id S1752349Ab2ISVtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:49:12 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:47230 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752129Ab2ISVtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:47:17 -0400
-Message-ID: <505A3D77.8030009@gmail.com>
-Date: Wed, 19 Sep 2012 23:47:35 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
+	Wed, 19 Sep 2012 17:49:11 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [alsa-devel] [RFC PATCH v2 0/5] snd-ice1712: Add Philips =?iso-8859-1?q?PSC724=09Ultimate?= Edge
+Date: Wed, 19 Sep 2012 23:48:29 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+References: <1347994716-10251-1-git-send-email-linux@rainbow-software.org> <201209191903.14690.linux@rainbow-software.org> <s5hhaqtopxk.wl%tiwai@suse.de>
+In-Reply-To: <s5hhaqtopxk.wl%tiwai@suse.de>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [Patch 3/7] smpboot: Provide infrastructure for percpu hotplug
- threads
-References: <20120716103749.122800930@linutronix.de> <20120716103948.352501068@linutronix.de>
-In-Reply-To: <20120716103948.352501068@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201209192348.30440.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Wednesday 19 September 2012 19:58:15 Takashi Iwai wrote:
+> At Wed, 19 Sep 2012 19:03:14 +0200,
+>
+> Ondrej Zary wrote:
+> > On Wednesday 19 September 2012 17:28:21 Takashi Iwai wrote:
+> > > At Tue, 18 Sep 2012 20:58:31 +0200,
+> > >
+> > > Ondrej Zary wrote:
+> > > > Hello,
+> > > > this is second attempt to add Philips PSC724 Ultimate Edge sound card
+> > > > support to snd-ice1712 driver. Unlike other snd-ice1712 subdrivers,
+> > > > the codec code is splitted into separate modules and thus reusable by
+> > > > other ice1712 subdrivers.
+> > >
+> > > Well, the problem is that most of ice17xx boards use only a part of
+> > > channels on codecs.   Thus you don't want to expose controls for all
+> > > channels, too.  Otherwise user will get confusing dead controls.
+> >
+> > The controls can be easily hidden by setting its name to NULL. It's even
+> > used in the psc724 subdriver.
+> >
+> > > If these new modules are supposed to be used by other ice1712/ice1724
+> > > sub drivers, they should provide some good binding mechanism, too.
+> > > (And that's one of the good reasons why ASoC has been nominated.)
+> >
+> > They're easy to use, you just need to provide wm87x6_write() function. I
+> > think that other subdrivers could be easily converted to use this (with
+> > hardware to test).
+>
+> OK, but I'd like to have modules only when the code sharing happens.
+> Also, it'd be better to have different module names, indicating that
+> they are ice17xx-specific.
 
-On 07/16/2012 12:42 PM, Thomas Gleixner wrote:
-> Provide a generic interface for setting up and tearing down percpu
-> threads.
-> 
-> On registration the threads for already online cpus are created and
-> started. On deregistration (modules) the threads are stoppped.
-> 
-> During hotplug operations the threads are created, started, parked and
-> unparked. The datastructure for registration provides a pointer to
-> percpu storage space and optional setup, cleanup, park, unpark
-> functions. These functions are called when the thread state changes.
-> 
-> Each implementation has to provide a function which is queried and
-> returns whether the thread should run and the thread function itself.
-> 
-> The core code handles all state transitions and avoids duplicated code
-> in the call sites.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
+OK, I'll change the code to not produce modules.
 
-This patch seems to cause the following BUG() on KVM guests with large amount of
-VCPUs:
+> > > > Working: all analog outputs (front, rear, center+lfe, headphone) and
+> > > > inputs (front mic, rear mic, line, cd, aux), mixer, headphone jack
+> > > > detection, suspend/resume
+> > > >
+> > > > Currently untested: SPDIF
+> > > >
+> > > > Buggy: switching AGC mode in mixer causes alsamixer to crash - looks
+> > > > like it does not like notifications about control
+> > > > activating/deactivating
 
-[    0.511760] ------------[ cut here ]------------
-[    0.511761] kernel BUG at kernel/smpboot.c:134!
-[    0.511764] invalid opcode: 0000 [#3] PREEMPT SMP DEBUG_PAGEALLOC
-[    0.511779] CPU 0
-[    0.511780] Pid: 70, comm: watchdog/10 Tainted: G      D W
-3.6.0-rc6-next-20120919-sasha-00001-gb54aafe #365
-[    0.511783] RIP: 0010:[<ffffffff81141676>]  [<ffffffff81141676>]
-smpboot_thread_fn+0x196/0x2e0
-[    0.511785] RSP: 0018:ffff88000cf4bdd0  EFLAGS: 00010206
-[    0.511786] RAX: 0000000000000000 RBX: ffff88000cf58000 RCX: 0000000000000000
-[    0.511787] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
-[    0.511788] RBP: ffff88000cf4be30 R08: 0000000000000000 R09: 0000000000000001
-[    0.511789] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88000cdb9ff0
-[    0.511790] R13: ffffffff84c60920 R14: 000000000000000a R15: ffff88000cf58000
-[    0.511792] FS:  0000000000000000(0000) GS:ffff88000d200000(0000)
-knlGS:0000000000000000
-[    0.511794] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    0.511795] CR2: 00000000ffffffff CR3: 0000000004c26000 CR4: 00000000000406f0
-[    0.511801] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[    0.511805] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[    0.511807] Process watchdog/10 (pid: 70, threadinfo ffff88000cf4a000, task
-ffff88000cf58000)
-[    0.511808] Stack:
-[    0.511822]  ffff88000cf4bfd8 ffff88000cf4bfd8 0000000000000000 0000000000000000
-[    0.511833]  ffff88000cf4be00 ffffffff839eace5 ffff88000cf4be30 ffff88000cdd1c68
-[    0.511844]  ffff88000cdb9ff0 ffffffff811414e0 0000000000000000 0000000000000000
-[    0.511845] Call Trace:
-[    0.511852]  [<ffffffff839eace5>] ? schedule+0x55/0x60
-[    0.511857]  [<ffffffff811414e0>] ? __smpboot_create_thread+0xf0/0xf0
-[    0.511863]  [<ffffffff81135c13>] kthread+0xe3/0xf0
-[    0.511867]  [<ffffffff839eb463>] ? wait_for_common+0x143/0x180
-[    0.511873]  [<ffffffff839ef044>] kernel_thread_helper+0x4/0x10
-[    0.511878]  [<ffffffff839ed3b4>] ? retint_restore_args+0x13/0x13
-[    0.511883]  [<ffffffff81135b30>] ? insert_kthread_work+0x90/0x90
-[    0.511888]  [<ffffffff839ef040>] ? gs_change+0x13/0x13
-[    0.511916] Code: 24 04 02 00 00 00 0f 1f 80 00 00 00 00 e8 b3 46 ff ff e9 b6
-fe ff ff 66 0f 1f 44 00 00 45 8b 34 24 e8 ff 72 8a 00 41 39 c6 74 0a <0f> 0b 0f
-1f 84 00 00 00 00 00 41 8b 44 24 04 85 c0 74 0f 83 f8
-[    0.511919] RIP  [<ffffffff81141676>] smpboot_thread_fn+0x196/0x2e0
-[    0.511920]  RSP <ffff88000cf4bdd0>
-[    0.511922] ---[ end trace 127920ef70923ae1 ]---
+What about this? Is it a bug in my code or somewhere else?
 
-I'm starting the guest with numa=fake=10, so vcpu 0 ends up on the same (fake)
-node as vcpu 10, and while digging into the bug, it seems that the issue is that
-vcpu10's thread gets scheduled on vcpu0.
-
-Beyond that I don't really understand what's wrong...
-
-
-Thanks,
-Sasha
+-- 
+Ondrej Zary
