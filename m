@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2ISVfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:35:13 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:57701 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab2ISVfI (ORCPT
+	id S1752380Ab2ISVfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:35:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38771 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2ISVfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:35:08 -0400
-Date: Wed, 19 Sep 2012 21:35:06 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-cc: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH v2 2/9] ARM: OMAP3: hwmod data: add mmu data for iva and
- isp
-In-Reply-To: <1347479152-588-3-git-send-email-omar.luna@linaro.org>
-Message-ID: <alpine.DEB.2.00.1209192134490.5264@utopia.booyaka.com>
-References: <1347479152-588-1-git-send-email-omar.luna@linaro.org> <1347479152-588-3-git-send-email-omar.luna@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 19 Sep 2012 17:35:13 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH 6/6] xfrm_user: don't copy esn replay window twice for new states
+Date: Wed, 19 Sep 2012 23:33:43 +0200
+Message-Id: <1348090423-32665-7-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Sep 2012, Omar Ramirez Luna wrote:
+The ESN replay window was already fully initialized in
+xfrm_alloc_replay_state_esn(). No need to copy it again.
 
-> Add mmu hwmod data for iva and isp.
-> 
-> Due to compatibility an ifdef CONFIG_OMAP_IOMMU_IVA2 needs to be
-> propagated (previously on iommu resource info) to hwmod data in OMAP3,
-> so users of iommu and tidspbridge can avoid issues of two modules
-> managing mmu data/irqs/resets; this until tidspbridge can be migrated
-> to iommu framework.
-> 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
+ net/xfrm/xfrm_user.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Thanks, queued for 3.7.
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 7fd92b8..fa072de 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -457,10 +457,11 @@ static void copy_from_user_state(struct xfrm_state *x, struct xfrm_usersa_info *
+  * somehow made shareable and move it to xfrm_state.c - JHS
+  *
+ */
+-static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs)
++static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs,
++				  int update_esn)
+ {
+ 	struct nlattr *rp = attrs[XFRMA_REPLAY_VAL];
+-	struct nlattr *re = attrs[XFRMA_REPLAY_ESN_VAL];
++	struct nlattr *re = update_esn ? attrs[XFRMA_REPLAY_ESN_VAL] : NULL;
+ 	struct nlattr *lt = attrs[XFRMA_LTIME_VAL];
+ 	struct nlattr *et = attrs[XFRMA_ETIMER_THRESH];
+ 	struct nlattr *rt = attrs[XFRMA_REPLAY_THRESH];
+@@ -570,7 +571,7 @@ static struct xfrm_state *xfrm_state_construct(struct net *net,
+ 		goto error;
+ 
+ 	/* override default values from above */
+-	xfrm_update_ae_params(x, attrs);
++	xfrm_update_ae_params(x, attrs, 0);
+ 
+ 	return x;
+ 
+@@ -1840,7 +1841,7 @@ static int xfrm_new_ae(struct sk_buff *skb, struct nlmsghdr *nlh,
+ 		goto out;
+ 
+ 	spin_lock_bh(&x->lock);
+-	xfrm_update_ae_params(x, attrs);
++	xfrm_update_ae_params(x, attrs, 1);
+ 	spin_unlock_bh(&x->lock);
+ 
+ 	c.event = nlh->nlmsg_type;
+-- 
+1.7.10.4
 
-- Paul
