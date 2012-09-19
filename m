@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab2ISVhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 17:37:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36881 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab2ISVfF (ORCPT
+	id S1752177Ab2ISVkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 17:40:14 -0400
+Received: from shmail0.sohard.de ([212.114.139.117]:37118 "EHLO
+	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab2ISVkL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 17:35:05 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH 2/6] xfrm_user: fix info leak in copy_to_user_state()
-Date: Wed, 19 Sep 2012 23:33:39 +0200
-Message-Id: <1348090423-32665-3-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
-References: <1348090423-32665-1-git-send-email-minipli@googlemail.com>
+	Wed, 19 Sep 2012 17:40:11 -0400
+Date: Wed, 19 Sep 2012 23:40:07 +0200 (CEST)
+From: Rene Buergel <rene.buergel@sohard.de>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: Greg KH <greg@kroah.com>
+Subject: [Patch v4] ezusb: move ezusb.c from drivers/usb/serial to drivers/usb/misc
+Message-ID: <0ea79bd0-ff8e-44ce-9dba-e9e9ea300678@shmail0>
+In-Reply-To: <93adca3f-6a22-45b7-a159-32bb6622efb5@shmail0>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Originating-IP: [77.7.73.0]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Win)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory reserved to dump the xfrm state includes the padding bytes of
-struct xfrm_usersa_info added by the compiler for alignment (7 for
-amd64, 3 for i386). Add an explicit memset(0) before filling the buffer
-to avoid the info leak.
+This patch moves drivers/usb/serial/ezusb.c to drivers/usb/misc/and
+adapts Makefiles and Kconfigs switching from bool to tristate for CONFIG_USB_EZUSB
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: René Bürgel <rene.buergel@sohard.de>
 ---
- net/xfrm/xfrm_user.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index ba26423..c1f15b5 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -689,6 +689,7 @@ out:
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index 1bfcd02..1c63b54 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -244,3 +244,7 @@ config USB_YUREX
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called yurex.
  
- static void copy_to_user_state(struct xfrm_state *x, struct xfrm_usersa_info *p)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->id, &x->id, sizeof(p->id));
- 	memcpy(&p->sel, &x->sel, sizeof(p->sel));
- 	memcpy(&p->lft, &x->lft, sizeof(p->lft));
--- 
-1.7.10.4
-
++config USB_EZUSB
++	tristate "Functions for loading firmware on EZUSB chips"
++	help
++	    Say Y here if you need EZUSB device support.
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 796ce7e..f1f7815 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_USB_CYPRESS_CY7C63)	+= cypress_cy7c63.o
+ obj-$(CONFIG_USB_CYTHERM)		+= cytherm.o
+ obj-$(CONFIG_USB_EMI26)			+= emi26.o
+ obj-$(CONFIG_USB_EMI62)			+= emi62.o
++obj-$(CONFIG_USB_EZUSB)			+= ezusb.o
+ obj-$(CONFIG_USB_FTDI_ELAN)		+= ftdi-elan.o
+ obj-$(CONFIG_USB_IDMOUSE)		+= idmouse.o
+ obj-$(CONFIG_USB_IOWARRIOR)		+= iowarrior.o
+diff --git a/drivers/usb/serial/ezusb.c b/drivers/usb/misc/ezusb.c
+similarity index 100%
+rename from drivers/usb/serial/ezusb.c
+rename to drivers/usb/misc/ezusb.c
+diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
+index 325d291..73b5e6f 100644
+--- a/drivers/usb/serial/Kconfig
++++ b/drivers/usb/serial/Kconfig
+@@ -42,11 +42,6 @@ config USB_SERIAL_CONSOLE
+ 
+ 	  If unsure, say N.
+ 
+-config USB_EZUSB
+-	bool "Functions for loading firmware on EZUSB chips"
+-	help
+-	    Say Y here if you need EZUSB device support.
+-
+ config USB_SERIAL_GENERIC
+ 	bool "USB Generic Serial Driver"
+ 	help
+diff --git a/drivers/usb/serial/Makefile b/drivers/usb/serial/Makefile
+index 1dc483a..12b56bb 100644
+--- a/drivers/usb/serial/Makefile
++++ b/drivers/usb/serial/Makefile
+@@ -9,7 +9,6 @@ obj-$(CONFIG_USB_SERIAL)			+= usbserial.o
+ usbserial-y := usb-serial.o generic.o bus.o
+ 
+ usbserial-$(CONFIG_USB_SERIAL_CONSOLE)	+= console.o
+-usbserial-$(CONFIG_USB_EZUSB)		+= ezusb.o
+ 
+ obj-$(CONFIG_USB_SERIAL_AIRCABLE)		+= aircable.o
+ obj-$(CONFIG_USB_SERIAL_ARK3116)		+= ark3116.o
