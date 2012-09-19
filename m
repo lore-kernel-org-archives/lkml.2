@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab2ISWjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 18:39:17 -0400
-Received: from nm12.bullet.mail.sp2.yahoo.com ([98.139.91.82]:46985 "HELO
-	nm12.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752636Ab2ISWip (ORCPT
+	id S1752618Ab2ISWiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 18:38:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43071 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab2ISWiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 18:38:45 -0400
-X-Yahoo-Newman-Id: 115991.79283.bm@omp1008.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 25.ggiUVM1nR1.UMBy5uiKaJHmvziA2Ka0qV9uCbQiMtOpt
- L0lyrGYkNi5t9gtzGvB1kOMESS1ziGTUkWM_GxsJoDEXuQC_S_TtWr.jB_G8
- 7FkiUe1dTa__FsdQRjolWOunSxSN2ATc3BSAfXdMdTYbeBokYmYKyirznCuf
- 7lFrGhaEPpuC8FxMm5kxFqR2c8u4RNY_qMKovGEqTzw6HpunBc1acnx1pMy8
- xB3w7B4d6dvQ.AJVQSj2mReUwIVej_u38Dx9FwOnoFjK0f7IcorKmFYsVZvA
- YYQq7_AbPZHczXCyNWplOrChA9_1MWJpAHZ1p8B3ERZgBuosywvoIqYzrMDS
- BqhdkaTGOQvOAKiQcix_OX5Sk97Ozl8M1yfWkO_H2Ejms5TcMb8lMxxd1OzG
- xupLuhfNFgv9gAptEC5dnxA--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <505A499F.1040102@att.net>
-Date: Wed, 19 Sep 2012 17:39:27 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Where to put test code?
-References: <505A3EAB.2030002@att.net> <CAFTL4hyF9c5e91JbVxGyo5RSjm3XuvRmhxXLExamZub3ae5KTg@mail.gmail.com>
-In-Reply-To: <CAFTL4hyF9c5e91JbVxGyo5RSjm3XuvRmhxXLExamZub3ae5KTg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Sep 2012 18:38:08 -0400
+Date: Thu, 20 Sep 2012 08:37:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Chris Zankel <chris@zankel.net>, Greg Ungerer <gerg@uclinux.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] PCI: Provide a default pcibios_update_irq()
+Message-Id: <20120920083731.b99255eb8fdeea908d34ed2f@canb.auug.org.au>
+In-Reply-To: <1347880974-13615-2-git-send-email-thierry.reding@avionic-design.de>
+References: <1347880974-13615-1-git-send-email-thierry.reding@avionic-design.de>
+	<1347880974-13615-2-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the response!
+--Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 09/19/2012 05:18 PM, Frederic Weisbecker wrote:
-> 2012/9/19 Daniel Santos <danielfsantos@att.net>:
->> I'm putting the finishing touches on the generic red-black tree test
->> code, but I'm uncertain about where to place it exactly.
->>
->> I haven't finished the test module just yet, but the idea is that the
->> tests can be run in userspace as well as kernelspace to make it easier
->> to test on multiple compilers.  It has some common sources files (used
->> by in both places) and then specific code for both user- and
->> kernel-space that I currently have as follows:
->>
->> tools/testing/selftests/grbtree/       - common.{c,h}
->> tools/testing/selftests/grbtree/user   - user-space main.c, Makefile, etc.
->> tools/testing/selftests/grbtree/module - kernel-space grbtest.c,
->> Makefile, etc.
->>
->> Would this be correct or should the common & module code go some place
->> else and then just have the user-space code under
->> tools/testing/selftests/grbtest?
-> It depends on the nature of your tests. Are these pure validation
-> tests (some batch
-> tests that perform actions and check the result is correct) or stress
-> tests (something
-> that runs for a while)?
-The program does both performance measurement tests and validation tests
-based upon what you pass at the command line.  The primary aim is to
-measure performance differences between the generic code and specific
-(hand-coded) implementations on various compilers.  The secondary aim is
-to provide validation that the results are correct in all
-circumstances.  I'm not sure in this case what would be considered a
-"stress" test.
+Hi,
 
-> If these are only about validation tests, then both user and module
-> can be in that
-> tools/testing/selftests directory.
+On Mon, 17 Sep 2012 13:22:54 +0200 Thierry Reding <thierry.reding@avionic-d=
+esign.de> wrote:
 >
-> What is the module doing?
-The module is the exact same thing, except built in kernel-space, where
-the actual code will normally reside.  Parameters are passed when you
-load the module and it unloads when the test is complete.  Perhaps what
-I omitted is that the user-space program is generated partially by
-compiling sources and headers that are intended for kernel-space only,
-but linked with glibc using some cute hacks.  This is done mostly to
-ease the process of testing the code with multiple compilers.
+> diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
+> index 270ae7b..3d61ce3 100644
+> --- a/drivers/pci/setup-irq.c
+> +++ b/drivers/pci/setup-irq.c
+> @@ -17,6 +17,11 @@
+>  #include <linux/ioport.h>
+>  #include <linux/cache.h>
+> =20
+> +void __weak pcibios_update_irq(struct pci_dev *dev, int irq)
+> +{
+> +	dev_dbg(&dev->dev, "Assigning IRQ %02d\n", irq);
+> +	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
+> +}
+> =20
+>  static void
+>  pdev_fixup_irq(struct pci_dev *dev,
 
-Daniel
+Didn't we have a problem with some compiler versions when the weak
+definition was in the same file as the call (there is a call to this
+function in drivers/pci/setup-irq.c)?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWkkrAAoJEECxmPOUX5FEW9wP/RZUlNoHKF/hdMIqgBXmqu9j
+ziwT/7xAnOx2PyPXzlr360bi/PMcjIv3oqf4DHv1tBxYe7tzxS9j1M2Moq8UHiWW
+1wOj+EXsgex73bIKtudojQojTpY9lZML9cdD5ki6zxvIEZTynAH4dSdomk2knPxw
+er3HuNnawQIA4iad+FF4IFp9ojKsduCCRHEGzgC0sfLm1zT/pKgT/jQjZYjdWtKy
+cTujkETaHoMG6rZdnUwmmZryGHWtPUAlWVyg9BDebJfIL32zzU66lQlpIFREyTnI
+zmOrfeJ4Ypw/B0NRUvEMQbUZJtRk7L/ovddItq9NNWHgYn5pznuJOlTaPQb9owOd
+i4oOZguBUyIQL92SrzMMXjxkx5RaBf8dtgGwvdvvCGv5F48Cnr3eCbQN5YQL08xQ
+fek/sjc5izX0MbNjKYw4twCrOwYVpd6Hj7W8L0lhZ0NgFZIoXQi8zTmEjDtf5cHw
+heVKZnH2zdtboYaiIB6utdl1/20mrq6YUd4yuQxwGpc9LveCkPxpPZ1fwTYJj6Fq
+sjabH0KJVKmHTKr3LJg6xFKNh98p+Z3PlVAz4Ac6JTfCWLroBb9df9XAbHZ5kUZd
+Q8RvTloTEYY6hiYKVUn7QF6iO7fUxYuY8/7s8HBhGEyJrwCrVJTpFCOgm7ySBwO5
+fqCAlk6bhtq1THZ3WZZh
+=VZA6
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Sep_2012_08_37_31_+1000_w3NxfdoHc7EAjbxm--
