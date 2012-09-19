@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab2ISTCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:02:13 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19639 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab2ISSz0 (ORCPT
+	id S933119Ab2ISTCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:02:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47963 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756946Ab2ISSzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:55:26 -0400
+	Wed, 19 Sep 2012 14:55:24 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/40] PCI: pci_bus_size_bridges() should not size own bridge
-Date: Wed, 19 Sep 2012 11:54:30 -0700
-Message-Id: <1348080894-23412-17-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 14/40] PCI: Separate out pci_assign_unassigned_bus_resources()
+Date: Wed, 19 Sep 2012 11:54:28 -0700
+Message-Id: <1348080894-23412-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
@@ -28,129 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During checking acpiphp code, found following sequence:
-        pci_bus_size_bridges(bus);
-        pci_bus_assign_resources(bus);
-	pci_enable_bridges(bus);
+It is main portion of pci_rescan_bus().
 
-The problem is that when bus is not root bus, pci_bus_size_bridges would also size
-own pci bridge bus->self if that bridge resource is not inserted before.
-but later pci_bus_assign_resources will not allocate those size bridge res.
-
-So try make it less confusing, let it does not include self sizing.
-and add with_self parameter info __pci_bus_size_bridge()
-
-Fixes caller in pci hotplug componets.
+Separate it out and need to use it for pci root bus hot add later.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |    3 ++-
- drivers/pci/setup-bus.c            |   24 +++++++++++++++---------
- include/linux/pci.h                |    1 +
- 3 files changed, 18 insertions(+), 10 deletions(-)
+ drivers/pci/setup-bus.c |   32 ++++++++++++++++++--------------
+ include/linux/pci.h     |    1 +
+ 2 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 085eec7..6cb1923 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -842,7 +842,8 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 				max = pci_scan_bridge(bus, dev, max, pass);
- 				if (pass && dev->subordinate) {
- 					check_hotplug_bridge(slot, dev);
--					pci_bus_size_bridges(dev->subordinate);
-+					pci_bus_size_bridges_with_self(
-+							dev->subordinate);
- 				}
- 			}
- 		}
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 31821d4..85f7ec73 100644
+index 9e625d84..7d7c1c9 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -1044,8 +1044,8 @@ handle_done:
- 	;
+@@ -1550,25 +1550,12 @@ enable_all:
  }
+ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
  
--void __ref __pci_bus_size_bridges(struct pci_bus *bus,
--			struct list_head *realloc_head)
-+static void __ref __pci_bus_size_bridges(struct pci_bus *bus,
-+			struct list_head *realloc_head, bool with_self)
+-#ifdef CONFIG_HOTPLUG
+-/**
+- * pci_rescan_bus - scan a PCI bus for devices.
+- * @bus: PCI bus to scan
+- *
+- * Scan a PCI bus and child buses for new devices, adds them,
+- * and enables them.
+- *
+- * Returns the max number of subordinate bus discovered.
+- */
+-unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
++void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
  {
+-	unsigned int max;
  	struct pci_dev *dev;
- 	unsigned long mask, prefmask;
-@@ -1063,13 +1063,13 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+ 	LIST_HEAD(add_list); /* list of resources that
+ 					want additional resources */
  
- 		case PCI_CLASS_BRIDGE_PCI:
- 		default:
--			__pci_bus_size_bridges(b, realloc_head);
-+			__pci_bus_size_bridges(b, realloc_head, true);
- 			break;
- 		}
- 	}
+-	max = pci_scan_child_bus(bus);
+-
+ 	down_read(&pci_bus_sem);
+ 	list_for_each_entry(dev, &bus->devices, bus_list)
+ 		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+@@ -1581,6 +1568,23 @@ unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
+ 	BUG_ON(!list_empty(&add_list));
  
--	/* The root bus? */
--	if (!bus->self)
-+	/* Is root bus or not wanted? */
-+	if (!bus->self || !with_self)
- 		return;
- 
- 	switch (bus->self->class >> 8) {
-@@ -1109,9 +1109,15 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
- 	}
- }
- 
-+void __ref pci_bus_size_bridges_with_self(struct pci_bus *bus)
-+{
-+	__pci_bus_size_bridges(bus, NULL, true);
+ 	pci_enable_bridges(bus);
 +}
-+EXPORT_SYMBOL(pci_bus_size_bridges_with_self);
++#ifdef CONFIG_HOTPLUG
++/**
++ * pci_rescan_bus - scan a PCI bus for devices.
++ * @bus: PCI bus to scan
++ *
++ * Scan a PCI bus and child buses for new devices, adds them,
++ * and enables them.
++ *
++ * Returns the max number of subordinate bus discovered.
++ */
++unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
++{
++	unsigned int max;
 +
- void __ref pci_bus_size_bridges(struct pci_bus *bus)
- {
--	__pci_bus_size_bridges(bus, NULL);
-+	__pci_bus_size_bridges(bus, NULL, false);
- }
- EXPORT_SYMBOL(pci_bus_size_bridges);
++	max = pci_scan_child_bus(bus);
++	pci_assign_unassigned_bus_resources(bus);
+ 	pci_bus_add_devices(bus);
  
-@@ -1424,7 +1430,7 @@ again:
- 	/* Depth first, calculate sizes and alignments of all
- 	   subordinate buses. */
- 	list_for_each_entry(bus, &pci_root_buses, node)
--		__pci_bus_size_bridges(bus, add_list);
-+		__pci_bus_size_bridges(bus, add_list, false);
- 
- 	/* Depth last, allocate resources and update the hardware. */
- 	list_for_each_entry(bus, &pci_root_buses, node)
-@@ -1501,7 +1507,7 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
- 				  IORESOURCE_PREFETCH;
- 
- again:
--	__pci_bus_size_bridges(parent, &add_list);
-+	__pci_bus_size_bridges(parent, &add_list, true);
- 	__pci_bridge_assign_resources(bridge, &add_list, &fail_head);
- 	BUG_ON(!list_empty(&add_list));
- 	tried_times++;
-@@ -1562,7 +1568,7 @@ void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
- 		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
- 			if (dev->subordinate)
- 				__pci_bus_size_bridges(dev->subordinate,
--							 &add_list);
-+						 &add_list, true);
- 	up_read(&pci_bus_sem);
- 	__pci_bus_assign_resources(bus, &add_list, NULL);
- 	BUG_ON(!list_empty(&add_list));
+ 	return max;
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 02b8e10..7404077 100644
+index ec25403..02b8e10 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -978,6 +978,7 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size);
- resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
- void pci_bus_assign_resources(const struct pci_bus *bus);
- void pci_bus_size_bridges(struct pci_bus *bus);
-+void pci_bus_size_bridges_with_self(struct pci_bus *bus);
+@@ -981,6 +981,7 @@ void pci_bus_size_bridges(struct pci_bus *bus);
  int pci_claim_resource(struct pci_dev *, int);
  void pci_assign_unassigned_resources(void);
  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge);
++void pci_assign_unassigned_bus_resources(struct pci_bus *bus);
+ void pdev_enable_device(struct pci_dev *);
+ int pci_enable_resources(struct pci_dev *, int mask);
+ void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
 -- 
 1.7.7
 
