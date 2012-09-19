@@ -1,91 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2ISOya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:54:30 -0400
-Received: from [216.32.180.187] ([216.32.180.187]:52829 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752415Ab2ISOyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:54:24 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432I4015Id6f1izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh1155h)
-X-WSS-ID: 0MALQNF-02-D94-02
-X-M-MSG: 
-Date: Wed, 19 Sep 2012 16:52:27 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 00/19 v2] Improve IRQ remapping abstraction in x86 core
- code
-Message-ID: <20120919145227.GS2505@amd.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <20120826191749.GK3690@breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1754932Ab2ISOyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:54:54 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36858 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab2ISOyv convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 19 Sep 2012 10:54:51 -0400
+Message-Id: <5059F8D8020000780009C5CD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 19 Sep 2012 15:54:48 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <stable@kernel.org>, "xen-devel" <xen-devel@lists.xen.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/boot: Disable BIOS SMP MP table
+ search.
+References: <1348061269-19133-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1348061269-19133-1-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120826191749.GK3690@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-
-finally I am back from vacation and resume work on this :)
-
-On Sun, Aug 26, 2012 at 09:17:49PM +0200, Sebastian Andrzej Siewior wrote:
-> On Mon, Aug 20, 2012 at 03:55:46PM +0200, Joerg Roedel wrote:
-> > Please review.
+>>> On 19.09.12 at 15:27, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> As the initial domain we are able to search/map certain regions
+> of memory to harvest configuration data. For all low-level we
+> use ACPI tables - for interrupts we use exclusively ACPI _PRT
+> (so DSDT) and MADT for INT_SRC_OVR.
 > 
-> Finally. Usually you don't add/change code but you just move common
-> irq remapping pieces out of geric io-apic code and put them in once place. I
-> think it would be good, if you would note this in the description of your
-> patch.
-> Altogether it makes a good impression.
-
-Thanks, and thanks for your review.
-
-> After browsing through the new functions in irq_remapping_modify_x86_ops() I
-> see that some of them test for "remap_ops" which is pointless because you don't
-> call irq_remapping_modify_x86_ops() if it is not the case. This also goes mostly
-> for irq_remapping_enabled.
-
-Okay, I am usually a bit conservative when it comes to checking function
-pointers and conditions. One reason is that the Linux kernel had severe
-security bugs in the past with NULL functions pointers being called.
-Especially when future changes modify the code path these function
-pointers it is easy to forget re-adding the checks. But I will look
-again at the patches to check which checks can be removed and which
-should better stay.
-
-> The only reason when you can disable (or say irq_remapping_disable() is
-> called) is in the suspend path. And the remap is enabled again in via
-> irq_remapping_reenable() in resume. Now if this goes wrong what is next? You
-> don't even return an error if the callback is missing. The variable
-> irq_remapping_enabled does not save your ass here because some function
-> behave now different.
+> The SMP MP table is not used at all. As a matter of fact we do
+> not even support machines that only have SMP MP but no ACPI tables.
 > 
-> But back to the realisitic world: If something goes wrong in resume and you
-> can't re-enable irq remapping, the system is not really useable or is it (even
-> before your series)?
+> Lets follow how Moorestown does it and just disable searching
+> for BIOS SMP tables.
+> 
+> This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
+> 
+> 9f->100 for 1:1 PTE
+> Freeing 9f-100 pfn range: 97 pages freed
+> 1-1 mapping on 9f->100
+> .. snip..
+> e820: BIOS-provided physical RAM map:
+> Xen: [mem 0x0000000000000000-0x000000000009efff] usable
+> Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
+> Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
+> .. snip..
+> Scan for SMP in [mem 0x00000000-0x000003ff]
+> Scan for SMP in [mem 0x0009fc00-0x0009ffff]
+> Scan for SMP in [mem 0x000f0000-0x000fffff]
+> found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
+> (XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 
+> 0000000000100461 for l1e_owner=0, pg_owner=0
+> (XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
+> BUG: unable to handle kernel NULL pointer dereference at           (null)
+> IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
+> . snip..
+> Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP 
+> ProLiant BL680c G5
+> .. snip..
+> Call Trace:
+>  [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
+>  [<ffffffff81624731>] ? printk+0x48/0x4a
+>  [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
+>  [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
+>  [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
+>  [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
+>  [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
+>  [<ffffffff81624731>] ? printk+0x48/0x4a
+>  [<ffffffff81abca7f>] start_kernel+0x90/0x390
+>  [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
+>  [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
+> (XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
+> 
+> which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
+> (which is what early_ioremap sticks as a flag) - which meant
+> we would get MFN 0xFF (pte ff461, which is OK), and then it would
+> also map 0x100 (b/c ioremap tries to get page aligned request, and
+> it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
+> as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
+> bypasses the P2M lookup we would happily set the PTE to 1000461.
+> Xen would deny the request since we do not have access to the
+> Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
+> 0x80140.
+> 
+> CC: stable@kernel.org 
+> Fixes-Oracle-Bugzilla: 
+> https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Well, when something goes wrong on resume and irq-remapping doesn't work
-anymore the system is usually doomed (with and without this patch-set).
-When irq-remapping does not work the dma-remapping will likely also not
-work anymore which is even worse.
+Acked-by: Jan Beulich <jbeulich@suse.com>
 
-Regards,
+> ---
+>  arch/x86/xen/enlighten.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 9642d4a..1fbe75a 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1452,6 +1452,10 @@ asmlinkage void __init xen_start_kernel(void)
+>  		pci_request_acs();
+>  
+>  		xen_acpi_sleep_register();
+> +
+> +		/* Avoid searching for BIOS MP tables */
+> +		x86_init.mpparse.find_smp_config = x86_init_noop;
+> +		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+>  	}
+>  #ifdef CONFIG_PCI
+>  	/* PCI BIOS service won't work from a PV guest. */
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org 
+> http://lists.xen.org/xen-devel 
 
-	Joerg
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
