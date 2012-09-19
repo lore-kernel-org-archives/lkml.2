@@ -1,160 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab2ISRSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 13:18:24 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57888 "EHLO zene.cmpxchg.org"
+	id S932731Ab2ISRSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 13:18:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41512 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756636Ab2ISRSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 13:18:22 -0400
-Date: Wed, 19 Sep 2012 13:18:11 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Ying Han <yinghan@google.com>, linux-mm@kvack.org,
+	id S1756636Ab2ISRSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 13:18:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,450,1344236400"; 
+   d="scan'208";a="146810739"
+Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in
+ kvm_load/put_guest_fpu()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mm: clear_page_mlock in page_remove_rmap
-Message-ID: <20120919171811.GR1560@cmpxchg.org>
-References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
- <alpine.LSU.2.00.1209182053520.11632@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209182053520.11632@eggly.anvils>
+Date: Wed, 19 Sep 2012 10:18:22 -0700
+In-Reply-To: <50599AE2.80601@redhat.com>
+References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>
+	 <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>
+	 <50599AE2.80601@redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1348075103.26695.301.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 08:55:21PM -0700, Hugh Dickins wrote:
-> We had thought that pages could no longer get freed while still marked
-> as mlocked; but Johannes Weiner posted this program to demonstrate that
-> truncating an mlocked private file mapping containing COWed pages is
-> still mishandled:
+On Wed, 2012-09-19 at 13:13 +0300, Avi Kivity wrote:
+> On 08/25/2012 12:12 AM, Suresh Siddha wrote:
+> > kvm's guest fpu save/restore should be wrapped around
+> > kernel_fpu_begin/end(). This will avoid for example taking a DNA
+> > in kvm_load_guest_fpu() when it tries to load the fpu immediately
+> > after doing unlazy_fpu() on the host side.
+> > 
+> > More importantly this will prevent the host process fpu from being
+> > corrupted.
+> > 
+> > Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> > Cc: Avi Kivity <avi@redhat.com>
+> > ---
+> >  arch/x86/kvm/x86.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index 42bce48..67e773c 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -5969,7 +5969,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+> >  	 */
+> >  	kvm_put_guest_xcr0(vcpu);
+> >  	vcpu->guest_fpu_loaded = 1;
+> > -	unlazy_fpu(current);
+> > +	kernel_fpu_begin();
+> >  	fpu_restore_checking(&vcpu->arch.guest_fpu);
+> >  	trace_kvm_fpu(1);
 > 
-> #include <sys/types.h>
-> #include <sys/mman.h>
-> #include <sys/stat.h>
-> #include <stdlib.h>
-> #include <unistd.h>
-> #include <fcntl.h>
-> #include <stdio.h>
-> 
-> int main(void)
-> {
-> 	char *map;
-> 	int fd;
-> 
-> 	system("grep mlockfreed /proc/vmstat");
-> 	fd = open("chigurh", O_CREAT|O_EXCL|O_RDWR);
-> 	unlink("chigurh");
-> 	ftruncate(fd, 4096);
-> 	map = mmap(NULL, 4096, PROT_WRITE, MAP_PRIVATE, fd, 0);
-> 	map[0] = 11;
-> 	mlock(map, sizeof(fd));
-> 	ftruncate(fd, 0);
-> 	close(fd);
-> 	munlock(map, sizeof(fd));
-> 	munmap(map, 4096);
-> 	system("grep mlockfreed /proc/vmstat");
-> 	return 0;
-> }
-> 
-> The anon COWed pages are not caught by truncation's clear_page_mlock()
-> of the pagecache pages; but unmap_mapping_range() unmaps them, so we
-> ought to look out for them there in page_remove_rmap().  Indeed, why
-> should truncation or invalidation be doing the clear_page_mlock() when
-> removing from pagecache?  mlock is a property of mapping in userspace,
-> not a propertly of pagecache: an mlocked unmapped page is nonsensical.
+> This breaks kvm, since it disables preemption.  What we want here is to
+> save the user fpu state if it was loaded, and do nothing if wasn't.
+> Don't know what's the new API for that.
 
-property?
+These routines (kvm_load/put_guest_fpu()) are already called with
+preemption disabled but as you mentioned, we don't want the preemption
+to be disabled completely between the kvm_load_guest_fpu() and
+kvm_put_guest_fpu().
 
-> --- 3.6-rc6.orig/mm/memory.c	2012-09-18 15:38:08.000000000 -0700
-> +++ 3.6-rc6/mm/memory.c	2012-09-18 17:51:02.871288773 -0700
-> @@ -1576,12 +1576,12 @@ split_fallthrough:
->  		if (page->mapping && trylock_page(page)) {
->  			lru_add_drain();  /* push cached pages to LRU */
->  			/*
-> -			 * Because we lock page here and migration is
-> -			 * blocked by the pte's page reference, we need
-> -			 * only check for file-cache page truncation.
-> +			 * Because we lock page here, and migration is
-> +			 * blocked by the pte's page reference, and we
-> +			 * know the page is still mapped, we don't even
-> +			 * need to check for file-cache page truncation.
->  			 */
-> -			if (page->mapping)
-> -				mlock_vma_page(page);
-> +			mlock_vma_page(page);
->  			unlock_page(page);
+Also KVM already has the preempt notifier which is doing the
+kvm_put_guest_fpu(), so something like the appended should address this.
+I will test this shortly.
 
-So I don't see a reason for checking for truncation in current code,
-but I also had a hard time figuring out from git history and list
-archives when this was ever "needed" (flu brain does not help).
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/i387.h |   17 +++++++++++++++--
+ arch/x86/kernel/i387.c      |   13 +++++--------
+ arch/x86/kvm/x86.c          |    4 ++--
+ 3 files changed, 22 insertions(+), 12 deletions(-)
 
-My conclusion is that it started out as a fix for when an early draft
-of putback_lru_page dropped the page lock on truncated pages, but at
-the time b291f00 "mlock: mlocked pages are unevictable" went into the
-tree it was merely an optimization anymore to avoid moving pages
-between lists when they are to be freed soon anyway.
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 6c3bd37..29429b1 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -24,8 +24,21 @@ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
+ extern void math_state_restore(void);
+ 
+ extern bool irq_fpu_usable(void);
+-extern void kernel_fpu_begin(void);
+-extern void kernel_fpu_end(void);
++extern void __kernel_fpu_begin(void);
++extern void __kernel_fpu_end(void);
++
++static inline void kernel_fpu_begin(void)
++{
++	WARN_ON_ONCE(!irq_fpu_usable());
++	preempt_disable();
++	__kernel_fpu_begin();
++}
++
++static inline void kernel_fpu_end(void)
++{
++	__kernel_fpu_end();
++	preempt_enable();
++}
+ 
+ /*
+  * Some instructions like VIA's padlock instructions generate a spurious
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 6782e39..675a050 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -73,32 +73,29 @@ bool irq_fpu_usable(void)
+ }
+ EXPORT_SYMBOL(irq_fpu_usable);
+ 
+-void kernel_fpu_begin(void)
++void __kernel_fpu_begin(void)
+ {
+ 	struct task_struct *me = current;
+ 
+-	WARN_ON_ONCE(!irq_fpu_usable());
+-	preempt_disable();
+ 	if (__thread_has_fpu(me)) {
+ 		__save_init_fpu(me);
+ 		__thread_clear_has_fpu(me);
+-		/* We do 'stts()' in kernel_fpu_end() */
++		/* We do 'stts()' in __kernel_fpu_end() */
+ 	} else if (!use_eager_fpu()) {
+ 		this_cpu_write(fpu_owner_task, NULL);
+ 		clts();
+ 	}
+ }
+-EXPORT_SYMBOL(kernel_fpu_begin);
++EXPORT_SYMBOL(__kernel_fpu_begin);
+ 
+-void kernel_fpu_end(void)
++void __kernel_fpu_end(void)
+ {
+ 	if (use_eager_fpu())
+ 		math_state_restore();
+ 	else
+ 		stts();
+-	preempt_enable();
+ }
+-EXPORT_SYMBOL(kernel_fpu_end);
++EXPORT_SYMBOL(__kernel_fpu_end);
+ 
+ void unlazy_fpu(struct task_struct *tsk)
+ {
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 3ddefb4..1f09552 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5979,7 +5979,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+ 	 */
+ 	kvm_put_guest_xcr0(vcpu);
+ 	vcpu->guest_fpu_loaded = 1;
+-	kernel_fpu_begin();
++	__kernel_fpu_begin();
+ 	fpu_restore_checking(&vcpu->arch.guest_fpu);
+ 	trace_kvm_fpu(1);
+ }
+@@ -5993,7 +5993,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->guest_fpu_loaded = 0;
+ 	fpu_save_init(&vcpu->arch.guest_fpu);
+-	kernel_fpu_end();
++	__kernel_fpu_end();
+ 	++vcpu->stat.fpu_reload;
+ 	kvm_make_request(KVM_REQ_DEACTIVATE_FPU, vcpu);
+ 	trace_kvm_fpu(0);
 
-Is this correct?
 
-> --- 3.6-rc6.orig/mm/mlock.c	2012-09-18 15:38:08.000000000 -0700
-> +++ 3.6-rc6/mm/mlock.c	2012-09-18 17:51:02.871288773 -0700
-> @@ -51,13 +51,10 @@ EXPORT_SYMBOL(can_do_mlock);
->  /*
->   *  LRU accounting for clear_page_mlock()
->   */
-> -void __clear_page_mlock(struct page *page)
-> +void clear_page_mlock(struct page *page)
->  {
-> -	VM_BUG_ON(!PageLocked(page));
-> -
-> -	if (!page->mapping) {	/* truncated ? */
-> +	if (!TestClearPageMlocked(page))
->  		return;
-> -	}
->  
->  	dec_zone_page_state(page, NR_MLOCK);
->  	count_vm_event(UNEVICTABLE_PGCLEARED);
-> @@ -290,14 +287,7 @@ void munlock_vma_pages_range(struct vm_a
->  		page = follow_page(vma, addr, FOLL_GET | FOLL_DUMP);
->  		if (page && !IS_ERR(page)) {
->  			lock_page(page);
-> -			/*
-> -			 * Like in __mlock_vma_pages_range(),
-> -			 * because we lock page here and migration is
-> -			 * blocked by the elevated reference, we need
-> -			 * only check for file-cache page truncation.
-> -			 */
-> -			if (page->mapping)
-> -				munlock_vma_page(page);
-> +			munlock_vma_page(page);
->  			unlock_page(page);
->  			put_page(page);
->  		}
-> --- 3.6-rc6.orig/mm/rmap.c	2012-09-18 16:39:50.000000000 -0700
-> +++ 3.6-rc6/mm/rmap.c	2012-09-18 17:51:02.871288773 -0700
-> @@ -1203,7 +1203,10 @@ void page_remove_rmap(struct page *page)
->  	} else {
->  		__dec_zone_page_state(page, NR_FILE_MAPPED);
->  		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
-> +		mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	}
-> +	if (unlikely(PageMlocked(page)))
-> +		clear_page_mlock(page);
->  	/*
->  	 * It would be tidy to reset the PageAnon mapping here,
->  	 * but that might overwrite a racing page_add_anon_rmap
-> @@ -1213,6 +1216,7 @@ void page_remove_rmap(struct page *page)
->  	 * Leaving it set also helps swapoff to reinstate ptes
->  	 * faster for those pages still in swapcache.
->  	 */
-> +	return;
->  out:
->  	if (!anon)
->  		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-
-Would it be cleaner to fold this into the only goto site left?  One
-certain upside of that would be the fantastic comment about leaving
-page->mapping intact being the last operation in this function again :-)
