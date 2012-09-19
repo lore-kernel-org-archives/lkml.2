@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2ISON3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:13:29 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39743 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751721Ab2ISONV (ORCPT
+	id S1753403Ab2ISOOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:14:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43799 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab2ISOOX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:13:21 -0400
-X-Sasl-enc: Y1Ha/Pd4FwRCE+Ky/VMfze7c3cwxfCASxOSV1hVwjLaT 1348064000
-Date: Wed, 19 Sep 2012 15:13:16 +0100
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the usb tree
-Message-ID: <20120919141316.GA19526@kroah.com>
-References: <20120919143136.46dd2318963c0d8524492041@canb.auug.org.au>
- <20120919145925.35e95b5a@pyramind.ukuu.org.uk>
+	Wed, 19 Sep 2012 10:14:23 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: RE: [RFC - PATCH] base:pm: prepare driver for common clock framework
+Thread-Topic: [RFC - PATCH] base:pm: prepare driver for common clock
+ framework
+Thread-Index: AQHNkscGQnhzdlyu5EK+tSnspVAZNJeQ+O4AgADArxCAAAJ2kA==
+Date: Wed, 19 Sep 2012 14:13:18 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041D3350@DFLE12.ent.ti.com>
+References: <1347661174-15404-1-git-send-email-m-karicheri2@ti.com>
+ <201209182334.08229.rjw@sisk.pl>
+ <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919145925.35e95b5a@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 02:59:25PM +0100, Alan Cox wrote:
-> On Wed, 19 Sep 2012 14:31:36 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Greg,
-> > 
-> > After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
-> > failed like this:
-> > 
-> > drivers/usb/serial/vizzini.c: In function 'vizzini_set_termios':
-> > drivers/usb/serial/vizzini.c:454:22: error: invalid type argument of '->' (have 'struct ktermios')
-> > 
-> > Caused by commit c05fecb1d57e ("USB: serial: add vizzini driver")
-> > interacting with commit adc8d746caa6 ("tty: move the termios object into
-> > the tty") from the tty tree.
-> > 
-> > I added the following merge fix patch and can carry it as necessary:
-> 
-> Vizzini seems to have teleported into Greg's tree. Greg - it's got a pile
-> of other bugs in it plus complete bogus comments and the like. You don't
-> seem to have every posted it to the lists for comment or if you did it
-> didn't turn up here ?
-
-Yeah, I pulled it in from an out-of-tree vendor and tried to clean a
-bunch of things up, but I know it has more things left to get right
-(heck, I'm almost not sure it's even needed, I think this might be a
-cdc-acm device...)
-
-Any patches are appreciated, and I think that if the vendor doesn't
-respond, I'll just drop the driver entirely, their emails are now
-bouncing :(
-
-greg k-h
++ Len Brown
+>> -----Original Message-----
+>> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-owner@vger.kernel.org] On
+>> Behalf Of Karicheri, Muralidharan
+>> Sent: Wednesday, September 19, 2012 10:09 AM
+>> To: Rafael J. Wysocki
+>> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
+>> mturquette@linaro.org; Magnus Damm; Linux-sh list
+>> Subject: RE: [RFC - PATCH] base:pm: prepare driver for common clock framework
+>> 
+>> >> -----Original Message-----
+>> >> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+>> >> Sent: Tuesday, September 18, 2012 5:34 PM
+>> >> To: Karicheri, Muralidharan
+>> >> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
+>> >> mturquette@linaro.org; Magnus Damm; Linux-sh list
+>> >> Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
+>> >>
+>> >> On Saturday, September 15, 2012, Murali Karicheri wrote:
+>> >> > As part of my work to migrate davinci SoC code to
+>> >> > use common clk framework, I encountered an issue with this driver
+>> >> > which is calling clk_enable() and clk_disable() without prepare()/
+>> >> > unprepare(). This change is needed to enable common clock migration
+>> >> > for davinci SoCs.
+>> >> >
+>> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> >>
+>> >> There are other users of this code than davinci.  For example, sh
+>> >> and ARM/shmobile both use it.  Have you verified that your changes will
+>> >> work for them too?
+>> >>
+>> Rafael,
+>> 
+>> Technically do you agree with the changes or do I need to get it reviewed by someone in
+>> particular? I have no way of verifying if this works for sh and ARM/shmobile. I have
+>> copied this RFC patch to the list showed up by scripts/get_maintainer.pl list. Any idea
+>> how I can get this patch reviewed by the sh and ARM/shmobile maintainers and get it
+>> tested as well? This is required for DaVinci for sure unless there is an alternate way of
+>> doing this. Well, then that is the idea of sending an RFC patch.
+>> 
+>> -Murali
+>> 
+>> >> Rafael
+>> >>
+>> >>
+>> >> > diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+>> >> > index eb78e96..9d8fde7 100644
+>> >> > --- a/drivers/base/power/clock_ops.c
+>> >> > +++ b/drivers/base/power/clock_ops.c
+>> >> > @@ -99,7 +99,7 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
+>> >> >
+>> >> >  	if (ce->status < PCE_STATUS_ERROR) {
+>> >> >  		if (ce->status == PCE_STATUS_ENABLED)
+>> >> > -			clk_disable(ce->clk);
+>> >> > +			clk_disable_unprepare(ce->clk);
+>> >> >
+>> >> >  		if (ce->status >= PCE_STATUS_ACQUIRED)
+>> >> >  			clk_put(ce->clk);
+>> >> > @@ -396,7 +396,7 @@ static void enable_clock(struct device *dev, const char
+>> >> *con_id)
+>> >> >
+>> >> >  	clk = clk_get(dev, con_id);
+>> >> >  	if (!IS_ERR(clk)) {
+>> >> > -		clk_enable(clk);
+>> >> > +		clk_prepare_enable(clk);
+>> >> >  		clk_put(clk);
+>> >> >  		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
+>> >> >  	}
+>> >> > @@ -413,7 +413,7 @@ static void disable_clock(struct device *dev, const char
+>> >> *con_id)
+>> >> >
+>> >> >  	clk = clk_get(dev, con_id);
+>> >> >  	if (!IS_ERR(clk)) {
+>> >> > -		clk_disable(clk);
+>> >> > +		clk_disable_unprepare(clk);
+>> >> >  		clk_put(clk);
+>> >> >  		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
+>> >> >  	}
+>> >> >
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
