@@ -1,119 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2ISNQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 09:16:51 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:50609 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab2ISNQr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 19 Sep 2012 09:16:47 -0400
-Message-Id: <5059E1DA020000780009C53D@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 19 Sep 2012 14:16:42 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
-Cc: "Ryan Mallon" <rmallon@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH, v2] allow gpiolib to be a module
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755095Ab2ISNSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 09:18:39 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45116 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab2ISNSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 09:18:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANBXnM=p1Jq33j81vE0WqD35c7JLvRAD1DQ-K4fn=dnUqwH55A@mail.gmail.com>
+References: <CANBXnM=p1Jq33j81vE0WqD35c7JLvRAD1DQ-K4fn=dnUqwH55A@mail.gmail.com>
+Date: Wed, 19 Sep 2012 18:48:33 +0530
+Message-ID: <CANBXnMkLaEqGJ3Cv_U4GT2na7vGQnJT4XuBTbCwebnFbUBdfxw@mail.gmail.com>
+Subject: Re: Documentation/HOWTO: Broken URL
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: rob@landley.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without ARCH_REQUIRE_GPIOLIB there's no reason to force this code, when
-enabled, to always be built into the kernel, which requires only minor
-Makefile and source code adjustments.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-
----
-v2: Make gpiolib_init() static. Properly handle !CONFIG_DEBUG_FS case.
-
----
- drivers/gpio/Kconfig       |    2 +-
- drivers/gpio/Makefile      |    3 ++-
- drivers/gpio/gpiolib.c     |   21 +++++++++++++++++++++
- include/asm-generic/gpio.h |    3 ++-
- 4 files changed, 26 insertions(+), 3 deletions(-)
-
---- 3.6-rc6/drivers/gpio/Kconfig
-+++ 3.6-rc6-gpiolib-module/drivers/gpio/Kconfig
-@@ -33,7 +33,7 @@ config ARCH_REQUIRE_GPIOLIB
- 
- 
- menuconfig GPIOLIB
--	bool "GPIO Support"
-+	tristate "GPIO Support"
- 	depends on ARCH_WANT_OPTIONAL_GPIOLIB || ARCH_REQUIRE_GPIOLIB
- 	select GENERIC_GPIO
- 	help
---- 3.6-rc6/drivers/gpio/Makefile
-+++ 3.6-rc6-gpiolib-module/drivers/gpio/Makefile
-@@ -2,7 +2,8 @@
- 
- ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
- 
--obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
-+gpio-lib-y			:= gpiolib.o devres.o
-+obj-$(CONFIG_GPIOLIB)		+= gpio-lib.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
- 
- # Device drivers. Generally keep list sorted alphabetically
---- 3.6-rc6/drivers/gpio/gpiolib.c
-+++ 3.6-rc6-gpiolib-module/drivers/gpio/gpiolib.c
-@@ -1003,7 +1003,9 @@ static int __init gpiolib_sysfs_init(voi
- 
- 	return status;
- }
-+#ifndef MODULE
- postcore_initcall(gpiolib_sysfs_init);
-+#endif
- 
- #else
- static inline int gpiochip_export(struct gpio_chip *chip)
-@@ -1832,6 +1834,25 @@ static int __init gpiolib_debugfs_init(v
- 				NULL, NULL, &gpiolib_operations);
- 	return 0;
- }
-+#ifndef MODULE
- subsys_initcall(gpiolib_debugfs_init);
-+#endif
- 
- #endif	/* DEBUG_FS */
-+
-+#ifdef MODULE
-+static int __init gpiolib_init(void)
-+{
-+	int err = gpiolib_sysfs_init();
-+
-+#ifdef CONFIG_DEBUG_FS
-+	if (!err)
-+		err = gpiolib_debugfs_init();
-+#endif
-+	return err;
-+}
-+module_init(gpiolib_init);
-+
-+MODULE_DESCRIPTION("GPIO library");
-+MODULE_LICENSE("GPL");
-+#endif
---- 3.6-rc6/include/asm-generic/gpio.h
-+++ 3.6-rc6-gpiolib-module/include/asm-generic/gpio.h
-@@ -4,9 +4,10 @@
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/errno.h>
-+#include <linux/kconfig.h>
- #include <linux/of.h>
- 
--#ifdef CONFIG_GPIOLIB
-+#if IS_ENABLED(CONFIG_GPIOLIB)
- 
- #include <linux/compiler.h>
- 
+On Wed, Sep 19, 2012 at 2:28 PM, Adil Mujeeb <mujeeb.adil@gmail.com> wrote:
+> Hi,
+>
+> I was reading Documentation/HOWTO and it mentions:
+>
+> ---------------8<-----------------
+> Other excellent descriptions of how to create patches properly are:
+>         "The Perfect Patch"
+>                 http://userweb.kernel.org/~akpm/stuff/tpp.txt
+>         "Linux kernel patch submission format"
+>                 http://linux.yyz.us/patch-format.html
+> ---------------8<-----------------
+>
+> The first URL (http://userweb.kernel.org/~akpm/stuff/tpp.txt) seems broken (?)
+> When I tried to access, its getting timed out.
 
 
+Sorry, I have realized that the same problem has been reported
+recently and the thread is going on:
 
+https://lkml.org/lkml/2012/9/12/419
+
+>
+> Thanks and Regards,
+> Adil Mujeeb
