@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2ISOOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 10:14:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43799 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2ISOOX convert rfc822-to-8bit (ORCPT
+	id S1753659Ab2ISOOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 10:14:37 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:7847 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751643Ab2ISOOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 10:14:23 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Subject: RE: [RFC - PATCH] base:pm: prepare driver for common clock framework
-Thread-Topic: [RFC - PATCH] base:pm: prepare driver for common clock
- framework
-Thread-Index: AQHNkscGQnhzdlyu5EK+tSnspVAZNJeQ+O4AgADArxCAAAJ2kA==
-Date: Wed, 19 Sep 2012 14:13:18 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7041D3350@DFLE12.ent.ti.com>
-References: <1347661174-15404-1-git-send-email-m-karicheri2@ti.com>
- <201209182334.08229.rjw@sisk.pl>
- <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
-In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041D3326@DFLE12.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Sep 2012 10:14:24 -0400
+Date: Wed, 19 Sep 2012 14:14:23 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 09/16] sl[au]b: always get the cache from its page in
+ kfree
+In-Reply-To: <5059777E.8060906@parallels.com>
+Message-ID: <00000139dee12735-6220e641-d91c-446e-a329-ed9389eafa22-000000@email.amazonses.com>
+References: <1347977530-29755-1-git-send-email-glommer@parallels.com> <1347977530-29755-10-git-send-email-glommer@parallels.com> <00000139d9fe8595-8905906d-18ed-4d41-afdb-f4c632c2d50a-000000@email.amazonses.com> <5059777E.8060906@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Len Brown
->> -----Original Message-----
->> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-owner@vger.kernel.org] On
->> Behalf Of Karicheri, Muralidharan
->> Sent: Wednesday, September 19, 2012 10:09 AM
->> To: Rafael J. Wysocki
->> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
->> mturquette@linaro.org; Magnus Damm; Linux-sh list
->> Subject: RE: [RFC - PATCH] base:pm: prepare driver for common clock framework
->> 
->> >> -----Original Message-----
->> >> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
->> >> Sent: Tuesday, September 18, 2012 5:34 PM
->> >> To: Karicheri, Muralidharan
->> >> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Chemparathy, Cyril;
->> >> mturquette@linaro.org; Magnus Damm; Linux-sh list
->> >> Subject: Re: [RFC - PATCH] base:pm: prepare driver for common clock framework
->> >>
->> >> On Saturday, September 15, 2012, Murali Karicheri wrote:
->> >> > As part of my work to migrate davinci SoC code to
->> >> > use common clk framework, I encountered an issue with this driver
->> >> > which is calling clk_enable() and clk_disable() without prepare()/
->> >> > unprepare(). This change is needed to enable common clock migration
->> >> > for davinci SoCs.
->> >> >
->> >> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> >>
->> >> There are other users of this code than davinci.  For example, sh
->> >> and ARM/shmobile both use it.  Have you verified that your changes will
->> >> work for them too?
->> >>
->> Rafael,
->> 
->> Technically do you agree with the changes or do I need to get it reviewed by someone in
->> particular? I have no way of verifying if this works for sh and ARM/shmobile. I have
->> copied this RFC patch to the list showed up by scripts/get_maintainer.pl list. Any idea
->> how I can get this patch reviewed by the sh and ARM/shmobile maintainers and get it
->> tested as well? This is required for DaVinci for sure unless there is an alternate way of
->> doing this. Well, then that is the idea of sending an RFC patch.
->> 
->> -Murali
->> 
->> >> Rafael
->> >>
->> >>
->> >> > diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
->> >> > index eb78e96..9d8fde7 100644
->> >> > --- a/drivers/base/power/clock_ops.c
->> >> > +++ b/drivers/base/power/clock_ops.c
->> >> > @@ -99,7 +99,7 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
->> >> >
->> >> >  	if (ce->status < PCE_STATUS_ERROR) {
->> >> >  		if (ce->status == PCE_STATUS_ENABLED)
->> >> > -			clk_disable(ce->clk);
->> >> > +			clk_disable_unprepare(ce->clk);
->> >> >
->> >> >  		if (ce->status >= PCE_STATUS_ACQUIRED)
->> >> >  			clk_put(ce->clk);
->> >> > @@ -396,7 +396,7 @@ static void enable_clock(struct device *dev, const char
->> >> *con_id)
->> >> >
->> >> >  	clk = clk_get(dev, con_id);
->> >> >  	if (!IS_ERR(clk)) {
->> >> > -		clk_enable(clk);
->> >> > +		clk_prepare_enable(clk);
->> >> >  		clk_put(clk);
->> >> >  		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
->> >> >  	}
->> >> > @@ -413,7 +413,7 @@ static void disable_clock(struct device *dev, const char
->> >> *con_id)
->> >> >
->> >> >  	clk = clk_get(dev, con_id);
->> >> >  	if (!IS_ERR(clk)) {
->> >> > -		clk_disable(clk);
->> >> > +		clk_disable_unprepare(clk);
->> >> >  		clk_put(clk);
->> >> >  		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
->> >> >  	}
->> >> >
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wed, 19 Sep 2012, Glauber Costa wrote:
+
+> > This is an extremely hot path of the kernel and you are adding significant
+> > processing. Check how the benchmarks are influenced by this change.
+> > virt_to_cache can be a bit expensive.
+> Would it be enough for you to have a separate code path for
+> !CONFIG_MEMCG_KMEM?
+
+Yes, at least add an #ifdef around this.
+
+> I don't really see another way to do it, aside from deriving the cache
+> from the object in our case. I am open to suggestions if you do.
+
+Rethink the whole memcg approach and find some other way to do it? This
+whole scheme is very intrusive and is likely to increase instability in
+the VM given the explosion of lru lists, duplication of slab caches and
+significantly more complex processing throughout the VM.
+
+
+
