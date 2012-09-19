@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab2ISQG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:06:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23280 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756487Ab2ISQG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:06:27 -0400
-Subject: [PATCH v5 01/10] ipc: remove forced assignment of selected message
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
-        jmorris@namei.org, linux-driver@qlogic.com,
-        linux-security-module@vger.kernel.org, hughd@google.com,
-        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk,
-        james.l.morris@oracle.com, catalin.marinas@arm.com,
-        casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
-        jitendra.kalsaria@qlogic.com, devel@openvz.org
-Date: Wed, 19 Sep 2012 20:05:31 +0400
-Message-ID: <20120919160531.11254.48182.stgit@localhost6.localdomain6>
-In-Reply-To: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
-References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S932346Ab2ISQGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:06:40 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44124 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab2ISQGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:06:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120918164103.440C22C0A4@topped-with-meat.com>
+References: <1347979995-1452-1-git-send-email-vda.linux@googlemail.com>
+ <1347979995-1452-3-git-send-email-vda.linux@googlemail.com>
+ <20120918153027.GA21612@redhat.com> <20120918164103.440C22C0A4@topped-with-meat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Wed, 19 Sep 2012 18:06:11 +0200
+Message-ID: <CAK1hOcN-FOY+wUa32vYekOn7dDaNFWoTce7H0pgVwHOWhYNbOQ@mail.gmail.com>
+Subject: Re: [PATCH -mm v2 2/2] coredump: add a new elf note with siginfo of
+ the signal
+To: Roland McGrath <roland@hack.frob.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Pedro Alves <palves@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. The assignment is redundant.
+On Tue, Sep 18, 2012 at 6:41 PM, Roland McGrath <roland@hack.frob.com> wrote:
+>> But, somehow I forgot about compat tasks when we discussed this before.
+>> Perhaps the code above should do
+>>
+>>       if (is_compat_task())
+>>               copy_siginfo_to_user32(...);
+>>       else
+>>               copy_siginfo_to_user(...);
+>>
+>> ?
+>
+> compat_binfmt_elf.c will define a separate copy of this code via #include.
+> So it just needs #define copy_siginfo_to_user copy_siginfo_to_user32 or
+> something like that, as the various other types and functions are handled.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- ipc/msg.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 7385de2..f3bfbb8 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -787,7 +787,6 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
- 			    !security_msg_queue_msgrcv(msq, walk_msg, current,
- 						       msgtyp, mode)) {
- 
--				msg = walk_msg;
- 				if (mode == SEARCH_LESSEQUAL &&
- 						walk_msg->m_type != 1) {
- 					msg = walk_msg;
-
+Sending a new version in a minute.
