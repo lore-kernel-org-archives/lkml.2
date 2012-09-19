@@ -1,176 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab2ISQGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 12:06:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37022 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab2ISQGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 12:06:31 -0400
-Subject: [PATCH v5 03/10] ipc: segment key change helper introduced
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
-        jmorris@namei.org, linux-driver@qlogic.com,
-        linux-security-module@vger.kernel.org, hughd@google.com,
-        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk,
-        james.l.morris@oracle.com, catalin.marinas@arm.com,
-        casey@schaufler-ca.com, eparis@parisplace.org, sds@tycho.nsa.gov,
-        jitendra.kalsaria@qlogic.com, devel@openvz.org
-Date: Wed, 19 Sep 2012 20:05:42 +0400
-Message-ID: <20120919160542.11254.52904.stgit@localhost6.localdomain6>
-In-Reply-To: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
-References: <20120919160430.11254.86848.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S932294Ab2ISQPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 12:15:16 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46700 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596Ab2ISQPN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 12:15:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348065718.2453.31.camel@falcor>
+References: <1346955201-8926-1-git-send-email-keescook@chromium.org>
+	<50500C5C.8060006@zytor.com>
+	<878vcfu22s.fsf@rustcorp.com.au>
+	<1347564136.2270.4.camel@falcor>
+	<87obl2ptq0.fsf@rustcorp.com.au>
+	<1348065718.2453.31.camel@falcor>
+Date: Wed, 19 Sep 2012 09:15:12 -0700
+X-Google-Sender-Auth: jSnoImn94WJywxVBndzvEUtvPUI
+Message-ID: <CAGXu5j+wPj1F+MQdneLCkOa+ozSbLCYUFMER1yTXz0KqKDAyvQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces existent segment key changing infrastructure.
-New function ipc_update_key() can be used change segment key, cuid, cgid
-values. It checks for that new key is not used (except IPC_PRIVATE) prior to
-set it on existent.
-To make this possible, added copying of this fields from user-space in
-__get_compat_ipc_perm() and __get_compat_ipc64_perm() functions. Also segment
-search by key and lock were splitted into different functions, because
-ipc_update_key() doesn't need to lock the segment during check that new key is
-not used.
+On Wed, Sep 19, 2012 at 7:41 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Wed, 2012-09-19 at 13:08 +0930, Rusty Russell wrote:
+>> Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+>>
+>> > On Wed, 2012-09-12 at 17:04 +0930, Rusty Russell wrote:
+>> >> "H. Peter Anvin" <hpa@zytor.com> writes:
+>> >>
+>> >> > On 09/06/2012 11:13 AM, Kees Cook wrote:
+>> >> >> Instead of (or in addition to) kernel module signing, being able to reason
+>> >> >> about the origin of a kernel module would be valuable in situations
+>> >> >> where an OS already trusts a specific file system, file, etc, due to
+>> >> >> things like security labels or an existing root of trust to a partition
+>> >> >> through things like dm-verity.
+>> >> >>
+>> >> >> This introduces a new syscall (currently only on x86), similar to
+>> >> >> init_module, that has only two arguments. The first argument is used as
+>> >> >> a file descriptor to the module and the second argument is a pointer to
+>> >> >> the NULL terminated string of module arguments.
+>> >> >>
+>> >> >
+>> >> > Please use the standard naming convention, which is an f- prefix (i.e.
+>> >> > finit_module()).
+>> >>
+>> >> Good point; I just did a replace here.
+>> >
+>> > Have you pushed out the changes?  And if so, to where?
+>>
+>> No, I kept them in my patch series but out of linux-next, since I
+>> thought you disliked the placement of the security hooks?
+>
+> I thought about it some more.  The call to
+> security_kernel_module_from_file() from copy_module_from_user() doesn't
+> provide any information, not the buffer contents nor the signature.  The
+> only thing IMA-appraisal can do is to fail the request with
+> INTEGRITY_UNKNOWN.  This is reflected in the IMA-appraisal patch I
+> posted http://marc.info/?l=linux-security-module&m=134739023306344&w=2.
+>
+> Please add my Acked-by: Mimi Zohar <zohar@us.ibm.com>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- ipc/compat.c |    6 ++++++
- ipc/util.c   |   51 ++++++++++++++++++++++++++++++++++++++++++++++++---
- ipc/util.h   |    2 ++
- 3 files changed, 56 insertions(+), 3 deletions(-)
+FWIW, this was my intent: it is a way for the LSM to see an attempt to
+load a module it can't reason about. If it wants to allow it blindly,
+it can, otherwise is has the option to refuse it. I didn't want to
+leave the old syscall unhooked.
 
-diff --git a/ipc/compat.c b/ipc/compat.c
-index ad9518e..af30d13 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -144,6 +144,9 @@ static inline int __get_compat_ipc64_perm(struct ipc64_perm *p64,
- 	err  = __get_user(p64->uid, &up64->uid);
- 	err |= __get_user(p64->gid, &up64->gid);
- 	err |= __get_user(p64->mode, &up64->mode);
-+	err |= __get_user(p64->cuid, &up64->cuid);
-+	err |= __get_user(p64->cgid, &up64->cgid);
-+	err |= __get_user(p64->key, &up64->key);
- 	return err;
- }
- 
-@@ -155,6 +158,9 @@ static inline int __get_compat_ipc_perm(struct ipc64_perm *p,
- 	err  = __get_user(p->uid, &up->uid);
- 	err |= __get_user(p->gid, &up->gid);
- 	err |= __get_user(p->mode, &up->mode);
-+	err |= __get_user(p->cuid, &up->cuid);
-+	err |= __get_user(p->cgid, &up->cgid);
-+	err |= __get_user(p->key, &up->key);
- 	return err;
- }
- 
-diff --git a/ipc/util.c b/ipc/util.c
-index 328abd1..1154245 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -173,7 +173,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
-  *	@key: The key to find
-  *	
-  *	Requires ipc_ids.rw_mutex locked.
-- *	Returns the LOCKED pointer to the ipc structure if found or NULL
-+ *	Returns the UNLOCKED pointer to the ipc structure if found or NULL
-  *	if not.
-  *	If key is found ipc points to the owning ipc structure
-  */
-@@ -195,7 +195,6 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
- 			continue;
- 		}
- 
--		ipc_lock_by_ptr(ipc);
- 		return ipc;
- 	}
- 
-@@ -203,6 +202,27 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
- }
- 
- /**
-+ *	ipc_findkey_locked	-	find and lock a key in an ipc identifier set
-+ *	@ids: Identifier set
-+ *	@key: The key to find
-+ *
-+ *	Requires ipc_ids.rw_mutex locked.
-+ *	Returns the LOCKED pointer to the ipc structure if found or NULL
-+ *	if not.
-+ *	If key is found ipc points to the owning ipc structure
-+ */
-+
-+static struct kern_ipc_perm *ipc_findkey_locked(struct ipc_ids *ids, key_t key)
-+{
-+	struct kern_ipc_perm *ipc;
-+
-+	ipc = ipc_findkey(ids, key);
-+	if (ipc)
-+		ipc_lock_by_ptr(ipc);
-+	return ipc;
-+}
-+
-+/**
-  *	ipc_get_maxid 	-	get the last assigned id
-  *	@ids: IPC identifier set
-  *
-@@ -388,7 +408,7 @@ retry:
- 	 * a new entry + read locks are not "upgradable"
- 	 */
- 	down_write(&ids->rw_mutex);
--	ipcp = ipc_findkey(ids, params->key);
-+	ipcp = ipc_findkey_locked(ids, params->key);
- 	if (ipcp == NULL) {
- 		/* key not used */
- 		if (!(flg & IPC_CREAT))
-@@ -755,6 +775,31 @@ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
- }
- 
- /**
-+ * ipc_update_key - update the key of an IPC.
-+ * @in:  the permission given as input.
-+ * @out: the permission of the ipc to set.
-+ *
-+ * Common routine called by sys_shmctl(), sys_semctl(). sys_msgctl().
-+ */
-+int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
-+		    struct kern_ipc_perm *out)
-+{
-+
-+	if (in->key && out->key != in->key) {
-+		/*
-+		 * Check for existent segment with the same key.
-+		 * Note: ipc_ids.rw_mutex is taken for write already.
-+		 */
-+		if (ipc_findkey(ids, in->key))
-+			return -EEXIST;
-+	}
-+	out->cuid = in->cuid;
-+	out->cgid = in->cgid;
-+	out->key = in->key;
-+	return 0;
-+}
-+
-+/**
-  * ipc_update_perm - update the permissions of an IPC.
-  * @in:  the permission given as input.
-  * @out: the permission of the ipc to set.
-diff --git a/ipc/util.h b/ipc/util.h
-index 878df18..b48016d 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -126,6 +126,8 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
- 
- void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
- void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
-+int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
-+		   struct kern_ipc_perm *out);
- void ipc_update_perm(struct ipc64_perm *in, struct kern_ipc_perm *out);
- struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
- 				      struct ipc_ids *ids, int id, int cmd,
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
