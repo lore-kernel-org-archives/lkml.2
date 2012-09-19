@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab2ISEQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 00:16:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49365 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab2ISEQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 00:16:44 -0400
-Date: Wed, 19 Sep 2012 14:16:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: manual merge of the usb tree with the tty tree
-Message-Id: <20120919141636.99298d4d5e8501ec377e5594@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Sep_2012_14_16_36_+1000_FBBjimUCklRIAPes"
+	id S1752131Ab2ISE0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 00:26:05 -0400
+Received: from tundra.namei.org ([65.99.196.166]:41997 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab2ISEZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 00:25:59 -0400
+Date: Wed, 19 Sep 2012 14:17:47 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: David Howells <dhowells@redhat.com>, herbert@gondor.hengli.com.au,
+        pjones@redhat.com, rusty@rustcorp.com.au, linux-crypto@vger.kernel.org,
+        zohar@us.ibm.com, dmitry.kasatkin@intel.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/16] X.509: Add an ASN.1 decoder
+In-Reply-To: <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
+Message-ID: <alpine.LRH.2.02.1209191416060.29525@tundra.namei.org>
+References: <20120914103930.1e16ad8b@pyramind.ukuu.org.uk> <20120913234802.3575.77103.stgit@warthog.procyon.org.uk> <20120913235005.3575.46218.stgit@warthog.procyon.org.uk> <13189.1347989652@warthog.procyon.org.uk>
+ <20120918195115.6ddcf5fc@pyramind.ukuu.org.uk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Sep_2012_14_16_36_+1000_FBBjimUCklRIAPes
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 18 Sep 2012, Alan Cox wrote:
 
-Hi Greg,
+> On Tue, 18 Sep 2012 18:34:12 +0100
+> David Howells <dhowells@redhat.com> wrote:
+> 
+> > Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > 
+> > > Why do this in the kernel.That appears to be completely insane.
+> > 
+> > A number of reasons:
+> > 
+> >  (1) The UEFI signature/key database may contain ASN.1 X.509 certificates and
+> >      we may need to use those very early in the boot process, during initrd.
+> 
+> Ok that makes some sense.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/serial/io_edgeport.c between commit adc8d746caa6 ("tty: move
-the termios object into the tty") from the tty tree and commit
-984f68683298 ("USB: serial: io_edgeport.c: remove dbg() usage") from the
-usb tree.
+I'd like to see some serious effort at code review and testing before this 
+code is merged.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/serial/io_edgeport.c
-index f435575,75b7ccd..0000000
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@@ -1516,13 -1497,9 +1497,9 @@@ static void edge_set_termios(struct tty
-  	struct edgeport_port *edge_port =3D usb_get_serial_port_data(port);
-  	unsigned int cflag;
- =20
- -	cflag =3D tty->termios->c_cflag;
- -	dev_dbg(&port->dev, "%s - clfag %08x iflag %08x\n", __func__, tty->termi=
-os->c_cflag, tty->termios->c_iflag);
- +	cflag =3D tty->termios.c_cflag;
-- 	dbg("%s - clfag %08x iflag %08x", __func__,
-- 	    tty->termios.c_cflag, tty->termios.c_iflag);
-- 	dbg("%s - old clfag %08x old iflag %08x", __func__,
-- 	    old_termios->c_cflag, old_termios->c_iflag);
--=20
-- 	dbg("%s - port %d", __func__, port->number);
-++	dev_dbg(&port->dev, "%s - clfag %08x iflag %08x\n", __func__, tty->termi=
-os.c_cflag, tty->termios.c_iflag);
-+ 	dev_dbg(&port->dev, "%s - old clfag %08x old iflag %08x\n", __func__, ol=
-d_termios->c_cflag, old_termios->c_iflag);
- =20
-  	if (edge_port =3D=3D NULL)
-  		return;
-
---Signature=_Wed__19_Sep_2012_14_16_36_+1000_FBBjimUCklRIAPes
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQWUckAAoJEECxmPOUX5FExGYP/0KaebfE9uv4saZk1MJJHRrr
-Z4RsoyYK8qF2Woez1z/6ZnnKB2rpPImqLv7/0qr+3XbPH/KSwSzh3dCe8tut37W+
-5L7Cwo9e5LMuolq9e5MAnOno8aXHh6LNCIUz888XLeLRQ5PKfA3Vgqr8G6qtXNFt
-FbjFySutIH2lCNTdwuUMHY810hAE0DOcHsnYU88I10RiO1zI8w5CQqjxtlcPgwl2
-2mBbmmKOREAHPMh5DtfFCLIVpviqmdXChkpjBvB4Km1Cl94duBpBffuvSPadXWic
-rDEkrgMDH17oUAQSA4Y6uS57icA/SOZx1K7Dy/JgIjYwpupFrDtv2ia5fMiCppm/
-3EQ48/d4PpyyJoNPPpkWehpQj+fslH7iskQKQr7Mpk6WHEowSQppK2MIDQMIXVzM
-CUuDLIAMl85rPxgm+qKubNmuZ/JoaupR5205t/k6vHGY2AHlU9dieZCSwE7ZliJg
-wz1ApSeNIVQQbm8M351kgwj9fU36U5vQxkT9fu3pJoDgil27DXRQI9ev6CERTWm3
-8cJzhhVi7C6xJDI2EOUOihS/YjpQPYn7kQwsiy4bZJW49SyXRK6c9QJktufpCU6i
-wE6j4KstUR8FG6N3BbBXlJi1q5bXFN/DjoeOalrm54B8nn5nOrBTYHIwGLsMSHqt
-u2tiKJMRpFdPBawH7ZSN
-=xig0
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Sep_2012_14_16_36_+1000_FBBjimUCklRIAPes--
+- James
+-- 
+James Morris
+<jmorris@namei.org>
