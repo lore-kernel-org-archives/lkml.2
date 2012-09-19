@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab2ISPaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:30:08 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34360 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab2ISP37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:29:59 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: raven@themaw.net
-Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
-        serge.hallyn@canonical.com, ebiederm@xmission.com, mszeredi@suse.cz
-Subject: [PATCH 0/2] struct pid-ify autofs4
-Date: Wed, 19 Sep 2012 17:29:34 +0200
-Message-Id: <1348068576-21363-1-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
+	id S932254Ab2ISPaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:30:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46879 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932191Ab2ISPaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 11:30:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
+   d="scan'208";a="223998221"
+Date: Wed, 19 Sep 2012 17:30:11 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: NeilBrown <neilb@suse.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] mfd: twl: Move PWM driver to PWM framework
+Message-ID: <20120919153011.GH28670@sortiz-mobl>
+References: <1347956991-16088-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120919112315.GA8138@sortiz-mobl>
+ <20120919115412.GA24731@avionic-0098.mockup.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919115412.GA24731@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
-These two patches change autofs4 to store struct pid pointers instead of pid_t
-values.
+On Wed, Sep 19, 2012 at 01:54:12PM +0200, Thierry Reding wrote:
+> > > Thierry Reding (2):
+> > >   mfd: twl: Replace twl_has_*() macros by IS_ENABLED()
+> > >   pwm: Move TWL6030 PWM driver to PWM framework
+> > Both patches applied now, thanks.
+> 
+> Thanks. Are these queued for linux-next and 3.7?
+Yes. They're on my for-next branch.
 
-Fixed various issues with the previous post.  Not tested, handle with care!
+Cheers,
+Samuel.
 
-Thanks,
-Miklos
----
-
-
-Serge Hallyn (1):
-      autofs4: store struct pids in autofs_waitqs
-
-Sukadev Bhattiprolu (1):
-      Replace pid_t in autofs4 with struct pid reference.
-
----
- fs/autofs4/autofs_i.h  |    8 ++++----
- fs/autofs4/dev-ioctl.c |    3 ++-
- fs/autofs4/inode.c     |   22 +++++++++++++++-------
- fs/autofs4/waitq.c     |   19 +++++++++++++------
- 4 files changed, 34 insertions(+), 18 deletions(-)
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
