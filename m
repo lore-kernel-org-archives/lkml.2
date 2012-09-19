@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab2ISD6C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Sep 2012 23:58:02 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:51649 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab2ISD6A (ORCPT
+	id S1755179Ab2ISD77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Sep 2012 23:59:59 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62134 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab2ISD76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Sep 2012 23:58:00 -0400
-Date: Tue, 18 Sep 2012 20:57:27 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] mm: remove free_page_mlock
-In-Reply-To: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1209182055290.11632@eggly.anvils>
-References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 18 Sep 2012 23:59:58 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Tue, 18 Sep 2012 22:59:57 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] linux/kernel.h: Fix warning seen with W=1 due to change in DIV_ROUND_CLOSEST
+Date: Tue, 18 Sep 2012 21:00:09 -0700
+Message-Id: <1348027209-29710-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not be seeing non-0 unevictable_pgs_mlockfreed any longer.
-So remove free_page_mlock() from the page freeing paths: __PG_MLOCKED
-is already in PAGE_FLAGS_CHECK_AT_FREE, so free_pages_check() will now
-be checking it, reporting "BUG: Bad page state" if it's ever found set.
-Comment UNEVICTABLE_MLOCKFREED and unevictable_pgs_mlockfreed always 0.
+After commit b6d86d3d (Fix DIV_ROUND_CLOSEST to support negative dividends),
+the following warning is seen if the kernel is compiled with W=1 (-Wextra):
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ying Han <yinghan@google.com>
+warning: comparison of unsigned expression >= 0 is always true
+
+The warning is due to the test '((typeof(x))-1) >= 0', which is used to detect
+if the variable type is unsigned. Research on the web suggests that the warning
+disappears if '>' instead of '>=' is used for the comparison.
+
+Tests after changing the macro along that line show that the warning is gone,
+and that the result is still correct:
+
+i=-4: DIV_ROUND_CLOSEST(i, 2)=-2
+i=-3: DIV_ROUND_CLOSEST(i, 2)=-2
+i=-2: DIV_ROUND_CLOSEST(i, 2)=-1
+i=-1: DIV_ROUND_CLOSEST(i, 2)=-1
+i=0: DIV_ROUND_CLOSEST(i, 2)=0
+i=1: DIV_ROUND_CLOSEST(i, 2)=1
+i=2: DIV_ROUND_CLOSEST(i, 2)=1
+i=3: DIV_ROUND_CLOSEST(i, 2)=2
+i=4: DIV_ROUND_CLOSEST(i, 2)=2
+
+Code size is the same as before.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- include/linux/vm_event_item.h |    2 +-
- mm/page_alloc.c               |   17 -----------------
- mm/vmstat.c                   |    2 +-
- 3 files changed, 2 insertions(+), 19 deletions(-)
+ include/linux/kernel.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- 3.6-rc6.orig/include/linux/vm_event_item.h	2012-09-18 15:38:08.000000000 -0700
-+++ 3.6-rc6/include/linux/vm_event_item.h	2012-09-18 20:04:42.516625261 -0700
-@@ -52,7 +52,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
- 		UNEVICTABLE_PGMUNLOCKED,
- 		UNEVICTABLE_PGCLEARED,	/* on COW, page truncate */
- 		UNEVICTABLE_PGSTRANDED,	/* unable to isolate on unlock */
--		UNEVICTABLE_MLOCKFREED,
-+		UNEVICTABLE_MLOCKFREED,	/* no longer useful: always zero */
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		THP_FAULT_ALLOC,
- 		THP_FAULT_FALLBACK,
---- 3.6-rc6.orig/mm/page_alloc.c	2012-09-18 15:38:08.000000000 -0700
-+++ 3.6-rc6/mm/page_alloc.c	2012-09-18 20:04:42.520625316 -0700
-@@ -597,17 +597,6 @@ out:
- 	zone->free_area[order].nr_free++;
- }
- 
--/*
-- * free_page_mlock() -- clean up attempts to free and mlocked() page.
-- * Page should not be on lru, so no need to fix that up.
-- * free_pages_check() will verify...
-- */
--static inline void free_page_mlock(struct page *page)
--{
--	__dec_zone_page_state(page, NR_MLOCK);
--	__count_vm_event(UNEVICTABLE_MLOCKFREED);
--}
--
- static inline int free_pages_check(struct page *page)
- {
- 	if (unlikely(page_mapcount(page) |
-@@ -721,14 +710,11 @@ static bool free_pages_prepare(struct pa
- static void __free_pages_ok(struct page *page, unsigned int order)
- {
- 	unsigned long flags;
--	int wasMlocked = __TestClearPageMlocked(page);
- 
- 	if (!free_pages_prepare(page, order))
- 		return;
- 
- 	local_irq_save(flags);
--	if (unlikely(wasMlocked))
--		free_page_mlock(page);
- 	__count_vm_events(PGFREE, 1 << order);
- 	free_one_page(page_zone(page), page, order,
- 					get_pageblock_migratetype(page));
-@@ -1296,7 +1282,6 @@ void free_hot_cold_page(struct page *pag
- 	struct per_cpu_pages *pcp;
- 	unsigned long flags;
- 	int migratetype;
--	int wasMlocked = __TestClearPageMlocked(page);
- 
- 	if (!free_pages_prepare(page, 0))
- 		return;
-@@ -1304,8 +1289,6 @@ void free_hot_cold_page(struct page *pag
- 	migratetype = get_pageblock_migratetype(page);
- 	set_page_private(page, migratetype);
- 	local_irq_save(flags);
--	if (unlikely(wasMlocked))
--		free_page_mlock(page);
- 	__count_vm_event(PGFREE);
- 
- 	/*
---- 3.6-rc6.orig/mm/vmstat.c	2012-09-18 15:38:08.000000000 -0700
-+++ 3.6-rc6/mm/vmstat.c	2012-09-18 20:04:42.524625352 -0700
-@@ -781,7 +781,7 @@ const char * const vmstat_text[] = {
- 	"unevictable_pgs_munlocked",
- 	"unevictable_pgs_cleared",
- 	"unevictable_pgs_stranded",
--	"unevictable_pgs_mlockfreed",
-+	"unevictable_pgs_mlockfreed",	/* no longer useful: always zero */
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	"thp_fault_alloc",
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 594b419..2451f1f 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -91,7 +91,7 @@
+ {							\
+ 	typeof(x) __x = x;				\
+ 	typeof(divisor) __d = divisor;			\
+-	(((typeof(x))-1) >= 0 || (__x) >= 0) ?		\
++	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
+ 		(((__x) + ((__d) / 2)) / (__d)) :	\
+ 		(((__x) - ((__d) / 2)) / (__d));	\
+ }							\
+-- 
+1.7.9.7
+
