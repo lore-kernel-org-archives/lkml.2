@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2ISL0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:26:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64445 "EHLO mga14.intel.com"
+	id S1754333Ab2ISL0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:26:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12363 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754046Ab2ISL0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:26:15 -0400
+	id S1753401Ab2ISL03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 07:26:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,447,1344236400"; 
-   d="scan'208";a="194483563"
-Date: Wed, 19 Sep 2012 13:26:14 +0200
+   d="scan'208";a="194793245"
+Date: Wed, 19 Sep 2012 13:26:21 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com, rpurdie@rpsys.net,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] mfd: update on 88pm860x and max8925
-Message-ID: <20120919112614.GE8138@sortiz-mobl>
-References: <1347855552-26213-1-git-send-email-haojian.zhuang@gmail.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: fengguang.wu@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tps65090: remove redundant check
+Message-ID: <20120919112621.GF8138@sortiz-mobl>
+References: <1347859847-23341-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347855552-26213-1-git-send-email-haojian.zhuang@gmail.com>
+In-Reply-To: <1347859847-23341-1-git-send-email-vbyravarasu@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haojian,
+Hi Venu,
 
-On Mon, Sep 17, 2012 at 12:19:03PM +0800, Haojian Zhuang wrote:
-> 1. Updates the patch of max8925 of building issue.
-> 2. Include Jett's PREG regulator patch.
-> 3. Support DT in 88pm860x.
-
-I applied the 5 first patches.
-For the regulator one, I'd like to get Mark's ACK as well.
-
-Patch #6 did not apply cleanly.
-Patch #7 needs some fixes and documentation addition.
-Patch #8 needs Dmitry's ACK
-
-And I can take patch #9 once #7 is in.
+On Mon, Sep 17, 2012 at 11:00:47AM +0530, Venu Byravarasu wrote:
+> Remove redundant check in is_volatile_reg().
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+>  drivers/mfd/tps65090.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+Applied, thanks.
 
 Cheers,
 Samuel.
