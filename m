@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab2ISUOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:14:42 -0400
-Received: from server505e.appriver.com ([98.129.35.9]:1027 "EHLO
-	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751342Ab2ISUOk convert rfc822-to-8bit (ORCPT
+	id S1751654Ab2ISURt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:17:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55419 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2ISURr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:14:40 -0400
-X-Note-AR-ScanTimeLocal: 9/19/2012 3:14:38 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: Too many policies to list
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-ALLOW: @coraid.com ALLOWED
-X-Virus-Scan: V-
-X-Note: Spam Tests Failed: 
-X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
-X-Note-Sending-IP: 98.129.35.1
-X-Note-Reverse-DNS: smtp.exg5.exghost.com
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G299 G300 G301 G302 G306 G307 G318 G411 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: ALLOWEDSENDER
-X-Note: Headers Injected
-From: Ed Cashin <ecashin@coraid.com>
-To: David Miller <davem@davemloft.net>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "jesse@nicira.com" <jesse@nicira.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 19 Sep 2012 15:14:31 -0500
-Subject: Re: [PATCH] net: do not disable sg for AoE
-Thread-Topic: [PATCH] net: do not disable sg for AoE
-Thread-Index: Ac2Wo2GLxQsSWi8ASTSsFwYNy43D5w==
-Message-ID: <54341AB7-E6F1-4877-8CE1-D581EA79F6E5@coraid.com>
-References: <1348079358.4585@cat.he.net>
- <20120919.160009.1489407274317336389.davem@davemloft.net>
-In-Reply-To: <20120919.160009.1489407274317336389.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Sep 2012 16:17:47 -0400
+Date: Thu, 20 Sep 2012 05:17:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Shaohua Li <shli@fusionio.com>
+Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
+Message-ID: <20120919201738.GA2425@barrios>
+References: <1348039748-32111-1-git-send-email-minchan@kernel.org>
+ <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 19, 2012, at 4:00 PM, David Miller wrote:
+Hi KOSAKI,
 
-> Please do not incorporate the date of the commit in your local tree
-> into the Date: field advertised in your outgoing emails when you post
-> patches.
+On Wed, Sep 19, 2012 at 02:05:20PM -0400, KOSAKI Motohiro wrote:
+> On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
+> > are increasing so that kernel are hang out.
+> >
+> > The cause is that when we do memory-hotadd after memory-remove,
+> > __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
+> > without draining vm_stat_diff of all CPU.
+> >
+> > This patch fixes it.
+> 
+> zone_pcp_update() is called from online pages path. but IMHO,
+> the statistics should be drained offline path. isn't it?
 
-Noted.   I will remove the Date field added by git-format-patch from now on.
+It isn't necessary because statistics is right until we reset it to zero
+in online path.
+Do you have something on your mind that we have to drain it in offline path?
 
-Sorry for the inconvenience.
+> 
+> thanks.
 
 -- 
-  Ed Cashin
-  ecashin@coraid.com
-
-
+Kind Regards,
+Minchan Kim
