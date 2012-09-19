@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2ISL4o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 07:56:44 -0400
+	id S1756224Ab2ISL5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 07:57:41 -0400
 Received: from eusmtp01.atmel.com ([212.144.249.243]:16801 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab2ISL4k (ORCPT
+	with ESMTP id S1756054Ab2ISL4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 07:56:40 -0400
+	Wed, 19 Sep 2012 07:56:43 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
 CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
         <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
         <linux-kernel@vger.kernel.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 5/9] net/macb: tx status is more than 8 bits now
-Date: Wed, 19 Sep 2012 13:55:18 +0200
-Message-ID: <bfe08a1f18b7f4bb248517e319b6c42f041f7351.1348055112.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 7/9] net/macb: ethtool interface: add register dump feature
+Date: Wed, 19 Sep 2012 13:55:20 +0200
+Message-ID: <20ebfb29f6f4a84d8ba20553e2d81cd456f438de.1348055112.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
 References: <cover.1348055112.git.nicolas.ferre@atmel.com>
@@ -25,26 +25,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some revision of GEM, TSR status register has more information.
+Add macb_get_regs() ethtool function and its helper function:
+macb_get_regs_len().
+The version field is deduced from the IP revision which gives the
+"MACB or GEM" information. An additional version field is reserved.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/cadence/macb.c | 40 +++++++++++++++++++++++++++++++++++++
+ drivers/net/ethernet/cadence/macb.h |  3 +++
+ 2 files changed, 43 insertions(+)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 31f945c..e98f6fc 100644
+index 5758a1c..2c4358e 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -310,7 +310,7 @@ static void macb_tx(struct macb *bp)
- 	status = macb_readl(bp, TSR);
- 	macb_writel(bp, TSR, status);
+@@ -1265,9 +1265,49 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	return phy_ethtool_sset(phydev, cmd);
+ }
  
--	netdev_vdbg(bp->dev, "macb_tx status = %02lx\n", (unsigned long)status);
-+	netdev_vdbg(bp->dev, "macb_tx status = 0x%03lx\n", (unsigned long)status);
++static int macb_get_regs_len(struct net_device *netdev)
++{
++	return MACB_GREGS_NBR * sizeof(u32);
++}
++
++static void macb_get_regs(struct net_device *dev, struct ethtool_regs *regs,
++			  void *p)
++{
++	struct macb *bp = netdev_priv(dev);
++	unsigned int tail, head;
++	u32 *regs_buff = p;
++
++	regs->version = (macb_readl(bp, MID) & ((1 << MACB_REV_SIZE) - 1))
++			| MACB_GREGS_VERSION;
++
++	tail = macb_tx_ring_wrap(bp->tx_tail);
++	head = macb_tx_ring_wrap(bp->tx_head);
++
++	regs_buff[0]  = macb_readl(bp, NCR);
++	regs_buff[1]  = macb_or_gem_readl(bp, NCFGR);
++	regs_buff[2]  = macb_readl(bp, NSR);
++	regs_buff[3]  = macb_readl(bp, TSR);
++	regs_buff[4]  = macb_readl(bp, RBQP);
++	regs_buff[5]  = macb_readl(bp, TBQP);
++	regs_buff[6]  = macb_readl(bp, RSR);
++	regs_buff[7]  = macb_readl(bp, IMR);
++
++	regs_buff[8]  = tail;
++	regs_buff[9]  = head;
++	regs_buff[10] = macb_tx_dma(bp, tail);
++	regs_buff[11] = macb_tx_dma(bp, head);
++
++	if (macb_is_gem(bp)) {
++		regs_buff[12] = gem_readl(bp, USRIO);
++		regs_buff[13] = gem_readl(bp, DMACFG);
++	}
++}
++
+ static const struct ethtool_ops macb_ethtool_ops = {
+ 	.get_settings		= macb_get_settings,
+ 	.set_settings		= macb_set_settings,
++	.get_regs_len		= macb_get_regs_len,
++	.get_regs		= macb_get_regs,
+ 	.get_link		= ethtool_op_get_link,
+ };
  
- 	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
- 		int i;
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 8a4ee2f..5be5900 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -10,6 +10,9 @@
+ #ifndef _MACB_H
+ #define _MACB_H
+ 
++#define MACB_GREGS_NBR 16
++#define MACB_GREGS_VERSION 1
++
+ /* MACB register offsets */
+ #define MACB_NCR				0x0000
+ #define MACB_NCFGR				0x0004
 -- 
 1.7.11.3
 
