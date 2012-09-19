@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab2ISS22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 14:28:28 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57902 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab2ISS20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 14:28:26 -0400
-Date: Wed, 19 Sep 2012 14:28:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-Message-ID: <20120919182810.GB1569@cmpxchg.org>
-References: <1348040735-3897-1-git-send-email-minchan@kernel.org>
- <CAHGf_=rY-1R+68BWqW4653r_=AYkgE1CfM7wvSyvdSXRwjraUA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=rY-1R+68BWqW4653r_=AYkgE1CfM7wvSyvdSXRwjraUA@mail.gmail.com>
+	id S1756783Ab2ISS3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 14:29:24 -0400
+Received: from noserose.net ([66.220.18.76]:60081 "HELO noserose.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754208Ab2ISS3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 14:29:22 -0400
+Message-Id: <1348079358.4585@cat.he.net>
+From: Ed Cashin <ecashin@coraid.com>
+Date: Tue, 18 Sep 2012 20:20:36 -0400
+Subject: [PATCH] net: do not disable sg for AoE
+To: davem@davemloft.net
+Cc: ecashin@coraid.com, akpm@linux-foundation.org, jesse@nicira.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 01:04:56PM -0400, KOSAKI Motohiro wrote:
-> On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > When I looked at zone stat mismatch problem, I found
-> > migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
-> > if check_range fails.
+A change in a series of VLAN-related changes appears to have
+inadvertently disabled the use of the scatter gather feature of
+network cards for transmission of non-IP ethernet protocols like ATA
+over Ethernet (AoE).  Below is a reference to the commit that
+introduces a "harmonize_features" function that turns off scatter
+gather when the NIC does not support hardware checksumming for the
+ethernet protocol of an sk buff.
 
-This is a bit misleading.  It's not that the stats would be
-inaccurate, it's that the pages would be leaked from the LRU, no?
+  commit f01a5236bd4b140198fbcc550f085e8361fd73fa
+  Author: Jesse Gross <jesse@nicira.com>
+  Date:   Sun Jan 9 06:23:31 2011 +0000
 
-> > It can make system hang out.
+      net offloading: Generalize netif_get_vlan_features().
 
-Did you spot this by code review only or did you actually run into
-this?  Because...
+The can_checksum_protocol function is not equipped to consider a
+protocol that does not require checksumming.  Calling it for a
+protocol that requires no checksum is inappropriate.
 
-> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  mm/mempolicy.c |   16 ++++++++--------
-> >  1 file changed, 8 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > index 3d64b36..6bf0860 100644
-> > --- a/mm/mempolicy.c
-> > +++ b/mm/mempolicy.c
-> > @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
-> >
-> >         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
-> >                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
-> > -       if (IS_ERR(vma))
-> > -               return PTR_ERR(vma);
-> > -
-> > -       if (!list_empty(&pagelist)) {
-> > +       if (IS_ERR(vma)) {
-> > +               err = PTR_ERR(vma);
-> > +               goto out;
-> > +       }
-> > +       if (!list_empty(&pagelist))
-> >                 err = migrate_pages(&pagelist, new_node_page, dest,
-> >                                                         false, MIGRATE_SYNC);
-> > -               if (err)
-> > -                       putback_lru_pages(&pagelist);
-> > -       }
-> > -
-> > +out:
-> > +       if (err)
-> > +               putback_lru_pages(&pagelist);
-> 
-> Good catch!
-> This is a regression since following commit. So, I doubt we need
-> all or nothing semantics. Can we revert it instead? (and probably
-> we need more kind comment for preventing an accident)
+The patch below has harmonize_features call can_checksum_protocol when
+the protocol needs a checksum, so that the network layer is not forced
+to perform unnecessary skb linearization on the transmission of AoE
+packets.  Unnecessary linearization results in decreased performance
+and increased memory pressure, as reported here:
 
-I think it makes sense to revert.  Not because of the semantics, but I
-just don't see how check_range() could even fail for this callsite:
+  http://www.spinics.net/lists/linux-mm/msg15184.html
 
-1. we pass mm->mmap->vm_start in there, so we should not fail due to
-   find_vma()
+The problem has probably not been widely experienced yet, because
+only recently has the kernel.org-distributed aoe driver acquired the
+ability to use payloads of over a page in size, with the patchset
+recently included in the mm tree:
 
-2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
-   and so can not fail
+  https://lkml.org/lkml/2012/8/28/140
 
-3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
-   continue until addr == end, so we never fail with -EIO
+The coraid.com-distributed aoe driver already could use payloads of
+greater than a page in size, but its users generally do not use the
+newest kernels.
 
-> commit 0def08e3acc2c9c934e4671487029aed52202d42
-> Author: Vasiliy Kulikov <segooon@gmail.com>
-> Date:   Tue Oct 26 14:21:32 2010 -0700
-> 
->     mm/mempolicy.c: check return code of check_range
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ net/core/dev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-We don't use this code to "check" the range, we use it to collect
-migrate pages.  There is no failure case.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index d7fe32c..5531159 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2134,7 +2134,8 @@ static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
+ static netdev_features_t harmonize_features(struct sk_buff *skb,
+ 	__be16 protocol, netdev_features_t features)
+ {
+-	if (!can_checksum_protocol(features, protocol)) {
++	if (protocol != htons(ETH_P_AOE) &&
++	    !can_checksum_protocol(features, protocol)) {
+ 		features &= ~NETIF_F_ALL_CSUM;
+ 		features &= ~NETIF_F_SG;
+ 	} else if (illegal_highdma(skb->dev, skb)) {
+-- 
+1.7.2.5
+
