@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab2ISUAN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:00:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56991 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab2ISUAL (ORCPT
+	id S1751468Ab2ISUGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:06:36 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64122 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab2ISUGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 16:00:11 -0400
-Date: Wed, 19 Sep 2012 16:00:09 -0400 (EDT)
-Message-Id: <20120919.160009.1489407274317336389.davem@davemloft.net>
-To: ecashin@coraid.com
-Cc: akpm@linux-foundation.org, jesse@nicira.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: do not disable sg for AoE
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1348079358.4585@cat.he.net>
-References: <1348079358.4585@cat.he.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Sep 2012 16:06:34 -0400
+Date: Wed, 19 Sep 2012 21:06:27 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rene Buergel <rene.buergel@sohard.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: USB: ezusb: move ezusb.c from drivers/usb/serial to
+ drivers/usb/misc
+Message-ID: <20120919200627.GB17827@kroah.com>
+References: <20120918163732.GA28387@kroah.com>
+ <23459b4f-b303-4b3b-a0ef-152064209bb3@shmail0>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <23459b4f-b303-4b3b-a0ef-152064209bb3@shmail0>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 19, 2012 at 08:23:07PM +0200, Rene Buergel wrote:
+> > I get the following build errors with
+> > this patch applied:
+> > 
+> > ERROR: "ezusb_fx1_ihex_firmware_download"
+> > [drivers/usb/serial/whiteheat.ko] undefined!
+> > ERROR: "ezusb_fx1_ihex_firmware_download"
+> > [drivers/usb/serial/keyspan_pda.ko] undefined!
+> > ERROR: "ezusb_fx1_set_reset" [drivers/usb/serial/keyspan_pda.ko]
+> > undefined!
+> > ERROR: "ezusb_fx1_ihex_firmware_download"
+> > [drivers/usb/serial/keyspan.ko] undefined!
+> > 
+> 
+> I unfortunately can't reproduce these errors, neither using bool nor tristate
+> for the setting in Kconfig. I did a clean build.
+> Can you provide more information on when/how they occur? Can you send a .config?
 
-> Date: Tue, 18 Sep 2012 20:20:36 -0400
+I can't as I don't have the patch anymore, nor the same config.  Care to
+resend it after fixing the bool Kconfig option and I'll see if I can
+reproduce it?
 
-Please do not incorporate the date of the commit in your local tree
-into the Date: field advertised in your outgoing emails when you post
-patches.
+Also be sure to cc: me so that I don't miss the patch.
 
-You did not post this on September 18th, you posted it on September
-19th.
+thanks,
 
-When you post patches the way you did, it screws up the ordering
-of my patch queue at:
-
-	http://patchwork.ozlabs.org/project/netdev/list/
-
-since it is sorted by the Date: in the patch's email.
-
-Therefore if you just use the normal email posting date it makes
-my life a lot easier and it makes sure patches will be looked at
-and processed in the correct order.
-
-Thanks.
+greg k-h
