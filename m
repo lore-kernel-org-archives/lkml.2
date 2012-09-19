@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab2ISFas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 01:30:48 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41892 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab2ISFah (ORCPT
+	id S1753299Ab2ISFjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 01:39:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56643 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2ISFja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 01:30:37 -0400
+	Wed, 19 Sep 2012 01:39:30 -0400
+Date: Wed, 19 Sep 2012 07:39:24 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: NeilBrown <neilb@suse.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] mfd: twl: Move PWM driver to PWM framework
+Message-ID: <20120919053924.GA611@avionic-0098.mockup.avionic-design.de>
+References: <1347279020-15596-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120919002459.GC3647@sortiz-mobl>
 MIME-Version: 1.0
-In-Reply-To: <20120919045038.GA2248@netboy.at.omicron.at>
-References: <1347919501-64534-1-git-send-email-john.stultz@linaro.org>
- <CALCETrX5vXTZr_CNfCFDss7XG2PioxMqtpMTuYvoq7-ip2NNbA@mail.gmail.com>
- <5057BE59.3050903@linaro.org> <20120918180200.GA2281@netboy.at.omicron.at>
- <5058BD9E.30909@linaro.org> <20120919045038.GA2248@netboy.at.omicron.at>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Sep 2012 22:30:15 -0700
-Message-ID: <CALCETrUoU+MPnV2kuy4UmAfHvSVtfXBt-zQ=QAvhZx3qXgTvXQ@mail.gmail.com>
-Subject: Re: [PATCH 0/6][RFC] Rework vsyscall to avoid truncation/rounding
- issue in timekeeping core
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Disposition: inline
+In-Reply-To: <20120919002459.GC3647@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:T1J3L4zkNLTe9tYirgWXi/tFgCWWkvCsFcABjAOuFzA
+ +9wy9o9dUkzoSRVRc1uXsp3DJjmySG2DYb0uuYldaJYUWnkm3I
+ MkzKkj6CpzwOsDzC2zWH4col17dbYZfIpN1V6Nn8ibloB58NhX
+ aEi0NdukMexG1bVLzsk9ciaXoFSZw726qNwtpYmUxbxMsTpCjW
+ KLa6H3G0xGw98ubBENwBEm11xn0pzQtNEix9zzHHAqSRF07FwM
+ 9tz/i3f9q9i/GVwEugwuAoEqm9ZeccAzy/Ry+NXcl+UIqYpoxd
+ qIrTYbxiUEKK1IyEuC3fTcU5NsJFbTiJ2u0Sj2z55LZXV/yZ2L
+ YiTZwEuHFjMt18YMjay2Cfum9B/QljnNzWU+OwL1js7dheF0G0
+ NenK5oh4ef3POmHC2aonTUoedBjYAsgKFE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 9:50 PM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> On Tue, Sep 18, 2012 at 11:29:50AM -0700, John Stultz wrote:
->> I believe its mostly historical, but on some architectures that
->> history has become an established ABI, making it technical.
->
-> Fine, but what do you mean by "ABI?" Are you talking about magic
-> addresses for functions?
->
-> Without knowing the dirty details, what I imagine is a jump/branch
-> from the arch-specific code into the common implementation.
 
-I suspect (based mostly on speculation) that this is possible for
-everything except ia64.  ia64 looks like it uses a highly magical
-syscall entry, where user code jumps to a special address for *all*
-syscalls, and that code does some kind of partial kernel entry.  Very
-careful asm code can run in that weird state, and that code implements
-gettimeofday.  Now, if that code could return back to normal execution
-and jump to a vdso, it could use common code, I guess.
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This assumes that all architectures that want to use vclock_gettime,
-etc are capable of sharing a page of read-only kernel memory with
-userspace at a fixed address or can otherwise make the VVAR macro
-work.  The only architectures I actually understand are x86-{32,64},
-which can.  I don't think anyone cares about x86-32 enough to
-implement it, though.
+On Wed, Sep 19, 2012 at 02:24:59AM +0200, Samuel Ortiz wrote:
+> Hi Thierry,
+>=20
+> On Mon, Sep 10, 2012 at 02:10:18PM +0200, Thierry Reding wrote:
+> > Hi,
+> >=20
+> > This mini series replaces the twl_has_*() macros by the equivalent
+> > standard IS_ENABLED() macro and moves the PWM driver to the PWM
+> > framework.
+> >=20
+> > I'll take the second patch through the PWM tree but would like to have
+> > some Acked-bys from people that know and have the hardware and can
+> > verify that I haven't broken anything.
+> We're already going to have conflicts for twl-core.c as Tony is pushing s=
+ome
+> code for it through his tree. So, would you be ok with me carrying the wh=
+ole
+> series through the MFD tree ?
 
---Andy
+Yes, that's okay with me.
+
+Thierry
+
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQWVqMAAoJEN0jrNd/PrOhCU8QAKSvZuhpp+MYpdAwyXuHeUjS
+CNavmRzCaPty/kzxsna8Fv3l/tBNASNaY8TIaeO682TxW5nR95x3SMUW2uytQtbt
+I2R0PRM/ezTdtcdN00l0knOxbwT+1gX+XphysmGAkGM4fM1nD85TsWbpU9T+yPMy
+VL15xLXStqzJnYRbtQGNA//7CqU1fv9KR1ks4bXyCV4JQxiJHC0tEjmthilpWyYJ
+7qBnWhptwG9Ua2xpBhTN+qGck/vg8H+ANMUDZePv5fWVunrkbjY8fDlutZmixmf1
++G573RcaSxvy/VXI5mNDKWGmXkP/y1PR1ct+mdYjR7ki/uTu2B0jAOuFM2F8rBwC
+7t+oOArMZSbBqDDbWnGgFoeTobXxcq7D8CzaAf/ZQ/21GJtek80RmcKq1epOQO2X
+IP0pp9xy6JswwA5hVyBK0zMMVLfBjqT6dXPGoogWfJv7aOx1lx3QHUYH6nHOq+fp
+G768qHbwqotFcbQ0fz+W1iEwmcFlezisE3wt0HXv0uZ6ioFA2nT5bcEkP+3cbsse
+lANEnZVD09e6NUVLv4dLFhTnZ55t7dIYv/yOGH3UomLA2fhBl3N+HHc8/Nq4T9Ct
+v7VcWMiWVgOzJynj+hTgUAs5sNUpzuyTnSA4nQl7iC3uwPhxDzbH/6PQZejzdzyX
+5908C3I7do/5OB4uVrM5
+=DHwI
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
