@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab2ISUid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 16:38:33 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53716 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab2ISUia (ORCPT
+	id S1751874Ab2ISUib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 16:38:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33021 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab2ISUia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Sep 2012 16:38:30 -0400
-Date: Wed, 19 Sep 2012 22:38:25 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, mlindner@marvell.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch net] sky2: fix rx filter setup on link up
-Message-ID: <20120919203825.GA1460@minipsycho.orion>
-References: <1347894617-13614-1-git-send-email-jiri@resnulli.us>
- <20120919132248.5fced1c7@s6510.linuxnetplumber.net>
+Date: Thu, 20 Sep 2012 05:38:21 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
+Message-ID: <20120919203821.GB2425@barrios>
+References: <1348040735-3897-1-git-send-email-minchan@kernel.org>
+ <CAHGf_=rY-1R+68BWqW4653r_=AYkgE1CfM7wvSyvdSXRwjraUA@mail.gmail.com>
+ <20120919182810.GB1569@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120919132248.5fced1c7@s6510.linuxnetplumber.net>
+In-Reply-To: <20120919182810.GB1569@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Sep 19, 2012 at 10:22:48PM CEST, shemminger@vyatta.com wrote:
->Rather than saving and restoring values, why not just redo the
->full setup? This would also determine if the change was a result
->of something outside the driver.
+Hi Hannes,
 
-You cannot call sky2_set_multicast() directly here. It is called from
-__dev_set_rx_mode(). You would have to take at lease netif_addr_lock()
-here. I think that clearer is to remember computed value....
+On Wed, Sep 19, 2012 at 02:28:10PM -0400, Johannes Weiner wrote:
+> On Wed, Sep 19, 2012 at 01:04:56PM -0400, KOSAKI Motohiro wrote:
+> > On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > > When I looked at zone stat mismatch problem, I found
+> > > migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
+> > > if check_range fails.
+> 
+> This is a bit misleading.  It's not that the stats would be
+> inaccurate, it's that the pages would be leaked from the LRU, no?
+> 
+> > > It can make system hang out.
+> 
+> Did you spot this by code review only or did you actually run into
+> this?  Because...
 
->
->
->--- a/drivers/net/ethernet/marvell/sky2.c	2012-09-18 21:12:01.156438131 -0700
->+++ b/drivers/net/ethernet/marvell/sky2.c	2012-09-19 13:20:40.373620276 -0700
->@@ -2201,6 +2201,8 @@ static void sky2_link_up(struct sky2_por
+Just by code review during the bug of memory-hotplug.
+
 > 
-> 	sky2_enable_rx_tx(sky2);
+> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Cc: Mel Gorman <mgorman@suse.de>
+> > > Cc: Christoph Lameter <cl@linux.com>
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > ---
+> > >  mm/mempolicy.c |   16 ++++++++--------
+> > >  1 file changed, 8 insertions(+), 8 deletions(-)
+> > >
+> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> > > index 3d64b36..6bf0860 100644
+> > > --- a/mm/mempolicy.c
+> > > +++ b/mm/mempolicy.c
+> > > @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+> > >
+> > >         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+> > >                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+> > > -       if (IS_ERR(vma))
+> > > -               return PTR_ERR(vma);
+> > > -
+> > > -       if (!list_empty(&pagelist)) {
+> > > +       if (IS_ERR(vma)) {
+> > > +               err = PTR_ERR(vma);
+> > > +               goto out;
+> > > +       }
+> > > +       if (!list_empty(&pagelist))
+> > >                 err = migrate_pages(&pagelist, new_node_page, dest,
+> > >                                                         false, MIGRATE_SYNC);
+> > > -               if (err)
+> > > -                       putback_lru_pages(&pagelist);
+> > > -       }
+> > > -
+> > > +out:
+> > > +       if (err)
+> > > +               putback_lru_pages(&pagelist);
+> > 
+> > Good catch!
+> > This is a regression since following commit. So, I doubt we need
+> > all or nothing semantics. Can we revert it instead? (and probably
+> > we need more kind comment for preventing an accident)
 > 
->+	sky2_set_multicast(sky2->netdev);
->+
-> 	gm_phy_write(hw, port, PHY_MARV_INT_MASK, PHY_M_DEF_MSK);
+> I think it makes sense to revert.  Not because of the semantics, but I
+> just don't see how check_range() could even fail for this callsite:
 > 
-> 	netif_carrier_on(sky2->netdev);
+> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
+>    find_vma()
+> 
+> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
+>    and so can not fail
+> 
+> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
+>    continue until addr == end, so we never fail with -EIO
+> 
+> > commit 0def08e3acc2c9c934e4671487029aed52202d42
+> > Author: Vasiliy Kulikov <segooon@gmail.com>
+> > Date:   Tue Oct 26 14:21:32 2010 -0700
+> > 
+> >     mm/mempolicy.c: check return code of check_range
+> 
+> We don't use this code to "check" the range, we use it to collect
+> migrate pages.  There is no failure case.
+
+Right. I will send revert patch when I go to office.
+Thanks for the pointing out.
+
+-- 
+Kind Regards,
+Minchan Kim
