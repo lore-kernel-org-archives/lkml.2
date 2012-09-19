@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933211Ab2ISTE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 15:04:58 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19513 "EHLO
+	id S933196Ab2ISTEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 15:04:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19517 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab2ISSzR (ORCPT
+	with ESMTP id S1756230Ab2ISSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Sep 2012 14:55:17 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,40 +16,101 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 05/40] PCI: Add root bus children dev's res to fail list
-Date: Wed, 19 Sep 2012 11:54:19 -0700
-Message-Id: <1348080894-23412-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 08/40] x86, PCI: Separate pcibios_allocate_dev_resources()
+Date: Wed, 19 Sep 2012 11:54:22 -0700
+Message-Id: <1348080894-23412-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1348080894-23412-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com>
  <1348080894-23412-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can stop according to try number now and do not need to use root_bus checking
-as stop sign anymore.
-Also in extreme case we could need to reallocate device just under bus 0.
+Thus pcibios_allocate_resources() could more simple and clean
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/setup-bus.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/pci/i386.c |   42 +++++++++++++++++++++++-------------------
+ 1 files changed, 23 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 1e808ca..9e625d84 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -283,7 +283,7 @@ static void assign_requested_resources_sorted(struct list_head *head,
- 		idx = res - &dev_res->dev->resource[0];
- 		if (resource_size(res) &&
- 		    pci_assign_resource(dev_res->dev, idx)) {
--			if (fail_head && !pci_is_root_bus(dev_res->dev->bus)) {
-+			if (fail_head) {
- 				/*
- 				 * if the failed res is for ROM BAR, and it will
- 				 * be enabled later, don't add it to the list
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 9800362..5817cf2 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -232,9 +232,8 @@ struct pci_check_idx_range {
+ 	int end;
+ };
+ 
+-static void __init pcibios_allocate_resources(int pass)
++static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ {
+-	struct pci_dev *dev = NULL;
+ 	int idx, disabled, i;
+ 	u16 command;
+ 	struct resource *r;
+@@ -246,14 +245,13 @@ static void __init pcibios_allocate_resources(int pass)
+ #endif
+ 	};
+ 
+-	for_each_pci_dev(dev) {
+-		pci_read_config_word(dev, PCI_COMMAND, &command);
+-		for (i = 0; i < ARRAY_SIZE(idx_range); i++)
++	pci_read_config_word(dev, PCI_COMMAND, &command);
++	for (i = 0; i < ARRAY_SIZE(idx_range); i++)
+ 		for (idx = idx_range[i].start; idx <= idx_range[i].end; idx++) {
+ 			r = &dev->resource[idx];
+-			if (r->parent)		/* Already allocated */
++			if (r->parent)	/* Already allocated */
+ 				continue;
+-			if (!r->start)		/* Address not assigned at all */
++			if (!r->start)	/* Address not assigned at all */
+ 				continue;
+ 			if (r->flags & IORESOURCE_IO)
+ 				disabled = !(command & PCI_COMMAND_IO);
+@@ -272,23 +270,29 @@ static void __init pcibios_allocate_resources(int pass)
+ 				}
+ 			}
+ 		}
+-		if (!pass) {
+-			r = &dev->resource[PCI_ROM_RESOURCE];
+-			if (r->flags & IORESOURCE_ROM_ENABLE) {
+-				/* Turn the ROM off, leave the resource region,
+-				 * but keep it unregistered. */
+-				u32 reg;
+-				dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
+-				r->flags &= ~IORESOURCE_ROM_ENABLE;
+-				pci_read_config_dword(dev,
+-						dev->rom_base_reg, &reg);
+-				pci_write_config_dword(dev, dev->rom_base_reg,
++	if (!pass) {
++		r = &dev->resource[PCI_ROM_RESOURCE];
++		if (r->flags & IORESOURCE_ROM_ENABLE) {
++			/* Turn the ROM off, leave the resource region,
++			 * but keep it unregistered. */
++			u32 reg;
++			dev_dbg(&dev->dev, "disabling ROM %pR\n", r);
++			r->flags &= ~IORESOURCE_ROM_ENABLE;
++			pci_read_config_dword(dev, dev->rom_base_reg, &reg);
++			pci_write_config_dword(dev, dev->rom_base_reg,
+ 						reg & ~PCI_ROM_ADDRESS_ENABLE);
+-			}
+ 		}
+ 	}
+ }
+ 
++static void __init pcibios_allocate_resources(int pass)
++{
++	struct pci_dev *dev = NULL;
++
++	for_each_pci_dev(dev)
++		pcibios_allocate_dev_resources(dev, pass);
++}
++
+ static int __init pcibios_assign_resources(void)
+ {
+ 	struct pci_dev *dev = NULL;
 -- 
 1.7.7
 
