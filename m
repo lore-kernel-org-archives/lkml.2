@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab2ISPpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 11:45:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50997 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab2ISPpT (ORCPT
+	id S1756550Ab2ISPss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 11:48:48 -0400
+Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:32897 "EHLO
+	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755666Ab2ISPsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 11:45:19 -0400
-Message-ID: <5059E88C.7090801@gmail.com>
-Date: Wed, 19 Sep 2012 10:45:16 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 19 Sep 2012 11:48:45 -0400
+X-Greylist: delayed 985 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Sep 2012 11:48:45 EDT
+Message-ID: <5059E581.8030600@rsk.demon.co.uk>
+Date: Wed, 19 Sep 2012 16:32:17 +0100
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] gpio: adnp: dt: Reference generic interrupt binding
-References: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de> <1348045056-29769-2-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1348045056-29769-2-git-send-email-thierry.reding@avionic-design.de>
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: jaxboe@fusionio.com, Mikulas Patocka <mpatocka@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] block: make struct block_device cacheline_aligned
+References: <x49lig686kv.fsf@segfault.boston.devel.redhat.com> <x498vc683eq.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x498vc683eq.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 03:57 AM, Thierry Reding wrote:
-> Instead of having to duplicate the description of the properties needed
-> for interrupt support, reference the new standard document.
+On 19/09/12 15:59, Jeff Moyer wrote:
+> Jeff Moyer <jmoyer@redhat.com> writes:
 > 
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
-> This patch should go through LinusW's tree because it already carries
-> the patch that created this documentation.
+>> Hi,
+>>
+>> When testing against a pcie ssd or a ramdisk, making the block device
+>> structure cacheline_aligned provided a significant increase in
+>> performance:
 > 
->  Documentation/devicetree/bindings/gpio/gpio-adnp.txt | 4 ++++
->  1 file changed, 4 insertions(+)
+> Self-NACK on this one.  This results in a ton of warnings:
 > 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
-> index 5a09a21..625eee7 100644
-> --- a/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-adnp.txt
-> @@ -11,6 +11,10 @@ Required properties:
->  - gpio-controller: Marks the device as a GPIO controller
->  - nr-gpios: The number of pins supported by the controller.
->  
-> +The GPIO exander can optionally be used as an interrupt controller, in
-
-s/exander/expander/
-
-Otherwise,
-
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-
-> +which case it uses the default two cell specifier as described in
-> +Documentation/devicetree/bindings/interrupt-controller/interrupts.txt.
-> +
->  Example:
->  
->  	gpioext: gpio-controller@41 {
+> include/linux/fs.h:727: warning: ???__section__??? attribute does not
+> apply to types
+> In file included from include/linux/debugfs.h:18,
+>                  from kernel/trace/trace_probe.h:28,
+>                  from kernel/trace/trace_kprobe.c:23:
+> include/linux/fs.h:727: warning: ???__section__??? attribute does not
+> apply to types
 > 
+> And that leaves me with the task of figuring out if/why this actually
+> helps.
+> 
+> Cheers,
+> Jeff
+>>
+Hi,
+block_device sits in bdev_inode which is already cache line aligned as
+they're allocated in a kmem_cache with HWALIGN set.
+So I wonder if swapping the order of bdev & inode in bdev_inode will help?
+
+So it becomes this :-
+struct bdev_inode {
+	struct inode vfs_inode;
+	struct block_device bdev;
+};
+
+
+regards
+Richard
 
