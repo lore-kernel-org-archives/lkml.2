@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab2ITJHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:07:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34318 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750847Ab2ITJHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:07:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
-   d="scan'208";a="208538089"
-Date: Thu, 20 Sep 2012 12:10:14 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (net-next tree related)
-Message-ID: <20120920091013.GV15548@intel.com>
-References: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
+	id S1751939Ab2ITJI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:08:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56764 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2ITJI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:08:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Corbet <corbet@lwn.net>
+Subject: Re: Davicom DM9000C driver
+Date: Thu, 20 Sep 2012 09:08:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Allen Huang (=?utf-8?q?=E9=BB=83=E5=81=89=E6=A0=BC?=) 
+	<allen_huang@davicom.com.tw>,
+        linux-kernel@vger.kernel.org,
+        "'Michael Chen'" <michael_chen@mail.davicom.com.tw>,
+        "'Charles'" <charles_tsai@davicom.com.tw>,
+        "'Joseph Chang'" <joseph_chang@mail.davicom.com.tw>
+References: <20120919055333.3ECF95F94D@mail.davicom.com.tw> <20120919173524.7bf4a974@lwn.net>
+In-Reply-To: <20120919173524.7bf4a974@lwn.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201209200908.00519.arnd@arndb.de>
+X-Provags-ID: V02:K0:DRtOg8kMRe05OCNVKA5b5PvbxuK0uzkfDbQ41FLf1+9
+ 7EhQYuKGoUIIpn+XBnnbotrIuzLyn3iSx++sE6Om//637CiWEO
+ yf+lieAevSAaDLwnW9uTsyxUGGKZJ86S1c1O5Yrfll5wKY2w8s
+ PbG+iCNGMUS8uI1mfv/ooS6Ccp6xvraS8wSj/14ma9i9LIJw6b
+ qB2Hwwr4RRpo/akjOb8N6CXaqlyrj3d1xBIGTDwCPCiORbMoZ/
+ kCbqn9w+mWbJ3EU6r9SVxu/LBSPt5bWpIdihDHJdSwxoqizAyL
+ lYpTstd8uxs8Rpyi4YKlhVTcGgOrYh+w3KP1w7ZMqKJvMhcE7y
+ WOzpeTn4SVuBUkGfuOs8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 05:36:22PM +1000, Stephen Rothwell wrote:
-> Hi all,
+On Wednesday 19 September 2012, Jonathan Corbet wrote:
+> On Wed, 19 Sep 2012 13:58:08 +0800
+> Allen Huang (黃偉格)  <allen_huang@davicom.com.tw> wrote:
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+> > I'm Allen Huang from Davicom. We are hereby opensourcing the linux
+> > driver for our DM9000C. 
 > 
-> drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
-> drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration of function 'isa_virt_to_bus' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings when
-> building a 64-bit kernel").  Is there some Kconfig dependency missing (CONFIG_ISA)?
+> That is great, but please read the development process documentation on
+> how best to submit something like this.  We would much rather see a patch
+> (inline, not as an attachment) to facilitate the review.
 
-If we make it dependent on CONFIG_ISA then the driver cannot be built with
-64-bit kernel. Then again is there someone running 64-bit kernel on Zenith
-Z-note notebook? From the pictures it looks like very ancient "laptop".
+More importantly, the patch should be against the version that is
+already present in the kernel as drivers/net/ethernet/davicom/dm9000.c,
+which appears to be mostly the same as the version that is submitted
+here.
 
-An alternative is to make it depend on X86 like this:
+So while all the comments on the driver are valuable, they also apply
+to the code we already have since 2005.
 
-diff --git a/drivers/net/ethernet/i825xx/Kconfig b/drivers/net/ethernet/i825xx/Kconfig
-index fed5080..959faf7 100644
---- a/drivers/net/ethernet/i825xx/Kconfig
-+++ b/drivers/net/ethernet/i825xx/Kconfig
-@@ -150,7 +150,7 @@ config SUN3_82586
- 
- config ZNET
- 	tristate "Zenith Z-Note support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && ISA_DMA_API
-+	depends on EXPERIMENTAL && ISA_DMA_API && X86
- 	---help---
- 	  The Zenith Z-Note notebook computer has a built-in network
- 	  (Ethernet) card, and this is the Linux driver for it. Note that the
+	Arnd
