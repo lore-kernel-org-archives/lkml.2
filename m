@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab2ITXxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:53:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23785 "EHLO mx1.redhat.com"
+	id S1756506Ab2ITXyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:54:12 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37976 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754607Ab2ITXxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:53:04 -0400
-Message-ID: <505BAC5D.9020909@redhat.com>
-Date: Thu, 20 Sep 2012 18:53:01 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1753297Ab2ITXyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:54:10 -0400
+Date: Thu, 20 Sep 2012 16:54:07 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-man@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wad@chromium.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] prctl: document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
+Message-ID: <20120920235407.GA3769@www.outflux.net>
 MIME-Version: 1.0
-To: kernel list <linux-kernel@vger.kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf: Fix parallel build
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parallel builds of perf were failing for me on a 32p box, with:
+This adds a short description of the no_new_privs bit, as described in
+Documentation/prctl/no_new_privs.txt.
 
-    * new build flags or prefix
-util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
-
-...
-
-make: *** [util/pmu-flex.o] Error 1
-make: *** Waiting for unfinished jobs....
-
-This can pretty quickly be seen by adding a sleep in front of
-the bison call in tools/perf/Makefile and running make -j4 on a
-smaller box:
-
-	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
-
-Adding the following dependency fixes it for me:
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
+ man2/prctl.2 |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bad726a..6c389d9 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -219,7 +219,7 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
- 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
- 
--$(OUTPUT)util/pmu-flex.c: util/pmu.l
-+$(OUTPUT)util/pmu-flex.c: util/pmu.l util/pmu-bison.c
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
- 
- $(OUTPUT)util/pmu-bison.c: util/pmu.y
+diff --git a/man2/prctl.2 b/man2/prctl.2
+index a44aa32..220c031 100644
+--- a/man2/prctl.2
++++ b/man2/prctl.2
+@@ -42,6 +42,7 @@
+ .\" 2012-04-25 Michael Kerrisk, Document PR_TASK_PERF_EVENTS_DISABLE and
+ .\"				PR_TASK_PERF_EVENTS_ENABLE
+ .\" 2012-09-20 Kees Cook, update PR_SET_SECCOMP for mode 2
++.\" 2012-09-20 Kees Cook, document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
+ .\"
+ .\" FIXME: Document PR_SET_TIMERSLACK and PR_GET_TIMERSLACK (new in 2.6.28)
+ .\"		commit 6976675d94042fbd446231d1bd8b7de71a980ada
+@@ -216,6 +217,19 @@ in the buffer pointed to by
+ The buffer should allow space for up to 16 bytes;
+ the returned string will be null-terminated if it is shorter than that.
+ .TP
++.BR PR_SET_NO_NEW_PRIVS " (since Linux 3.5)"
++Set the current process's \fIno_new_privs\fP bit to the value in
++\fIarg2\fP.  With \fIno_new_privs\fP set to 1, execve promises not
++to grant the privilege to do anything that could not have been done
++without the execve call (for example, rendering setuid, setgid, and file
++capabilities non-functional).  When enabled, this value is inherited
++across fork, clone, and execve and cannot be unset.
++.TP
++.BR PR_GET_NO_NEW_PRIVS " (since Linux 3.5)"
++Return the value of the \fIno_new_privs\fP bit for the current process. A
++value of 0 indicates the regular execve behavior. A value of 1 indicates
++execve will operate in the privilege restricting mode described above.
++.TP
+ .BR PR_SET_PDEATHSIG " (since Linux 2.1.57)"
+ Set the parent process death signal
+ of the calling process to \fIarg2\fP (either a signal value
+@@ -567,6 +581,7 @@ option.
+ On success,
+ .BR PR_GET_DUMPABLE ,
+ .BR PR_GET_KEEPCAPS ,
++.BR PR_GET_NO_NEW_PRIVS ,
+ .BR PR_CAPBSET_READ ,
+ .BR PR_GET_TIMING ,
+ .BR PR_GET_SECUREBITS ,
+-- 
+1.7.0.4
 
+
+-- 
+Kees Cook
+Chrome OS Security
