@@ -1,168 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab2ITWQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:16:40 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57166 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab2ITWPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:15:38 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH 2/4] security: introduce kernel_module_from_file hook
-Date: Thu, 20 Sep 2012 15:14:58 -0700
-Message-Id: <1348179300-11653-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1756356Ab2ITWTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:19:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61731 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab2ITWTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 18:19:23 -0400
+Date: Thu, 20 Sep 2012 15:16:38 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] power_supply: add new lp8788 charger driver
+Message-ID: <20120920221638.GF18223@lizard>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF2227@DQHE02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF2227@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that kernel module origins can be reasoned about, provide a hook to
-the LSMs to make policy decisions about the module file. This will let
-Chrome OS enforce that loadable kernel modules can only come from its
-read-only hash-verified root filesystem. Other LSMs can, for example,
-read extended attributes for signatures, etc.
+On Wed, Sep 05, 2012 at 10:43:21AM +0000, Kim, Milo wrote:
+>  TI LP8788 PMU supports regulators, battery charger, RTC,
+>  ADC, backlight driver and current sinks.
+> 
+>  This patch supports the charger operations including
+>  the charger interrupt handling.
+[...]
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Acked-by: Eric Paris <eparis@redhat.com>
----
- include/linux/security.h |   13 +++++++++++++
- kernel/module.c          |    9 +++++++++
- security/capability.c    |    6 ++++++
- security/security.c      |    5 +++++
- 4 files changed, 33 insertions(+), 0 deletions(-)
+Had to fix a bunch of checkpatch complaints:
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 3dea6a9..368e539 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -693,6 +693,12 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	userspace to load a kernel module with the given name.
-  *	@kmod_name name of the module requested by the kernel
-  *	Return 0 if successful.
-+ * @kernel_module_from_file:
-+ *	Load a kernel module from userspace.
-+ *	@file contains the file structure pointing to the file containing
-+ *	the kernel module to load. If the module is being loaded from a blob,
-+ *	this argument will be NULL.
-+ *	Return 0 if permission is granted.
-  * @task_fix_setuid:
-  *	Update the module's state after setting one or more of the user
-  *	identity attributes of the current process.  The @flags parameter
-@@ -1507,6 +1513,7 @@ struct security_operations {
- 	int (*kernel_act_as)(struct cred *new, u32 secid);
- 	int (*kernel_create_files_as)(struct cred *new, struct inode *inode);
- 	int (*kernel_module_request)(char *kmod_name);
-+	int (*kernel_module_from_file)(struct file *file);
- 	int (*task_fix_setuid) (struct cred *new, const struct cred *old,
- 				int flags);
- 	int (*task_setpgid) (struct task_struct *p, pid_t pgid);
-@@ -1764,6 +1771,7 @@ void security_transfer_creds(struct cred *new, const struct cred *old);
- int security_kernel_act_as(struct cred *new, u32 secid);
- int security_kernel_create_files_as(struct cred *new, struct inode *inode);
- int security_kernel_module_request(char *kmod_name);
-+int security_kernel_module_from_file(struct file *file);
- int security_task_fix_setuid(struct cred *new, const struct cred *old,
- 			     int flags);
- int security_task_setpgid(struct task_struct *p, pid_t pgid);
-@@ -2277,6 +2285,11 @@ static inline int security_kernel_module_request(char *kmod_name)
- 	return 0;
- }
- 
-+static inline int security_kernel_module_from_file(struct file *file)
-+{
-+	return 0;
-+}
-+
- static inline int security_task_fix_setuid(struct cred *new,
- 					   const struct cred *old,
- 					   int flags)
-diff --git a/kernel/module.c b/kernel/module.c
-index afe2f69..511b8e9 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -29,6 +29,7 @@
- #include <linux/vmalloc.h>
- #include <linux/elf.h>
- #include <linux/proc_fs.h>
-+#include <linux/security.h>
- #include <linux/seq_file.h>
- #include <linux/syscalls.h>
- #include <linux/fcntl.h>
-@@ -2430,6 +2431,10 @@ static int copy_module_from_user(const void __user *umod, unsigned long len,
- 	if (info->len < sizeof(*(info->hdr)))
- 		return -ENOEXEC;
- 
-+	err = security_kernel_module_from_file(NULL);
-+	if (err)
-+		return err;
-+
- 	/* Suck in entire file: we'll want most of it. */
- 	info->hdr = vmalloc(info->len);
- 	if (!info->hdr)
-@@ -2464,6 +2469,10 @@ static int copy_module_from_fd(int fd, struct load_info *info)
- 	if (!file)
- 		return -ENOEXEC;
- 
-+	err = security_kernel_module_from_file(file);
-+	if (err)
-+		goto out;
-+
- 	err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
- 	if (err)
- 		goto out;
-diff --git a/security/capability.c b/security/capability.c
-index 61095df..8acb304 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -395,6 +395,11 @@ static int cap_kernel_module_request(char *kmod_name)
- 	return 0;
- }
- 
-+static int cap_kernel_module_from_file(struct file *file)
-+{
-+	return 0;
-+}
-+
- static int cap_task_setpgid(struct task_struct *p, pid_t pgid)
- {
- 	return 0;
-@@ -967,6 +972,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, kernel_act_as);
- 	set_to_cap_if_null(ops, kernel_create_files_as);
- 	set_to_cap_if_null(ops, kernel_module_request);
-+	set_to_cap_if_null(ops, kernel_module_from_file);
- 	set_to_cap_if_null(ops, task_fix_setuid);
- 	set_to_cap_if_null(ops, task_setpgid);
- 	set_to_cap_if_null(ops, task_getpgid);
-diff --git a/security/security.c b/security/security.c
-index 860aeb3..f7f8695 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -799,6 +799,11 @@ int security_kernel_module_request(char *kmod_name)
- 	return security_ops->kernel_module_request(kmod_name);
- }
- 
-+int security_kernel_module_from_file(struct file *file)
-+{
-+	return security_ops->kernel_module_from_file(file);
-+}
-+
- int security_task_fix_setuid(struct cred *new, const struct cred *old,
- 			     int flags)
- {
--- 
-1.7.0.4
+CHECK: space prohibited before semicolon
+#478: FILE: drivers/power/lp8788-charger.c:396:
++       for (i = 0 ; i < pdata->num_chg_params ; i++) {
 
+CHECK: space prohibited before semicolon
+#541: FILE: drivers/power/lp8788-charger.c:459:
++       for (i = 0 ; i < pchg->num_irqs ; i++) {
+
+
+But other than this, it looks really good, this is now applied.
+
+Obviously, I couldn't compile-test it, but hopefully it will work
+once MFD part is also in. :-) If not, you can just send a follow-up
+fix.
+
+Thanks!
