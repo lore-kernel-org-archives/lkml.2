@@ -1,57 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab2ITWr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:47:29 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:60617 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932337Ab2ITWr1 (ORCPT
+	id S932371Ab2ITWwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:52:45 -0400
+Received: from mail-fa0-f74.google.com ([209.85.161.74]:33790 "EHLO
+	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159Ab2ITWwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:47:27 -0400
-Date: Thu, 20 Sep 2012 22:47:25 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: "Bruce, Becky" <bbruce@ti.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Hunter, Jon" <jon-hunter@ti.com>,
-        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-In-Reply-To: <20120920220130.GN2449@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
-References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com> <20120913011208.GT4257@linux.vnet.ibm.com> <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com> <20120920000351.GI2455@linux.vnet.ibm.com> <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
- <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com> <20120920220130.GN2449@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Sep 2012 18:52:44 -0400
+From: David Sharp <dhsharp@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v3 1/3] tracing,x86: add a TSC trace_clock
+Date: Thu, 20 Sep 2012 15:52:28 -0700
+Message-Id: <1348181550-21931-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1348148044.13080.59.camel@gandalf.local.home>
+References: <1348148044.13080.59.camel@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Paul E. McKenney wrote:
+In order to promote interoperability between userspace tracers and ftrace,
+add a trace_clock that reports raw TSC values which will then be recorded
+in the ring buffer. Userspace tracers that also record TSCs are then on
+exactly the same time base as the kernel and events can be unambiguously
+interlaced.
 
-> On Thu, Sep 20, 2012 at 09:49:13PM +0000, Bruce, Becky wrote:
->
-> > OK, people, you can stop heckling me about "sent from my iPhone" - I'm in the wilds of rural Louisiana with really bad internet service and was trying to work on my phone (but, alas, did not notice the CC list included the entire universe).   Shame on me.
-> > 
-> > With the above set, I don't seem to see any stalls with the RCU timeout set to 60s (the default).  I left the board running for 25 minutes; I will fire it up again later and let it run for a bit longer, but usually I end up seeing the problem pretty quickly so I don't expect that to result in anything.  I also didn't see any stalls on Paul's RCU tree as of a week ago at 60s, so as far as I can tell the CPU_IDLE stuff didn't have any impact (it wasn't on when I tested Paul's tree).
-> > 
-> > If I drop the timeout to 5s as Paul M. suggested for debug a while back, I do see stalls (both with CPU_IDLE stuff and without). 
-> > 
-> > I'm using the default omap2plus config, with RCU stall info enabled and the cpu idle stuff turned on (console dump below).  This is a Panda ES 1.1 (OMAP4460)
-> 
-> Thank you for the testing, Becky!
-> 
-> Paul Walmsley, please let me know if the config below doesn't clear things
-> up for you or if there is some reason why this config is infeasible.
+Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+timestamp values.
 
-Will certainly test it here once things settle down.  But I wouldn't 
-consider the use of CONFIG_CPU_IDLE to be a 'fix' until the problem can be 
-understood.  We use !CONFIG_CPU_IDLE kernels for testing here.
+v2:
+Move arch-specific bits out of generic code.
+v3:
+Rename "x86-tsc", cleanups
 
+Google-Bug-Id: 6980623
+Signed-off-by: David Sharp <dhsharp@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/trace_clock.h |   16 ++++++++++++++++
+ arch/x86/kernel/Makefile           |    1 +
+ arch/x86/kernel/trace_clock.c      |   21 +++++++++++++++++++++
+ include/asm-generic/trace_clock.h  |   16 ++++++++++++++++
+ include/linux/trace_clock.h        |    2 ++
+ kernel/trace/trace.c               |    1 +
+ 6 files changed, 57 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace_clock.h
+ create mode 100644 arch/x86/kernel/trace_clock.c
+ create mode 100644 include/asm-generic/trace_clock.h
 
-- Paul
+diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..7ee0d8c
+--- /dev/null
++++ b/arch/x86/include/asm/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_X86_TRACE_CLOCK_H
++#define _ASM_X86_TRACE_CLOCK_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#ifdef CONFIG_X86_TSC
++
++extern u64 notrace trace_clock_x86_tsc(void);
++
++# define ARCH_TRACE_CLOCKS \
++	{ trace_clock_x86_tsc,	"x86-tsc" },
++
++#endif
++
++#endif  /* _ASM_X86_TRACE_CLOCK_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..0ee9344 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
++obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+new file mode 100644
+index 0000000..25b9937
+--- /dev/null
++++ b/arch/x86/kernel/trace_clock.c
+@@ -0,0 +1,21 @@
++/*
++ * X86 trace clocks
++ */
++#include <asm/trace_clock.h>
++#include <asm/barrier.h>
++#include <asm/msr.h>
++
++/*
++ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
++ *
++ * Unlike the other clocks, this is not in nanoseconds.
++ */
++u64 notrace trace_clock_x86_tsc(void)
++{
++	u64 ret;
++
++	rdtsc_barrier();
++	rdtscll(ret);
++
++	return ret;
++}
+diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+new file mode 100644
+index 0000000..6726f1b
+--- /dev/null
++++ b/include/asm-generic/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_GENERIC_TRACE_CLOCK_H
++#define _ASM_GENERIC_TRACE_CLOCK_H
++/*
++ * Arch-specific trace clocks.
++ */
++
++/*
++ * Additional trace clocks added to the trace_clocks
++ * array in kernel/trace/trace.c
++ * None if the architecture has not defined it.
++ */
++#ifndef ARCH_TRACE_CLOCKS
++# define ARCH_TRACE_CLOCKS
++#endif
++
++#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index 4eb4902..d563f37 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -12,6 +12,8 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+ 
++#include <asm/trace_clock.h>
++
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
+ extern u64 notrace trace_clock_global(void);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..92fb08e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -480,6 +480,7 @@ static struct {
+ 	{ trace_clock_local,	"local" },
+ 	{ trace_clock_global,	"global" },
+ 	{ trace_clock_counter,	"counter" },
++	ARCH_TRACE_CLOCKS
+ };
+ 
+ int trace_clock_id;
+-- 
+1.7.7.3
+
