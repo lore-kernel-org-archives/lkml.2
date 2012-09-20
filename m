@@ -1,136 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab2ITGi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:38:57 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37091 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2ITGi4 (ORCPT
+	id S1752133Ab2ITGks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:40:48 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47427 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab2ITGkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:38:56 -0400
-Message-ID: <505AB9F7.6030605@linux.vnet.ibm.com>
-Date: Thu, 20 Sep 2012 14:38:47 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: kernel BUG at kernel/sched/core.c:1465!
-References: <20120919091230.GA25576@liondog.tnic>
-In-Reply-To: <20120919091230.GA25576@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12092006-3568-0000-0000-0000027D76D8
+	Thu, 20 Sep 2012 02:40:47 -0400
+X-AuditID: 9c93016f-b7c19ae000000e6d-67-505aba6c5e8e
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH v3] memory-hotplug: fix zone stat mismatch
+Date: Thu, 20 Sep 2012 15:43:25 +0900
+Message-Id: <1348123405-30641-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 05:12 PM, Borislav Petkov wrote:
-> Hi,
-> 
-> I got the below oops when running rc6 + tip/master from two days ago and
-> CONFIG_DEBUG_PAGEALLOC enabled.
-> 
-> Looks like the task's runqueue is not this runqueue on the CPU it
-> happened - in this case CPU 5.
-> 
-> I was running a simple workload where a userspace test is pinned on each
-> core with taskset.
+During memory-hotplug, I found NR_ISOLATED_[ANON|FILE]
+are increasing so that kernel are hang out.
 
-Hi, Borislav
+The cause is that when we do memory-hotadd after memory-remove,
+__zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
+although vm_stat_diff of all CPU still have value.
 
-Could you please try below patch and see whether the new
-WARNING appear or not?
+In addtion, when we offline all pages of the zone, we reset them
+in zone_pcp_reset without drain so that we lost zone stat item.
 
-And cc Tejun Heo <tj@kernel.org> since wq_worker_sleeping()
-doesn't work as it's introduced...
+This patch fixes it.
 
-Regards,
-Michael Wang
+* from v2
+  * Add Reviewed-by - Wen
 
+* from v1
+  * drain offline patch - KOSAKI, Wen
 
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/vmstat.h |    4 ++++
+ mm/page_alloc.c        |    7 +++++++
+ mm/vmstat.c            |   12 ++++++++++++
+ 3 files changed, 23 insertions(+)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1e1373b..b166751 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -750,6 +750,7 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
-         */
-        if (atomic_dec_and_test(nr_running) && !list_empty(&pool->worklist))
-                to_wakeup = first_worker(pool);
-+       WARN_ON(to_wakeup && (to_wakeup->flags & WORKER_UNBOUND));
-        return to_wakeup ? to_wakeup->task : NULL;
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index ad2cfd5..5d31876 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -198,6 +198,8 @@ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
+ void refresh_cpu_vm_stats(int);
+ void refresh_zone_stat_thresholds(void);
+ 
++void drain_zonestat(struct zone *zone, struct per_cpu_pageset *);
++
+ int calculate_pressure_threshold(struct zone *zone);
+ int calculate_normal_threshold(struct zone *zone);
+ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+@@ -251,6 +253,8 @@ static inline void __dec_zone_page_state(struct page *page,
+ static inline void refresh_cpu_vm_stats(int cpu) { }
+ static inline void refresh_zone_stat_thresholds(void) { }
+ 
++static inline void drain_zonestat(struct zone *zone,
++			struct per_cpu_pageset *pset) { }
+ #endif		/* CONFIG_SMP */
+ 
+ extern const char * const vmstat_text[];
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ab58346..980f2e7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5904,6 +5904,7 @@ static int __meminit __zone_pcp_update(void *data)
+ 		local_irq_save(flags);
+ 		if (pcp->count > 0)
+ 			free_pcppages_bulk(zone, pcp->count, pcp);
++		drain_zonestat(zone, pset);
+ 		setup_pageset(pset, batch);
+ 		local_irq_restore(flags);
+ 	}
+@@ -5920,10 +5921,16 @@ void __meminit zone_pcp_update(struct zone *zone)
+ void zone_pcp_reset(struct zone *zone)
+ {
+ 	unsigned long flags;
++	int cpu;
++	struct per_cpu_pageset *pset;
+ 
+ 	/* avoid races with drain_pages()  */
+ 	local_irq_save(flags);
+ 	if (zone->pageset != &boot_pageset) {
++		for_each_online_cpu(cpu) {
++			pset = per_cpu_ptr(zone->pageset, cpu);
++			drain_zonestat(zone, pset);
++		}
+ 		free_percpu(zone->pageset);
+ 		zone->pageset = &boot_pageset;
+ 	}
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index b3e3b9d..d4cc1c2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -495,6 +495,18 @@ void refresh_cpu_vm_stats(int cpu)
+ 			atomic_long_add(global_diff[i], &vm_stat[i]);
  }
-
-
-
-> 
-> [10199.391444] ------------[ cut here ]------------
-> [10199.396440] kernel BUG at kernel/sched/core.c:1465!
-> [10199.401288] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [10199.406684] Modules linked in: nfsv3 nfs_acl nfs lockd sunrpc radeon kvm_amd kvm fbcon tileblit ttm font bitblit softcursor drm_kms_helper drm psmou
-> se microcode bnx2 i2c_algo_bit i2c_piix4 serio_raw
-> [10199.425015] CPU 5 
-> [10199.426844] Pid: 4, comm: kworker/0:0 Not tainted 3.6.0-rc6-kvm+ #1 AMD
-> [10199.434642] RIP: 0010:[<ffffffff814dbe65>]  [<ffffffff814dbe65>] __schedule+0x1af/0x578
-> [10199.442616] RSP: 0018:ffff880425c797f0  EFLAGS: 00010087
-> [10199.448193] RAX: ffff880427d53880 RBX: ffff880427d53880 RCX: 0000000000000005
-> [10199.455595] RDX: ffffffff8108ea0b RSI: 0000000000000005 RDI: ffff880427c13840
-> [10199.462691] RBP: ffff880425c79880 R08: 0000000000000400 R09: 0000000000000000
-> [10199.469787] R10: ffff880425d89c8a R11: 00000000ffffffff R12: ffff8804255ddac0
-> [10199.476881] R13: ffff880427c13880 R14: 0000000000000005 R15: ffff880425c64410
-> [10199.483977] FS:  00007f5d51dbe700(0000) GS:ffff880427d40000(0000) knlGS:0000000000000000
-> [10199.492021] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [10199.497735] CR2: 00007f5d518c29f0 CR3: 0000000001a0b000 CR4: 00000000000407e0
-> [10199.504830] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [10199.511926] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [10199.519021] Process kworker/0:0 (pid: 4, threadinfo ffff880425c78000, task ffff880425c64410)
-> [10199.528026] Stack:
-> [10199.530025]  0000000000013880 0000000000013880 0000000000013880 ffff880425c64410
-> [10199.537416]  0000000000013880 ffff880425c79fd8 0000000000013880 0000000000013880
-> [10199.544810]  ffff880425c79fd8 0000000000013880 ffff880425c79850 ffff880425c64410
-> [10199.552206] Call Trace:
-> [10199.554639]  [<ffffffff814dc2f7>] schedule+0x64/0x66
-> [10199.559577]  [<ffffffff814daf5f>] schedule_timeout+0x36/0xe5
-> [10199.565207]  [<ffffffff8106d186>] ? ttwu_do_wakeup+0x59/0xd0
-> [10199.571107]  [<ffffffff814dcd3b>] ? _raw_spin_unlock_irqrestore+0x1a/0x1d
-> [10199.578199]  [<ffffffff814dbb86>] wait_for_common+0x9d/0x113
-> [10199.583826]  [<ffffffff8106f179>] ? try_to_wake_up+0x1eb/0x1eb
-> [10199.589627]  [<ffffffff814dcd3b>] ? _raw_spin_unlock_irqrestore+0x1a/0x1d
-> [10199.596378]  [<ffffffff814dbcb4>] wait_for_completion+0x1d/0x1f
-> [10199.602267]  [<ffffffff810a1038>] stop_one_cpu+0x60/0x77
-> [10199.607549]  [<ffffffff8106d501>] ? __migrate_task+0xf6/0xf6
-> [10199.613176]  [<ffffffff8106b033>] ? task_rq_unlock+0x22/0x27
-> [10199.618803]  [<ffffffff8106f342>] set_cpus_allowed_ptr+0xbe/0xe4
-> [10199.624777]  [<ffffffff813ede71>] ? query_current_values_with_pending_wait+0x33/0x95
-> [10199.632478]  [<ffffffff813eeb85>] powernowk8_target+0x601/0x640
-> [10199.638364]  [<ffffffff8108ea0b>] ? do_raw_spin_lock+0x9/0xd
-> [10199.643992]  [<ffffffff813ec0ac>] ? cpufreq_stat_notifier_trans+0x88/0x93
-> [10199.650742]  [<ffffffff813e9b7d>] __cpufreq_driver_target+0x41/0x43
-> [10199.656976]  [<ffffffff813ecd27>] cpufreq_governor_dbs+0x2c9/0x2e6
-> [10199.663123]  [<ffffffff813e9cbb>] __cpufreq_governor+0x68/0xa5
-> [10199.668923]  [<ffffffff813e9e80>] __cpufreq_set_policy+0x137/0x143
-> [10199.675068]  [<ffffffff813eba6c>] cpufreq_update_policy+0xbd/0xe1
-> [10199.681130]  [<ffffffff813eba90>] ? cpufreq_update_policy+0xe1/0xe1
-> [10199.687365]  [<ffffffff812d15fc>] acpi_processor_ppc_has_changed+0x62/0x69
-> [10199.694204]  [<ffffffff8111927b>] ? virt_to_head_page+0x9/0x2c
-> [10199.700006]  [<ffffffff812cdea1>] acpi_processor_notify+0x55/0x115
-> [10199.706154]  [<ffffffff812a8849>] acpi_device_notify+0x19/0x1b
-> [10199.711956]  [<ffffffff812b573d>] acpi_ev_notify_dispatch+0x41/0x5c
-> [10199.718188]  [<ffffffff812a5932>] acpi_os_execute_deferred+0x27/0x34
-> [10199.724507]  [<ffffffff8105af8a>] process_one_work+0x1a7/0x2a3
-> [10199.730307]  [<ffffffff812a590b>] ? acpi_os_wait_events_complete+0x23/0x23
-> [10199.737145]  [<ffffffff8105cb27>] worker_thread+0x20f/0x29b
-> [10199.742686]  [<ffffffff814dcd3b>] ? _raw_spin_unlock_irqrestore+0x1a/0x1d
-> [10199.749437]  [<ffffffff8105c918>] ? manage_workers+0x243/0x243
-> [10199.755237]  [<ffffffff810607e1>] kthread+0x95/0x9d
-> [10199.760089]  [<ffffffff814e4cc4>] kernel_thread_helper+0x4/0x10
-> [10199.765977]  [<ffffffff8106074c>] ? kthread_freezable_should_stop+0x41/0x41
-> [10199.772899]  [<ffffffff814e4cc0>] ? gs_change+0x13/0x13
-> [10199.778093] Code: 00 00 00 48 8b 40 08 4c 8b 6d 90 8b 40 18 4c 03 2c c5 40 27 a9 81 48 c7 c0 80 38 01 00 65 48 03 04 25 08 db 00 00 49 39 c5 74 02 <0f> 0b 4c 3b 65 88 75 02 0f 0b 4d 8d bc 24 da 05 00 00 4c 89 ff 
-> [10199.797435] RIP  [<ffffffff814dbe65>] __schedule+0x1af/0x578
-> [10199.803074]  RSP <ffff880425c797f0>
-> [10199.849926] ---[ end trace 4418a7e0165bd3f8 ]---
-> 
-> 
+ 
++void drain_zonestat(struct zone *zone, struct per_cpu_pageset *pset)
++{
++	int i;
++
++	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
++		if (pset->vm_stat_diff[i]) {
++			int v = pset->vm_stat_diff[i];
++			pset->vm_stat_diff[i] = 0;
++			atomic_long_add(v, &zone->vm_stat[i]);
++			atomic_long_add(v, &vm_stat[i]);
++		}
++}
+ #endif
+ 
+ #ifdef CONFIG_NUMA
+-- 
+1.7.9.5
 
