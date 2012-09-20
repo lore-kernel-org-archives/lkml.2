@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2ITJiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:38:00 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33281 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab2ITJh6 (ORCPT
+	id S1753723Ab2ITJiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:38:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11385 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678Ab2ITJiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:37:58 -0400
-X-AuditID: b753bd60-94a4dba000002f78-96-505ae3f40c4c
-X-AuditID: b753bd60-94a4dba000002f78-96-505ae3f40c4c
-Message-ID: <505AE3F3.1040305@hitachi.com>
-Date: Thu, 20 Sep 2012 18:37:55 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Hyeoncheol Lee <hyc.lee@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH] perf probe: Allow of casting an array of char to string
-References: <1348117932-786-1-git-send-email-hyc.lee@gmail.com>
-In-Reply-To: <1348117932-786-1-git-send-email-hyc.lee@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Sep 2012 05:38:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
+   d="scan'208";a="147084889"
+Message-ID: <1348133880.13371.35.camel@smile>
+Subject: Re: [PATCH 4/7] dw_dmac: autoconfigure block_size or use platform
+ data
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
+Date: Thu, 20 Sep 2012 12:38:00 +0300
+In-Reply-To: <CAOh2x=noPEPNNEDJG7_BRV_eeY1PWxR=8EWpOCWLp_ohS-gpdw@mail.gmail.com>
+References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1347867577-13170-5-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=noPEPNNEDJG7_BRV_eeY1PWxR=8EWpOCWLp_ohS-gpdw@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/09/20 14:12), Hyeoncheol Lee wrote:
-> Before casting a type of a variable to string,
-> convert_variable_type() confirms that the type is a pointer or
-> an array. if it is a pointer to char, it is casted to string.
-> but in case of an array of char, it isn't
+On Tue, 2012-09-18 at 12:27 +0530, viresh kumar wrote:
 
-Oops, right! I missed the array case. This must be fixed.
+[snip]
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > @@ -1420,6 +1411,9 @@ static int __devinit dw_probe(struct platform_device *pdev)
+> >
+> >         dw->regs = regs;
+> >
+> > +       /* get hardware configuration parameters */
+> > +       max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
+> > +
+> 
+> Do this only for autocfg case.
+Ok.
 
-Thank you!
+> > @@ -1465,6 +1459,14 @@ static int __devinit dw_probe(struct platform_device *pdev)
+> >                 INIT_LIST_HEAD(&dwc->free_list);
+> >
+> >                 channel_clear_bit(dw, CH_EN, dwc->mask);
+> > +
+> > +               /* hardware configuration */
+> > +               if (autocfg) {
+> > +                       dwc->block_size =
+> > +                               (4 << ((max_blk_size >> 4 * i) & 0xf)) - 1;
+> 
+> Put a comment on what are you doing here.
+Ok.
 
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
-> ---
->  tools/perf/util/probe-finder.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+> > +               } else {
+> > +                       dwc->block_size = pdata->block_size;
+> > +               }
 > 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 1daf5c1..be03293 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -413,12 +413,12 @@ static int convert_variable_type(Dwarf_Die *vr_die,
->  				   dwarf_diename(vr_die), dwarf_diename(&type));
->  			return -EINVAL;
->  		}
-> +		if (die_get_real_type(&type, &type) == NULL) {
-> +			pr_warning("Failed to get a type"
-> +				   " information.\n");
-> +			return -ENOENT;
-> +		}
->  		if (ret == DW_TAG_pointer_type) {
-> -			if (die_get_real_type(&type, &type) == NULL) {
-> -				pr_warning("Failed to get a type"
-> -					   " information.\n");
-> -				return -ENOENT;
-> -			}
->  			while (*ref_ptr)
->  				ref_ptr = &(*ref_ptr)->next;
->  			/* Add new reference with offset +0 */
-> 
+> Don't need {} for single line statements.
+Ok. By the way it comes by next patch anyway.
 
+> > --- a/drivers/dma/dw_dmac_regs.h
+> > +++ b/drivers/dma/dw_dmac_regs.h
+> > @@ -186,6 +186,9 @@ struct dw_dma_chan {
+> >
+> >         unsigned int            descs_allocated;
+> >
+> > +       /* hardware configuration */
+> > +       unsigned short          block_size;
+> > +
+> 
+> You actually don't save any memory here with short and actually makes access
+> to block_size more complex. keeping it int would be better i believe.
+I rather agree with you. I'll change it.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
