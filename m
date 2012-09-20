@@ -1,177 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2ITLki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 07:40:38 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:13409 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab2ITLkf (ORCPT
+	id S1754105Ab2ITLmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 07:42:31 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51839 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2ITLm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 07:40:35 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14654088"
-Date: Thu, 20 Sep 2012 12:39:45 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
- machines
-In-Reply-To: <1348135563.11116.94.camel@hornet>
-Message-ID: <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>
-References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com> <1348135563.11116.94.camel@hornet>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 20 Sep 2012 07:42:28 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Date: Thu, 20 Sep 2012 04:41:42 -0700
+Message-Id: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <877grox6ql.fsf@xmission.com>
+References: <877grox6ql.fsf@xmission.com>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19BN3+0cd757Up00zbx9cBIvhOgbFrtmWA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4695]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *****;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 01/25] userns: Convert fat to use kuid/kgid where appropriate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Pawel Moll wrote:
-> Morning,
-> 
-> On Wed, 2012-09-19 at 18:44 +0100, Stefano Stabellini wrote:
-> > +/dts-v1/;
-> > +
-> > +/include/ "skeleton.dtsi"
-> 
-> Any particular reason to include skeleton? And I think it would be
-> better to use #address-cells = <2> and #size-cells = <2>, to be ready
-> for LPAE addresses...
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-good idea
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/fat/fat.h   |    4 ++--
+ fs/fat/file.c  |    6 +++---
+ fs/fat/inode.c |   18 ++++++++++++------
+ init/Kconfig   |    1 -
+ 4 files changed, 17 insertions(+), 12 deletions(-)
 
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 2deeeb8..7d8e0dc 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -23,8 +23,8 @@
+ #define FAT_ERRORS_RO		3      /* remount r/o on error */
+ 
+ struct fat_mount_options {
+-	uid_t fs_uid;
+-	gid_t fs_gid;
++	kuid_t fs_uid;
++	kgid_t fs_gid;
+ 	unsigned short fs_fmask;
+ 	unsigned short fs_dmask;
+ 	unsigned short codepage;  /* Codepage for shortname conversions */
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index e007b8b..a62e0ec 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -352,7 +352,7 @@ static int fat_allow_set_time(struct msdos_sb_info *sbi, struct inode *inode)
+ {
+ 	umode_t allow_utime = sbi->options.allow_utime;
+ 
+-	if (current_fsuid() != inode->i_uid) {
++	if (!uid_eq(current_fsuid(), inode->i_uid)) {
+ 		if (in_group_p(inode->i_gid))
+ 			allow_utime >>= 3;
+ 		if (allow_utime & MAY_WRITE)
+@@ -407,9 +407,9 @@ int fat_setattr(struct dentry *dentry, struct iattr *attr)
+ 	}
+ 
+ 	if (((attr->ia_valid & ATTR_UID) &&
+-	     (attr->ia_uid != sbi->options.fs_uid)) ||
++	     (!uid_eq(attr->ia_uid, sbi->options.fs_uid))) ||
+ 	    ((attr->ia_valid & ATTR_GID) &&
+-	     (attr->ia_gid != sbi->options.fs_gid)) ||
++	     (!gid_eq(attr->ia_gid, sbi->options.fs_gid))) ||
+ 	    ((attr->ia_valid & ATTR_MODE) &&
+ 	     (attr->ia_mode & ~FAT_VALID_MODE)))
+ 		error = -EPERM;
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 05e897f..47d9eb0 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -791,10 +791,12 @@ static int fat_show_options(struct seq_file *m, struct dentry *root)
+ 	struct fat_mount_options *opts = &sbi->options;
+ 	int isvfat = opts->isvfat;
+ 
+-	if (opts->fs_uid != 0)
+-		seq_printf(m, ",uid=%u", opts->fs_uid);
+-	if (opts->fs_gid != 0)
+-		seq_printf(m, ",gid=%u", opts->fs_gid);
++	if (!uid_eq(opts->fs_uid, GLOBAL_ROOT_UID))
++		seq_printf(m, ",uid=%u",
++				from_kuid_munged(&init_user_ns, opts->fs_uid));
++	if (!gid_eq(opts->fs_gid, GLOBAL_ROOT_GID))
++		seq_printf(m, ",gid=%u",
++				from_kgid_munged(&init_user_ns, opts->fs_gid));
+ 	seq_printf(m, ",fmask=%04o", opts->fs_fmask);
+ 	seq_printf(m, ",dmask=%04o", opts->fs_dmask);
+ 	if (opts->allow_utime)
+@@ -1037,12 +1039,16 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
+ 		case Opt_uid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			opts->fs_uid = option;
++			opts->fs_uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(opts->fs_uid))
++				return 0;
+ 			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			opts->fs_gid = option;
++			opts->fs_gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(opts->fs_gid))
++				return 0;
+ 			break;
+ 		case Opt_umask:
+ 			if (match_octal(&args[0], &option))
+diff --git a/init/Kconfig b/init/Kconfig
+index 296d48b..60bdff2 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -952,7 +952,6 @@ config UIDGID_CONVERTED
+ 	depends on ECRYPT_FS = n
+ 	depends on EFS_FS = n
+ 	depends on EXOFS_FS = n
+-	depends on FAT_FS = n
+ 	depends on FUSE_FS = n
+ 	depends on GFS2_FS = n
+ 	depends on HFS_FS = n
+-- 
+1.7.5.4
 
-> > +/ {
-> > +	model = "XENVM-4.2";
-> > +	compatible = "xen,xenvm-4.2", "arm,vexpress";
-> > +	interrupt-parent = <&gic>;
-> > +
-> > +	chosen {
-> > +		bootargs = "earlyprintk console=hvc0 root=/dev/xvda init=/sbin/init";
-> > +	};
-> > +
-> > +	cpus {
-> > +		#address-cells = <1>;
-> > +		#size-cells = <0>;
-> > +
-> > +		cpu@0 {
-> > +			device_type = "cpu";
-> > +			compatible = "arm,cortex-a15";
-> > +			reg = <0>;
-> > +		};
-> > +	};
-> > +
-> > +	memory {
-> 
-> Formally, it should be memory@80000000, not that I have any strong
-> feelings about it :-)
-
-OK
-
-
-> > +		device_type = "memory";
-> > +		reg = <0x80000000 0x08000000>;
-> > +	};
-> > +
-> > +	gic: interrupt-controller@2c001000 {
-> > +		compatible = "arm,cortex-a9-gic";
-> > +		#interrupt-cells = <3>;
-> > +		#address-cells = <0>;
-> > +		interrupt-controller;
-> > +		reg = <0x2c001000 0x1000>,
-> > +		      <0x2c002000 0x100>;
-> > +	};
-> > +
-> > +	timer {
-> > +		compatible = "arm,armv7-timer";
-> > +		interrupts = <1 13 0xf08>,
-> > +			     <1 14 0xf08>,
-> > +			     <1 11 0xf08>,
-> > +			     <1 10 0xf08>;
-> > +	};
-> > +
-> > +	hypervisor {
-> > +		compatible = "xen,xen-4.2", "xen,xen";
-> > +		reg = <0xb0000000 0x20000>;
-> > +		interrupts = <1 15 0xf08>;
-> > +	};
-> 
-> Is this binding documented somewhere - I mean in
-> Documentation/devicetree/bindings?
-
-Yes, it is: Documentation/devicetree/bindings/arm/xen.txt
-added by: http://marc.info/?l=linux-kernel&m=134790380030990&w=2
-
-
-> > +	motherboard {
-> > +		arm,v2m-memory-map = "rs1";
-> > +		ranges = <0 0 0x08000000 0x04000000>,
-> > +			 <1 0 0x14000000 0x04000000>,
-> > +			 <2 0 0x18000000 0x04000000>,
-> > +			 <3 0 0x1c000000 0x04000000>,
-> > +			 <4 0 0x0c000000 0x04000000>,
-> > +			 <5 0 0x10000000 0x04000000>;
-> > +
-> > +		interrupt-map-mask = <0 0 63>;
-> > +		interrupt-map = <0 0  0 &gic 0  0 4>,
-> > +				<0 0  1 &gic 0  1 4>,
-> > +				<0 0  2 &gic 0  2 4>,
-> > +				<0 0  3 &gic 0  3 4>,
-> > +				<0 0  4 &gic 0  4 4>,
-> > +				<0 0  5 &gic 0  5 4>,
-> > +				<0 0  6 &gic 0  6 4>,
-> > +				<0 0  7 &gic 0  7 4>,
-> > +				<0 0  8 &gic 0  8 4>,
-> > +				<0 0  9 &gic 0  9 4>,
-> > +				<0 0 10 &gic 0 10 4>,
-> > +				<0 0 11 &gic 0 11 4>,
-> > +				<0 0 12 &gic 0 12 4>,
-> > +				<0 0 13 &gic 0 13 4>,
-> > +				<0 0 14 &gic 0 14 4>,
-> > +				<0 0 15 &gic 0 15 4>,
-> > +				<0 0 16 &gic 0 16 4>,
-> > +				<0 0 17 &gic 0 17 4>,
-> > +				<0 0 18 &gic 0 18 4>,
-> > +				<0 0 19 &gic 0 19 4>,
-> > +				<0 0 20 &gic 0 20 4>,
-> > +				<0 0 21 &gic 0 21 4>,
-> > +				<0 0 22 &gic 0 22 4>,
-> > +				<0 0 23 &gic 0 23 4>,
-> > +				<0 0 24 &gic 0 24 4>,
-> > +				<0 0 25 &gic 0 25 4>,
-> > +				<0 0 26 &gic 0 26 4>,
-> > +				<0 0 27 &gic 0 27 4>,
-> > +				<0 0 28 &gic 0 28 4>,
-> > +				<0 0 29 &gic 0 29 4>,
-> > +				<0 0 30 &gic 0 30 4>,
-> > +				<0 0 31 &gic 0 31 4>,
-> > +				<0 0 32 &gic 0 32 4>,
-> > +				<0 0 33 &gic 0 33 4>,
-> > +				<0 0 34 &gic 0 34 4>,
-> > +				<0 0 35 &gic 0 35 4>,
-> > +				<0 0 36 &gic 0 36 4>,
-> > +				<0 0 37 &gic 0 37 4>,
-> > +				<0 0 38 &gic 0 38 4>,
-> > +				<0 0 39 &gic 0 39 4>,
-> > +				<0 0 40 &gic 0 40 4>,
-> > +				<0 0 41 &gic 0 41 4>,
-> > +				<0 0 42 &gic 0 42 4>;
-> > +	};
-> > +};
-> 
-> You've lost me here... You have ranges and interrupt map, but don't
-> include motherboard file. Is it a mistake? If not, you could remove the
-> ranges and interrupt-map, but where do you get your peripherals from
-> then?
-
-There are no peripherals apart from the ones that are already described
-here (timer, gic). All the peripherals that the guest sees are virtual
-devices that show up on xenbus (a virtual bus). In order to initialize
-xenbus, the guest only needs the hypervisor node.  So I'll remove the
-ranges and interrupt-map.
