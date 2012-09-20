@@ -1,126 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab2ITOto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:49:44 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41760 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab2ITOtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:49:42 -0400
-Date: Thu, 20 Sep 2012 20:13:11 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/5] uprobes: Fix UPROBE_SKIP_SSTEP checks in
- handle_swbp()
-Message-ID: <20120920144311.GF27880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120914171513.GA29599@redhat.com>
- <20120914171557.GA29642@redhat.com>
- <20120915073957.GD7588@in.ibm.com>
- <20120915150120.GA20608@redhat.com>
- <20120917172052.GK28033@linux.vnet.ibm.com>
- <20120918160738.GA22995@redhat.com>
+	id S1755579Ab2ITOwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:52:47 -0400
+Received: from nm9-vm0.bullet.mail.ird.yahoo.com ([77.238.189.197]:39938 "HELO
+	nm9-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750755Ab2ITOwq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:52:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 761213.92059.bm@omp1024.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=4OdMTdJlEDIXUd+Yw26Ykg8h/Wr9eLKik/Y9n14UHnmLs0h5XmaPY3imW0JPxK4yAecF9ovilll5cTjR0hVC/tM+MaWJOfgNEULiPcOm1jeU4kyGnV7fdnPdtLVZNngYQXnsCCi7bSUuAQq8X8YYwMHW11EHo7bni4c8iWAdcRA=;
+X-YMail-OSG: l0EXmoMVM1nejeXq6ZfogbegAlnmPa6.kyZ7qmyv3wrirtS
+ 7QKlVGd.kl6ArN3yLESbhsWum6SF6ZtKW1Xoo79o2Juv9SgzjpVhC4_3Xdj2
+ .y.txflyaAjn_3cuhoN3VokOA6p92TsJ0GN3_ch1cLablGKt25Mv5GCEMSiI
+ gnUZGV1Cgj4qoqbPluuU1gUN7PxNPcVURdRxuue7AKqRZz7TzlUsR69hfLLH
+ cUBphCT32Vd1MxcXlpQRccA.P6aps.RQl6XmwcomLRxS3SYoDWTr_jSpM.3B
+ F9ahRlqsctxI8jQTeyZ8FzfuPRzCgbYH5DUe72Ph0Jr1NW6fwphfKgxUZF1_
+ dHuV2hWupJV_xI5bLGrlYPnQExLnsy2ee4nJC61W.rI0axe.yM3XnsoQNMAL
+ 6WZkTgZVaH2GbosX3FQ6t8iXqcpd20R1Ru07MFerxKhJxHoKrPRWE6ptGdi3
+ LSFc.7UUST0x.VSS9nS6FXz11FohIb61A_4qQ2D900ifnG78AYyjpOStxaXu
+ APHcZ7SooxCf1M_L1TOw-
+X-Mailer: YahooMailWebService/0.8.121.416
+Message-ID: <1348152764.23590.YahooMailNeo@web29904.mail.ird.yahoo.com>
+Date: Thu, 20 Sep 2012 15:52:44 +0100 (BST)
+From: Kenyetta Battiest <eryzzzrodes@yahoo.com>
+Reply-To: Eryzzzrodes <eryzzzrodes@yahoo.com>
+Subject: =?utf-8?B?SGV5ISBJIHdhbm5hIG1lZXQgYW4gaW50ZXJlc3RpbmcgbWFuLiBZb3Ugc2Vl?=
+ =?utf-8?B?bSB0byBzdWl0IHRoZSBjb25kaXRpb25zIHBlcmZlY3RseS4uLiDzn6q9?=
+ =?utf-8?B?85+EmfOfq5jzn66L85+RsvOfnqU=?=
+To: "jay3003@collegeclub.com" <jay3003@collegeclub.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120918160738.GA22995@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12092014-8974-0000-0000-00000E183B7C
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000007; SDB=6.00175765; UDB=6.00039797; UTC=2012-09-20
- 14:49:40
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-09-18 18:07:38]:
-
-> >
-> > > Probably this is fine, at least this is
-> > > fine if it finds "nop" eventually. But I can't undestand what
-> > > "0x66* { 0x90 | 0x0f 0x1f | 0x0f 0x19 | 0x87 0xc0 }" means.
-> > > OK, 0x66 and 0x90 are clear. But, say, 0x0f 0x1f ?
-> >
-> > we skip is 0x66 ..0x66 0x0f 0x1f
-> >
-> > So we have a check
-> > if (i == (MAX_UINSN_BYTES - 1))
-> >
-> > so this ensures that we are consider 0x0f 0x1f as nop if and only if
-> > they are at the end and preceeded by 0x66.
-> 
-> Hmm. How so? The code does
-> 
-> 	if (i == (MAX_UINSN_BYTES - 1))
-> 		break;
-> 
-> 	if ((auprobe->insn[i] == 0x0f) && (auprobe->insn[i+1] == 0x1f))
-> 		return true;
-> 
-> 
-> So, afaics, if the intent was to skip 1f0f at the end only, it should do
-
-Its 0f1f and not 1f0f
-
-> 
-> 	if (i == (MAX_UINSN_BYTES - 1)) {
-> 		if ((auprobe->insn[i] == 0x0f) && (auprobe->insn[i+1] == 0x1f))
-> 			return true;
-> 		...
-> 	}
-> 
-> "and preceeded by 0x66" above doesn't look true too, perhaps you
-> meant "may be preceeded by 0x66".
-> 
-
-Yup, as always you are right. We expect 0x0f 0x1f preceeded by 0x66 to
-be nop instructions.
-
-> > So are you suggesting extending the list of nops or is it that we are
-> > considering non nop instructions as nops?
-> 
-> No, I am trying to understand which insns arch_skip tries to skip.
-> In particular, what "0x0f 0x1f" means.
-> 
-> > > I compiled this program
-> > >
-> > > 	int main(void)
-> > > 	{
-> > > 		asm volatile (".word 0x1f0f");
-> > > 		return 0;
-> > > 	}
-> > >
-> > > and objdump reports:
-> > >
-> > > 	000000000040047c <main>:
-> > > 	  40047c:       0f 1f 31                nopl   (%rcx)
-> >
-> > Current uprobes code wouldnt skip the above insn because it has 31
-> > following it.
-> 
-> See above.
-> 
-> And again, could you explain which insn has 1f0f (at the end or not) ?
-> IOW, what we are trying to skip?
-
-Again its 0f1f and not 1f0f
-
-for example 
-0f 1f 40 00
-0f 1f 44 00 00
-66 0f 1f 44 00 00
-
-I referred arch/x86/include/asm/nops.h, arch/x86/lib/x86-opcode-map.txt
-and disassembly of libc.  And ofcourse Jim Keniston helped me in most of
-the x86 stuff.
-
---
-thanks and regards
-Srikar
-
+*http://οоаůὁ.sweet-discreets.ru/?ḩȃὃŕĸ
