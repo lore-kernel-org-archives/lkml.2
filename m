@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab2ITOer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:34:47 -0400
-Received: from sh.osrg.net ([192.16.179.4]:53050 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755441Ab2ITOep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:34:45 -0400
-Date: Thu, 20 Sep 2012 23:34:34 +0900 (JST)
-Message-Id: <20120920.233434.135419220.konishi.ryusuke@lab.ntt.co.jp>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 18/25] userns: Convert nillfs2 to use kuid/kgid where
- appropriate
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <1348141326-23355-18-git-send-email-ebiederm@xmission.com>
-References: <877grox6ql.fsf@xmission.com>
-	<1348141326-23355-1-git-send-email-ebiederm@xmission.com>
-	<1348141326-23355-18-git-send-email-ebiederm@xmission.com>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+	id S1755559Ab2ITOkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:40:10 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:52547 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab2ITOkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:40:08 -0400
+Date: Thu, 20 Sep 2012 16:40:01 +0200
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/s390/char/monreader.c: fix error return
+ code
+Message-ID: <20120920164001.50a4305c@thinkpad>
+In-Reply-To: <1347869521-2470-1-git-send-email-peter.senna@gmail.com>
+References: <1347869521-2470-1-git-send-email-peter.senna@gmail.com>
+Reply-To: gerald.schaefer@de.ibm.com
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Thu, 20 Sep 2012 23:34:36 +0900 (JST)
+x-cbid: 12092014-0542-0000-0000-00000310045B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012 04:41:59 -0700, "Eric W. Biederman" wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Mon, 17 Sep 2012 10:12:00 +0200
+Peter Senna Tschudin <peter.senna@gmail.com> wrote:
+
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
 > 
-> Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 > ---
->  fs/nilfs2/inode.c |    8 ++++----
->  init/Kconfig      |    1 -
->  2 files changed, 4 insertions(+), 5 deletions(-)
+>  drivers/s390/char/monreader.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/s390/char/monreader.c b/drivers/s390/char/monreader.c
+> index 5b8b859..f4ff515 100644
+> --- a/drivers/s390/char/monreader.c
+> +++ b/drivers/s390/char/monreader.c
+> @@ -571,8 +571,11 @@ static int __init mon_init(void)
+>  	if (rc)
+>  		goto out_iucv;
+>  	monreader_device = kzalloc(sizeof(struct device), GFP_KERNEL);
+> -	if (!monreader_device)
+> +	if (!monreader_device) {
+> +		rc = -ENOMEM;
+>  		goto out_driver;
+> +	}
+> +
+>  	dev_set_name(monreader_device, "monreader-dev");
+>  	monreader_device->bus = &iucv_bus;
+>  	monreader_device->parent = iucv_root;
 
-Looks good to me, thanks.
+Applied, thanks!
 
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-
-
-Ryusuke Konishi
