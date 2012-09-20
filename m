@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2ITVug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:50:36 -0400
-Received: from nm34-vm10.bullet.mail.sg3.yahoo.com ([106.10.151.249]:34382
-	"HELO nm34-vm10.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751032Ab2ITVuf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:50:35 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 583078.28406.bm@omp1025.mail.sg3.yahoo.com
-X-YMail-OSG: T2ZpBcoVM1nbG_ZzNyGoPEbQwCQxcgfSQ6dOShBTKfiI2K5
- 1Nmj77LHlHtbiEkVD7JWvEFrwV12ROtE58Exp3oXYKzJgZSh9RzGgiw.lXrV
- JliC8wJoe38wnHEQ9n5Qwh0jRe_04FMoM.Isbb3eIKlTTsrEHkzWojU_4xIO
- v5lEiJ84WSMnmRNQpScEmim7qOhY7V43lMb0CZLnwgZ2yahQ0eaxnz6T8FpW
- ohtmQRYbi3EfSn0N9Lq8evJ.0B2qlbmVW0v4kFbPWcXknwcHZWnIVWJWJ9rp
- 3dF9O01d01B6.2nJ2HESK1mm2DgFmFB35VIP4.thAYQsi_V.SRuydKaj49kZ
- SUZK.bGMVSWkIxQ8eZzpeDX5UAoaWgF5qUaCxpn_1WDvPojDq8lr4_dxH8a2
- Zovbv7YMm54oqu9Kgrew996KmOE7_StMg8Ilyhnk9cDlBTOTYQlawi_ICO_L
- GjBNucEqv_bLAigRCmMTAB0nGER4RptORqDiQ8A4_nw8rcNUx0o4a9FV0g5E
- oasOJL2xQWUVEoiguWjHhniqn8BZzTo9UHgWT3Dr0kgKlyEWiKzfvAtfxi1n
- 7t5QdQLBP9M3AbYJO
-X-RocketYMMF: anir82
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.121.416
-Message-ID: <1348177721.33252.YahooMailClassic@web193104.mail.sg3.yahoo.com>
-Date: Fri, 21 Sep 2012 05:48:41 +0800 (SGT)
-From: Ruth Yoda <ruth_y2@qq.com>
-Reply-To: ruth_y1@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1753691Ab2ITVuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:50:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39726 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab2ITVuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 17:50:37 -0400
+Date: Thu, 20 Sep 2012 17:50:34 -0400 (EDT)
+Message-Id: <20120920.175034.401099732294832491.davem@davemloft.net>
+To: avagin@openvz.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        xemul@parallels.com
+Subject: Re: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+References: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andrew Vagin <avagin@openvz.org>
+Date: Wed, 19 Sep 2012 23:40:00 +0400
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+> rcv_wscale is a symetric parameter with snd_wscale.
+> 
+> Both this parameters are set on a connection handshake.
+> 
+> Without this value a remote window size can not be interpreted correctly,
+> because a value from a packet should be shifted on rcv_wscale.
+> 
+> And one more thing is that wscale_ok should be set too.
+> 
+> This patch doesn't break a backward compatibility.
+> If someone uses it in a old scheme, a rcv window
+> will be restored with the same bug (rcv_wscale = 0).
+> 
+> v2: Save backward compatibility on big-endian system. Before
+>     the first two bytes were snd_wscale and the second two bytes were
+>     rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
+>     This approach is independent on byte ordering.
+> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+
+Applied, thanks.
