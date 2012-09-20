@@ -1,95 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2ITWD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:03:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19048 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab2ITWD4 (ORCPT
+	id S1756231Ab2ITWEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:04:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48699 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab2ITWEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:03:56 -0400
-X-Authority-Analysis: v=2.0 cv=C49rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=mDYbXTAqAuEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=csqk5SOtqX8A:10 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=L5JWO0G1mFL6_1CW1c0A:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1348178633.13080.69.camel@gandalf.local.home>
-Subject: [PATCH][GIT PULL][v3.6] tracing: Don't call page_to_pfn() if page
- is NULL
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>
-Date: Thu, 20 Sep 2012 18:03:53 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 18:04:42 -0400
+Date: Thu, 20 Sep 2012 15:02:04 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: walter harms <wharms@bfs.de>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] da9052-battery: don't free IRQ that wasn't requested
+Message-ID: <20120920220204.GE18223@lizard>
+References: <20120905123440.GF6128@elgon.mountain>
+ <50475D75.2040908@bfs.de>
+ <20120906150758.GL19410@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120906150758.GL19410@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 06, 2012 at 08:07:58AM -0700, Dan Carpenter wrote:
+[...]
+> >    for (j=0; j <= i ;j++ ) {
+>                ^^^^^^
+> The count up loops are prone to the exact same off by one bugs.  ;)
+> You've got one in your sample code.  Plus I'd have to declare
+> another variable and send a v2 patch and I am very lazy...  So in
+> this case I think should just take my original patch.
 
-Ingo,
-
-I wrote a test that triggers the bug, and tested this patch which seems
-to fix it as well.
-
-Please pull the latest tip/perf/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
-
-Head SHA1: 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
-
-
-Wen Congyang (1):
-      tracing: Don't call page_to_pfn() if page is NULL
-
-----
- include/trace/events/kmem.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
----------------------------
-commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa
-Author: Wen Congyang <wency@cn.fujitsu.com>
-Date:   Thu Sep 20 14:04:47 2012 +0800
-
-    tracing: Don't call page_to_pfn() if page is NULL
-    
-    When allocating memory fails, page is NULL. page_to_pfn() will
-    cause the kernel panicked if we don't use sparsemem vmemmap.
-    
-    Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
-    
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@redhat.com>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: stable <stable@vger.kernel.org>
-    Acked-by: Mel Gorman <mel@csn.ul.ie>
-    Reviewed-by: Minchan Kim <minchan@kernel.org>
-    Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
-index 5f889f1..08fa272 100644
---- a/include/trace/events/kmem.h
-+++ b/include/trace/events/kmem.h
-@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
- 
- 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		show_gfp_flags(__entry->gfp_flags))
-@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
- 
- 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		__entry->order == 0)
-
-
+Applied, thank you!
