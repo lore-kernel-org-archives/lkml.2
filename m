@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab2ITXWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:22:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43884 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab2ITXWl (ORCPT
+	id S932554Ab2ITXWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:22:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57326 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449Ab2ITXWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:22:41 -0400
+	Thu, 20 Sep 2012 19:22:50 -0400
+Date: Thu, 20 Sep 2012 16:22:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2 00/26] Prep work for immutable bio vecs
+Message-ID: <20120920232245.GH7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
-In-Reply-To: <CAMQu2gw0AmVhW+qR9GUGkUd2G+aZd9A=skTUDJiY2BMpURmSNQ@mail.gmail.com>
-References: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
-	<20120917215128.GF11762@atomide.com>
-	<201209191857.57862.arnd@arndb.de>
-	<CAMQu2gw0AmVhW+qR9GUGkUd2G+aZd9A=skTUDJiY2BMpURmSNQ@mail.gmail.com>
-Date: Thu, 20 Sep 2012 16:22:39 -0700
-Message-ID: <CAOesGMgzAiFQKpZEpXqRS+U9fxcLAemhb+MCNsn0AOffa6JiNA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to drivers/bus/
-From: Olof Johansson <olof@lixom.net>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 10:56 PM, Shilimkar, Santosh
-<santosh.shilimkar@ti.com> wrote:
-> On Thu, Sep 20, 2012 at 12:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Monday 17 September 2012, Tony Lindgren wrote:
->>> * Santosh Shilimkar <santosh.shilimkar@ti.com> [120914 02:21]:
->>> > OMAP interconnect drivers are used for the interconnect error handling.
->>> > Since they are bus driver, lets move it to newly created drivers/bus.
->>> >
->>> > Cc: Arnd Bergmann <arnd@arndb.de>
->>> > Cc: Tony Lindgren <tony@atomide.com>
->>> > Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
->>> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> > ---
->>> > Patch just moves OMAP interconnect drivers as is to the newly created
->>> > driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
->>> > tree and test on all OMAP boards.
->>>
->>> Great, looks like this should not conflict with other
->>> omap patches queued, so Arnd should probably take this into
->>> the bus branch:
->>>
->>> Acked-by: Tony Lindgren <tony@atomide.com>
->>
->> It turns out that the patch actually did conflict and we now have a broken
->> omap2plus_defconfig. The patch below seems to fix it, but please verify
->> that this makes sense.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->>
-> Looks correct.
->
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Mon, Sep 10, 2012 at 05:22:11PM -0700, Kent Overstreet wrote:
+> Random assortment of refactoring and trivial cleanups;
+> 
+> Immutable bio vecs and efficient bio splitting require auditing and
+> removing pretty much all bi_idx uses, among other things.
+> 
+> The reason is that with immutable bio vecs we can't use the bvec array
+> directly; if we have a partially completed bvec, that'll be indicated
+> with a field in struct bvec_iter (which gets embedded in struct bio) -
+> bi_bvec_done.
+> 
+> bio_for_each_segments() will handle this transparently, so code needs to
+> be converted to use it or some other generic accessor.
+> 
+> Also, bio splitting means that when a driver gets a bio, bi_idx and
+> bi_bvec_done may both be nonzero. Again, just need to use generic
+> accessors.
+> 
+> v2: Patch series now has all the prep work to be done before abstracting
+> out the bio iterator, I think.
 
-I ended up applying something very similar to this and carried the
-ACKs on that, but I broke it up in two pieces; one for the
-drivers/ocp2scp branch to fix the irq numbers, and another to just
-for-next to deal with the soc.h include file (since that should
-probably have been fixed at branch merge time).
+Cc'ing Vivek.  Kent, can you please add Vivek to Cc on block layer
+patches?
 
-Pushed out to for-next as well.
+Vivek, can you please review this series?  It's generic block stuff
+and definitely can use your review.
 
+  http://thread.gmane.org/gmane.linux.kernel.bcache.devel/1055
 
--Olof
+Thanks.
+
+-- 
+tejun
