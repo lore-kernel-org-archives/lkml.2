@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2ITOla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:41:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24170 "EHLO mx1.redhat.com"
+	id S1755881Ab2ITOrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:47:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755466Ab2ITOl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:27 -0400
+	id S1755332Ab2ITOl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:41:29 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 01/10] Secure boot: Add new capability
-Date: Thu, 20 Sep 2012 10:40:56 -0400
-Message-Id: <1348152065-31353-2-git-send-email-mjg@redhat.com>
+Subject: [PATCH V2 03/10] x86: Lock down IO port access in secure boot environments
+Date: Thu, 20 Sep 2012 10:40:58 -0400
+Message-Id: <1348152065-31353-4-git-send-email-mjg@redhat.com>
 In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,34 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Secure boot adds certain policy requirements, including that root must not
-be able to do anything that could cause the kernel to execute arbitrary code.
-The simplest way to handle this would seem to be to add a new capability
-and gate various functionality on that. We'll then strip it from the initial
-capability set if required.
+IO port access would permit users to gain access to PCI configuration
+registers, which in turn (on a lot of hardware) give access to MMIO register
+space. This would potentially permit root to trigger arbitrary DMA, so lock
+it down by default.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- include/linux/capability.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/ioport.c | 4 ++--
+ drivers/char/mem.c       | 3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d10b7ed..4345bc8 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -364,7 +364,11 @@ struct cpu_vfs_cap_data {
+diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
+index 8c96897..a2578c4 100644
+--- a/arch/x86/kernel/ioport.c
++++ b/arch/x86/kernel/ioport.c
+@@ -28,7 +28,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
  
- #define CAP_BLOCK_SUSPEND    36
+ 	if ((from + num <= from) || (from + num > IO_BITMAP_BITS))
+ 		return -EINVAL;
+-	if (turn_on && !capable(CAP_SYS_RAWIO))
++	if (turn_on && (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL)))
+ 		return -EPERM;
  
--#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
-+/* Allow things that trivially permit root to modify the running kernel */
+ 	/*
+@@ -102,7 +102,7 @@ long sys_iopl(unsigned int level, struct pt_regs *regs)
+ 		return -EINVAL;
+ 	/* Trying to gain more privileges? */
+ 	if (level > old) {
+-		if (!capable(CAP_SYS_RAWIO))
++		if (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL))
+ 			return -EPERM;
+ 	}
+ 	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index e5eedfa2..1e0a660 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -597,6 +597,9 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	unsigned long i = *ppos;
+ 	const char __user * tmp = buf;
+ 
++	if (!capable(CAP_COMPROMISE_KERNEL))
++		return -EPERM;
 +
-+#define CAP_COMPROMISE_KERNEL  37
-+
-+#define CAP_LAST_CAP         CAP_COMPROMISE_KERNEL
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
+ 	if (!access_ok(VERIFY_READ, buf, count))
+ 		return -EFAULT;
+ 	while (count-- > 0 && i < 65536) {
 -- 
 1.7.11.4
 
