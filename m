@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2ITJEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:04:42 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:54828 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2ITJEi (ORCPT
+	id S1751626Ab2ITJHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:07:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55987 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2ITJHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:04:38 -0400
-Date: Thu, 20 Sep 2012 11:04:24 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
-Message-ID: <20120920110424.3cb4daff@skate>
-In-Reply-To: <505AD103.8050004@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
-	<505AD103.8050004@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 05:07:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120920000313.GH2455@linux.vnet.ibm.com>
+References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
+	<50520E8A.9030408@linaro.org>
+	<20120913165844.GW4257@linux.vnet.ibm.com>
+	<CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
+	<20120914175322.GI4257@linux.vnet.ibm.com>
+	<CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
+	<20120920000313.GH2455@linux.vnet.ibm.com>
+Date: Thu, 20 Sep 2012 11:07:37 +0200
+Message-ID: <CACRpkdaufGjsEtkjQFY9oDvmtM7xnEiFweLfOGuX+WRf0Vbb5A@mail.gmail.com>
+Subject: Re: RCU lockup in the SMP idle thread, help...
+From: Linus Walleij <linus.walleij@linaro.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: John Stultz <john.stultz@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
+On Thu, Sep 20, 2012 at 2:03 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
 
-On Thu, 20 Sep 2012 10:17:07 +0200, Sebastian Hesselbarth wrote:
+> In the meantime, a crude fallback is for the CPU that detected the stall
+> to trace the stack of the task running on the other CPU.  See below for
+> a crude (and untested) patch.
 
-> I prefer having a subdirectory as there are three more SoCs related
-> to mvebu.
+OK now I get this:
 
-I definitely agree.
+ INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
+t=29508 jiffies)
+Task dump for CPU 0:
+swapper/0       R running      0     0      0 0x00000000
+[<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
+[<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
+INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
+t=29851 jiffies)
+Task dump for CPU 0:
+swapper/0       R running      0     0      0 0x00000000
+[<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
+[<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
 
-> > Either way it's NO BIG DEAL, so I will take care of this after they
-> > are merged unless you feel like just fixing it in-flight at this moment.
-> 
-> I think integration into Marvell tree is a little bit stalled by other
-> patches. Hopefully, today I find some time and update the patches accordingly.
+So the swapper thread is the culprit?
+Hm, I'm not very smart with this no...
 
-Hum, which patches are stalling the integration into the Marvell tree?
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Yours,
+Linus Walleij
