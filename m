@@ -1,187 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab2ITADW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 20:03:22 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57259 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab2ITADU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 20:03:20 -0400
-Date: Wed, 19 Sep 2012 17:03:13 -0700
+	id S1753272Ab2ITAHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 20:07:20 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50133 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab2ITAHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 20:07:17 -0400
+Date: Wed, 19 Sep 2012 17:03:51 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: RCU lockup in the SMP idle thread, help...
-Message-ID: <20120920000313.GH2455@linux.vnet.ibm.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, bbruce@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        khilman@ti.com, santosh.shilimkar@ti.com, jon-hunter@ti.com,
+        snijsure@grid-net.com
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+Message-ID: <20120920000351.GI2455@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
- <50520E8A.9030408@linaro.org>
- <20120913165844.GW4257@linux.vnet.ibm.com>
- <CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
- <20120914175322.GI4257@linux.vnet.ibm.com>
- <CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com>
+ <20120913011208.GT4257@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092000-7182-0000-0000-000002A9767F
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092000-2398-0000-0000-00000B2DD312
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00175591; UDB=6.00039758; UTC=2012-09-20
+ 00:07:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 11:10:30AM +0200, Linus Walleij wrote:
-> On Fri, Sep 14, 2012 at 7:53 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
+On Thu, Sep 13, 2012 at 06:52:10PM +0000, Paul Walmsley wrote:
+> Hi Paul,
 > 
-> > Could you please try reproducing with CONFIG_RCU_CPU_STALL_INFO=y?
+> thanks for the reply,
 > 
-> Yep: looks like this:
+> On Wed, 12 Sep 2012, Paul E. McKenney wrote:
 > 
-> INFO: rcu_preempt detected stalls on CPUs/tasks:
->         0: (0 ticks this GP) idle=458/0/0
->         (detected by 1, t=29904 jiffies)
-> [<c0014710>] (unwind_backtrace+0x0/0xf8) from [<c00687dc>]
-> (rcu_check_callbacks+0x6f8/0x730)
-> [<c00687dc>] (rcu_check_callbacks+0x6f8/0x730) from [<c0029cbc>]
-> (update_process_times+0x38/0x4c)
-> [<c0029cbc>] (update_process_times+0x38/0x4c) from [<c0055088>]
-> (tick_sched_timer+0x80/0xe4)
-> [<c0055088>] (tick_sched_timer+0x80/0xe4) from [<c003c120>]
-> (__run_hrtimer.isra.18+0x44/0xd0)
-> [<c003c120>] (__run_hrtimer.isra.18+0x44/0xd0) from [<c003cae0>]
-> (hrtimer_interrupt+0x118/0x2b4)
-> [<c003cae0>] (hrtimer_interrupt+0x118/0x2b4) from [<c0013658>]
-> (twd_handler+0x30/0x44)
-> [<c0013658>] (twd_handler+0x30/0x44) from [<c00638c8>]
-> (handle_percpu_devid_irq+0x80/0xa0)
-> [<c00638c8>] (handle_percpu_devid_irq+0x80/0xa0) from [<c00603b8>]
-> (generic_handle_irq+0x20/0x30)
-> [<c00603b8>] (generic_handle_irq+0x20/0x30) from [<c000ef58>]
-> (handle_IRQ+0x4c/0xac)
-> [<c000ef58>] (handle_IRQ+0x4c/0xac) from [<c00084bc>] (gic_handle_irq+0x24/0x58)
-> [<c00084bc>] (gic_handle_irq+0x24/0x58) from [<c000dc80>] (__irq_svc+0x40/0x70)
-> Exception stack(0xcf865f88 to 0xcf865fd0)
-> 5f80:                   00000020 c05c0a20 00000001 00000000 cf864000 cf864000
-> 5fa0: c05dfe48 c02de0b4 c05c3e90 412fc091 cf864000 00000000 01000000 cf865fd0
-> 5fc0: c000f234 c000f238 60000013 ffffffff
-> [<c000dc80>] (__irq_svc+0x40/0x70) from [<c000f238>] (default_idle+0x28/0x30)
-> [<c000f238>] (default_idle+0x28/0x30) from [<c000f438>] (cpu_idle+0x98/0xe4)
-> [<c000f438>] (cpu_idle+0x98/0xe4) from [<002d3114>] (0x2d3114)
+> > Interesting.  I am assuming that the interrupt in the stack below came
+> > from idle, if not, please let me know what.
+> 
+> According to the exception stack section in the original traceback, it
+> appears that the serial interrupt took the SoC out of idle.
+> 
+> > Could you please reproduce with CONFIG_RCU_CPU_STALL_INFO=y?  That would
+> > give me a bit more information about why RCU thought that there was
+> > a stall.  (CCing Becky Bruce, who saw something similar recently.)
+> 
+> At the bottom of this mail is a series of tracebacks with
+> CONFIG_RCU_CPU_STALL_INFO=y.  Unlike the traceback that was sent in
+> the last message, these were not triggered by serial activity.  These
+> appeared every 300 seconds.
+> 
+> > Subodh Nijsure (also CCed) reported something that might be similar on
+> > ARM, and also reported that setting the following got rid of the stalls:
+> > 
+> > 	CONFIG_CPU_IDLE=y
+> > 	CONFIG_CPU_IDLE_GOV_LADDER=y
+> > 	CONFIG_CPU_IDLE_GOV_MENU=y
+> > 
+> > At which point he was happy, which was good, but which also left the
+> > underlying problem unsolved.  Do these affect your system?  If so,
+> > do they cause a different ARM idle loop to be executed?
+> 
+> Will give this a try.  What board was Subodh using?
 
-Ah!!!  If I understand correctly, ARM does not implement the NMI-based
-trigger_all_cpu_backtrace() facility that RCU uses to get stack backtraces
-out of all CPUs.  In this case, trigger_all_cpu_backtrace() returns
-failure, so RCU falls back to dumping a stack trace of the current CPU,
-which in this case is CPU 1.  Unfortunately, this stack backtrace says
-nothing about the state of CPU 0, which is the one that is stalling.
+Hello, Paul,
 
-So, yes, CPU 1 was interrupted out of idle, but it was CPU 0 that was
-responsible for the stall.
-
-I could hack together something that used IPIs to get the backtrace, but
-this is unlikely to work.  The thing is that RCU waits an additional
-two jiffies before allowing a CPU to complain about some other CPU's
-stall.  This means that unless CPU 0 halted the scheduling-clock
-interrupt, the most likely failure mode is that CPU 0 was spinning
-with interrupts disabled, which would render IPIs ineffective.  Which is
-why trigger_all_cpu_backtrace() uses NMIs.
-
-Any thoughts on the feasibility of implementing NMI-based stack backtraces
-for ARM?
-
-In the meantime, a crude fallback is for the CPU that detected the stall
-to trace the stack of the task running on the other CPU.  See below for
-a crude (and untested) patch.
+Any news on trying the above settings?
 
 							Thanx, Paul
 
-------------------------------------------------------------------------
-
-rcu: Print remote CPU's stacks in stall warnings
-
-The RCU CPU stall warnings rely on trigger_all_cpu_backtrace() to
-do NMI-based dump of the stack traces of all CPUs.  Unfortunately, a
-number of architectures do not implement trigger_all_cpu_backtrace(), in
-which case RCU falls back to just dumping the stack of the running CPU.
-This is unhelpful in the case where the running CPU has detected that
-some other CPU has stalled.
-
-This commit therefore makes the running CPU dump the stacks of the
-tasks running on the stalled CPUs.
-
-Not-yet-signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index cdaeeff..02df81a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -149,6 +149,8 @@ extern void update_cpu_load_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-+extern void dump_cpu_task(int cpu);
-+
- struct seq_file;
- struct cfs_rq;
- struct task_group;
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 6eff63d..ea42da1 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -851,6 +851,29 @@ static void record_gp_stall_check_time(struct rcu_state *rsp)
- 	rsp->jiffies_stall = jiffies + jiffies_till_stall_check();
- }
- 
-+/*
-+ * Dump stacks of all tasks running on stalled CPUs.  This is a fallback
-+ * for architectures that do not implement trigger_all_cpu_backtrace().
-+ * The NMI-triggered stack traces are more accurate because they are
-+ * printed by the target CPU.
-+ */
-+static void rcu_dump_cpu_stacks(struct rcu_state *rsp)
-+{
-+	int cpu;
-+	unsigned long flags;
-+	struct rcu_node *rnp;
-+
-+	rcu_for_each_leaf_node(rsp, rnp) {
-+		raw_spin_lock_irqsave(&rnp->lock, flags);
-+		if (rnp->qsmask != 0) {
-+			for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
-+				if (rnp->qsmask & (1UL << cpu))
-+					dump_cpu_task(rnp->grplo + cpu);
-+		}
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+	}
-+}
-+
- static void print_other_cpu_stall(struct rcu_state *rsp)
- {
- 	int cpu;
-@@ -907,7 +930,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	if (ndetected == 0)
- 		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
- 	else if (!trigger_all_cpu_backtrace())
--		dump_stack();
-+		rcu_dump_cpu_stacks(rsp);
- 
- 	/* Complain about tasks blocking the grace period. */
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ce685da..b5c27a7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -8610,3 +8610,9 @@ struct cgroup_subsys cpuacct_subsys = {
- 	.base_cftypes = files,
- };
- #endif	/* CONFIG_CGROUP_CPUACCT */
-+
-+void dump_cpu_task(int cpu)
-+{
-+	pr_info("Task dump for CPU %d:\n", cpu);
-+	sched_show_task(cpu_curr(cpu));
-+}
+> - Paul
+> 
+> 
+> Debian GNU/Linux wheezy/sid armel ttyO2
+> 
+> armel login: [  305.942108] INFO: rcu_sched self-detected stall on CPU
+> [  305.944946]  1: (7 GPs behind) idle=57b/1/0 
+> [  305.947265]   (t=22811 jiffies)
+> [  305.949066] [<c001b7cc>] (unwind_backtrace+0x0/0xf0) from [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678)
+> [  305.954223] [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678) from [<c00529e0>] (update_process_times+0x38/0x68)
+> [  305.959625] [<c00529e0>] (update_process_times+0x38/0x68) from [<c008bf14>] (tick_sched_timer+0x80/0xec)
+> [  305.964813] [<c008bf14>] (tick_sched_timer+0x80/0xec) from [<c006840c>] (__run_hrtimer+0x7c/0x1e0)
+> [  305.969696] [<c006840c>] (__run_hrtimer+0x7c/0x1e0) from [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0)
+> [  305.974731] [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a04c>] (twd_handler+0x30/0x44)
+> [  305.979644] [<c001a04c>] (twd_handler+0x30/0x44) from [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c)
+> [  305.984741] [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a37dc>] (generic_handle_irq+0x30/0x48)
+> [  305.990234] [<c00a37dc>] (generic_handle_irq+0x30/0x48) from [<c0014c58>] (handle_IRQ+0x4c/0xac)
+> [  305.995025] [<c0014c58>] (handle_IRQ+0x4c/0xac) from [<c0008478>] (gic_handle_irq+0x28/0x5c)
+> [  305.999633] [<c0008478>] (gic_handle_irq+0x28/0x5c) from [<c04f8ca4>] (__irq_svc+0x44/0x5c)
+> [  306.004180] Exception stack(0xde86ff88 to 0xde86ffd0)
+> [  306.006927] ff80:                   0003c6d0 00000001 00000000 de8660c0 de86e000 c07c23c8
+> [  306.011383] ffa0: c0504590 c0749e20 00000000 411fc092 c074a040 00000000 00000001 de86ffd0
+> [  306.015838] ffc0: 0003c6d1 c0014f50 20000113 ffffffff
+> [  306.018585] [<c04f8ca4>] (__irq_svc+0x44/0x5c) from [<c0014f50>] (default_idle+0x20/0x44)
+> [  306.023040] [<c0014f50>] (default_idle+0x20/0x44) from [<c001517c>] (cpu_idle+0x9c/0x114)
+> [  306.027526] [<c001517c>] (cpu_idle+0x9c/0x114) from [<804f1af4>] (0x804f1af4)
+> [  602.004486] INFO: rcu_sched detected stalls on CPUs/tasks:
+> [  602.007476]  (detected by 0, t=60707 jiffies)
+> [  602.009857] INFO: Stall ended before state dump start
+> [  906.027893] INFO: rcu_sched self-detected stall on CPU
+> [  906.030700]  1: (6 GPs behind) idle=647/1/0 
+> [  906.033020]   (t=38379 jiffies)
+> [  906.034790] [<c001b7cc>] (unwind_backtrace+0x0/0xf0) from [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678)
+> [  906.039947] [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678) from [<c00529e0>] (update_process_times+0x38/0x68)
+> [  906.045349] [<c00529e0>] (update_process_times+0x38/0x68) from [<c008bf14>] (tick_sched_timer+0x80/0xec)
+> [  906.050537] [<c008bf14>] (tick_sched_timer+0x80/0xec) from [<c006840c>] (__run_hrtimer+0x7c/0x1e0)
+> [  906.055419] [<c006840c>] (__run_hrtimer+0x7c/0x1e0) from [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0)
+> [  906.060424] [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a04c>] (twd_handler+0x30/0x44)
+> [  906.065307] [<c001a04c>] (twd_handler+0x30/0x44) from [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c)
+> [  906.070434] [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a37dc>] (generic_handle_irq+0x30/0x48)
+> [  906.075897] [<c00a37dc>] (generic_handle_irq+0x30/0x48) from [<c0014c58>] (handle_IRQ+0x4c/0xac)
+> [  906.080688] [<c0014c58>] (handle_IRQ+0x4c/0xac) from [<c0008478>] (gic_handle_irq+0x28/0x5c)
+> [  906.085296] [<c0008478>] (gic_handle_irq+0x28/0x5c) from [<c04f8ca4>] (__irq_svc+0x44/0x5c)
+> [  906.089843] Exception stack(0xde86ff88 to 0xde86ffd0)
+> [  906.092590] ff80:                   0003cb06 00000001 00000000 de8660c0 de86e000 c07c23c8
+> [  906.097045] ffa0: c0504590 c0749e20 00000000 411fc092 c074a040 00000000 00000001 de86ffd0
+> [  906.101501] ffc0: 0003cb07 c0014f50 20000113 ffffffff
+> [  906.104278] [<c04f8ca4>] (__irq_svc+0x44/0x5c) from [<c0014f50>] (default_idle+0x20/0x44)
+> [  906.108734] [<c0014f50>] (default_idle+0x20/0x44) from [<c001517c>] (cpu_idle+0x9c/0x114)
+> [  906.113189] [<c001517c>] (cpu_idle+0x9c/0x114) from [<804f1af4>] (0x804f1af4)
+> 
 
