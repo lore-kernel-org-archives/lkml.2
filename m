@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab2ITSxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:53:36 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42860 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2ITStE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:49:04 -0400
+	id S1754519Ab2ITSxe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:53:34 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44362 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754283Ab2ITStI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:49:08 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,76 +14,55 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 19/23] rcu: Eliminate signed overflow in synchronize_rcu_expedited()
-Date: Thu, 20 Sep 2012 11:48:15 -0700
-Message-Id: <1348166900-18716-19-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 18/23] rcu: Adjust for unconditional ->completed assignment
+Date: Thu, 20 Sep 2012 11:48:14 -0700
+Message-Id: <1348166900-18716-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120920184751.GA18657@linux.vnet.ibm.com>
  <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092018-5518-0000-0000-000007CEF4A7
+x-cbid: 12092018-5806-0000-0000-000019D02DFB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-In the C language, signed overflow is undefined.  It is true that
-twos-complement arithmetic normally comes to the rescue, but if the
-compiler can subvert this any time it has any information about the values
-being compared.  For example, given "if (a - b > 0)", if the compiler
-has enough information to realize that (for example) the value of "a"
-is positive and that of "b" is negative, the compiler is within its
-rights to optimize to a simple "if (1)", which might not be what you want.
+Now that the rcu_node structures' ->completed fields are unconditionally
+assigned at grace-period cleanup time, they should already have the
+correct value for the new grace period at grace-period initialization
+time.  This commit therefore inserts a WARN_ON_ONCE() to verify this
+invariant.
 
-This commit therefore converts synchronize_rcu_expedited()'s work-done
-detection counter from signed to unsigned.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree_plugin.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/rcutree.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index eb8dcd1..cb58793 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -677,7 +677,7 @@ void synchronize_rcu(void)
- EXPORT_SYMBOL_GPL(synchronize_rcu);
- 
- static DECLARE_WAIT_QUEUE_HEAD(sync_rcu_preempt_exp_wq);
--static long sync_rcu_preempt_exp_count;
-+static unsigned long sync_rcu_preempt_exp_count;
- static DEFINE_MUTEX(sync_rcu_preempt_exp_mutex);
- 
- /*
-@@ -792,7 +792,7 @@ void synchronize_rcu_expedited(void)
- 	unsigned long flags;
- 	struct rcu_node *rnp;
- 	struct rcu_state *rsp = &rcu_preempt_state;
--	long snap;
-+	unsigned long snap;
- 	int trycount = 0;
- 
- 	smp_mb(); /* Caller's modifications seen first by other CPUs. */
-@@ -811,10 +811,10 @@ void synchronize_rcu_expedited(void)
- 			synchronize_rcu();
- 			return;
- 		}
--		if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
-+		if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
- 			goto mb_ret; /* Others did our work for us. */
- 	}
--	if ((ACCESS_ONCE(sync_rcu_preempt_exp_count) - snap) > 0)
-+	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
- 		goto unlock_mb_ret; /* Others did our work for us. */
- 
- 	/* force all RCU readers onto ->blkd_tasks lists. */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 5cb003d..71ae31b 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1078,6 +1078,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		rcu_preempt_check_blocked_tasks(rnp);
+ 		rnp->qsmask = rnp->qsmaskinit;
+ 		rnp->gpnum = rsp->gpnum;
++		WARN_ON_ONCE(rnp->completed != rsp->completed);
+ 		rnp->completed = rsp->completed;
+ 		if (rnp == rdp->mynode)
+ 			rcu_start_gp_per_cpu(rsp, rnp, rdp);
+@@ -2775,7 +2776,8 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 			raw_spin_lock_init(&rnp->fqslock);
+ 			lockdep_set_class_and_name(&rnp->fqslock,
+ 						   &rcu_fqs_class[i], fqs[i]);
+-			rnp->gpnum = 0;
++			rnp->gpnum = rsp->gpnum;
++			rnp->completed = rsp->completed;
+ 			rnp->qsmask = 0;
+ 			rnp->qsmaskinit = 0;
+ 			rnp->grplo = j * cpustride;
 -- 
 1.7.8
 
