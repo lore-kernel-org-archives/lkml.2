@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2ITSzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:55:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58505 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2ITSzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:55:14 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 12/13] ovl: switch to __inode_permission()
-Date: Thu, 20 Sep 2012 20:55:29 +0200
-Message-Id: <1348167330-30288-13-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
-References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+	id S932266Ab2ITS4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:56:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755527Ab2ITSzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:55:03 -0400
+Message-ID: <505B6680.2000609@redhat.com>
+Date: Thu, 20 Sep 2012 14:54:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
+        Avi Kivity <avi@redhat.com>, QEMU-devel <qemu-devel@nongnu.org>,
+        KVM <kvm@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] Revert "mm: have order > 0 compaction start off where
+ it left"
+References: <1348149875-29678-1-git-send-email-mgorman@suse.de> <1348149875-29678-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1348149875-29678-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Whitcroft <apw@canonical.com>
+On 09/20/2012 10:04 AM, Mel Gorman wrote:
+> This reverts commit 7db8889a (mm: have order > 0 compaction start off
+> where it left) and commit de74f1cc (mm: have order > 0 compaction start
+> near a pageblock with free pages). These patches were a good idea and
+> tests confirmed that they massively reduced the amount of scanning but
+> the implementation is complex and tricky to understand. A later patch
+> will cache what pageblocks should be skipped and reimplements the
+> concept of compact_cached_free_pfn on top for both migration and
+> free scanners.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-When checking permissions on an overlayfs inode we do not take into
-account either device cgroup restrictions nor security permissions.
-This allows a user to mount an overlayfs layer over a restricted device
-directory and by pass those permissions to open otherwise restricted
-files.
+Sure, it makes your next patches easier...
 
-Switch over to __inode_permissions.
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/overlayfs/inode.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
-
-diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-index e854720..f3a534f 100644
---- a/fs/overlayfs/inode.c
-+++ b/fs/overlayfs/inode.c
-@@ -100,19 +100,9 @@ int ovl_permission(struct inode *inode, int mask)
- 		if (is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode) &&
- 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
- 			goto out_dput;
--
--		/*
--		 * Nobody gets write access to an immutable file.
--		 */
--		err = -EACCES;
--		if (IS_IMMUTABLE(realinode))
--			goto out_dput;
- 	}
- 
--	if (realinode->i_op->permission)
--		err = realinode->i_op->permission(realinode, mask);
--	else
--		err = generic_permission(realinode, mask);
-+	err = __inode_permission(realinode, mask);
- out_dput:
- 	dput(alias);
- 	return err;
--- 
-1.7.7
+Acked-by: Rik van Riel <riel@redhat.com>
 
