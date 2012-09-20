@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab2ITMKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:10:52 -0400
-Received: from tee.schottelius.org ([77.109.138.222]:51903 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754250Ab2ITMKt (ORCPT
+	id S1754521Ab2ITMLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:11:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48066 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab2ITMJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:10:49 -0400
-Date: Thu, 20 Sep 2012 14:12:26 +0200
-From: Nico Schottelius <nico-kernel20120920@schottelius.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Nico Schottelius <nico-kernel20120920@schottelius.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: Out of memory on 3.5 kernels
-Message-ID: <20120920121226.GA31797@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
-	Arend van Spriel <arend@broadcom.com>,
-	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-	Stanislaw Gruszka <sgruszka@redhat.com>
-References: <20120920060202.GB10758@schottelius.org>
- <alpine.DEB.2.00.1209192351440.30029@chino.kir.corp.google.com>
- <20120920073245.GA1327@schottelius.org>
- <505AC952.60501@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505AC952.60501@broadcom.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.5.4-1-ARCH x86_64)
+	Thu, 20 Sep 2012 08:09:28 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 2/7] ASoC: Ux500: Enable MOP500 driver for Device Tree
+Date: Thu, 20 Sep 2012 14:09:11 +0200
+Message-Id: <1348142956-1872-3-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
+References: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Arend,
+Here we ensure that the MOP500 audio driver will be probed during a
+Device Tree boot. We also parse the sound node to link together the
+codec, dma and the CPU-side Digital Audio Interface.
 
-just while running, I got the following brcmsmac related error:
+Acked-by: Ola Lilja <ola.o.lilja@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ sound/soc/ux500/mop500.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-[17336.572558] WARNING: at drivers/net/wireless/brcm80211/brcmsmac/main.c:7968 brcms_c_wait_for_tx_completion+0x99/0xb0 [brcmsmac]()
-[17336.572562] Hardware name: MacBookAir4,2
-[17336.572565] Modules linked in: sha256_generic snd_hda_codec_hdmi snd_hda_codec_cirrus ext4 jbd2 mbcache arc4 uvcvideo brcmsmac videobuf2_vmalloc videobuf2_memops cordic brcmutil btusb bluetooth i915 videobuf2_core mac80211 videodev crc16 acpi_cpufreq snd_hda_intel media i2c_algo_bit cfg80211 mperf drm_kms_helper snd_hda_codec rfkill joydev bcm5974 iTCO_wdt iTCO_vendor_support i2c_i801 intel_agp lpc_ich applesmc evdev microcode drm coretemp input_polldev pcspkr intel_gtt mfd_core i2c_core processor bcma snd_hwdep video button battery apple_bl mei ac snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_timer snd soundcore kvm_intel kvm nfs nfs_acl lockd auth_rpcgss sunrpc fscache autofs4 jfs xts gf128mul dm_crypt dm_mod sd_mod pata_acpi ata_generic hid_generic usb_storage hid_apple usbhid hid uhci_hcd aesni_intel aes_x86_64 aes_generic ghash_clmulni_intel cryptd crc32c_intel ata_piix libata scsi_mod ehci_hcd usbcore usb_common
-[17336.572716] Pid: 27714, comm: kworker/u:1 Not tainted 3.5.4-1-ARCH #1
-[17336.572719] Call Trace:
-[17336.572734]  [<ffffffff81051a3f>] warn_slowpath_common+0x7f/0xc0
-[17336.572743]  [<ffffffff81051a9a>] warn_slowpath_null+0x1a/0x20
-[17336.572759]  [<ffffffffa063bd29>] brcms_c_wait_for_tx_completion+0x99/0xb0 [brcmsmac]
-[17336.572769]  [<ffffffffa062e1bb>] brcms_ops_flush+0x3b/0x60 [brcmsmac]
-[17336.572792]  [<ffffffffa04a2f69>] ieee80211_mgd_probe_ap_send+0xc9/0x230 [mac80211]
-[17336.572809]  [<ffffffffa04a374f>] ieee80211_mgd_probe_ap.part.22+0x10f/0x130 [mac80211]
-[17336.572823]  [<ffffffffa04a381d>] ieee80211_beacon_connection_loss_work+0xad/0x160 [mac80211]
-[17336.572833]  [<ffffffff8106effa>] process_one_work+0x12a/0x440
-[17336.572848]  [<ffffffffa04a3770>] ? ieee80211_mgd_probe_ap.part.22+0x130/0x130 [mac80211]
-[17336.572857]  [<ffffffff8106f85e>] worker_thread+0x12e/0x2d0
-[17336.572865]  [<ffffffff8106f730>] ? manage_workers.isra.26+0x1f0/0x1f0
-[17336.572872]  [<ffffffff81074f73>] kthread+0x93/0xa0
-[17336.572880]  [<ffffffff81486864>] kernel_thread_helper+0x4/0x10
-[17336.572888]  [<ffffffff81074ee0>] ? kthread_freezable_should_stop+0x70/0x70
-[17336.572894]  [<ffffffff81486860>] ? gs_change+0x13/0x13
-[17336.572898] ---[ end trace 87315886d62eca54 ]---
-
-
-Things are still running, though and slab is ~274 MiB.
-
-Cheers,
-
-Nico
-
+diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
+index 31c4d26..6840df7 100644
+--- a/sound/soc/ux500/mop500.c
++++ b/sound/soc/ux500/mop500.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/io.h>
+ #include <linux/spi/spi.h>
++#include <linux/of.h>
+ 
+ #include <sound/soc.h>
+ #include <sound/initval.h>
+@@ -56,8 +57,35 @@ static struct snd_soc_card mop500_card = {
+ 	.num_links = ARRAY_SIZE(mop500_dai_links),
+ };
+ 
++static int __devinit mop500_of_probe(struct platform_device *pdev,
++				struct device_node *np)
++{
++	struct device_node *codec_np, *msp_np[2];
++	int i;
++
++	msp_np[0] = of_parse_phandle(np, "stericsson,cpu-dai", 0);
++	msp_np[1] = of_parse_phandle(np, "stericsson,cpu-dai", 1);
++	codec_np  = of_parse_phandle(np, "stericsson,audio-codec", 0);
++
++	if (!(msp_np[0] && msp_np[1] && codec_np)) {
++		dev_err(&pdev->dev, "Phandle missing or invalid\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < 2; i++) {
++		mop500_dai_links[i].cpu_of_node = msp_np[i];
++		mop500_dai_links[i].cpu_dai_name = NULL;
++		mop500_dai_links[i].codec_of_node = codec_np;
++		mop500_dai_links[i].codec_name = NULL;
++	}
++
++	snd_soc_of_parse_card_name(&mop500_card, "stericsson,card-name");
++
++	return 0;
++}
+ static int __devinit mop500_probe(struct platform_device *pdev)
+ {
++	struct device_node *np = pdev->dev.of_node;
+ 	int ret;
+ 
+ 	pr_debug("%s: Enter.\n", __func__);
+@@ -66,6 +94,12 @@ static int __devinit mop500_probe(struct platform_device *pdev)
+ 
+ 	mop500_card.dev = &pdev->dev;
+ 
++	if (np) {
++		ret = mop500_of_probe(pdev, np);
++		if (ret)
++			return ret;
++	}
++
+ 	dev_dbg(&pdev->dev, "%s: Card %s: Set platform drvdata.\n",
+ 		__func__, mop500_card.name);
+ 	platform_set_drvdata(pdev, &mop500_card);
+@@ -101,10 +135,16 @@ static int __devexit mop500_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id snd_soc_mop500_match[] = {
++	{ .compatible = "stericsson,snd-soc-mop500", },
++	{},
++};
++
+ static struct platform_driver snd_soc_mop500_driver = {
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = "snd-soc-mop500",
++		.of_match_table = snd_soc_mop500_match,
+ 	},
+ 	.probe = mop500_probe,
+ 	.remove = __devexit_p(mop500_remove),
 -- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+1.7.9.5
+
