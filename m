@@ -1,108 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2ITCMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 22:12:43 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48401 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab2ITCLd (ORCPT
+	id S1753749Ab2ITCSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 22:18:09 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59049 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab2ITCSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 22:11:33 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-fsdevel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-security-module@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Wed, 19 Sep 2012 18:52:17 -0700
-Message-Id: <1348105949-25454-15-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
-References: <871uhx1n71.fsf@xmission.com>
- <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18hHtOT2p+rXQy6mAmH1BmrtJ3Atv50da0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0267]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 15/27] userns: Teach trace to use from_kuid
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 19 Sep 2012 22:18:06 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-5e-505a7cdbd291
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v2] tools lib traceevent: Handle alloc_arg failure
+References: <87boh23epi.fsf@sejong.aot.lge.com>
+	<1348037109-17252-1-git-send-email-namhyung@kernel.org>
+	<20120919114258.GA16696@gmail.com> <1348057609.1644.9.camel@leonhard>
+	<1348058460.13080.52.camel@gandalf.local.home>
+	<1348061435.1470.4.camel@leonhard>
+Date: Thu, 20 Sep 2012 11:09:19 +0900
+In-Reply-To: <1348061435.1470.4.camel@leonhard> (Namhyung Kim's message of
+	"Wed, 19 Sep 2012 22:30:35 +0900")
+Message-ID: <87k3vpzbqo.fsf_-_@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+Now alloc_arg returns NULL if memory allocation failed, it should be
+handled on callsites properly.
 
-- When tracing capture the kuid.
-- When displaying the data to user space convert the kuid into the
-  user namespace of the process that opened the report file.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- init/Kconfig         |    1 -
- kernel/trace/trace.c |    3 ++-
- kernel/trace/trace.h |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Hmm.. how about this?  Do you want that the __func__ part also gets removed?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 6de46ef..2a388e5 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -927,7 +927,6 @@ config UIDGID_CONVERTED
- 	# Features
- 	depends on IMA = n
- 	depends on EVM = n
--	depends on TRACING = n
- 	depends on FS_POSIX_ACL = n
- 	depends on QUOTA = n
- 	depends on QUOTACTL = n
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5c38c81..c9ace83 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2060,7 +2060,8 @@ print_trace_header(struct seq_file *m, struct trace_iterator *iter)
- 	seq_puts(m, "#    -----------------\n");
- 	seq_printf(m, "#    | task: %.16s-%d "
- 		   "(uid:%d nice:%ld policy:%ld rt_prio:%ld)\n",
--		   data->comm, data->pid, data->uid, data->nice,
-+		   data->comm, data->pid,
-+		   from_kuid_munged(seq_user_ns(m), data->uid), data->nice,
- 		   data->policy, data->rt_priority);
- 	seq_puts(m, "#    -----------------\n");
+ tools/lib/traceevent/event-parse.c | 97 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 95 insertions(+), 2 deletions(-)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index e8e0fe0443a4..2e3fc5ec9cc6 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1565,6 +1565,14 @@ process_cond(struct event_format *event, struct print_arg *top, char **tok)
+ 	left = alloc_arg();
+ 	right = alloc_arg();
  
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 55e1f7f..40a6f30 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -147,7 +147,7 @@ struct trace_array_cpu {
- 	unsigned long		skipped_entries;
- 	cycle_t			preempt_timestamp;
- 	pid_t			pid;
--	uid_t			uid;
-+	kuid_t			uid;
- 	char			comm[TASK_COMM_LEN];
- };
++	if (!arg || !left || !right) {
++		do_warning("%s: not enough memory!", __func__);
++		/* arg will be freed at out_free */
++		free_arg(left);
++		free_arg(right);
++		goto out_free;
++	}
++
+ 	arg->type = PRINT_OP;
+ 	arg->op.left = left;
+ 	arg->op.right = right;
+@@ -1607,6 +1615,12 @@ process_array(struct event_format *event, struct print_arg *top, char **tok)
+ 	char *token = NULL;
  
+ 	arg = alloc_arg();
++	if (!arg) {
++		do_warning("%s: not enough memory!", __func__);
++		/* '*tok' is set to top->op.op.  No need to free. */
++		*tok = NULL;
++		return EVENT_ERROR;
++	}
+ 
+ 	*tok = NULL;
+ 	type = process_arg(event, arg, &token);
+@@ -1726,10 +1740,16 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 		/* make an empty left */
+ 		left = alloc_arg();
++		if (!left)
++			goto out_warn_free;
++
+ 		left->type = PRINT_NULL;
+ 		arg->op.left = left;
+ 
+ 		right = alloc_arg();
++		if (!right)
++			goto out_warn_free;
++
+ 		arg->op.right = right;
+ 
+ 		/* do not free the token, it belongs to an op */
+@@ -1739,6 +1759,9 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 	} else if (strcmp(token, "?") == 0) {
+ 
+ 		left = alloc_arg();
++		if (!left)
++			goto out_warn_free;
++
+ 		/* copy the top arg to the left */
+ 		*left = *arg;
+ 
+@@ -1766,6 +1789,8 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 		   strcmp(token, "!=") == 0) {
+ 
+ 		left = alloc_arg();
++		if (!left)
++			goto out_warn_free;
+ 
+ 		/* copy the top arg to the left */
+ 		*left = *arg;
+@@ -1796,7 +1821,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 			new_atom = realloc(left->atom.atom,
+ 					    strlen(left->atom.atom) + 3);
+ 			if (!new_atom)
+-				goto out_free;
++				goto out_warn_free;
+ 
+ 			left->atom.atom = new_atom;
+ 			strcat(left->atom.atom, " *");
+@@ -1808,12 +1833,18 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 		}
+ 
+ 		right = alloc_arg();
++		if (!right)
++			goto out_warn_free;
++
+ 		type = process_arg_token(event, right, tok, type);
+ 		arg->op.right = right;
+ 
+ 	} else if (strcmp(token, "[") == 0) {
+ 
+ 		left = alloc_arg();
++		if (!left)
++			goto out_warn_free;
++
+ 		*left = *arg;
+ 
+ 		arg->type = PRINT_OP;
+@@ -1845,7 +1876,9 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 	return type;
+ 
+- out_free:
++out_warn_free:
++	do_warning("%s: not enough memory!", __func__);
++out_free:
+ 	free_token(token);
+ 	*tok = NULL;
+ 	return EVENT_ERROR;
+@@ -2201,6 +2234,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 			break;
+ 
+ 		arg = alloc_arg();
++		if (!arg)
++			goto out_free;
+ 
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
+@@ -2227,6 +2262,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 
+ 		free_arg(arg);
+ 		arg = alloc_arg();
++		if (!arg)
++			goto out_free;
+ 
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
+@@ -2271,6 +2308,10 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+ 	arg->type = PRINT_FLAGS;
+ 
+ 	field = alloc_arg();
++	if (!field) {
++		do_warning("%s: not enough memory!", __func__);
++		goto out_free;
++	}
+ 
+ 	type = process_arg(event, field, &token);
+ 
+@@ -2318,6 +2359,10 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+ 	arg->type = PRINT_SYMBOL;
+ 
+ 	field = alloc_arg();
++	if (!field) {
++		do_warning("%s: not enough memory!", __func__);
++		goto out_free;
++	}
+ 
+ 	type = process_arg(event, field, &token);
+ 	if (test_type_token(type, token, EVENT_DELIM, ","))
+@@ -2350,6 +2395,11 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+ 	arg->type = PRINT_HEX;
+ 
+ 	field = alloc_arg();
++	if (!field) {
++		do_warning("%s: not enough memory!", __func__);
++		goto out_free;
++	}
++
+ 	type = process_arg(event, field, &token);
+ 
+ 	if (test_type_token(type, token, EVENT_DELIM, ","))
+@@ -2360,6 +2410,12 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+ 	free_token(token);
+ 
+ 	field = alloc_arg();
++	if (!field) {
++		do_warning("%s: not enough memory!", __func__);
++		*tok = NULL;
++		return EVENT_ERROR;
++	}
++
+ 	type = process_arg(event, field, &token);
+ 
+ 	if (test_type_token(type, token, EVENT_DELIM, ")"))
+@@ -2417,6 +2473,12 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
+ 
+ 	free_token(token);
+ 	arg = alloc_arg();
++	if (!field) {
++		do_warning("%s: not enough memory!", __func__);
++		*tok = NULL;
++		return EVENT_ERROR;
++	}
++
+ 	type = process_arg(event, arg, &token);
+ 	if (type == EVENT_ERROR)
+ 		goto out_free_arg;
+@@ -2476,6 +2538,10 @@ process_paren(struct event_format *event, struct print_arg *arg, char **tok)
+ 		}
+ 
+ 		item_arg = alloc_arg();
++		if (!item_arg) {
++			do_warning("%s: not enough memory!", __func__);
++			goto out_free;
++		}
+ 
+ 		arg->type = PRINT_TYPE;
+ 		arg->typecast.type = arg->atom.atom;
+@@ -2571,6 +2637,11 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	next_arg = &(arg->func.args);
+ 	for (i = 0; i < func->nr_args; i++) {
+ 		farg = alloc_arg();
++		if (!farg) {
++			do_warning("%s: not enough memory!", __func__);
++			return EVENT_ERROR;
++		}
++
+ 		type = process_arg(event, farg, &token);
+ 		if (i < (func->nr_args - 1))
+ 			test = ",";
+@@ -2737,6 +2808,10 @@ static int event_read_print_args(struct event_format *event, struct print_arg **
+ 		}
+ 
+ 		arg = alloc_arg();
++		if (!arg) {
++			do_warning("%s: not enough memory!", __func__);
++			return -1;
++		}
+ 
+ 		type = process_arg(event, arg, &token);
+ 
+@@ -3635,6 +3710,10 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 	 * The first arg is the IP pointer.
+ 	 */
+ 	args = alloc_arg();
++	if (!args) {
++		do_warning("%s(%d): not enough memory!", __func__, __LINE__);
++		return NULL;
++	}
+ 	arg = args;
+ 	arg->next = NULL;
+ 	next = &arg->next;
+@@ -3697,6 +3776,11 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				val = pevent_read_number(pevent, bptr, vsize);
+ 				bptr += vsize;
+ 				arg = alloc_arg();
++				if (!arg) {
++					do_warning("%s(%d): not enough memory!",
++						   __func__, __LINE__);
++					goto out_free;
++				}
+ 				arg->next = NULL;
+ 				arg->type = PRINT_ATOM;
+ 				if (asprintf(&arg->atom.atom, "%lld", val) < 0) {
+@@ -3715,6 +3799,11 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				break;
+ 			case 's':
+ 				arg = alloc_arg();
++				if (!arg) {
++					do_warning("%s(%d): not enough memory!",
++						   __func__, __LINE__);
++					goto out_free;
++				}
+ 				arg->next = NULL;
+ 				arg->type = PRINT_BSTRING;
+ 				arg->string.string = strdup(bptr);
+@@ -4876,6 +4965,10 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 		list = &event->print_fmt.args;
+ 		for (field = event->format.fields; field; field = field->next) {
+ 			arg = alloc_arg();
++			if (!arg) {
++				event->flags |= EVENT_FL_FAILED;
++				return PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED;
++			}
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
+ 			if (!arg->field.name) {
 -- 
-1.7.5.4
+1.7.11.4
 
