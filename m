@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2ITMgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:36:38 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44298 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab2ITMgg (ORCPT
+	id S1755090Ab2ITMku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:40:50 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:29165 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab2ITMkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:36:36 -0400
+	Thu, 20 Sep 2012 08:40:49 -0400
+X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
+   d="scan'208";a="14655854"
+Date: Thu, 20 Sep 2012 13:39:58 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+In-Reply-To: <1348143533.26501.28.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1209201333460.29232@kaball.uk.xensource.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>  <1348136222.26501.19.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1209201240110.29232@kaball.uk.xensource.com> <1348143533.26501.28.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120919235156.GC13234@bbox>
-References: <20120919235156.GC13234@bbox>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 20 Sep 2012 08:36:15 -0400
-X-Google-Sender-Auth: swFvihfs53GOElpeNfs4iaG-LG0
-Message-ID: <CAHGf_=onFKC8NKEUGxSs75qfhSa-A-rP5THMuT0KhfOEC3hTHA@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 7:51 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Wed, Sep 19, 2012 at 02:28:10PM -0400, Johannes Weiner wrote:
->> On Wed, Sep 19, 2012 at 01:04:56PM -0400, KOSAKI Motohiro wrote:
->> > On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
->> > > When I looked at zone stat mismatch problem, I found
->> > > migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
->> > > if check_range fails.
->>
->> This is a bit misleading.  It's not that the stats would be
->> inaccurate, it's that the pages would be leaked from the LRU, no?
->>
->> > > It can make system hang out.
->>
->> Did you spot this by code review only or did you actually run into
->> this?  Because...
->>
->> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> > > Cc: Mel Gorman <mgorman@suse.de>
->> > > Cc: Christoph Lameter <cl@linux.com>
->> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > > ---
->> > >  mm/mempolicy.c |   16 ++++++++--------
->> > >  1 file changed, 8 insertions(+), 8 deletions(-)
->> > >
->> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
->> > > index 3d64b36..6bf0860 100644
->> > > --- a/mm/mempolicy.c
->> > > +++ b/mm/mempolicy.c
->> > > @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->> > >
->> > >         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
->> > >                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
->> > > -       if (IS_ERR(vma))
->> > > -               return PTR_ERR(vma);
->> > > -
->> > > -       if (!list_empty(&pagelist)) {
->> > > +       if (IS_ERR(vma)) {
->> > > +               err = PTR_ERR(vma);
->> > > +               goto out;
->> > > +       }
->> > > +       if (!list_empty(&pagelist))
->> > >                 err = migrate_pages(&pagelist, new_node_page, dest,
->> > >                                                         false, MIGRATE_SYNC);
->> > > -               if (err)
->> > > -                       putback_lru_pages(&pagelist);
->> > > -       }
->> > > -
->> > > +out:
->> > > +       if (err)
->> > > +               putback_lru_pages(&pagelist);
->> >
->> > Good catch!
->> > This is a regression since following commit. So, I doubt we need
->> > all or nothing semantics. Can we revert it instead? (and probably
->> > we need more kind comment for preventing an accident)
->>
->> I think it makes sense to revert.  Not because of the semantics, but I
->> just don't see how check_range() could even fail for this callsite:
->>
->> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
->>    find_vma()
->>
->> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
->>    and so can not fail
->>
->> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
->>    continue until addr == end, so we never fail with -EIO
->>
->> > commit 0def08e3acc2c9c934e4671487029aed52202d42
->> > Author: Vasiliy Kulikov <segooon@gmail.com>
->> > Date:   Tue Oct 26 14:21:32 2010 -0700
->> >
->> >     mm/mempolicy.c: check return code of check_range
->>
->> We don't use this code to "check" the range, we use it to collect
->> migrate pages.  There is no failure case.
->>
->
-> Here it goes.
->
-> From c2c21b551811e034eb0ede6806e0314b201d7e5b Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Thu, 20 Sep 2012 08:39:52 +0900
-> Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
->  check_range
->
-> This patch reverts 0def08e3 because check_range can't fail in
-> migrate_to_node with considering current usecases.
->
-> Quote from Johannes
-> "
-> I think it makes sense to revert.  Not because of the semantics, but I
-> just don't see how check_range() could even fail for this callsite:
->
-> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
->    find_vma()
->
-> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
->    and so can not fail
->
-> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
->    continue until addr == end, so we never fail with -EIO
-> "
->
-> And I add new VM_BUG_ON for checking migrate_to_node's future usecase
-> which might pass to MPOL_MF_STRICT.
->
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Vasiliy Kulikov <segooon@gmail.com>
-> Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/mempolicy.c |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 3d64b36..9ec87bd 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->         nodemask_t nmask;
->         LIST_HEAD(pagelist);
->         int err = 0;
-> -       struct vm_area_struct *vma;
->
->         nodes_clear(nmask);
->         node_set(source, nmask);
->
-> -       vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
-> +       /*
-> +        * Collect migrate pages and it shoudn't be failed.
-> +        */
-> +       VM_BUG_ON(flags & MPOL_MF_STRICT);
-> +       check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
->                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
-> -       if (IS_ERR(vma))
-> -               return PTR_ERR(vma);
->
->         if (!list_empty(&pagelist)) {
->                 err = migrate_pages(&pagelist, new_node_page, dest,
+On Thu, 20 Sep 2012, Ian Campbell wrote:
+> > Versatile Express is flexible enough to be a good base for our own
+> > virtual machine platform, especially if the maintainers keep an eye on
+> > getting everything through DT and not expecting devices just to be there
+> > ;-)
+> 
+> Perhaps what we want is a stricter subset of the stuff in mach-vexpress
+> then. But if so then this should be expressed both in the DT and in the
+> code, not just papered over by declaring things compatible when they are
+> not.
 
-Looks good. thank you.
+But it is already expressed in the DT, by removing all the device nodes
+we don't emulated. And it is already expressed in the code, by fully
+discovering peripherals via DT, therefore not trying to initialize
+non-present devices.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+> > > > +	gic: interrupt-controller@2c001000 {
+> > > > +		compatible = "arm,cortex-a9-gic";
+> > > 
+> > > Don't we mean "arm,cortex-a15-gic" here? That's what we actually
+> > > provide. I'm not sure how the a9 and a15 differ.
+> > 
+> > The GIC that comes with vexpress is a9 compatible.
+> 
+> The GIC which Xen emulates is the one which matters here though, and
+> that is an a15.
+
+The a15 gic is still a9 compatible. OK to be precise I am going to add
+"arm,cortex-a15-gic", but I cannot really remove "arm,cortex-a9-gic".
