@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2ITNa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:30:29 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:60506 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab2ITNa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:30:28 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14657372"
-Message-ID: <1348147826.26501.47.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
- machines
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Thu, 20 Sep 2012 14:30:26 +0100
-In-Reply-To: <505B0C00.5010003@arm.com>
-References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1348135563.11116.94.camel@hornet>
-	 <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>
-	 <1348142133.11116.109.camel@hornet>
-	 <alpine.DEB.2.02.1209201308490.29232@kaball.uk.xensource.com>
-	 <505B0C00.5010003@arm.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755259Ab2ITNae (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:30:34 -0400
+Received: from tex.lwn.net ([70.33.254.29]:45002 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754586Ab2ITNac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 09:30:32 -0400
+Date: Thu, 20 Sep 2012 07:30:27 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Allen Huang (=?UTF-8?B?6buD5YGJ5qC8?=) 
+	<allen_huang@davicom.com.tw>,
+        linux-kernel@vger.kernel.org,
+        "'Michael Chen'" <michael_chen@mail.davicom.com.tw>,
+        "'Charles'" <charles_tsai@davicom.com.tw>,
+        "'Joseph Chang'" <joseph_chang@mail.davicom.com.tw>
+Subject: Re: Davicom DM9000C driver
+Message-ID: <20120920073027.15be4002@hpe.lwn.net>
+In-Reply-To: <201209200908.00519.arnd@arndb.de>
+References: <20120919055333.3ECF95F94D@mail.davicom.com.tw>
+	<20120919173524.7bf4a974@lwn.net>
+	<201209200908.00519.arnd@arndb.de>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-20 at 13:28 +0100, Marc Zyngier wrote:
-> I think the important thing here is that the memory map is RS1. As this
-> is a (very limited) subset of a vexpress A15, it seems to make some sense.
+On Thu, 20 Sep 2012 09:08:00 +0000
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Looking at arch/arm/boot/dts/vexpress-v2m-rs1.dtsi I don't think we
-provide anything which is on rs1 though.
+> More importantly, the patch should be against the version that is
+> already present in the kernel as drivers/net/ethernet/davicom/dm9000.c,
+> which appears to be mostly the same as the version that is submitted
+> here.
 
-The Xen VM environment has only a gic (via a combination of the gic
-virtualisation mode for CPU regs and emulation for the distributor), the
-arch timers and xenbus (which is the s/w bus which Xen uses to discover
-its paravirtualised peripherals).
+Sigh.  Leave it to me to miss the most important part of all.  Ignore
+me, please, and listen to Arnd - good advice in general.
 
-Currently we provide a very simple output only emulation of UART0,
-simply to get the debug output from the decompresser, but we want that
-to go away not get baked in.
-
-Ian.
-
+jon
