@@ -1,160 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab2ITMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:17:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49158 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab2ITMRH (ORCPT
+	id S1755054Ab2ITMRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:17:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:60100 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab2ITMNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:17:07 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Rob Herring <rob.herring@calxeda.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] dt: Document general interrupt controller bindings
-Date: Thu, 20 Sep 2012 14:16:50 +0200
-Message-Id: <1348143410-32656-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.12
-X-Provags-ID: V02:K0:lnAlWiZyACwknZLZh7ocrHIHz7AOsUir3K+cNZayeTt
- jJztv/GLzJGzTakmFfUs1sIfmqyvoV02OxmjTcXn64/vSoNHVn
- kTqBYpE5yYGo9XQFkUrHKxxM7i6MaKHKGSgL4geGyZDdk01a1r
- VuUncBcXUXqVyXjfT4scCatxymGUXFGtnqr19BjRkzrsVJQTFF
- jNUQ5Y5qrpACJVXD0Rq9bDQChx8pzPyC9pYQQOYC/LqHBncIuh
- l97X73a4gFilfz8+adONP27xthO4rtfZj5s3GpcXA0XPzV4nay
- maDG2UY3sOb9QbrdEZ6/R4h9KyDobY48aXQ0NnFJnaYQ3fISIy
- 6FbwDjRCD5GryaYsRRi8pnUcd2/O0K0IvMufgB6qTlSBPYxVa0
- ggBvxMEkgriNLmPYELDfcz32SlDVNtxe8WebqzEUuKM6ETNdK5
- Leh5I
+	Thu, 20 Sep 2012 08:13:37 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olof.johansson@gmail.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 19/32] ARM: ux500: Pass MSP DMA platform data though AUXDATA
+Date: Thu, 20 Sep 2012 14:12:37 +0200
+Message-Id: <1348143170-2130-20-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
+References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to use a device as interrupt controller, it needs to be marked
-with the DT interrupt-controller property. This commit adds rudimentary
-documentation about the required standard properties and describes the
-most commonly used interrupt specifiers.
+It isn't currently possible to pass all platform specific configuration
+though Device Tree. Thinks like device names used in the clock
+infrastructure, call-backs and DMA information have to be passed in via
+AUXDATA structures and the MSP is no exception. Here we're passing DMA
+settings.
 
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
-Changes in v2:
-- update interrupt client description as per Stephen's suggestions
-- use an example for the two cell specifier where both the client and
-  the parent use two cell specifiers, as suggested by Rob, to reduce
-  the possibility for confusion
+ arch/arm/mach-ux500/board-mop500-msp.c |    8 ++++----
+ arch/arm/mach-ux500/board-mop500.c     |    9 +++++++++
+ arch/arm/mach-ux500/board-mop500.h     |    5 +++++
+ 3 files changed, 18 insertions(+), 4 deletions(-)
 
- .../bindings/interrupt-controller/interrupts.txt   | 95 ++++++++++++++++++++++
- 1 file changed, 95 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-new file mode 100644
-index 0000000..72a06c0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-@@ -0,0 +1,95 @@
-+Specifying interrupt information for devices
-+============================================
-+
-+1) Interrupt client nodes
-+-------------------------
-+
-+Nodes that describe devices which generate interrupts must contain an
-+"interrupts" property. This property must contain a list of interrupt
-+specifiers, one per output interrupt. The format of the interrupt specifier is
-+determined by the interrupt controller to which the interrupts are routed; see
-+section 2 below for details.
-+
-+The "interrupt-parent" property is used to specify the controller to which
-+interrupts are routed and contains a single phandle referring to the interrupt
-+controller node. This property is inherited, so it may be specified in an
-+interrupt client node or in any of its parent nodes.
-+
-+2) Interrupt controller nodes
-+-----------------------------
-+
-+A device is marked as an interrupt controller with the "interrupt-controller"
-+property. This is a empty, boolean property. An additional "#interrupt-cells"
-+property defines the number of cells needed to specify a single interrupt.
-+
-+It is the responsibility of the interrupt controller's binding to define the
-+length and format of the interrupt specifier. The following two variants are
-+commonly used:
-+
-+  a) one cell
-+  -----------
-+  The #interrupt-cells property is set to 1 and the single cell defines the
-+  index of the interrupt within the controller.
-+
-+  Example:
-+
-+	vic: intc@10140000 {
-+		compatible = "arm,versatile-vic";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		reg = <0x10140000 0x1000>;
-+	};
-+
-+	sic: intc@10003000 {
-+		compatible = "arm,versatile-sic";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		reg = <0x10003000 0x1000>;
-+		interrupt-parent = <&vic>;
-+		interrupts = <31>; /* Cascaded to vic */
-+	};
-+
-+  b) two cells
-+  ------------
-+  The #interrupt-cells property is set to 2 and the first cell defines the
-+  index of the interrupt within the controller, while the second cell is used
-+  to specify any of the following flags:
-+    - bits[3:0] trigger type and level flags
-+        1 = low-to-high edge triggered
-+        2 = high-to-low edge triggered
-+        4 = active high level-sensitive
-+        8 = active low level-sensitive
-+
-+  Example:
-+
-+	i2c@7000c000 {
-+		gpioext: gpio-adnp@41 {
-+			compatible = "ad,gpio-adnp";
-+			reg = <0x41>;
-+
-+			interrupt-parent = <&gpio>;
-+			interrupts = <160 1>;
-+
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+
-+			nr-gpios = <64>;
-+		};
-+
-+		sx8634@2b {
-+			compatible = "smtc,sx8634";
-+			reg = <0x2b>;
-+
-+			interrupt-parent = <&gpioext>;
-+			interrupts = <3 0x8>;
-+
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			threshold = <0x40>;
-+			sensitivity = <7>;
-+		};
-+	};
+diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
+index bfd4851..1c60135 100644
+--- a/arch/arm/mach-ux500/board-mop500-msp.c
++++ b/arch/arm/mach-ux500/board-mop500-msp.c
+@@ -48,7 +48,7 @@ static struct stedma40_chan_cfg msp0_dma_tx = {
+ 	/* data_width is set during configuration */
+ };
+ 
+-static struct msp_i2s_platform_data msp0_platform_data = {
++struct msp_i2s_platform_data msp0_platform_data = {
+ 	.id = MSP_I2S_0,
+ 	.msp_i2s_dma_rx = &msp0_dma_rx,
+ 	.msp_i2s_dma_tx = &msp0_dma_tx,
+@@ -80,7 +80,7 @@ static struct stedma40_chan_cfg msp1_dma_tx = {
+ 	/* data_width is set during configuration */
+ };
+ 
+-static struct msp_i2s_platform_data msp1_platform_data = {
++struct msp_i2s_platform_data msp1_platform_data = {
+ 	.id = MSP_I2S_1,
+ 	.msp_i2s_dma_rx = NULL,
+ 	.msp_i2s_dma_tx = &msp1_dma_tx,
+@@ -159,13 +159,13 @@ static struct platform_device ux500_pcm = {
+ 		},
+ };
+ 
+-static struct msp_i2s_platform_data msp2_platform_data = {
++struct msp_i2s_platform_data msp2_platform_data = {
+ 	.id = MSP_I2S_2,
+ 	.msp_i2s_dma_rx = &msp2_dma_rx,
+ 	.msp_i2s_dma_tx = &msp2_dma_tx,
+ };
+ 
+-static struct msp_i2s_platform_data msp3_platform_data = {
++struct msp_i2s_platform_data msp3_platform_data = {
+ 	.id		= MSP_I2S_3,
+ 	.msp_i2s_dma_rx	= &msp1_dma_rx,
+ 	.msp_i2s_dma_tx	= NULL,
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index e7593b0..2cb13bc 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -755,6 +755,15 @@ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
+ 	/* Requires device name bindings. */
+ 	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
++	/* Requires clock name and DMA bindings. */
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
++		"ux500-msp-i2s.0", &msp0_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80124000,
++		"ux500-msp-i2s.1", &msp1_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80117000,
++		"ux500-msp-i2s.2", &msp2_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
++		"ux500-msp-i2s.3", &msp3_platform_data),
+ 	{},
+ };
+ 
+diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+index c6daea2..6794324 100644
+--- a/arch/arm/mach-ux500/board-mop500.h
++++ b/arch/arm/mach-ux500/board-mop500.h
+@@ -9,6 +9,7 @@
+ 
+ /* For NOMADIK_NR_GPIO */
+ #include <mach/irqs.h>
++#include <mach/msp.h>
+ #include <linux/amba/mmci.h>
+ 
+ /* Snowball specific GPIO assignments, this board has no GPIO expander */
+@@ -83,6 +84,10 @@ extern struct mmci_platform_data mop500_sdi0_data;
+ extern struct mmci_platform_data mop500_sdi1_data;
+ extern struct mmci_platform_data mop500_sdi2_data;
+ extern struct mmci_platform_data mop500_sdi4_data;
++extern struct msp_i2s_platform_data msp0_platform_data;
++extern struct msp_i2s_platform_data msp1_platform_data;
++extern struct msp_i2s_platform_data msp2_platform_data;
++extern struct msp_i2s_platform_data msp3_platform_data;
+ extern struct arm_pmu_platdata db8500_pmu_platdata;
+ 
+ extern void mop500_sdi_init(struct device *parent);
 -- 
-1.7.12
+1.7.9.5
 
