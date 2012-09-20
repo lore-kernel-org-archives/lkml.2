@@ -1,32 +1,34 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752470Ab2IPQhb (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sun, 16 Sep 2012 12:37:31 -0400
-Received: from outrelay03.libero.it ([212.52.84.103]:38133 "EHLO
-        outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751756Ab2IPQhK (ORCPT
+        id S1752280Ab2ITK0d (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Thu, 20 Sep 2012 06:26:33 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55367 "EHLO
+        mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751351Ab2ITK0b (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 16 Sep 2012 12:37:10 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0B0204.5055FFF3.0031,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Message-ID: <15439645.1200091347813363062.JavaMail.defaultUser@defaultHost>
-Date: Sun, 16 Sep 2012 18:36:03 +0200 (CEST)
-From: Linda Sajid <misslindasajid@yahoo.com>
-Reply-To: Linda Sajid <misslindasajid@yahoo.com>
-Subject: Hello
+        Thu, 20 Sep 2012 06:26:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.109.95
-X-libjamv: 12sMh1pfHXI=
-X-libjamsun: Kb4DkkxpRg9BSvw/B/CdOu46X8hENvdN
-To: unlisted-recipients:; (no To-header on input)
+Reply-To: kebkal@ymail.com
+From: Oleksiy Kebkal <kebkal@gmail.com>
+Date: Thu, 20 Sep 2012 11:26:10 +0100
+Message-ID: <CADQPpSSOK5gX6kEA8TP5C7Sd5vGhHcH18tgTTW=hhJL2bsT15Q@mail.gmail.com>
+Subject: Hi
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Hello,
-My names is Linda. How are you doing?
-Hope fine. I wish to request for your  true
-friendship.
+I hope you don't take offense in my sudden approach. I made a quick
+trip to Edinburgh, Scotland and was attacked and robbed. My belongings
+including my cash, credit card and cell phones were all stolen. I've
+made contact with my bank but the best they can do is to mail me a new
+card which will take 4 working days to arrive here, am currently
+concluding my documentation at the embassy so i can fly out. I need
+you to borrow me some funds to settle some bills.
+Western Union Money Transfer is the quickest means for me to receive
+cash at this time. Please let me know if you can assist me in anyway
+so i can forward you detail to effect a transfer.
+
+Thanks,
+Oleksiy
