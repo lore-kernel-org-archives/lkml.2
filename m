@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2ITXsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:48:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30473 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964Ab2ITXse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:48:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,457,1344236400"; 
-   d="scan'208";a="195557175"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>
-Subject: RE: [PATCH] pstore: avoid recursive spinlocks in the
- oops_in_progress case
-Thread-Topic: [PATCH] pstore: avoid recursive spinlocks in the
- oops_in_progress case
-Thread-Index: AQHNlLD6UUggHZobd0mcEpKcavm2tZeUUpQA//+L8tCAAHvqAP//jxHA
-Date: Thu, 20 Sep 2012 23:48:32 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D43892@ORSMSX108.amr.corp.intel.com>
-References: <1347903824.29767.15.camel@cliu38-desktop-build>
- <20120920225727.GD29721@lizard>
- <3908561D78D1C84285E8C5FCA982C28F19D43812@ORSMSX108.amr.corp.intel.com>
- <20120920232536.GB8209@lizard>
-In-Reply-To: <20120920232536.GB8209@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1754822Ab2ITXt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:49:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37103 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab2ITXt6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:49:58 -0400
+Date: Thu, 20 Sep 2012 16:49:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
+Subject: Re: [PATCH v2 08/26] block: Remove bi_idx references
+Message-ID: <20120920234953.GO7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-9-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347322957-25260-9-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8KNmduB007310
 
-> True, but the lock is used to protect pstore->buf, I doubt that
-> any backend will actually want to grab it, no?
+On Mon, Sep 10, 2012 at 05:22:19PM -0700, Kent Overstreet wrote:
+> These were harmless but uneccessary,andt getting rid of them makes the
+> code easier to audit since most of them need to be removed.
 
-The lock is doing double duty to protect the buffer, and the back-end driver.
+I find the descriptions a bit too terse.  Why do they need to be
+removed?  So, I suppose you wanted to say explicit initializations to
+0 are unnecessary, but there are bio_segments() conversions too.
 
-But even if we split it into two (one for the buffer, taken by pstore, and one
-internal to the backend to protect interaction with the f/w). Ifwe ignore the
-fact that we can't get the lock that protects  the buffer means it is very likely
-that we corrupt the previous record that was being written by clobbering the
-buffer with the data for this new record.
+The patch is simple and this isn't a big deal but I really hope for
+better (correct) descriptions.
 
-I'd prefer to maximize the chances that the earlier record gets written.
+Thanks.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
