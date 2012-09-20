@@ -1,199 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2ITOFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:05:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37121 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755282Ab2ITOEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755306Ab2ITOEm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Sep 2012 10:04:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37098 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753119Ab2ITOEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:04:39 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>
 Cc: Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
         QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/6] Revert "mm: have order > 0 compaction start off where it left"
-Date: Thu, 20 Sep 2012 15:04:33 +0100
-Message-Id: <1348149875-29678-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 0/6] Reduce compaction scanning and lock contention
+Date: Thu, 20 Sep 2012 15:04:29 +0100
+Message-Id: <1348149875-29678-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1348149875-29678-1-git-send-email-mgorman@suse.de>
-References: <1348149875-29678-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 7db8889a (mm: have order > 0 compaction start off
-where it left) and commit de74f1cc (mm: have order > 0 compaction start
-near a pageblock with free pages). These patches were a good idea and
-tests confirmed that they massively reduced the amount of scanning but
-the implementation is complex and tricky to understand. A later patch
-will cache what pageblocks should be skipped and reimplements the
-concept of compact_cached_free_pfn on top for both migration and
-free scanners.
+Hi Richard,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |    4 ---
- mm/compaction.c        |   65 ++++--------------------------------------------
- mm/internal.h          |    6 -----
- mm/page_alloc.c        |    5 ----
- 4 files changed, 5 insertions(+), 75 deletions(-)
+This series is following up from your mail at
+http://www.spinics.net/lists/kvm/msg80080.html . I am pleased the lock
+contention is now reduced but acknowledge that the scanning rates are
+stupidly high. Fortunately, I am reasonably confident I know what is
+going wrong. If all goes according to plain this should drastically reduce
+the amount of time your workload spends on compaction. I would very much
+appreciate if you drop the MM patches (i.e. keep the btrfs patches) and
+replace them with this series. I know that Rik's patches are dropped and
+this is deliberate. I reimplemented his idea on top of the fifth patch on
+this series to cover both the migrate and free scanners. Thanks to Rik who
+discussed how the idea could be reimplemented on IRC which was very helpful.
+Hopefully the patch actually reflects what we discussed :)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2daa54f..603d0b5 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -368,10 +368,6 @@ struct zone {
- 	 */
- 	spinlock_t		lock;
- 	int                     all_unreclaimable; /* All pages pinned */
--#if defined CONFIG_COMPACTION || defined CONFIG_CMA
--	/* pfn where the last incremental compaction isolated free pages */
--	unsigned long		compact_cached_free_pfn;
--#endif
- #ifdef CONFIG_MEMORY_HOTPLUG
- 	/* see spanned/present_pages for more description */
- 	seqlock_t		span_seqlock;
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 70c7cbd..6058822 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -481,20 +481,6 @@ next_pageblock:
- #endif /* CONFIG_COMPACTION || CONFIG_CMA */
- #ifdef CONFIG_COMPACTION
- /*
-- * Returns the start pfn of the last page block in a zone.  This is the starting
-- * point for full compaction of a zone.  Compaction searches for free pages from
-- * the end of each zone, while isolate_freepages_block scans forward inside each
-- * page block.
-- */
--static unsigned long start_free_pfn(struct zone *zone)
--{
--	unsigned long free_pfn;
--	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	free_pfn &= ~(pageblock_nr_pages-1);
--	return free_pfn;
--}
--
--/*
-  * Based on information in the current compact_control, find blocks
-  * suitable for isolating free pages from and then isolate them.
-  */
-@@ -562,19 +548,8 @@ static void isolate_freepages(struct zone *zone,
- 		 * looking for free pages, the search will restart here as
- 		 * page migration may have returned some pages to the allocator
- 		 */
--		if (isolated) {
-+		if (isolated)
- 			high_pfn = max(high_pfn, pfn);
--
--			/*
--			 * If the free scanner has wrapped, update
--			 * compact_cached_free_pfn to point to the highest
--			 * pageblock with free pages. This reduces excessive
--			 * scanning of full pageblocks near the end of the
--			 * zone
--			 */
--			if (cc->order > 0 && cc->wrapped)
--				zone->compact_cached_free_pfn = high_pfn;
--		}
- 	}
- 
- 	/* split_free_page does not map the pages */
-@@ -582,11 +557,6 @@ static void isolate_freepages(struct zone *zone,
- 
- 	cc->free_pfn = high_pfn;
- 	cc->nr_freepages = nr_freepages;
--
--	/* If compact_cached_free_pfn is reset then set it now */
--	if (cc->order > 0 && !cc->wrapped &&
--			zone->compact_cached_free_pfn == start_free_pfn(zone))
--		zone->compact_cached_free_pfn = high_pfn;
- }
- 
- /*
-@@ -682,26 +652,8 @@ static int compact_finished(struct zone *zone,
- 	if (fatal_signal_pending(current))
- 		return COMPACT_PARTIAL;
- 
--	/*
--	 * A full (order == -1) compaction run starts at the beginning and
--	 * end of a zone; it completes when the migrate and free scanner meet.
--	 * A partial (order > 0) compaction can start with the free scanner
--	 * at a random point in the zone, and may have to restart.
--	 */
--	if (cc->free_pfn <= cc->migrate_pfn) {
--		if (cc->order > 0 && !cc->wrapped) {
--			/* We started partway through; restart at the end. */
--			unsigned long free_pfn = start_free_pfn(zone);
--			zone->compact_cached_free_pfn = free_pfn;
--			cc->free_pfn = free_pfn;
--			cc->wrapped = 1;
--			return COMPACT_CONTINUE;
--		}
--		return COMPACT_COMPLETE;
--	}
--
--	/* We wrapped around and ended up where we started. */
--	if (cc->wrapped && cc->free_pfn <= cc->start_free_pfn)
-+	/* Compaction run completes if the migrate and free scanner meet */
-+	if (cc->free_pfn <= cc->migrate_pfn)
- 		return COMPACT_COMPLETE;
- 
- 	/*
-@@ -799,15 +751,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 
- 	/* Setup to move all movable pages to the end of the zone */
- 	cc->migrate_pfn = zone->zone_start_pfn;
--
--	if (cc->order > 0) {
--		/* Incremental compaction. Start where the last one stopped. */
--		cc->free_pfn = zone->compact_cached_free_pfn;
--		cc->start_free_pfn = cc->free_pfn;
--	} else {
--		/* Order == -1 starts at the end of the zone. */
--		cc->free_pfn = start_free_pfn(zone);
--	}
-+	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
-+	cc->free_pfn &= ~(pageblock_nr_pages-1);
- 
- 	migrate_prep_local();
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index 4bd7c0e..04ab01a 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -118,14 +118,8 @@ struct compact_control {
- 	unsigned long nr_freepages;	/* Number of isolated free pages */
- 	unsigned long nr_migratepages;	/* Number of pages to migrate */
- 	unsigned long free_pfn;		/* isolate_freepages search base */
--	unsigned long start_free_pfn;	/* where we started the search */
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
- 	bool sync;			/* Synchronous migration */
--	bool wrapped;			/* Order > 0 compactions are
--					   incremental, once free_pfn
--					   and migrate_pfn meet, we restart
--					   from the top of the zone;
--					   remember we wrapped around. */
- 
- 	int order;			/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c66fb87..46b2db3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4438,11 +4438,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 
- 		zone->spanned_pages = size;
- 		zone->present_pages = realsize;
--#if defined CONFIG_COMPACTION || defined CONFIG_CMA
--		zone->compact_cached_free_pfn = zone->zone_start_pfn +
--						zone->spanned_pages;
--		zone->compact_cached_free_pfn &= ~(pageblock_nr_pages-1);
--#endif
- #ifdef CONFIG_NUMA
- 		zone->node = nid;
- 		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
+Shaohua, I would also appreciate if you tested this series. I picked up
+one of your patches but replaced another and want to make sure that the
+workload you were investigating is still ok.
+
+===
+
+Richard Davies and Shaohua Li have both reported lock contention problems
+in compaction on the zone and LRU locks as well as significant amounts of
+time being spent in compaction. It is critical that performance gains from
+THP are not offset by the cost of allocating them in the first place. This
+series aims to reduce lock contention and scanning rates.
+
+Patch 1 is a fix for c67fe375 (mm: compaction: Abort async compaction if
+	locks are contended or taking too long) to properly abort in all
+	cases when contention is detected.
+
+Patch 2 defers acquiring the zone->lru_lock as long as possible.
+
+Patch 3 defers acquiring the zone->lock as lock as possible.
+
+Patch 4 reverts Rik's "skip-free" patches as the core concept gets
+	reimplemented later and the remaining patches are easier to
+	understand if this is reverted first.
+
+Patch 5 adds a pageblock-skip bit to the pageblock flags to cache what
+	pageblocks should be skipped by the migrate and free scanners.
+	This drastically reduces the amount of scanning compaction has
+	to do.
+
+Patch 6 reimplements something similar to Rik's idea except it uses the
+	pageblock-skip information to decide where the scanners should
+	restart from and does not need to wrap around.
+
+I tested this on 3.6-rc5 as that was the kernel base that the earlier threads
+worked on. It will need a bit of work to rebase on top of Andrews tree for
+merging due to other compaction changes but it will not be a major problem.
+Kernels tested were
+
+vanilla		3.6-rc5
+lesslock	Patches 1-3
+revert		Patches 1-4
+cachefail	Patches 1-5
+skipuseless	Patches 1-6
+
+Stress high-order allocation tests looked ok.
+
+STRESS-HIGHALLOC
+                   3.6.0         3.6.0-rc5         3.6.0-rc5        3.6.0-rc5         3.6.0-rc5
+                   rc5-vanilla    lesslock            revert        cachefail       skipuseless      
+Pass 1          17.00 ( 0.00%)    19.00 ( 2.00%)    29.00 (12.00%)   24.00 ( 7.00%)    20.00 ( 3.00%)
+Pass 2          16.00 ( 0.00%)    19.00 ( 3.00%)    39.00 (23.00%)   37.00 (21.00%)    35.00 (19.00%)
+while Rested    88.00 ( 0.00%)    88.00 ( 0.00%)    88.00 ( 0.00%)   85.00 (-3.00%)    86.00 (-2.00%)
+
+Success rates are improved a bit by the series as there are fewer
+opporunities to race with other allocation requests if compaction is
+scanning less.  I recognise the success rates are still low but patches
+that tackle parts of that are in Andrews tree already.
+
+The time to complete the tests did not vary that much and are uninteresting
+as were the vmstat statistics so I will not present them here.
+
+Using ftrace I recorded how much scanning was done by compaction and got this
+
+                            3.6.0         3.6.0-rc5 3.6.0-rc5  3.6.0-rc5  3.6.0-rc5
+                            rc5-vanilla    lesslock    revert  cachefail  skipuseless      
+Total   free    scanned       185020625  223313210  744553485   37149462   29231432 
+Total   free    isolated         845094    1174759    4301672     906689     721963 
+Total   free    efficiency      0.0046%    0.0053%    0.0058%    0.0244%    0.0247% 
+Total   migrate scanned       187708506  143133150  428180990   21941574   12288851 
+Total   migrate isolated         714376    1081134    3950098     711357     590552 
+Total   migrate efficiency      0.0038%    0.0076%    0.0092%    0.0324%    0.0481% 
+
+The efficiency is worthless because of the nature of the test and the
+number of failures.  The really interesting point as far as this patch
+series is concerned is the number of pages scanned.
+
+Note that reverting Rik's patches massively increases the number of pages scanned
+indicating that those patches really did make a huge difference to CPU usage.
+
+However, caching what pageblocks should be skipped has a much higher
+impact. With patches 1-5 applied, free page scanning is reduced by 80%
+in comparison to the vanilla kernel and migrate page scanning is reduced
+by 88%. If the basic concept of Rik's patches are implemened on top then
+scanning is even further reduced. Free scanning is reduced by 84% and
+migrate scanning is reduced by 93%.
+
+ include/linux/mmzone.h          |    5 +-
+ include/linux/pageblock-flags.h |   19 +-
+ mm/compaction.c                 |  407 ++++++++++++++++++++++++---------------
+ mm/internal.h                   |   13 +-
+ mm/page_alloc.c                 |    6 +-
+ 5 files changed, 284 insertions(+), 166 deletions(-)
+
 -- 
 1.7.9.2
 
