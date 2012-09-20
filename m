@@ -1,131 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2ITAHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 20:07:20 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50133 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab2ITAHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 20:07:17 -0400
-Date: Wed, 19 Sep 2012 17:03:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, bbruce@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        khilman@ti.com, santosh.shilimkar@ti.com, jon-hunter@ti.com,
-        snijsure@grid-net.com
-Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
-Message-ID: <20120920000351.GI2455@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com>
- <20120913011208.GT4257@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092000-2398-0000-0000-00000B2DD312
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000007; SDB=6.00175591; UDB=6.00039758; UTC=2012-09-20
- 00:07:16
+	id S1753282Ab2ITAKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 20:10:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29247 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051Ab2ITAKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 20:10:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,452,1344236400"; 
+   d="scan'208";a="195075406"
+Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in
+ kvm_load/put_guest_fpu()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 19 Sep 2012 17:10:35 -0700
+References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>
+	 <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>
+	 <50599AE2.80601@redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1348099839.26695.327.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 13, 2012 at 06:52:10PM +0000, Paul Walmsley wrote:
-> Hi Paul,
+On Wed, 2012-09-19 at 10:18 -0700, Suresh Siddha wrote:
+> These routines (kvm_load/put_guest_fpu()) are already called with
+> preemption disabled but as you mentioned, we don't want the preemption
+> to be disabled completely between the kvm_load_guest_fpu() and
+> kvm_put_guest_fpu().
 > 
-> thanks for the reply,
-> 
-> On Wed, 12 Sep 2012, Paul E. McKenney wrote:
-> 
-> > Interesting.  I am assuming that the interrupt in the stack below came
-> > from idle, if not, please let me know what.
-> 
-> According to the exception stack section in the original traceback, it
-> appears that the serial interrupt took the SoC out of idle.
-> 
-> > Could you please reproduce with CONFIG_RCU_CPU_STALL_INFO=y?  That would
-> > give me a bit more information about why RCU thought that there was
-> > a stall.  (CCing Becky Bruce, who saw something similar recently.)
-> 
-> At the bottom of this mail is a series of tracebacks with
-> CONFIG_RCU_CPU_STALL_INFO=y.  Unlike the traceback that was sent in
-> the last message, these were not triggered by serial activity.  These
-> appeared every 300 seconds.
-> 
-> > Subodh Nijsure (also CCed) reported something that might be similar on
-> > ARM, and also reported that setting the following got rid of the stalls:
-> > 
-> > 	CONFIG_CPU_IDLE=y
-> > 	CONFIG_CPU_IDLE_GOV_LADDER=y
-> > 	CONFIG_CPU_IDLE_GOV_MENU=y
-> > 
-> > At which point he was happy, which was good, but which also left the
-> > underlying problem unsolved.  Do these affect your system?  If so,
-> > do they cause a different ARM idle loop to be executed?
-> 
-> Will give this a try.  What board was Subodh using?
+> Also KVM already has the preempt notifier which is doing the
+> kvm_put_guest_fpu(), so something like the appended should address this.
+> I will test this shortly.
 
-Hello, Paul,
+Appended the tested fix (one more VMX based change needed as it fiddles
+with cr0.TS host bit).
 
-Any news on trying the above settings?
+Thanks.
+--8<--
 
-							Thanx, Paul
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, kvm: fix kvm's usage of kernel_fpu_begin/end()
 
-> - Paul
-> 
-> 
-> Debian GNU/Linux wheezy/sid armel ttyO2
-> 
-> armel login: [  305.942108] INFO: rcu_sched self-detected stall on CPU
-> [  305.944946]  1: (7 GPs behind) idle=57b/1/0 
-> [  305.947265]   (t=22811 jiffies)
-> [  305.949066] [<c001b7cc>] (unwind_backtrace+0x0/0xf0) from [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678)
-> [  305.954223] [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678) from [<c00529e0>] (update_process_times+0x38/0x68)
-> [  305.959625] [<c00529e0>] (update_process_times+0x38/0x68) from [<c008bf14>] (tick_sched_timer+0x80/0xec)
-> [  305.964813] [<c008bf14>] (tick_sched_timer+0x80/0xec) from [<c006840c>] (__run_hrtimer+0x7c/0x1e0)
-> [  305.969696] [<c006840c>] (__run_hrtimer+0x7c/0x1e0) from [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0)
-> [  305.974731] [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a04c>] (twd_handler+0x30/0x44)
-> [  305.979644] [<c001a04c>] (twd_handler+0x30/0x44) from [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c)
-> [  305.984741] [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a37dc>] (generic_handle_irq+0x30/0x48)
-> [  305.990234] [<c00a37dc>] (generic_handle_irq+0x30/0x48) from [<c0014c58>] (handle_IRQ+0x4c/0xac)
-> [  305.995025] [<c0014c58>] (handle_IRQ+0x4c/0xac) from [<c0008478>] (gic_handle_irq+0x28/0x5c)
-> [  305.999633] [<c0008478>] (gic_handle_irq+0x28/0x5c) from [<c04f8ca4>] (__irq_svc+0x44/0x5c)
-> [  306.004180] Exception stack(0xde86ff88 to 0xde86ffd0)
-> [  306.006927] ff80:                   0003c6d0 00000001 00000000 de8660c0 de86e000 c07c23c8
-> [  306.011383] ffa0: c0504590 c0749e20 00000000 411fc092 c074a040 00000000 00000001 de86ffd0
-> [  306.015838] ffc0: 0003c6d1 c0014f50 20000113 ffffffff
-> [  306.018585] [<c04f8ca4>] (__irq_svc+0x44/0x5c) from [<c0014f50>] (default_idle+0x20/0x44)
-> [  306.023040] [<c0014f50>] (default_idle+0x20/0x44) from [<c001517c>] (cpu_idle+0x9c/0x114)
-> [  306.027526] [<c001517c>] (cpu_idle+0x9c/0x114) from [<804f1af4>] (0x804f1af4)
-> [  602.004486] INFO: rcu_sched detected stalls on CPUs/tasks:
-> [  602.007476]  (detected by 0, t=60707 jiffies)
-> [  602.009857] INFO: Stall ended before state dump start
-> [  906.027893] INFO: rcu_sched self-detected stall on CPU
-> [  906.030700]  1: (6 GPs behind) idle=647/1/0 
-> [  906.033020]   (t=38379 jiffies)
-> [  906.034790] [<c001b7cc>] (unwind_backtrace+0x0/0xf0) from [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678)
-> [  906.039947] [<c00acc28>] (rcu_check_callbacks+0x1b0/0x678) from [<c00529e0>] (update_process_times+0x38/0x68)
-> [  906.045349] [<c00529e0>] (update_process_times+0x38/0x68) from [<c008bf14>] (tick_sched_timer+0x80/0xec)
-> [  906.050537] [<c008bf14>] (tick_sched_timer+0x80/0xec) from [<c006840c>] (__run_hrtimer+0x7c/0x1e0)
-> [  906.055419] [<c006840c>] (__run_hrtimer+0x7c/0x1e0) from [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0)
-> [  906.060424] [<c00691f0>] (hrtimer_interrupt+0x11c/0x2d0) from [<c001a04c>] (twd_handler+0x30/0x44)
-> [  906.065307] [<c001a04c>] (twd_handler+0x30/0x44) from [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c)
-> [  906.070434] [<c00a7068>] (handle_percpu_devid_irq+0x90/0x13c) from [<c00a37dc>] (generic_handle_irq+0x30/0x48)
-> [  906.075897] [<c00a37dc>] (generic_handle_irq+0x30/0x48) from [<c0014c58>] (handle_IRQ+0x4c/0xac)
-> [  906.080688] [<c0014c58>] (handle_IRQ+0x4c/0xac) from [<c0008478>] (gic_handle_irq+0x28/0x5c)
-> [  906.085296] [<c0008478>] (gic_handle_irq+0x28/0x5c) from [<c04f8ca4>] (__irq_svc+0x44/0x5c)
-> [  906.089843] Exception stack(0xde86ff88 to 0xde86ffd0)
-> [  906.092590] ff80:                   0003cb06 00000001 00000000 de8660c0 de86e000 c07c23c8
-> [  906.097045] ffa0: c0504590 c0749e20 00000000 411fc092 c074a040 00000000 00000001 de86ffd0
-> [  906.101501] ffc0: 0003cb07 c0014f50 20000113 ffffffff
-> [  906.104278] [<c04f8ca4>] (__irq_svc+0x44/0x5c) from [<c0014f50>] (default_idle+0x20/0x44)
-> [  906.108734] [<c0014f50>] (default_idle+0x20/0x44) from [<c001517c>] (cpu_idle+0x9c/0x114)
-> [  906.113189] [<c001517c>] (cpu_idle+0x9c/0x114) from [<804f1af4>] (0x804f1af4)
-> 
+Preemption is disabled between kernel_fpu_begin/end() and as such
+it is not a good idea to use these routines in kvm_load/put_guest_fpu()
+which can be very far apart.
+
+kvm_load/put_guest_fpu() routines are already called with
+preemption disabled and KVM already uses the preempt notifier to save
+the guest fpu state using kvm_put_guest_fpu().
+
+So introduce __kernel_fpu_begin/end() routines which don't touch
+preemption and use them instead of kernel_fpu_begin/end()
+for KVM's use model of saving/restoring guest FPU state.
+
+Also with this change (and with eagerFPU model), fix the host cr0.TS vm-exit
+state in the case of VMX. For eagerFPU case, host cr0.TS is always clear.
+So no need to worry about it. For the traditional lazyFPU restore case,
+cr0.TS bit is always set during vm-exit and depending on the guest FPU state
+and the host task's FPU state, cr0.TS bit is cleared when needed.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/fpu-internal.h |    5 -----
+ arch/x86/include/asm/i387.h         |   28 ++++++++++++++++++++++++++--
+ arch/x86/include/asm/processor.h    |    5 +++++
+ arch/x86/kernel/i387.c              |   13 +++++--------
+ arch/x86/kvm/vmx.c                  |   11 +++++++++--
+ arch/x86/kvm/x86.c                  |    4 ++--
+ 6 files changed, 47 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 92f3c6e..a6b60c7 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -85,11 +85,6 @@ static inline int is_x32_frame(void)
+ 
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
+ 
+-static __always_inline __pure bool use_eager_fpu(void)
+-{
+-	return static_cpu_has(X86_FEATURE_EAGER_FPU);
+-}
+-
+ static __always_inline __pure bool use_xsaveopt(void)
+ {
+ 	return static_cpu_has(X86_FEATURE_XSAVEOPT);
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 6c3bd37..ed8089d 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -24,8 +24,32 @@ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
+ extern void math_state_restore(void);
+ 
+ extern bool irq_fpu_usable(void);
+-extern void kernel_fpu_begin(void);
+-extern void kernel_fpu_end(void);
++
++/*
++ * Careful: __kernel_fpu_begin/end() must be called with preempt disabled
++ * and they don't touch the preempt state on their own.
++ * If you enable preemption after __kernel_fpu_begin(), preempt notifier
++ * should call the __kernel_fpu_end() to prevent the kernel/user FPU
++ * state from getting corrupted. KVM for example uses this model.
++ *
++ * All other cases use kernel_fpu_begin/end() which disable preemption
++ * during kernel FPU usage.
++ */
++extern void __kernel_fpu_begin(void);
++extern void __kernel_fpu_end(void);
++
++static inline void kernel_fpu_begin(void)
++{
++	WARN_ON_ONCE(!irq_fpu_usable());
++	preempt_disable();
++	__kernel_fpu_begin();
++}
++
++static inline void kernel_fpu_end(void)
++{
++	__kernel_fpu_end();
++	preempt_enable();
++}
+ 
+ /*
+  * Some instructions like VIA's padlock instructions generate a spurious
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b98c0d9..d0e9adb 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -402,6 +402,11 @@ struct fpu {
+ 	union thread_xstate *state;
+ };
+ 
++static __always_inline __pure bool use_eager_fpu(void)
++{
++	return static_cpu_has(X86_FEATURE_EAGER_FPU);
++}
++
+ #ifdef CONFIG_X86_64
+ DECLARE_PER_CPU(struct orig_ist, orig_ist);
+ 
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 6782e39..675a050 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -73,32 +73,29 @@ bool irq_fpu_usable(void)
+ }
+ EXPORT_SYMBOL(irq_fpu_usable);
+ 
+-void kernel_fpu_begin(void)
++void __kernel_fpu_begin(void)
+ {
+ 	struct task_struct *me = current;
+ 
+-	WARN_ON_ONCE(!irq_fpu_usable());
+-	preempt_disable();
+ 	if (__thread_has_fpu(me)) {
+ 		__save_init_fpu(me);
+ 		__thread_clear_has_fpu(me);
+-		/* We do 'stts()' in kernel_fpu_end() */
++		/* We do 'stts()' in __kernel_fpu_end() */
+ 	} else if (!use_eager_fpu()) {
+ 		this_cpu_write(fpu_owner_task, NULL);
+ 		clts();
+ 	}
+ }
+-EXPORT_SYMBOL(kernel_fpu_begin);
++EXPORT_SYMBOL(__kernel_fpu_begin);
+ 
+-void kernel_fpu_end(void)
++void __kernel_fpu_end(void)
+ {
+ 	if (use_eager_fpu())
+ 		math_state_restore();
+ 	else
+ 		stts();
+-	preempt_enable();
+ }
+-EXPORT_SYMBOL(kernel_fpu_end);
++EXPORT_SYMBOL(__kernel_fpu_end);
+ 
+ void unlazy_fpu(struct task_struct *tsk)
+ {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index b06737d..8ff328b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1493,7 +1493,8 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
+ #ifdef CONFIG_X86_64
+ 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+-	if (user_has_fpu())
++	/* Did the host task or the guest vcpu has FPU restored lazily? */
++	if (!use_eager_fpu() && (user_has_fpu() || vmx->vcpu.guest_fpu_loaded))
+ 		clts();
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
+@@ -3743,7 +3744,13 @@ static void vmx_set_constant_host_state(void)
+ 	unsigned long tmpl;
+ 	struct desc_ptr dt;
+ 
+-	vmcs_writel(HOST_CR0, read_cr0() | X86_CR0_TS);  /* 22.2.3 */
++	/*
++	 * Eager FPU always has the cr0.TS bit clear.
++	 */
++	if (use_eager_fpu())
++		vmcs_writel(HOST_CR0, read_cr0());  /* 22.2.3 */
++	else
++		vmcs_writel(HOST_CR0, read_cr0() | X86_CR0_TS); /* 22.2.3 */
+ 	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
+ 	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 3ddefb4..1f09552 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5979,7 +5979,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+ 	 */
+ 	kvm_put_guest_xcr0(vcpu);
+ 	vcpu->guest_fpu_loaded = 1;
+-	kernel_fpu_begin();
++	__kernel_fpu_begin();
+ 	fpu_restore_checking(&vcpu->arch.guest_fpu);
+ 	trace_kvm_fpu(1);
+ }
+@@ -5993,7 +5993,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->guest_fpu_loaded = 0;
+ 	fpu_save_init(&vcpu->arch.guest_fpu);
+-	kernel_fpu_end();
++	__kernel_fpu_end();
+ 	++vcpu->stat.fpu_reload;
+ 	kvm_make_request(KVM_REQ_DEACTIVATE_FPU, vcpu);
+ 	trace_kvm_fpu(0);
+
 
