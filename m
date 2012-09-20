@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab2ITMoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:44:05 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:43384 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab2ITMoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:44:03 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH -v2] x86, kprobes: Move skip_singlestep up
-Date: Thu, 20 Sep 2012 14:43:54 +0200
-Message-Id: <1348145034-16603-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <20120920110515.GA5996@gmail.com>
-References: <20120920110515.GA5996@gmail.com>
+	id S1755181Ab2ITMoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:44:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60687 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754658Ab2ITMo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 08:44:28 -0400
+Date: Thu, 20 Sep 2012 13:44:01 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>, Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH 2/3] mm: thp: Fix the update_mmu_cache() last argument
+ passing in mm/huge_memory.c
+Message-ID: <20120920124401.GF4654@mudshark.cambridge.arm.com>
+References: <1347382036-18455-1-git-send-email-will.deacon@arm.com>
+ <1347382036-18455-3-git-send-email-will.deacon@arm.com>
+ <20120915133833.GA32398@linux-mips.org>
+ <20120918123331.6ca5833c.akpm@linux-foundation.org>
+ <CAHkRjk7uCZZvA_Ubq7vgkAV2r-vMNHxs+hZmvf+99ks+4v7isA@mail.gmail.com>
+ <20120919155346.GB32398@linux-mips.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120919155346.GB32398@linux-mips.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Hi Ralf,
 
-I get
+On Wed, Sep 19, 2012 at 04:53:46PM +0100, Ralf Baechle wrote:
+> On Wed, Sep 19, 2012 at 10:12:28AM +0100, Catalin Marinas wrote:
+> 
+> > >> 5) void update_mmu_cache(struct vm_area_struct *vma,
+> > >>                          unsigned long address, pte_t *ptep)
+> > >
+> > > Yes please.
+> > 
+> > Should we just use a generic (void *) for the last argument or force a
+> > cast in mm/huge_memory.c?
+> > 
+> > Ralf's point is that transparent huge page code calls update_mmu_cache
+> > with a (pmd_t *) as the last argument. This could make sense for THP
+> > as it assumes that huge pages can only be created at the pmd level.
+> > But that's unlike mm/hugetlb.c which casts huge page types to pte_t,
+> > even though on ARM they are implemented at the pmd level.
+> > 
+> > On ARM (with VIPT caches) update_mmu_cache() is empty like on x86,
+> > though a static inline rather than macro.
+> 
+> It's even worse - mm/huge_memory.c is passing a pmd_t, not a pointer so
+> changing the type of update_mmu_cache's 3rd argument alone won't cut it.
+> 
+> This went unnoticed so far because all existing architectures supporting
+> transparent huge pages implement update_mmu_cache() as do { } while (0).
+> 
+> MIPS uses update_mmu_cache() as the hook to deal with cache aliases and
+> pre-faulting a TLB entry.  But aliases don't affect small pages and having
+> a separate variant of update_mmu_cache for huge pages will allow some other
+> optimizations.  That's minor but it's the argument types that really need
+> to be fixed and because MIPS also implements huge pages at PMD level I'd
+> be happy if we settle on pte_t * for mm/huge_memory.c.
 
-arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined [-Wunused-function]
+Just to clarify: do you want a cast from pmd_t * to pte_t * or instead copy
+the hugetlb code and pass ptes around instead of pmds? The latter is pretty
+invasive...
 
-on tip/auto-latest.
-
-Put the skip_singlestep function declaration up, in KPROBES_CAN_USE_FTRACE
-and drop the superfluous forward declaration.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/kprobes.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index b7c2a85d1926..57916c0d3cf6 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -541,8 +541,23 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
- 	return 1;
- }
- 
-+#ifdef KPROBES_CAN_USE_FTRACE
- static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
--				      struct kprobe_ctlblk *kcb);
-+				      struct kprobe_ctlblk *kcb)
-+{
-+	/*
-+	 * Emulate singlestep (and also recover regs->ip)
-+	 * as if there is a 5byte nop
-+	 */
-+	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
-+	if (unlikely(p->post_handler)) {
-+		kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+		p->post_handler(p, regs, 0);
-+	}
-+	__this_cpu_write(current_kprobe, NULL);
-+}
-+#endif
-+
- /*
-  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
-  * remain disabled throughout this function.
-@@ -1061,21 +1076,6 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- }
- 
- #ifdef KPROBES_CAN_USE_FTRACE
--static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
--				      struct kprobe_ctlblk *kcb)
--{
--	/*
--	 * Emulate singlestep (and also recover regs->ip)
--	 * as if there is a 5byte nop
--	 */
--	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
--	if (unlikely(p->post_handler)) {
--		kcb->kprobe_status = KPROBE_HIT_SSDONE;
--		p->post_handler(p, regs, 0);
--	}
--	__this_cpu_write(current_kprobe, NULL);
--}
--
- /* Ftrace callback handler for kprobes */
- void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
- 				     struct ftrace_ops *ops, struct pt_regs *regs)
--- 
-1.7.11.rc1
-
+Will
