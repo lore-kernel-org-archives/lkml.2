@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab2ITVuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:50:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39726 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2ITVuh (ORCPT
+	id S1755305Ab2ITVvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:51:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab2ITVvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:50:37 -0400
-Date: Thu, 20 Sep 2012 17:50:34 -0400 (EDT)
-Message-Id: <20120920.175034.401099732294832491.davem@davemloft.net>
-To: avagin@openvz.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        xemul@parallels.com
-Subject: Re: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
-References: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 17:51:02 -0400
+Date: Thu, 20 Sep 2012 14:48:16 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Message-ID: <20120920214816.GB18223@lizard>
+References: <1347985687-22676-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20120919073734.GO15548@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120919073734.GO15548@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Vagin <avagin@openvz.org>
-Date: Wed, 19 Sep 2012 23:40:00 +0400
+On Wed, Sep 19, 2012 at 10:37:34AM +0300, Mika Westerberg wrote:
+> On Tue, Sep 18, 2012 at 09:58:07PM +0530, Ramakrishna Pallala wrote:
+> > This patch checks for charger status register for determining the
+> > battery charging status and reports Discharing/Charging/Not Charging/Full
+> > accordingly.
+> > 
+> > This patch also adds the interrupt support for Safety Timer Expiration.
+> > This interrupt is helpful in debugging the cause for charger fault.
+> > 
+> > Resending this patch because previous patch missed Anton's attention
 
-> rcv_wscale is a symetric parameter with snd_wscale.
-> 
-> Both this parameters are set on a connection handshake.
-> 
-> Without this value a remote window size can not be interpreted correctly,
-> because a value from a packet should be shifted on rcv_wscale.
-> 
-> And one more thing is that wscale_ok should be set too.
-> 
-> This patch doesn't break a backward compatibility.
-> If someone uses it in a old scheme, a rcv window
-> will be restored with the same bug (rcv_wscale = 0).
-> 
-> v2: Save backward compatibility on big-endian system. Before
->     the first two bytes were snd_wscale and the second two bytes were
->     rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
->     This approach is independent on byte ordering.
-> 
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Not that it missed my attention, it's just that I'm in "apply-mode"
+only 3-4 times per dev cycle. So, patches may lay in my "battery"
+folder for some time.
 
-Applied, thanks.
+That's mostly because I have somewhat limited time, but also that way I
+can collect Acks and give other folks a chance to take a look at the
+patches.  :-)
+
+But if you suspect the patch missed my attention (which also happens
+sometimes), it's totally fine to resend it or ping me, as you did.
+
+> > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> 
+> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+Applied, thank you guys!
