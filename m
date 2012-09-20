@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2ITOwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:52:47 -0400
-Received: from nm9-vm0.bullet.mail.ird.yahoo.com ([77.238.189.197]:39938 "HELO
-	nm9-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750755Ab2ITOwq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:52:46 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 761213.92059.bm@omp1024.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=4OdMTdJlEDIXUd+Yw26Ykg8h/Wr9eLKik/Y9n14UHnmLs0h5XmaPY3imW0JPxK4yAecF9ovilll5cTjR0hVC/tM+MaWJOfgNEULiPcOm1jeU4kyGnV7fdnPdtLVZNngYQXnsCCi7bSUuAQq8X8YYwMHW11EHo7bni4c8iWAdcRA=;
-X-YMail-OSG: l0EXmoMVM1nejeXq6ZfogbegAlnmPa6.kyZ7qmyv3wrirtS
- 7QKlVGd.kl6ArN3yLESbhsWum6SF6ZtKW1Xoo79o2Juv9SgzjpVhC4_3Xdj2
- .y.txflyaAjn_3cuhoN3VokOA6p92TsJ0GN3_ch1cLablGKt25Mv5GCEMSiI
- gnUZGV1Cgj4qoqbPluuU1gUN7PxNPcVURdRxuue7AKqRZz7TzlUsR69hfLLH
- cUBphCT32Vd1MxcXlpQRccA.P6aps.RQl6XmwcomLRxS3SYoDWTr_jSpM.3B
- F9ahRlqsctxI8jQTeyZ8FzfuPRzCgbYH5DUe72Ph0Jr1NW6fwphfKgxUZF1_
- dHuV2hWupJV_xI5bLGrlYPnQExLnsy2ee4nJC61W.rI0axe.yM3XnsoQNMAL
- 6WZkTgZVaH2GbosX3FQ6t8iXqcpd20R1Ru07MFerxKhJxHoKrPRWE6ptGdi3
- LSFc.7UUST0x.VSS9nS6FXz11FohIb61A_4qQ2D900ifnG78AYyjpOStxaXu
- APHcZ7SooxCf1M_L1TOw-
-X-Mailer: YahooMailWebService/0.8.121.416
-Message-ID: <1348152764.23590.YahooMailNeo@web29904.mail.ird.yahoo.com>
-Date: Thu, 20 Sep 2012 15:52:44 +0100 (BST)
-From: Kenyetta Battiest <eryzzzrodes@yahoo.com>
-Reply-To: Eryzzzrodes <eryzzzrodes@yahoo.com>
-Subject: =?utf-8?B?SGV5ISBJIHdhbm5hIG1lZXQgYW4gaW50ZXJlc3RpbmcgbWFuLiBZb3Ugc2Vl?=
- =?utf-8?B?bSB0byBzdWl0IHRoZSBjb25kaXRpb25zIHBlcmZlY3RseS4uLiDzn6q9?=
- =?utf-8?B?85+EmfOfq5jzn66L85+RsvOfnqU=?=
-To: "jay3003@collegeclub.com" <jay3003@collegeclub.com>
+	id S1755900Ab2ITO4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:56:31 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40745 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab2ITO4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:56:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
+Date: Thu, 20 Sep 2012 20:26:28 +0530
+Message-ID: <CAK9yfHyzJ5MsuPakn3coccYdmfMk_miVFbGr76ybKZxX5Lqd2A@mail.gmail.com>
+Subject: Re: [PATCH] pwm-backlight: Take over maintenance
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Matthew Garrett <mjg@redhat.com>, Robert Morell <rmorell@nvidia.com>,
+        Dilan Lee <dilee@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*http://οоаůὁ.sweet-discreets.ru/?ḩȃὃŕĸ
+On 20 September 2012 16:20, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> Since the pwm-backlight driver is lacking a proper maintainer and is the
+> heaviest user of the PWM framework I'm taking over maintenance.
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Arun Murthy <arun.murthy@stericsson.com>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Robert Morell <rmorell@nvidia.com>
+> Cc: Dilan Lee <dilee@nvidia.com>
+> Cc: Axel Lin <axel.lin@gmail.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Alexandre Courbot <acourbot@nvidia.com>
+> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+
+
+> ---
+> Andrew: As previously discussed this patch makes me the new maintainer
+> for the pwm-backlight driver. I contacted Richard Purdie and requested
+> his Acked-by for this because he's the backlight subsystem maintainer.
+> Unfortunately he hasn't answered yet. Looking at the commit log, every
+> commit in the last 2+ years has gone through your tree, which seems to
+> be reason enough for me to take over this driver but I still wanted to
+> get an Acked-by at least from you so that this doesn't look like
+> hijacking. I've also Cc'ed a couple of people that have done work on
+> the driver in the past to give them a chance to object or send their
+> Acked-by.
+>
+> Obviously I will take this patch through my tree so this is not a
+> request to include it in your tree.
+>
+>  MAINTAINERS | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 61ad79e..a6f023e 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5543,6 +5543,8 @@ F:        Documentation/devicetree/bindings/pwm/
+>  F:     include/linux/pwm.h
+>  F:     include/linux/of_pwm.h
+>  F:     drivers/pwm/
+> +F:     drivers/video/backlight/pwm_bl.c
+> +F:     include/linux/pwm_backlight.h
+>
+>  PXA2xx/PXA3xx SUPPORT
+>  M:     Eric Miao <eric.y.miao@gmail.com>
+> --
+> 1.7.12
+>
+
+
+
+-- 
+With warm regards,
+Sachin
