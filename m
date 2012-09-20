@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab2ITDTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 23:19:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53021 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2ITDS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 23:18:58 -0400
-From: Robin Dong <robin.k.dong@gmail.com>
-To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Cc: Robin Dong <sanbai@taobao.com>
-Subject: [PATCH 2/2] md: modify dm_io() so it could return bios instead of submitting it
-Date: Thu, 20 Sep 2012 11:18:42 +0800
-Message-Id: <1348111122-27400-2-git-send-email-robin.k.dong@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1348111122-27400-1-git-send-email-robin.k.dong@gmail.com>
-References: <1348111122-27400-1-git-send-email-robin.k.dong@gmail.com>
+	id S1754089Ab2ITDVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 23:21:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48701 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab2ITDVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 23:21:39 -0400
+Message-ID: <505A8BAB.2020004@ti.com>
+Date: Thu, 20 Sep 2012 05:21:15 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] ARM: dts: omap: add dt data for MUSB
+References: <1348047128-25692-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1348047128-25692-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Dong <sanbai@taobao.com>
+Hi Kishon,
 
-When trying to modify flashcache to request based (current it's bio based), we need
-to make request from bios by ourselves, but dm_io() will submit these bios directly,
-so we propose to modify the dm_io() to return bios instead of submiting it.
+On 09/19/2012 11:32 AM, Kishon Vijay Abraham I wrote:
+> This patch series adds dt data to get MUSB working in omap4 and omap3
+> 
+> Changes from v2:
+> * Changes the subject of all the patches to include "ARM: dts:"
+> * Added reg property and interrupt property for "usb_otg_hs". Previously these
+>   were obtained from ti,hwmods property.
+> * Rebased on
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git devel-dt
+> 
+> Changes from v1:
+> Just removed the omap-usb2 dt data and sent that as a separate patch.
+> 
+> Kishon Vijay Abraham I (3):
+>   ARM: dts: Add twl6030-usb data
+>   ARM: dts: Add twl4030-usb data
+>   ARM: dts: omap: Add usb_otg and glue data
 
-This could also improve the flexibility of dm_io().
+Thanks for the update. I've just pulled the series for 3.7.
 
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
- drivers/md/dm.c               |   11 +++++++++++
- include/linux/device-mapper.h |    3 +++
- 2 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 4e09b6f..bf6e3bb 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1459,11 +1459,22 @@ static int dm_request_based(struct mapped_device *md)
- static void dm_request(struct request_queue *q, struct bio *bio)
- {
- 	struct mapped_device *md = q->queuedata;
-+	struct dm_table *map = dm_get_live_table(md);
-+	struct dm_target *ti = dm_table_find_target(map, bio->bi_sector);
-+
-+	if (ti->type->mk_rq) {
-+		ti->type->mk_rq(ti, q, bio);
-+		goto out;
-+	}
- 
- 	if (dm_request_based(md))
- 		blk_queue_bio(q, bio);
- 	else
- 		_dm_request(q, bio);
-+
-+out:
-+	dm_table_put(map);
-+	return;
- }
- 
- void dm_dispatch_request(struct request *rq)
-diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
-index 38d27a1..2386389 100644
---- a/include/linux/device-mapper.h
-+++ b/include/linux/device-mapper.h
-@@ -50,6 +50,8 @@ typedef int (*dm_map_fn) (struct dm_target *ti, struct bio *bio,
- 			  union map_info *map_context);
- typedef int (*dm_map_request_fn) (struct dm_target *ti, struct request *clone,
- 				  union map_info *map_context);
-+typedef int (*dm_make_request_fn) (struct dm_target *ti,
-+				struct request_queue *q, struct bio *bio);
- 
- /*
-  * Returns:
-@@ -136,6 +138,7 @@ struct target_type {
- 	dm_dtr_fn dtr;
- 	dm_map_fn map;
- 	dm_map_request_fn map_rq;
-+	dm_make_request_fn mk_rq;
- 	dm_endio_fn end_io;
- 	dm_request_endio_fn rq_end_io;
- 	dm_presuspend_fn presuspend;
--- 
-1.7.1
+Regards,
+Benoit
 
