@@ -1,34 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2ITODI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:03:08 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44648 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab2ITODG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:03:06 -0400
-MIME-Version: 1.0
-Date: Thu, 20 Sep 2012 16:03:05 +0200
-Message-ID: <CAHODtZT6UP4BCHuugpSr6q2=KoTDiGuW_hG_fqjWG7cXcTE35A@mail.gmail.com>
-Subject: [PATCH] [MTD] slram: Invalid checking of absolute end address
-From: Jiri Engelthaler <engycz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755335Ab2ITOEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:04:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37103 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370Ab2ITOEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:04:39 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/6] mm: compaction: Abort compaction loop if lock is contended or run too long
+Date: Thu, 20 Sep 2012 15:04:30 +0100
+Message-Id: <1348149875-29678-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1348149875-29678-1-git-send-email-mgorman@suse.de>
+References: <1348149875-29678-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed parsing end absolute address
-Signed-off-by: Jiri Engelthaler <engycz@gmail.com>
----
---- linux-3.2.28/drivers/mtd/devices/slram.c	2012-08-19 19:15:38.000000000 +0200
-+++ linux-3.2.28.mod/drivers/mtd/devices/slram.c	2012-09-19
-18:29:28.012740703 +0200
-@@ -266,7 +266,7 @@ static int parse_cmdline(char *devname,
+From: Shaohua Li <shli@fusionio.com>
 
- 	if (*(szlength) != '+') {
- 		devlength = simple_strtoul(szlength, &buffer, 0);
--		devlength = handle_unit(devlength, buffer) - devstart;
-+		devlength = handle_unit(devlength, buffer);
- 		if (devlength < devstart)
- 			goto err_out;
+Changelog since V2
+o Fix BUG_ON triggered due to pages left on cc.migratepages
+o Make compact_zone_order() require non-NULL arg `contended'
+
+Changelog since V1
+o only abort the compaction if lock is contended or run too long
+o Rearranged the code by Andrea Arcangeli.
+
+isolate_migratepages_range() might isolate no pages if for example when
+zone->lru_lock is contended and running asynchronous compaction. In this
+case, we should abort compaction, otherwise, compact_zone will run a
+useless loop and make zone->lru_lock is even contended.
+
+[minchan@kernel.org: Putback pages isolated for migration if aborting]
+[akpm@linux-foundation.org: compact_zone_order requires non-NULL arg contended]
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/compaction.c |   17 ++++++++++++-----
+ mm/internal.h   |    2 +-
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 7fcd3a5..a8de20d 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -70,8 +70,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+ 
+ 		/* async aborts if taking too long or contended */
+ 		if (!cc->sync) {
+-			if (cc->contended)
+-				*cc->contended = true;
++			cc->contended = true;
+ 			return false;
+ 		}
+ 
+@@ -634,7 +633,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 
+ 	/* Perform the isolation */
+ 	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
+-	if (!low_pfn)
++	if (!low_pfn || cc->contended)
+ 		return ISOLATE_ABORT;
+ 
+ 	cc->migrate_pfn = low_pfn;
+@@ -787,6 +786,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		switch (isolate_migratepages(zone, cc)) {
+ 		case ISOLATE_ABORT:
+ 			ret = COMPACT_PARTIAL;
++			putback_lru_pages(&cc->migratepages);
++			cc->nr_migratepages = 0;
+ 			goto out;
+ 		case ISOLATE_NONE:
+ 			continue;
+@@ -831,6 +832,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+ 				 int order, gfp_t gfp_mask,
+ 				 bool sync, bool *contended)
+ {
++	unsigned long ret;
+ 	struct compact_control cc = {
+ 		.nr_freepages = 0,
+ 		.nr_migratepages = 0,
+@@ -838,12 +840,17 @@ static unsigned long compact_zone_order(struct zone *zone,
+ 		.migratetype = allocflags_to_migratetype(gfp_mask),
+ 		.zone = zone,
+ 		.sync = sync,
+-		.contended = contended,
+ 	};
+ 	INIT_LIST_HEAD(&cc.freepages);
+ 	INIT_LIST_HEAD(&cc.migratepages);
+ 
+-	return compact_zone(zone, &cc);
++	ret = compact_zone(zone, &cc);
++
++	VM_BUG_ON(!list_empty(&cc.freepages));
++	VM_BUG_ON(!list_empty(&cc.migratepages));
++
++	*contended = cc.contended;
++	return ret;
+ }
+ 
+ int sysctl_extfrag_threshold = 500;
+diff --git a/mm/internal.h b/mm/internal.h
+index b8c91b3..4bd7c0e 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -130,7 +130,7 @@ struct compact_control {
+ 	int order;			/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+ 	struct zone *zone;
+-	bool *contended;		/* True if a lock was contended */
++	bool contended;			/* True if a lock was contended */
+ };
+ 
+ unsigned long
+-- 
+1.7.9.2
+
