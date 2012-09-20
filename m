@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab2ITMLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:11:40 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:54950 "EHLO
+	id S1754624Ab2ITMMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:12:16 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54935 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab2ITMLf (ORCPT
+	with ESMTP id S1754158Ab2ITMLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:11:35 -0400
+	Thu, 20 Sep 2012 08:11:33 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         Linux Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Joern Engel <joern@logfs.org>,
-        Prasad Joshi <prasadjoshi.linux@gmail.com>
-Date: Thu, 20 Sep 2012 04:41:57 -0700
-Message-Id: <1348141326-23355-16-git-send-email-ebiederm@xmission.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Thu, 20 Sep 2012 04:41:56 -0700
+Message-Id: <1348141326-23355-15-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 References: <877grox6ql.fsf@xmission.com>
  <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+kjcMPlEe6guuFaqG1zdVRVwO9dIeYoKE=
+X-XM-AID: U2FsdGVkX1+2RHBrHZxzcJDuMMWtAcpT94tSZyAEMKo=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0013]
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1272]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1]
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
-X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 16/25] userns: Convert logfs to use kuid/kgid where appropriate
+Subject: [PATCH 15/25] userns: Convert isofs to use kuid/kgid where appropriate
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -47,69 +45,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Cc: Joern Engel <joern@logfs.org>
-Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/logfs/inode.c     |    4 ++--
- fs/logfs/readwrite.c |    8 ++++----
- init/Kconfig         |    1 -
- 3 files changed, 6 insertions(+), 7 deletions(-)
+ fs/isofs/inode.c |   17 +++++++++++------
+ fs/isofs/isofs.h |    4 ++--
+ fs/isofs/rock.c  |    4 ++--
+ init/Kconfig     |    1 -
+ 4 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/fs/logfs/inode.c b/fs/logfs/inode.c
-index a422f42..43f61c2 100644
---- a/fs/logfs/inode.c
-+++ b/fs/logfs/inode.c
-@@ -192,8 +192,8 @@ static void logfs_init_inode(struct super_block *sb, struct inode *inode)
- 	li->li_height	= 0;
- 	li->li_used_bytes = 0;
- 	li->li_block	= NULL;
--	inode->i_uid	= 0;
--	inode->i_gid	= 0;
-+	i_uid_write(inode, 0);
-+	i_gid_write(inode, 0);
- 	inode->i_size	= 0;
- 	inode->i_blocks	= 0;
- 	inode->i_ctime	= CURRENT_TIME;
-diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
-index f1cb512..a8d492d 100644
---- a/fs/logfs/readwrite.c
-+++ b/fs/logfs/readwrite.c
-@@ -119,8 +119,8 @@ static void logfs_disk_to_inode(struct logfs_disk_inode *di, struct inode*inode)
- 	inode->i_mode	= be16_to_cpu(di->di_mode);
- 	li->li_height	= di->di_height;
- 	li->li_flags	= be32_to_cpu(di->di_flags);
--	inode->i_uid	= be32_to_cpu(di->di_uid);
--	inode->i_gid	= be32_to_cpu(di->di_gid);
-+	i_uid_write(inode, be32_to_cpu(di->di_uid));
-+	i_gid_write(inode, be32_to_cpu(di->di_gid));
- 	inode->i_size	= be64_to_cpu(di->di_size);
- 	logfs_set_blocks(inode, be64_to_cpu(di->di_used_bytes));
- 	inode->i_atime	= be64_to_timespec(di->di_atime);
-@@ -156,8 +156,8 @@ static void logfs_inode_to_disk(struct inode *inode, struct logfs_disk_inode*di)
- 	di->di_height	= li->li_height;
- 	di->di_pad	= 0;
- 	di->di_flags	= cpu_to_be32(li->li_flags);
--	di->di_uid	= cpu_to_be32(inode->i_uid);
--	di->di_gid	= cpu_to_be32(inode->i_gid);
-+	di->di_uid	= cpu_to_be32(i_uid_read(inode));
-+	di->di_gid	= cpu_to_be32(i_gid_read(inode));
- 	di->di_size	= cpu_to_be64(i_size_read(inode));
- 	di->di_used_bytes = cpu_to_be64(li->li_used_bytes);
- 	di->di_atime	= timespec_to_be64(inode->i_atime);
+diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
+index 29037c3..a7d8e6c 100644
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -21,6 +21,7 @@
+ #include <linux/cdrom.h>
+ #include <linux/parser.h>
+ #include <linux/mpage.h>
++#include <linux/user_namespace.h>
+ 
+ #include "isofs.h"
+ #include "zisofs.h"
+@@ -171,8 +172,8 @@ struct iso9660_options{
+ 	unsigned int blocksize;
+ 	umode_t fmode;
+ 	umode_t dmode;
+-	gid_t gid;
+-	uid_t uid;
++	kgid_t gid;
++	kuid_t uid;
+ 	char *iocharset;
+ 	/* LVE */
+ 	s32 session;
+@@ -383,8 +384,8 @@ static int parse_options(char *options, struct iso9660_options *popt)
+ 	popt->fmode = popt->dmode = ISOFS_INVALID_MODE;
+ 	popt->uid_set = 0;
+ 	popt->gid_set = 0;
+-	popt->gid = 0;
+-	popt->uid = 0;
++	popt->gid = GLOBAL_ROOT_GID;
++	popt->uid = GLOBAL_ROOT_UID;
+ 	popt->iocharset = NULL;
+ 	popt->utf8 = 0;
+ 	popt->overriderockperm = 0;
+@@ -460,13 +461,17 @@ static int parse_options(char *options, struct iso9660_options *popt)
+ 		case Opt_uid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			popt->uid = option;
++			popt->uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(popt->uid))
++				return 0;
+ 			popt->uid_set = 1;
+ 			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			popt->gid = option;
++			popt->gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(popt->gid))
++				return 0;
+ 			popt->gid_set = 1;
+ 			break;
+ 		case Opt_mode:
+diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
+index 3620ad1..9916723 100644
+--- a/fs/isofs/isofs.h
++++ b/fs/isofs/isofs.h
+@@ -52,8 +52,8 @@ struct isofs_sb_info {
+ 
+ 	umode_t s_fmode;
+ 	umode_t s_dmode;
+-	gid_t s_gid;
+-	uid_t s_uid;
++	kgid_t s_gid;
++	kuid_t s_uid;
+ 	struct nls_table *s_nls_iocharset; /* Native language support table */
+ };
+ 
+diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
+index 70e79d0..c0bf424 100644
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -364,8 +364,8 @@ repeat:
+ 		case SIG('P', 'X'):
+ 			inode->i_mode = isonum_733(rr->u.PX.mode);
+ 			set_nlink(inode, isonum_733(rr->u.PX.n_links));
+-			inode->i_uid = isonum_733(rr->u.PX.uid);
+-			inode->i_gid = isonum_733(rr->u.PX.gid);
++			i_uid_write(inode, isonum_733(rr->u.PX.uid));
++			i_gid_write(inode, isonum_733(rr->u.PX.gid));
+ 			break;
+ 		case SIG('P', 'N'):
+ 			{
 diff --git a/init/Kconfig b/init/Kconfig
-index 88f6571..80edba8 100644
+index 9cf8cb1..88f6571 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -946,7 +946,6 @@ config UIDGID_CONVERTED
+@@ -944,7 +944,6 @@ config UIDGID_CONVERTED
+ 	depends on FUSE_FS = n
+ 	depends on GFS2_FS = n
  	depends on HPFS_FS = n
+-	depends on ISO9660_FS = n
  	depends on JFFS2_FS = n
  	depends on JFS_FS = n
--	depends on LOGFS = n
- 	depends on MINIX_FS = n
- 	depends on NCP_FS = n
- 	depends on NFSD = n
+ 	depends on LOGFS = n
 -- 
 1.7.5.4
 
