@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2ITKAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:00:48 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43836 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2ITKAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:00:47 -0400
+	id S1753095Ab2ITKDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:03:17 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:53905 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab2ITKDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 06:03:16 -0400
+Date: Thu, 20 Sep 2012 12:02:54 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
+Message-ID: <20120920100254.GE21928@lunn.ch>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
+ <505AD103.8050004@gmail.com>
+ <20120920110424.3cb4daff@skate>
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=mHPEp5QshoVXc0YfL1EuxuUPOed=G3nCvMnKY5+45jQw@mail.gmail.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1347867577-13170-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=kRV-K+0SfBwoTkA641G9CeQWP4-4COMZKmkZGNL=1Dgw@mail.gmail.com>
-	<1348134130.13371.39.camel@smile>
-	<CAOh2x=mHPEp5QshoVXc0YfL1EuxuUPOed=G3nCvMnKY5+45jQw@mail.gmail.com>
-Date: Thu, 20 Sep 2012 12:53:47 +0300
-Message-ID: <CAHp75VesmzoEj7UwjGG1GwjY9w3dwvvihURNt_d3XjFYJKeJgw@mail.gmail.com>
-Subject: Re: [PATCH 5/7] dw_dmac: autoconfigure data_width or get it via
- platform data
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120920110424.3cb4daff@skate>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 12:46 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> On Thu, Sep 20, 2012 at 3:12 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->>> Do these changes in a single patch 2/7
->> From this comment I guess you would like to have dw_dmac_regs.h changes
->> at one place. Am I right?
->
-> yes.
-Okay, will do.
+Hi Thomas
 
--- 
-With Best Regards,
-Andy Shevchenko
+> Hum, which patches are stalling the integration into the Marvell tree?
+
+l2 cache, I think.
+
+The trees Jason built for pull requests in the direction of arm-soc
+had the l2 cache patch as the very first in the series. Now that these
+patches have run into some trouble, its blocking all the patches that
+followed.
+
+Jason is re-building his trees, throwing out l2 cache for the
+moment. That should allow Olof/Arnd to pull these trees into arm-soc,
+and then Jason will work on integrating the remaining patches not
+already in his trees.
+
+	Andrew
