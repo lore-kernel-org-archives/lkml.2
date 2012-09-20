@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2ITMNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:13:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55161 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2ITMNo (ORCPT
+	id S1754889Ab2ITMNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:13:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:60100 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2ITMNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:13:44 -0400
+	Thu, 20 Sep 2012 08:13:51 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olof.johansson@gmail.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 23/32] ARM: ux500: Add nodes for the MSP into Device Tree
-Date: Thu, 20 Sep 2012 14:12:41 +0200
-Message-Id: <1348143170-2130-24-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 27/32] ARM: ux500: Add all known I2C sub-device nodes to the HREF DT
+Date: Thu, 20 Sep 2012 14:12:45 +0200
+Message-Id: <1348143170-2130-28-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
 References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
@@ -22,80 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch inserts all known MSP devices into the DBx5x0 Device Tree
-disabled and enables the two important ones for the Snowball low-cost
-development board.
+Here we add the skeleton nodes for each of the known I2C sub-devices
+currently registered on ST-Ericsson's HREF Development Platform. We
+will fill these nodes in turn as the drivers are enabled for Device
+Tree.
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/dbx5x0.dtsi  |   33 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/snowball.dts |    8 ++++++++
- 2 files changed, 41 insertions(+)
+ arch/arm/boot/dts/hrefv60plus.dts |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index f055902..3708a6b 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -604,6 +604,39 @@
- 			status = "disabled";
- 		};
- 
-+		msp0: msp@80123000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80123000 0x1000>;
-+			interrupts = <0 31 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+			status = "disabled";
-+		};
-+
-+		msp1: msp@80124000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80124000 0x1000>;
-+			interrupts = <0 62 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+			status = "disabled";
-+		};
-+
-+		// HDMI sound
-+		msp2: msp@80117000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80117000 0x1000>;
-+			interrupts = <0 98 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+			status = "disabled";
-+		};
-+
-+		msp3: msp@80125000 {
-+			compatible = "stericsson,ux500-msp-i2s";
-+			reg = <0x80125000 0x1000>;
-+			interrupts = <0 62 0x4>;
-+			v-ape-supply = <&db8500_vape_reg>;
-+			status = "disabled";
-+		};
-+
- 		external-bus@50000000 {
- 			compatible = "simple-bus";
- 			reg = <0x50000000 0x4000000>;
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index df6fc57..fce4a00 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -83,6 +83,14 @@
- 	};
- 
- 	soc-u9500 {
-+		msp1: msp@80124000 {
-+			status = "okay";
-+		};
-+
-+		msp3: msp@80125000 {
-+			status = "okay";
-+		};
-+
- 		external-bus@50000000 {
+diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
+index 32cd7a0..1d2c642 100644
+--- a/arch/arm/boot/dts/hrefv60plus.dts
++++ b/arch/arm/boot/dts/hrefv60plus.dts
+@@ -32,5 +32,34 @@
+ 		uart@80007000 {
  			status = "okay";
- 
+ 		};
++
++		i2c@80004000 {
++			tc3589x@42 {
++				compatible = "tc3589x";
++				reg = <0x42>;
++			};
++
++			tps61052@33 {
++				compatible = "tps61052";
++				reg = <0x33>;
++			};
++		};
++
++		i2c@80128000 {
++			lp5521@0x33 {
++				compatible = "lp5521";
++				reg = <0x33>;
++			};
++
++			lp5521@0x34 {
++				compatible = "lp5521";
++				reg = <0x34>;
++			};
++
++			bh1780@0x29 {
++				compatible = "rohm,bh1780gli";
++				reg = <0x33>;
++			};
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
