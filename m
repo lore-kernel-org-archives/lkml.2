@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2ITGy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:54:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46039 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2ITGy5 (ORCPT
+	id S1753120Ab2ITGzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:55:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33339 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab2ITGzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:54:57 -0400
-Date: Wed, 19 Sep 2012 23:54:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Out of memory on 3.5 kernels
-In-Reply-To: <20120920060202.GB10758@schottelius.org>
-Message-ID: <alpine.DEB.2.00.1209192351440.30029@chino.kir.corp.google.com>
-References: <20120920060202.GB10758@schottelius.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 20 Sep 2012 02:55:38 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1348045056-29769-2-git-send-email-thierry.reding@avionic-design.de>
+References: <1348045056-29769-1-git-send-email-thierry.reding@avionic-design.de>
+	<1348045056-29769-2-git-send-email-thierry.reding@avionic-design.de>
+Date: Thu, 20 Sep 2012 08:55:37 +0200
+Message-ID: <CACRpkda7dZmQNT2T3CnJjC9Au23ny2CrMao-tpxujw5Uqa-O-Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio: adnp: dt: Reference generic interrupt binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Nico Schottelius wrote:
+On Wed, Sep 19, 2012 at 10:57 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
 
-> for some time the slab usage is quite high (~3.2 GiB) and whenever I try
-> to do a backup with ccollect (which is using rsync), a lot of processes
-> (like chromium) are being killed over night.
-> 
+> Instead of having to duplicate the description of the properties needed
+> for interrupt support, reference the new standard document.
+>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+> This patch should go through LinusW's tree because it already carries
+> the patch that created this documentation.
 
-Yeah, over 81% of your memory is consumed by slab and that doesn't shrink 
-over the duration of the log you posted.  It would be interesting to see 
-if there was a leak somewhere: try looking at slabtop and determining if 
-you have a cache using an egregious amount of memory; if there aren't any 
-clear winners, then we'll still see what is hogging most of your memory 
-and see how it compares to 3.4.2.  You can also check if there is a leak 
-using kmemleak, but this requires a reboot (see 
-Documentation/kmemleak.txt).
+Applied with Rob's ACK and the minor spelling correction.
+
+Thanks!
+Linus Walleij
