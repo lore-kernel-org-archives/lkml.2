@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab2ITXAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:00:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47860 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab2ITXAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:00:07 -0400
-Date: Thu, 20 Sep 2012 15:57:28 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: gregkh@linuxfoundation.org, keescook@chromium.org, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] pstore: avoid recursive spinlocks in the
+	id S932464Ab2ITXJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:09:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46473 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932411Ab2ITXJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:09:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,457,1344236400"; 
+   d="scan'208";a="224657070"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>
+Subject: RE: [PATCH] pstore: avoid recursive spinlocks in the
  oops_in_progress case
-Message-ID: <20120920225727.GD29721@lizard>
+Thread-Topic: [PATCH] pstore: avoid recursive spinlocks in the
+ oops_in_progress case
+Thread-Index: AQHNlLD6UUggHZobd0mcEpKcavm2tZeUUpQA//+L8tA=
+Date: Thu, 20 Sep 2012 23:09:36 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D43812@ORSMSX108.amr.corp.intel.com>
 References: <1347903824.29767.15.camel@cliu38-desktop-build>
+ <20120920225727.GD29721@lizard>
+In-Reply-To: <20120920225727.GD29721@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1347903824.29767.15.camel@cliu38-desktop-build>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q8KNA1xf007159
 
-On Tue, Sep 18, 2012 at 01:43:44AM +0800, Chuansheng Liu wrote:
-> Like 8250 driver, when pstore is registered as a console,
-> to avoid recursive spinlocks when panic happening, change the
-> spin_lock_irqsave to spin_trylock_irqsave when oops_in_progress
-> is true.
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  fs/pstore/platform.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-> index 29996e8..cbcb5fc 100644
-> --- a/fs/pstore/platform.c
-> +++ b/fs/pstore/platform.c
-> @@ -164,7 +164,12 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
->  
->  		if (c > psinfo->bufsize)
->  			c = psinfo->bufsize;
-> -		spin_lock_irqsave(&psinfo->buf_lock, flags);
-> +
-> +		if (oops_in_progress) {
-> +			if (!spin_trylock_irqsave(&psinfo->buf_lock, flags))
-> +				break;
+> Mm... why break?
 
-Mm... why break?
+We don't know what the back-end driver will do if we allow another call
+while a previous one is still in progress.  It might end up corrupting the
+backing non-volatile storage and losing some previously saved records.
 
-Like 8250, in this case it's better still log the console.
-That is, something along these lines:
+Existing drivers (ERST and EFI) are dependent on f/w ... so things might
+work on some platforms, yet be horribly bad on others.
 
-bool locked = 1;
+The patch as it was written converts a deadlock (hang) case into a "lose
+this log, but keep going" case. Which seems to be an improvement without
+taking any risks about what the backend will do.
 
-if (oops_in_progress)
-	locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
-else
-	spin_lock_irqsave(&psinfo->buf_lock, flags);
-
-memcpy(psinfo->buf, s, c);
-psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-
-if (locked)
-	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
-
-
-Thanks,
-
-Anton.
-
-> +		} else
-> +			spin_lock_irqsave(&psinfo->buf_lock, flags);
->  		memcpy(psinfo->buf, s, c);
->  		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
->  		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
-> -- 
-> 1.7.0.4
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
