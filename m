@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2ITJgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:36:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:65402 "EHLO mga03.intel.com"
+	id S1753647Ab2ITJg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:36:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567Ab2ITJgD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:36:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
-   d="scan'208";a="194929883"
-Message-ID: <1348133748.13371.33.camel@smile>
-Subject: Re: [PATCH 3/7] dw_dmac: get number of channels from hardware if
- possible
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Date: Thu, 20 Sep 2012 12:35:48 +0300
-In-Reply-To: <CAOh2x==MwD6RVnShoD0zJaAPZ814bAGDx6BEjGsK=9M+LxMxBA@mail.gmail.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1347867577-13170-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x==MwD6RVnShoD0zJaAPZ814bAGDx6BEjGsK=9M+LxMxBA@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1752978Ab2ITJg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:36:26 -0400
+Message-ID: <505AE385.3030600@redhat.com>
+Date: Thu, 20 Sep 2012 12:36:05 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org, andreas.herrmann3@amd.com, bp@amd64.org,
+        robert.richter@amd.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in kvm_load/put_guest_fpu()
+References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>  <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>  <50599AE2.80601@redhat.com> <1348075103.26695.301.camel@sbsiddha-desk.sc.intel.com> <5059FF67.6050005@redhat.com> <505A002E.6050304@zytor.com>
+In-Reply-To: <505A002E.6050304@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-18 at 12:20 +0530, viresh kumar wrote: 
-> On Mon, Sep 17, 2012 at 1:09 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > In case the controller has the encoded parameters feature enabled the driver
-> > will use it to get the number of channels. In the future it will be used for
-> > the other important parameters as well.
-
-[snip]
-
-> > @@ -1392,23 +1396,32 @@ static int __devinit dw_probe(struct platform_device *pdev)
-> >         if (irq < 0)
-> >                 return irq;
-> >
-> > -       size = sizeof(struct dw_dma);
-> > -       size += pdata->nr_channels * sizeof(struct dw_dma_chan);
-> > +       regs = devm_request_and_ioremap(&pdev->dev, io);
-> > +       if (!regs)
-> > +               return -EBUSY;
-> > +
-> > +       dw_params = dma_raw_readl(regs, DW_PARAMS);
+On 09/19/2012 08:26 PM, H. Peter Anvin wrote:
+> On 09/19/2012 10:22 AM, Avi Kivity wrote:
+>> 
+>> Note, we could also go in a different direction and make
+>> kernel_fpu_begin() use preempt notifiers and thus make its users
+>> preemptible.  But that's for a separate patchset.
+>> 
 > 
-> Is this valid for every SoC implementation. What if this configuration
-> is not valid
-> for a particular SoC and it is invalid to access this address? Or this
-> gives a invalid
-> value instead of returning 0?
-Actually I didn't get it clearly from the documentation. We have only
-one test report from Hein until now.
+> Where would you put the state if you were preempted?  You want to
+> allocate a full extra buffer for the kernel xstate for each thread just
+> in case?  ("Yes" is a valid answer to that question, but it is a fair
+> chunk of memory.)
 
-> > diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> > index 4633d39..0f96965 100644
-> > --- a/drivers/dma/dw_dmac_regs.h
-> > +++ b/drivers/dma/dw_dmac_regs.h
-> > @@ -104,6 +104,10 @@ struct dw_dma_regs {
-> >  #define dma_raw_writel(addr, name, val) \
-> >         writel((val), (addr) + offsetof(struct dw_dma_regs, name))
-> >
-> > +/* Bitfields in DW_PARAMS */
-> > +#define DW_PARAMS_NR_CHAN      8               /* number of channels */
-> > +#define DW_PARAMS_EN           28              /* encoded parameters */
-> > +
-> 
-> Can you make this part of patch 2/7?
-Do you mean to combine patch 2 and 3 together or only the parts related
-to dw_dmac_regs.h?
-
+kernel_fpu_begin() could receive a pointer to a struct fpu, with
+fpu->state either preallocated by the caller, or allocated by
+kernel_fpu_begin() itself.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+error compiling committee.c: too many arguments to function
