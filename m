@@ -1,468 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab2ITQdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 12:33:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33683 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2ITQdH (ORCPT
+	id S1752157Ab2ITQdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 12:33:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34576 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab2ITQdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 12:33:07 -0400
-From: sjur.brandeland@stericsson.com
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv4] remoteproc: Add STE modem driver for remoteproc
-Date: Thu, 20 Sep 2012 18:32:56 +0200
-Message-Id: <1348158776-23858-1-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Sep 2012 12:33:50 -0400
+Message-ID: <505B455D.2040603@gmail.com>
+Date: Thu, 20 Sep 2012 18:33:33 +0200
+From: Andrzej Giniewicz <gginiu@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: linux-kernel@vger.kernel.org
+Subject: Sound got mute in kernel 3.5.4 (Fast Track Pro USB Sound Card), found
+ commit that causes it - how to proceed?
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig6828E5B967850DFFD3A67D5C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig6828E5B967850DFFD3A67D5C
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Add support for the STE modem shared memory driver.
-This driver hooks into the remoteproc framework
-in order to manage configuration and the virtio
-devices.
+Hello,
 
-This driver adds custom firmware handlers, because
-STE modem uses a custom firmware layout.
+today I updated kernel to 3.5.4 and noticed, that all my sound from Fast
+Track Pro USB Sound Card got mute. I haven't noticed any error reports
+or messages, all seems to work, the card is just silent. I downgraded to
+3.5.3 and applied patched from usb sound module one by one and found
+out, that 3.5.4 minus " ALSA: snd-usb: fix calls to next_packet_size "
+works fine:
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-cc: Linus Walleij <linus.walleij@linaro.org>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
-Changes from v3:
-Added function setup to struct ste_modem_dev_ops.
+http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dc=
+ommitdiff;h=3Dca150f7ade5973c3bce19261bca6174d5c3cc342
 
- drivers/remoteproc/Kconfig           |   11 ++
- drivers/remoteproc/Makefile          |    1 +
- drivers/remoteproc/ste_modem_rproc.c |  317 ++++++++++++++++++++++++++++++++++
- include/linux/ste_modem_shm.h        |   56 ++++++
- 4 files changed, 385 insertions(+), 0 deletions(-)
- create mode 100644 drivers/remoteproc/ste_modem_rproc.c
- create mode 100644 include/linux/ste_modem_shm.h
+Does this change require some update of configuration I missed?
 
-diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-index f8d818a..a552566 100644
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -27,4 +27,15 @@ config OMAP_REMOTEPROC
- 	  It's safe to say n here if you're not interested in multimedia
- 	  offloading or just want a bare minimum kernel.
- 
-+config STE_MODEM_RPROC
-+	tristate "STE-Modem remoteproc support"
-+	depends on EXPERIMENTAL
-+	depends on HAS_DMA
-+	select REMOTEPROC
-+	default n
-+	help
-+	  Say y or m here to support STE-Modem shared memory driver.
-+	  This can be either built-in or a loadable module.
-+	  If unsure say N.
-+
- endmenu
-diff --git a/drivers/remoteproc/Makefile b/drivers/remoteproc/Makefile
-index 934ce6e..391b651 100644
---- a/drivers/remoteproc/Makefile
-+++ b/drivers/remoteproc/Makefile
-@@ -8,3 +8,4 @@ remoteproc-y				+= remoteproc_debugfs.o
- remoteproc-y				+= remoteproc_virtio.o
- remoteproc-y				+= remoteproc_elf_loader.o
- obj-$(CONFIG_OMAP_REMOTEPROC)		+= omap_remoteproc.o
-+obj-$(CONFIG_STE_MODEM_RPROC)	 	+= ste_modem_rproc.o
-diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
-new file mode 100644
-index 0000000..176362f
---- /dev/null
-+++ b/drivers/remoteproc/ste_modem_rproc.c
-@@ -0,0 +1,317 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2012
-+ * Author: Sjur Brændeland <sjur.brandeland@stericsson.com>
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/remoteproc.h>
-+#include <linux/ste_modem_shm.h>
-+#include "remoteproc_internal.h"
-+
-+#define SPROC_FW_SIZE (50 * 4096)
-+#define SPROC_MAX_TOC_ENTRIES 32
-+#define SPROC_MAX_NOTIFY_ID 14
-+#define SPROC_RESOURCE_NAME "rsc-table"
-+#define SPROC_MODEM_NAME "ste-modem"
-+#define SPROC_MODEM_FIRMWARE SPROC_MODEM_NAME "-fw.bin"
-+
-+#define sproc_dbg(sproc, fmt, ...) \
-+	dev_dbg(&sproc->mdev->pdev.dev, fmt, ##__VA_ARGS__)
-+#define sproc_err(sproc, fmt, ...) \
-+	dev_err(&sproc->mdev->pdev.dev, fmt, ##__VA_ARGS__)
-+
-+/* STE-modem control structure */
-+struct sproc {
-+	struct rproc *rproc;
-+	struct ste_modem_device *mdev;
-+	int error;
-+	void *fw_addr;
-+	size_t fw_size;
-+	dma_addr_t fw_dma_addr;
-+};
-+
-+/* STE-Modem firmware entry */
-+struct ste_toc_entry {
-+	__le32 start;
-+	__le32 size;
-+	__le32 flags;
-+	__le32 entry_point;
-+	__le32 load_addr;
-+	char name[12];
-+};
-+
-+/*
-+ * The Table Of Content is located at the start of the firmware image and
-+ * at offset zero in the shared memory region. The resource table typically
-+ * contains the initial boot image (boot strap) and other information elements
-+ * such as remoteproc resource table. Each entry is identified by a unique
-+ * name.
-+ */
-+struct ste_toc {
-+	struct ste_toc_entry table[SPROC_MAX_TOC_ENTRIES];
-+};
-+
-+/* Loads the firmware to shared memory. */
-+static int sproc_load_segments(struct rproc *rproc, const struct firmware *fw)
-+{
-+	struct sproc *sproc = rproc->priv;
-+
-+	memcpy(sproc->fw_addr, fw->data, fw->size);
-+	return 0;
-+}
-+
-+/* Find the entry for resource table in the Table of Content */
-+static struct ste_toc_entry *sproc_find_rsc_entry(const struct firmware *fw)
-+{
-+	int i;
-+	struct ste_toc *toc;
-+
-+	if (!fw)
-+		return NULL;
-+	toc = (void *)fw->data;
-+
-+	/* Search the table for the resource table */
-+	for (i = 0; i < SPROC_MAX_TOC_ENTRIES &&
-+		     toc->table[i].start != 0xffffffff; i++) {
-+
-+		if (!strncmp(toc->table[i].name, SPROC_RESOURCE_NAME,
-+			     sizeof(toc->table[i].name))) {
-+			if (toc->table[i].start > fw->size)
-+				return NULL;
-+			return &toc->table[i];
-+		}
-+	}
-+	return NULL;
-+}
-+
-+/*
-+ * Find the resource table inside the remote processor's firmware.
-+ * This function will allocate area used for firmware image in the memory
-+ * region shared with the modem.
-+ */
-+static struct resource_table *
-+sproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
-+		     int *tablesz)
-+{
-+	struct resource_table *table;
-+	struct ste_toc_entry *entry = sproc_find_rsc_entry(fw);
-+	struct sproc *sproc = rproc->priv;
-+
-+	if (!entry) {
-+		sproc_err(sproc, "resource table not found in fw\n");
-+		return NULL;
-+	}
-+
-+	table = (void *)(fw->data + entry->start);
-+
-+	/* sanity check size and offset of resource table */
-+	if (entry->start > SPROC_FW_SIZE ||
-+	    entry->size > SPROC_FW_SIZE ||
-+	    fw->size > SPROC_FW_SIZE ||
-+	    entry->start + entry->size > fw->size ||
-+	    sizeof(struct resource_table) > entry->size) {
-+		sproc_err(sproc, "bad size of fw or resource table\n");
-+		return NULL;
-+	}
-+
-+	/* we don't support any version beyond the first */
-+	if (table->ver != 1) {
-+		sproc_err(sproc, "unsupported fw ver: %d\n", table->ver);
-+		return NULL;
-+	}
-+
-+	/* make sure reserved bytes are zeroes */
-+	if (table->reserved[0] || table->reserved[1]) {
-+		sproc_err(sproc, "non zero reserved bytes\n");
-+		return NULL;
-+	}
-+
-+	/* make sure the offsets array isn't truncated */
-+	if (table->num > SPROC_MAX_TOC_ENTRIES ||
-+	    table->num * sizeof(table->offset[0]) +
-+	    sizeof(struct resource_table) > entry->size) {
-+		sproc_err(sproc, "resource table incomplete\n");
-+		return NULL;
-+	}
-+
-+	/* If the fw size has grown, release the previous fw allocation */
-+	if (SPROC_FW_SIZE < fw->size) {
-+		sproc_err(sproc,
-+			  "Insufficient space for fw (%d < %zd)\n",
-+			  SPROC_FW_SIZE, fw->size);
-+		return NULL;
-+	}
-+
-+	sproc->fw_size = fw->size;
-+	*tablesz = entry->size;
-+	return table;
-+}
-+
-+/* STE modem firmware handler operations */
-+const struct rproc_fw_ops sproc_fw_ops = {
-+	.load = sproc_load_segments,
-+	.find_rsc_table = sproc_find_rsc_table
-+};
-+
-+/* Kick the modem with specified notification id */
-+static void sproc_kick(struct rproc *rproc, int vqid)
-+{
-+	struct sproc *sproc = rproc->priv;
-+
-+	sproc_dbg(sproc, "kick vqid:%d\n", vqid);
-+
-+	/*
-+	 * We need different notification IDs for RX and TX so add
-+	 * an offset on TX notification IDs.
-+	 */
-+	sproc->mdev->ops.kick(sproc->mdev, vqid + SPROC_MAX_NOTIFY_ID);
-+}
-+
-+/* Received a kick from a modem, kick the virtqueue */
-+static void sproc_kick_callback(struct ste_modem_device *mdev, int vqid)
-+{
-+	struct sproc *sproc = mdev->drv_data;
-+	if (rproc_vq_interrupt(sproc->rproc, vqid) == IRQ_NONE)
-+		sproc_dbg(sproc,
-+			  "no message was found in vqid %d\n", vqid);
-+}
-+
-+struct ste_modem_dev_cb sproc_dev_cb = {
-+	.kick = sproc_kick_callback
-+};
-+
-+/* Start the STE modem */
-+static int sproc_start(struct rproc *rproc)
-+{
-+	struct sproc *sproc = rproc->priv;
-+	int i, err;
-+
-+	sproc_dbg(sproc, "start ste-modem\n");
-+
-+	/* Provide callback functions to modem device */
-+	sproc->mdev->ops.setup(sproc->mdev, &sproc_dev_cb);
-+
-+	/* Sanity test the max_notifyid */
-+	if (rproc->max_notifyid > SPROC_MAX_NOTIFY_ID) {
-+		sproc_err(sproc, "Notification IDs too high:%d\n",
-+			  rproc->max_notifyid);
-+		return -EINVAL;
-+	}
-+
-+	/* Subscribe to notifications */
-+	for (i = 0; i < rproc->max_notifyid; i++) {
-+		err = sproc->mdev->ops.kick_subscribe(sproc->mdev, i);
-+		if (err) {
-+			sproc_err(sproc,
-+				  "subscription of kicks failed:%d\n", err);
-+			return err;
-+		}
-+	}
-+
-+	/* Request modem start-up*/
-+	return sproc->mdev->ops.power(sproc->mdev, true);
-+}
-+
-+/* Stop the STE modem */
-+static int sproc_stop(struct rproc *rproc)
-+{
-+	struct sproc *sproc = rproc->priv;
-+	sproc_dbg(sproc, "stop ste-modem\n");
-+
-+	/* Reset device callback functions */
-+	sproc->mdev->ops.setup(sproc->mdev, NULL);
-+
-+	return sproc->mdev->ops.power(sproc->mdev, false);
-+}
-+
-+static struct rproc_ops sproc_ops = {
-+	.start		= sproc_start,
-+	.stop		= sproc_stop,
-+	.kick		= sproc_kick,
-+};
-+
-+/* STE modem device is unregistered */
-+static int sproc_drv_remove(struct platform_device *pdev)
-+{
-+	struct ste_modem_device *mdev =
-+		container_of(pdev, struct ste_modem_device, pdev);
-+	struct sproc *sproc = mdev->drv_data;
-+
-+	sproc_dbg(sproc, "remove ste-modem\n");
-+
-+	/* Unregister as remoteproc device */
-+	rproc_del(sproc->rproc);
-+	rproc_put(sproc->rproc);
-+
-+	mdev->drv_data = NULL;
-+	return 0;
-+}
-+
-+/* Handle probe of a modem device */
-+static int sproc_probe(struct platform_device *pdev)
-+{
-+	struct ste_modem_device *mdev =
-+		container_of(pdev, struct ste_modem_device, pdev);
-+	struct sproc *sproc;
-+	struct rproc *rproc;
-+	int err;
-+
-+	dev_dbg(&mdev->pdev.dev, "probe ste-modem\n");
-+	rproc = rproc_alloc(&mdev->pdev.dev,
-+			    mdev->pdev.name,
-+			    &sproc_ops,
-+			    SPROC_MODEM_FIRMWARE,
-+			    sizeof(*sproc));
-+	if (!rproc)
-+		return -ENOMEM;
-+
-+	sproc = rproc->priv;
-+	sproc->mdev = mdev;
-+	sproc->rproc = rproc;
-+	mdev->drv_data = sproc;
-+
-+	/* Set the STE-modem specific firmware handler */
-+	rproc->fw_ops = &sproc_fw_ops;
-+
-+	/*
-+	 * STE-modem requires the firmware to be located
-+	 * at the start of the shared memory region. So we need to
-+	 * reserve space for firmware at the start.
-+	 */
-+	sproc->fw_addr = dma_alloc_coherent(rproc->dev.parent, SPROC_FW_SIZE,
-+					    &sproc->fw_dma_addr,
-+					    GFP_KERNEL);
-+	if (!sproc->fw_addr) {
-+		sproc_err(sproc, "Cannot allocate memory for fw\n");
-+		err = -ENOMEM;
-+		goto free_rproc;
-+	}
-+
-+	/* Register as a remoteproc device */
-+	err = rproc_add(rproc);
-+	if (err)
-+		goto free_rproc;
-+
-+	return 0;
-+
-+free_rproc:
-+	/* Reset device data upon error */
-+	mdev->drv_data = NULL;
-+	rproc_put(rproc);
-+	return err;
-+}
-+
-+static struct platform_driver sproc_driver = {
-+	.driver = {
-+		.name = SPROC_MODEM_NAME,
-+		.owner   = THIS_MODULE,
-+	},
-+	.probe		= sproc_probe,
-+	.remove	= sproc_drv_remove,
-+};
-+
-+module_platform_driver(sproc_driver);
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("STE Modem driver using the Remote Processor Framework");
-diff --git a/include/linux/ste_modem_shm.h b/include/linux/ste_modem_shm.h
-new file mode 100644
-index 0000000..8444a4e
---- /dev/null
-+++ b/include/linux/ste_modem_shm.h
-@@ -0,0 +1,56 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2012
-+ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef __INC_MODEM_DEV_H
-+#define __INC_MODEM_DEV_H
-+#include <linux/types.h>
-+#include <linux/platform_device.h>
-+
-+struct ste_modem_device;
-+
-+/**
-+ * struct ste_modem_dev_cb - Callbacks for modem initiated events.
-+ * @kick: Called when the modem kicks the host.
-+ *
-+ * This structure contains callbacks for actions triggered by the modem.
-+ */
-+struct ste_modem_dev_cb {
-+	void (*kick)(struct ste_modem_device *mdev, int notify_id);
-+};
-+
-+/**
-+ * struct ste_modem_dev_ops - Functions to control modem and modem interface.
-+ *
-+ * @power:	Main power switch, used for cold-start or complete power off.
-+ * @kick:	Kick the modem.
-+ * @kick_subscribe: Subscribe for notifications from the modem.
-+ * @setup:	Provide callback functions to modem device.
-+ *
-+ * This structure contains functions used by the ste remoteproc driver
-+ * to manage the modem.
-+ */
-+struct ste_modem_dev_ops {
-+	int (*power)(struct ste_modem_device *mdev, bool on);
-+	int (*kick)(struct ste_modem_device *mdev, int notify_id);
-+	int (*kick_subscribe)(struct ste_modem_device *mdev, int notify_id);
-+	int (*setup)(struct ste_modem_device *mdev,
-+		     struct ste_modem_dev_cb *cfg);
-+};
-+
-+/**
-+ * struct ste_modem_device - represent the STE modem device
-+ * @pdev: Reference to platform device
-+ * @ops: Operations used to manage the modem.
-+ * @drv_data: Driver private data.
-+ */
-+struct ste_modem_device {
-+	struct platform_device pdev;
-+	struct ste_modem_dev_ops ops;
-+	void *drv_data;
-+};
-+
-+#endif /*INC_MODEM_DEV_H*/
--- 
-1.7.5.4
+There are some informations about device from lsusb:
+http://pastie.org/private/odiuw0ve3iszdat9mwpa
+My system runs 64 bit Arch Linux, there is config used by it:
+https://projects.archlinux.org/svntogit/packages.git/plain/trunk/config.x=
+86_64?h=3Dpackages/linux&id=3D59ae346478ff01f0d2dc47b04a3a1297046b1900
 
+How can I proceed with this issue? Any more information I can provide to
+help in solving this?
+
+Thank you,
+Andrzej Giniewicz.
+
+
+--------------enig6828E5B967850DFFD3A67D5C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJQW0VpAAoJEED1V7cxSWEG0BoIAL3Mq5GMVwsEi7YwiEG7YkKo
+on+LU4FnMNtQyD4Qzve3goI2TanPpfgWwS1w2zx8v2pSzxtJtUjJ4BxJz6UkFNCc
+drYY+h03AIk73J/okQhkYNFDMruc/Gr1zcI/okLX8O/vfEZK4nYEI9epsCwc0DXe
+VyV67kOobVCx4e1ZxwY7XX7dt4TLHM1+nwZAZF899x0BK4xY8XyL8fEhi/cA5rly
+SpkvX6pbP2N5DcDixf0pvVPMBi8QqHgbMlLhbQZc6HFD4hmt5G0VnP7TexN6vLNJ
+gJTHNcEFUCgRuC6aiXEpko7KiJgVAoqL7mgcRvu84ek2WBorTmBVsY8Nx2D8leQ=
+=p5HG
+-----END PGP SIGNATURE-----
+
+--------------enig6828E5B967850DFFD3A67D5C--
