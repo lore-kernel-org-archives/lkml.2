@@ -1,117 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2ITTAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 15:00:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38842 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab2ITStD (ORCPT
+	id S932270Ab2ITTAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:00:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45837 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab2ITTAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:49:03 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 20/23] rcu: Reduce synchronize_rcu_expedited() latency
-Date: Thu, 20 Sep 2012 11:48:16 -0700
-Message-Id: <1348166900-18716-20-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120920184751.GA18657@linux.vnet.ibm.com>
- <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092018-4242-0000-0000-000002F74F26
+	Thu, 20 Sep 2012 15:00:36 -0400
+Date: Thu, 20 Sep 2012 12:00:32 -0700
+From: "Kevin Daughtridge" <kevin@kdau.com>
+To: linux-input@vger.kernel.org, jkosina@suse.cz
+Cc: kevin@kdau.com, rydberg@euromail.se, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v3] HID: keep dev_rdesc unmodified and use it for
+ comparisons
+Message-ID: <505b67d0.jarbgcy4b522QzyI%kevin@kdau.com>
+User-Agent: Heirloom mailx 12.5 6/20/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+The dev_rdesc member of the hid_device structure is meant to store the original
+report descriptor received from the device, but it is currently passed to any
+report_fixup method before it is copied to the rdesc member. This patch uses a
+temporary buffer to shield dev_rdesc from the side effects of many HID drivers'
+report_fixup implementations.
 
-The synchronize_rcu_expedited() function disables interrupts across a
-scan of all leaf rcu_node structures, which is not good for real-time
-scheduling latency on large systems (hundreds or especially thousands
-of CPUs).  This commit therefore holds off CPU-hotplug operations using
-get_online_cpus(), and removes the prior acquisiion of the ->onofflock
-(which required disabling interrupts).
+usbhid's hid_post_reset checks the report descriptor currently returned by the
+device against a descriptor that may have been modified by a driver's
+report_fixup method. That leaves some devices nonfunctional after a resume, with
+a "reset_resume error 1" reported. This patch checks the new descriptor against
+the unmodified dev_rdesc instead and uses the original, instead of modified,
+report size.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+BugLink: http://bugs.launchpad.net/bugs/1049623
+Signed-off-by: Kevin Daughtridge <kevin@kdau.com>
 ---
- kernel/rcutree_plugin.h |   30 ++++++++++++++++++++++--------
- 1 files changed, 22 insertions(+), 8 deletions(-)
+ drivers/hid/hid-core.c        |   16 +++++++++++++---
+ drivers/hid/usbhid/hid-core.c |    6 +++---
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index cb58793..b4e8eb2 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -800,33 +800,47 @@ void synchronize_rcu_expedited(void)
- 	smp_mb(); /* Above access cannot bleed into critical section. */
+Changed in this version: added a temporary buffer to work around report_fixup
+inconsistencies; using dev_rsize instead of rsize to allocate and read new
+descriptor.
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 8bcd168..5de3bb3 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -757,6 +757,7 @@ int hid_open_report(struct hid_device *device)
+ 	struct hid_item item;
+ 	unsigned int size;
+ 	__u8 *start;
++	__u8 *buf;
+ 	__u8 *end;
+ 	int ret;
+ 	static int (*dispatch_type[])(struct hid_parser *parser,
+@@ -775,12 +776,21 @@ int hid_open_report(struct hid_device *device)
+ 		return -ENODEV;
+ 	size = device->dev_rsize;
  
- 	/*
-+	 * Block CPU-hotplug operations.  This means that any CPU-hotplug
-+	 * operation that finds an rcu_node structure with tasks in the
-+	 * process of being boosted will know that all tasks blocking
-+	 * this expedited grace period will already be in the process of
-+	 * being boosted.  This simplifies the process of moving tasks
-+	 * from leaf to root rcu_node structures.
-+	 */
-+	get_online_cpus();
++	buf = kmemdup(start, size, GFP_KERNEL);
++	if (buf == NULL)
++		return -ENOMEM;
 +
-+	/*
- 	 * Acquire lock, falling back to synchronize_rcu() if too many
- 	 * lock-acquisition failures.  Of course, if someone does the
- 	 * expedited grace period for us, just leave.
+ 	if (device->driver->report_fixup)
+-		start = device->driver->report_fixup(device, start, &size);
++		start = device->driver->report_fixup(device, buf, &size);
++	else
++		start = buf;
+ 
+-	device->rdesc = kmemdup(start, size, GFP_KERNEL);
+-	if (device->rdesc == NULL)
++	start = kmemdup(start, size, GFP_KERNEL);
++	kfree(buf);
++	if (start == NULL)
+ 		return -ENOMEM;
++
++	device->rdesc = start;
+ 	device->rsize = size;
+ 
+ 	parser = vzalloc(sizeof(struct hid_parser));
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index dedd8e4..8e0c4bf94 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1415,20 +1415,20 @@ static int hid_post_reset(struct usb_interface *intf)
+ 	 * configuration descriptors passed, we already know that
+ 	 * the size of the HID report descriptor has not changed.
  	 */
- 	while (!mutex_trylock(&sync_rcu_preempt_exp_mutex)) {
-+		if (ULONG_CMP_LT(snap,
-+		    ACCESS_ONCE(sync_rcu_preempt_exp_count))) {
-+			put_online_cpus();
-+			goto mb_ret; /* Others did our work for us. */
-+		}
- 		if (trycount++ < 10) {
- 			udelay(trycount * num_online_cpus());
- 		} else {
-+			put_online_cpus();
- 			synchronize_rcu();
- 			return;
- 		}
--		if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
--			goto mb_ret; /* Others did our work for us. */
+-	rdesc = kmalloc(hid->rsize, GFP_KERNEL);
++	rdesc = kmalloc(hid->dev_rsize, GFP_KERNEL);
+ 	if (!rdesc) {
+ 		dbg_hid("couldn't allocate rdesc memory (post_reset)\n");
+ 		return 1;
  	}
--	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count)))
-+	if (ULONG_CMP_LT(snap, ACCESS_ONCE(sync_rcu_preempt_exp_count))) {
-+		put_online_cpus();
- 		goto unlock_mb_ret; /* Others did our work for us. */
-+	}
- 
- 	/* force all RCU readers onto ->blkd_tasks lists. */
- 	synchronize_sched_expedited();
- 
--	raw_spin_lock_irqsave(&rsp->onofflock, flags);
--
- 	/* Initialize ->expmask for all non-leaf rcu_node structures. */
- 	rcu_for_each_nonleaf_node_breadth_first(rsp, rnp) {
--		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		rnp->expmask = rnp->qsmaskinit;
--		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	status = hid_get_class_descriptor(dev,
+ 				interface->desc.bInterfaceNumber,
+-				HID_DT_REPORT, rdesc, hid->rsize);
++				HID_DT_REPORT, rdesc, hid->dev_rsize);
+ 	if (status < 0) {
+ 		dbg_hid("reading report descriptor failed (post_reset)\n");
+ 		kfree(rdesc);
+ 		return 1;
  	}
- 
- 	/* Snapshot current state of ->blkd_tasks lists. */
-@@ -835,7 +849,7 @@ void synchronize_rcu_expedited(void)
- 	if (NUM_RCU_NODES > 1)
- 		sync_rcu_preempt_exp_init(rsp, rcu_get_root(rsp));
- 
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-+	put_online_cpus();
- 
- 	/* Wait for snapshotted ->blkd_tasks lists to drain. */
- 	rnp = rcu_get_root(rsp);
--- 
-1.7.8
-
+-	status = memcmp(rdesc, hid->rdesc, hid->rsize);
++	status = memcmp(rdesc, hid->dev_rdesc, hid->dev_rsize);
+ 	kfree(rdesc);
+ 	if (status != 0) {
+ 		dbg_hid("report descriptor changed\n");
