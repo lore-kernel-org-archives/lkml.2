@@ -1,242 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2ITU5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 16:57:31 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62872 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab2ITU51 (ORCPT
+	id S1755265Ab2ITVF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:05:28 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:9443 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2ITVF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 16:57:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120920132903.437434aa.akpm@linux-foundation.org>
-References: <1347043094-11120-1-git-send-email-keescook@chromium.org>
-	<1347043094-11120-2-git-send-email-keescook@chromium.org>
-	<20120920132903.437434aa.akpm@linux-foundation.org>
-Date: Thu, 20 Sep 2012 13:57:26 -0700
-X-Google-Sender-Auth: y1euzt9jVmLPdyy4kiUXQevSeB8
-Message-ID: <CAGXu5jKRK0KmiGAUY6ufg8rZqR5eJOocdTpmqYfL4OZct0OrCw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] security: introduce kernel_module_from_file hook
-From: Kees Cook <keescook@chromium.org>
+	Thu, 20 Sep 2012 17:05:27 -0400
+Date: Thu, 20 Sep 2012 16:05:18 -0500
+From: Mike Miller <mike.miller@hp.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, thenzl@redhat.com
+Subject: [PATCH 1/2] hpsa: gen8plus Smart Array IDs
+Message-ID: <20120920210518.GA30921@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 1:29 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Fri,  7 Sep 2012 11:38:13 -0700
-> Kees Cook <keescook@chromium.org> wrote:
->
->> Instead of (or in addition to) kernel module signing, being able to reason
->> about the origin of a kernel module would be valuable in situations
->> where an OS already trusts a specific file system, file, etc, due to
->> things like security labels or an existing root of trust to a partition
->> through things like dm-verity.
->
-> <scratches head>
->
-> This is a really sketchy rationale and I would like to see a *lot* more
-> about the reasoning behind this.  Who will use the feature?  How will
-> they use it?  What value will they obtain from using it?  This
-> description should be pitched at kernel literate non-security people
-> who lack mind-reading powers, please.
 
-I'm happy to expand this further. I tried to give some examples, but
-I'll expand on those. The bottom line is that Chrome OS wants to load
-modules only from its crypto-verified read-only root filesystem. Doing
-external per-module signatures makes no sense for us, and we want to
-be able to reason about the origin of a module, which is what this
-syscall gets us.
+hpsa: add PCI ID's for next gen Smart Array
 
-> We'll need a manpage for this, and I'd suggest that preparing it sooner
-> rather than later will help with the review of your proposal.
+From: Mike Miller <mike.miller@hp.com>
 
-Sounds good. The manpage is see for the old init_module looks to be
-wildly out of data anyway, so perhaps I can fix that too. I'll check
-the manpage tree.
+No marketing names yet available for the next generation of Smart Array.
+---
+ drivers/scsi/hpsa.c     |   18 ++++++++++++++++++
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
->> This introduces a new syscall (currently only on x86), similar to
->> init_module, that has only two arguments. The first argument is used as
->> a file descriptor to the module and the second argument is a pointer to
->> the NULL terminated string of module arguments.
->>
->>
->> ...
->>
->> -static int copy_and_check(struct load_info *info,
->> -                       const void __user *umod, unsigned long len,
->> -                       const char __user *uargs)
->> +int copy_module_from_user(const void __user *umod, unsigned long len,
->> +                       struct load_info *info)
->
-> can be made static, methinks.
-
-Ah, yes, thanks. I'll fix the missing statics.
-
-> `len' should have type size_t?
-
-Yes, this was a left-over from the prior revision of this. I'll get
-that fixed too.
-
->> +{
->> +     struct file *file;
->> +     int err;
->> +     struct kstat stat;
->> +     unsigned long size;
->> +     off_t pos;
->> +     ssize_t bytes = 0;
->> +
->> +     file = fget(fd);
->> +     if (!file)
->> +             return -ENOEXEC;
->> +
->> +     err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
->> +     if (err)
->> +             goto out;
->> +
->> +     size = stat.size;
->
-> kstat.size had type loff_t.  Here it gets trucated to 32 bits on 32-bit
-> machines.  Harmless I guess, but sloppy.
-
-It's actually intentional, since I want to load the entire file into a
-kmalloc-able region. I'll return EFBIG if we would truncate instead.
-
->> +     info->hdr = vmalloc(size);
->> +     if (!info->hdr) {
->> +             err = -ENOMEM;
->> +             goto out;
->>       }
->>
->> -     if (hdr->e_shoff >= len ||
->> -         hdr->e_shnum * sizeof(Elf_Shdr) > len - hdr->e_shoff) {
->> -             err = -ENOEXEC;
->> -             goto free_hdr;
->> +     pos = 0;
->> +     while (pos < size) {
->
-> `pos' should be loff_t as well.
->
->> +             bytes = kernel_read(file, pos, (char *)(info->hdr) + pos,
->> +                                 size - pos);
->> +             if (bytes < 0) {
->> +                     vfree(info->hdr);
->> +                     err = bytes;
->> +                     goto out;
->> +             }
->> +             if (bytes == 0)
->> +                     break;
->> +             pos += bytes;
->>       }
->> +     info->len = pos;
->> -     info->hdr = hdr;
->> -     info->len = len;
->> -     return 0;
->> +     err = check_info(info);
->> +     if (err)
->> +             vfree(info->hdr);
->>
->> -free_hdr:
->> -     vfree(hdr);
->> +out:
->> +     fput(file);
->>       return err;
->>  }
->>
->> @@ -2861,26 +2916,17 @@ static int post_relocation(struct module *mod, const struct load_info *info)
->>       return module_finalize(info->hdr, info->sechdrs, mod);
->>  }
->>
->> +static int do_init_module(struct module *mod);
->
-> I wonder if do_init_module() could have been moved to avoid the forward
-> declaration.
-
-I was hoping to make the patch more readable, but I can move things
-around to avoid the pre-declaration.
-
->
->>  /* Allocate and load the module: note that size of section 0 is always
->>     zero, and we rely on this for optional sections. */
->> -static struct module *load_module(void __user *umod,
->> -                               unsigned long len,
->> -                               const char __user *uargs)
->> +static int load_module(struct load_info *info, const char __user *uargs)
->>  {
->> -     struct load_info info = { NULL, };
->>       struct module *mod;
->>       long err;
->>
->>
->> ...
->>
->> @@ -3091,6 +3127,56 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
->>       return 0;
->>  }
->>
->> +static int init_module_permission(void)
->
-> "init_module_permission" -> initialises a module's permission.
->
-> IOW, the name is poor.
->
->> +{
->> +     /* Must have permission */
->
-> The world wouldn't end if this comment was omitted ;)
-
-Sure, I'll fix this and the name.
-
->
->> +     if (!capable(CAP_SYS_MODULE) || modules_disabled)
->> +             return -EPERM;
->> +
->> +     return 0;
->> +}
->> +
->> +SYSCALL_DEFINE2(init_module_fd, int, fd, const char __user *, uargs)
->> +{
->> +     int err;
->> +     struct load_info info = { };
->> +
->> +     err = init_module_permission();
->> +     if (err)
->> +             return err;
->> +
->> +     pr_debug("init_module_fd: fd=%d, uargs=%p\n", fd, uargs);
->> +
->> +     if (fd < 0)
->> +             return -ENOEXEC;
->
-> hm, why?  Surely copy_module_from_fd()'s fget() will fail on a -ve fd?
-
-Good point, I'll let it fall through.
-
->
->> +     err = copy_module_from_fd(fd, &info);
->> +     if (err)
->> +             return err;
->> +
->> +     return load_module(&info, uargs);
->> +}
->> +
->>
->> ...
->>
->
-
-Thanks for the review! I'll get another version up shortly.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 796482b..edc598b 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -99,6 +99,15 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1924},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -125,6 +134,15 @@ static struct board_type products[] = {
+ 	{0x3354103C, "Smart Array", &SA5_access},
+ 	{0x3355103C, "Smart Array", &SA5_access},
+ 	{0x3356103C, "Smart Array", &SA5_access},
++	{0x1920103C, "Smart Array", &SA5_access},
++	{0x1921103C, "Smart Array", &SA5_access},
++	{0x1922103C, "Smart Array", &SA5_access},
++	{0x1923103C, "Smart Array", &SA5_access},
++	{0x1924103C, "Smart Array", &SA5_access},
++	{0x1925103C, "Smart Array", &SA5_access},
++	{0x1926103C, "Smart Array", &SA5_access},
++	{0x1928103C, "Smart Array", &SA5_access},
++	{0x334d103C, "Smart Array", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
+ 
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 6b4565c..416db39 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -753,6 +753,7 @@
+ #define PCI_DEVICE_ID_HP_CISSD		0x3238
+ #define PCI_DEVICE_ID_HP_CISSE		0x323a
+ #define PCI_DEVICE_ID_HP_CISSF		0x323b
++#define PCI_DEVICE_ID_HP_CISSH		0x323c
+ #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
+ 
+ #define PCI_VENDOR_ID_PCTECH		0x1042
