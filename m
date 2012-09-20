@@ -1,132 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2ITALt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 20:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab2ITALr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 20:11:47 -0400
-Date: Wed, 19 Sep 2012 20:11:40 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Richard Kennedy <richard@rsk.demon.co.uk>, jaxboe@fusionio.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] block: make struct block_device cacheline_aligned
-In-Reply-To: <x49r4py6jze.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <Pine.LNX.4.64.1209192008160.14029@file.rdu.redhat.com>
-References: <x49lig686kv.fsf@segfault.boston.devel.redhat.com>
- <x498vc683eq.fsf@segfault.boston.devel.redhat.com>
- <Pine.LNX.4.64.1209191116240.30172@file.rdu.redhat.com>
- <x494nmu828c.fsf@segfault.boston.devel.redhat.com>
- <Pine.LNX.4.64.1209191148170.30172@file.rdu.redhat.com>
- <x49r4py6jze.fsf@segfault.boston.devel.redhat.com>
+	id S1753294Ab2ITAMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 20:12:34 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:12876
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753304Ab2ITAMb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 20:12:31 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zzbb2dI98dI9371I1432Id6f1izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd2bhf0ah107ah1288h12a5h12a9h12bdh1155h)
+Date: Wed, 19 Sep 2012 19:12:16 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [RFC][PATCH 2/3] iommu/fsl: Add iommu domain attributes
+ required by fsl PAMU driver.
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: "<b16395@freescale.com>" <b16395@freescale.com>, <joerg.roedel@amd.com>,
+        <iommu@lists.linux-foundation.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+References: <1348060632-12997-1-git-send-email-b16395@freescale.com>
+	<1348060632-12997-3-git-send-email-b16395@freescale.com>
+	<6B8A3365-C97E-4742-A0DD-D8FD6BA358EB@kernel.crashing.org>
+In-Reply-To: <6B8A3365-C97E-4742-A0DD-D8FD6BA358EB@kernel.crashing.org>
+	(from galak@kernel.crashing.org on Wed Sep 19 08:52:27 2012)
+X-Mailer: Balsa 2.4.11
+Message-ID: <1348099936.22800.21@snotra>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 19 Sep 2012, Jeff Moyer wrote:
-
-> Mikulas Patocka <mpatocka@redhat.com> writes:
+On 09/19/2012 08:52:27 AM, Kumar Gala wrote:
 > 
-> > On Wed, 19 Sep 2012, Jeff Moyer wrote:
+> On Sep 19, 2012, at 8:17 AM, <b16395@freescale.com>  
+> <b16395@freescale.com> wrote:
+> 
+> > From: Varun Sethi <Varun.Sethi@freescale.com>
 > >
-> >> Mikulas Patocka <mpatocka@redhat.com> writes:
-> >> 
-> >> > On Wed, 19 Sep 2012, Jeff Moyer wrote:
-> >> >
-> >> >> Jeff Moyer <jmoyer@redhat.com> writes:
-> >> >> 
-> >> >> > Hi,
-> >> >> >
-> >> >> > When testing against a pcie ssd or a ramdisk, making the block device
-> >> >> > structure cacheline_aligned provided a significant increase in
-> >> >> > performance:
-> >> >> 
-> >> >> Self-NACK on this one.  This results in a ton of warnings:
-> >> >> 
-> >> >> include/linux/fs.h:727: warning: ???__section__??? attribute does not
-> >> >> apply to types
-> >> >> In file included from include/linux/debugfs.h:18,
-> >> >>                  from kernel/trace/trace_probe.h:28,
-> >> >>                  from kernel/trace/trace_kprobe.c:23:
-> >> >> include/linux/fs.h:727: warning: ???__section__??? attribute does not
-> >> >> apply to types
-> >> >> 
-> >> >> And that leaves me with the task of figuring out if/why this actually
-> >> >> helps.
-> >> >> 
-> >> >> Cheers,
-> >> >> Jeff
-> >> >
-> >> > Hi
-> >> >
-> >> > Use ____cacheline_aligned instead of __cacheline_aligned
-> >> 
-> >> struct block_device is allocated as part of the bdev_inode:
-> >> 
-> >> struct bdev_inode {
-> >>         struct block_device bdev;
-> >>         struct inode vfs_inode;
-> >> };
-> >> 
-> >> The bdev_inode is allocated from the bdev_cachep, which uses
-> >> SLAB_HWCACHE_ALIGN.  So, in theory, this should already be aligned.
-> >> 
-> >> -Jeff
+> > Added the following domain attributes required by FSL PAMU driver:
+> > 1. Subwindows field added to the iommu domain geometry attribute.
+> > 2. Added new iommu stash attribute, which allows setting of the
+> >   LIODN specific stash id parameter through IOMMU API.
+> > 3. Added an attribute for enabling/disabling DMA to a particular
+> >   memory window.
 > >
-> > The purpose here is to align vfs_inode.
+> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> > ---
+> > include/linux/iommu.h |   30 ++++++++++++++++++++++++++++++
+> > 1 files changed, 30 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> > index 7e83370..eaa40c6 100644
+> > --- a/include/linux/iommu.h
+> > +++ b/include/linux/iommu.h
+> > @@ -44,6 +44,28 @@ struct iommu_domain_geometry {
+> > 	dma_addr_t aperture_start; /* First address that can be  
+> mapped    */
+> > 	dma_addr_t aperture_end;   /* Last address that can be  
+> mapped     */
+> > 	bool force_aperture;       /* DMA only allowed in mappable  
+> range? */
+> > +
+> > +	/* The subwindows field indicates number of DMA subwindows  
+> supported
+> > +	 * by the geometry. Following is the interpretation of
+> > +	 * values for this field:
+> > +	 * 0 : This implies that the supported geometry size is 1 MB
+> > +         * with each subwindow size being 4KB. Thus number of  
+> subwindows
+> > +	 * being = 1MB/4KB = 256.
+> > +	 * 1 : Only one DMA window i.e. no subwindows.
+> > +	 * value other than 0 or 1 would indicate actual number of  
+> subwindows.
+> > +	 */
+> > +	u32 subwindows;
+> > +};
+> > +
+> > +/* This attribute corresponds to IOMMUs capable of generating
+> > + * a stash transaction. A stash transaction is typically a
+> > + * hardware initiated prefetch of data from memory to cache.
+> > + * This attribute allows configuring stashig specific parameters
+> > + * in the IOMMU hardware.
+> > + */
+> > +struct iommu_stash_attribute {
+> > +	u32 	cpu;	/* cpu number */
+> > +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
 > 
-> I'm not sure I understand what you're saying.  When you say, "The
-> purpose here," do you mean the purpose in the existing code or the
-> purpose of our changes?  The existing code seems to want to align the
-> struct block_device, so I assume you mean we should instead align the
-> vfs_inode.
+> seems like this should be enum instead of u32 for cache
 > 
-> > If you add alignment to bdev, vfs_inode would be aligned (because bdev
-> > size would be aligned to cacheline boundary).
+> With enum being something like:
 > 
-> ITYM because the bdev size *is* aligned to a cacheline boundary (the
-> size is 256 in my kernel, and the cache line alignment for this cpu is
-> 64).  But, since the entire structure is already aligned by the slab
-> allocator, I don't see how adding ____cacheline_aligned would change
-> anything.
-> 
-> > Or you can add the alignment to vfs_inode, it would have the same
-> > effect.
-> 
-> Well, I tried the suggestion by Richard to swap the fields in the
-> bdev_inode, and it did not result in a huge performance gain:
-> 
->                                    %diff
->           	        READ                WRITE                 CPU          
->   Job Name	     BW   IOPS  msec      BW   IOPS  msec   usr  sys   csw
->     write1	      0      0     0       9      9    -8 0.00 0.00 -17.18
->      read1	      6      6    -6       0      0     0 5.87 0.00 -19.20
-> randwrite1	      0      0     0       0      0     0 0.00 0.00 -15.46
->  randread1	      5      5    -5       0      0     0 0.00 0.00 -13.69
-> readwrite1	      0      0     0       0      0     0 0.00 0.00   7.83
->    randrw1	      5      5    -5       5      5    -5 0.00 0.00 -12.29
-> 
-> I can try adding the ____cacheline_aligned to the vfs_inode inside of
-> the bdev_inode if you like.  Any other ideas?
-> 
-> Cheers,
-> Jeff
+> enum iommu_attr_stash_cache {
+> 	IOMMU_ATTR_CACHE_L1,
+> 	IOMMU_ATTR_CACHE_L2,
+> 	IOMMU_ATTR_CACHE_L3,
+> };
 
-I added ____cacheline_aligned - the results are this:
-3.5.4 (without ____cacheline_aligned):	60.0630s, stdev 0.9087
-3.5.4, ____cacheline_aligned:		43.1266s, stdev 0.8916
-3.5.4, ____cacheline_aligned, patch 1:	42.7746s, stdev 0.3491
-3.5.4, ____cacheline_aligned, patch 2:	45.1152s, stdev 0.8554
-3.5.4, ____cacheline_aligned, patch 3:	43.2462s, stdev 0.1946
-3.5.4, ____cacheline_aligned, patch 4:	42.8494s, stdev 0.2387
+Don't we want these structs to be usable via some VFIO ioctl?  In that  
+case they need to use fixed size types.
 
---- so, cacheline_aligned makes the results consistent. Patch 4 looks 
-slighly better than patch 3. What are your results with cacheline_aligned?
-
-Mikulas
+-Scott
