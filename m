@@ -1,78 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab2ITM24 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:28:56 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53890 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab2ITM2y convert rfc822-to-8bit (ORCPT
+	id S1755013Ab2ITMgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:36:38 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:44298 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab2ITMgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:28:54 -0400
-Message-ID: <505B0C00.5010003@arm.com>
-Date: Thu, 20 Sep 2012 13:28:48 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 20 Sep 2012 08:36:36 -0400
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Pawel Moll <Pawel.Moll@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual machines
-References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>  <1348135563.11116.94.camel@hornet>  <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com> <1348142133.11116.109.camel@hornet> <alpine.DEB.2.02.1209201308490.29232@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1209201308490.29232@kaball.uk.xensource.com>
-X-Enigmail-Version: 1.5a1pre
-X-OriginalArrivalTime: 20 Sep 2012 12:28:49.0423 (UTC) FILETIME=[7CA5A1F0:01CD972B]
-X-MC-Unique: 112092013285202501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120919235156.GC13234@bbox>
+References: <20120919235156.GC13234@bbox>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 20 Sep 2012 08:36:15 -0400
+X-Google-Sender-Auth: swFvihfs53GOElpeNfs4iaG-LG0
+Message-ID: <CAHGf_=onFKC8NKEUGxSs75qfhSa-A-rP5THMuT0KhfOEC3hTHA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/09/12 13:15, Stefano Stabellini wrote:
-> On Thu, 20 Sep 2012, Pawel Moll wrote:
->> On Thu, 2012-09-20 at 12:39 +0100, Stefano Stabellini wrote:
->>> There are no peripherals apart from the ones that are already described
->>> here (timer, gic). All the peripherals that the guest sees are virtual
->>> devices that show up on xenbus (a virtual bus). In order to initialize
->>> xenbus, the guest only needs the hypervisor node.  So I'll remove the
->>> ranges and interrupt-map.
+On Wed, Sep 19, 2012 at 7:51 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Wed, Sep 19, 2012 at 02:28:10PM -0400, Johannes Weiner wrote:
+>> On Wed, Sep 19, 2012 at 01:04:56PM -0400, KOSAKI Motohiro wrote:
+>> > On Wed, Sep 19, 2012 at 3:45 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> > > When I looked at zone stat mismatch problem, I found
+>> > > migrate_to_node doesn't decrease NR_ISOLATED_[ANON|FILE]
+>> > > if check_range fails.
 >>
->> So all the peripherals are actually discoverable - awesome!
+>> This is a bit misleading.  It's not that the stats would be
+>> inaccurate, it's that the pages would be leaked from the LRU, no?
 >>
->> But the fact is that the only "vexpressness" of this tree is
->> memory@80000000 and gic@2c001000. The rest (not much of it ;-) is a
->> "generic A15 platform". 
+>> > > It can make system hang out.
 >>
->> I understand that you had to use some "compatible" value to get
->> initialization code and I'm flattered ;-) by your choice of
->> "arm,vexpress", but maybe - as suggested by others - you would be better
->> off with generating this stuff in runtime, by whatever tool is used to
->> instantiate the guest?
-> 
-> Yes, it is certainly going to be generated at run time. Does it make
-> sense to keep an example under arch/arm/boot/dts? I think so. There must
-> be other platforms that actually pass the device tree to the kernel from
-> the firmware and still have a dts in the kernel tree, right?
-> If actually there are none, it is probably best to forget about this
-> patch :)
-> 
-> Regarding the choice of "arm,vexpress", there was a discussion at kernel
-> summit about vexpress being the right choice as a base platform for
-> virtual machines on ARM, even though in the Xen case it means having a
-> vexpress with no peripherals.
+>> Did you spot this by code review only or did you actually run into
+>> this?  Because...
+>>
+>> > > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> > > Cc: Mel Gorman <mgorman@suse.de>
+>> > > Cc: Christoph Lameter <cl@linux.com>
+>> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> > > ---
+>> > >  mm/mempolicy.c |   16 ++++++++--------
+>> > >  1 file changed, 8 insertions(+), 8 deletions(-)
+>> > >
+>> > > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> > > index 3d64b36..6bf0860 100644
+>> > > --- a/mm/mempolicy.c
+>> > > +++ b/mm/mempolicy.c
+>> > > @@ -953,16 +953,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+>> > >
+>> > >         vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+>> > >                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+>> > > -       if (IS_ERR(vma))
+>> > > -               return PTR_ERR(vma);
+>> > > -
+>> > > -       if (!list_empty(&pagelist)) {
+>> > > +       if (IS_ERR(vma)) {
+>> > > +               err = PTR_ERR(vma);
+>> > > +               goto out;
+>> > > +       }
+>> > > +       if (!list_empty(&pagelist))
+>> > >                 err = migrate_pages(&pagelist, new_node_page, dest,
+>> > >                                                         false, MIGRATE_SYNC);
+>> > > -               if (err)
+>> > > -                       putback_lru_pages(&pagelist);
+>> > > -       }
+>> > > -
+>> > > +out:
+>> > > +       if (err)
+>> > > +               putback_lru_pages(&pagelist);
+>> >
+>> > Good catch!
+>> > This is a regression since following commit. So, I doubt we need
+>> > all or nothing semantics. Can we revert it instead? (and probably
+>> > we need more kind comment for preventing an accident)
+>>
+>> I think it makes sense to revert.  Not because of the semantics, but I
+>> just don't see how check_range() could even fail for this callsite:
+>>
+>> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
+>>    find_vma()
+>>
+>> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
+>>    and so can not fail
+>>
+>> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
+>>    continue until addr == end, so we never fail with -EIO
+>>
+>> > commit 0def08e3acc2c9c934e4671487029aed52202d42
+>> > Author: Vasiliy Kulikov <segooon@gmail.com>
+>> > Date:   Tue Oct 26 14:21:32 2010 -0700
+>> >
+>> >     mm/mempolicy.c: check return code of check_range
+>>
+>> We don't use this code to "check" the range, we use it to collect
+>> migrate pages.  There is no failure case.
+>>
+>
+> Here it goes.
+>
+> From c2c21b551811e034eb0ede6806e0314b201d7e5b Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Thu, 20 Sep 2012 08:39:52 +0900
+> Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
+>  check_range
+>
+> This patch reverts 0def08e3 because check_range can't fail in
+> migrate_to_node with considering current usecases.
+>
+> Quote from Johannes
+> "
+> I think it makes sense to revert.  Not because of the semantics, but I
+> just don't see how check_range() could even fail for this callsite:
+>
+> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
+>    find_vma()
+>
+> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
+>    and so can not fail
+>
+> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
+>    continue until addr == end, so we never fail with -EIO
+> "
+>
+> And I add new VM_BUG_ON for checking migrate_to_node's future usecase
+> which might pass to MPOL_MF_STRICT.
+>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Vasiliy Kulikov <segooon@gmail.com>
+> Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/mempolicy.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 3d64b36..9ec87bd 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+>         nodemask_t nmask;
+>         LIST_HEAD(pagelist);
+>         int err = 0;
+> -       struct vm_area_struct *vma;
+>
+>         nodes_clear(nmask);
+>         node_set(source, nmask);
+>
+> -       vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+> +       /*
+> +        * Collect migrate pages and it shoudn't be failed.
+> +        */
+> +       VM_BUG_ON(flags & MPOL_MF_STRICT);
+> +       check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+>                         flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+> -       if (IS_ERR(vma))
+> -               return PTR_ERR(vma);
+>
+>         if (!list_empty(&pagelist)) {
+>                 err = migrate_pages(&pagelist, new_node_page, dest,
 
-I think the important thing here is that the memory map is RS1. As this
-is a (very limited) subset of a vexpress A15, it seems to make some sense.
+Looks good. thank you.
 
-I still think it is useful at have an example of such a platform in the
-tree, if only as a very minimal example.
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
