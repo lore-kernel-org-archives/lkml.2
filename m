@@ -1,157 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab2ITUsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 16:48:20 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:44581 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab2ITUsT (ORCPT
+	id S1754411Ab2ITU5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 16:57:31 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62872 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab2ITU51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 16:48:19 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArCIALV+W1BV5h1yPGdsb2JhbABFhSK3FgEBgQIZAQEBAR8ZDSeCIAEBBAEnExwjBQsIA0YUJQoaE4d9CgenbJI1FIxcbIMiYAOVY4EVhFuDRolVgVgj
-X-IronPort-AV: E=Sophos;i="4.80,456,1344204000"; 
-   d="scan'208";a="196607513"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 20 Sep 2012 22:48:25 +0200
-To: Kevin Daughtridge <kevin@kdau.com>
-Cc: linux-input@vger.kernel.org, jkosina@suse.cz, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v3] HID: keep dev_rdesc unmodified and use it for
- comparisons
-Message-ID: <20120920204825.GA2455@polaris.bitmath.org>
-References: <505b67d0.jarbgcy4b522QzyI%kevin@kdau.com>
+	Thu, 20 Sep 2012 16:57:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505b67d0.jarbgcy4b522QzyI%kevin@kdau.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120920132903.437434aa.akpm@linux-foundation.org>
+References: <1347043094-11120-1-git-send-email-keescook@chromium.org>
+	<1347043094-11120-2-git-send-email-keescook@chromium.org>
+	<20120920132903.437434aa.akpm@linux-foundation.org>
+Date: Thu, 20 Sep 2012 13:57:26 -0700
+X-Google-Sender-Auth: y1euzt9jVmLPdyy4kiUXQevSeB8
+Message-ID: <CAGXu5jKRK0KmiGAUY6ufg8rZqR5eJOocdTpmqYfL4OZct0OrCw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] security: introduce kernel_module_from_file hook
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The dev_rdesc member of the hid_device structure is meant to store the original
-> report descriptor received from the device, but it is currently passed to any
-> report_fixup method before it is copied to the rdesc member. This patch uses a
-> temporary buffer to shield dev_rdesc from the side effects of many HID drivers'
-> report_fixup implementations.
-> 
-> usbhid's hid_post_reset checks the report descriptor currently returned by the
-> device against a descriptor that may have been modified by a driver's
-> report_fixup method. That leaves some devices nonfunctional after a resume, with
-> a "reset_resume error 1" reported. This patch checks the new descriptor against
-> the unmodified dev_rdesc instead and uses the original, instead of modified,
-> report size.
-> 
-> BugLink: http://bugs.launchpad.net/bugs/1049623
-> Signed-off-by: Kevin Daughtridge <kevin@kdau.com>
-> ---
+On Thu, Sep 20, 2012 at 1:29 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri,  7 Sep 2012 11:38:13 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> Instead of (or in addition to) kernel module signing, being able to reason
+>> about the origin of a kernel module would be valuable in situations
+>> where an OS already trusts a specific file system, file, etc, due to
+>> things like security labels or an existing root of trust to a partition
+>> through things like dm-verity.
+>
+> <scratches head>
+>
+> This is a really sketchy rationale and I would like to see a *lot* more
+> about the reasoning behind this.  Who will use the feature?  How will
+> they use it?  What value will they obtain from using it?  This
+> description should be pitched at kernel literate non-security people
+> who lack mind-reading powers, please.
 
-Looks like it will work, thank you Kevin. The comments below are just
-suggestions, I am fine with the patch as is.
+I'm happy to expand this further. I tried to give some examples, but
+I'll expand on those. The bottom line is that Chrome OS wants to load
+modules only from its crypto-verified read-only root filesystem. Doing
+external per-module signatures makes no sense for us, and we want to
+be able to reason about the origin of a module, which is what this
+syscall gets us.
 
+> We'll need a manpage for this, and I'd suggest that preparing it sooner
+> rather than later will help with the review of your proposal.
 
->  drivers/hid/hid-core.c        |   16 +++++++++++++---
->  drivers/hid/usbhid/hid-core.c |    6 +++---
->  2 files changed, 16 insertions(+), 6 deletions(-)
-> 
-> Changed in this version: added a temporary buffer to work around report_fixup
-> inconsistencies; using dev_rsize instead of rsize to allocate and read new
-> descriptor.
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 8bcd168..5de3bb3 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -757,6 +757,7 @@ int hid_open_report(struct hid_device *device)
->  	struct hid_item item;
->  	unsigned int size;
->  	__u8 *start;
-> +	__u8 *buf;
+Sounds good. The manpage is see for the old init_module looks to be
+wildly out of data anyway, so perhaps I can fix that too. I'll check
+the manpage tree.
 
-It is sad to have to add a temporary here.
+>> This introduces a new syscall (currently only on x86), similar to
+>> init_module, that has only two arguments. The first argument is used as
+>> a file descriptor to the module and the second argument is a pointer to
+>> the NULL terminated string of module arguments.
+>>
+>>
+>> ...
+>>
+>> -static int copy_and_check(struct load_info *info,
+>> -                       const void __user *umod, unsigned long len,
+>> -                       const char __user *uargs)
+>> +int copy_module_from_user(const void __user *umod, unsigned long len,
+>> +                       struct load_info *info)
+>
+> can be made static, methinks.
 
->  	__u8 *end;
->  	int ret;
->  	static int (*dispatch_type[])(struct hid_parser *parser,
-> @@ -775,12 +776,21 @@ int hid_open_report(struct hid_device *device)
->  		return -ENODEV;
->  	size = device->dev_rsize;
->  
-> +	buf = kmemdup(start, size, GFP_KERNEL);
-> +	if (buf == NULL)
-> +		return -ENOMEM;
-> +
->  	if (device->driver->report_fixup)
-> -		start = device->driver->report_fixup(device, start, &size);
-> +		start = device->driver->report_fixup(device, buf, &size);
-> +	else
-> +		start = buf;
->  
-> -	device->rdesc = kmemdup(start, size, GFP_KERNEL);
-> -	if (device->rdesc == NULL)
-> +	start = kmemdup(start, size, GFP_KERNEL);
-> +	kfree(buf);
+Ah, yes, thanks. I'll fix the missing statics.
 
-Changing the semantics of the callback did not seem appealing, but it
-does not prevent us from using our own version internally. So, how
-about something like this:
+> `len' should have type size_t?
 
-   static __u8 *hid_alloc_rdesc(struct hid_device *devicew,
-   			     const __u8 *start, unsigned int *size)
-   {
-   	__u8 *rdesc = kmemdup(start, *size, GFP_KERNEL);
-   
-   	if (rdesc && device->driver->report_fixup) {
-   		__u8 *tmp = device->driver->report_fixup(device, rdesc, size);
-   
-   		if (tmp != rdesc) {
-   			tmp = kmemdup(tmp, *size, GFP_KERNEL);
-   			kfree(rdesc);
-   			rdesc = tmp;
-   		}
-   	}
-   
-   	return rdesc;
-   }
+Yes, this was a left-over from the prior revision of this. I'll get
+that fixed too.
 
+>> +{
+>> +     struct file *file;
+>> +     int err;
+>> +     struct kstat stat;
+>> +     unsigned long size;
+>> +     off_t pos;
+>> +     ssize_t bytes = 0;
+>> +
+>> +     file = fget(fd);
+>> +     if (!file)
+>> +             return -ENOEXEC;
+>> +
+>> +     err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
+>> +     if (err)
+>> +             goto out;
+>> +
+>> +     size = stat.size;
+>
+> kstat.size had type loff_t.  Here it gets trucated to 32 bits on 32-bit
+> machines.  Harmless I guess, but sloppy.
 
-> +	if (start == NULL)
->  		return -ENOMEM;
-> +
-> +	device->rdesc = start;
->  	device->rsize = size;
->  
->  	parser = vzalloc(sizeof(struct hid_parser));
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index dedd8e4..8e0c4bf94 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -1415,20 +1415,20 @@ static int hid_post_reset(struct usb_interface *intf)
->  	 * configuration descriptors passed, we already know that
->  	 * the size of the HID report descriptor has not changed.
->  	 */
-> -	rdesc = kmalloc(hid->rsize, GFP_KERNEL);
-> +	rdesc = kmalloc(hid->dev_rsize, GFP_KERNEL);
->  	if (!rdesc) {
->  		dbg_hid("couldn't allocate rdesc memory (post_reset)\n");
->  		return 1;
->  	}
->  	status = hid_get_class_descriptor(dev,
->  				interface->desc.bInterfaceNumber,
-> -				HID_DT_REPORT, rdesc, hid->rsize);
-> +				HID_DT_REPORT, rdesc, hid->dev_rsize);
->  	if (status < 0) {
->  		dbg_hid("reading report descriptor failed (post_reset)\n");
->  		kfree(rdesc);
->  		return 1;
->  	}
-> -	status = memcmp(rdesc, hid->rdesc, hid->rsize);
-> +	status = memcmp(rdesc, hid->dev_rdesc, hid->dev_rsize);
->  	kfree(rdesc);
->  	if (status != 0) {
->  		dbg_hid("report descriptor changed\n");
+It's actually intentional, since I want to load the entire file into a
+kmalloc-able region. I'll return EFBIG if we would truncate instead.
 
-Thanks,
-Henrik
+>> +     info->hdr = vmalloc(size);
+>> +     if (!info->hdr) {
+>> +             err = -ENOMEM;
+>> +             goto out;
+>>       }
+>>
+>> -     if (hdr->e_shoff >= len ||
+>> -         hdr->e_shnum * sizeof(Elf_Shdr) > len - hdr->e_shoff) {
+>> -             err = -ENOEXEC;
+>> -             goto free_hdr;
+>> +     pos = 0;
+>> +     while (pos < size) {
+>
+> `pos' should be loff_t as well.
+>
+>> +             bytes = kernel_read(file, pos, (char *)(info->hdr) + pos,
+>> +                                 size - pos);
+>> +             if (bytes < 0) {
+>> +                     vfree(info->hdr);
+>> +                     err = bytes;
+>> +                     goto out;
+>> +             }
+>> +             if (bytes == 0)
+>> +                     break;
+>> +             pos += bytes;
+>>       }
+>> +     info->len = pos;
+>> -     info->hdr = hdr;
+>> -     info->len = len;
+>> -     return 0;
+>> +     err = check_info(info);
+>> +     if (err)
+>> +             vfree(info->hdr);
+>>
+>> -free_hdr:
+>> -     vfree(hdr);
+>> +out:
+>> +     fput(file);
+>>       return err;
+>>  }
+>>
+>> @@ -2861,26 +2916,17 @@ static int post_relocation(struct module *mod, const struct load_info *info)
+>>       return module_finalize(info->hdr, info->sechdrs, mod);
+>>  }
+>>
+>> +static int do_init_module(struct module *mod);
+>
+> I wonder if do_init_module() could have been moved to avoid the forward
+> declaration.
+
+I was hoping to make the patch more readable, but I can move things
+around to avoid the pre-declaration.
+
+>
+>>  /* Allocate and load the module: note that size of section 0 is always
+>>     zero, and we rely on this for optional sections. */
+>> -static struct module *load_module(void __user *umod,
+>> -                               unsigned long len,
+>> -                               const char __user *uargs)
+>> +static int load_module(struct load_info *info, const char __user *uargs)
+>>  {
+>> -     struct load_info info = { NULL, };
+>>       struct module *mod;
+>>       long err;
+>>
+>>
+>> ...
+>>
+>> @@ -3091,6 +3127,56 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+>>       return 0;
+>>  }
+>>
+>> +static int init_module_permission(void)
+>
+> "init_module_permission" -> initialises a module's permission.
+>
+> IOW, the name is poor.
+>
+>> +{
+>> +     /* Must have permission */
+>
+> The world wouldn't end if this comment was omitted ;)
+
+Sure, I'll fix this and the name.
+
+>
+>> +     if (!capable(CAP_SYS_MODULE) || modules_disabled)
+>> +             return -EPERM;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +SYSCALL_DEFINE2(init_module_fd, int, fd, const char __user *, uargs)
+>> +{
+>> +     int err;
+>> +     struct load_info info = { };
+>> +
+>> +     err = init_module_permission();
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     pr_debug("init_module_fd: fd=%d, uargs=%p\n", fd, uargs);
+>> +
+>> +     if (fd < 0)
+>> +             return -ENOEXEC;
+>
+> hm, why?  Surely copy_module_from_fd()'s fget() will fail on a -ve fd?
+
+Good point, I'll let it fall through.
+
+>
+>> +     err = copy_module_from_fd(fd, &info);
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     return load_module(&info, uargs);
+>> +}
+>> +
+>>
+>> ...
+>>
+>
+
+Thanks for the review! I'll get another version up shortly.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
