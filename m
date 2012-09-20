@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab2ITJaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:30:20 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:52549 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751547Ab2ITJaP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:30:15 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Amit Shah <amit.shah@redhat.com>
-Date: Thu, 20 Sep 2012 11:29:27 +0200
-Subject: RE: [PATCHv2] virtio_console: Add support for remoteproc serial
-Thread-Topic: [PATCHv2] virtio_console: Add support for remoteproc serial
-Thread-Index: Ac2W9oQb8eo2K2hCQ3eN9iPSVrm2CQACOG0g
-Message-ID: <81C3A93C17462B4BBD7E272753C1057923BD6DF285@EXDCVYMBSTM005.EQ1STM.local>
-References: <1348073458-17592-1-git-send-email-sjur.brandeland@stericsson.com>
- <20120920061057.GD5721@redhat.com>
-In-Reply-To: <20120920061057.GD5721@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752922Ab2ITJcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:32:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119Ab2ITJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:32:05 -0400
+Message-ID: <505AE281.1030603@redhat.com>
+Date: Thu, 20 Sep 2012 12:31:45 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in kvm_load/put_guest_fpu()
+References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>   <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>   <50599AE2.80601@redhat.com>  <1348075103.26695.301.camel@sbsiddha-desk.sc.intel.com>  <5059FF67.6050005@redhat.com> <1348075534.26695.303.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1348075534.26695.303.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Michael S. Tsirkin [mailto:mst@redhat.com]
-> sjur.brandeland@stericsson.com wrote:
-> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> >
-> > Add a simple serial connection driver called
-> > VIRTIO_ID_RPROC_SERIAL (0xB) for communicating with a
-> > remote processor in an asymmetric multi-processing
-> > configuration.
-> >
-> > This implementation reuses the existing virtio_console
-> > implementation, and adds support for DMA allocation
-> > of data buffers and disables use of tty console and
-> > the virtio control queue.
+On 09/19/2012 08:25 PM, Suresh Siddha wrote:
+> On Wed, 2012-09-19 at 20:22 +0300, Avi Kivity wrote:
+>> On 09/19/2012 08:18 PM, Suresh Siddha wrote:
+>> 
+>> > These routines (kvm_load/put_guest_fpu()) are already called with
+>> > preemption disabled but as you mentioned, we don't want the preemption
+>> > to be disabled completely between the kvm_load_guest_fpu() and
+>> > kvm_put_guest_fpu().
+>> > 
+>> > Also KVM already has the preempt notifier which is doing the
+>> > kvm_put_guest_fpu(), so something like the appended should address this.
+>> > I will test this shortly.
+>> > 
+>> 
+>> Note, we could also go in a different direction and make
+>> kernel_fpu_begin() use preempt notifiers and thus make its users
+>> preemptible.  But that's for a separate patchset.
 > 
-> Can't repoteproc work with control queue?
-> Reason I ask, there are known races when
-> using config space and I was working on
-> a spec change that uses control queue for
-> all config accesses.
+> yep, but we need the fpu buffer to save/restore the kernel fpu state.
+> 
+> KVM already has those buffers allocated in the guest cpu state and hence
+> it all works out ok. But yes, we can revisit this in future.
 
-In my case rproc-serial will be used for transferring boot
-image or crash-dump to a modem. In these scenarios the
-execution environment is very limited (no OS) and  the size
-and complexity of the virtio code at the modem should be kept
-to a minimum.
-
-The usage pattern in this case is also very simple,
-the virtio device is opened only once, and only reopened
-after a complete modem cold-start.
-
-So the control queue is not appropriate for my use-case,
-simplicity is the most important requirement.
-(And currently the virtio config-space is not supported
-by remoteproc anyway).
-
-I don't know if other potential users of rproc_serial have more
-complex use-cases in mind?
-
-Regards,
-Sjur
+kernel_fpu_begin() can allocate it.  It means changing the APIs, but
+changing the behaviour to be preemptible is a bigger change anyway.
 
 
-
+-- 
+error compiling committee.c: too many arguments to function
