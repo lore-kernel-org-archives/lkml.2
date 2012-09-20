@@ -1,215 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2ITStp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:49:45 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57467 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab2ITSt0 (ORCPT
+	id S1754976Ab2ITStz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:49:55 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33963 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab2ITStq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:49:26 -0400
+	Thu, 20 Sep 2012 14:49:46 -0400
+Date: Thu, 20 Sep 2012 11:49:32 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 21/23] rcu: Simplify quiescent-state detection
-Date: Thu, 20 Sep 2012 11:48:17 -0700
-Message-Id: <1348166900-18716-21-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120920184751.GA18657@linux.vnet.ibm.com>
- <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Yijing Wang <wangyijing@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH v1 06/22] PCI: use a global lock to serialize PCI
+ root bridge hotplug operations
+Message-ID: <20120920184932.GK2449@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1344355862-2726-1-git-send-email-jiang.liu@huawei.com>
+ <1344355862-2726-7-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo5ixjvv3r9wzCXFrDZ790u9_K5KCuQ7GQO3fFuFuiVJZg@mail.gmail.com>
+ <5050AD65.1000801@gmail.com>
+ <CAErSpo4=cakjCQ_Z_nUa2xZQr9KV72kxtsgrW0cjeFN=ktb8zQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4=cakjCQ_Z_nUa2xZQr9KV72kxtsgrW0cjeFN=ktb8zQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092018-2876-0000-0000-00000058A1E0
+x-cbid: 12092018-2398-0000-0000-00000B351936
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00175813; UDB=6.00039806; UTC=2012-09-20
+ 18:49:43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Wed, Sep 12, 2012 at 10:51:05AM -0600, Bjorn Helgaas wrote:
+> On Wed, Sep 12, 2012 at 9:42 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> > On 09/12/2012 06:57 AM, Bjorn Helgaas wrote:
+> >> On Tue, Aug 7, 2012 at 10:10 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> >>> Currently there's no mechanism to protect the global pci_root_buses list
+> >>> from dynamic change at runtime. That means, PCI root bridge hotplug
+> >>> operations, which dynamically change the pci_root_buses list, may cause
+> >>> invalid memory accesses.
+> >>>
+> >>> So introduce a global lock to serialize accesses to the pci_root_buses
+> >>> list and serialize PCI host bridge hotplug operations.
+> 
+> >>> @@ -463,6 +463,8 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+> >>>         if (!root)
+> >>>                 return -ENOMEM;
+> >>>
+> >>> +       pci_host_bridge_hotplug_lock();
+> >>
+> >> Here's where I get lost.  This is an ACPI driver's .add() routine,
+> >> which is analogous to a PCI driver's .probe() routine.  PCI driver
+> >> .probe() routines don't need to be concerned with PCI device hotplug.
+> >> All the hotplug-related locking is handled by the PCI core, not by
+> >> individual drivers.  So why do we need it here?
+> >>
+> >> I'm not suggesting that the existing locking is correct.  I'm just not
+> >> convinced this is the right way to fix it.
+> >>
+> >> The commit log says we need protection for the global pci_root_buses
+> >> list.  But even with this whole series, we still traverse the list
+> >> without protection in places like pcibios_resource_survey() and
+> >> pci_assign_unassigned_resources().
+> >>
+> >> Maybe we can make progress on this by identifying specific failures
+> >> that can happen in a couple of these paths, e.g., acpi_pci_root_add()
+> >> and i7core_xeon_pci_fixup().  If we look at those paths, we might a
+> >> way to fix this in a more general fashion than throwing in lock/unlock
+> >> pairs.
+> >>
+> >> It might also help to know what the rule is for when we need to use
+> >> pci_host_bridge_hotplug_lock() and pci_host_bridge_hotplug_unlock().
+> >> Apparently it is not as simple as protecting every reference to the
+> >> pci_root_buses list.
+> > Hi Bjorn,
+> >         It's really a challenge work to protect the pci_root_buses list:)
+> 
+> Yes.  IIRC, your last patch was to unexport pci_root_buses, which I
+> think is a great idea.
+> 
+> > All evils are caused by the pci_find_next_bus() interface, which is designed
+> > to be called at boot time only. I have tried several other solutions but
+> > failed.
+> >         First I tried "pci_get_next_bus()" which holds a reference to the
+> > returned root bus "pci_bus". But that doesn't help because pci_bus could
+> > be removed from the pci_root_buses list even you hold a reference to
+> > pci_bus. And it will cause trouble when you call pci_get_next_bus(pci_bus)
+> > again because pci_bus->node.next is invalid now.
+> 
+> That sounds like a bug.  If an interface returns a structure after
+> acquiring a reference, the caller should be able to rely on the
+> structure remaining valid.  Adding extra locks doesn't feel like the
+> right solution for that problem.
+> 
+> In the big picture, I'm not sure how much sense all the
+> pci_find_bus(), pci_find_next_bus(), pci_get_bus(),
+> pci_get_next_bus(), etc., interfaces really make.  There really aren't
+> very many callers, and most of them look a bit hacky to me.  Usually
+> they're quirks trying to locate a device or drivers for device A
+> trying to locate companion device B or something similar.  I wonder if
+> we could figure out some entirely new interface that wouldn't involve
+> traversing so much of the hierarchy and therefore could be safer.
+> 
+> >         Then I tried RCU and also failed because caller of pci_get_next_bus()
+> > may sleep.
 
-The current quiescent-state detection algorithm is needlessly
-complex.  It records the grace-period number corresponding to
-the quiescent state at the time of the quiescent state, which
-works, but it seems better to simply erase any record of previous
-quiescent states at the time that the CPU notices the new grace
-period.  This has the further advantage of removing another piece
-of RCU for which lockless reasoning is required.
+On the unlikely off-chance that it helps, SRCU does allow sleeping
+readers.
 
-Therefore, this commit makes this change.
+							Thanx, Paul
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree.c        |   27 +++++++++++----------------
- kernel/rcutree.h        |    2 --
- kernel/rcutree_plugin.h |    2 --
- kernel/rcutree_trace.c  |   12 +++++-------
- 4 files changed, 16 insertions(+), 27 deletions(-)
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 71ae31b..7a91dd4 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -176,8 +176,6 @@ void rcu_sched_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
- 
--	rdp->passed_quiesce_gpnum = rdp->gpnum;
--	barrier();
- 	if (rdp->passed_quiesce == 0)
- 		trace_rcu_grace_period("rcu_sched", rdp->gpnum, "cpuqs");
- 	rdp->passed_quiesce = 1;
-@@ -187,8 +185,6 @@ void rcu_bh_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
- 
--	rdp->passed_quiesce_gpnum = rdp->gpnum;
--	barrier();
- 	if (rdp->passed_quiesce == 0)
- 		trace_rcu_grace_period("rcu_bh", rdp->gpnum, "cpuqs");
- 	rdp->passed_quiesce = 1;
-@@ -897,12 +893,8 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
- 		 */
- 		rdp->gpnum = rnp->gpnum;
- 		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
--		if (rnp->qsmask & rdp->grpmask) {
--			rdp->qs_pending = 1;
--			rdp->passed_quiesce = 0;
--		} else {
--			rdp->qs_pending = 0;
--		}
-+		rdp->passed_quiesce = 0;
-+		rdp->qs_pending = !!(rnp->qsmask & rdp->grpmask);
- 		zero_cpu_stall_ticks(rdp);
- 	}
- }
-@@ -982,10 +974,13 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
- 		 * our behalf. Catch up with this state to avoid noting
- 		 * spurious new grace periods.  If another grace period
- 		 * has started, then rnp->gpnum will have advanced, so
--		 * we will detect this later on.
-+		 * we will detect this later on.  Of course, any quiescent
-+		 * states we found for the old GP are now invalid.
- 		 */
--		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
-+		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed)) {
- 			rdp->gpnum = rdp->completed;
-+			rdp->passed_quiesce = 0;
-+		}
- 
- 		/*
- 		 * If RCU does not need a quiescent state from this CPU,
-@@ -1356,7 +1351,7 @@ rcu_report_qs_rnp(unsigned long mask, struct rcu_state *rsp,
-  * based on quiescent states detected in an earlier grace period!
-  */
- static void
--rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long lastgp)
-+rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp)
- {
- 	unsigned long flags;
- 	unsigned long mask;
-@@ -1364,7 +1359,8 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long las
- 
- 	rnp = rdp->mynode;
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
--	if (lastgp != rnp->gpnum || rnp->completed == rnp->gpnum) {
-+	if (rdp->passed_quiesce == 0 || rdp->gpnum != rnp->gpnum ||
-+	    rnp->completed == rnp->gpnum) {
- 
- 		/*
- 		 * The grace period in which this quiescent state was
-@@ -1423,7 +1419,7 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
- 	 * Tell RCU we are done (but rcu_report_qs_rdp() will be the
- 	 * judge of that).
- 	 */
--	rcu_report_qs_rdp(rdp->cpu, rsp, rdp, rdp->passed_quiesce_gpnum);
-+	rcu_report_qs_rdp(rdp->cpu, rsp, rdp);
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -2598,7 +2594,6 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 			rdp->completed = rnp->completed;
- 			rdp->passed_quiesce = 0;
- 			rdp->qs_pending = 0;
--			rdp->passed_quiesce_gpnum = rnp->gpnum - 1;
- 			trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuonl");
- 		}
- 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 8f0293c..935dd4c 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -246,8 +246,6 @@ struct rcu_data {
- 					/*  in order to detect GP end. */
- 	unsigned long	gpnum;		/* Highest gp number that this CPU */
- 					/*  is aware of having started. */
--	unsigned long	passed_quiesce_gpnum;
--					/* gpnum at time of quiescent state. */
- 	bool		passed_quiesce;	/* User-mode/idle loop etc. */
- 	bool		qs_pending;	/* Core waits for quiesc state. */
- 	bool		beenonline;	/* CPU online at least once. */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index b4e8eb2..4734afb 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -137,8 +137,6 @@ static void rcu_preempt_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
- 
--	rdp->passed_quiesce_gpnum = rdp->gpnum;
--	barrier();
- 	if (rdp->passed_quiesce == 0)
- 		trace_rcu_grace_period("rcu_preempt", rdp->gpnum, "cpuqs");
- 	rdp->passed_quiesce = 1;
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index f54f0ce..bd4df13 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -86,12 +86,11 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- {
- 	if (!rdp->beenonline)
- 		return;
--	seq_printf(m, "%3d%cc=%lu g=%lu pq=%d pgp=%lu qp=%d",
-+	seq_printf(m, "%3d%cc=%lu g=%lu pq=%d qp=%d",
- 		   rdp->cpu,
- 		   cpu_is_offline(rdp->cpu) ? '!' : ' ',
- 		   rdp->completed, rdp->gpnum,
--		   rdp->passed_quiesce, rdp->passed_quiesce_gpnum,
--		   rdp->qs_pending);
-+		   rdp->passed_quiesce, rdp->qs_pending);
- 	seq_printf(m, " dt=%d/%llx/%d df=%lu",
- 		   atomic_read(&rdp->dynticks->dynticks),
- 		   rdp->dynticks->dynticks_nesting,
-@@ -150,12 +149,11 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
- {
- 	if (!rdp->beenonline)
- 		return;
--	seq_printf(m, "%d,%s,%lu,%lu,%d,%lu,%d",
-+	seq_printf(m, "%d,%s,%lu,%lu,%d,%d",
- 		   rdp->cpu,
- 		   cpu_is_offline(rdp->cpu) ? "\"N\"" : "\"Y\"",
- 		   rdp->completed, rdp->gpnum,
--		   rdp->passed_quiesce, rdp->passed_quiesce_gpnum,
--		   rdp->qs_pending);
-+		   rdp->passed_quiesce, rdp->qs_pending);
- 	seq_printf(m, ",%d,%llx,%d,%lu",
- 		   atomic_read(&rdp->dynticks->dynticks),
- 		   rdp->dynticks->dynticks_nesting,
-@@ -186,7 +184,7 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
- 	int cpu;
- 	struct rcu_state *rsp;
- 
--	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
-+	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pq\",");
- 	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
- 	seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
- #ifdef CONFIG_RCU_BOOST
--- 
-1.7.8
+> >         And at last the global host bridge hotplug lock solution. The rules
+> > for locking are:
+> >         1) No need for locking when accessing the pci_root_buses list at
+> > system initialization stages. (It's system initialization instead of driver
+> > initialization here because driver's initialization code may be called
+> > at runtime when loading the driver.) It's single-threaded and no hotplug
+> > during system initialization stages.
+> >         2) Should acquire the global lock when accessing the pci_root_buses
+> > list at runtime.
+> >
+> >         I have done several rounds of scanning to identify accessing to
+> > the pci_root_buses list at runtime. But there may still be something missed:(
+> 
+> That's part of what makes me uneasy.  We have to look at a lot of code
+> outside drivers/pci to analyze correctness, which is difficult.  It
+> would be much better if we could do something in the core, where we
+> only have to analyze drivers/pci.  I know this is probably much harder
+> and probably involves replacing or removing some of these interfaces
+> that cause problems.
+> 
+> >         I think the best solution is to get rid of the pci_find_next_bus().
+> > but not sure whether we could achieve that.
+> 
+> >> Actually, I looked at the callers of pci_find_next_bus(), and most of
+> >> them are unsafe in an even deeper way: they're doing device setup in
+> >> initcalls, so that setup won't be done for hot-added devices.  For
+> >> example, I can pick on sba_init() because I think I wrote it back in
+> >> the dark ages.  sba_init() is a subsys_initcall that calls
+> >> sba_connect_bus() for every bus we know about at boot-time, and it
+> >> sets the host bridge's iommu pointer.  If we were to hot-add a host
+> >> bridge, we would never set the iommu pointer.
+> 
+> > That's a more fundamental issue, another big topic for us:(
+> 
+> >> I'm not sure why you didn't add a pci_host_bridge_hotplug_lock() in
+> >> the sba_init() path, since it looks similar to the drm_open_helper()
+> >> path above.  But in any case, I think that would be the wrong thing to
+> >> do because it would fix the superficial problem while leaving the
+> >> deeper problem of host bridge hot-add not setting the iommu pointer.
+> 
+> > sba_init is called during system initialization stages through subsys_initcall,
+> > so no extra protection for it.
+> 
+> OK, I see your reasoning.  But I don't agree :)  All the users of an
+> interface should use the same locking scheme, even if they're at
+> boot-time where we "know" we don't need it.  It's too hard to analyze
+> differences, and code gets copied from one place to somewhere else
+> where it might not be appropriate.
+> 
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
