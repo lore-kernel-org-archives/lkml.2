@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab2ITOLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:11:24 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59329 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab2ITOLX (ORCPT
+	id S1755364Ab2ITOMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:12:47 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:13613 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903Ab2ITOMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:11:23 -0400
-Date: Thu, 20 Sep 2012 07:10:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: RCU lockup in the SMP idle thread, help...
-Message-ID: <20120920141052.GA2449@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
- <50520E8A.9030408@linaro.org>
- <20120913165844.GW4257@linux.vnet.ibm.com>
- <CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
- <20120914175322.GI4257@linux.vnet.ibm.com>
- <CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
- <20120920000313.GH2455@linux.vnet.ibm.com>
- <CACRpkdaufGjsEtkjQFY9oDvmtM7xnEiFweLfOGuX+WRf0Vbb5A@mail.gmail.com>
+	Thu, 20 Sep 2012 10:12:46 -0400
+X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
+   d="scan'208";a="14659955"
+Date: Thu, 20 Sep 2012 15:11:56 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+In-Reply-To: <201209201327.45802.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.02.1209201501140.29232@kaball.uk.xensource.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1209201240110.29232@kaball.uk.xensource.com> <1348143533.26501.28.camel@zakaz.uk.xensource.com> <201209201327.45802.arnd@arndb.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaufGjsEtkjQFY9oDvmtM7xnEiFweLfOGuX+WRf0Vbb5A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092014-7408-0000-0000-000008A8FD85
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 11:07:37AM +0200, Linus Walleij wrote:
-> On Thu, Sep 20, 2012 at 2:03 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
+On Thu, 20 Sep 2012, Arnd Bergmann wrote:
+> On Thursday 20 September 2012, Ian Campbell wrote:
+> > On Thu, 2012-09-20 at 12:56 +0100, Stefano Stabellini wrote:
+> > > On Thu, 20 Sep 2012, Ian Campbell wrote:
+> > > > On Wed, 2012-09-19 at 18:44 +0100, Stefano Stabellini wrote:
 > 
-> > In the meantime, a crude fallback is for the CPU that detected the stall
-> > to trace the stack of the task running on the other CPU.  See below for
-> > a crude (and untested) patch.
+> > > > > + compatible = "xen,xenvm-4.2", "arm,vexpress";
+> > > > 
+> > > > Is this second compatible thing actually true? We don't actually emulate
+> > > > much (anything?) of what would be on a real vexpress motherboard.
+> > > > 
+> > > > "arm,vexpress" is used only in v2m.c and I don't think we want the
+> > > > majority of that -- we don't provide any of the peripherals which it
+> > > > registers.
+> > > > 
+> > > > I think the only things we might want out of that lot are the arch timer
+> > > > and perhaps the uart0 (as a debug port).
+> > > > 
+> > > > I suspect we should have our own xen machine .c.
+> > > > 
+> > > > [...]
+> > > 
+> > > It is true that we are "arm,vexpress" compatible at the moment.
+> > 
+> > But we aren't, we don't emulate 90%+ of the actual hardware which
+> > vexpress compatibility would actually imply.
+> > 
+> > Look in arch/arm/mach-vexpress/v2m.c, which is the only thing keyed off
+> > this compat value -- it's full of stuff which we don't (and aren't going
+> > to) implement.
 > 
-> OK now I get this:
+> It's not much different in the end, but I think I'd rather make the
+> compatible list in the device tree "xen,xenvm-4.2", "xen,xenvm" without
+> listing "arm,vexpress", but then adding "xen,xenvm" to the list of
+> compatible devices in the vexpress kernel code.
 > 
->  INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
-> t=29508 jiffies)
-> Task dump for CPU 0:
-> swapper/0       R running      0     0      0 0x00000000
-> [<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
-> [<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
-> INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
-> t=29851 jiffies)
-> Task dump for CPU 0:
-> swapper/0       R running      0     0      0 0x00000000
-> [<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
-> [<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
-> 
-> So the swapper thread is the culprit?
-> Hm, I'm not very smart with this no...
+> The main difference is that if we decide to separate out the Linux
+> code for Xen and vexpress later into distinct ports, we have the
+> option to do that. vexpress will support multiplatform configurations
+> in 3.7 anyway, so the idea of making all virtual platforms part of
+> vexpress in order to be able to boot the same kernel on them is not
+> all that important any more.
 
-Can we convince ARM to dump the stack of the swapper thread in this case?
-That would get us valuable information.
-
-							Thanx, Paul
-
+That's a very good idea, I'll do that.
