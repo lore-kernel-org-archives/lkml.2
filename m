@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab2ITJg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:36:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab2ITJg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:36:26 -0400
-Message-ID: <505AE385.3030600@redhat.com>
-Date: Thu, 20 Sep 2012 12:36:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1753652Ab2ITJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:36:58 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:33728 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab2ITJg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:36:56 -0400
+X-AuditID: b753bd60-91b5cba000007c38-e8-505ae3b60f26
+X-AuditID: b753bd60-91b5cba000007c38-e8-505ae3b60f26
+Message-ID: <505AE3B5.6080401@hitachi.com>
+Date: Thu, 20 Sep 2012 18:36:53 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org, andreas.herrmann3@amd.com, bp@amd64.org,
-        robert.richter@amd.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in kvm_load/put_guest_fpu()
-References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>  <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>  <50599AE2.80601@redhat.com> <1348075103.26695.301.camel@sbsiddha-desk.sc.intel.com> <5059FF67.6050005@redhat.com> <505A002E.6050304@zytor.com>
-In-Reply-To: <505A002E.6050304@zytor.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, kprobes: Hide skip_singlestep forward declaration
+ properly
+References: <1348062414-6578-1-git-send-email-bp@amd64.org> <505ADB6B.3070706@hitachi.com> <20120920092540.GB3611@gmail.com>
+In-Reply-To: <20120920092540.GB3611@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 08:26 PM, H. Peter Anvin wrote:
-> On 09/19/2012 10:22 AM, Avi Kivity wrote:
->> 
->> Note, we could also go in a different direction and make
->> kernel_fpu_begin() use preempt notifiers and thus make its users
->> preemptible.  But that's for a separate patchset.
->> 
+(2012/09/20 18:25), Ingo Molnar wrote:
 > 
-> Where would you put the state if you were preempted?  You want to
-> allocate a full extra buffer for the kernel xstate for each thread just
-> in case?  ("Yes" is a valid answer to that question, but it is a fair
-> chunk of memory.)
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> (2012/09/19 22:46), Borislav Petkov wrote:
+>>> From: Borislav Petkov <borislav.petkov@amd.com>
+>>>
+>>> I get
+>>>
+>>> arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined [-Wunused-function]
+>>>
+>>> on tip/auto-latest.
+>>>
+>>> Hide the forward declaration in the KPROBES_CAN_USE_FTRACE as it
+>>> is done in its callsites.
+>>
+>> Thank you for reporting and fixing :)
+> 
+> Why is a forward declation needed, why isn't the function in the 
+> proper spot in the file to begin with?
 
-kernel_fpu_begin() could receive a pointer to a struct fpu, with
-fpu->state either preallocated by the caller, or allocated by
-kernel_fpu_begin() itself.
+There is no reason, ftrace-related things can also be moved on top.
+Borislav, could you move it?
+
+Thanks,
 
 -- 
-error compiling committee.c: too many arguments to function
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
