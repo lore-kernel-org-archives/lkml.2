@@ -1,120 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2ITDHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 23:07:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47886 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753950Ab2ITDHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 23:07:05 -0400
-X-IronPort-AV: E=Sophos;i="4.80,452,1344182400"; 
-   d="scan'208";a="5874747"
-Message-ID: <505A89A8.8070008@cn.fujitsu.com>
-Date: Thu, 20 Sep 2012 11:12:40 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Shaohua Li <shli@fusionio.com>
-Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
-References: <1348039748-32111-1-git-send-email-minchan@kernel.org> <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com> <20120919201738.GA2425@barrios> <505A6EB7.5070305@cn.fujitsu.com> <20120920023053.GD13234@bbox>
-In-Reply-To: <20120920023053.GD13234@bbox>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/20 11:07:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/09/20 11:07:17,
-	Serialize complete at 2012/09/20 11:07:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754066Ab2ITDS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 23:18:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53021 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab2ITDS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 23:18:56 -0400
+From: Robin Dong <robin.k.dong@gmail.com>
+To: linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Cc: Robin Dong <sanbai@taobao.com>
+Subject: [PATCH 1/2] md: add new interface 'mk_rq' in target_type
+Date: Thu, 20 Sep 2012 11:18:41 +0800
+Message-Id: <1348111122-27400-1-git-send-email-robin.k.dong@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/20/2012 10:30 AM, Minchan Kim Wrote:
-> On Thu, Sep 20, 2012 at 09:17:43AM +0800, Wen Congyang wrote:
->> At 09/20/2012 04:17 AM, Minchan Kim Wrote:
->>> Hi KOSAKI,
->>>
->>> On Wed, Sep 19, 2012 at 02:05:20PM -0400, KOSAKI Motohiro wrote:
->>>> On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
->>>>> During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
->>>>> are increasing so that kernel are hang out.
->>>>>
->>>>> The cause is that when we do memory-hotadd after memory-remove,
->>>>> __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
->>>>> without draining vm_stat_diff of all CPU.
->>>>>
->>>>> This patch fixes it.
->>>>
->>>> zone_pcp_update() is called from online pages path. but IMHO,
->>>> the statistics should be drained offline path. isn't it?
->>>
->>> It isn't necessary because statistics is right until we reset it to zero
->>> in online path.
->>> Do you have something on your mind that we have to drain it in offline path?
->>
->> When a node is offlined and onlined again. We create node_data[i] in the
-> 
-> I would like to clarify your word.
-> Create or recreate?
-> Why I have a question is as I look over the source code, hotadd_new_pgdat
-> seem to be called if we do hotadd *new* memory. It's not the case for
-> offline and online again you mentioned. If you're right, I should find 
-> arch_free_nodedata to free pgdat when node is disappear but I can't find it.
-> Do I miss something?
+From: Robin Dong <sanbai@taobao.com>
 
-Hmm, when a memory is removed, we don't do cleanup now. We(Fujitsu) posted
-a patchset to do this:
-https://lkml.org/lkml/2012/9/5/201
+We are now trying to modify flashcache(https://github.com/facebook/flashcache)
+to make it request based so that
+we can let cfq io-controller control the bandwidth between different
+io cgroups.
 
-We don't free pgdat in this patchset now. We have two choice:
-1. free pgdat
-2. don't free it, and reuse it when it is onlined again
+A search in the dm directory tells me that only multipath is a request
+based dm target and its functionality
+is very simple and map_rq() is used to map the request to different underlying devices.
+We can't work in this way because:
 
-I'm not sure which choice is better.
+1. the request which processed by map_rq() need to be issued to
+	different lower devices (disk device and cache device, in flashcache), therefore the request
+	can't be totally remapped by simply changing its queue and returning DM_MAPIO_REMAPPED in map_rq() like multipath_map()
+2. to submit bios drectly in map_rq() (by return DM_MAPIO_SUBMITTED) will cause BUG_ON(!irqs_disabled())
+	in dm_request_fn() because the submit_bio()->generic_make_request()->blk_queue_bio() will definitly call spin_unlock_irq to enable the irqs
 
-> 
-> 
->> function hotadd_new_pgdat(), and we will lost the statistics stored in
->> zone->pageset. So we should drain it in offline path.
-> 
-> Even we drain in offline patch, it still has a problem.
-> 
-> 1. offline
-> 2. drain -> OKAY 
-> 3. schedule
-> 4. Process A increase zone stat
-> 5. Process B increase zone stat
-> 6. online
-> 7. reset it -> we ends up lost zone stat counter which is modified between 2-6
-> 
+As above,the interface map_rq() provided by devcie-mapper framework
+is not enough for an autonomous target, like flashcache.
 
-I understand why you drain it in online path now. But it still should drain it
-in offline path because if all pages in this zone are offlined, we will call
-zone_pcp_reset() to reset zone's pcp. We should also drop it in the function
-zone_pcp_reset().
+We propose to add a new
+mk_rq interface so that we can make the requests
+by ourselves.
 
-Thanks
-Wen Congyang
+Signed-off-by: Robin Dong <sanbai@taobao.com>
+---
+ drivers/md/dm-io.c    |   58 ++++++++++++++++++++++++++++--------------------
+ drivers/md/dm-log.c   |    1 +
+ include/linux/dm-io.h |    3 ++
+ 3 files changed, 38 insertions(+), 24 deletions(-)
 
-> 
->>
->> Thanks
->> Wen Congyang
->>
->>>
->>>>
->>>> thanks.
->>>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
+index ea5dd28..f767792 100644
+--- a/drivers/md/dm-io.c
++++ b/drivers/md/dm-io.c
+@@ -287,8 +287,8 @@ static void km_dp_init(struct dpages *dp, void *data)
+ /*-----------------------------------------------------------------
+  * IO routines that accept a list of pages.
+  *---------------------------------------------------------------*/
+-static void do_region(int rw, unsigned region, struct dm_io_region *where,
+-		      struct dpages *dp, struct io *io)
++static void do_region(struct dm_io_request *io_req, unsigned region,
++		struct dm_io_region *where, struct dpages *dp, struct io *io)
+ {
+ 	struct bio *bio;
+ 	struct page *page;
+@@ -298,6 +298,7 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
+ 	sector_t remaining = where->count;
+ 	struct request_queue *q = bdev_get_queue(where->bdev);
+ 	sector_t discard_sectors;
++	int rw = io_req->bi_rw;
+ 
+ 	/*
+ 	 * where->count may be zero if rw holds a flush and we need to
+@@ -339,15 +340,26 @@ static void do_region(int rw, unsigned region, struct dm_io_region *where,
+ 		}
+ 
+ 		atomic_inc(&io->count);
+-		submit_bio(rw, bio);
++		if (!io_req->only_create_bio)
++			submit_bio(rw, bio);
++		else {
++			bio->bi_rw |= rw;
++			if (io_req->start) {
++				io_req->end->bi_next = bio;
++				io_req->end = bio;
++			} else
++				io_req->start = io_req->end = bio;
++			bio->bi_next = NULL;
++		}
+ 	} while (remaining);
+ }
+ 
+-static void dispatch_io(int rw, unsigned int num_regions,
++static void dispatch_io(struct dm_io_request *io_req, unsigned int num_regions,
+ 			struct dm_io_region *where, struct dpages *dp,
+ 			struct io *io, int sync)
+ {
+ 	int i;
++	int rw = io_req->bi_rw;
+ 	struct dpages old_pages = *dp;
+ 
+ 	BUG_ON(num_regions > DM_IO_MAX_REGIONS);
+@@ -362,7 +374,7 @@ static void dispatch_io(int rw, unsigned int num_regions,
+ 	for (i = 0; i < num_regions; i++) {
+ 		*dp = old_pages;
+ 		if (where[i].count || (rw & REQ_FLUSH))
+-			do_region(rw, i, where + i, dp, io);
++			do_region(io_req, i, where + i, dp, io);
+ 	}
+ 
+ 	/*
+@@ -372,8 +384,8 @@ static void dispatch_io(int rw, unsigned int num_regions,
+ 	dec_count(io, 0, 0);
+ }
+ 
+-static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+-		   struct dm_io_region *where, int rw, struct dpages *dp,
++static int sync_io(struct dm_io_request *io_req,  unsigned int num_regions,
++		   struct dm_io_region *where, struct dpages *dp,
+ 		   unsigned long *error_bits)
+ {
+ 	/*
+@@ -385,7 +397,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+ 	volatile char io_[sizeof(struct io) + __alignof__(struct io) - 1];
+ 	struct io *io = (struct io *)PTR_ALIGN(&io_, __alignof__(struct io));
+ 
+-	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
++	if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
+ 		WARN_ON(1);
+ 		return -EIO;
+ 	}
+@@ -393,12 +405,12 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+ 	io->error_bits = 0;
+ 	atomic_set(&io->count, 1); /* see dispatch_io() */
+ 	io->sleeper = current;
+-	io->client = client;
++	io->client = io_req->client;
+ 
+ 	io->vma_invalidate_address = dp->vma_invalidate_address;
+ 	io->vma_invalidate_size = dp->vma_invalidate_size;
+ 
+-	dispatch_io(rw, num_regions, where, dp, io, 1);
++	dispatch_io(io_req, num_regions, where, dp, io, 1);
+ 
+ 	while (1) {
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+@@ -416,30 +428,29 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
+ 	return io->error_bits ? -EIO : 0;
+ }
+ 
+-static int async_io(struct dm_io_client *client, unsigned int num_regions,
+-		    struct dm_io_region *where, int rw, struct dpages *dp,
+-		    io_notify_fn fn, void *context)
++static int async_io(struct dm_io_request *io_req, unsigned int num_regions,
++		struct dm_io_region *where, struct dpages *dp)
+ {
+ 	struct io *io;
+ 
+-	if (num_regions > 1 && (rw & RW_MASK) != WRITE) {
++	if (num_regions > 1 && (io_req->bi_rw & RW_MASK) != WRITE) {
+ 		WARN_ON(1);
+-		fn(1, context);
++		io_req->notify.fn(1, io_req->notify.context);
+ 		return -EIO;
+ 	}
+ 
+-	io = mempool_alloc(client->pool, GFP_NOIO);
++	io = mempool_alloc(io_req->client->pool, GFP_NOIO);
+ 	io->error_bits = 0;
+ 	atomic_set(&io->count, 1); /* see dispatch_io() */
+ 	io->sleeper = NULL;
+-	io->client = client;
+-	io->callback = fn;
+-	io->context = context;
++	io->client = io_req->client;
++	io->callback = io_req->notify.fn;
++	io->context = io_req->notify.context;
+ 
+ 	io->vma_invalidate_address = dp->vma_invalidate_address;
+ 	io->vma_invalidate_size = dp->vma_invalidate_size;
+ 
+-	dispatch_io(rw, num_regions, where, dp, io, 0);
++	dispatch_io(io_req, num_regions, where, dp, io, 0);
+ 	return 0;
+ }
+ 
+@@ -499,11 +510,10 @@ int dm_io(struct dm_io_request *io_req, unsigned num_regions,
+ 		return r;
+ 
+ 	if (!io_req->notify.fn)
+-		return sync_io(io_req->client, num_regions, where,
+-			       io_req->bi_rw, &dp, sync_error_bits);
++		return sync_io(io_req, num_regions, where,
++				&dp, sync_error_bits);
+ 
+-	return async_io(io_req->client, num_regions, where, io_req->bi_rw,
+-			&dp, io_req->notify.fn, io_req->notify.context);
++	return async_io(io_req, num_regions, where, &dp);
+ }
+ EXPORT_SYMBOL(dm_io);
+ 
+diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
+index 627d191..3bf065a 100644
+--- a/drivers/md/dm-log.c
++++ b/drivers/md/dm-log.c
+@@ -463,6 +463,7 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
+ 			kfree(lc);
+ 			return r;
+ 		}
++		lc->io_req.only_create_bio = 0;
+ 
+ 		lc->disk_header = vmalloc(buf_size);
+ 		if (!lc->disk_header) {
+diff --git a/include/linux/dm-io.h b/include/linux/dm-io.h
+index f4b0aa3..8782163 100644
+--- a/include/linux/dm-io.h
++++ b/include/linux/dm-io.h
+@@ -61,6 +61,9 @@ struct dm_io_request {
+ 	struct dm_io_memory mem;	/* Memory to use for io */
+ 	struct dm_io_notify notify;	/* Synchronous if notify.fn is NULL */
+ 	struct dm_io_client *client;	/* Client memory handler */
++	int only_create_bio;
++	struct bio *start;
++	struct bio *end;
+ };
+ 
+ /*
+-- 
+1.7.1
 
