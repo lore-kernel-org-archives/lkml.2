@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab2ITHeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:34:46 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50540 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2ITHep (ORCPT
+	id S1753514Ab2ITHgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:36:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47724 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2ITHga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:34:45 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-e9-505ac70d69a2
-Date: Thu, 20 Sep 2012 16:37:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3] memory-hotplug: fix zone stat mismatch
-Message-ID: <20120920073719.GH13234@bbox>
-References: <1348123405-30641-1-git-send-email-minchan@kernel.org>
- <505AC3E9.4030009@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505AC3E9.4030009@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Sep 2012 03:36:30 -0400
+Date: Thu, 20 Sep 2012 17:36:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yasuaki,
+--Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 20, 2012 at 04:21:13PM +0900, Yasuaki Ishimatsu wrote:
-> Hi Minchan,
-> 
-> Sorry for late reply.
-> 
-> 2012/09/20 15:43, Minchan Kim wrote:
-> > During memory-hotplug, I found NR_ISOLATED_[ANON|FILE]
-> > are increasing so that kernel are hang out.
-> 
-> Why does your system hang out by increasing NR_ISOLATED_[ANON|FILE]?
-> I cannot understand what has happened by your system.
+Hi all,
 
-If system doesn't have enough free page, it goes reclaim path and never
-reclaim any pages by too_many_isolated and loop forever.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
---
-Kind regards,
-Minchan Kim
+drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
+drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration of fu=
+nction 'isa_virt_to_bus' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings when
+building a 64-bit kernel").  Is there some Kconfig dependency missing (CONF=
+IG_ISA)?
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWsd2AAoJEECxmPOUX5FEf8YP/RMOnhYeXVHPZxPj8JO1Mkkt
+1Z7czcmR0yDt5vnO/XoCNcNWfCLTGuSClxonTmUmx0IofYgMgVe17ww+c4DcdWkU
+txcT3sw0UjI+nthzvkmuhjgNoU3f/wC8Z/MgtS9H10CEqJgNGQ0slQitIJ4DaAAl
+9HGWVP0a/2Mzwh+RLU7yOValMP9DogDRFoXIIyjhxWi5LOfFu9MJ5EQfAhBLXzTo
+hp+vsaLJEp8T9kTQyZrt0KredzAOsaKi3q1vSH7NXSpWlsfMcIWffs3fWz0CEEaH
+6SF7awfG9vzR1+oaR6n0fxgIJGM4Iz8mLfNdFXiDrsdpAnyEfX/hi8yD4wgb/xGs
+SRYEtlJU1gXFF07g5R93S9fTC38E658GhGYkoj09p1/oAH3dCXzwmDWtOVCUQyIu
+YdgmbETCxcjyWgv8Cl0bYEE2BB123HgYJQTHlBotCBriU1InFY5t0PDGjEjjyBkC
+qM7Y4ZiKJ6Ffu7aBLBlK1SA7euP94+B3mC/y6pBRMN5pn2sezw0GaQ3FQynL6zEo
+DESuHQXk20qD2k6eyIOUdLU5HJsDpjFuIi6anZ82jTT+qPiW2cTiC1xN7PqBjCEK
+PKE5H47Q6TNNawmVXuGVSo7meHzTTSKBSKD9QrsMEen4cVrLnawms/D1pbCE3+0V
+IEf5/N8ZhRj/pkD4K3M2
+=SUiP
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Sep_2012_17_36_22_+1000_OR2iKvAWGf=5rQZb--
