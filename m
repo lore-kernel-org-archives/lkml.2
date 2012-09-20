@@ -1,101 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab2ITWQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:16:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59787 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932365Ab2ITWQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:16:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Hqz0Wo0CmseF4oaxTg78A
-Date: Thu, 20 Sep 2012 15:16:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [RFC PATCH 07/13] mmc: omap_hsmmc: dma_request_slave_channel()
- support for DT platforms
-Message-ID: <20120920221630.GL28835@atomide.com>
-References: <1348152226-13588-1-git-send-email-mporter@ti.com>
- <1348152226-13588-8-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348152226-13588-8-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932347Ab2ITWQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:16:40 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57166 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932078Ab2ITWPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 18:15:38 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH 2/4] security: introduce kernel_module_from_file hook
+Date: Thu, 20 Sep 2012 15:14:58 -0700
+Message-Id: <1348179300-11653-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matt Porter <mporter@ti.com> [120920 07:43]:
-> For platforms with DT populated, use dma_request_slave_channel()
-> to acquire the DMA channel. For !DT platforms, we fall back to
-> explicitly passing the omap_dma_filter_fn() to dma_request_channel().
-> Once all platforms boot from DT, the dma_request_channel() path can
-> be dropped.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  drivers/mmc/host/omap_hsmmc.c |   16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index 3a09f93..c82d0ab 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -1923,14 +1923,26 @@ static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
->  	dma_cap_zero(mask);
->  	dma_cap_set(DMA_SLAVE, mask);
->  
-> -	host->rx_chan = dma_request_channel(mask, omap_dma_filter_fn, &rx_req);
-> +	if (pdev->dev.of_node)
-> +		host->rx_chan =
-> +			dma_request_slave_channel(&pdev->dev, "rx");
-> +	else
-> +		host->rx_chan = dma_request_channel(mask,
-> +						    omap_dma_filter_fn,
-> +						    &rx_req);
->  	if (!host->rx_chan) {
->  		dev_err(mmc_dev(host->mmc), "unable to obtain RX DMA engine channel %u\n", rx_req);
->  		ret = -ENXIO;
->  		goto err_irq;
->  	}
->  
-> -	host->tx_chan = dma_request_channel(mask, omap_dma_filter_fn, &tx_req);
-> +	if (pdev->dev.of_node)
-> +		host->tx_chan =
-> +			dma_request_slave_channel(&pdev->dev, "tx");
-> +	else
-> +		host->tx_chan = dma_request_channel(mask,
-> +						    omap_dma_filter_fn,
-> +						    &tx_req);
->  	if (!host->tx_chan) {
->  		dev_err(mmc_dev(host->mmc), "unable to obtain TX DMA engine channel %u\n", tx_req);
->  		ret = -ENXIO;
-> 
+Now that kernel module origins can be reasoned about, provide a hook to
+the LSMs to make policy decisions about the module file. This will let
+Chrome OS enforce that loadable kernel modules can only come from its
+read-only hash-verified root filesystem. Other LSMs can, for example,
+read extended attributes for signatures, etc.
 
-Here to the omap_hsmmc.c driver should not need to care about which
-way to request the dma channels.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Acked-by: Eric Paris <eparis@redhat.com>
+---
+ include/linux/security.h |   13 +++++++++++++
+ kernel/module.c          |    9 +++++++++
+ security/capability.c    |    6 ++++++
+ security/security.c      |    5 +++++
+ 4 files changed, 33 insertions(+), 0 deletions(-)
 
-Regards,
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 3dea6a9..368e539 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -693,6 +693,12 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	userspace to load a kernel module with the given name.
+  *	@kmod_name name of the module requested by the kernel
+  *	Return 0 if successful.
++ * @kernel_module_from_file:
++ *	Load a kernel module from userspace.
++ *	@file contains the file structure pointing to the file containing
++ *	the kernel module to load. If the module is being loaded from a blob,
++ *	this argument will be NULL.
++ *	Return 0 if permission is granted.
+  * @task_fix_setuid:
+  *	Update the module's state after setting one or more of the user
+  *	identity attributes of the current process.  The @flags parameter
+@@ -1507,6 +1513,7 @@ struct security_operations {
+ 	int (*kernel_act_as)(struct cred *new, u32 secid);
+ 	int (*kernel_create_files_as)(struct cred *new, struct inode *inode);
+ 	int (*kernel_module_request)(char *kmod_name);
++	int (*kernel_module_from_file)(struct file *file);
+ 	int (*task_fix_setuid) (struct cred *new, const struct cred *old,
+ 				int flags);
+ 	int (*task_setpgid) (struct task_struct *p, pid_t pgid);
+@@ -1764,6 +1771,7 @@ void security_transfer_creds(struct cred *new, const struct cred *old);
+ int security_kernel_act_as(struct cred *new, u32 secid);
+ int security_kernel_create_files_as(struct cred *new, struct inode *inode);
+ int security_kernel_module_request(char *kmod_name);
++int security_kernel_module_from_file(struct file *file);
+ int security_task_fix_setuid(struct cred *new, const struct cred *old,
+ 			     int flags);
+ int security_task_setpgid(struct task_struct *p, pid_t pgid);
+@@ -2277,6 +2285,11 @@ static inline int security_kernel_module_request(char *kmod_name)
+ 	return 0;
+ }
+ 
++static inline int security_kernel_module_from_file(struct file *file)
++{
++	return 0;
++}
++
+ static inline int security_task_fix_setuid(struct cred *new,
+ 					   const struct cred *old,
+ 					   int flags)
+diff --git a/kernel/module.c b/kernel/module.c
+index afe2f69..511b8e9 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -29,6 +29,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/elf.h>
+ #include <linux/proc_fs.h>
++#include <linux/security.h>
+ #include <linux/seq_file.h>
+ #include <linux/syscalls.h>
+ #include <linux/fcntl.h>
+@@ -2430,6 +2431,10 @@ static int copy_module_from_user(const void __user *umod, unsigned long len,
+ 	if (info->len < sizeof(*(info->hdr)))
+ 		return -ENOEXEC;
+ 
++	err = security_kernel_module_from_file(NULL);
++	if (err)
++		return err;
++
+ 	/* Suck in entire file: we'll want most of it. */
+ 	info->hdr = vmalloc(info->len);
+ 	if (!info->hdr)
+@@ -2464,6 +2469,10 @@ static int copy_module_from_fd(int fd, struct load_info *info)
+ 	if (!file)
+ 		return -ENOEXEC;
+ 
++	err = security_kernel_module_from_file(file);
++	if (err)
++		goto out;
++
+ 	err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
+ 	if (err)
+ 		goto out;
+diff --git a/security/capability.c b/security/capability.c
+index 61095df..8acb304 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -395,6 +395,11 @@ static int cap_kernel_module_request(char *kmod_name)
+ 	return 0;
+ }
+ 
++static int cap_kernel_module_from_file(struct file *file)
++{
++	return 0;
++}
++
+ static int cap_task_setpgid(struct task_struct *p, pid_t pgid)
+ {
+ 	return 0;
+@@ -967,6 +972,7 @@ void __init security_fixup_ops(struct security_operations *ops)
+ 	set_to_cap_if_null(ops, kernel_act_as);
+ 	set_to_cap_if_null(ops, kernel_create_files_as);
+ 	set_to_cap_if_null(ops, kernel_module_request);
++	set_to_cap_if_null(ops, kernel_module_from_file);
+ 	set_to_cap_if_null(ops, task_fix_setuid);
+ 	set_to_cap_if_null(ops, task_setpgid);
+ 	set_to_cap_if_null(ops, task_getpgid);
+diff --git a/security/security.c b/security/security.c
+index 860aeb3..f7f8695 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -799,6 +799,11 @@ int security_kernel_module_request(char *kmod_name)
+ 	return security_ops->kernel_module_request(kmod_name);
+ }
+ 
++int security_kernel_module_from_file(struct file *file)
++{
++	return security_ops->kernel_module_from_file(file);
++}
++
+ int security_task_fix_setuid(struct cred *new, const struct cred *old,
+ 			     int flags)
+ {
+-- 
+1.7.0.4
 
-Tony
