@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab2ITBqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 21:46:43 -0400
-Received: from noserose.net ([66.220.18.76]:44232 "HELO noserose.net"
+	id S1753135Ab2ITBtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 21:49:07 -0400
+Received: from noserose.net ([66.220.18.76]:49966 "HELO noserose.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753010Ab2ITBql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 21:46:41 -0400
-Date: Wed, 19 Sep 2012 18:46:39 -0700
-Message-Id: <b4821fa88e0a0047eaa40011e8440e3d68575f75.1348105262.git.ecashin@coraid.com>
+	id S1752294Ab2ITBtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Sep 2012 21:49:05 -0400
+Date: Wed, 19 Sep 2012 18:49:00 -0700
+Message-Id: <2b61d19f2964c30498848554fff9ec870f448b75.1348105262.git.ecashin@coraid.com>
 In-Reply-To: <cover.1348105262.git.ecashin@coraid.com>
 References: <cover.1348105262.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 1/2] aoe: assert AoE packets marked as requiring no checksum
+Subject: [PATCH 2/2] net: do not disable sg for packets requiring no checksum
 To: davem@davemloft.net
 Cc: ecashin@coraid.com, akpm@linux-foundation.org, bhutchings@solarflare.com,
         jesse@nicira.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -19,28 +19,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order for the network layer to see that AoE requires
-no checksumming in a generic way, the packets must be
-marked as requiring no checksum, so we make this requirement
-explicit with the assertion.
+A change in a series of VLAN-related changes appears to have
+inadvertently disabled the use of the scatter gather feature of
+network cards for transmission of non-IP ethernet protocols like ATA
+over Ethernet (AoE).  Below is a reference to the commit that
+introduces a "harmonize_features" function that turns off scatter
+gather when the NIC does not support hardware checksumming for the
+ethernet protocol of an sk buff.
+
+  commit f01a5236bd4b140198fbcc550f085e8361fd73fa
+  Author: Jesse Gross <jesse@nicira.com>
+  Date:   Sun Jan 9 06:23:31 2011 +0000
+
+      net offloading: Generalize netif_get_vlan_features().
+
+The can_checksum_protocol function is not equipped to consider a
+protocol that does not require checksumming.  Calling it for a
+protocol that requires no checksum is inappropriate.
+
+The patch below has harmonize_features call can_checksum_protocol when
+the protocol needs a checksum, so that the network layer is not forced
+to perform unnecessary skb linearization on the transmission of AoE
+packets.  Unnecessary linearization results in decreased performance
+and increased memory pressure, as reported here:
+
+  http://www.spinics.net/lists/linux-mm/msg15184.html
+
+The problem has probably not been widely experienced yet, because
+only recently has the kernel.org-distributed aoe driver acquired the
+ability to use payloads of over a page in size, with the patchset
+recently included in the mm tree:
+
+  https://lkml.org/lkml/2012/8/28/140
+
+The coraid.com-distributed aoe driver already could use payloads of
+greater than a page in size, but its users generally do not use the
+newest kernels.
 
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- drivers/block/aoe/aoecmd.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/core/dev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index de0435e..887f68f 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -35,6 +35,7 @@ new_skb(ulong len)
- 		skb_reset_mac_header(skb);
- 		skb_reset_network_header(skb);
- 		skb->protocol = __constant_htons(ETH_P_AOE);
-+		skb_checksum_none_assert(skb);
- 	}
- 	return skb;
- }
+diff --git a/net/core/dev.c b/net/core/dev.c
+index d7fe32c..9b934d4 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2134,7 +2134,8 @@ static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
+ static netdev_features_t harmonize_features(struct sk_buff *skb,
+ 	__be16 protocol, netdev_features_t features)
+ {
+-	if (!can_checksum_protocol(features, protocol)) {
++	if (skb->ip_summed != CHECKSUM_NONE &&
++	    !can_checksum_protocol(features, protocol)) {
+ 		features &= ~NETIF_F_ALL_CSUM;
+ 		features &= ~NETIF_F_SG;
+ 	} else if (illegal_highdma(skb->dev, skb)) {
 -- 
 1.7.2.5
 
