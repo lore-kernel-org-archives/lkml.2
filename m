@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab2ITNuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:50:11 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37096 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab2ITNuJ (ORCPT
+	id S1752731Ab2ITNuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:50:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47468 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab2ITNuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:50:09 -0400
-Date: Thu, 20 Sep 2012 09:49:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Oliver Chick <oliver.chick@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-Message-ID: <20120920134951.GC1998@localhost.localdomain>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
- <505AF126.2050806@citrix.com>
- <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
- <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
+	Thu, 20 Sep 2012 09:50:51 -0400
+Message-ID: <505B1F37.9040305@arm.com>
+Date: Thu, 20 Sep 2012 14:50:47 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual machines
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>  <1348135563.11116.94.camel@hornet>  <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>  <1348142133.11116.109.camel@hornet>  <alpine.DEB.2.02.1209201308490.29232@kaball.uk.xensource.com>  <505B0C00.5010003@arm.com> <1348147826.26501.47.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1348147826.26501.47.camel@zakaz.uk.xensource.com>
+X-Enigmail-Version: 1.5a1pre
+X-OriginalArrivalTime: 20 Sep 2012 13:50:48.0413 (UTC) FILETIME=[F097F0D0:01CD9736]
+X-MC-Unique: 112092014504917701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
-> >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
-> > The memory overhead, and fallback mode points are related:
-> > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-> > per device. I made a mistake (pointed out by Jan) as the maximum number
-> > of requests that can fit into a single-page ring is 64, not 256.
-> > -Clearly, this still scales linearly. So the problem of memory footprint
-> > will occur with more VMs, or block devices.
-> > -Whilst 2.75MB per device is probably acceptable (?), if we start using
-> > multipage rings, then we might not want to have
-> > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-> > memory overhead to increase. This is why I have implemented the
-> > 'fallback' mode. With a multipage ring, it seems reasonable to want the
-> > first $x$ grefs seen by blkback to be treated as persistent, and any
-> > later ones to be non-persistent. Does that seem sensible?
+On 20/09/12 14:30, Ian Campbell wrote:
+> On Thu, 2012-09-20 at 13:28 +0100, Marc Zyngier wrote:
+>> I think the important thing here is that the memory map is RS1. As this
+>> is a (very limited) subset of a vexpress A15, it seems to make some sense.
 > 
-> From a resource usage pov, perhaps. But this will get the guest
-> entirely unpredictable performance. Plus I don't think 11Mb of
+> Looking at arch/arm/boot/dts/vexpress-v2m-rs1.dtsi I don't think we
+> provide anything which is on rs1 though.
 
-Wouldn't it fall back to the older performance?
-> _virtual_ space is unacceptable overhead in a 64-bit kernel. If
-> you really want/need this in a 32-bit one, then perhaps some
-> other alternatives would be needed (and persistent grants may
-> not be the right approach there in the first place).
-> 
-> Jan
-> 
+The location of both GIC and memory are RS1 "compliant" (as in "they are
+at the expected location").
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
