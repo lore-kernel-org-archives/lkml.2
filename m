@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2ITStk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:49:40 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:43000 "EHLO
+	id S1754755Ab2ITStm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:49:42 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42970 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856Ab2ITStb (ORCPT
+	with ESMTP id S1753932Ab2ITSta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:49:31 -0400
+	Thu, 20 Sep 2012 14:49:30 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,54 +16,63 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 17/23] rcu: Add random PROVE_RCU_DELAY to grace-period initialization
-Date: Thu, 20 Sep 2012 11:48:13 -0700
-Message-Id: <1348166900-18716-17-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 15/23] rcu: Make rcutree module parameters visible in sysfs
+Date: Thu, 20 Sep 2012 11:48:11 -0700
+Message-Id: <1348166900-18716-15-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120920184751.GA18657@linux.vnet.ibm.com>
  <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12092018-5518-0000-0000-000007CEF52F
+x-cbid: 12092018-5518-0000-0000-000007CEF515
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Preemption greatly raised the probability of certain types of race
-conditions, so this commit adds an anti-heisenbug to greatly increase
-the collision cross section, also known as the probability of occurrence.
+The module parameters blimit, qhimark, and qlomark (and more
+recently, rcu_fanout_leaf) have permission masks of zero, so
+that their values are not visible from sysfs.  This is unnecessary
+and inconvenient to administrators who might like an easy way to
+see what these values are on a running system.  This commit therefore
+sets their permission masks to 0444, allowing them to be read but
+not written.
 
+Reported-by: Rusty Russell <rusty@ozlabs.org>
+Reported-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ kernel/rcutree.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 25a671c..5cb003d 100644
+index 13ce38c..c900c3c 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -52,6 +52,7 @@
- #include <linux/prefetch.h>
- #include <linux/delay.h>
- #include <linux/stop_machine.h>
-+#include <linux/random.h>
+@@ -88,7 +88,7 @@ LIST_HEAD(rcu_struct_flavors);
  
- #include "rcutree.h"
- #include <trace/events/rcu.h>
-@@ -1085,6 +1086,10 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 					    rnp->level, rnp->grplo,
- 					    rnp->grphi, rnp->qsmask);
- 		raw_spin_unlock_irq(&rnp->lock);
-+#ifdef CONFIG_PROVE_RCU_DELAY
-+		if ((random32() % (rcu_num_nodes * 8)) == 0)
-+			schedule_timeout_uninterruptible(2);
-+#endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
- 		cond_resched();
- 	}
+ /* Increase (but not decrease) the CONFIG_RCU_FANOUT_LEAF at boot time. */
+ static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
+-module_param(rcu_fanout_leaf, int, 0);
++module_param(rcu_fanout_leaf, int, 0444);
+ int rcu_num_lvls __read_mostly = RCU_NUM_LVLS;
+ static int num_rcu_lvl[] = {  /* Number of rcu_nodes at specified level. */
+ 	NUM_RCU_LVL_0,
+@@ -216,9 +216,9 @@ static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+ static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+ static int qlowmark = 100;	/* Once only this many pending, use blimit. */
  
+-module_param(blimit, int, 0);
+-module_param(qhimark, int, 0);
+-module_param(qlowmark, int, 0);
++module_param(blimit, int, 0444);
++module_param(qhimark, int, 0444);
++module_param(qlowmark, int, 0444);
+ 
+ int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+ int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
 -- 
 1.7.8
 
