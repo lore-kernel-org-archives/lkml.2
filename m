@@ -1,90 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab2ITSso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:48:44 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41907 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab2ITSsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:48:42 -0400
-Date: Thu, 20 Sep 2012 11:47:51 -0700
+	id S1754135Ab2ITSs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:48:57 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42743 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab2ITSsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:48:55 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: [PATCH tip/core/rcu 0/23] v2 Improvements to RT response on big
- systems and expedited functions
-Message-ID: <20120920184751.GA18657@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092018-5930-0000-0000-00000C4D6947
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/23] rcu: Allow RCU grace-period initialization to be preempted
+Date: Thu, 20 Sep 2012 11:47:59 -0700
+Message-Id: <1348166900-18716-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120920184751.GA18657@linux.vnet.ibm.com>
+ <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092018-5518-0000-0000-000007CEF43A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This patch series contains additional improvements to latency for
-large systems (beyond those in 3.6), along with improvements to
-synchronize_rcu_expedited().  It also fixes one race introduced by the
-latency improvements and another that was there to start with (but made
-more probable by the latency improvements).  These are in a single
-series due to conflicts that would otherwise occur.  The individual
-patches are as follows:
+RCU grace-period initialization is currently carried out with interrupts
+disabled, which can result in 200-microsecond latency spikes on systems
+on which RCU has been configured for 4096 CPUs.  This patch therefore
+makes the RCU grace-period initialization be preemptible, which should
+eliminate those latency spikes.  Similar spikes from grace-period cleanup
+and the forcing of quiescent states will be dealt with similarly by later
+patches.
 
-1-6.	Move RCU grace-period initialization and cleanup into a kthread:
-	1.	Move RCU grace-period initialization into kthread.
-	2.	Prevent initialization-time quiescent-state race.
-	3.	Allow RCU grace-period initialization to be preempted.
-	4.	Move RCU grace-period cleanup into kthread.
-	5.	Allow RCU grace-period cleanup to be preempted.
-	6.	Break up rcu_gp_kthread() into subfunctions.
-7.	Prevent offline CPUs from executing RCU core code.
-8.	Provide an OOM handler to allow lazy callbacks to be motivated
-	under memory pressure.
-9.	Segregate rcu_state fields to improve cache locality
-	(Courtesy of Dimitri Sivanich).
-10-13.	Move RCU grace-period forcing into a kthread.
-	10.	Move quiescent-state forcing into kthread.
-	11.	Allow RCU quiescent-state forcing to be preempted.
-	12.	Adjust debugfs tracing for kthread-based quiescent-state
-		forcing.
-	13.	Prevent force_quiescent_state() memory contention.
-14.	Control grace-period duration from sysfs.
-15.	Make rcutree module parameters visible in sysfs.
-16.	Fix day-zero grace-period initialization/cleanup race.
-17.	Add random PROVE_RCU_DELAY to provoke initalization races.
-18.	Adjust for unconditional ->completed assignment.	
-19.	Eliminate signed overflow in synchronize_rcu_expedited().
-20.	Reduce synchronize_rcu_expedited() latency.
-21.	Simplify quiescent-state detection.
-22.	Correctly handle reconfiguring to larger leaf fanout in the
-	case of CONFIG_RCU_FANOUT_EXACT=y.  (New in this posting.)
-23.	Shrink RCU when there is a smaller number of CPUs than the
-	kernel was built for (NR_CPUS < nr_cpu_ids) even when the
-	leaf fanout did not change.  (New in this posting.)
+Reported-by: Mike Galbraith <mgalbraith@suse.de>
+Reported-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutree.c |   26 +++++++++++---------------
+ 1 files changed, 11 insertions(+), 15 deletions(-)
 
-Changes from v1 (https://lkml.org/lkml/2012/8/30/171):
-
-o	Incorporated feedback from that posting (thank you Peter, Josh,
-	and Lai!).  This involves some serious rebasing, so the patch
-	numbers do not match v1.
-
-o	Added patches #22 and #23 above.
-
-							Thanx, Paul
-
- b/Documentation/RCU/trace.txt         |   43 -
- b/Documentation/kernel-parameters.txt |   11 
- b/kernel/rcutree.c                    |  970 ++++++++++++++++++----------------
- b/kernel/rcutree.h                    |   28 
- b/kernel/rcutree_plugin.h             |  131 +++-
- b/kernel/rcutree_trace.c              |   15 
- 6 files changed, 680 insertions(+), 518 deletions(-)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 0df9aaa..59c528f 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1028,7 +1028,7 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ /*
+  * Body of kthread that handles grace periods.
+  */
+-static int rcu_gp_kthread(void *arg)
++static int __noreturn rcu_gp_kthread(void *arg)
+ {
+ 	struct rcu_data *rdp;
+ 	struct rcu_node *rnp;
+@@ -1054,6 +1054,7 @@ static int rcu_gp_kthread(void *arg)
+ 			 * don't start another one.
+ 			 */
+ 			raw_spin_unlock_irq(&rnp->lock);
++			cond_resched();
+ 			continue;
+ 		}
+ 
+@@ -1064,6 +1065,7 @@ static int rcu_gp_kthread(void *arg)
+ 			 */
+ 			rsp->fqs_need_gp = 1;
+ 			raw_spin_unlock_irq(&rnp->lock);
++			cond_resched();
+ 			continue;
+ 		}
+ 
+@@ -1074,10 +1076,10 @@ static int rcu_gp_kthread(void *arg)
+ 		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
+ 		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+ 		record_gp_stall_check_time(rsp);
+-		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
++		raw_spin_unlock_irq(&rnp->lock);
+ 
+ 		/* Exclude any concurrent CPU-hotplug operations. */
+-		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
++		get_online_cpus();
+ 
+ 		/*
+ 		 * Set the quiescent-state-needed bits in all the rcu_node
+@@ -1089,15 +1091,9 @@ static int rcu_gp_kthread(void *arg)
+ 		 * indicate that no grace period is in progress, at least
+ 		 * until the corresponding leaf node has been initialized.
+ 		 * In addition, we have excluded CPU-hotplug operations.
+-		 *
+-		 * Note that the grace period cannot complete until
+-		 * we finish the initialization process, as there will
+-		 * be at least one qsmask bit set in the root node until
+-		 * that time, namely the one corresponding to this CPU,
+-		 * due to the fact that we have irqs disabled.
+ 		 */
+ 		rcu_for_each_node_breadth_first(rsp, rnp) {
+-			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++			raw_spin_lock_irq(&rnp->lock);
+ 			rcu_preempt_check_blocked_tasks(rnp);
+ 			rnp->qsmask = rnp->qsmaskinit;
+ 			rnp->gpnum = rsp->gpnum;
+@@ -1108,17 +1104,17 @@ static int rcu_gp_kthread(void *arg)
+ 			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
+ 						    rnp->level, rnp->grplo,
+ 						    rnp->grphi, rnp->qsmask);
+-			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			raw_spin_unlock_irq(&rnp->lock);
++			cond_resched();
+ 		}
+ 
+ 		rnp = rcu_get_root(rsp);
+-		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++		raw_spin_lock_irq(&rnp->lock);
+ 		/* force_quiescent_state() now OK. */
+ 		rsp->fqs_state = RCU_SIGNAL_INIT;
+-		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+-		raw_spin_unlock_irq(&rsp->onofflock);
++		raw_spin_unlock_irq(&rnp->lock);
++		put_online_cpus();
+ 	}
+-	return 0;
+ }
+ 
+ /*
+-- 
+1.7.8
 
