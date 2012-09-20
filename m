@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab2ITHKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:10:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64430 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab2ITHKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:10:13 -0400
-Date: Thu, 20 Sep 2012 09:10:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] audit: Use a tracepoint for getname
-Message-ID: <20120920071008.GB2042@gmail.com>
-References: <20120919225659.GA11325@ghostprotocols.net>
+	id S1753248Ab2ITHLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:11:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34187 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819Ab2ITHLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 03:11:16 -0400
+Date: Thu, 20 Sep 2012 01:11:34 -0600
+From: John Jolly <jjolly@suse.com>
+To: linux-kernel@vger.kernel.org
+Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH] rds: Error on offset mismatch if not loopback
+Message-ID: <20120920071134.GF14393@linux-tkdk.sfcn.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120919225659.GA11325@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Attempting an rds connection from the IP address of an IPoIB interface
+to itself causes a kernel panic due to a BUG_ON() being triggered. Making
+the test less strict allows rds-ping to work without crashing the machine.
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+A local unprivileged user could use this flaw to crash the sytem.
+---
+ net/rds/ib_send.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Al, Eric,
-> 
-> 	Was this considered before? Acceptable?
-> 
-> - Arnaldo
-> 
-> ---
-> 
-> Instead of an explicit hook only for audit, use a tracepoint, so that
-> other users that need to know about filenames can hook there just like
-> audit.
-> 
-> Based on an earlier patch by Thomas Gleixner that added the tracepoint
-> but left the audit_getname call.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  fs/namei.c                 |    5 ++++-
->  include/linux/audit.h      |    6 +-----
->  include/trace/events/vfs.h |   32 ++++++++++++++++++++++++++++++++
->  init/Kconfig               |    2 +-
->  kernel/audit.c             |   11 +++++++++++
->  5 files changed, 49 insertions(+), 7 deletions(-)
->  create mode 100644 include/trace/events/vfs.h
+diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
+index e590949..7920c85 100644
+--- a/net/rds/ib_send.c
++++ b/net/rds/ib_send.c
+@@ -544,7 +544,7 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
+ 	int flow_controlled = 0;
+ 	int nr_sig = 0;
+ 
+-	BUG_ON(off % RDS_FRAG_SIZE);
++	BUG_ON(!conn->c_loopback && off % RDS_FRAG_SIZE);
+ 	BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
+ 
+ 	/* Do not send cong updates to IB loopback */
+-- 
+1.7.7
 
-Nice generalization and we gain a useful tracepoint as well.
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
