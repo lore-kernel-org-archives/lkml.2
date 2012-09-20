@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2ITSjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:39:12 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:43553 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753996Ab2ITSjJ (ORCPT
+	id S1754090Ab2ITSkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:40:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58758 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab2ITSkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:39:09 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH 5/5] snd-ice1712: Fix resume on ice1724
-Date: Thu, 20 Sep 2012 20:37:55 +0200
-Message-Id: <1348166275-13203-6-git-send-email-linux@rainbow-software.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1348166275-13203-1-git-send-email-linux@rainbow-software.org>
-References: <1348166275-13203-1-git-send-email-linux@rainbow-software.org>
+	Thu, 20 Sep 2012 14:40:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120920182651.GH28934@google.com>
+References: <20120913205827.GO7677@google.com> <505A725B.2080901@amacapital.net>
+ <20120920182651.GH28934@google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 20 Sep 2012 11:39:46 -0700
+Message-ID: <CALCETrX78_twPUkNTZbtXQv9yBnW+-c9RhetassdrQKicOiDFg@mail.gmail.com>
+Subject: Re: [RFC] cgroup TODOs
+To: Tejun Heo <tj@kernel.org>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.org>, Michal Hocko <mhocko@suse.cz>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        serge.hallyn@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_pro_rate() is called from hw_params() but not from prepare(), breaking running PCM on suspend/resume.
-Call it from prepare() if PCM was suspended to fix the problem.
+On Thu, Sep 20, 2012 at 11:26 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Wed, Sep 19, 2012 at 06:33:15PM -0700, Andy Lutomirski wrote:
+>> [grr.  why does gmane scramble addresses?]
+>
+> You can append /raw to the message url and see the raw mssage.
+>
+>   http://article.gmane.org/gmane.linux.kernel.containers/23802/raw
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- sound/pci/ice1712/ice1724.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+Thanks!
 
-diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
-index 0eb7ec6..ade3354 100644
---- a/sound/pci/ice1712/ice1724.c
-+++ b/sound/pci/ice1712/ice1724.c
-@@ -783,6 +783,13 @@ static int snd_vt1724_playback_pro_prepare(struct snd_pcm_substream *substream)
- 	struct snd_ice1712 *ice = snd_pcm_substream_chip(substream);
- 	unsigned char val;
- 	unsigned int size;
-+	int err;
-+
-+	if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
-+		err = snd_vt1724_set_pro_rate(ice, substream->runtime->rate, 0);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	spin_lock_irq(&ice->reg_lock);
- 	val = (8 - substream->runtime->channels) >> 1;
-@@ -853,6 +860,13 @@ static int snd_vt1724_pcm_prepare(struct snd_pcm_substream *substream)
- {
- 	struct snd_ice1712 *ice = snd_pcm_substream_chip(substream);
- 	const struct vt1724_pcm_reg *reg = substream->runtime->private_data;
-+	int err;
-+
-+	if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
-+		err = snd_vt1724_set_pro_rate(ice, substream->runtime->rate, 0);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	spin_lock_irq(&ice->reg_lock);
- 	outl(substream->runtime->dma_addr, ice->profi_port + reg->addr);
--- 
-Ondrej Zary
+>
+>> >   I think this level of flexibility should be enough for most use
+>> >   cases.  If someone disagrees, please voice your objections now.
+>>
+>> OK, I'll bite.
+>>
+>> I have a server that has a whole bunch of cores.  A small fraction of
+>> those cores are general purpose and run whatever they like.  The rest
+>> are tightly controlled.
+>>
+>> For simplicity, we have two cpusets that we use.  The root allows all
+>> cpus.  The other one only allows the general purpose cpus.  We shove
+>> everything into the general-purpose-only cpuset, and then we move
+>> special stuff back to root.  (We also shove some kernel threads into a
+>> non-root cpuset using the 'cset' tool.)
+>
+> Using root for special stuff probably isn't a good idea and moving
+> bound kthreads into !root cgroups is already disallowed.
 
+Agreed.  I do it this way because it's easy and it works.  I can
+change it in the future if needed.
+
+>
+>> Enter systemd, which wants a hierarchy corresponding to services.  If we
+>> were to use it, we might end up violating its hierarchy.
+>>
+>> Alternatively, if we started using memcg, then we might have some tasks
+>> to have more restrictive memory usage but less restrictive cpu usage.
+>>
+>> As long as we can still pull this off, I'm happy.
+>
+> IIUC, you basically want just two groups w/ cpuset and use it for
+> loose cpu ioslation for high priority jobs.  Structure-wise, I don't
+> think it's gonna be a problem although using root for special stuff
+> would need to change.
+
+Right.
+
+But what happens when multiple hierarchies go away and I lose control
+of the structure?  If systemd or whatever sticks my whole session or
+my service (or however I organize it) into cgroup /whatever, then
+either I can put my use-all-cpus tasks into /whatever/everything or I
+can step outside the hierarchy and put them into /everything.  The
+former doesn't work, because
+
+<quote>
+The following rules apply to each cpuset:
+
+ - Its CPUs and Memory Nodes must be a subset of its parents.
+</quote>
+
+The latter might confuse systemd.
+
+My real objection might be to that requirement a cpuset can't be less
+restrictive than its parents.  Currently I can arrange for a task to
+simultaneously have a less restrictive cpuset and a more restrictive
+memory limit (or to stick it into a container or whatever).  If the
+hierarchies have to correspond, this stops working.
+
+--Andy
