@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab2ITWBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:01:54 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:31810 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752293Ab2ITWBx (ORCPT
+	id S1756218Ab2ITWCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:02:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45525 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab2ITWCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:01:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18WiSWpBsnh0uIEb5MXw5j8
-Date: Thu, 20 Sep 2012 15:01:44 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- sound-asoc tree
-Message-ID: <20120920220143.GI28835@atomide.com>
-References: <20120920160637.7f9065225982468c25fa1952@canb.auug.org.au>
+	Thu, 20 Sep 2012 18:02:04 -0400
+Date: Thu, 20 Sep 2012 14:59:27 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>, David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sbs-battery: probe should try talking to the device
+Message-ID: <20120920215926.GD18223@lizard>
+References: <1346956349-21980-1-git-send-email-olof@lixom.net>
+ <5048ECF2.8050307@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120920160637.7f9065225982468c25fa1952@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5048ECF2.8050307@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [120919 23:07]:
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got conflicts in
-> sound/soc/omap/igep0020.c, sound/soc/omap/omap3beagle.c,
-> sound/soc/omap/omap3evm.c and sound/soc/omap/overo.c between commit
-> 152c6e56f6a8 ("ASoC: Remove obsolete OMAP3 machine drivers") from the
-> sound-asoc tree and commit 2203747c9771 ("ARM: omap: move platform_data
-> definitions") from the arm-soc tree.
-> 
-> The former removed the files, so I did that and can carry the fix as
-> necessary (no action is required).
+On Thu, Sep 06, 2012 at 02:35:30PM -0400, Rhyland Klein wrote:
+> On 09/06/2012 02:32 PM, Olof Johansson wrote:
+> >Turns out this driver doesn't actually try talking to the device at
+> >probe time, so if it's incorrectly configured in the device tree or
+> >platform data (or if the battery has been removed from the system), then
+> >probe will succeed and every access will sit there and time out. The
+> >end result is a possibly laggy system that thinks it has a battery but
+> >can never read status, which isn't very useful.
+> >
+> >Instead, just read any register (I chose status) at probe, and if that
+> >fails, don't register the device.
+> >
+> >Signed-off-by: Olof Johansson <olof@lixom.net>
+[...]
+> Acked-by: Rhyland Klein <rklein@nvidia.com>
 
-OK thanks again.
-
-Tony
+Applied, thank you folks!
