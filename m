@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2ITLsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 07:48:23 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41670 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2ITLsW convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Thu, 20 Sep 2012 07:48:22 -0400
-Message-Id: <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 20 Sep 2012 12:48:41 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "David Vrabel" <david.vrabel@citrix.com>,
-        "Oliver Chick" <oliver.chick@citrix.com>
-Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+	id S1754317Ab2ITLzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 07:55:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57224 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2ITLzg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 07:55:36 -0400
+Message-ID: <1348142133.11116.109.camel@hornet>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+From: Pawel Moll <pawel.moll@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk
- drivers
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
- <505AF126.2050806@citrix.com>
- <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
-In-Reply-To: <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Sep 2012 12:55:33 +0100
+In-Reply-To: <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <1348135563.11116.94.camel@hornet>
+	 <alpine.DEB.2.02.1209201235450.29232@kaball.uk.xensource.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-OriginalArrivalTime: 20 Sep 2012 11:55:34.0167 (UTC) FILETIME=[D761BA70:01CD9726]
+X-MC-Unique: 112092012553402201
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
-> The memory overhead, and fallback mode points are related:
-> -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-> per device. I made a mistake (pointed out by Jan) as the maximum number
-> of requests that can fit into a single-page ring is 64, not 256.
-> -Clearly, this still scales linearly. So the problem of memory footprint
-> will occur with more VMs, or block devices.
-> -Whilst 2.75MB per device is probably acceptable (?), if we start using
-> multipage rings, then we might not want to have
-> BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-> memory overhead to increase. This is why I have implemented the
-> 'fallback' mode. With a multipage ring, it seems reasonable to want the
-> first $x$ grefs seen by blkback to be treated as persistent, and any
-> later ones to be non-persistent. Does that seem sensible?
+On Thu, 2012-09-20 at 12:39 +0100, Stefano Stabellini wrote:
+> There are no peripherals apart from the ones that are already described
+> here (timer, gic). All the peripherals that the guest sees are virtual
+> devices that show up on xenbus (a virtual bus). In order to initialize
+> xenbus, the guest only needs the hypervisor node.  So I'll remove the
+> ranges and interrupt-map.
 
->From a resource usage pov, perhaps. But this will get the guest
-entirely unpredictable performance. Plus I don't think 11Mb of
-_virtual_ space is unacceptable overhead in a 64-bit kernel. If
-you really want/need this in a 32-bit one, then perhaps some
-other alternatives would be needed (and persistent grants may
-not be the right approach there in the first place).
+So all the peripherals are actually discoverable - awesome!
 
-Jan
+But the fact is that the only "vexpressness" of this tree is
+memory@80000000 and gic@2c001000. The rest (not much of it ;-) is a
+"generic A15 platform". 
+
+I understand that you had to use some "compatible" value to get
+initialization code and I'm flattered ;-) by your choice of
+"arm,vexpress", but maybe - as suggested by others - you would be better
+off with generating this stuff in runtime, by whatever tool is used to
+instantiate the guest?
+
+Paweł
+
+
 
