@@ -1,171 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2ITOGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:06:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37111 "EHLO mx2.suse.de"
+	id S1755329Ab2ITOKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:10:18 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55296 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab2ITOEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:04:41 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        QEMU-devel <qemu-devel@nongnu.org>, KVM <kvm@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/6] mm: compaction: Acquire the zone->lru_lock as late as possible
-Date: Thu, 20 Sep 2012 15:04:31 +0100
-Message-Id: <1348149875-29678-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1348149875-29678-1-git-send-email-mgorman@suse.de>
-References: <1348149875-29678-1-git-send-email-mgorman@suse.de>
+	id S1753851Ab2ITOKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:10:15 -0400
+Date: Thu, 20 Sep 2012 19:35:29 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] uprobes: Fix UPROBE_SKIP_SSTEP checks in
+ handle_swbp()
+Message-ID: <20120920140529.GC27880@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120914171513.GA29599@redhat.com>
+ <20120914171557.GA29642@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120914171557.GA29642@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12092014-7182-0000-0000-000002AA4557
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compactions migrate scanner acquires the zone->lru_lock when scanning a range
-of pages looking for LRU pages to acquire. It does this even if there are
-no LRU pages in the range. If multiple processes are compacting then this
-can cause severe locking contention. To make matters worse commit b2eef8c0
-(mm: compaction: minimise the time IRQs are disabled while isolating pages
-for migration) releases the lru_lock every SWAP_CLUSTER_MAX pages that are
-scanned.
+* Oleg Nesterov <oleg@redhat.com> [2012-09-14 19:15:57]:
 
-This patch makes two changes to how the migrate scanner acquires the LRU
-lock. First, it only releases the LRU lock every SWAP_CLUSTER_MAX pages if
-the lock is contended. This reduces the number of times it unnecessarily
-disables and re-enables IRQs. The second is that it defers acquiring the
-LRU lock for as long as possible. If there are no LRU pages or the only
-LRU pages are transhuge then the LRU lock will not be acquired at all
-which reduces contention on zone->lru_lock.
+> If handle_swbp()->add_utask() fails but UPROBE_SKIP_SSTEP is set,
+> cleanup_ret: path do not restart the insn, this is wrong. Remove
+> this check and add the additional label for can_skip_sstep() = T
+> case.
+> 
+> Note also that UPROBE_SKIP_SSTEP can be false positive, we simply
+> can not trust it unless arch_uprobe_skip_sstep() was already called.
+> 
+> Also, move another UPROBE_SKIP_SSTEP check before can_skip_sstep()
+> into this helper, this looks more clean and understandable.
+> 
+> Note: probably we should rename "skip" to "emulate" and I think
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   63 +++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 43 insertions(+), 20 deletions(-)
+yes we can rename can_skip_step to can_emulate_insn and
+arch_uprobe_skip_step() to arch_uprobe_emulate_insn
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index a8de20d..6450c3e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -50,6 +50,11 @@ static inline bool migrate_async_suitable(int migratetype)
- 	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
- }
- 
-+static inline bool should_release_lock(spinlock_t *lock)
-+{
-+	return need_resched() || spin_is_contended(lock);
-+}
-+
- /*
-  * Compaction requires the taking of some coarse locks that are potentially
-  * very heavily contended. Check if the process needs to be scheduled or
-@@ -62,7 +67,7 @@ static inline bool migrate_async_suitable(int migratetype)
- static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
- 				      bool locked, struct compact_control *cc)
- {
--	if (need_resched() || spin_is_contended(lock)) {
-+	if (should_release_lock(lock)) {
- 		if (locked) {
- 			spin_unlock_irqrestore(lock, *flags);
- 			locked = false;
-@@ -275,7 +280,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 	isolate_mode_t mode = 0;
- 	struct lruvec *lruvec;
- 	unsigned long flags;
--	bool locked;
-+	bool locked = false;
- 
- 	/*
- 	 * Ensure that there are not too many pages isolated from the LRU
-@@ -295,23 +300,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 
- 	/* Time to isolate some pages for migration */
- 	cond_resched();
--	spin_lock_irqsave(&zone->lru_lock, flags);
--	locked = true;
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
- 
- 		/* give a chance to irqs before checking need_resched() */
--		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
--			spin_unlock_irqrestore(&zone->lru_lock, flags);
--			locked = false;
-+		if (locked && !((low_pfn+1) % SWAP_CLUSTER_MAX)) {
-+			if (should_release_lock(&zone->lru_lock)) {
-+				spin_unlock_irqrestore(&zone->lru_lock, flags);
-+				locked = false;
-+			}
- 		}
- 
--		/* Check if it is ok to still hold the lock */
--		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
--								locked, cc);
--		if (!locked)
--			break;
--
- 		/*
- 		 * migrate_pfn does not necessarily start aligned to a
- 		 * pageblock. Ensure that pfn_valid is called when moving
-@@ -351,21 +350,38 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		pageblock_nr = low_pfn >> pageblock_order;
- 		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
- 		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
--			low_pfn += pageblock_nr_pages;
--			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
--			last_pageblock_nr = pageblock_nr;
--			continue;
-+			goto next_pageblock;
- 		}
- 
-+		/* Check may be lockless but that's ok as we recheck later */
- 		if (!PageLRU(page))
- 			continue;
- 
- 		/*
--		 * PageLRU is set, and lru_lock excludes isolation,
--		 * splitting and collapsing (collapsing has already
--		 * happened if PageLRU is set).
-+		 * PageLRU is set. lru_lock normally excludes isolation
-+		 * splitting and collapsing (collapsing has already happened
-+		 * if PageLRU is set) but the lock is not necessarily taken
-+		 * here and it is wasteful to take it just to check transhuge.
-+		 * Check transhuge without lock and skip if it's either a
-+		 * transhuge or hugetlbfs page.
- 		 */
- 		if (PageTransHuge(page)) {
-+			if (!locked)
-+				goto next_pageblock;
-+			low_pfn += (1 << compound_order(page)) - 1;
-+			continue;
-+		}
-+
-+		/* Check if it is ok to still hold the lock */
-+		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-+								locked, cc);
-+		if (!locked)
-+			break;
-+
-+		/* Recheck PageLRU and PageTransHuge under lock */
-+		if (!PageLRU(page))
-+			continue;
-+		if (PageTransHuge(page)) {
- 			low_pfn += (1 << compound_order(page)) - 1;
- 			continue;
- 		}
-@@ -392,6 +408,13 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			++low_pfn;
- 			break;
- 		}
-+
-+		continue;
-+
-+next_pageblock:
-+		low_pfn += pageblock_nr_pages;
-+		low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
-+		last_pageblock_nr = pageblock_nr;
- 	}
- 
- 	acct_isolated(zone, locked, cc);
--- 
-1.7.9.2
+Similarly UPROBE_SKIP_SSTEP can be renamed as UPROBE_EMULATE_INSN
+
+> that "clear UPROBE_SKIP_SSTEP" should be moved to arch_can_skip.
+> 
+
+Currently struct uprobe is not exposed to arch specific code as
+suggested by Ingo. Adding a flag in arch_uprobe just for this and
+expecting all archs to define one is probably an overhead.
+Hence I am not sure moving the clear flag to arch is a good idea.
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/events/uprobes.c |   31 +++++++++++++++----------------
+>  1 files changed, 15 insertions(+), 16 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 9893cba..403d2e0 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1389,10 +1389,11 @@ bool uprobe_deny_signal(void)
+>   */
+>  static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+>  {
+> -	if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+> -		return true;
+> -
+> -	uprobe->flags &= ~UPROBE_SKIP_SSTEP;
+> +	if (uprobe->flags & UPROBE_SKIP_SSTEP) {
+> +		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+> +			return true;
+> +		uprobe->flags &= ~UPROBE_SKIP_SSTEP;
+> +	}
+>  	return false;
+>  }
+> 
+> @@ -1494,12 +1495,12 @@ static void handle_swbp(struct pt_regs *regs)
+>  		utask = add_utask();
+>  		/* Cannot allocate; re-execute the instruction. */
+>  		if (!utask)
+> -			goto cleanup_ret;
+> +			goto restart;
+>  	}
+> 
+>  	handler_chain(uprobe, regs);
+> -	if (uprobe->flags & UPROBE_SKIP_SSTEP && can_skip_sstep(uprobe, regs))
+> -		goto cleanup_ret;
+> +	if (can_skip_sstep(uprobe, regs))
+> +		goto out;
+> 
+>  	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+>  		arch_uprobe_enable_step(&uprobe->arch);
+> @@ -1508,15 +1509,13 @@ static void handle_swbp(struct pt_regs *regs)
+>  		return;
+>  	}
+> 
+> -cleanup_ret:
+> -	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
+> -
+> -		/*
+> -		 * cannot singlestep; cannot skip instruction;
+> -		 * re-execute the instruction.
+> -		 */
+> -		instruction_pointer_set(regs, bp_vaddr);
+> -
+> +restart:
+> +	/*
+> +	 * cannot singlestep; cannot skip instruction;
+> +	 * re-execute the instruction.
+> +	 */
+> +	instruction_pointer_set(regs, bp_vaddr);
+> +out:
+>  	put_uprobe(uprobe);
+>  }
+> 
+> -- 
+> 1.5.5.1
+> 
 
