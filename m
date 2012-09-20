@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2ITLnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 07:43:20 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:51837 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab2ITLnR (ORCPT
+	id S1754265Ab2ITLnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 07:43:10 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51920 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2ITLnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 07:43:17 -0400
+	Thu, 20 Sep 2012 07:43:04 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         Linux Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>
-Date: Thu, 20 Sep 2012 04:41:51 -0700
-Message-Id: <1348141326-23355-10-git-send-email-ebiederm@xmission.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Thu, 20 Sep 2012 04:41:49 -0700
+Message-Id: <1348141326-23355-8-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 References: <877grox6ql.fsf@xmission.com>
  <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/VZLp/L+APahzAOt1aUhrwG7Pq8cYJ1sQ=
+X-XM-AID: U2FsdGVkX18LkpZnNtQVUThOLRLN8JVnDeLL6vQQdaQ=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0097]
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0133]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
 	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 10/25] userns: Convert ecryptfs to use kuid/kgid where appropriate
+Subject: [PATCH 08/25] userns: Convert befs to use kuid/kgid where appropriate
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -47,70 +45,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Cc: Tyler Hicks <tyhicks@canonical.com>
-Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/ecryptfs/main.c      |    5 +++--
- fs/ecryptfs/messaging.c |    5 ++---
- init/Kconfig            |    1 -
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ fs/befs/befs.h     |    4 ++--
+ fs/befs/linuxvfs.c |   27 +++++++++++++++++++--------
+ init/Kconfig       |    1 -
+ 3 files changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 2768138..1d6ce91 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -544,11 +544,12 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
- 		goto out_free;
- 	}
+diff --git a/fs/befs/befs.h b/fs/befs/befs.h
+index d9a40ab..b266428 100644
+--- a/fs/befs/befs.h
++++ b/fs/befs/befs.h
+@@ -20,8 +20,8 @@ typedef u64 befs_blocknr_t;
+  */
  
--	if (check_ruid && path.dentry->d_inode->i_uid != current_uid()) {
-+	if (check_ruid && !uid_eq(path.dentry->d_inode->i_uid, current_uid())) {
- 		rc = -EPERM;
- 		printk(KERN_ERR "Mount of device (uid: %d) not owned by "
- 		       "requested user (uid: %d)\n",
--		       path.dentry->d_inode->i_uid, current_uid());
-+			i_uid_read(path.dentry->d_inode),
-+			from_kuid(&init_user_ns, current_uid()));
- 		goto out_free;
- 	}
+ typedef struct befs_mount_options {
+-	gid_t gid;
+-	uid_t uid;
++	kgid_t gid;
++	kuid_t uid;
+ 	int use_gid;
+ 	int use_uid;
+ 	int debug;
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index cf7f3c6..7f73a69 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -15,6 +15,7 @@
+ #include <linux/vfs.h>
+ #include <linux/parser.h>
+ #include <linux/namei.h>
++#include <linux/sched.h>
  
-diff --git a/fs/ecryptfs/messaging.c b/fs/ecryptfs/messaging.c
-index b29bb8b..5fa2471 100644
---- a/fs/ecryptfs/messaging.c
-+++ b/fs/ecryptfs/messaging.c
-@@ -33,7 +33,7 @@ static struct hlist_head *ecryptfs_daemon_hash;
- struct mutex ecryptfs_daemon_hash_mux;
- static int ecryptfs_hash_bits;
- #define ecryptfs_current_euid_hash(uid) \
--		hash_long((unsigned long)current_euid(), ecryptfs_hash_bits)
-+	hash_long((unsigned long)from_kuid(&init_user_ns, current_euid()), ecryptfs_hash_bits)
+ #include "befs.h"
+ #include "btree.h"
+@@ -352,9 +353,11 @@ static struct inode *befs_iget(struct super_block *sb, unsigned long ino)
+ 	 */   
  
- static u32 ecryptfs_msg_counter;
- static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
-@@ -121,8 +121,7 @@ int ecryptfs_find_daemon_by_euid(struct ecryptfs_daemon **daemon)
- 	hlist_for_each_entry(*daemon, elem,
- 			    &ecryptfs_daemon_hash[ecryptfs_current_euid_hash()],
- 			    euid_chain) {
--		if ((*daemon)->file->f_cred->euid == current_euid() &&
--		    (*daemon)->file->f_cred->user_ns == current_user_ns()) {
-+		if (uid_eq((*daemon)->file->f_cred->euid, current_euid())) {
- 			rc = 0;
- 			goto out;
- 		}
+ 	inode->i_uid = befs_sb->mount_opts.use_uid ?
+-	    befs_sb->mount_opts.uid : (uid_t) fs32_to_cpu(sb, raw_inode->uid);
++		befs_sb->mount_opts.uid :
++		make_kuid(&init_user_ns, fs32_to_cpu(sb, raw_inode->uid));
+ 	inode->i_gid = befs_sb->mount_opts.use_gid ?
+-	    befs_sb->mount_opts.gid : (gid_t) fs32_to_cpu(sb, raw_inode->gid);
++		befs_sb->mount_opts.gid :
++		make_kgid(&init_user_ns, fs32_to_cpu(sb, raw_inode->gid));
+ 
+ 	set_nlink(inode, 1);
+ 
+@@ -674,10 +677,12 @@ parse_options(char *options, befs_mount_options * opts)
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int option;
++	kuid_t uid;
++	kgid_t gid;
+ 
+ 	/* Initialize options */
+-	opts->uid = 0;
+-	opts->gid = 0;
++	opts->uid = GLOBAL_ROOT_UID;
++	opts->gid = GLOBAL_ROOT_GID;
+ 	opts->use_uid = 0;
+ 	opts->use_gid = 0;
+ 	opts->iocharset = NULL;
+@@ -696,23 +701,29 @@ parse_options(char *options, befs_mount_options * opts)
+ 		case Opt_uid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			if (option < 0) {
++			uid = INVALID_UID;
++			if (option >= 0)
++				uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(uid)) {
+ 				printk(KERN_ERR "BeFS: Invalid uid %d, "
+ 						"using default\n", option);
+ 				break;
+ 			}
+-			opts->uid = option;
++			opts->uid = uid;
+ 			opts->use_uid = 1;
+ 			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			if (option < 0) {
++			gid = INVALID_GID;
++			if (option >= 0)
++				gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(gid)) {
+ 				printk(KERN_ERR "BeFS: Invalid gid %d, "
+ 						"using default\n", option);
+ 				break;
+ 			}
+-			opts->gid = option;
++			opts->gid = gid;
+ 			opts->use_gid = 1;
+ 			break;
+ 		case Opt_charset:
 diff --git a/init/Kconfig b/init/Kconfig
-index 5f846b5..6120bae 100644
+index 20ddf0d..d9bb344 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -941,7 +941,6 @@ config UIDGID_CONVERTED
+@@ -936,7 +936,6 @@ config UIDGID_CONVERTED
+ 	depends on AFFS_FS = n
+ 	depends on AFS_FS = n
+ 	depends on AUTOFS4_FS = n
+-	depends on BEFS_FS = n
+ 	depends on BFS_FS = n
+ 	depends on BTRFS_FS = n
  	depends on CEPH_FS = n
- 	depends on CIFS = n
- 	depends on CODA_FS = n
--	depends on ECRYPT_FS = n
- 	depends on EFS_FS = n
- 	depends on EXOFS_FS = n
- 	depends on FUSE_FS = n
 -- 
 1.7.5.4
 
