@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab2ITPzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:55:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48049 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab2ITPzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:55:51 -0400
-Date: Thu, 20 Sep 2012 17:55:43 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Jiri Engelthaler <engycz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Roel Kluin <roel.kluin@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Fix bug in end absolute address in drivers/mtd/devices/slram.c
-In-Reply-To: <CAHODtZTFP=KJh1VmBvCcYLWD=M41vBnf_nyoEbvHKW1UzYx8dQ@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1209201754450.31786@twin.jikos.cz>
-References: <CAHODtZTFP=KJh1VmBvCcYLWD=M41vBnf_nyoEbvHKW1UzYx8dQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1756019Ab2ITP7C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:59:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54934 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752797Ab2ITP7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:59:00 -0400
+Date: Thu, 20 Sep 2012 16:58:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [RFC PATCH 13/13] Documentation: add schedule for removing
+	private EDMA API
+Message-ID: <20120920155858.GA4583@opensource.wolfsonmicro.com>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com> <1348152226-13588-14-git-send-email-mporter@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348152226-13588-14-git-send-email-mporter@ti.com>
+X-Cookie: Are you sure the back door is locked?
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Jiri Engelthaler wrote:
+On Thu, Sep 20, 2012 at 10:43:46AM -0400, Matt Porter wrote:
 
-> Hello.
->   I found a bug in parsing end absolute address in
-> drivers/mtd/devices/slram.c. There is checking for startaddress <
-> endaddress and endaddress subtracted by startaddress before check. The
-> bug is there from commit 3afd522de8d8ec446efe957b86e4f63e3dd8ce9d Mon,
-> 19 Jan 2009 01:24:21 +0000
-> 
-> Here is the patch
-> 
-> Signed-off-by: Jiri Engelthaler <engycz@gmail.com>
-> 
-> --- linux-3.2.28/drivers/mtd/devices/slram.c	2012-08-19 19:15:38.000000000 +0200
-> +++ linux-3.2.28.mod/drivers/mtd/devices/slram.c	2012-09-19
-> 18:29:28.012740703 +0200
-> @@ -266,7 +266,7 @@ static int parse_cmdline(char *devname,
-> 
->  	if (*(szlength) != '+') {
->  		devlength = simple_strtoul(szlength, &buffer, 0);
-> -		devlength = handle_unit(devlength, buffer) - devstart;
-> +		devlength = handle_unit(devlength, buffer);
->  		if (devlength < devstart)
->  			goto err_out;
+>  Documentation/feature-removal-schedule.txt |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
 
-... adding the suspects to CC so that they are aware of this.
-
--- 
-Jiri Kosina
-SUSE Labs
-
+We decided at kernel summit that we'd stop bothering with this, it's
+mostly just bitrot and rarely read.  I guess the ASoC driver update
+isn't ready yet?
