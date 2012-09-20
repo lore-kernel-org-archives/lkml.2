@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2ITMNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:13:15 -0400
+	id S1754724Ab2ITMNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:13:22 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:56078 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab2ITMNL (ORCPT
+	with ESMTP id S1754680Ab2ITMNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:13:11 -0400
+	Thu, 20 Sep 2012 08:13:14 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, olof.johansson@gmail.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 05/32] of/irq: Create stub for of_irq_find_parent when !CONFIG_OF
-Date: Thu, 20 Sep 2012 14:12:23 +0200
-Message-Id: <1348143170-2130-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 07/32] ARM: ux500: Force AB8500 to use the GIC as its interrupt controller
+Date: Thu, 20 Sep 2012 14:12:25 +0200
+Message-Id: <1348143170-2130-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
 References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
@@ -22,37 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_irq_find_parent is a handy function to use outside the confines of
-the Open Firmware subsystem. One such use-case is when the IRQ Domain
-wishes to find an IRQ domain for a given device node. Currently it can
-not take any notice of the 'interrupt-parent' property. Instead it
-just uses the first IRQ controller as it climbs the Device Tree. If
-we were to use this as a precursor the resultant controller is more
-likely to be correct.
+It's understood that the AB8500 should be subordinate to the DB8500;
+however, the AB8500 uses the GIC as it's interrupt controller. If
+we do not specify which IRQ controller to use the default is to use
+the next encountered IRQ controller as we climb the tree. This would
+be the DB8500. This patch ensures the AB8500 makes use of the correct
+interrupt controller.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/linux/of_irq.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/dbx5x0.dtsi |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 1717cd9..b8e2411 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -83,6 +83,11 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
- {
- 	return 0;
- }
-+
-+static inline void *of_irq_find_parent(struct device_node *child)
-+{
-+	return NULL;
-+}
- #endif /* !CONFIG_OF */
- 
- #endif /* __OF_IRQ_H */
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 04cd525..daedefe 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -332,6 +332,7 @@
+ 			ab8500@5 {
+ 				compatible = "stericsson,ab8500";
+ 				reg = <5>; /* mailbox 5 is i2c */
++				interrupt-parent = <&intc>;
+ 				interrupts = <0 40 0x4>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
 -- 
 1.7.9.5
 
