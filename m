@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2ITKah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:30:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47312 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab2ITKaf (ORCPT
+	id S1752788Ab2ITKch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:32:37 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:55785 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab2ITKcg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:30:35 -0400
-Date: Thu, 20 Sep 2012 11:30:23 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] USB: remove dbg() usage in USB networking drivers
-Message-ID: <20120920103023.GA2012@kroah.com>
-References: <20120919171316.GA12248@kroah.com>
- <1348077212.22122.13.camel@joe2Laptop>
- <20120919193536.GA13933@kroah.com>
- <20120919194614.GA17585@kroah.com>
- <1348135633.5604.5.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348135633.5604.5.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Sep 2012 06:32:36 -0400
+Date: Thu, 20 Sep 2012 12:32:22 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
+Message-ID: <20120920123222.7f58ee4c@skate>
+In-Reply-To: <20120920100254.GE21928@lunn.ch>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
+	<505AD103.8050004@gmail.com>
+	<20120920110424.3cb4daff@skate>
+	<20120920100254.GE21928@lunn.ch>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 03:07:13AM -0700, Joe Perches wrote:
-> On Wed, 2012-09-19 at 20:46 +0100, Greg Kroah-Hartman wrote:
-> > The dbg() USB macro is so old, it predates me.  The USB networking drivers are
-> > the last hold-out using this macro, and we want to get rid of it, so replace
-> > the usage of it with the proper netdev_dbg() or dev_dbg() (depending on the
-> > context) calls.
-> 
-> OK, one more bit of trivia
-> 
-> > diff --git a/drivers/net/usb/net1080.c b/drivers/net/usb/net1080.c
-> []
-> > @@ -422,8 +419,9 @@ static int net1080_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-> >  	if (!(skb->len & 0x01)) {
-> >  #ifdef DEBUG
-> >  		struct net_device	*net = dev->net;
-> > -		dbg("rx framesize %d range %d..%d mtu %d", skb->len,
-> > -			net->hard_header_len, dev->hard_mtu, net->mtu);
-> > +		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
-> > +			   skb->len, net->hard_header_len, dev->hard_mtu,
-> > +			   net->mtu);
-> >  #endif
-> 
-> maybe
-> 		netdev_dbg(net, ...
-> 
-> or remove the odd #ifdef DEBUG surround used to guard
-> the otherwise unused net variable and use:
-> 
-> 		netdev_dbg(dev->net, "rx framesize %d range %d..%d mtu %d\n",
-> 			   skb->len, dev->net->hard_header_len, dev->hard_mtu,
-> 			   dev->net->mtu);
-> 
+Dear Andrew Lunn,
 
-Yeah, that would be better.
+On Thu, 20 Sep 2012 12:02:54 +0200, Andrew Lunn wrote:
 
-Even better would be just to delete all of this debug crud from these
-drivers.  Almost all of the messages are there from when the developer
-originally wrote the driver, trying to figure out what was going on.
->From what I have seen, in doing all of these cleanups, is that the need
-for maybe a few debug lines that can be used if users have issues, but
-the majority are just useless.
+> > Hum, which patches are stalling the integration into the Marvell tree?
+> 
+> l2 cache, I think.
+> 
+> The trees Jason built for pull requests in the direction of arm-soc
+> had the l2 cache patch as the very first in the series. Now that these
+> patches have run into some trouble, its blocking all the patches that
+> followed.
+> 
+> Jason is re-building his trees, throwing out l2 cache for the
+> moment. That should allow Olof/Arnd to pull these trees into arm-soc,
+> and then Jason will work on integrating the remaining patches not
+> already in his trees.
 
-But, as I'm not the author or maintainer of these drivers, I'll be nice
-and just leave them in, all I want to do is get rid of the old, foolish,
-macros for debugging and use the proper dynamic debug code that works so
-much better.
+Ok, thanks. Regarding the L2 cache patches, Grégory has replied to
+Russell comments, and will most likely post an updated version late
+next week. So it would be good if the pinctrl/gpio patches could get
+merged.
 
-So I'll leave this change alone, and if someone wants to do the cleanup
-better, the 3 liner above is fine with me to add later.
+Also, Andrew, could you look at the address decoding patch set I have
+sent? I really would like to see that in 3.7 if possible. Thanks!
 
-thanks,
+Best regards,
 
-greg k-h
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
