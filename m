@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab2ITOnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:43:08 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52363 "EHLO
+	id S932226Ab2ITOnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:43:39 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41616 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195Ab2ITOml (ORCPT
+	with ESMTP id S932167Ab2ITOmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:42:41 -0400
+	Thu, 20 Sep 2012 10:42:39 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH 12/13] ARM: dts: add am33xx EDMA support
-Date: Thu, 20 Sep 2012 10:43:45 -0400
-Message-Id: <1348152226-13588-13-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 11/13] spi: omap2-mcspi: add generic DMA request support to the DT binding
+Date: Thu, 20 Sep 2012 10:43:44 -0400
+Message-Id: <1348152226-13588-12-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348152226-13588-1-git-send-email-mporter@ti.com>
 References: <1348152226-13588-1-git-send-email-mporter@ti.com>
@@ -37,99 +37,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for the defined EDMA, generic DMA controller, and
-DMA request bindings for mmc and spi.
+The binding definition is based on the generic DMA request binding.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |   46 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index e8033eb..c14a61d 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -86,6 +86,36 @@
- 			reg = <0x48200000 0x1000>;
- 		};
+diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
+index 81df374..11aff04 100644
+--- a/Documentation/devicetree/bindings/spi/omap-spi.txt
++++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
+@@ -7,8 +7,18 @@ Required properties:
+ - ti,spi-num-cs : Number of chipselect supported  by the instance.
+ - ti,hwmods: Name of the hwmod associated to the McSPI
  
-+		edma: edma@49000000 {
-+			compatible = "ti,edma3";
-+			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+			reg = <0x49000000 0x10000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <12 13 14>;
-+			#dma-cells = <1>;
-+			dma-channels = <64>;
-+			ti,edma-regions = <4>;
-+			ti,edma-slots = <256>;
-+			ti,edma-reserved-channels = <0  2
-+					     14 2
-+					     26 6
-+					     48 4
-+					     56 8>;
-+			ti,edma-reserved-slots = <0  2
-+					  14 2
-+					  26 6
-+					  48 4
-+					  56 8
-+					  64 127>;
-+			ti,edma-queue-tc-map = <0 0
-+					1 1
-+					2 2>;
-+			ti,edma-queue-priority-map = <0 0
-+					      1 1
-+					      2 2>;
-+			ti,edma-default-queue = <0>;
-+		};
++Optional properties:
++- dmas: List of DMA controller phandle and DMA request ordered
++	pairs. One tx and one rx pair is required for each chip
++	select.
++- dma-names: List of DMA request names. These strings correspond
++	1:1 with the ordered pairs in dmas. The string naming is
++	to be "rxN" and "txN" for RX and TX requests,
++	respectively, where N equals the chip select number.
+ 
+-Example:
++Examples:
 +
- 		gpio0: gpio@44e07000 {
- 			compatible = "ti,omap4-gpio";
- 			ti,hwmods = "gpio1";
-@@ -290,6 +320,9 @@
- 			ti,hwmods = "mmc1";
- 			ti,dual-volt;
- 			ti,needs-special-reset;
-+			dmas = <&edma 24
-+				&edma 25>;
-+			dma-names = "tx", "rx";
- 		};
++[hwmod populated DMA resources]
  
- 		mmc2: mmc@481D8000 {
-@@ -297,6 +330,9 @@
- 			ti,hwmods = "mmc2";
- 			ti,needs-special-reset;
- 			status = "disabled";
-+			dmas = <&edma 2
-+				&edma 3>;
-+			dma-names = "tx", "rx";
- 		};
+ mcspi1: mcspi@1 {
+     #address-cells = <1>;
+@@ -18,3 +28,18 @@ mcspi1: mcspi@1 {
+     ti,spi-num-cs = <4>;
+ };
  
- 		mmc3: mmc@47810000 {
-@@ -339,6 +375,11 @@
- 			reg = <0x48030000 0x400>;
- 			interrupt-parent = <&intc>;
- 			interrupt = <65>;
-+			dmas = <&edma 16
-+				&edma 17
-+				&edma 18
-+				&edma 19>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi0";
- 			status = "disabled";
-@@ -351,6 +392,11 @@
- 			reg = <0x481a0000 0x400>;
- 			interrupt-parent = <&intc>;
- 			interrupt = <125>;
-+			dmas = <&edma 42
-+				&edma 43
-+				&edma 44
-+				&edma 45>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi1";
- 			status = "disabled";
++[generic DMA request binding]
++
++mcspi1: mcspi@1 {
++    #address-cells = <1>;
++    #size-cells = <0>;
++    compatible = "ti,omap4-mcspi";
++    ti,hwmods = "mcspi1";
++    ti,spi-num-cs = <2>;
++    dmas = <&edma 42
++	    &edma 43
++	    &edma 44
++	    &edma 45>;
++    dma-names = "tx0", "rx0", "tx1", "rx1";
++};
++
 -- 
 1.7.9.5
 
