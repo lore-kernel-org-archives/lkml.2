@@ -1,135 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab2ITI1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:27:44 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:38577 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab2ITI1k (ORCPT
+	id S1753180Ab2ITImH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 04:42:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58981 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2ITImC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:27:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Huang Ying <ying.huang@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pm@vger.kernel.org,
-        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <1347872076-5260-1-git-send-email-ying.huang@intel.com>
-	<1347872076-5260-2-git-send-email-ying.huang@intel.com>
-	<CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
-	<877grpywhy.fsf@xmission.com> <1348129173.8212.218.camel@yhuang-dev>
-Date: Thu, 20 Sep 2012 01:27:33 -0700
-In-Reply-To: <1348129173.8212.218.camel@yhuang-dev> (Huang Ying's message of
-	"Thu, 20 Sep 2012 16:19:33 +0800")
-Message-ID: <87fw6dxfnu.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 20 Sep 2012 04:42:02 -0400
+Message-ID: <505AD51F.7050709@gmail.com>
+Date: Thu, 20 Sep 2012 01:34:39 -0700
+From: Stephen Boyd <bebarino@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110911 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19Jw9YLj0s5pLBg2fTFVjaOGL5iViMxTRQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: infradead.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Huang Ying <ying.huang@intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC 1/3] PCI/PM: Fix kexec for D3cold and bridge suspending
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+CC: linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        linux-kernel@vger.kernel.org
+Subject: rt73usb WARNING: at net/mac80211/driver-ops.h:12 check_sdata_in_driver
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huang Ying <ying.huang@intel.com> writes:
+Hi,
 
-> On Thu, 2012-09-20 at 00:38 -0700, Eric W. Biederman wrote:
->> Bjorn Helgaas <bhelgaas@google.com> writes:
->> 
->> > +cc Eric and kexec list
->> >
->> > On Mon, Sep 17, 2012 at 2:54 AM, Huang Ying <ying.huang@intel.com> wrote:
->> >> If PCI devices are put into D3cold before kexec, because the
->> >> configuration registers of PCI devices in D3cold are not accessible.
->> >>
->> >> And if PCI bridges are put into low power state before kexec,
->> >> configuration registers of PCI devices underneath the PCI bridges are
->> >> not accessible too.
->> >>
->> >> These will make some PCI devices can not be scanned after kexec, so
->> >> resume the PCI devices in D3cold or PCI bridges in low power state
->> >> before kexec.
->> >
->> > Don't we need to resume the device even without the kexec issue?  And
->> > even if it's in D1 or D2?
->> 
->> The basic requirement is that the device needs to be visible so we can
->> auto discover it.  As I recall most sleep states don't make the device
->> invisible and we can handle the rest in the device initializatoin code.
->
-> PCI devices in D3cold or under a bridge in D3hot will not be visible, so
-> we must fix that for kexec to run properly.
+I've noticed that if I suspend to disk and then resume with my usb wifi
+adapter plugged in I get a spew of these warnings from what looks to be
+the wifi driver and some warning from the usb layer. Are these known issues?
 
-That seems reasonable to me.
+rt73usb 1-2:1.0: no reset_resume for driver rt73usb?
 
->> > It looks to me like pci_msi_shutdown() (and probably drv->shutdown())
->> > depend on the device being in D0.
->> 
->> There is certainly a depenency on the config registers being visible.
->> Although I don't know if much will go wrong if they aren't.
->> 
->> Ceratinly pci_msi_shutdown doesn't have anything to do if the device has
->> had so much power removed that the device is not even exectuing.
->
-> Don't know which power state device should be in for pci_msi_shutdown
-> etc.  But it appears that normal shutdown/reboot and kexec works at most
-> times so far.  D3cold and bridge in D3hot works for normal
-> shutdown/reboot, but not for kexec.  So I write some fix.
-
-To be clear.  Has someone picked up this patch yet?
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-As for reboot it tends to always work because frequently the firmware
-code triggers a soft reset of the entire machine, which puts devices in
-their power on reset state, which is not a suspended state.  Although
-that behavior is not required for a software reboot.
-
-Eric
-
-
-
-> Best Regards,
-> Huang Ying
->
->> >> Signed-off-by: Huang Ying <ying.huang@intel.com>
->> >> ---
->> >>  drivers/pci/pci-driver.c |    4 ++++
->> >>  1 file changed, 4 insertions(+)
->> >>
->> >> --- a/drivers/pci/pci-driver.c
->> >> +++ b/drivers/pci/pci-driver.c
->> >> @@ -421,6 +421,10 @@ static void pci_device_shutdown(struct d
->> >>         struct pci_dev *pci_dev = to_pci_dev(dev);
->> >>         struct pci_driver *drv = pci_dev->driver;
->> >>
->> >> +       /* Resume bridges and devices in D3cold for kexec to work properly */
->> >> +       if (pci_dev->current_state == PCI_D3cold || pci_dev->subordinate)
->> >> +               pm_runtime_resume(dev);
->> >> +
->> >>         if (drv && drv->shutdown)
->> >>                 drv->shutdown(pci_dev);
->> >>         pci_msi_shutdown(pci_dev);
->> >
->> > _______________________________________________
->> > kexec mailing list
->> > kexec@lists.infradead.org
->> > http://lists.infradead.org/mailman/listinfo/kexec
+WARNING: at net/mac80211/driver-ops.h:12 check_sdata_in_driver+0x32/0x34()
+Hardware name: MS-7094
+wlan0:  Failed check-sdata-in-driver check, flags: 0x4
+Modules linked in: snd_seq_midi snd_emu10k1_synth snd_emux_synth
+snd_seq_virmidi snd_seq_midi_emul snd_seq_dummy snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss radeon snd_emu10k1
+snd_rawmidi snd_ac97_codec ac97_bus ttm drm_kms_helper snd_pcm
+snd_seq_device snd_timer drm snd_page_alloc snd_util_mem snd_hwdep snd
+i2c_algo_bit rt73usb crc_itu_t rt2x00usb cfbcopyarea cfbimgblt rt2x00lib
+cfbfillrect parport_pc edac_core via82cxxx edac_mce_amd floppy parport
+soundcore k8temp powernow_k8 mperf r8169 mii
+Pid: 2525, comm: kworker/u:14 Not tainted 3.6.0-rc6-00052-gc46de22 #126
+Call Trace:
+ [<ffffffff8102e13a>] warn_slowpath_common+0x85/0x9d
+ [<ffffffff8102e1f5>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff81495f1f>] check_sdata_in_driver+0x32/0x34
+ [<ffffffff81497f20>] drv_mgd_prepare_tx+0x33/0xda
+ [<ffffffff81498099>] ieee80211_send_deauth_disassoc+0xd2/0xeb
+ [<ffffffff81498db8>] ieee80211_set_disassoc+0x169/0x2ab
+ [<ffffffff814990d8>] ieee80211_mgd_deauth+0xc0/0x155
+ [<ffffffff81477f5e>] ieee80211_deauth+0x18/0x1a
+ [<ffffffff8145ec09>] __cfg80211_mlme_deauth+0xd9/0xec
+ [<ffffffff8146210a>] __cfg80211_disconnect+0x12d/0x1a5
+ [<ffffffff8144b1a3>] ? cfg80211_netdev_notifier_call+0x2ba/0x559
+ [<ffffffff8144b1d9>] cfg80211_netdev_notifier_call+0x2f0/0x559
+ [<ffffffff814b54bf>] notifier_call_chain+0x68/0x9c
+ [<ffffffff814afb9c>] ? __mutex_lock_common+0x322/0x34e
+ [<ffffffff81052311>] raw_notifier_call_chain+0x14/0x16
+ [<ffffffff813846ac>] call_netdevice_notifiers+0x4a/0x4f
+ [<ffffffff81384710>] __dev_close_many+0x5f/0xbf
+ [<ffffffff81384827>] dev_close_many+0x71/0xd9
+ [<ffffffff813849a9>] rollback_registered_many+0xcf/0x29a
+ [<ffffffff81384b8d>] unregister_netdevice_many+0x19/0x51
+ [<ffffffff81473389>] ieee80211_remove_interfaces+0xa6/0xbd
+ [<ffffffff81466236>] ieee80211_unregister_hw+0x53/0x101
+ [<ffffffffa0087bea>] rt2x00lib_remove_dev+0xe4/0x16d [rt2x00lib]
+ [<ffffffffa00a00cc>] rt2x00usb_disconnect+0x2e/0x61 [rt2x00usb]
+ [<ffffffff8132c07d>] usb_unbind_interface+0x7f/0x160
+ [<ffffffff812c5103>] __device_release_driver+0x86/0xd9
+ [<ffffffff812c5237>] device_release_driver+0x25/0x32
+ [<ffffffff8132c3dd>] usb_driver_release_interface+0x4c/0x82
+ [<ffffffff8132c45b>] usb_forced_unbind_intf+0x48/0x51
+ [<ffffffff8132c4db>] usb_resume+0x77/0xa1
+ [<ffffffff8131e91d>] ? usb_disabled+0x12/0x12
+ [<ffffffff8131e930>] usb_dev_restore+0x13/0x15
+ [<ffffffff812cb460>] dpm_run_callback+0x4a/0x88
+ [<ffffffff812cc4be>] device_resume+0x145/0x184
+ [<ffffffff812cc735>] async_resume+0x21/0x48
+ [<ffffffff81053768>] async_run_entry_fn+0x9a/0x152
+ [<ffffffff81048a9b>] process_one_work+0x273/0x3f6
+ [<ffffffff810489f7>] ? process_one_work+0x1cf/0x3f6
+ [<ffffffff810536ce>] ? async_schedule+0x17/0x17
+ [<ffffffff81049024>] worker_thread+0x226/0x2ea
+ [<ffffffff81048dfe>] ? rescuer_thread+0x1e0/0x1e0
+ [<ffffffff8104ccf6>] kthread+0xa4/0xac
+ [<ffffffff81074ca1>] ? trace_hardirqs_on_caller+0x16/0x161
+ [<ffffffff814b9e24>] kernel_thread_helper+0x4/0x10
+ [<ffffffff814b2219>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8104cc52>] ? __init_kthread_worker+0x5b/0x5b
+ [<ffffffff814b9e20>] ? gs_change+0xb/0xb
