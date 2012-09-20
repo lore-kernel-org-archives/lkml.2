@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2ITOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:47:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20298 "EHLO mx1.redhat.com"
+	id S1755644Ab2ITOla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:41:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24170 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755665Ab2ITOlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:31 -0400
+	id S1755466Ab2ITOl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:41:27 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 05/10] asus-wmi: Restrict debugfs interface
-Date: Thu, 20 Sep 2012 10:41:00 -0400
-Message-Id: <1348152065-31353-6-git-send-email-mjg@redhat.com>
+Subject: [PATCH V2 01/10] Secure boot: Add new capability
+Date: Thu, 20 Sep 2012 10:40:56 -0400
+Message-Id: <1348152065-31353-2-git-send-email-mjg@redhat.com>
 In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,50 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no way of validating what all of the Asus WMI methods do on a
-given machine, and there's a risk that some will allow hardware state to
-be manipulated in such a way that arbitrary code can be executed in the
-kernel. Add a capability check to prevent that.
+Secure boot adds certain policy requirements, including that root must not
+be able to do anything that could cause the kernel to execute arbitrary code.
+The simplest way to handle this would seem to be to add a new capability
+and gate various functionality on that. We'll then strip it from the initial
+capability set if required.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/platform/x86/asus-wmi.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ include/linux/capability.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index c0e9ff4..3c10167 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1521,6 +1521,9 @@ static int show_dsts(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index d10b7ed..4345bc8 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -364,7 +364,11 @@ struct cpu_vfs_cap_data {
  
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
+ #define CAP_BLOCK_SUSPEND    36
+ 
+-#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
++/* Allow things that trivially permit root to modify the running kernel */
 +
- 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
- 
- 	if (err < 0)
-@@ -1537,6 +1540,9 @@ static int show_devs(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
++#define CAP_COMPROMISE_KERNEL  37
 +
- 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
- 				    &retval);
++#define CAP_LAST_CAP         CAP_COMPROMISE_KERNEL
  
-@@ -1561,6 +1567,9 @@ static int show_call(struct seq_file *m, void *data)
- 	union acpi_object *obj;
- 	acpi_status status;
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
  
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
- 				     1, asus->debug.method_id,
- 				     &input, &output);
 -- 
 1.7.11.4
 
