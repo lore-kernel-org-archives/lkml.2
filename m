@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2ITHV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:21:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61750 "EHLO
+	id S1753384Ab2ITHWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:22:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50774 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2ITHV4 (ORCPT
+	with ESMTP id S1751439Ab2ITHWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:21:56 -0400
+	Thu, 20 Sep 2012 03:22:03 -0400
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 0/2] ARM: pci: Prepare for Tegra PCIe controller driver
-Date: Thu, 20 Sep 2012 09:21:48 +0200
-Message-Id: <1348125710-28726-1-git-send-email-thierry.reding@avionic-design.de>
+Subject: [PATCH v2 1/2] ARM: pci: Keep pci_common_init() around after init
+Date: Thu, 20 Sep 2012 09:21:49 +0200
+Message-Id: <1348125710-28726-2-git-send-email-thierry.reding@avionic-design.de>
 X-Mailer: git-send-email 1.7.12
-X-Provags-ID: V02:K0:VritkSSrmpdf1lDjFtBEYaoFxsDTDTJ3Ggu0XwcGqKo
- bHmefTHqxfU49QmW2mxzarCXXSgFFfFACTIcAn3S+4sTpUqOMO
- 39uKtzFLA5CrI5oODw+Y45MkzcZgzOxNt9rjCPCdVCe0BrB59R
- p2MniH7efohazrIAuiYu1Sq/ahFpGtC3+TyS2WA6J5vYq1h6aw
- xtUy8r548c5y1q9eiYbI+L1aFPA35EJuBv6wu8XgQtBQF3yHHp
- lmy8vm+Lrdyzi7re8KLnqQ8iinfVVb8ptT7LgoAaPKITN9X3Jt
- wpJlIY2KeUbL6XFAurJ1dJZEgph74ZfGYk4rGU7yT1E/pEnPuM
- Inuy++qEcTrCXpVozOKYwDyDQI6/UIU5Dc595Y/4R6EHqGS/WJ
- MDyyfmPCVC32wVa1xFUNUMFJM0hHzJB3XbcUMjO494pGZ7f9ds
- 1ReQ1
+In-Reply-To: <1348125710-28726-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1348125710-28726-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:/TMVOkrbRjkMZh4qYWb+/iPTVzMkaGQDuHSlTwoArmu
+ hGVCqcsIgnyFBpUZ834auogCJ0cBKr7eb0Uw97Wku4oCO3IQz9
+ ZYECuVpbwDYZidfajo3mCekE8pDY8UGiBjlysWCuTXF6eTfhi6
+ xCcD0Zs2Ap+vVwENiFukXvfM2GGEN11Bd6hBAwDopQTBg/50SW
+ BvIkzoGmIuZplbp9djZl1Cp+n0B1/zzj7ExwmenRm39n9A/cxa
+ lr3GKEXHWiulx7vLpNE5fOC70ZJ85LoYkQjqoJpOB0EZN2zMb+
+ uuwMC6FpLUL5mMWhJhYJf/82vXKRqy4K6YqLJruBVvsDMUsWJO
+ M4UYfgq6xiHIWkmpVlRN7eMyid0LAOkrNQs7KIbBCIw68JHLlz
+ 8Xbn8yACnhPXN29BXMEXnbsP/lQc0HlQsRIt0OKP0hlEcWjHJz
+ wkAXv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+When using deferred driver probing, PCI host controller drivers may
+actually require this function after the init stage.
 
-These are two patches I've been carrying in a larger series that
-converts the Tegra PCIe controller driver to a proper platform driver.
-Since the complete series didn't get much feedback, I've begun to post
-smaller subsets in an effort to get them merged more easily.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+Changes in v2:
+- remove __devinit annotation from pcibios_swizzle
+- remove __init annotations altogether
 
-The first patch in this series removes the __init annotations from the
-pci_common_init() function (and pcibios_init_hw() and pcibios_swizzle()
-because they are called from the former) to make sure that they stay
-around after the init stage. This is required because the Tegra driver
-depends on regulators that become available only very late during boot
-and uses deferred probing to handle this situation. It turned out that
-this postpones the PCI bus initialization until after init, thus this
-patch.
+ arch/arm/kernel/bios32.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-The second patch is used to pass per-controller or per-host-bridge data
-to the driver, such that it can be associated with the corresponding
-bus. This is also required by the Tegra driver in order to pass a
-driver-private structure to the PCI bus (or more precisely the
-pci_sys_data structure associated with a bus). It is subsequently used
-to obtain the root port private data given the corresponding PCI bus.
-
-Thierry
-
-Thierry Reding (2):
-  ARM: pci: Keep pci_common_init() around after init
-  ARM: pci: Allow passing per-controller private data
-
- arch/arm/include/asm/mach/pci.h | 1 +
- arch/arm/kernel/bios32.c        | 9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 2b2f25e..6f1d75f 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -388,7 +388,7 @@ EXPORT_SYMBOL(pcibios_fixup_bus);
+  * PCI standard swizzle is implemented on plug-in cards and Cardbus based
+  * PCI extenders, so it can not be ignored.
+  */
+-static u8 __devinit pcibios_swizzle(struct pci_dev *dev, u8 *pin)
++static u8 pcibios_swizzle(struct pci_dev *dev, u8 *pin)
+ {
+ 	struct pci_sys_data *sys = dev->sysdata;
+ 	int slot, oldpin = *pin;
+@@ -423,7 +423,7 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ 	return irq;
+ }
+ 
+-static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
++static void pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+ {
+ 	struct pci_sys_data *sys = NULL;
+ 	int ret;
+@@ -472,7 +472,7 @@ static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
+ 	}
+ }
+ 
+-void __init pci_common_init(struct hw_pci *hw)
++void pci_common_init(struct hw_pci *hw)
+ {
+ 	struct pci_sys_data *sys;
+ 	LIST_HEAD(head);
 -- 
 1.7.12
 
