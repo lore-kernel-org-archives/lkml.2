@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab2ITCLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 22:11:36 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:60516 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2ITCLa (ORCPT
+	id S1753827Ab2ITCNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 22:13:12 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:48414 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab2ITCLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 22:11:30 -0400
+	Wed, 19 Sep 2012 22:11:34 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-fsdevel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
@@ -14,30 +14,32 @@ Cc: <linux-fsdevel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
         linux-security-module@vger.kernel.org, Jan Kara <jack@suse.cz>,
         Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
         Eric Paris <eparis@redhat.com>, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Wed, 19 Sep 2012 18:52:13 -0700
-Message-Id: <1348105949-25454-11-git-send-email-ebiederm@xmission.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
+Date: Wed, 19 Sep 2012 18:52:24 -0700
+Message-Id: <1348105949-25454-22-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
 References: <871uhx1n71.fsf@xmission.com>
  <1348105949-25454-1-git-send-email-ebiederm@xmission.com>
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18ZkuXJVVqO+UXh2gJK7bqLLD4lXwzhQoU=
+X-XM-AID: U2FsdGVkX1/uaurRPHrzCBGvNFInpaC61vD/XPKiCfM=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4759]
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3237]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
 	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
 X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;<linux-kernel@vger.kernel.org>
+X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 11/27] userns: Convert the audit loginuid  to be a kuid
+Subject: [PATCH 22/27] userns: Convert qutoactl
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -47,699 +49,336 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Always store audit loginuids in type kuid_t.
+Update the quotactl user space interface to successfull compile with
+user namespaces support enabled and to hand off quota identifiers to
+lower layers of the kernel in struct kqid instead of type and qid
+pairs.
 
-Print loginuids by converting them into uids in the appropriate user
-namespace, and then printing the resulting uid.
+The quota on function is not converted because while it takes a quota
+type and an id.  The id is the on disk quota format to use, which
+is something completely different.
 
-Modify audit_get_loginuid to return a kuid_t.
+The signature of two struct quotactl_ops methods were changed to take
+struct kqid argumetns get_dqblk and set_dqblk.
 
-Modify audit_set_loginuid to take a kuid_t.
+The dquot, xfs, and ocfs2 implementations of get_dqblk and set_dqblk
+are minimally changed so that the code continues to work with
+the change in parameter type.
 
-Modify /proc/<pid>/loginuid on read to convert the loginuid into the
-user namespace of the opener of the file.
+This is the first in a series of changes to always store quota
+identifiers in the kernel in struct kqid and only use raw type and qid
+values when interacting with on disk structures or userspace.  Always
+using struct kqid internally makes it hard to miss places that need
+conversion to or from the kernel internal values.
 
-Modify /proc/<pid>/loginud on write to convert the loginuid
-rom the user namespace of the opener of the file.
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Paul Moore <paul@paul-moore.com> ?
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- drivers/tty/tty_audit.c           |   14 ++++++++------
- fs/proc/base.c                    |   12 ++++++++++--
- include/linux/audit.h             |    6 +++---
- include/linux/init_task.h         |    2 +-
- include/linux/sched.h             |    2 +-
- include/linux/tty.h               |    4 ++--
- include/net/netlabel.h            |    2 +-
- include/net/xfrm.h                |   23 ++++++++++++-----------
- kernel/audit.c                    |   20 ++++++++++----------
- kernel/audit_watch.c              |    2 +-
- kernel/auditfilter.c              |    7 ++++---
- kernel/auditsc.c                  |   20 +++++++++++---------
- net/core/dev.c                    |    2 +-
- net/netlabel/netlabel_unlabeled.c |    2 +-
- net/netlabel/netlabel_user.c      |    2 +-
- net/xfrm/xfrm_policy.c            |    8 ++++----
- net/xfrm/xfrm_state.c             |    6 +++---
- net/xfrm/xfrm_user.c              |   12 ++++++------
- 18 files changed, 80 insertions(+), 66 deletions(-)
+ fs/gfs2/quota.c          |   20 +++++++++++---------
+ fs/quota/dquot.c         |    8 ++++----
+ fs/quota/quota.c         |   28 ++++++++++++++++++++++------
+ fs/xfs/xfs_quotaops.c    |   12 ++++++------
+ include/linux/quota.h    |    4 ++--
+ include/linux/quotaops.h |    4 ++--
+ init/Kconfig             |    2 +-
+ 7 files changed, 48 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/tty/tty_audit.c b/drivers/tty/tty_audit.c
-index 7c58669..5b59bd7 100644
---- a/drivers/tty/tty_audit.c
-+++ b/drivers/tty/tty_audit.c
-@@ -61,7 +61,7 @@ static void tty_audit_buf_put(struct tty_audit_buf *buf)
- }
- 
- static void tty_audit_log(const char *description, struct task_struct *tsk,
--			  uid_t loginuid, unsigned sessionid, int major,
-+			  kuid_t loginuid, unsigned sessionid, int major,
- 			  int minor, unsigned char *data, size_t size)
- {
- 	struct audit_buffer *ab;
-@@ -73,7 +73,9 @@ static void tty_audit_log(const char *description, struct task_struct *tsk,
- 
- 		audit_log_format(ab, "%s pid=%u uid=%u auid=%u ses=%u "
- 				 "major=%d minor=%d comm=", description,
--				 tsk->pid, uid, loginuid, sessionid,
-+				 tsk->pid, uid,
-+				 from_kuid(&init_user_ns, loginuid),
-+				 sessionid,
- 				 major, minor);
- 		get_task_comm(name, tsk);
- 		audit_log_untrustedstring(ab, name);
-@@ -89,7 +91,7 @@ static void tty_audit_log(const char *description, struct task_struct *tsk,
-  *	Generate an audit message from the contents of @buf, which is owned by
-  *	@tsk with @loginuid.  @buf->mutex must be locked.
-  */
--static void tty_audit_buf_push(struct task_struct *tsk, uid_t loginuid,
-+static void tty_audit_buf_push(struct task_struct *tsk, kuid_t loginuid,
- 			       unsigned int sessionid,
- 			       struct tty_audit_buf *buf)
- {
-@@ -112,7 +114,7 @@ static void tty_audit_buf_push(struct task_struct *tsk, uid_t loginuid,
-  */
- static void tty_audit_buf_push_current(struct tty_audit_buf *buf)
- {
--	uid_t auid = audit_get_loginuid(current);
-+	kuid_t auid = audit_get_loginuid(current);
- 	unsigned int sessionid = audit_get_sessionid(current);
- 	tty_audit_buf_push(current, auid, sessionid, buf);
- }
-@@ -179,7 +181,7 @@ void tty_audit_tiocsti(struct tty_struct *tty, char ch)
- 	}
- 
- 	if (should_audit && audit_enabled) {
--		uid_t auid;
-+		kuid_t auid;
- 		unsigned int sessionid;
- 
- 		auid = audit_get_loginuid(current);
-@@ -199,7 +201,7 @@ void tty_audit_tiocsti(struct tty_struct *tty, char ch)
-  * reference to the tty audit buffer if available.
-  * Flush the buffer or return an appropriate error code.
-  */
--int tty_audit_push_task(struct task_struct *tsk, uid_t loginuid, u32 sessionid)
-+int tty_audit_push_task(struct task_struct *tsk, kuid_t loginuid, u32 sessionid)
- {
- 	struct tty_audit_buf *buf = ERR_PTR(-EPERM);
- 	unsigned long flags;
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1b6c84c..138cff4 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1089,7 +1089,8 @@ static ssize_t proc_loginuid_read(struct file * file, char __user * buf,
- 	if (!task)
- 		return -ESRCH;
- 	length = scnprintf(tmpbuf, TMPBUFLEN, "%u",
--				audit_get_loginuid(task));
-+			   from_kuid(file->f_cred->user_ns,
-+				     audit_get_loginuid(task)));
- 	put_task_struct(task);
- 	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
- }
-@@ -1101,6 +1102,7 @@ static ssize_t proc_loginuid_write(struct file * file, const char __user * buf,
- 	char *page, *tmp;
- 	ssize_t length;
- 	uid_t loginuid;
-+	kuid_t kloginuid;
- 
- 	rcu_read_lock();
- 	if (current != pid_task(proc_pid(inode), PIDTYPE_PID)) {
-@@ -1130,7 +1132,13 @@ static ssize_t proc_loginuid_write(struct file * file, const char __user * buf,
- 		goto out_free_page;
- 
- 	}
--	length = audit_set_loginuid(loginuid);
-+	kloginuid = make_kuid(file->f_cred->user_ns, loginuid);
-+	if (!uid_valid(kloginuid)) {
-+		length = -EINVAL;
-+		goto out_free_page;
-+	}
-+
-+	length = audit_set_loginuid(kloginuid);
- 	if (likely(length == 0))
- 		length = count;
- 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index ca019bb..12367cb 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -527,7 +527,7 @@ static inline void audit_ptrace(struct task_struct *t)
- extern unsigned int audit_serial(void);
- extern int auditsc_get_stamp(struct audit_context *ctx,
- 			      struct timespec *t, unsigned int *serial);
--extern int  audit_set_loginuid(uid_t loginuid);
-+extern int  audit_set_loginuid(kuid_t loginuid);
- #define audit_get_loginuid(t) ((t)->loginuid)
- #define audit_get_sessionid(t) ((t)->sessionid)
- extern void audit_log_task_context(struct audit_buffer *ab);
-@@ -639,7 +639,7 @@ extern int audit_signals;
- #define audit_core_dumps(i) do { ; } while (0)
- #define audit_seccomp(i,s,c) do { ; } while (0)
- #define auditsc_get_stamp(c,t,s) (0)
--#define audit_get_loginuid(t) (-1)
-+#define audit_get_loginuid(t) (INVALID_UID)
- #define audit_get_sessionid(t) (-1)
- #define audit_log_task_context(b) do { ; } while (0)
- #define audit_ipc_obj(i) ((void)0)
-@@ -705,7 +705,7 @@ extern int		    audit_update_lsm_rules(void);
- extern int audit_filter_user(void);
- extern int audit_filter_type(int type);
- extern int  audit_receive_filter(int type, int pid, int seq,
--				void *data, size_t datasz, uid_t loginuid,
-+				void *data, size_t datasz, kuid_t loginuid,
- 				u32 sessionid, u32 sid);
- extern int audit_enabled;
- #else
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 89f1cb1..6d087c5 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -92,7 +92,7 @@ extern struct group_info init_groups;
- 
- #ifdef CONFIG_AUDITSYSCALL
- #define INIT_IDS \
--	.loginuid = -1, \
-+	.loginuid = INVALID_UID, \
- 	.sessionid = -1,
- #else
- #define INIT_IDS
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c147e70..f64d092 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1426,7 +1426,7 @@ struct task_struct {
- 
- 	struct audit_context *audit_context;
- #ifdef CONFIG_AUDITSYSCALL
--	uid_t loginuid;
-+	kuid_t loginuid;
- 	unsigned int sessionid;
- #endif
- 	struct seccomp seccomp;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 9f47ab5..7298385 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -553,7 +553,7 @@ extern void tty_audit_fork(struct signal_struct *sig);
- extern void tty_audit_tiocsti(struct tty_struct *tty, char ch);
- extern void tty_audit_push(struct tty_struct *tty);
- extern int tty_audit_push_task(struct task_struct *tsk,
--			       uid_t loginuid, u32 sessionid);
-+			       kuid_t loginuid, u32 sessionid);
- #else
- static inline void tty_audit_add_data(struct tty_struct *tty,
- 				      unsigned char *data, size_t size)
-@@ -572,7 +572,7 @@ static inline void tty_audit_push(struct tty_struct *tty)
- {
- }
- static inline int tty_audit_push_task(struct task_struct *tsk,
--				      uid_t loginuid, u32 sessionid)
-+				      kuid_t loginuid, u32 sessionid)
- {
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index a3bde91..b311539 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -1469,7 +1469,7 @@ static int gfs2_quota_get_xstate(struct super_block *sb,
  	return 0;
  }
-diff --git a/include/net/netlabel.h b/include/net/netlabel.h
-index f674409..2c95d55 100644
---- a/include/net/netlabel.h
-+++ b/include/net/netlabel.h
-@@ -110,7 +110,7 @@ struct cipso_v4_doi;
- /* NetLabel audit information */
- struct netlbl_audit {
- 	u32 secid;
--	uid_t loginuid;
-+	kuid_t loginuid;
- 	u32 sessionid;
- };
  
-diff --git a/include/net/xfrm.h b/include/net/xfrm.h
-index d9509eb..1f217e2 100644
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -662,7 +662,7 @@ struct xfrm_spi_skb_cb {
- /* Audit Information */
- struct xfrm_audit {
- 	u32	secid;
--	uid_t	loginuid;
-+	kuid_t	loginuid;
- 	u32	sessionid;
- };
- 
-@@ -681,13 +681,14 @@ static inline struct audit_buffer *xfrm_audit_start(const char *op)
- 	return audit_buf;
- }
- 
--static inline void xfrm_audit_helper_usrinfo(uid_t auid, u32 ses, u32 secid,
-+static inline void xfrm_audit_helper_usrinfo(kuid_t auid, u32 ses, u32 secid,
- 					     struct audit_buffer *audit_buf)
+-static int gfs2_get_dqblk(struct super_block *sb, int type, qid_t id,
++static int gfs2_get_dqblk(struct super_block *sb, struct kqid qid,
+ 			  struct fs_disk_quota *fdq)
  {
- 	char *secctx;
- 	u32 secctx_len;
+ 	struct gfs2_sbd *sdp = sb->s_fs_info;
+@@ -1477,20 +1477,21 @@ static int gfs2_get_dqblk(struct super_block *sb, int type, qid_t id,
+ 	struct gfs2_quota_data *qd;
+ 	struct gfs2_holder q_gh;
+ 	int error;
++	int type;
  
--	audit_log_format(audit_buf, " auid=%u ses=%u", auid, ses);
-+	audit_log_format(audit_buf, " auid=%u ses=%u",
-+			 from_kuid(&init_user_ns, auid), ses);
- 	if (secid != 0 &&
- 	    security_secid_to_secctx(secid, &secctx, &secctx_len) == 0) {
- 		audit_log_format(audit_buf, " subj=%s", secctx);
-@@ -697,13 +698,13 @@ static inline void xfrm_audit_helper_usrinfo(uid_t auid, u32 ses, u32 secid,
- }
+ 	memset(fdq, 0, sizeof(struct fs_disk_quota));
  
- extern void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid);
-+				  kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid);
-+				  kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_add(struct xfrm_state *x, int result,
--				 u32 auid, u32 ses, u32 secid);
-+				 kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--				    u32 auid, u32 ses, u32 secid);
-+				    kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_replay_overflow(struct xfrm_state *x,
- 					     struct sk_buff *skb);
- extern void xfrm_audit_state_replay(struct xfrm_state *x,
-@@ -716,22 +717,22 @@ extern void xfrm_audit_state_icvfail(struct xfrm_state *x,
- #else
+ 	if (sdp->sd_args.ar_quota == GFS2_QUOTA_OFF)
+ 		return -ESRCH; /* Crazy XFS error code */
  
- static inline void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid)
-+				  kuid_t auid, u32 ses, u32 secid)
+-	if (type == USRQUOTA)
++	if (qid.type == USRQUOTA)
+ 		type = QUOTA_USER;
+-	else if (type == GRPQUOTA)
++	else if (qid.type == GRPQUOTA)
+ 		type = QUOTA_GROUP;
+ 	else
+ 		return -EINVAL;
+ 
+-	error = qd_get(sdp, type, id, &qd);
++	error = qd_get(sdp, type, from_kqid(&init_user_ns, qid), &qd);
+ 	if (error)
+ 		return error;
+ 	error = do_glock(qd, FORCE, &q_gh);
+@@ -1500,7 +1501,7 @@ static int gfs2_get_dqblk(struct super_block *sb, int type, qid_t id,
+ 	qlvb = (struct gfs2_quota_lvb *)qd->qd_gl->gl_lvb;
+ 	fdq->d_version = FS_DQUOT_VERSION;
+ 	fdq->d_flags = (type == QUOTA_USER) ? FS_USER_QUOTA : FS_GROUP_QUOTA;
+-	fdq->d_id = id;
++	fdq->d_id = from_kqid(&init_user_ns, qid);
+ 	fdq->d_blk_hardlimit = be64_to_cpu(qlvb->qb_limit) << sdp->sd_fsb2bb_shift;
+ 	fdq->d_blk_softlimit = be64_to_cpu(qlvb->qb_warn) << sdp->sd_fsb2bb_shift;
+ 	fdq->d_bcount = be64_to_cpu(qlvb->qb_value) << sdp->sd_fsb2bb_shift;
+@@ -1514,7 +1515,7 @@ out:
+ /* GFS2 only supports a subset of the XFS fields */
+ #define GFS2_FIELDMASK (FS_DQ_BSOFT|FS_DQ_BHARD|FS_DQ_BCOUNT)
+ 
+-static int gfs2_set_dqblk(struct super_block *sb, int type, qid_t id,
++static int gfs2_set_dqblk(struct super_block *sb, struct kqid qid,
+ 			  struct fs_disk_quota *fdq)
  {
+ 	struct gfs2_sbd *sdp = sb->s_fs_info;
+@@ -1526,11 +1527,12 @@ static int gfs2_set_dqblk(struct super_block *sb, int type, qid_t id,
+ 	int alloc_required;
+ 	loff_t offset;
+ 	int error;
++	int type;
+ 
+ 	if (sdp->sd_args.ar_quota == GFS2_QUOTA_OFF)
+ 		return -ESRCH; /* Crazy XFS error code */
+ 
+-	switch(type) {
++	switch(qid.type) {
+ 	case USRQUOTA:
+ 		type = QUOTA_USER;
+ 		if (fdq->d_flags != FS_USER_QUOTA)
+@@ -1547,10 +1549,10 @@ static int gfs2_set_dqblk(struct super_block *sb, int type, qid_t id,
+ 
+ 	if (fdq->d_fieldmask & ~GFS2_FIELDMASK)
+ 		return -EINVAL;
+-	if (fdq->d_id != id)
++	if (fdq->d_id != from_kqid(&init_user_ns, qid))
+ 		return -EINVAL;
+ 
+-	error = qd_get(sdp, type, id, &qd);
++	error = qd_get(sdp, type, from_kqid(&init_user_ns, qid), &qd);
+ 	if (error)
+ 		return error;
+ 
+diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+index 36a29b7..7714b16 100644
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -2376,12 +2376,12 @@ static void do_get_dqblk(struct dquot *dquot, struct fs_disk_quota *di)
+ 	spin_unlock(&dq_data_lock);
  }
  
- static inline void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid)
-+				  kuid_t auid, u32 ses, u32 secid)
+-int dquot_get_dqblk(struct super_block *sb, int type, qid_t id,
++int dquot_get_dqblk(struct super_block *sb, struct kqid qid,
+ 		    struct fs_disk_quota *di)
  {
+ 	struct dquot *dquot;
+ 
+-	dquot = dqget(sb, id, type);
++	dquot = dqget(sb, qid.type, from_kqid(&init_user_ns, qid));
+ 	if (!dquot)
+ 		return -ESRCH;
+ 	do_get_dqblk(dquot, di);
+@@ -2488,13 +2488,13 @@ static int do_set_dqblk(struct dquot *dquot, struct fs_disk_quota *di)
+ 	return 0;
  }
  
- static inline void xfrm_audit_state_add(struct xfrm_state *x, int result,
--				 u32 auid, u32 ses, u32 secid)
-+				 kuid_t auid, u32 ses, u32 secid)
+-int dquot_set_dqblk(struct super_block *sb, int type, qid_t id,
++int dquot_set_dqblk(struct super_block *sb, struct kqid qid,
+ 		  struct fs_disk_quota *di)
  {
- }
- 
- static inline void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--				    u32 auid, u32 ses, u32 secid)
-+				    kuid_t auid, u32 ses, u32 secid)
- {
- }
- 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 2e0dd5e..44a4b13 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -265,7 +265,7 @@ void audit_log_lost(const char *message)
- }
- 
- static int audit_log_config_change(char *function_name, int new, int old,
--				   uid_t loginuid, u32 sessionid, u32 sid,
-+				   kuid_t loginuid, u32 sessionid, u32 sid,
- 				   int allow_changes)
- {
- 	struct audit_buffer *ab;
-@@ -273,7 +273,7 @@ static int audit_log_config_change(char *function_name, int new, int old,
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
- 	audit_log_format(ab, "%s=%d old=%d auid=%u ses=%u", function_name, new,
--			 old, loginuid, sessionid);
-+			 old, from_kuid(&init_user_ns, loginuid), sessionid);
- 	if (sid) {
- 		char *ctx = NULL;
- 		u32 len;
-@@ -293,7 +293,7 @@ static int audit_log_config_change(char *function_name, int new, int old,
- }
- 
- static int audit_do_config_change(char *function_name, int *to_change,
--				  int new, uid_t loginuid, u32 sessionid,
-+				  int new, kuid_t loginuid, u32 sessionid,
- 				  u32 sid)
- {
- 	int allow_changes, rc = 0, old = *to_change;
-@@ -320,21 +320,21 @@ static int audit_do_config_change(char *function_name, int *to_change,
- 	return rc;
- }
- 
--static int audit_set_rate_limit(int limit, uid_t loginuid, u32 sessionid,
-+static int audit_set_rate_limit(int limit, kuid_t loginuid, u32 sessionid,
- 				u32 sid)
- {
- 	return audit_do_config_change("audit_rate_limit", &audit_rate_limit,
- 				      limit, loginuid, sessionid, sid);
- }
- 
--static int audit_set_backlog_limit(int limit, uid_t loginuid, u32 sessionid,
-+static int audit_set_backlog_limit(int limit, kuid_t loginuid, u32 sessionid,
- 				   u32 sid)
- {
- 	return audit_do_config_change("audit_backlog_limit", &audit_backlog_limit,
- 				      limit, loginuid, sessionid, sid);
- }
- 
--static int audit_set_enabled(int state, uid_t loginuid, u32 sessionid, u32 sid)
-+static int audit_set_enabled(int state, kuid_t loginuid, u32 sessionid, u32 sid)
- {
+ 	struct dquot *dquot;
  	int rc;
- 	if (state < AUDIT_OFF || state > AUDIT_LOCKED)
-@@ -349,7 +349,7 @@ static int audit_set_enabled(int state, uid_t loginuid, u32 sessionid, u32 sid)
- 	return rc;
+ 
+-	dquot = dqget(sb, id, type);
++	dquot = dqget(sb, qid.type, from_kqid(&init_user_ns, qid));
+ 	if (!dquot) {
+ 		rc = -ESRCH;
+ 		goto out;
+diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+index 6f15578..ff0135d 100644
+--- a/fs/quota/quota.c
++++ b/fs/quota/quota.c
+@@ -32,8 +32,8 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
+ 	/* allow to query information for dquots we "own" */
+ 	case Q_GETQUOTA:
+ 	case Q_XGETQUOTA:
+-		if ((type == USRQUOTA && current_euid() == id) ||
+-		    (type == GRPQUOTA && in_egroup_p(id)))
++		if ((type == USRQUOTA && uid_eq(current_euid(), make_kuid(current_user_ns(), id))) ||
++		    (type == GRPQUOTA && in_egroup_p(make_kgid(current_user_ns(), id))))
+ 			break;
+ 		/*FALLTHROUGH*/
+ 	default:
+@@ -130,13 +130,17 @@ static void copy_to_if_dqblk(struct if_dqblk *dst, struct fs_disk_quota *src)
+ static int quota_getquota(struct super_block *sb, int type, qid_t id,
+ 			  void __user *addr)
+ {
++	struct kqid qid;
+ 	struct fs_disk_quota fdq;
+ 	struct if_dqblk idq;
+ 	int ret;
+ 
+ 	if (!sb->s_qcop->get_dqblk)
+ 		return -ENOSYS;
+-	ret = sb->s_qcop->get_dqblk(sb, type, id, &fdq);
++	qid = make_kqid(current_user_ns(), type, id);
++	if (!qid_valid(qid))
++		return -EINVAL;
++	ret = sb->s_qcop->get_dqblk(sb, qid, &fdq);
+ 	if (ret)
+ 		return ret;
+ 	copy_to_if_dqblk(&idq, &fdq);
+@@ -176,13 +180,17 @@ static int quota_setquota(struct super_block *sb, int type, qid_t id,
+ {
+ 	struct fs_disk_quota fdq;
+ 	struct if_dqblk idq;
++	struct kqid qid;
+ 
+ 	if (copy_from_user(&idq, addr, sizeof(idq)))
+ 		return -EFAULT;
+ 	if (!sb->s_qcop->set_dqblk)
+ 		return -ENOSYS;
++	qid = make_kqid(current_user_ns(), type, id);
++	if (!qid_valid(qid))
++		return -EINVAL;
+ 	copy_from_if_dqblk(&fdq, &idq);
+-	return sb->s_qcop->set_dqblk(sb, type, id, &fdq);
++	return sb->s_qcop->set_dqblk(sb, qid, &fdq);
  }
  
--static int audit_set_failure(int state, uid_t loginuid, u32 sessionid, u32 sid)
-+static int audit_set_failure(int state, kuid_t loginuid, u32 sessionid, u32 sid)
+ static int quota_setxstate(struct super_block *sb, int cmd, void __user *addr)
+@@ -213,23 +221,31 @@ static int quota_setxquota(struct super_block *sb, int type, qid_t id,
+ 			   void __user *addr)
  {
- 	if (state != AUDIT_FAIL_SILENT
- 	    && state != AUDIT_FAIL_PRINTK
-@@ -607,7 +607,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	struct fs_disk_quota fdq;
++	struct kqid qid;
+ 
+ 	if (copy_from_user(&fdq, addr, sizeof(fdq)))
+ 		return -EFAULT;
+ 	if (!sb->s_qcop->set_dqblk)
+ 		return -ENOSYS;
+-	return sb->s_qcop->set_dqblk(sb, type, id, &fdq);
++	qid = make_kqid(current_user_ns(), type, id);
++	if (!qid_valid(qid))
++		return -EINVAL;
++	return sb->s_qcop->set_dqblk(sb, qid, &fdq);
  }
  
- static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
--				     uid_t auid, u32 ses, u32 sid)
-+				     kuid_t auid, u32 ses, u32 sid)
+ static int quota_getxquota(struct super_block *sb, int type, qid_t id,
+ 			   void __user *addr)
  {
- 	int rc = 0;
- 	char *ctx = NULL;
-@@ -622,7 +622,7 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
- 	audit_log_format(*ab, "pid=%d uid=%u auid=%u ses=%u",
- 			 task_tgid_vnr(current),
- 			 from_kuid(&init_user_ns, current_uid()),
--			 auid, ses);
-+			 from_kuid(&init_user_ns, auid), ses);
- 	if (sid) {
- 		rc = security_secid_to_secctx(sid, &ctx, &len);
- 		if (rc)
-@@ -644,7 +644,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	int			err;
- 	struct audit_buffer	*ab;
- 	u16			msg_type = nlh->nlmsg_type;
--	uid_t			loginuid; /* loginuid of sender */
-+	kuid_t			loginuid; /* loginuid of sender */
- 	u32			sessionid;
- 	struct audit_sig_info   *sig_data;
- 	char			*ctx = NULL;
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 3823281..1c22ec3 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -241,7 +241,7 @@ static void audit_watch_log_rule_change(struct audit_krule *r, struct audit_watc
- 		struct audit_buffer *ab;
- 		ab = audit_log_start(NULL, GFP_NOFS, AUDIT_CONFIG_CHANGE);
- 		audit_log_format(ab, "auid=%u ses=%u op=",
--				 audit_get_loginuid(current),
-+				 from_kuid(&init_user_ns, audit_get_loginuid(current)),
- 				 audit_get_sessionid(current));
- 		audit_log_string(ab, op);
- 		audit_log_format(ab, " path=");
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index b30320c..c4bcdba 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -1109,7 +1109,7 @@ static void audit_list_rules(int pid, int seq, struct sk_buff_head *q)
+ 	struct fs_disk_quota fdq;
++	struct kqid qid;
+ 	int ret;
+ 
+ 	if (!sb->s_qcop->get_dqblk)
+ 		return -ENOSYS;
+-	ret = sb->s_qcop->get_dqblk(sb, type, id, &fdq);
++	qid = make_kqid(current_user_ns(), type, id);
++	if (!qid_valid(qid))
++		return -EINVAL;
++	ret = sb->s_qcop->get_dqblk(sb, qid, &fdq);
+ 	if (!ret && copy_to_user(addr, &fdq, sizeof(fdq)))
+ 		return -EFAULT;
+ 	return ret;
+diff --git a/fs/xfs/xfs_quotaops.c b/fs/xfs/xfs_quotaops.c
+index fed504f..71926d6 100644
+--- a/fs/xfs/xfs_quotaops.c
++++ b/fs/xfs/xfs_quotaops.c
+@@ -97,8 +97,7 @@ xfs_fs_set_xstate(
+ STATIC int
+ xfs_fs_get_dqblk(
+ 	struct super_block	*sb,
+-	int			type,
+-	qid_t			id,
++	struct kqid		qid,
+ 	struct fs_disk_quota	*fdq)
+ {
+ 	struct xfs_mount	*mp = XFS_M(sb);
+@@ -108,14 +107,14 @@ xfs_fs_get_dqblk(
+ 	if (!XFS_IS_QUOTA_ON(mp))
+ 		return -ESRCH;
+ 
+-	return -xfs_qm_scall_getquota(mp, id, xfs_quota_type(type), fdq);
++	return -xfs_qm_scall_getquota(mp, from_kqid(&init_user_ns, qid),
++				      xfs_quota_type(qid.type), fdq);
  }
  
- /* Log rule additions and removals */
--static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
-+static void audit_log_rule_change(kuid_t loginuid, u32 sessionid, u32 sid,
- 				  char *action, struct audit_krule *rule,
- 				  int res)
+ STATIC int
+ xfs_fs_set_dqblk(
+ 	struct super_block	*sb,
+-	int			type,
+-	qid_t			id,
++	struct kqid		qid,
+ 	struct fs_disk_quota	*fdq)
  {
-@@ -1121,7 +1121,8 @@ static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
- 	if (!ab)
- 		return;
--	audit_log_format(ab, "auid=%u ses=%u", loginuid, sessionid);
-+	audit_log_format(ab, "auid=%u ses=%u",
-+			 from_kuid(&init_user_ns, loginuid), sessionid);
- 	if (sid) {
- 		char *ctx = NULL;
- 		u32 len;
-@@ -1152,7 +1153,7 @@ static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
-  * @sid: SE Linux Security ID of sender
-  */
- int audit_receive_filter(int type, int pid, int seq, void *data,
--			 size_t datasz, uid_t loginuid, u32 sessionid, u32 sid)
-+			 size_t datasz, kuid_t loginuid, u32 sessionid, u32 sid)
- {
- 	struct task_struct *tsk;
- 	struct audit_netlink_list *dest;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 0b5b8a2..26fdfc0 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -149,7 +149,7 @@ struct audit_aux_data_execve {
- struct audit_aux_data_pids {
- 	struct audit_aux_data	d;
- 	pid_t			target_pid[AUDIT_AUX_PIDS];
--	uid_t			target_auid[AUDIT_AUX_PIDS];
-+	kuid_t			target_auid[AUDIT_AUX_PIDS];
- 	uid_t			target_uid[AUDIT_AUX_PIDS];
- 	unsigned int		target_sessionid[AUDIT_AUX_PIDS];
- 	u32			target_sid[AUDIT_AUX_PIDS];
-@@ -214,7 +214,7 @@ struct audit_context {
- 	int		    arch;
+ 	struct xfs_mount	*mp = XFS_M(sb);
+@@ -127,7 +126,8 @@ xfs_fs_set_dqblk(
+ 	if (!XFS_IS_QUOTA_ON(mp))
+ 		return -ESRCH;
  
- 	pid_t		    target_pid;
--	uid_t		    target_auid;
-+	kuid_t		    target_auid;
- 	uid_t		    target_uid;
- 	unsigned int	    target_sessionid;
- 	u32		    target_sid;
-@@ -1176,7 +1176,7 @@ static void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk
+-	return -xfs_qm_scall_setqlim(mp, id, xfs_quota_type(type), fdq);
++	return -xfs_qm_scall_setqlim(mp, from_kqid(&init_user_ns, qid),
++				     xfs_quota_type(qid.type), fdq);
  }
  
- static int audit_log_pid_context(struct audit_context *context, pid_t pid,
--				 uid_t auid, uid_t uid, unsigned int sessionid,
-+				 kuid_t auid, uid_t uid, unsigned int sessionid,
- 				 u32 sid, char *comm)
- {
- 	struct audit_buffer *ab;
-@@ -1188,7 +1188,8 @@ static int audit_log_pid_context(struct audit_context *context, pid_t pid,
- 	if (!ab)
- 		return rc;
+ const struct quotactl_ops xfs_quotactl_operations = {
+diff --git a/include/linux/quota.h b/include/linux/quota.h
+index 00ac8d8..f96427a 100644
+--- a/include/linux/quota.h
++++ b/include/linux/quota.h
+@@ -461,8 +461,8 @@ struct quotactl_ops {
+ 	int (*quota_sync)(struct super_block *, int);
+ 	int (*get_info)(struct super_block *, int, struct if_dqinfo *);
+ 	int (*set_info)(struct super_block *, int, struct if_dqinfo *);
+-	int (*get_dqblk)(struct super_block *, int, qid_t, struct fs_disk_quota *);
+-	int (*set_dqblk)(struct super_block *, int, qid_t, struct fs_disk_quota *);
++	int (*get_dqblk)(struct super_block *, struct kqid, struct fs_disk_quota *);
++	int (*set_dqblk)(struct super_block *, struct kqid, struct fs_disk_quota *);
+ 	int (*get_xstate)(struct super_block *, struct fs_quota_stat *);
+ 	int (*set_xstate)(struct super_block *, unsigned int, int);
+ };
+diff --git a/include/linux/quotaops.h b/include/linux/quotaops.h
+index ec6b65f..bd3730d 100644
+--- a/include/linux/quotaops.h
++++ b/include/linux/quotaops.h
+@@ -87,9 +87,9 @@ int dquot_writeback_dquots(struct super_block *sb, int type);
+ int dquot_quota_sync(struct super_block *sb, int type);
+ int dquot_get_dqinfo(struct super_block *sb, int type, struct if_dqinfo *ii);
+ int dquot_set_dqinfo(struct super_block *sb, int type, struct if_dqinfo *ii);
+-int dquot_get_dqblk(struct super_block *sb, int type, qid_t id,
++int dquot_get_dqblk(struct super_block *sb, struct kqid id,
+ 		struct fs_disk_quota *di);
+-int dquot_set_dqblk(struct super_block *sb, int type, qid_t id,
++int dquot_set_dqblk(struct super_block *sb, struct kqid id,
+ 		struct fs_disk_quota *di);
  
--	audit_log_format(ab, "opid=%d oauid=%d ouid=%d oses=%d", pid, auid,
-+	audit_log_format(ab, "opid=%d oauid=%d ouid=%d oses=%d", pid,
-+			 from_kuid(&init_user_ns, auid),
- 			 uid, sessionid);
- 	if (security_secid_to_secctx(sid, &ctx, &len)) {
- 		audit_log_format(ab, " obj=(none)");
-@@ -1630,7 +1631,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
- 		  context->name_count,
- 		  context->ppid,
- 		  context->pid,
--		  tsk->loginuid,
-+		  from_kuid(&init_user_ns, tsk->loginuid),
- 		  context->uid,
- 		  context->gid,
- 		  context->euid, context->suid, context->fsuid,
-@@ -2291,14 +2292,14 @@ static atomic_t session_id = ATOMIC_INIT(0);
-  *
-  * Called (set) from fs/proc/base.c::proc_loginuid_write().
-  */
--int audit_set_loginuid(uid_t loginuid)
-+int audit_set_loginuid(kuid_t loginuid)
- {
- 	struct task_struct *task = current;
- 	struct audit_context *context = task->audit_context;
- 	unsigned int sessionid;
+ int __dquot_transfer(struct inode *inode, struct dquot **transfer_to);
+diff --git a/init/Kconfig b/init/Kconfig
+index 33d231c..15bb1dc 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -928,7 +928,7 @@ config UIDGID_CONVERTED
+ 	depends on IMA = n
+ 	depends on EVM = n
+ 	depends on QUOTA = n
+-	depends on QUOTACTL = n
++	depends on QUOTA_NETLINK_INTERFACE = n
  
- #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
--	if (task->loginuid != -1)
-+	if (uid_valid(task->loginuid))
- 		return -EPERM;
- #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
- 	if (!capable(CAP_AUDIT_CONTROL))
-@@ -2315,7 +2316,8 @@ int audit_set_loginuid(uid_t loginuid)
- 				"old auid=%u new auid=%u"
- 				" old ses=%u new ses=%u",
- 				task->pid, task_uid(task),
--				task->loginuid, loginuid,
-+				from_kuid(&init_user_ns, task->loginuid),
-+				from_kuid(&init_user_ns, loginuid),
- 				task->sessionid, sessionid);
- 			audit_log_end(ab);
- 		}
-@@ -2543,7 +2545,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 	if (audit_pid && t->tgid == audit_pid) {
- 		if (sig == SIGTERM || sig == SIGHUP || sig == SIGUSR1 || sig == SIGUSR2) {
- 			audit_sig_pid = tsk->pid;
--			if (tsk->loginuid != -1)
-+			if (uid_valid(tsk->loginuid))
- 				audit_sig_uid = tsk->loginuid;
- 			else
- 				audit_sig_uid = uid;
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 026bb4a..1c0d082 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4524,7 +4524,7 @@ static int __dev_set_promiscuity(struct net_device *dev, int inc)
- 				"dev=%s prom=%d old_prom=%d auid=%u uid=%u gid=%u ses=%u",
- 				dev->name, (dev->flags & IFF_PROMISC),
- 				(old_flags & IFF_PROMISC),
--				audit_get_loginuid(current),
-+				from_kuid(&init_user_ns, audit_get_loginuid(current)),
- 				from_kuid(&init_user_ns, uid),
- 				from_kgid(&init_user_ns, gid),
- 				audit_get_sessionid(current));
-diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-index e7ff694..729a345 100644
---- a/net/netlabel/netlabel_unlabeled.c
-+++ b/net/netlabel/netlabel_unlabeled.c
-@@ -1541,7 +1541,7 @@ int __init netlbl_unlabel_defconf(void)
- 	 * it is called is at bootup before the audit subsystem is reporting
- 	 * messages so don't worry to much about these values. */
- 	security_task_getsecid(current, &audit_info.secid);
--	audit_info.loginuid = 0;
-+	audit_info.loginuid = GLOBAL_ROOT_UID;
- 	audit_info.sessionid = 0;
- 
- 	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-diff --git a/net/netlabel/netlabel_user.c b/net/netlabel/netlabel_user.c
-index 9fae63f..9650c4a 100644
---- a/net/netlabel/netlabel_user.c
-+++ b/net/netlabel/netlabel_user.c
-@@ -109,7 +109,7 @@ struct audit_buffer *netlbl_audit_start_common(int type,
- 		return NULL;
- 
- 	audit_log_format(audit_buf, "netlabel: auid=%u ses=%u",
--			 audit_info->loginuid,
-+			 from_kuid(&init_user_ns, audit_info->loginuid),
- 			 audit_info->sessionid);
- 
- 	if (audit_info->secid != 0 &&
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index c5a5165..2f47515 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2630,12 +2630,12 @@ static void xfrm_policy_fini(struct net *net)
- 
- 	flush_work(&net->xfrm.policy_hash_work);
- #ifdef CONFIG_XFRM_SUB_POLICY
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_policy_flush(net, XFRM_POLICY_TYPE_SUB, &audit_info);
- #endif
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_policy_flush(net, XFRM_POLICY_TYPE_MAIN, &audit_info);
-@@ -2742,7 +2742,7 @@ static void xfrm_audit_common_policyinfo(struct xfrm_policy *xp,
- }
- 
- void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--			   uid_t auid, u32 sessionid, u32 secid)
-+			   kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-@@ -2757,7 +2757,7 @@ void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
- EXPORT_SYMBOL_GPL(xfrm_audit_policy_add);
- 
- void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--			      uid_t auid, u32 sessionid, u32 secid)
-+			      kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index 5b228f9..fce6a49 100644
---- a/net/xfrm/xfrm_state.c
-+++ b/net/xfrm/xfrm_state.c
-@@ -2045,7 +2045,7 @@ void xfrm_state_fini(struct net *net)
- 	unsigned int sz;
- 
- 	flush_work(&net->xfrm.state_hash_work);
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_state_flush(net, IPSEC_PROTO_ANY, &audit_info);
-@@ -2112,7 +2112,7 @@ static void xfrm_audit_helper_pktinfo(struct sk_buff *skb, u16 family,
- }
- 
- void xfrm_audit_state_add(struct xfrm_state *x, int result,
--			  uid_t auid, u32 sessionid, u32 secid)
-+			  kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-@@ -2127,7 +2127,7 @@ void xfrm_audit_state_add(struct xfrm_state *x, int result,
- EXPORT_SYMBOL_GPL(xfrm_audit_state_add);
- 
- void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--			     uid_t auid, u32 sessionid, u32 secid)
-+			     kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index e75d8e4..9ea55db 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -575,7 +575,7 @@ static int xfrm_add_sa(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	struct xfrm_state *x;
- 	int err;
- 	struct km_event c;
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -654,7 +654,7 @@ static int xfrm_del_sa(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	int err = -ESRCH;
- 	struct km_event c;
- 	struct xfrm_usersa_id *p = nlmsg_data(nlh);
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -1369,7 +1369,7 @@ static int xfrm_add_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	struct km_event c;
- 	int err;
- 	int excl;
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -1624,7 +1624,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 					    NETLINK_CB(skb).pid);
- 		}
- 	} else {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
-@@ -1918,7 +1918,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 
- 	err = 0;
- 	if (up->hard) {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
-@@ -1961,7 +1961,7 @@ static int xfrm_add_sa_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	km_state_expired(x, ue->hard, current->pid);
- 
- 	if (ue->hard) {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
+ 	# Networking
+ 	depends on NET_9P = n
 -- 
 1.7.5.4
 
