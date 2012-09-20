@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2ITPGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:06:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab2ITPGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:06:43 -0400
-Date: Thu, 20 Sep 2012 12:05:51 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, andi@firstfloor.org,
-        namhyung@kernel.org, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] perf tool: Add a global variable "const char
- *input_name"
-Message-ID: <20120920150551.GD26278@infradead.org>
-References: <1348150779-17707-1-git-send-email-feng.tang@intel.com>
+	id S1755963Ab2ITPHQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:07:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63518 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab2ITPHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:07:14 -0400
+Message-ID: <505B3117.9040603@gmail.com>
+Date: Thu, 20 Sep 2012 23:07:03 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348150779-17707-1-git-send-email-feng.tang@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Btrfs: small fix the commment for the action flags in delayed-ref.h
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 20, 2012 at 10:19:39PM +0800, Feng Tang escreveu:
-> Currently many perf ommands annotate/evlist/report/script/lock etc
-> all support "-i" option to chose a specific perf data, and all
-> of them create a local "input_name" to save the file name for
-> that perf data.
-> 
-> So adding a global variable could unify all those local ones, and
-> it will also be useful for other codes which need to know the file name.
+The action has been merged into struct btrfs_delayed_ref_node,
+and no struct btrfs_delayed_ref is available now.
 
-But I think the input_name should be passed as a parameter to whoever
-needs it. Think about 'perf diff', for instance, it deals with two
-perf.data files.
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ fs/btrfs/delayed-ref.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In general I think we should _remove_ more globals :-)
+diff --git a/fs/btrfs/delayed-ref.h b/fs/btrfs/delayed-ref.h
+index ab53005..c9d7036 100644
+--- a/fs/btrfs/delayed-ref.h
++++ b/fs/btrfs/delayed-ref.h
+@@ -18,7 +18,7 @@
+ #ifndef __DELAYED_REF__
+ #define __DELAYED_REF__
+ 
+-/* these are the possible values of struct btrfs_delayed_ref->action */
++/* these are the possible values of struct btrfs_delayed_ref_node->action */
+ #define BTRFS_ADD_DELAYED_REF    1 /* add one backref to the tree */
+ #define BTRFS_DROP_DELAYED_REF   2 /* delete one backref from the tree */
+ #define BTRFS_ADD_DELAYED_EXTENT 3 /* record a full extent allocation */
+-- 
+1.7.1
 
-- Arnaldo
