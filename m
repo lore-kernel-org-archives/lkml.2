@@ -1,169 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab2ITS7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:59:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58505 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab2ITSyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:54:09 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
-        hooanon05@yahoo.co.jp, mszeredi@suse.cz
-Subject: [PATCH 01/13] vfs: add i_op->dentry_open()
-Date: Thu, 20 Sep 2012 20:55:18 +0200
-Message-Id: <1348167330-30288-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
-References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+	id S1755109Ab2ITTAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:00:11 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49467 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754178Ab2ITStC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:49:02 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 06/23] rcu: Break up rcu_gp_kthread() into subfunctions
+Date: Thu, 20 Sep 2012 11:48:02 -0700
+Message-Id: <1348166900-18716-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120920184751.GA18657@linux.vnet.ibm.com>
+ <1348166900-18716-1-git-send-email-paulmck@linux.vnet.ibm.com>
+x-cbid: 12092018-7182-0000-0000-000002AAD3AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Add a new inode operation i_op->dentry_open().  This is for stacked filesystems
-that want to return a struct file from a different filesystem.
+Then rcu_gp_kthread() function is too large and furthermore needs to
+have the force_quiescent_state() code pulled in.  This commit therefore
+breaks up rcu_gp_kthread() into rcu_gp_init() and rcu_gp_cleanup().
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- Documentation/filesystems/Locking |    2 ++
- Documentation/filesystems/vfs.txt |    7 +++++++
- fs/namei.c                        |    9 ++++++---
- fs/open.c                         |   23 +++++++++++++++++++++--
- include/linux/fs.h                |    2 ++
- 5 files changed, 38 insertions(+), 5 deletions(-)
+ kernel/rcutree.c |  250 +++++++++++++++++++++++++++++-------------------------
+ 1 files changed, 135 insertions(+), 115 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index e540a24..019fc72 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -64,6 +64,7 @@ prototypes:
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 				struct file *, unsigned open_flag,
- 				umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- 
- locking rules:
- 	all may block
-@@ -92,6 +93,7 @@ removexattr:	yes
- fiemap:		no
- update_time:	no
- atomic_open:	yes
-+dentry_open:	no
- 
- 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
- victim.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 2ee133e..ea1379c 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -363,6 +363,7 @@ struct inode_operations {
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 				struct file *, unsigned open_flag,
- 				umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- };
- 
- Again, all methods are called without any locks being held, unless
-@@ -692,6 +693,12 @@ struct address_space_operations {
-   	but instead uses bmap to find out where the blocks in the file
-   	are and uses those addresses directly.
- 
-+  dentry_open: this is an alternative to f_op->open(), the difference is that
-+	this method may open a file not necessarily originating from the same
-+	filesystem as the one i_op->open() was called on.  It may be
-+	useful for stacking filesystems which want to allow native I/O directly
-+	on underlying files.
-+
- 
-   invalidatepage: If a page has PagePrivate set, then invalidatepage
-         will be called when part or all of the page is to be removed
-diff --git a/fs/namei.c b/fs/namei.c
-index dd1ed1b..829404a 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2822,9 +2822,12 @@ finish_open_created:
- 	error = may_open(&nd->path, acc_mode, open_flag);
- 	if (error)
- 		goto out;
--	file->f_path.mnt = nd->path.mnt;
--	error = finish_open(file, nd->path.dentry, NULL, opened);
--	if (error) {
-+
-+	BUG_ON(*opened & FILE_OPENED); /* once it's opened, it's opened */
-+	error = vfs_open(&nd->path, file, current_cred());
-+	if (!error) {
-+		*opened |= FILE_OPENED;
-+	} else {
- 		if (error == -EOPENSTALE)
- 			goto stale_open;
- 		goto out;
-diff --git a/fs/open.c b/fs/open.c
-index e1f2cdb..d0f0ec7 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -787,8 +787,7 @@ struct file *dentry_open(const struct path *path, int flags,
- 		return ERR_PTR(error);
- 
- 	f->f_flags = flags;
--	f->f_path = *path;
--	error = do_dentry_open(f, NULL, cred);
-+	error = vfs_open(path, f, cred);
- 	if (!error) {
- 		error = open_check_o_direct(f);
- 		if (error) {
-@@ -803,6 +802,26 @@ struct file *dentry_open(const struct path *path, int flags,
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index fa11e54..f061740 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1026,95 +1026,159 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
  }
- EXPORT_SYMBOL(dentry_open);
  
-+/**
-+ * vfs_open - open the file at the given path
-+ * @path: path to open
-+ * @filp: newly allocated file with f_flag initialized
-+ * @cred: credentials to use
-+ */
-+int vfs_open(const struct path *path, struct file *filp,
-+	     const struct cred *cred)
-+{
-+	struct inode *inode = path->dentry->d_inode;
-+
-+	if (inode->i_op->dentry_open)
-+		return inode->i_op->dentry_open(path->dentry, filp, cred);
-+	else {
-+		filp->f_path = *path;
-+		return do_dentry_open(filp, NULL, cred);
-+	}
-+}
-+EXPORT_SYMBOL(vfs_open);
-+
- static void __put_unused_fd(struct files_struct *files, unsigned int fd)
+ /*
+- * Body of kthread that handles grace periods.
++ * Initialize a new grace period.
+  */
+-static int __noreturn rcu_gp_kthread(void *arg)
++static int rcu_gp_init(struct rcu_state *rsp)
  {
- 	struct fdtable *fdt = files_fdtable(files);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aa11047..e372113 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1835,6 +1835,7 @@ struct inode_operations {
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 			   struct file *, unsigned open_flag,
- 			   umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- } ____cacheline_aligned;
+-	unsigned long gp_duration;
+ 	struct rcu_data *rdp;
+-	struct rcu_node *rnp;
+-	struct rcu_state *rsp = arg;
++	struct rcu_node *rnp = rcu_get_root(rsp);
  
- struct seq_file;
-@@ -2199,6 +2200,7 @@ extern long do_sys_open(int dfd, const char __user *filename, int flags,
- extern struct file *filp_open(const char *, int, umode_t);
- extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- 				   const char *, int);
-+extern int vfs_open(const struct path *, struct file *, const struct cred *);
- extern struct file * dentry_open(const struct path *, int, const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
- extern char * getname(const char __user *);
+-	for (;;) {
++	raw_spin_lock_irq(&rnp->lock);
++	rsp->gp_flags = 0;
+ 
+-		/* Handle grace-period start. */
+-		rnp = rcu_get_root(rsp);
+-		for (;;) {
+-			wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
+-			if (rsp->gp_flags)
+-				break;
+-			flush_signals(current);
+-		}
++	if (rcu_gp_in_progress(rsp)) {
++		/* Grace period already in progress, don't start another.  */
++		raw_spin_unlock_irq(&rnp->lock);
++		return 0;
++	}
++
++	if (rsp->fqs_active) {
++		/*
++		 * We need a grace period, but force_quiescent_state()
++		 * is running.  Tell it to start one on our behalf.
++		 */
++		rsp->fqs_need_gp = 1;
++		raw_spin_unlock_irq(&rnp->lock);
++		return 0;
++	}
++
++	/* Advance to a new grace period and initialize state. */
++	rsp->gpnum++;
++	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
++	WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
++	rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
++	rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
++	record_gp_stall_check_time(rsp);
++	raw_spin_unlock_irq(&rnp->lock);
++
++	/* Exclude any concurrent CPU-hotplug operations. */
++	get_online_cpus();
++
++	/*
++	 * Set the quiescent-state-needed bits in all the rcu_node
++	 * structures for all currently online CPUs in breadth-first order,
++	 * starting from the root rcu_node structure, relying on the layout
++	 * of the tree within the rsp->node[] array.  Note that other CPUs
++	 * will access only the leaves of the hierarchy, thus seeing that no
++	 * grace period is in progress, at least until the corresponding
++	 * leaf node has been initialized.  In addition, we have excluded
++	 * CPU-hotplug operations.
++	 *
++	 * The grace period cannot complete until the initialization
++	 * process finishes, because this kthread handles both.
++	 */
++	rcu_for_each_node_breadth_first(rsp, rnp) {
+ 		raw_spin_lock_irq(&rnp->lock);
+-		rsp->gp_flags = 0;
+ 		rdp = this_cpu_ptr(rsp->rda);
++		rcu_preempt_check_blocked_tasks(rnp);
++		rnp->qsmask = rnp->qsmaskinit;
++		rnp->gpnum = rsp->gpnum;
++		rnp->completed = rsp->completed;
++		if (rnp == rdp->mynode)
++			rcu_start_gp_per_cpu(rsp, rnp, rdp);
++		rcu_preempt_boost_start_gp(rnp);
++		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
++					    rnp->level, rnp->grplo,
++					    rnp->grphi, rnp->qsmask);
++		raw_spin_unlock_irq(&rnp->lock);
++		cond_resched();
++	}
+ 
+-		if (rcu_gp_in_progress(rsp)) {
+-			/*
+-			 * A grace period is already in progress, so
+-			 * don't start another one.
+-			 */
+-			raw_spin_unlock_irq(&rnp->lock);
+-			cond_resched();
+-			continue;
+-		}
++	rnp = rcu_get_root(rsp);
++	raw_spin_lock_irq(&rnp->lock);
++	/* force_quiescent_state() now OK. */
++	rsp->fqs_state = RCU_SIGNAL_INIT;
++	raw_spin_unlock_irq(&rnp->lock);
++	put_online_cpus();
++	return 1;
++}
+ 
+-		if (rsp->fqs_active) {
+-			/*
+-			 * We need a grace period, but force_quiescent_state()
+-			 * is running.  Tell it to start one on our behalf.
+-			 */
+-			rsp->fqs_need_gp = 1;
+-			raw_spin_unlock_irq(&rnp->lock);
+-			cond_resched();
+-			continue;
+-		}
++/*
++ * Clean up after the old grace period.
++ */
++static int rcu_gp_cleanup(struct rcu_state *rsp)
++{
++	unsigned long gp_duration;
++	struct rcu_data *rdp;
++	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+-		/* Advance to a new grace period and initialize state. */
+-		rsp->gpnum++;
+-		trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
+-		WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
+-		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
+-		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+-		record_gp_stall_check_time(rsp);
+-		raw_spin_unlock_irq(&rnp->lock);
++	raw_spin_lock_irq(&rnp->lock);
++	gp_duration = jiffies - rsp->gp_start;
++	if (gp_duration > rsp->gp_max)
++		rsp->gp_max = gp_duration;
+ 
+-		/* Exclude any concurrent CPU-hotplug operations. */
+-		get_online_cpus();
++	/*
++	 * We know the grace period is complete, but to everyone else
++	 * it appears to still be ongoing.  But it is also the case
++	 * that to everyone else it looks like there is nothing that
++	 * they can do to advance the grace period.  It is therefore
++	 * safe for us to drop the lock in order to mark the grace
++	 * period as completed in all of the rcu_node structures.
++	 *
++	 * But if this CPU needs another grace period, it will take
++	 * care of this while initializing the next grace period.
++	 * We use RCU_WAIT_TAIL instead of the usual RCU_DONE_TAIL
++	 * because the callbacks have not yet been advanced: Those
++	 * callbacks are waiting on the grace period that just now
++	 * completed.
++	 */
++	rdp = this_cpu_ptr(rsp->rda);
++	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
++		raw_spin_unlock_irq(&rnp->lock);
+ 
+ 		/*
+-		 * Set the quiescent-state-needed bits in all the rcu_node
+-		 * structures for all currently online CPUs in breadth-first
+-		 * order, starting from the root rcu_node structure.
+-		 * This operation relies on the layout of the hierarchy
+-		 * within the rsp->node[] array.  Note that other CPUs will
+-		 * access only the leaves of the hierarchy, which still
+-		 * indicate that no grace period is in progress, at least
+-		 * until the corresponding leaf node has been initialized.
+-		 * In addition, we have excluded CPU-hotplug operations.
++		 * Propagate new ->completed value to rcu_node
++		 * structures so that other CPUs don't have to
++		 * wait until the start of the next grace period
++		 * to process their callbacks.
+ 		 */
+ 		rcu_for_each_node_breadth_first(rsp, rnp) {
+ 			raw_spin_lock_irq(&rnp->lock);
+-			rcu_preempt_check_blocked_tasks(rnp);
+-			rnp->qsmask = rnp->qsmaskinit;
+-			rnp->gpnum = rsp->gpnum;
+-			rnp->completed = rsp->completed;
+-			if (rnp == rdp->mynode)
+-				rcu_start_gp_per_cpu(rsp, rnp, rdp);
+-			rcu_preempt_boost_start_gp(rnp);
+-			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
+-						    rnp->level, rnp->grplo,
+-						    rnp->grphi, rnp->qsmask);
++			rnp->completed = rsp->gpnum;
+ 			raw_spin_unlock_irq(&rnp->lock);
+ 			cond_resched();
+ 		}
+-
+ 		rnp = rcu_get_root(rsp);
+ 		raw_spin_lock_irq(&rnp->lock);
+-		/* force_quiescent_state() now OK. */
+-		rsp->fqs_state = RCU_SIGNAL_INIT;
+-		raw_spin_unlock_irq(&rnp->lock);
+-		put_online_cpus();
++	}
++
++	rsp->completed = rsp->gpnum; /* Declare grace period done. */
++	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
++	rsp->fqs_state = RCU_GP_IDLE;
++	if (cpu_needs_another_gp(rsp, rdp))
++		rsp->gp_flags = 1;
++	raw_spin_unlock_irq(&rnp->lock);
++	return 1;
++}
++
++/*
++ * Body of kthread that handles grace periods.
++ */
++static int __noreturn rcu_gp_kthread(void *arg)
++{
++	struct rcu_state *rsp = arg;
++	struct rcu_node *rnp = rcu_get_root(rsp);
++
++	for (;;) {
++
++		/* Handle grace-period start. */
++		for (;;) {
++			wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
++			if (rsp->gp_flags && rcu_gp_init(rsp))
++				break;
++			cond_resched();
++			flush_signals(current);
++		}
+ 
+ 		/* Handle grace-period end. */
+ 		rnp = rcu_get_root(rsp);
+@@ -1123,56 +1187,12 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 						 !ACCESS_ONCE(rnp->qsmask) &&
+ 						 !rcu_preempt_blocked_readers_cgp(rnp));
+ 			if (!ACCESS_ONCE(rnp->qsmask) &&
+-			    !rcu_preempt_blocked_readers_cgp(rnp))
++			    !rcu_preempt_blocked_readers_cgp(rnp) &&
++			    rcu_gp_cleanup(rsp))
+ 				break;
++			cond_resched();
+ 			flush_signals(current);
+ 		}
+-
+-		raw_spin_lock_irq(&rnp->lock);
+-		gp_duration = jiffies - rsp->gp_start;
+-		if (gp_duration > rsp->gp_max)
+-			rsp->gp_max = gp_duration;
+-
+-		/*
+-		 * We know the grace period is complete, but to everyone else
+-		 * it appears to still be ongoing.  But it is also the case
+-		 * that to everyone else it looks like there is nothing that
+-		 * they can do to advance the grace period.  It is therefore
+-		 * safe for us to drop the lock in order to mark the grace
+-		 * period as completed in all of the rcu_node structures.
+-		 *
+-		 * But if this CPU needs another grace period, it will take
+-		 * care of this while initializing the next grace period.
+-		 * We use RCU_WAIT_TAIL instead of the usual RCU_DONE_TAIL
+-		 * because the callbacks have not yet been advanced: Those
+-		 * callbacks are waiting on the grace period that just now
+-		 * completed.
+-		 */
+-		if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
+-			raw_spin_unlock_irq(&rnp->lock);
+-
+-			/*
+-			 * Propagate new ->completed value to rcu_node
+-			 * structures so that other CPUs don't have to
+-			 * wait until the start of the next grace period
+-			 * to process their callbacks.
+-			 */
+-			rcu_for_each_node_breadth_first(rsp, rnp) {
+-				raw_spin_lock_irq(&rnp->lock);
+-				rnp->completed = rsp->gpnum;
+-				raw_spin_unlock_irq(&rnp->lock);
+-				cond_resched();
+-			}
+-			rnp = rcu_get_root(rsp);
+-			raw_spin_lock_irq(&rnp->lock);
+-		}
+-
+-		rsp->completed = rsp->gpnum; /* Declare grace period done. */
+-		trace_rcu_grace_period(rsp->name, rsp->completed, "end");
+-		rsp->fqs_state = RCU_GP_IDLE;
+-		if (cpu_needs_another_gp(rsp, rdp))
+-			rsp->gp_flags = 1;
+-		raw_spin_unlock_irq(&rnp->lock);
+ 	}
+ }
+ 
 -- 
-1.7.7
+1.7.8
 
