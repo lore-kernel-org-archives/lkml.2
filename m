@@ -1,231 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab2ITGDV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:03:21 -0400
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:33049 "EHLO
-	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751651Ab2ITGDT (ORCPT
+	id S1752252Ab2ITGDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:03:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33480 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2ITGDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:03:19 -0400
-From: Maya Erez <merez@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC/PATCH 2/2] mmc: new packet notification
-Date: Thu, 20 Sep 2012 09:02:32 +0300
-Message-Id: <1348120954-6937-3-git-send-email-merez@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <n>
-References: <n>
+	Thu, 20 Sep 2012 02:03:31 -0400
+Date: Thu, 20 Sep 2012 16:03:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120920160314.b3ea668fc0766224c24bf276@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Sep_2012_16_03_14_+1000_g2jXex_u/iVR9wS8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Dorfman <kdorfman@codeaurora.org>
+--Signature=_Thu__20_Sep_2012_16_03_14_+1000_g2jXex_u/iVR9wS8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unblock waiting for current request running on the bus,
-when new packet supplied by block layer. This improves async request
-mechanism.
-In most cases new request is inserted after mmc layer fetched NULL
-and was blocked on waiting for the previous request completion.
-The new event new_packet_flag wakes mmc layer and allow it to
-immediately fetch the new inserted request.
+Hi all,
 
-Signed-off-by: Konstantin Dorfman <kdorfman@codeaurora.org>
----
- drivers/mmc/card/block.c |   11 +++++++++--
- drivers/mmc/card/queue.c |   29 +++++++++++++++++++++++++----
- drivers/mmc/core/core.c  |   21 +++++++++++++++++++++
- include/linux/mmc/card.h |    1 +
- include/linux/mmc/core.h |    1 +
- 5 files changed, 57 insertions(+), 6 deletions(-)
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-integrator/integrator_cp.c between commit 73efd53012af
+("ARM: 7519/1: integrator: convert platform devices to Device Tree") from
+the arm tree and commit b7a3f8db07c1 ("ARM: integrator: use __iomem
+pointers for MMIO") from the arm-soc tree.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index e739c2f..8b996c3 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1820,8 +1820,11 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
- 		} else
- 			areq = NULL;
- 		areq = mmc_start_data_req(card->host, areq, (int *) &status);
--		if (!areq)
-+		if (!areq) {
-+			if (status == MMC_BLK_NEW_PACKET)
-+				return status;
- 			return 0;
-+		}
- 
- 		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
- 		brq = &mq_rq->brq;
-@@ -1830,6 +1833,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
- 		mmc_queue_bounce_post(mq_rq);
- 
- 		switch (status) {
-+		case MMC_BLK_NEW_PACKET:
-+			BUG_ON(1); /* should never get here */
-+			return MMC_BLK_NEW_PACKET;
- 		case MMC_BLK_URGENT:
- 			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
- 				/* complete successfully transmitted part */
-@@ -2012,9 +2018,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 	}
- 
- out:
--	if (!req)
-+	if (!req && (ret != MMC_BLK_NEW_PACKET))
- 		/* release host only when there are no more requests */
- 		mmc_release_host(card->host);
-+
- 	return ret;
- }
- 
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index b56ff33..0b9bac3 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -74,7 +74,9 @@ static int mmc_queue_thread(void *d)
- 
- 		if (req || mq->mqrq_prev->req) {
- 			set_current_state(TASK_RUNNING);
--			mq->issue_fn(mq, req);
-+			if (mq->issue_fn(mq, req) == MMC_BLK_NEW_PACKET) {
-+				continue; /* fetch again */
-+			}
- 		} else {
- 			if (kthread_should_stop()) {
- 				set_current_state(TASK_RUNNING);
-@@ -105,6 +107,7 @@ static int mmc_queue_thread(void *d)
-  */
- static void mmc_request_fn(struct request_queue *q)
- {
-+	unsigned long flags;
- 	struct mmc_queue *mq = q->queuedata;
- 	struct request *req;
- 
-@@ -115,9 +118,26 @@ static void mmc_request_fn(struct request_queue *q)
- 		}
- 		return;
- 	}
--
--	if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
--		wake_up_process(mq->thread);
-+	if (!mq->mqrq_cur->req && mq->mqrq_prev->req) {
-+		/* new packet arrived, while mmc context waiting with no
-+		 * async packet
-+		 */
-+		mq->sync_data.skip_urgent_flag = false;
-+		/* critical section with mmc_wait_data_req_done() */
-+		spin_lock_irqsave(&mq->sync_data.lock, flags);
-+		/* do stop flow only when mmc thread is waiting for done */
-+		if (mq->sync_data.waiting_flag &&
-+				!mq->sync_data.new_packet_flag &&
-+				!mq->sync_data.skip_urgent_flag) {
-+
-+			mq->sync_data.new_packet_flag = true;
-+			wake_up_interruptible(&mq->sync_data.wait);
-+		}
-+		spin_unlock_irqrestore(&mq->sync_data.lock, flags);
-+	} else {
-+		if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
-+			wake_up_process(mq->thread);
-+	}
- }
- 
- /*
-@@ -307,6 +327,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	spin_lock_init(&mq->sync_data.lock);
- 	mq->sync_data.skip_urgent_flag = false;
- 	mq->sync_data.urgent_flag = false;
-+	mq->sync_data.new_packet_flag = false;
- 	mq->sync_data.done_flag = false;
- 	mq->sync_data.waiting_flag = false;
- 	init_waitqueue_head(&mq->sync_data.wait);
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 623f60b..5309990 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -414,18 +414,23 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
- 	int ret = 0;
- 	bool done_flag = false;
- 	bool urgent_flag = false;
-+	bool new_packet_flag = false;
- 	int err;
- 
- 	while (1) {
- 		sync_data->waiting_flag = true;
-+		sync_data->new_packet_flag = false;
- 		wait_event_interruptible(sync_data->wait,
- 				(sync_data->done_flag ||
-+				 sync_data->new_packet_flag ||
- 				 sync_data->urgent_flag));
- 		sync_data->waiting_flag = false;
- 		done_flag = sync_data->done_flag;
- 		urgent_flag = sync_data->urgent_flag;
-+		new_packet_flag = sync_data->new_packet_flag;
- 		if (done_flag) {
- 			sync_data->done_flag = false;
-+			sync_data->new_packet_flag = false;
- 			cmd = mrq->cmd;
- 			if (!cmd->error || !cmd->retries ||
- 					mmc_card_removed(host->card)) {
-@@ -460,6 +465,10 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
- 				sync_data->done_flag = false;
- 				continue; /* wait for done/urgent event again */
- 			}
-+		} else if (new_packet_flag) {
-+			sync_data->new_packet_flag = false;
-+			err = MMC_BLK_NEW_PACKET;
-+			break; /* return err */
- 		}
- 		if (urgent_flag) {
- 			/*
-@@ -590,6 +599,18 @@ struct mmc_async_req *mmc_start_data_req(struct mmc_host *host,
- 				host->areq->reinsert_request(areq);
- 			host->areq = NULL;
- 			goto exit;
-+		} else if (err == MMC_BLK_NEW_PACKET) {
-+			if (areq) {
-+				pr_err("%s: new packet while areq = %p",
-+						__func__, areq);
-+				BUG_ON(1);
-+			}
-+			*error = err;
-+			/*
-+			 * The previous request was not completed,
-+			 * nothing to return
-+			 */
-+			return NULL;
- 		}
- 	}
- 
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 50eb211..a39c3ac 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -217,6 +217,7 @@ enum mmc_blk_status {
- 	MMC_BLK_ECC_ERR,
- 	MMC_BLK_NOMEDIUM,
- 	MMC_BLK_URGENT,
-+	MMC_BLK_NEW_PACKET,
- };
- 
- /*
-diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
-index c02d753..fb6bcfd 100644
---- a/include/linux/mmc/core.h
-+++ b/include/linux/mmc/core.h
-@@ -135,6 +135,7 @@ struct mmc_data {
- struct mmc_sync_data {
- 	bool			done_flag;
- 	bool			urgent_flag;
-+	bool			new_packet_flag;
- 	bool			skip_urgent_flag;
- 	bool			waiting_flag;
- 	wait_queue_head_t	wait;
--- 
-1.7.6
--- 
-QUALCOMM ISRAEL,
-on behalf of Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-integrator/integrator_cp.c
+index f51363e,3df5fc3..0000000
+--- a/arch/arm/mach-integrator/integrator_cp.c
++++ b/arch/arm/mach-integrator/integrator_cp.c
+@@@ -55,7 -52,14 +55,7 @@@
+ =20
+  #define INTCP_PA_CLCD_BASE		0xc0000000
+ =20
+- #define INTCP_VA_CTRL_BASE		IO_ADDRESS(INTEGRATOR_CP_CTL_BASE)
+ -#define INTCP_VA_CIC_BASE		__io_address(INTEGRATOR_HDR_BASE + 0x40)
+ -#define INTCP_VA_PIC_BASE		__io_address(INTEGRATOR_IC_BASE)
+ -#define INTCP_VA_SIC_BASE		__io_address(INTEGRATOR_CP_SIC_BASE)
+ -
+ -#define INTCP_ETH_SIZE			0x10
+ -
++ #define INTCP_VA_CTRL_BASE		__io_address(INTEGRATOR_CP_CTL_BASE)
+  #define INTCP_FLASHPROG			0x04
+  #define CINTEGRATOR_FLASHPROG_FLVPPEN	(1 << 0)
+  #define CINTEGRATOR_FLASHPROG_FLWREN	(1 << 1)
+
+--Signature=_Thu__20_Sep_2012_16_03_14_+1000_g2jXex_u/iVR9wS8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQWrGiAAoJEECxmPOUX5FEQagP/3G7PdyMhYBnEXYXfeyGnKEo
+hpKRUJ6JfIKw/NCta9ytzFaQPQo0T/ENszM18jVLOMb+0Ol4Mr9H9uS4hfWPVuk5
+v4JKbQnWR4JzqDRm05V2j+3tgCqUpbslBxnocD3iusJqHpVxcFINAMHQPiKbCwQT
+PORV+V87riPh6P2EOfdNxzpQwn7Mkf0kT9cA9kPnzILD06aD/78bUuOBTeXLFn1a
+yQBZcUEuFnfSJGJUk/Eit7k9pqMs5n8aCECJtejV+ow4PCGGdzuwVzRqrGBCNx1N
+EzsG0kPOPnTTW70VrIskXDC8zXIIfjZAHIjxF9Xy+pc7XydOrr6na/Yu1syqS87a
+YZDen0BNDqLmYEyiFH5P/Sr0vFjtbkO2iwVBzrbvczLoy6IcEcjRmqUQ+rne7o3e
+zJKPGHvsLONiXmTgNpug0oUadk0JPOEFJnX7rf19BL7ySdA1/EFiatTjFXyyW/uV
+JUWjpTI5CxEEoVb3YDD/6ryq5pW50/5DbzITr2ALwZ9uJZWl9sdJmivIpsaKhB0I
++m+KBwd5M+20Y9dJ2sBLo3tTOTSrH0Cyr0p7Q9sYkmrDJu8T8lwy6OcVSgDlRcdH
+5CbqiQuCQw+21M/z7Yyylr4lVYuO5EzqwYCtXV2gPujpC2eIINtyK922v44rBeP/
+3asFr0O9GTRi4BwCP2lV
+=0qYs
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Sep_2012_16_03_14_+1000_g2jXex_u/iVR9wS8--
