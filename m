@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509Ab2ITGeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:34:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34034 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2ITGeV (ORCPT
+	id S1751679Ab2ITGet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:34:49 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49483 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2ITGer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:34:21 -0400
+	Thu, 20 Sep 2012 02:34:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <1347983122-15174-1-git-send-email-lee.jones@linaro.org>
-References: <1347983122-15174-1-git-send-email-lee.jones@linaro.org>
-Date: Thu, 20 Sep 2012 08:34:20 +0200
-Message-ID: <CACRpkdbX_FuZnX2J16UCD1KX-r55KU-st-Fv1AGZhionG6NM7g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: ux500: Remove redundant #gpio-cell properties
- from Snowball DT
+In-Reply-To: <1347983548-15243-1-git-send-email-lee.jones@linaro.org>
+References: <1347983548-15243-1-git-send-email-lee.jones@linaro.org>
+Date: Thu, 20 Sep 2012 08:34:46 +0200
+Message-ID: <CACRpkdb3KMMOvyi2kKGXUNH+=8Cy3xNDRa7Ez6aSLgod_8mF9A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: ux500: Fix SSP register address format
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -24,10 +23,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 18, 2012 at 5:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Tue, Sep 18, 2012 at 5:52 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> This property has no place here as the populated node is not related
-> to a GPIO controller.
+> SSP won't probe unless the specified register address format
+> is correct i.e. we have to specify that the address is in hex.
+> After this patch has been applied, the SSP (SPI) driver probes
+> as expected.
 >
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
