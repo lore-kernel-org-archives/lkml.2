@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2ITGks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:40:48 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47427 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab2ITGkr (ORCPT
+	id S1752860Ab2ITGlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:41:03 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8412 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab2ITGlA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:40:47 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-67-505aba6c5e8e
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH v3] memory-hotplug: fix zone stat mismatch
-Date: Thu, 20 Sep 2012 15:43:25 +0900
-Message-Id: <1348123405-30641-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Sep 2012 02:41:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 19 Sep 2012 23:40:37 -0700
+From: Krishna Reddy <vdumpa@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>, Arnd Bergmann <arnd@arndb.de>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 19 Sep 2012 23:40:36 -0700
+Subject: RE: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
+ more precisely
+Thread-Topic: [RFC 0/5] ARM: dma-mapping: New dma_map_ops to control IOVA
+ more precisely
+Thread-Index: Ac2W1q01x4OVKakkSN+vu1KsZkBn5wAIJtrw
+Message-ID: <401E54CE964CD94BAE1EB4A729C7087E379FDC1F2D@HQMAIL04.nvidia.com>
+References: <1346223335-31455-1-git-send-email-hdoyu@nvidia.com>
+ <20120918124918.GK2505@amd.com>
+ <20120919095843.d1db155e0f085f4fcf64ea32@nvidia.com>
+ <201209190759.46174.arnd@arndb.de> <20120919125020.GQ2505@amd.com>
+ <401E54CE964CD94BAE1EB4A729C7087E379FDC1EEB@HQMAIL04.nvidia.com>
+ <505A7DB4.4090902@wwwdotorg.org>
+In-Reply-To: <505A7DB4.4090902@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During memory-hotplug, I found NR_ISOLATED_[ANON|FILE]
-are increasing so that kernel are hang out.
+> > On Tegra, the following use cases need specific IOVA mapping.
+> > 1. Few MMIO blocks need IOVA=PA mapping setup.
+> 
+> In that case, why would we enable the IOMMU for that one device; IOMMU
+> disabled means VA==PA, right? Perhaps isolation of the device so it can only
+> access certain PA ranges for security?
 
-The cause is that when we do memory-hotadd after memory-remove,
-__zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
-although vm_stat_diff of all CPU still have value.
+The device(H/W controller) need to access few special memory blocks(IOVA==PA)
+and DRAM as well. If IOMMU is disabled, then it has to handle memory fragmentation,
+ which defeats the purpose of IOMMU support.
+There is also a case where frame buffer memory is passed from BootLoader to Kernel and
+display H/W  continues to access it with IOMMU enabled. To support this, the one to one
+mapping has to be setup before enabling IOMMU.
 
-In addtion, when we offline all pages of the zone, we reset them
-in zone_pcp_reset without drain so that we lost zone stat item.
+-KR
 
-This patch fixes it.
 
-* from v2
-  * Add Reviewed-by - Wen
-
-* from v1
-  * drain offline patch - KOSAKI, Wen
-
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/vmstat.h |    4 ++++
- mm/page_alloc.c        |    7 +++++++
- mm/vmstat.c            |   12 ++++++++++++
- 3 files changed, 23 insertions(+)
-
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index ad2cfd5..5d31876 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -198,6 +198,8 @@ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
- void refresh_cpu_vm_stats(int);
- void refresh_zone_stat_thresholds(void);
- 
-+void drain_zonestat(struct zone *zone, struct per_cpu_pageset *);
-+
- int calculate_pressure_threshold(struct zone *zone);
- int calculate_normal_threshold(struct zone *zone);
- void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-@@ -251,6 +253,8 @@ static inline void __dec_zone_page_state(struct page *page,
- static inline void refresh_cpu_vm_stats(int cpu) { }
- static inline void refresh_zone_stat_thresholds(void) { }
- 
-+static inline void drain_zonestat(struct zone *zone,
-+			struct per_cpu_pageset *pset) { }
- #endif		/* CONFIG_SMP */
- 
- extern const char * const vmstat_text[];
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ab58346..980f2e7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5904,6 +5904,7 @@ static int __meminit __zone_pcp_update(void *data)
- 		local_irq_save(flags);
- 		if (pcp->count > 0)
- 			free_pcppages_bulk(zone, pcp->count, pcp);
-+		drain_zonestat(zone, pset);
- 		setup_pageset(pset, batch);
- 		local_irq_restore(flags);
- 	}
-@@ -5920,10 +5921,16 @@ void __meminit zone_pcp_update(struct zone *zone)
- void zone_pcp_reset(struct zone *zone)
- {
- 	unsigned long flags;
-+	int cpu;
-+	struct per_cpu_pageset *pset;
- 
- 	/* avoid races with drain_pages()  */
- 	local_irq_save(flags);
- 	if (zone->pageset != &boot_pageset) {
-+		for_each_online_cpu(cpu) {
-+			pset = per_cpu_ptr(zone->pageset, cpu);
-+			drain_zonestat(zone, pset);
-+		}
- 		free_percpu(zone->pageset);
- 		zone->pageset = &boot_pageset;
- 	}
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index b3e3b9d..d4cc1c2 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -495,6 +495,18 @@ void refresh_cpu_vm_stats(int cpu)
- 			atomic_long_add(global_diff[i], &vm_stat[i]);
- }
- 
-+void drain_zonestat(struct zone *zone, struct per_cpu_pageset *pset)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
-+		if (pset->vm_stat_diff[i]) {
-+			int v = pset->vm_stat_diff[i];
-+			pset->vm_stat_diff[i] = 0;
-+			atomic_long_add(v, &zone->vm_stat[i]);
-+			atomic_long_add(v, &vm_stat[i]);
-+		}
-+}
- #endif
- 
- #ifdef CONFIG_NUMA
--- 
-1.7.9.5
 
