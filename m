@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2ITNYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:24:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60449 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753501Ab2ITNYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:24:10 -0400
-Date: Thu, 20 Sep 2012 15:24:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 2.6.32] memcg: warn on deeper hierarchies with
- use_hierarchy==0
-Message-ID: <20120920132400.GC23872@dhcp22.suse.cz>
-References: <20120913205827.GO7677@google.com>
- <20120914150306.GQ28039@dhcp22.suse.cz>
- <20120919140203.GA5398@dhcp22.suse.cz>
- <20120919140308.GB5398@dhcp22.suse.cz>
- <alpine.DEB.2.00.1209191237020.749@chino.kir.corp.google.com>
+	id S1755208Ab2ITN1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:27:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56260 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab2ITN1w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 09:27:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual machines
+Date: Thu, 20 Sep 2012 13:27:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1209201240110.29232@kaball.uk.xensource.com> <1348143533.26501.28.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1348143533.26501.28.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1209191237020.749@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201209201327.45802.arnd@arndb.de>
+X-Provags-ID: V02:K0:MbamWzyfXUWMJ4bda6+S6Fl6++JJwT+lvfOV1RSoIMq
+ fblgtv0+qKgmgbvcArD1nwhvEElfTCXnkzOxIZunO8hxtz/X61
+ hUe5TmeAQEdrkxP1HkJnHRFkO94UhGLlZCS9bKCL7aA4bCGF6q
+ xBNxffC20ZQBTIJemklzXDtCReJCUD46RCHqmvk6qaiQOnv7Se
+ MwcpF491XefSCKBlEGE7px9eJbnMINpFeLsKkGah/OPs/9n+9I
+ 3NYD7yvkzz4uUH+6eokrYcGUMMVrev8+BNUiDTD483lf3g5+IB
+ oY+93PV4dM5Xgx6TAhD4kzkpnoOL3sr3Q800ynTBB0HdC1IsOQ
+ ZbBxse1F0TI+qiM+Ribk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 19-09-12 12:38:18, David Rientjes wrote:
-> On Wed, 19 Sep 2012, Michal Hocko wrote:
-> 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f99f599..b61c34b 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -3106,6 +3106,11 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >  	} else {
-> >  		parent = mem_cgroup_from_cont(cont->parent);
-> >  		mem->use_hierarchy = parent->use_hierarchy;
-> > +		WARN_ONCE(!mem->use_hierarchy && parent != root_mem_cgroup,
-> > +				"Creating hierarchies with use_hierarchy==0 "
-> > +				"(flat hierarchy) is considered deprecated. "
-> > +				"If you believe that your setup is correct, "
-> > +				"we kindly ask you to contact linux-mm@kvack.org and let us know");
-> 
-> When I deprecated /proc/pid/oom_adj (now removed), we did a WARN_ONCE() 
-> and others complained that this unnecessarily alters userspace scripts 
-> that a serious issue has occurred and Linus agreed that we shouldn't do 
-> deprecation in this way.  The alternative is to use printk_once() instead.
+On Thursday 20 September 2012, Ian Campbell wrote:
+> On Thu, 2012-09-20 at 12:56 +0100, Stefano Stabellini wrote:
+> > On Thu, 20 Sep 2012, Ian Campbell wrote:
+> > > On Wed, 2012-09-19 at 18:44 +0100, Stefano Stabellini wrote:
 
-Yes printk_once is an alternative but I really wanted to have this as
-much visible as possible. People tend to react to stack traceces more
-and this one will trigger only if somebody is either doing something
-wrong or the configuration is the one we are looking for.
+> > > > + compatible = "xen,xenvm-4.2", "arm,vexpress";
+> > > 
+> > > Is this second compatible thing actually true? We don't actually emulate
+> > > much (anything?) of what would be on a real vexpress motherboard.
+> > > 
+> > > "arm,vexpress" is used only in v2m.c and I don't think we want the
+> > > majority of that -- we don't provide any of the peripherals which it
+> > > registers.
+> > > 
+> > > I think the only things we might want out of that lot are the arch timer
+> > > and perhaps the uart0 (as a debug port).
+> > > 
+> > > I suspect we should have our own xen machine .c.
+> > > 
+> > > [...]
+> > 
+> > It is true that we are "arm,vexpress" compatible at the moment.
+> 
+> But we aren't, we don't emulate 90%+ of the actual hardware which
+> vexpress compatibility would actually imply.
+> 
+> Look in arch/arm/mach-vexpress/v2m.c, which is the only thing keyed off
+> this compat value -- it's full of stuff which we don't (and aren't going
+> to) implement.
 
-Comparing to oom_adj, that one was used much more often so the WARN_ONCE
-was too verbose especially when you usually had to wait for an userspace
-update which is not the case here.
--- 
-Michal Hocko
-SUSE Labs
+It's not much different in the end, but I think I'd rather make the
+compatible list in the device tree "xen,xenvm-4.2", "xen,xenvm" without
+listing "arm,vexpress", but then adding "xen,xenvm" to the list of
+compatible devices in the vexpress kernel code.
+
+The main difference is that if we decide to separate out the Linux
+code for Xen and vexpress later into distinct ports, we have the
+option to do that. vexpress will support multiplatform configurations
+in 3.7 anyway, so the idea of making all virtual platforms part of
+vexpress in order to be able to boot the same kernel on them is not
+all that important any more.
+
+	Arnd
