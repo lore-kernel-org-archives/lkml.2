@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab2ITMUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:20:40 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:40122 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab2ITMUg (ORCPT
+	id S1754797Ab2ITMVC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:21:02 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:38280 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab2ITMNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:20:36 -0400
-Message-ID: <505B09FE.1050907@panasas.com>
-Date: Thu, 20 Sep 2012 15:20:14 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Benny Halevy <bhalevy@tonian.com>
-Subject: Re: [PATCH 12/25] userns: Convert exofs to use kuid/kgid where appropriate
-References: <877grox6ql.fsf@xmission.com> <1348141326-23355-1-git-send-email-ebiederm@xmission.com> <1348141326-23355-12-git-send-email-ebiederm@xmission.com>
-In-Reply-To: <1348141326-23355-12-git-send-email-ebiederm@xmission.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 08:13:09 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olof.johansson@gmail.com,
+        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org
+Subject: [PATCH 04/32] Documentation: Add the AB8500 CODEC device to the MFD AB8500 doc
+Date: Thu, 20 Sep 2012 14:12:22 +0200
+Message-Id: <1348143170-2130-5-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
+References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 02:41 PM, Eric W. Biederman wrote:
+Here we document the AB8500 Audio CODEC in the existing MFD AB8500 document.
 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
-> Cc: Benny Halevy <bhalevy@tonian.com>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+CC: alsa-devel@alsa-project.org
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ Documentation/devicetree/bindings/mfd/ab8500.txt |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-
-Acked-by: Boaz Harrosh <bharrosh@panasas.com>
-
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  fs/exofs/inode.c |    8 ++++----
->  init/Kconfig     |    1 -
->  2 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-> index 5badb0c..190c3d6 100644
-> --- a/fs/exofs/inode.c
-> +++ b/fs/exofs/inode.c
-> @@ -1163,8 +1163,8 @@ struct inode *exofs_iget(struct super_block *sb, unsigned long ino)
->  
->  	/* copy stuff from on-disk struct to in-memory struct */
->  	inode->i_mode = le16_to_cpu(fcb.i_mode);
-> -	inode->i_uid = le32_to_cpu(fcb.i_uid);
-> -	inode->i_gid = le32_to_cpu(fcb.i_gid);
-> +	i_uid_write(inode, le32_to_cpu(fcb.i_uid));
-> +	i_gid_write(inode, le32_to_cpu(fcb.i_gid));
->  	set_nlink(inode, le16_to_cpu(fcb.i_links_count));
->  	inode->i_ctime.tv_sec = (signed)le32_to_cpu(fcb.i_ctime);
->  	inode->i_atime.tv_sec = (signed)le32_to_cpu(fcb.i_atime);
-> @@ -1376,8 +1376,8 @@ static int exofs_update_inode(struct inode *inode, int do_sync)
->  	fcb = &args->fcb;
->  
->  	fcb->i_mode = cpu_to_le16(inode->i_mode);
-> -	fcb->i_uid = cpu_to_le32(inode->i_uid);
-> -	fcb->i_gid = cpu_to_le32(inode->i_gid);
-> +	fcb->i_uid = cpu_to_le32(i_uid_read(inode));
-> +	fcb->i_gid = cpu_to_le32(i_gid_read(inode));
->  	fcb->i_links_count = cpu_to_le16(inode->i_nlink);
->  	fcb->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
->  	fcb->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 51084b0..39e55d6 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -941,7 +941,6 @@ config UIDGID_CONVERTED
->  	depends on CEPH_FS = n
->  	depends on CIFS = n
->  	depends on CODA_FS = n
-> -	depends on EXOFS_FS = n
->  	depends on FUSE_FS = n
->  	depends on GFS2_FS = n
->  	depends on HFS_FS = n
-
+diff --git a/Documentation/devicetree/bindings/mfd/ab8500.txt b/Documentation/devicetree/bindings/mfd/ab8500.txt
+index 69e757a..ce83c8d 100644
+--- a/Documentation/devicetree/bindings/mfd/ab8500.txt
++++ b/Documentation/devicetree/bindings/mfd/ab8500.txt
+@@ -23,6 +23,7 @@ Device                     IRQ Names              Supply Names   Description
+ ab8500-bm                :                      :              : Battery Manager
+ ab8500-btemp             :                      :              : Battery Temperature
+ ab8500-charger           :                      :              : Battery Charger
++ab8500-codec             :                      :              : Audio Codec
+ ab8500-fg                :                      :              : Fuel Gauge
+ ab8500-gpadc             : HW_CONV_END          : vddadc       : Analogue to Digital Converter
+                            SW_CONV_END          :              :
+@@ -52,6 +53,14 @@ Optional child device properties:
+                            supplied in the interrupts property
+ - <supply_name>-supply   : contains a phandle to the regulator supply node in Device Tree
+ 
++Non-standard child device properties:
++ - Audio CODEC:
++   - stericsson,amic[1|2]-type-single-ended : Single-ended Analoge Mic (default: differential)
++   - stericsson,amic1a-bias-vamic2          : Analoge Mic wishes to use a non-standard Vamic
++   - stericsson,amic1b-bias-vamic2          : Analoge Mic wishes to use a non-standard Vamic
++   - stericsson,amic2-bias-vamic1           : Analoge Mic wishes to use a non-standard Vamic
++   - stericsson,earpeice-cmv                : Earpeice voltage (only: 950 | 1100 | 1270 | 1580)
++
+ ab8500@5 {
+          compatible = "stericsson,ab8500";
+          reg = <5>; /* mailbox 5 is i2c */
+@@ -110,6 +119,12 @@ ab8500@5 {
+                 compatible = "stericsson,ab8500-pwm";
+         };
+ 
++	codec: ab8500-codec {
++		compatible = "stericsson,ab8500-codec";
++
++		stericsson,earpeice-cmv = <950>; /* Units in mV. */
++	};
++
+         ab8500-regulators {
+                 compatible = "stericsson,ab8500-regulator";
+ 
+-- 
+1.7.9.5
 
