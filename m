@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab2ITLbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 07:31:08 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23530 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab2ITLbG (ORCPT
+	id S1754068Ab2ITLk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 07:40:29 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:39009 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab2ITLk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 07:31:06 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14653558"
-Message-ID: <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
-From: Oliver Chick <oliver.chick@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Sep 2012 12:30:37 +0100
-In-Reply-To: <505AF126.2050806@citrix.com>
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
-	 <505AF126.2050806@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Sep 2012 07:40:26 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: <linux-fsdevel@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>
+Date: Thu, 20 Sep 2012 04:40:18 -0700
+Message-ID: <877grox6ql.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/oX5Jslyd6zVysf5Z3PeyFQH0y1hkqHRk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [REVIEW][PATCH 00/25] userns: Trivial filesystem conversions
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory overhead, and fallback mode points are related:
--Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
-per device. I made a mistake (pointed out by Jan) as the maximum number
-of requests that can fit into a single-page ring is 64, not 256.
--Clearly, this still scales linearly. So the problem of memory footprint
-will occur with more VMs, or block devices.
--Whilst 2.75MB per device is probably acceptable (?), if we start using
-multipage rings, then we might not want to have
-BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
-memory overhead to increase. This is why I have implemented the
-'fallback' mode. With a multipage ring, it seems reasonable to want the
-first $x$ grefs seen by blkback to be treated as persistent, and any
-later ones to be non-persistent. Does that seem sensible?
 
+This continues my conversion of uid_t and gidt into kuid_t and kgid_t.
+This time my target was all of the file systems that had an extremely
+trivial conversion.
 
-On Thu, 2012-09-20 at 11:34 +0100, David Vrabel wrote:
-> On 19/09/12 11:51, Oliver Chick wrote:
-> > This patch implements persistent grants for the xen-blk{front,back}
-> > mechanism.
-> [...]
-> > We (ijc, and myself) have introduced a new constant,
-> > BLKIF_MAX_PERS_REQUESTS_PER_DEV. This is to prevent a malicious guest
-> > from attempting a DoS, by supplying fresh grefs, causing the Dom0
-> > kernel from to map excessively. 
-> [...]
-> > 2) Otherwise, we revert to non-persistent grants for all future grefs.
-> 
-> Why fallback instead of immediately failing the request?
-> > diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> > index 73f196c..f95dee9 100644
-> > --- a/drivers/block/xen-blkback/blkback.c
-> > +++ b/drivers/block/xen-blkback/blkback.c
-> > @@ -78,6 +78,7 @@ struct pending_req {
-> >  	unsigned short		operation;
-> >  	int			status;
-> >  	struct list_head	free_list;
-> > +	u8			is_pers;
-> 
-> Using "pers" as an abbreviation for "persistent" isn't obvious.  For
-> readability it may be better spell it in full.
-> 
-Good point
+These patches are against:
+git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-next
 
-> > +/*
-> > + * Maximum number of persistent grants that can be mapped by Dom0 for each
-> > + * interface. This is set to be the size of the ring, as this is a limit on
-> > + * the number of requests that can be inflight at any one time. 256 imposes
-> > + * an overhead of 11MB of mapped kernel space per interface.
-> > + */
-> > +#define BLKIF_MAX_PERS_REQUESTS_PER_DEV 256
-> 
-> This 11MB per VBD seems like a lot.  With 150 VMs each with 2 VBDs this
-> requires > 3 GB.  Is this a scalability problem?
+Which is against 3.6-rc1.
 
+Once the review is complete I will push these patches to my for-next
+branch, hopefully in time for 3.7.
 
-> 
-> Does there need to be a mechanism to expire old maps in blkback?
+Eric
 
+Eric W. Biederman (25):
+      userns: Convert fat to use kuid/kgid where appropriate
+      userns: Convert gadgetfs to use kuid and kgid where appropriate
+      userns: Convert usb functionfs to use kuid/kgid where appropriate
+      userns: Convert devtmpfs to use GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
+      userns: Convert hugetlbfs to use kuid/kgid where appropriate
+      userns: Convert xenfs to use kuid and kgid where appropriate
+      userns: Convert adfs to use kuid and kgid where appropriate
+      userns: Convert befs to use kuid/kgid where appropriate
+      userns: Convert cramfs to use kuid/kgid where appropriate
+      userns: Convert ecryptfs to use kuid/kgid where appropriate
+      userns: Convert efs to use kuid/kgid where appropriate
+      userns: Convert exofs to use kuid/kgid where appropriate
+      userns: Convert hfs to use kuid and kgid where appropriate
+      userns: Convert hfsplus to use kuid and kgid where appropriate
+      userns: Convert isofs to use kuid/kgid where appropriate
+      userns: Convert logfs to use kuid/kgid where appropriate
+      userns: Convert minix to use kuid/kgid where appropriate
+      userns: Convert nillfs2 to use kuid/kgid where appropriate
+      userns: Convert ntfs to use kuid and kgid where appropriate
+      userns: Convert omfs to use kuid and kgid where appropriate
+      userns: Convert the qnx4 filesystem to use kuid/kgid where appropriate
+      userns: Convert the qnx6 filesystem to use kuid/kgid where appropriate
+      userns: Convert the sysv filesystem to use kuid/kgid where appropriate
+      userns: Convert freevxfs to use kuid/kgid where appropriate
+      userns: Convert ipathfs to use GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
 
-When blkback closes, I unmap. Or do you mean that I could unmap if there
-has been a spike in block-device activity, after which the mapped pages
-are not getting used?
-> 
-> David
-
-
+ drivers/base/devtmpfs.c            |    4 +-
+ drivers/infiniband/hw/qib/qib_fs.c |    4 +-
+ drivers/usb/gadget/f_fs.c          |   23 ++++++++++++++------
+ drivers/usb/gadget/inode.c         |    4 +-
+ drivers/xen/xenfs/super.c          |    3 +-
+ fs/adfs/adfs.h                     |    4 +-
+ fs/adfs/inode.c                    |    4 +-
+ fs/adfs/super.c                    |   21 ++++++++++++-------
+ fs/befs/befs.h                     |    4 +-
+ fs/befs/linuxvfs.c                 |   27 +++++++++++++++++-------
+ fs/cramfs/inode.c                  |    4 +-
+ fs/ecryptfs/main.c                 |    5 ++-
+ fs/ecryptfs/messaging.c            |    5 +--
+ fs/efs/inode.c                     |    4 +-
+ fs/exofs/inode.c                   |    8 +++---
+ fs/fat/fat.h                       |    4 +-
+ fs/fat/file.c                      |    6 ++--
+ fs/fat/inode.c                     |   18 +++++++++++-----
+ fs/freevxfs/vxfs_inode.c           |    4 +-
+ fs/hfs/hfs_fs.h                    |    4 +-
+ fs/hfs/inode.c                     |    4 +-
+ fs/hfs/super.c                     |   16 ++++++++++++--
+ fs/hfsplus/catalog.c               |    4 +-
+ fs/hfsplus/hfsplus_fs.h            |    4 +-
+ fs/hfsplus/inode.c                 |    8 +++---
+ fs/hfsplus/options.c               |   15 +++++++++++--
+ fs/hugetlbfs/inode.c               |   16 ++++++++++----
+ fs/isofs/inode.c                   |   17 ++++++++++-----
+ fs/isofs/isofs.h                   |    4 +-
+ fs/isofs/rock.c                    |    4 +-
+ fs/logfs/inode.c                   |    4 +-
+ fs/logfs/readwrite.c               |    8 +++---
+ fs/minix/inode.c                   |   16 +++++++-------
+ fs/nilfs2/inode.c                  |    8 +++---
+ fs/ntfs/inode.c                    |    7 +++--
+ fs/ntfs/super.c                    |   39 +++++++++++++++++++++++++++++------
+ fs/ntfs/volume.h                   |    5 ++-
+ fs/omfs/inode.c                    |    8 +++++-
+ fs/omfs/omfs.h                     |    4 +-
+ fs/qnx4/inode.c                    |    4 +-
+ fs/qnx6/inode.c                    |    4 +-
+ fs/sysv/inode.c                    |    8 +++---
+ init/Kconfig                       |   26 ------------------------
+ 43 files changed, 230 insertions(+), 163 deletions(-)
