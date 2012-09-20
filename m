@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab2ITKch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:32:37 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:55785 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab2ITKcg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:32:36 -0400
-Date: Thu, 20 Sep 2012 12:32:22 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
-Message-ID: <20120920123222.7f58ee4c@skate>
-In-Reply-To: <20120920100254.GE21928@lunn.ch>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkda+Kav6RGstSQ9+BCgVV+pR6ca_HmoueODYubX_xYM8Jw@mail.gmail.com>
-	<505AD103.8050004@gmail.com>
-	<20120920110424.3cb4daff@skate>
-	<20120920100254.GE21928@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752871Ab2ITKdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:33:21 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:42304 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab2ITKdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 06:33:20 -0400
+Date: Thu, 20 Sep 2012 12:33:15 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, kprobes: Hide skip_singlestep forward declaration
+ properly
+Message-ID: <20120920103315.GC15391@aftab.osrc.amd.com>
+References: <1348062414-6578-1-git-send-email-bp@amd64.org>
+ <505ADB6B.3070706@hitachi.com>
+ <20120920092540.GB3611@gmail.com>
+ <505AE3B5.6080401@hitachi.com>
+ <20120920094017.GA4918@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120920094017.GA4918@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
+On Thu, Sep 20, 2012 at 11:40:17AM +0200, Ingo Molnar wrote:
+> Could be moved into a separate file as well - we could have
+> arch/x86/kprobes/, with core.c, opt.c, ftrace.c and common.h in it -
+> possibly more in the future.
 
-On Thu, 20 Sep 2012 12:02:54 +0200, Andrew Lunn wrote:
+So, I'm guessing I should move only the function now and let Masami do
+the proper splitup later, correct?
 
-> > Hum, which patches are stalling the integration into the Marvell tree?
-> 
-> l2 cache, I think.
-> 
-> The trees Jason built for pull requests in the direction of arm-soc
-> had the l2 cache patch as the very first in the series. Now that these
-> patches have run into some trouble, its blocking all the patches that
-> followed.
-> 
-> Jason is re-building his trees, throwing out l2 cache for the
-> moment. That should allow Olof/Arnd to pull these trees into arm-soc,
-> and then Jason will work on integrating the remaining patches not
-> already in his trees.
-
-Ok, thanks. Regarding the L2 cache patches, Grégory has replied to
-Russell comments, and will most likely post an updated version late
-next week. So it would be good if the pinctrl/gpio patches could get
-merged.
-
-Also, Andrew, could you look at the address decoding patch set I have
-sent? I really would like to see that in 3.7 if possible. Thanks!
-
-Best regards,
-
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
