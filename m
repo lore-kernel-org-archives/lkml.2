@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab2ITXyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:54:12 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37976 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753297Ab2ITXyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:54:10 -0400
-Date: Thu, 20 Sep 2012 16:54:07 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: linux-man@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wad@chromium.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] prctl: document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
-Message-ID: <20120920235407.GA3769@www.outflux.net>
+	id S1756523Ab2ITXyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:54:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54429 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754980Ab2ITXya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:54:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+x0hzP5dSo8WQZIMu6BfYM
+Date: Thu, 20 Sep 2012 16:54:24 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers: bus: Move the OMAP interconnect driver to
+ drivers/bus/
+Message-ID: <20120920235423.GP28835@atomide.com>
+References: <1347614434-15938-1-git-send-email-santosh.shilimkar@ti.com>
+ <20120917215128.GF11762@atomide.com>
+ <201209191857.57862.arnd@arndb.de>
+ <CAMQu2gw0AmVhW+qR9GUGkUd2G+aZd9A=skTUDJiY2BMpURmSNQ@mail.gmail.com>
+ <CAOesGMgzAiFQKpZEpXqRS+U9fxcLAemhb+MCNsn0AOffa6JiNA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAOesGMgzAiFQKpZEpXqRS+U9fxcLAemhb+MCNsn0AOffa6JiNA@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a short description of the no_new_privs bit, as described in
-Documentation/prctl/no_new_privs.txt.
+* Olof Johansson <olof@lixom.net> [120920 16:23]:
+> On Wed, Sep 19, 2012 at 10:56 PM, Shilimkar, Santosh
+> <santosh.shilimkar@ti.com> wrote:
+> > On Thu, Sep 20, 2012 at 12:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> On Monday 17 September 2012, Tony Lindgren wrote:
+> >>> * Santosh Shilimkar <santosh.shilimkar@ti.com> [120914 02:21]:
+> >>> > OMAP interconnect drivers are used for the interconnect error handling.
+> >>> > Since they are bus driver, lets move it to newly created drivers/bus.
+> >>> >
+> >>> > Cc: Arnd Bergmann <arnd@arndb.de>
+> >>> > Cc: Tony Lindgren <tony@atomide.com>
+> >>> > Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> >>> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >>> > ---
+> >>> > Patch just moves OMAP interconnect drivers as is to the newly created
+> >>> > driver/bus/* directory. Patch is generated against "arm-soc/drivers/ocp2scp"
+> >>> > tree and test on all OMAP boards.
+> >>>
+> >>> Great, looks like this should not conflict with other
+> >>> omap patches queued, so Arnd should probably take this into
+> >>> the bus branch:
+> >>>
+> >>> Acked-by: Tony Lindgren <tony@atomide.com>
+> >>
+> >> It turns out that the patch actually did conflict and we now have a broken
+> >> omap2plus_defconfig. The patch below seems to fix it, but please verify
+> >> that this makes sense.
+> >>
+> >> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> >>
+> > Looks correct.
+> >
+> > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> I ended up applying something very similar to this and carried the
+> ACKs on that, but I broke it up in two pieces; one for the
+> drivers/ocp2scp branch to fix the irq numbers, and another to just
+> for-next to deal with the soc.h include file (since that should
+> probably have been fixed at branch merge time).
+> 
+> Pushed out to for-next as well.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- man2/prctl.2 |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+OK thanks!
 
-diff --git a/man2/prctl.2 b/man2/prctl.2
-index a44aa32..220c031 100644
---- a/man2/prctl.2
-+++ b/man2/prctl.2
-@@ -42,6 +42,7 @@
- .\" 2012-04-25 Michael Kerrisk, Document PR_TASK_PERF_EVENTS_DISABLE and
- .\"				PR_TASK_PERF_EVENTS_ENABLE
- .\" 2012-09-20 Kees Cook, update PR_SET_SECCOMP for mode 2
-+.\" 2012-09-20 Kees Cook, document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
- .\"
- .\" FIXME: Document PR_SET_TIMERSLACK and PR_GET_TIMERSLACK (new in 2.6.28)
- .\"		commit 6976675d94042fbd446231d1bd8b7de71a980ada
-@@ -216,6 +217,19 @@ in the buffer pointed to by
- The buffer should allow space for up to 16 bytes;
- the returned string will be null-terminated if it is shorter than that.
- .TP
-+.BR PR_SET_NO_NEW_PRIVS " (since Linux 3.5)"
-+Set the current process's \fIno_new_privs\fP bit to the value in
-+\fIarg2\fP.  With \fIno_new_privs\fP set to 1, execve promises not
-+to grant the privilege to do anything that could not have been done
-+without the execve call (for example, rendering setuid, setgid, and file
-+capabilities non-functional).  When enabled, this value is inherited
-+across fork, clone, and execve and cannot be unset.
-+.TP
-+.BR PR_GET_NO_NEW_PRIVS " (since Linux 3.5)"
-+Return the value of the \fIno_new_privs\fP bit for the current process. A
-+value of 0 indicates the regular execve behavior. A value of 1 indicates
-+execve will operate in the privilege restricting mode described above.
-+.TP
- .BR PR_SET_PDEATHSIG " (since Linux 2.1.57)"
- Set the parent process death signal
- of the calling process to \fIarg2\fP (either a signal value
-@@ -567,6 +581,7 @@ option.
- On success,
- .BR PR_GET_DUMPABLE ,
- .BR PR_GET_KEEPCAPS ,
-+.BR PR_GET_NO_NEW_PRIVS ,
- .BR PR_CAPBSET_READ ,
- .BR PR_GET_TIMING ,
- .BR PR_GET_SECUREBITS ,
--- 
-1.7.0.4
-
-
--- 
-Kees Cook
-Chrome OS Security
+Tony
