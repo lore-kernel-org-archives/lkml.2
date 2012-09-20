@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2ITOm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:42:26 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41616 "EHLO
+	id S932207Ab2ITOmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:42:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52363 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101Ab2ITOmV (ORCPT
+	with ESMTP id S932154Ab2ITOmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:42:21 -0400
+	Thu, 20 Sep 2012 10:42:36 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH 03/13] ARM: edma: add DT and runtime PM support for AM335x
-Date: Thu, 20 Sep 2012 10:43:36 -0400
-Message-Id: <1348152226-13588-4-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 10/13] spi: omap2-mcspi: dma_request_slave_channel() support for DT platforms
+Date: Thu, 20 Sep 2012 10:43:43 -0400
+Message-Id: <1348152226-13588-11-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348152226-13588-1-git-send-email-mporter@ti.com>
 References: <1348152226-13588-1-git-send-email-mporter@ti.com>
@@ -37,359 +37,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for parsing the TI EDMA DT data into the required
-EDMA private API platform data.
-
-Calls runtime PM API only in the DT case in order to unidle the
-associated hwmods on AM335x.
+For platforms with DT populated, use dma_request_slave_channel()
+to acquire the DMA channel. For !DT platforms, we fall back to
+explicitly passing the omap_dma_filter_fn() to dma_request_channel().
+Once all platforms boot from DT, the dma_request_channel() path can
+be dropped.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/common/edma.c           |  252 ++++++++++++++++++++++++++++++++++++--
- arch/arm/include/asm/mach/edma.h |    8 +-
- 2 files changed, 244 insertions(+), 16 deletions(-)
+ drivers/spi/spi-omap2-mcspi.c |   68 +++++++++++++++++++++++++++++------------
+ 1 file changed, 48 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 001d268..f337f81 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -24,6 +24,13 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/edma.h>
-+#include <linux/err.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/of_dma.h>
-+#include <linux/of_irq.h>
-+#include <linux/pm_runtime.h>
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 9502566..1cf1072 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -104,6 +104,9 @@ struct omap2_mcspi_dma {
  
- #include <asm/mach/edma.h>
+ 	struct completion dma_tx_completion;
+ 	struct completion dma_rx_completion;
++
++	char dma_rx_ch_name[14];
++	char dma_tx_ch_name[14];
+ };
  
-@@ -1366,30 +1373,236 @@ void edma_clear_event(unsigned channel)
- EXPORT_SYMBOL(edma_clear_event);
+ /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
+@@ -798,14 +801,26 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 	sig = mcspi_dma->dma_rx_sync_dev;
+-	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++	if (spi->dev.of_node)
++		mcspi_dma->dma_rx =
++			dma_request_slave_channel(&master->dev,
++						  mcspi_dma->dma_rx_ch_name);
++	else
++		mcspi_dma->dma_rx =
++			dma_request_channel(mask, omap_dma_filter_fn, &sig);
+ 	if (!mcspi_dma->dma_rx) {
+ 		dev_err(&spi->dev, "no RX DMA engine channel for McSPI\n");
+ 		return -EAGAIN;
+ 	}
  
- /*-----------------------------------------------------------------------*/
-+static int edma_of_read_u32_to_s8_array(const struct device_node *np,
-+					 const char *propname, s8 *out_values,
-+					 size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const __be32 *val;
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(u32)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	val = prop->value;
-+
-+	while (sz--)
-+		*out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
-+
-+	/* Terminate it */
-+	*out_values++ = -1;
-+	*out_values++ = -1;
-+
-+	return 0;
-+}
-+
-+static int edma_of_read_u32_to_s16_array(const struct device_node *np,
-+					 const char *propname, s16 *out_values,
-+					 size_t sz)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	const __be32 *val;
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if ((sz * sizeof(u32)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	val = prop->value;
-+
-+	while (sz--)
-+		*out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
-+
-+	/* Terminate it */
-+	*out_values++ = -1;
-+	*out_values++ = -1;
-+
-+	return 0;
-+}
-+
-+static int edma_of_parse_dt(struct device *dev,
-+			    struct device_node *node,
-+			    struct edma_soc_info *pdata)
-+{
-+	int ret = 0;
-+	u32 value;
-+	struct property *prop;
-+	size_t sz;
-+	struct edma_rsv_info *rsv_info;
-+	s16 (*rsv_chans)[2], (*rsv_slots)[2];
-+	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
-+
-+	ret = of_property_read_u32(node, "dma-channels", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_channel = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-regions", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_region = value;
-+
-+	ret = of_property_read_u32(node, "ti,edma-slots", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->n_slot = value;
-+
-+	pdata->n_cc = 1;
-+	/* This is unused */
-+	pdata->n_tc = 3;
-+
-+	rsv_info =
-+		devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
-+	if (!rsv_info)
-+		return -ENOMEM;
-+	pdata->rsv = rsv_info;
-+
-+	/* Build the reserved channel/slots arrays */
-+	prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	rsv_chans =
-+		devm_kzalloc(dev, sz/sizeof(s16) + 2*sizeof(s16), GFP_KERNEL);
-+	if (!rsv_chans)
-+		return -ENOMEM;
-+	pdata->rsv->rsv_chans = rsv_chans;
-+
-+	ret = edma_of_read_u32_to_s16_array(node, "ti,edma-reserved-channels",
-+					    (s16 *)rsv_chans, sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	rsv_slots = devm_kzalloc(dev,
-+				 sz/sizeof(s16) + 2*sizeof(s16),
-+				 GFP_KERNEL);
-+	if (!rsv_slots)
-+		return -ENOMEM;
-+	pdata->rsv->rsv_slots = rsv_slots;
-+
-+	ret = edma_of_read_u32_to_s16_array(node,
-+					    "ti,edma-reserved-slots",
-+					    (s16 *)rsv_slots,
-+					    sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	queue_tc_map = devm_kzalloc(dev,
-+				    sz/sizeof(s8) + 2*sizeof(s8),
-+				    GFP_KERNEL);
-+	if (!rsv_slots)
-+		return -ENOMEM;
-+	pdata->queue_tc_mapping = queue_tc_map;
-+
-+	ret = edma_of_read_u32_to_s8_array(node,
-+					   "ti,edma-queue-tc-map",
-+					   (s8 *)queue_tc_map,
-+					   sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
-+	if (!prop)
-+		return -EINVAL;
-+
-+	queue_priority_map = devm_kzalloc(dev,
-+					  sz/sizeof(s8) + 2*sizeof(s8),
-+					  GFP_KERNEL);
-+	if (!rsv_slots)
-+		return -ENOMEM;
-+	pdata->queue_priority_mapping = queue_priority_map;
-+
-+	ret = edma_of_read_u32_to_s8_array(node,
-+					   "ti,edma-queue-tc-map",
-+					   (s8 *)queue_priority_map,
-+					   sz/sizeof(u32));
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
-+	if (ret < 0)
-+		return ret;
-+	pdata->default_queue = value;
-+
-+	return ret;
-+}
-+
-+static struct of_dma_filter_info edma_filter_info = {
-+	.filter_fn = edma_filter_fn,
-+};
+ 	sig = mcspi_dma->dma_tx_sync_dev;
+-	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++	if (spi->dev.of_node)
++		mcspi_dma->dma_tx =
++			dma_request_slave_channel(&master->dev,
++						  mcspi_dma->dma_tx_ch_name);
++	else
++		mcspi_dma->dma_tx =
++			dma_request_channel(mask, omap_dma_filter_fn, &sig);
+ 	if (!mcspi_dma->dma_tx) {
+ 		dev_err(&spi->dev, "no TX DMA engine channel for McSPI\n");
+ 		dma_release_channel(mcspi_dma->dma_rx);
+@@ -1194,29 +1209,42 @@ static int __devinit omap2_mcspi_probe(struct platform_device *pdev)
+ 		goto free_master;
  
- static int __init edma_probe(struct platform_device *pdev)
- {
- 	struct edma_soc_info	**info = pdev->dev.platform_data;
--	const s8		(*queue_priority_mapping)[2];
--	const s8		(*queue_tc_mapping)[2];
-+	s8			(*queue_priority_mapping)[2];
-+	s8			(*queue_tc_mapping)[2];
- 	int			i, j, off, ln, found = 0;
- 	int			status = -1;
--	const s16		(*rsv_chans)[2];
--	const s16		(*rsv_slots)[2];
-+	s16			(*rsv_chans)[2];
-+	s16			(*rsv_slots)[2];
- 	int			irq[EDMA_MAX_CC] = {0, 0};
- 	int			err_irq[EDMA_MAX_CC] = {0, 0};
- 	struct resource		*r[EDMA_MAX_CC] = {NULL};
-+	struct resource		res[EDMA_MAX_CC];
- 	resource_size_t		len[EDMA_MAX_CC];
- 	char			res_name[10];
- 	char			irq_name[10];
-+	struct device_node	*node = pdev->dev.of_node;
-+	struct device		*dev = &pdev->dev;
-+	struct edma_soc_info	*pdata;
-+
-+	if (node) {
-+		int ret;
-+		pdata = devm_kzalloc(dev,
-+				     sizeof(struct edma_soc_info),
-+				     GFP_KERNEL);
-+		edma_of_parse_dt(dev, node, pdata);
-+		info = &pdata;
-+		dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
-+		of_dma_controller_register(dev->of_node,
-+					   of_dma_simple_xlate,
-+					   &edma_filter_info);
-+		pm_runtime_enable(dev);
-+		ret = pm_runtime_get_sync(dev);
-+		if (IS_ERR_VALUE(ret)) {
-+			dev_err(dev, "pm_runtime_get_sync() failed\n");
-+			return ret;
-+		}
-+	}
+ 	for (i = 0; i < master->num_chipselect; i++) {
+-		char dma_ch_name[14];
++		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
++		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
+ 		struct resource *dma_res;
  
- 	if (!info)
- 		return -ENODEV;
- 
- 	for (j = 0; j < EDMA_MAX_CC; j++) {
--		sprintf(res_name, "edma_cc%d", j);
--		r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+		if (node) {
-+			int err;
-+			err = of_address_to_resource(node, 0, &res[j]);
-+			if (err) {
-+				dev_err(dev,
-+					"unable to find 'reg' property\n");
-+				return -EIO;
+-		sprintf(dma_ch_name, "rx%d", i);
+-		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-							dma_ch_name);
+-		if (!dma_res) {
+-			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
+-			status = -ENODEV;
+-			break;
+-		}
++		sprintf(dma_rx_ch_name, "rx%d", i);
++		if (!pdev->dev.of_node) {
++			dma_res =
++				platform_get_resource_byname(pdev,
++							     IORESOURCE_DMA,
++							     dma_rx_ch_name);
++			if (!dma_res) {
++				dev_dbg(&pdev->dev,
++					"cannot get DMA RX channel\n");
++				status = -ENODEV;
++				break;
 +			}
-+			r[j] = &res[j];
-+
-+		} else {
-+			sprintf(res_name, "edma_cc%d", j);
-+			r[j] = platform_get_resource_byname(pdev,
-+						IORESOURCE_MEM,
- 						res_name);
-+		}
- 		if (!r[j] || !info[j]) {
- 			if (found)
- 				break;
-@@ -1465,8 +1678,12 @@ static int __init edma_probe(struct platform_device *pdev)
- 			}
+ 
+-		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
+-		sprintf(dma_ch_name, "tx%d", i);
+-		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-							dma_ch_name);
+-		if (!dma_res) {
+-			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
+-			status = -ENODEV;
+-			break;
++			mcspi->dma_channels[i].dma_rx_sync_dev =
++				dma_res->start;
  		}
++		sprintf(dma_tx_ch_name, "tx%d", i);
++		if (!pdev->dev.of_node) {
++			dma_res =
++				platform_get_resource_byname(pdev,
++							     IORESOURCE_DMA,
++							     dma_tx_ch_name);
++			if (!dma_res) {
++				dev_dbg(&pdev->dev,
++					"cannot get DMA TX channel\n");
++				status = -ENODEV;
++				break;
++			}
  
--		sprintf(irq_name, "edma%d", j);
--		irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		if (node)
-+			irq[j] = irq_of_parse_and_map(node, 0);
-+		else {
-+			sprintf(irq_name, "edma%d", j);
-+			irq[j] = platform_get_irq_byname(pdev, irq_name);
+-		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
++			mcspi->dma_channels[i].dma_tx_sync_dev =
++				dma_res->start;
 +		}
- 		edma_cc[j]->irq_res_start = irq[j];
- 		status = request_irq(irq[j], dma_irq_handler, 0, "edma",
- 					&pdev->dev);
-@@ -1476,8 +1693,12 @@ static int __init edma_probe(struct platform_device *pdev)
- 			goto fail;
- 		}
+ 	}
  
--		sprintf(irq_name, "edma%d_err", j);
--		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		if (node)
-+			err_irq[j] = irq_of_parse_and_map(node, 2);
-+		else {
-+			sprintf(irq_name, "edma%d_err", j);
-+			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
-+		}
- 		edma_cc[j]->irq_res_end = err_irq[j];
- 		status = request_irq(err_irq[j], dma_ccerr_handler, 0,
- 					"edma_error", &pdev->dev);
-@@ -1538,9 +1759,17 @@ fail1:
- 	return status;
- }
- 
-+static const struct of_device_id edma_of_ids[] = {
-+	{ .compatible = "ti,edma3", },
-+	{}
-+};
- 
- static struct platform_driver edma_driver = {
--	.driver.name	= "edma",
-+	.driver = {
-+		.name	= "edma",
-+		.of_match_table = edma_of_ids,
-+	},
-+	.probe = edma_probe,
- };
- 
- static int __init edma_init(void)
-@@ -1548,4 +1777,3 @@ static int __init edma_init(void)
- 	return platform_driver_probe(&edma_driver, edma_probe);
- }
- arch_initcall(edma_init);
--
-diff --git a/arch/arm/include/asm/mach/edma.h b/arch/arm/include/asm/mach/edma.h
-index 7e84c90..ce5f6f8 100644
---- a/arch/arm/include/asm/mach/edma.h
-+++ b/arch/arm/include/asm/mach/edma.h
-@@ -237,8 +237,8 @@ void edma_resume(unsigned channel);
- 
- struct edma_rsv_info {
- 
--	const s16	(*rsv_chans)[2];
--	const s16	(*rsv_slots)[2];
-+	s16		(*rsv_chans)[2];
-+	s16		(*rsv_slots)[2];
- };
- 
- /* platform_data for EDMA driver */
-@@ -260,8 +260,8 @@ struct edma_soc_info {
- 	/* Resource reservation for other cores */
- 	struct edma_rsv_info	*rsv;
- 
--	const s8	(*queue_tc_mapping)[2];
--	const s8	(*queue_priority_mapping)[2];
-+	s8	(*queue_tc_mapping)[2];
-+	s8	(*queue_priority_mapping)[2];
- };
- 
- #endif
+ 	if (status < 0)
 -- 
 1.7.9.5
 
