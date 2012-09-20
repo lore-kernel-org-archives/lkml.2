@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab2ITJHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:07:39 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55987 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2ITJHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:07:38 -0400
+	id S1752187Ab2ITJHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:07:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34318 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab2ITJHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:07:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
+   d="scan'208";a="208538089"
+Date: Thu, 20 Sep 2012 12:10:14 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+Message-ID: <20120920091013.GV15548@intel.com>
+References: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20120920000313.GH2455@linux.vnet.ibm.com>
-References: <CACRpkdYgxsF1G7Dc_xCcQcFV9G+foz1czOCmROcMQ5NfR-ziCA@mail.gmail.com>
-	<50520E8A.9030408@linaro.org>
-	<20120913165844.GW4257@linux.vnet.ibm.com>
-	<CACRpkdatjfk_eUof5G4fwa-Qf8SoF_NvSUJQAZ7U8yjcSYFuTA@mail.gmail.com>
-	<20120914175322.GI4257@linux.vnet.ibm.com>
-	<CACRpkdbw+VgaV26U6uZeKr9g28ax2shrieQSxFuj-Pi9RXPtLQ@mail.gmail.com>
-	<20120920000313.GH2455@linux.vnet.ibm.com>
-Date: Thu, 20 Sep 2012 11:07:37 +0200
-Message-ID: <CACRpkdaufGjsEtkjQFY9oDvmtM7xnEiFweLfOGuX+WRf0Vbb5A@mail.gmail.com>
-Subject: Re: RCU lockup in the SMP idle thread, help...
-From: Linus Walleij <linus.walleij@linaro.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: John Stultz <john.stultz@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 2:03 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
+On Thu, Sep 20, 2012 at 05:36:22PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
+> drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration of function 'isa_virt_to_bus' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings when
+> building a 64-bit kernel").  Is there some Kconfig dependency missing (CONFIG_ISA)?
 
-> In the meantime, a crude fallback is for the CPU that detected the stall
-> to trace the stack of the task running on the other CPU.  See below for
-> a crude (and untested) patch.
+If we make it dependent on CONFIG_ISA then the driver cannot be built with
+64-bit kernel. Then again is there someone running 64-bit kernel on Zenith
+Z-note notebook? From the pictures it looks like very ancient "laptop".
 
-OK now I get this:
+An alternative is to make it depend on X86 like this:
 
- INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
-t=29508 jiffies)
-Task dump for CPU 0:
-swapper/0       R running      0     0      0 0x00000000
-[<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
-[<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
-INFO: rcu_preempt detected stalls on CPUs/tasks: { 0} (detected by 1,
-t=29851 jiffies)
-Task dump for CPU 0:
-swapper/0       R running      0     0      0 0x00000000
-[<c02da614>] (__schedule+0x238/0x52c) from [<c000f238>] (default_idle+0x28/0x30)
-[<c000f238>] (default_idle+0x28/0x30) from [<ffffffff>] (0xffffffff)
-
-So the swapper thread is the culprit?
-Hm, I'm not very smart with this no...
-
-Yours,
-Linus Walleij
+diff --git a/drivers/net/ethernet/i825xx/Kconfig b/drivers/net/ethernet/i825xx/Kconfig
+index fed5080..959faf7 100644
+--- a/drivers/net/ethernet/i825xx/Kconfig
++++ b/drivers/net/ethernet/i825xx/Kconfig
+@@ -150,7 +150,7 @@ config SUN3_82586
+ 
+ config ZNET
+ 	tristate "Zenith Z-Note support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && ISA_DMA_API
++	depends on EXPERIMENTAL && ISA_DMA_API && X86
+ 	---help---
+ 	  The Zenith Z-Note notebook computer has a built-in network
+ 	  (Ethernet) card, and this is the Linux driver for it. Note that the
