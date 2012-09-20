@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2ITKQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:16:32 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44173 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab2ITKQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:16:31 -0400
-Message-ID: <505AECF0.6070607@parallels.com>
-Date: Thu, 20 Sep 2012 14:16:16 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1752198Ab2ITKRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:17:09 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:7849 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab2ITKRH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 06:17:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
+   d="scan'208";a="14651511"
+Message-ID: <1348136222.26501.19.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
+ machines
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 20 Sep 2012 11:17:02 +0100
+In-Reply-To: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lwn@lwn.net,
-        "criu@openvz.org" <criu@openvz.org>,
-        Containers <containers@lists.linux-foundation.org>
-CC: users@openvz.org, cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: [Announce] Checkpoint-restore tool v0.2
-References: <500D09C9.7060903@parallels.com>
-In-Reply-To: <500D09C9.7060903@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, 2012-09-19 at 18:44 +0100, Stefano Stabellini wrote:
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	model = "XENVM-4.2";
 
-I'm happy to announce that the next big step is done by the CRIU project.
+Why the shouty caps?
 
-The major achievement so far -- the tool can now dump and restore a simple LXC
-container. Another notable feature is the initial support for PTYs which is enough
-to play with c/r of a container with active ssh sessions from outside, or with
-a screen app with some simple stuff running inside.
+Did you mean 4.3 here and throughout?
 
-A HOWTO describing an LXC container dump and restore is at http://criu.org/LXC
+> +	compatible = "xen,xenvm-4.2", "arm,vexpress";
 
+Is this second compatible thing actually true? We don't actually emulate
+much (anything?) of what would be on a real vexpress motherboard.
 
-The v0.2 can be downloaded from
+"arm,vexpress" is used only in v2m.c and I don't think we want the
+majority of that -- we don't provide any of the peripherals which it
+registers.
 
-	http://download.openvz.org/criu/crtools-0.2.tar.bz2
+I think the only things we might want out of that lot are the arch timer
+and perhaps the uart0 (as a debug port).
 
+I suspect we should have our own xen machine .c.
 
-Other project resources are
+[...]
+> +	gic: interrupt-controller@2c001000 {
+> +		compatible = "arm,cortex-a9-gic";
 
-  documentation and news:             http://criu.org
-  mainling list:                      https://openvz.org/mailman/listinfo/criu
-  git repo:                           http://git.criu.org/?p=crtools.git
-  kernel with not-yet-merged patches: https://github.com/cyrillos/linux-2.6.git
+Don't we mean "arm,cortex-a15-gic" here? That's what we actually
+provide. I'm not sure how the a9 and a15 differ.
 
-Thanks,
-Pavel
+> +		#interrupt-cells = <3>;
+> +		#address-cells = <0>;
+> +		interrupt-controller;
+> +		reg = <0x2c001000 0x1000>,
+> +		      <0x2c002000 0x100>;
+> +	};
+> +
+
+Ian.
+
