@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab2ITJcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:32:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56535 "EHLO mx1.redhat.com"
+	id S1753227Ab2ITJcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:32:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31937 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119Ab2ITJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751534Ab2ITJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Sep 2012 05:32:05 -0400
-Message-ID: <505AE281.1030603@redhat.com>
-Date: Thu, 20 Sep 2012 12:31:45 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+Message-ID: <505AE28D.9060901@parallels.com>
+Date: Thu, 20 Sep 2012 13:31:57 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in kvm_load/put_guest_fpu()
-References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>   <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>   <50599AE2.80601@redhat.com>  <1348075103.26695.301.camel@sbsiddha-desk.sc.intel.com>  <5059FF67.6050005@redhat.com> <1348075534.26695.303.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1348075534.26695.303.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: "David S. Miller" <davem@davemloft.net>
+CC: Andrew Vagin <avagin@openvz.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH] tcp: restore rcv_wscale in a repair mode (v2)
+References: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1348083600-3881500-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2012 08:25 PM, Suresh Siddha wrote:
-> On Wed, 2012-09-19 at 20:22 +0300, Avi Kivity wrote:
->> On 09/19/2012 08:18 PM, Suresh Siddha wrote:
->> 
->> > These routines (kvm_load/put_guest_fpu()) are already called with
->> > preemption disabled but as you mentioned, we don't want the preemption
->> > to be disabled completely between the kvm_load_guest_fpu() and
->> > kvm_put_guest_fpu().
->> > 
->> > Also KVM already has the preempt notifier which is doing the
->> > kvm_put_guest_fpu(), so something like the appended should address this.
->> > I will test this shortly.
->> > 
->> 
->> Note, we could also go in a different direction and make
->> kernel_fpu_begin() use preempt notifiers and thus make its users
->> preemptible.  But that's for a separate patchset.
+On 09/19/2012 11:40 PM, Andrew Vagin wrote:
+> rcv_wscale is a symetric parameter with snd_wscale.
 > 
-> yep, but we need the fpu buffer to save/restore the kernel fpu state.
+> Both this parameters are set on a connection handshake.
 > 
-> KVM already has those buffers allocated in the guest cpu state and hence
-> it all works out ok. But yes, we can revisit this in future.
+> Without this value a remote window size can not be interpreted correctly,
+> because a value from a packet should be shifted on rcv_wscale.
+> 
+> And one more thing is that wscale_ok should be set too.
+> 
+> This patch doesn't break a backward compatibility.
+> If someone uses it in a old scheme, a rcv window
+> will be restored with the same bug (rcv_wscale = 0).
+> 
+> v2: Save backward compatibility on big-endian system. Before
+>     the first two bytes were snd_wscale and the second two bytes were
+>     rcv_wscale. Now snd_wscale is opt_val & 0xFFFF and rcv_wscale >> 16.
+>     This approach is independent on byte ordering.
+> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
 
-kernel_fpu_begin() can allocate it.  It means changing the APIs, but
-changing the behaviour to be preemptible is a bigger change anyway.
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 
-
--- 
-error compiling committee.c: too many arguments to function
