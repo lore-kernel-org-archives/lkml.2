@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2ITQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 12:08:56 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59093 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2ITQIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 12:08:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="236905564"
-Date: Thu, 20 Sep 2012 09:08:53 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [PATCH 4/5] gpio: Make gpio-msm-v1 into a platform driver
-Message-ID: <20120920160852.GA6907@codeaurora.org>
-References: <1348038044-1790-1-git-send-email-sboyd@codeaurora.org>
- <1348038044-1790-5-git-send-email-sboyd@codeaurora.org>
- <CACRpkdZZ4y2TpkDAgxp38hLbsvxV3hqQ0PRjEQ1s+CXuq8TVQg@mail.gmail.com>
+	id S1756062Ab2ITQJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 12:09:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57964 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793Ab2ITQJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 12:09:17 -0400
+Date: Thu, 20 Sep 2012 12:09:07 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Ying Han <yinghan@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mm: clear_page_mlock in page_remove_rmap
+Message-ID: <20120920160907.GU1560@cmpxchg.org>
+References: <alpine.LSU.2.00.1209182045370.11632@eggly.anvils>
+ <alpine.LSU.2.00.1209182053520.11632@eggly.anvils>
+ <20120919171811.GR1560@cmpxchg.org>
+ <alpine.LSU.2.00.1209191347360.28400@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZZ4y2TpkDAgxp38hLbsvxV3hqQ0PRjEQ1s+CXuq8TVQg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.00.1209191347360.28400@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 08:45:50AM +0200, Linus Walleij wrote:
-> On Wed, Sep 19, 2012 at 9:00 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Wed, Sep 19, 2012 at 02:52:53PM -0700, Hugh Dickins wrote:
+> On Wed, 19 Sep 2012, Johannes Weiner wrote:
+> > On Tue, Sep 18, 2012 at 08:55:21PM -0700, Hugh Dickins wrote:
+> > > --- 3.6-rc6.orig/mm/memory.c	2012-09-18 15:38:08.000000000 -0700
+> > > +++ 3.6-rc6/mm/memory.c	2012-09-18 17:51:02.871288773 -0700
+> > > @@ -1576,12 +1576,12 @@ split_fallthrough:
+> > >  		if (page->mapping && trylock_page(page)) {
+> > >  			lru_add_drain();  /* push cached pages to LRU */
+> > >  			/*
+> > > -			 * Because we lock page here and migration is
+> > > -			 * blocked by the pte's page reference, we need
+> > > -			 * only check for file-cache page truncation.
+> > > +			 * Because we lock page here, and migration is
+> > > +			 * blocked by the pte's page reference, and we
+> > > +			 * know the page is still mapped, we don't even
+> > > +			 * need to check for file-cache page truncation.
+> > >  			 */
+> > > -			if (page->mapping)
+> > > -				mlock_vma_page(page);
+> > > +			mlock_vma_page(page);
+> > >  			unlock_page(page);
+> > 
+> > So I don't see a reason for checking for truncation in current code,
+> > but I also had a hard time figuring out from git history and list
+> > archives when this was ever "needed" (flu brain does not help).
 > 
-> > Doing this removes the dependence of this driver on the
-> > msm_iomap.h and cpu.h mach include headers provied by MSM. This
-> > is necessary to support single zImage work in the future and
-> > allows us to remove cpu.h entirely and brings us closer to
-> > removing msm_iomap.h.
-> >
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: Rohit Vaswani <rvaswani@codeaurora.org>
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Thanks a lot for looking through all these.
 > 
-> This must be encouraged:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> But my unflued brain curses your flued brain for asking hard questions
+> that mine has such difficulty answering.  So, please get well soon!
 > 
-> Stephen, do you have a mainline-based kernel tree that can boot
-> on my DragonBoard? It's just sitting idle here... I pushed David
-> in the past, just naggin'...
+> I do believe you're right that it was unnecessary even before my patch.
+> 
+> I came to look at it (and spent a long time pondering this very block)
+> because I had already removed the page->mapping checks from the
+> munlocking cases.  Without giving any thought as to whether the NULL
+> case could actually occur in those, it was clearly wrong to skip
+> munlocking if NULL did occur (after my other changes anyway:
+> I didn't stop to work out if they were right before or not).
+> 
+> A more interesting question, I think, is whether that mlocking block
+> actually needs the trylock_page and unlock_page: holding the pte
+> lock there in follow_page gives a lot of security.  I did not decide
+> one way or another (just as I simply updated the comment to reflect
+> the change being made, without rethinking it all): it simply needed
+> more time and thought than I had to give it, could be done separately
+> later, and would have delayed getting these patches out.
 
-We're working on it :-)
+Fair enough, it was just a mix of curiosity and making sure I did not
+miss anything fundamental.  It looks like we agree, though :)
 
-The main thing coming that's needed are clocks.  There are some more
-things (such as regulators) that will be needed to get things like
-SD/MMC working, and that'll be next.
+> > My conclusion is that it started out as a fix for when an early draft
+> > of putback_lru_page dropped the page lock on truncated pages, but at
+> 
+> I don't recall the history of putback_lru_page at all, that sounds an
+> odd thing for it to have done.  Your question prompted me to look back
+> at old 2008 saved mail (though I've not looked at marc.info), but I
+> didn't find the crucial stage where the page->mapping check got added
+> (but there is a comment that Kosaki-san had fixed a truncate race).
 
-David
+This is what I was referring to: https://lkml.org/lkml/2008/6/19/72 -
+but the base of this patch never appeared in Linus' tree.
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> > > --- 3.6-rc6.orig/mm/rmap.c	2012-09-18 16:39:50.000000000 -0700
+> > > +++ 3.6-rc6/mm/rmap.c	2012-09-18 17:51:02.871288773 -0700
+> > > @@ -1203,7 +1203,10 @@ void page_remove_rmap(struct page *page)
+> > >  	} else {
+> > >  		__dec_zone_page_state(page, NR_FILE_MAPPED);
+> > >  		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
+> > > +		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+> > >  	}
+> > > +	if (unlikely(PageMlocked(page)))
+> > > +		clear_page_mlock(page);
+> > >  	/*
+> > >  	 * It would be tidy to reset the PageAnon mapping here,
+> > >  	 * but that might overwrite a racing page_add_anon_rmap
+> > > @@ -1213,6 +1216,7 @@ void page_remove_rmap(struct page *page)
+> > >  	 * Leaving it set also helps swapoff to reinstate ptes
+> > >  	 * faster for those pages still in swapcache.
+> > >  	 */
+> > > +	return;
+> > >  out:
+> > >  	if (!anon)
+> > >  		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+> > 
+> > Would it be cleaner to fold this into the only goto site left?  One
+> > certain upside of that would be the fantastic comment about leaving
+> > page->mapping intact being the last operation in this function again :-)
+> 
+> Yes and no: I wanted to do that, but look again and you'll see
+> that there are actually two "goto out"s there.
+
+Yes, I missed that.  No worries, then!
+
+Please include in this patch:
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
