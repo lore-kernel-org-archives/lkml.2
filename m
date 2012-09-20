@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab2ITMQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:16:49 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:38280 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab2ITMNl (ORCPT
+	id S1755040Ab2ITMRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:17:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49158 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab2ITMRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:13:41 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, olof.johansson@gmail.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 21/32] ARM: ux500: Remove platform registration of MSP devices
-Date: Thu, 20 Sep 2012 14:12:39 +0200
-Message-Id: <1348143170-2130-22-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
-References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Sep 2012 08:17:07 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Rob Herring <rob.herring@calxeda.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] dt: Document general interrupt controller bindings
+Date: Thu, 20 Sep 2012 14:16:50 +0200
+Message-Id: <1348143410-32656-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:lnAlWiZyACwknZLZh7ocrHIHz7AOsUir3K+cNZayeTt
+ jJztv/GLzJGzTakmFfUs1sIfmqyvoV02OxmjTcXn64/vSoNHVn
+ kTqBYpE5yYGo9XQFkUrHKxxM7i6MaKHKGSgL4geGyZDdk01a1r
+ VuUncBcXUXqVyXjfT4scCatxymGUXFGtnqr19BjRkzrsVJQTFF
+ jNUQ5Y5qrpACJVXD0Rq9bDQChx8pzPyC9pYQQOYC/LqHBncIuh
+ l97X73a4gFilfz8+adONP27xthO4rtfZj5s3GpcXA0XPzV4nay
+ maDG2UY3sOb9QbrdEZ6/R4h9KyDobY48aXQ0NnFJnaYQ3fISIy
+ 6FbwDjRCD5GryaYsRRi8pnUcd2/O0K0IvMufgB6qTlSBPYxVa0
+ ggBvxMEkgriNLmPYELDfcz32SlDVNtxe8WebqzEUuKM6ETNdK5
+ Leh5I
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes platform device registration of all 4 MSP
-devices. It also takes care of all redundant infrastructure now
-that each of the ux500 audio components have been Device Tree
-enabled.
+In order to use a device as interrupt controller, it needs to be marked
+with the DT interrupt-controller property. This commit adds rudimentary
+documentation about the required standard properties and describes the
+most commonly used interrupt specifiers.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- arch/arm/mach-ux500/board-mop500-msp.c |   10 ----------
- 1 file changed, 10 deletions(-)
+Changes in v2:
+- update interrupt client description as per Stephen's suggestions
+- use an example for the two cell specifier where both the client and
+  the parent use two cell specifiers, as suggested by Rob, to reduce
+  the possibility for confusion
 
-diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
-index ddc74c5..d04f54d 100644
---- a/arch/arm/mach-ux500/board-mop500-msp.c
-+++ b/arch/arm/mach-ux500/board-mop500-msp.c
-@@ -174,16 +174,6 @@ struct msp_i2s_platform_data msp3_platform_data = {
- /* Due for removal once the MSP driver has been fully DT:ed. */
- void mop500_of_msp_init(struct device *parent)
- {
--	pr_info("Initialize MSP I2S-devices.\n");
--	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
--			   &msp0_platform_data);
--	db8500_add_msp_i2s(parent, 1, U8500_MSP1_BASE, IRQ_DB8500_MSP1,
--			   &msp1_platform_data);
--	db8500_add_msp_i2s(parent, 2, U8500_MSP2_BASE, IRQ_DB8500_MSP2,
--			   &msp2_platform_data);
--	db8500_add_msp_i2s(parent, 3, U8500_MSP3_BASE, IRQ_DB8500_MSP1,
--			   &msp3_platform_data);
--
- 	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
- 	platform_device_register(&ux500_pcm);
- }
+ .../bindings/interrupt-controller/interrupts.txt   | 95 ++++++++++++++++++++++
+ 1 file changed, 95 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+new file mode 100644
+index 0000000..72a06c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+@@ -0,0 +1,95 @@
++Specifying interrupt information for devices
++============================================
++
++1) Interrupt client nodes
++-------------------------
++
++Nodes that describe devices which generate interrupts must contain an
++"interrupts" property. This property must contain a list of interrupt
++specifiers, one per output interrupt. The format of the interrupt specifier is
++determined by the interrupt controller to which the interrupts are routed; see
++section 2 below for details.
++
++The "interrupt-parent" property is used to specify the controller to which
++interrupts are routed and contains a single phandle referring to the interrupt
++controller node. This property is inherited, so it may be specified in an
++interrupt client node or in any of its parent nodes.
++
++2) Interrupt controller nodes
++-----------------------------
++
++A device is marked as an interrupt controller with the "interrupt-controller"
++property. This is a empty, boolean property. An additional "#interrupt-cells"
++property defines the number of cells needed to specify a single interrupt.
++
++It is the responsibility of the interrupt controller's binding to define the
++length and format of the interrupt specifier. The following two variants are
++commonly used:
++
++  a) one cell
++  -----------
++  The #interrupt-cells property is set to 1 and the single cell defines the
++  index of the interrupt within the controller.
++
++  Example:
++
++	vic: intc@10140000 {
++		compatible = "arm,versatile-vic";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0x10140000 0x1000>;
++	};
++
++	sic: intc@10003000 {
++		compatible = "arm,versatile-sic";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0x10003000 0x1000>;
++		interrupt-parent = <&vic>;
++		interrupts = <31>; /* Cascaded to vic */
++	};
++
++  b) two cells
++  ------------
++  The #interrupt-cells property is set to 2 and the first cell defines the
++  index of the interrupt within the controller, while the second cell is used
++  to specify any of the following flags:
++    - bits[3:0] trigger type and level flags
++        1 = low-to-high edge triggered
++        2 = high-to-low edge triggered
++        4 = active high level-sensitive
++        8 = active low level-sensitive
++
++  Example:
++
++	i2c@7000c000 {
++		gpioext: gpio-adnp@41 {
++			compatible = "ad,gpio-adnp";
++			reg = <0x41>;
++
++			interrupt-parent = <&gpio>;
++			interrupts = <160 1>;
++
++			gpio-controller;
++			#gpio-cells = <1>;
++
++			interrupt-controller;
++			#interrupt-cells = <2>;
++
++			nr-gpios = <64>;
++		};
++
++		sx8634@2b {
++			compatible = "smtc,sx8634";
++			reg = <0x2b>;
++
++			interrupt-parent = <&gpioext>;
++			interrupts = <3 0x8>;
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			threshold = <0x40>;
++			sensitivity = <7>;
++		};
++	};
 -- 
-1.7.9.5
+1.7.12
 
