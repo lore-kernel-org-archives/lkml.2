@@ -1,148 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab2ITXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:21:27 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52790 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab2ITXVZ (ORCPT
+	id S932529Ab2ITXWA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:22:00 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49394 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449Ab2ITXV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:21:25 -0400
-X-AuditID: 9c930179-b7bfcae0000020b4-d9-505ba4f2ea21
-Date: Fri, 21 Sep 2012 08:24:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-Message-ID: <20120920232408.GI13234@bbox>
+	Thu, 20 Sep 2012 19:21:58 -0400
+Date: Thu, 20 Sep 2012 16:21:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: "Bruce, Becky" <bbruce@ti.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Hunter, Jon" <jon-hunter@ti.com>,
+        "<snijsure@grid-net.com>" <snijsure@grid-net.com>
+Subject: Re: rcu self-detected stall messages on OMAP3, 4 boards
+Message-ID: <20120920232114.GO2449@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.00.1209122237080.7275@utopia.booyaka.com>
+ <20120913011208.GT4257@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209131839000.23318@utopia.booyaka.com>
+ <20120920000351.GI2455@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209200753450.3801@utopia.booyaka.com>
+ <F95344A7-3351-4E6B-BF61-37E591AF16A2@ti.com>
+ <20120920220130.GN2449@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209202244470.32589@utopia.booyaka.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12092023-7408-0000-0000-000008ACD4FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 11:41:11AM -0400, Johannes Weiner wrote:
-> On Thu, Sep 20, 2012 at 08:51:56AM +0900, Minchan Kim wrote:
-> > From: Minchan Kim <minchan@kernel.org>
-> > Date: Thu, 20 Sep 2012 08:39:52 +0900
-> > Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
-> >  check_range
-> > 
-> > This patch reverts 0def08e3 because check_range can't fail in
-> > migrate_to_node with considering current usecases.
-> > 
-> > Quote from Johannes
-> > "
-> > I think it makes sense to revert.  Not because of the semantics, but I
-> > just don't see how check_range() could even fail for this callsite:
-> > 
-> > 1. we pass mm->mmap->vm_start in there, so we should not fail due to
-> >    find_vma()
-> > 
-> > 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
-> >    and so can not fail
-> > 
-> > 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
-> >    continue until addr == end, so we never fail with -EIO
-> > "
-> > 
-> > And I add new VM_BUG_ON for checking migrate_to_node's future usecase
-> > which might pass to MPOL_MF_STRICT.
-> > 
-> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Cc: Vasiliy Kulikov <segooon@gmail.com>
-> > Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  mm/mempolicy.c |    9 +++++----
-> >  1 file changed, 5 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > index 3d64b36..9ec87bd 100644
-> > --- a/mm/mempolicy.c
-> > +++ b/mm/mempolicy.c
-> > @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
-> >  	nodemask_t nmask;
-> >  	LIST_HEAD(pagelist);
-> >  	int err = 0;
-> > -	struct vm_area_struct *vma;
-> >  
-> >  	nodes_clear(nmask);
-> >  	node_set(source, nmask);
-> >  
-> > -	vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
-> > +	/*
-> > +	 * Collect migrate pages and it shoudn't be failed.
-> > +	 */
-> > +	VM_BUG_ON(flags & MPOL_MF_STRICT);
+On Thu, Sep 20, 2012 at 10:47:25PM +0000, Paul Walmsley wrote:
+> On Thu, 20 Sep 2012, Paul E. McKenney wrote:
 > 
-> Adding a check and a comment is a good idea, but I'm not a big fan of
-> checking for MPOL_MF_STRICT in particular because it's one of the
-> invalid inputs, and so you need to extend this check when somebody
-> extends the spectrum of invalid inputs.  I would much prefer checking
-> directly for !(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) instead, which
-> would also make the possible inputs apparent without having to chase
-> up the call chain to find out what is usually passed in.
+> > On Thu, Sep 20, 2012 at 09:49:13PM +0000, Bruce, Becky wrote:
+> >
+> > > OK, people, you can stop heckling me about "sent from my iPhone" - I'm in the wilds of rural Louisiana with really bad internet service and was trying to work on my phone (but, alas, did not notice the CC list included the entire universe).   Shame on me.
+> > > 
+> > > With the above set, I don't seem to see any stalls with the RCU timeout set to 60s (the default).  I left the board running for 25 minutes; I will fire it up again later and let it run for a bit longer, but usually I end up seeing the problem pretty quickly so I don't expect that to result in anything.  I also didn't see any stalls on Paul's RCU tree as of a week ago at 60s, so as far as I can tell the CPU_IDLE stuff didn't have any impact (it wasn't on when I tested Paul's tree).
+> > > 
+> > > If I drop the timeout to 5s as Paul M. suggested for debug a while back, I do see stalls (both with CPU_IDLE stuff and without). 
+> > > 
+> > > I'm using the default omap2plus config, with RCU stall info enabled and the cpu idle stuff turned on (console dump below).  This is a Panda ES 1.1 (OMAP4460)
+> > 
+> > Thank you for the testing, Becky!
+> > 
+> > Paul Walmsley, please let me know if the config below doesn't clear things
+> > up for you or if there is some reason why this config is infeasible.
 > 
-> And how about
-> 
-> /*
->  * This does not "check" the range but isolates all pages that
->  * need migration.  Between passing in the full user address
->  * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
->  */
-> 
-> ?
+> Will certainly test it here once things settle down.  But I wouldn't 
+> consider the use of CONFIG_CPU_IDLE to be a 'fix' until the problem can be 
+> understood.  We use !CONFIG_CPU_IDLE kernels for testing here.
 
-Good idea. Thanks Hannes,
+Fair point.  I am wondering whether there is some path into the idle
+loop that somehow avoids telling RCU that the CPU has in face entered
+idle.  There needs to be an rcu_idle_enter() call on the way to idle,
+otherwise RCU CPU stall warnings are expected behavior.
 
->From 13ae84083ac1f057eafbeae49efba862aa7a470e Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan@kernel.org>
-Date: Fri, 21 Sep 2012 08:17:37 +0900
-Subject: [PATCH] mm: enhance comment and bug check
+							Thanx, Paul
 
-This patch updates comment and bug check.
-It can be fold into [1].
-
-[1] mm-revert-0def08e3-mm-mempolicyc-check-return-code-of-check_range.patch
-
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/mempolicy.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 9ec87bd..0b78fb9 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -951,9 +951,11 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 	node_set(source, nmask);
- 
- 	/*
--	 * Collect migrate pages and it shoudn't be failed.
-+	 * This does not "check" the range but isolates all pages that
-+	 * need migration.  Between passing in the full user address
-+	 * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
- 	 */
--	VM_BUG_ON(flags & MPOL_MF_STRICT);
-+	VM_BUG_ON(!(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)));
- 	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
- 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
- 
--- 
-1.7.9.5
-
--- 
-Kind regards,
-Minchan Kim
