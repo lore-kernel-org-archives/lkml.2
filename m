@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2ITJaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 05:30:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15080 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab2ITJaK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 05:30:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,453,1344236400"; 
-   d="scan'208";a="195229001"
-Message-ID: <1348133405.13371.30.camel@smile>
-Subject: Re: [PATCH 2/7] dw_dmac: fill optional encoded parameters in
- register structure
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Hein Tibosch <hein_tibosch@yahoo.es>
-Date: Thu, 20 Sep 2012 12:30:05 +0300
-In-Reply-To: <CAOh2x=k3hjXtuAd23LYLWvG59HPgFS8W2J+5-2Bre+wFufgcng@mail.gmail.com>
-References: <1347867577-13170-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1347867577-13170-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CAOh2x==Te7MBNrqX-wjaPzso_xTC44rUejMDhs7SW7HJag7j8g@mail.gmail.com>
-	 <1347951305.13371.10.camel@smile>
-	 <CAOh2x=k3hjXtuAd23LYLWvG59HPgFS8W2J+5-2Bre+wFufgcng@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
+	id S1753032Ab2ITJaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:30:20 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:52549 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751547Ab2ITJaP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 05:30:15 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Amit Shah <amit.shah@redhat.com>
+Date: Thu, 20 Sep 2012 11:29:27 +0200
+Subject: RE: [PATCHv2] virtio_console: Add support for remoteproc serial
+Thread-Topic: [PATCHv2] virtio_console: Add support for remoteproc serial
+Thread-Index: Ac2W9oQb8eo2K2hCQ3eN9iPSVrm2CQACOG0g
+Message-ID: <81C3A93C17462B4BBD7E272753C1057923BD6DF285@EXDCVYMBSTM005.EQ1STM.local>
+References: <1348073458-17592-1-git-send-email-sjur.brandeland@stericsson.com>
+ <20120920061057.GD5721@redhat.com>
+In-Reply-To: <20120920061057.GD5721@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-18 at 13:29 +0530, viresh kumar wrote: 
-> On Tue, Sep 18, 2012 at 12:25 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> >> > +#define dma_raw_readl(addr, name) \
-> >> > +       readl((addr) + offsetof(struct dw_dma_regs, name))
-> >> > +
-> >> > +#define dma_raw_writel(addr, name, val) \
-> >> > +       writel((val), (addr) + offsetof(struct dw_dma_regs, name))
-> >> > +
-> >>
-> >> But why don't you use earlier defined readl/writel macros:
-> >> dma_readl and dma_writel?
+> From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> sjur.brandeland@stericsson.com wrote:
+> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> >
+> > Add a simple serial connection driver called
+> > VIRTIO_ID_RPROC_SERIAL (0xB) for communicating with a
+> > remote processor in an asymmetric multi-processing
+> > configuration.
+> >
+> > This implementation reuses the existing virtio_console
+> > implementation, and adds support for DMA allocation
+> > of data buffers and disables use of tty console and
+> > the virtio control queue.
 > 
-> > If you look at further patches, namely 3rd, the access to the register
-> > is needed before we allocate memory for the dw_dma structure.
-> 
-> Ok. If i am not wrong, such calls are only required once for below line:
-Actually twice... 
-> dw_params = dma_raw_readl(regs, DW_PARAMS
-...here and for channel parameters.
+> Can't repoteproc work with control queue?
+> Reason I ask, there are known races when
+> using config space and I was working on
+> a spec change that uses control queue for
+> all config accesses.
 
-> dma_raw_writel() is not used and shouldn't be required in future too.
-> So remove it.
-Ok
+In my case rproc-serial will be used for transferring boot
+image or crash-dump to a modem. In these scenarios the
+execution environment is very limited (no OS) and  the size
+and complexity of the virtio code at the modem should be kept
+to a minimum.
 
-> dma_raw_readl() is required but the name is a bit confusing... this
-> raw type is different
-> from raw_readl...
-> 
-> Can we name it dma_read_byaddr()?
-> to make it more explicit.
-Ok.
+The usage pattern in this case is also very simple,
+the virtio device is opened only once, and only reopened
+after a complete modem cold-start.
+
+So the control queue is not appropriate for my use-case,
+simplicity is the most important requirement.
+(And currently the virtio config-space is not supported
+by remoteproc anyway).
+
+I don't know if other potential users of rproc_serial have more
+complex use-cases in mind?
+
+Regards,
+Sjur
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+
