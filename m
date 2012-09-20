@@ -1,61 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab2ITPfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:35:03 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49353 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2ITPfB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Thu, 20 Sep 2012 11:35:01 -0400
-Message-Id: <505B53D7020000780009CBB5@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 20 Sep 2012 16:35:19 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>,
-        "Oliver Chick" <oliver.chick@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk
- drivers
-References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
- <505AF126.2050806@citrix.com>
- <1348140637.24539.32.camel@oliverchick-Precision-WorkStation-T3400>
- <505B1EB9020000780009CA6E@nat28.tlf.novell.com>
- <20120920134951.GC1998@localhost.localdomain>
-In-Reply-To: <20120920134951.GC1998@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755667Ab2ITPhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:37:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46355 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754586Ab2ITPhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:37:10 -0400
+Date: Thu, 20 Sep 2012 16:37:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: MMTests 0.05
+Message-ID: <20120920153705.GQ11266@suse.de>
+References: <20120907124232.GA11266@suse.de>
+ <505AF81C.1080404@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <505AF81C.1080404@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.09.12 at 15:49, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Thu, Sep 20, 2012 at 12:48:41PM +0100, Jan Beulich wrote:
->> >>> On 20.09.12 at 13:30, Oliver Chick <oliver.chick@citrix.com> wrote:
->> > The memory overhead, and fallback mode points are related:
->> > -Firstly, it turns out that the overhead is actually 2.75MB, not 11MB
->> > per device. I made a mistake (pointed out by Jan) as the maximum number
->> > of requests that can fit into a single-page ring is 64, not 256.
->> > -Clearly, this still scales linearly. So the problem of memory footprint
->> > will occur with more VMs, or block devices.
->> > -Whilst 2.75MB per device is probably acceptable (?), if we start using
->> > multipage rings, then we might not want to have
->> > BLKIF_MAX_PERS_REQUESTS_PER_DEVICE==__RING_SIZE, as this will cause the
->> > memory overhead to increase. This is why I have implemented the
->> > 'fallback' mode. With a multipage ring, it seems reasonable to want the
->> > first $x$ grefs seen by blkback to be treated as persistent, and any
->> > later ones to be non-persistent. Does that seem sensible?
->> 
->> From a resource usage pov, perhaps. But this will get the guest
->> entirely unpredictable performance. Plus I don't think 11Mb of
+On Thu, Sep 20, 2012 at 03:03:56PM +0400, Glauber Costa wrote:
+> On 09/07/2012 04:42 PM, Mel Gorman wrote:
+> > ./run-mmtests.sh test-run-1
 > 
-> Wouldn't it fall back to the older performance?
+> Mel, would you share with us the command line and config tweaks you had
+> in place to run the memcg tests you presented in the memcg summit?
+> 
 
-Right, but the guest can't really predict this. That may have
-significant impact if the performance difference is big enough.
+Apply the following patch to mmtests 0.05 and then from within the
+mmtests directory do
 
-Jan
+./run-mmtests.sh testrun
 
+At the very least you should have oprofile installed. Optionally install
+libnuma-devel but the test will cope if it's not available. Automatic package
+installation will be in 0.06 for opensuse at least but other distros can
+be easily supported if I know the names of the equivalent packages.
+
+The above command will run both with and without profiling. The profiles
+will be in work/log/pft-testrun/fine-profile-timer/base/ and an annotated
+profile will be included in the file. If you have "recode" installed the
+annotated profile will be compressed and can be extracted with something like
+
+grep -A 9999999 "=== annotate ===" oprofile-compressed.report | grep -v annotate | recode /b64..char | gunzip -c
+
+Each of the memcg functions will be small but when all the functions that
+are in mm/memcontrol.c are added together it becomes a big problem.  What I
+actually showed at the meeting was based on piping the oprofile report
+through another quick and dirty script to match functions to filenames.
+
+The bulk of this patch is renaming  profile-disabled-hooks-a.sh to
+profile-hooks-a.sh. Let me know if you run into problems.
+
+---8<--
+mmtests: Configure for PFT profile
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+
+diff --git a/config b/config
+index 184864f..e1afb2a 100644
+--- a/config
++++ b/config
+@@ -9,9 +9,9 @@ export SKIP_WARMUP=yes
+ 
+ # Profiling parameters
+ export SKIP_NOPROFILE=no
+-export SKIP_FINEPROFILE=yes
++export SKIP_FINEPROFILE=no
+ export SKIP_COARSEPROFILE=yes
+-export OPROFILE_REPORT_ANNOTATE=no
++export OPROFILE_REPORT_ANNOTATE=yes
+ 
+ # Fixups
+ if [ "`which check-confidence.pl 2> /dev/null`" = "" ]; then
+@@ -57,7 +57,7 @@ export SWAP_NBD_PORT=100`ifconfig eth0 | sed -n 2p | cut -d ":" -f2 | cut -d " "
+ #export TESTDISK_NBD_PORT=100`ifconfig eth0 | sed -n 2p | cut -d ":" -f2 | cut -d " " -f1 | cut -d "." -f4`
+ 
+ # List of monitors
+-export RUN_MONITOR=yes
++export RUN_MONITOR=no
+ export MONITORS_ALWAYS=
+ export MONITORS_PLAIN=
+ export MONITORS_GZIP="proc-vmstat top slabinfo"
+diff --git a/profile-disabled-hooks-a.sh b/profile-disabled-hooks-a.sh
+deleted file mode 100644
+index c953dff..0000000
+--- a/profile-disabled-hooks-a.sh
++++ /dev/null
+@@ -1,48 +0,0 @@
+-if [ "$SAMPLE_CYCLE_FACTOR" = "" ]; then
+-	SAMPLE_CYCLE_FACTOR=1
+-fi
+-
+-CALLGRAPH=0
+-if [ "$OPROFILE_REPORT_CALLGRAPH" != "" ]; then
+-	CALLGRAPH=$OPROFILE_REPORT_CALLGRAPH
+-	if [ $SAMPLE_CYCLE_FACTOR -lt 15 ]; then
+-		SAMPLE_CYCLE_FACTOR=15
+-	fi
+-fi
+-
+-# Create profiling hooks
+-PROFILE_TITLE="timer"
+-
+-echo "#!/bin/bash" > monitor-pre-hook
+-case `uname -m` in
+-	i?86)
+-		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
+-		export PROFILE_EVENTS=timer
+-		;;
+-	x86_64)
+-		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
+-		export PROFILE_EVENTS=timer
+-		;;
+-	ppc64)
+-		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
+-		export PROFILE_EVENTS=timer
+-		;;
+-	*)
+-		echo Unrecognised architecture
+-		exit -1
+-		;;
+-esac
+-
+-echo "#!/bin/bash" > monitor-post-hook
+-echo "opcontrol --dump" >> monitor-post-hook
+-echo "opcontrol --stop" >> monitor-post-hook
+-echo "oprofile_report.sh > \$1/oprofile-\$2-report-$PROFILE_TITLE.txt" >> monitor-post-hook
+-
+-echo "#!/bin/bash" > monitor-cleanup-hook
+-echo "rm \$1/oprofile-\$2-report-$PROFILE_TITLE.txt" >> monitor-cleanup-hook
+-
+-echo "#!/bin/bash" > monitor-reset
+-echo "opcontrol --stop   > /dev/null 2> /dev/null" >> monitor-reset
+-echo "opcontrol --deinit > /dev/null 2> /dev/null" >> monitor-reset
+-
+-chmod u+x monitor-*
+diff --git a/profile-hooks-a.sh b/profile-hooks-a.sh
+new file mode 100644
+index 0000000..c953dff
+--- /dev/null
++++ b/profile-hooks-a.sh
+@@ -0,0 +1,48 @@
++if [ "$SAMPLE_CYCLE_FACTOR" = "" ]; then
++	SAMPLE_CYCLE_FACTOR=1
++fi
++
++CALLGRAPH=0
++if [ "$OPROFILE_REPORT_CALLGRAPH" != "" ]; then
++	CALLGRAPH=$OPROFILE_REPORT_CALLGRAPH
++	if [ $SAMPLE_CYCLE_FACTOR -lt 15 ]; then
++		SAMPLE_CYCLE_FACTOR=15
++	fi
++fi
++
++# Create profiling hooks
++PROFILE_TITLE="timer"
++
++echo "#!/bin/bash" > monitor-pre-hook
++case `uname -m` in
++	i?86)
++		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
++		export PROFILE_EVENTS=timer
++		;;
++	x86_64)
++		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
++		export PROFILE_EVENTS=timer
++		;;
++	ppc64)
++		echo "oprofile_start.sh --callgraph $CALLGRAPH --sample-cycle-factor $SAMPLE_CYCLE_FACTOR --event timer" >> monitor-pre-hook
++		export PROFILE_EVENTS=timer
++		;;
++	*)
++		echo Unrecognised architecture
++		exit -1
++		;;
++esac
++
++echo "#!/bin/bash" > monitor-post-hook
++echo "opcontrol --dump" >> monitor-post-hook
++echo "opcontrol --stop" >> monitor-post-hook
++echo "oprofile_report.sh > \$1/oprofile-\$2-report-$PROFILE_TITLE.txt" >> monitor-post-hook
++
++echo "#!/bin/bash" > monitor-cleanup-hook
++echo "rm \$1/oprofile-\$2-report-$PROFILE_TITLE.txt" >> monitor-cleanup-hook
++
++echo "#!/bin/bash" > monitor-reset
++echo "opcontrol --stop   > /dev/null 2> /dev/null" >> monitor-reset
++echo "opcontrol --deinit > /dev/null 2> /dev/null" >> monitor-reset
++
++chmod u+x monitor-*
