@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2ITVfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:35:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58206 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab2ITVfQ (ORCPT
+	id S1755530Ab2ITVhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:37:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39627 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab2ITVhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:35:16 -0400
-Date: Thu, 20 Sep 2012 14:32:33 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pda_power: ac_draw used before set
-Message-ID: <20120920213232.GA18223@lizard>
-References: <505A0293.4070708@yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <505A0293.4070708@yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Sep 2012 17:37:22 -0400
+Date: Thu, 20 Sep 2012 17:37:19 -0400 (EDT)
+Message-Id: <20120920.173719.1238894522809866676.davem@davemloft.net>
+To: chf.fritz@googlemail.com
+Cc: rob@landley.net, kuznet@ms2.inr.ac.ru, j.weitzel@phytec.de,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, hjk@hansjkoch.de, daniel@zonque.org
+Subject: Re: [PATCH] ipconfig: add nameserver IPs to kernel-parameter ip=
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1348176485.3858.92.camel@mars>
+References: <1348176485.3858.92.camel@mars>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 06:36:19PM +0100, Paul Parsons wrote:
-> When I reboot my iPAQ hx4700 in its cradle, the battery will not begin
-> to charge even though the AC supply is connected. Charging will start
-> only after the PDA power driver is tickled by some other power event,
-> such as reseating the iPAQ in its cradle or connecting the USB cable.
-> 
-> The problem lies in pda_power_probe(), where ac_draw is used by the call
-> to update_charger() before being set by the call to regulator_get().
-> 
-> Moving the regulator_get() call to before the update_charger() call
-> fixes the problem.
-> 
-> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
-> Cc: Philipp Zabel <philipp.zabel@gmail.com>
-> ---
+From: Christoph Fritz <chf.fritz@googlemail.com>
+Date: Thu, 20 Sep 2012 23:28:05 +0200
 
-Great to see that someone is still using hx4700. :-)
+> +			pr_info("     nameserver%u=%pI4",
+> +							i, &ic_nameservers[i]);
 
-Thanks for the patch, it is merged now!
+Why don't you just tab that second line out to planet Mars while
+you're at it?
 
-Cheers,
-Anton.
+Please format this correctly, the goal is not to use a million
+TAB characters.  Rather, the goal is to get the text starting
+on the second line of a function call to line up with the
+first column after the openning parenthesis on the previous line.
 
-p.s.
-The patch was mangled (word wrapped), but I fixed it up. Just fyi...
+What you're doing there looks awful, so you'll need to fix this
+up before this patch will be considered seriously.
+
+Thanks.
