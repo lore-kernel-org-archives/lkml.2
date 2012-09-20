@@ -1,145 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab2ITOmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:42:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab2ITOle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:34 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 08/10] efi: Enable secure boot lockdown automatically when enabled in firmware
-Date: Thu, 20 Sep 2012 10:41:03 -0400
-Message-Id: <1348152065-31353-9-git-send-email-mjg@redhat.com>
-In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S932125Ab2ITOmT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:42:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51869 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab2ITOmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:42:12 -0400
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [RFC PATCH 00/13] DMA Engine support for AM33xx
+Date: Thu, 20 Sep 2012 10:43:33 -0400
+Message-Id: <1348152226-13588-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The firmware has a set of flags that indicate whether secure boot is enabled
-and enforcing. Use them to indicate whether the kernel should lock itself
-down.
+This series adds DMA Engine support for AM33xx, which uses
+an EDMA DMAC. The EDMA DMAC has been previously supported by only
+a private API implementation (much like the situation with OMAP
+DMA) found on the DaVinci family of SoCs.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- Documentation/x86/zero-page.txt  |  2 ++
- arch/x86/boot/compressed/eboot.c | 32 ++++++++++++++++++++++++++++++++
- arch/x86/include/asm/bootparam.h |  3 ++-
- arch/x86/kernel/setup.c          |  3 +++
- include/linux/cred.h             |  2 ++
- 5 files changed, 41 insertions(+), 1 deletion(-)
+There are a mind-boggling number of dependencies for this series:
 
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index cf5437d..7f9ed48 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -27,6 +27,8 @@ Offset	Proto	Name		Meaning
- 1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
- 1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
- 				(below)
-+1EB/001	ALL	kbd_status	Numlock is enabled
-+1EC/001	ALL	secure_boot	Kernel should enable secure boot lockdowns
- 290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
- 2D0/A00	ALL	e820_map	E820 memory map table
- 				(array of struct e820entry)
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b3e0227..3789356 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -724,6 +724,36 @@ fail:
- 	return status;
- }
- 
-+static int get_secure_boot(efi_system_table_t *_table)
-+{
-+	u8 sb, setup;
-+	unsigned long datasize = sizeof(sb);
-+	efi_guid_t var_guid = EFI_GLOBAL_VARIABLE_GUID;
-+	efi_status_t status;
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SecureBoot", &var_guid, NULL, &datasize, &sb);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (sb == 0)
-+		return 0;
-+
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SetupMode", &var_guid, NULL, &datasize,
-+				&setup);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (setup == 1)
-+		return 0;
-+
-+	return 1;
-+}
-+
- /*
-  * Because the x86 boot code expects to be passed a boot_params we
-  * need to create one ourselves (usually the bootloader would create
-@@ -1018,6 +1048,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
- 		goto fail;
- 
-+	boot_params->secure_boot = get_secure_boot(sys_table);
-+
- 	setup_graphics(boot_params);
- 
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
-index 2ad874c..c7338e0 100644
---- a/arch/x86/include/asm/bootparam.h
-+++ b/arch/x86/include/asm/bootparam.h
-@@ -114,7 +114,8 @@ struct boot_params {
- 	__u8  eddbuf_entries;				/* 0x1e9 */
- 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
- 	__u8  kbd_status;				/* 0x1eb */
--	__u8  _pad6[5];					/* 0x1ec */
-+	__u8  secure_boot;				/* 0x1ec */
-+	__u8  _pad6[4];					/* 0x1ed */
- 	struct setup_header hdr;    /* setup header */	/* 0x1f1 */
- 	__u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
- 	__u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];	/* 0x290 */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..239bf2a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -947,6 +947,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	io_delay_init();
- 
-+	if (boot_params.secure_boot)
-+		secureboot_enable();
-+
- 	/*
- 	 * Parse the ACPI tables for possible boot-time SMP configuration.
- 	 */
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index ebbed2c..a24faf1 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -170,6 +170,8 @@ extern int set_security_override_from_ctx(struct cred *, const char *);
- extern int set_create_files_as(struct cred *, struct inode *);
- extern void __init cred_init(void);
- 
-+extern void secureboot_enable(void);
-+
- /*
-  * check for validity of credentials
-  */
+	- Jon Hunter's OF DMA helpers series
+	  https://patchwork.kernel.org/patch/1461061/
+	  https://patchwork.kernel.org/patch/1461051/
+	- Patch to address OF DMA helpers naming issues:
+	  https://patchwork.kernel.org/patch/1477921/
+	- EDMA DMA Engine wrapper driver in linux-next
+	  c2dde5f8f2095d7c623ff3565c1462e190272273
+	- EDMA DMA Engine wrapper driver bug fix:
+	  https://patchwork.kernel.org/patch/1474411/  
+	- A huge number of patches in linux-next for AM33xx boot
+	  (too numerous to list)
+
+The approach taken is similar to how OMAP DMA is being converted to
+DMA Engine support. With the functional EDMA private API already
+existing in mach-davinci/dma.c, we first move that to an ARM common
+area so it can be shared. Adding DT and runtime PM support to the
+private EDMA API implementation allows it to run on AM33xx. AM33xx
+*only* boots using DT so we leverage Jon's generic DT DMA helpers to
+register EDMA DMAC with the of_dma framework and then add support
+for calling the dma_request_slave_channel() API to both the mmc
+and spi drivers.
+
+What works? Well, with this series we now have MMC and SPI support
+on AM33xx. The only caveat for MMC is that the mmc3 controller has
+its events on the crossbar and is not usable right now.
+
+This is tested on BeagleBone with a SPI framebuffer driver and SD
+card.
+
+After this series, the plan is to convert the last in-tree user
+of the private EDMA API (davinci-pcm/mcasp) and then eliminate
+the private EDMA API by folding its functionality into
+drivers/dma/edma.c.
+
+TODO:
+	add AM33xx crossbar support to the private EDMA API
+	(any EDMA events on the crossbar are not supported)
+
+Matt Porter (13):
+  ARM: davinci: move private EDMA API to arm/common
+  ARM: edma: remove unused transfer controller handlers
+  ARM: edma: add DT and runtime PM support for AM335x
+  dmaengine: edma: enable build for AM335x
+  dma: Add TI EDMA device tree binding
+  ARM: omap: add hsmmc am33xx specific init
+  mmc: omap_hsmmc: dma_request_slave_channel() support for DT platforms
+  mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+  mmc: omap_hsmmc: add generic DMA request support to the DT binding
+  spi: omap2-mcspi: dma_request_slave_channel() support for DT
+    platforms
+  spi: omap2-mcspi: add generic DMA request support to the DT binding
+  ARM: dts: add am33xx EDMA support
+  Documentation: add schedule for removing private EDMA API
+
+ Documentation/devicetree/bindings/dma/ti-edma.txt  |   49 +
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +-
+ Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
+ Documentation/feature-removal-schedule.txt         |   10 +
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   46 +
+ arch/arm/common/Kconfig                            |    3 +
+ arch/arm/common/Makefile                           |    1 +
+ arch/arm/common/edma.c                             | 1779 ++++++++++++++++++++
+ arch/arm/include/asm/mach/edma.h                   |  267 +++
+ arch/arm/mach-davinci/Makefile                     |    2 +-
+ arch/arm/mach-davinci/devices.c                    |    3 +-
+ arch/arm/mach-davinci/dm355.c                      |    2 +-
+ arch/arm/mach-davinci/dm365.c                      |    2 +-
+ arch/arm/mach-davinci/dm644x.c                     |    2 +-
+ arch/arm/mach-davinci/dm646x.c                     |    2 +-
+ arch/arm/mach-davinci/dma.c                        | 1588 -----------------
+ arch/arm/mach-davinci/include/mach/asp.h           |    2 +-
+ arch/arm/mach-davinci/include/mach/da8xx.h         |    3 +-
+ arch/arm/mach-davinci/include/mach/edma.h          |  267 ---
+ arch/arm/mach-davinci/include/mach/spi.h           |    2 +-
+ arch/arm/mach-omap2/hsmmc.c                        |    7 +-
+ arch/arm/plat-omap/Kconfig                         |    1 +
+ drivers/dma/Kconfig                                |    2 +-
+ drivers/dma/edma.c                                 |    2 +-
+ drivers/mmc/host/omap_hsmmc.c                      |   26 +-
+ drivers/spi/spi-omap2-mcspi.c                      |   68 +-
+ 27 files changed, 2296 insertions(+), 1893 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+ create mode 100644 arch/arm/common/edma.c
+ create mode 100644 arch/arm/include/asm/mach/edma.h
+ delete mode 100644 arch/arm/mach-davinci/dma.c
+ delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+
 -- 
-1.7.11.4
+1.7.9.5
 
