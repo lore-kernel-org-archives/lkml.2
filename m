@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2ITVas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:30:48 -0400
-Received: from mail05-md.ns.itscom.net ([175.177.155.115]:44179 "EHLO
-	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab2ITVaq (ORCPT
+	id S1754767Ab2ITVfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:35:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58206 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2ITVfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:30:46 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v15)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com
-In-Reply-To: <877grozaih.fsf@tucsk.pomaz.szeredi.hu>
-References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu> <9647.1348169684@jrobl> <877grozaih.fsf@tucsk.pomaz.szeredi.hu>
-Date: Fri, 21 Sep 2012 06:30:41 +0900
-Message-ID: <32710.1348176641@jrobl>
+	Thu, 20 Sep 2012 17:35:16 -0400
+Date: Thu, 20 Sep 2012 14:32:33 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: dwmw2@infradead.org, philipp.zabel@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pda_power: ac_draw used before set
+Message-ID: <20120920213232.GA18223@lizard>
+References: <505A0293.4070708@yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <505A0293.4070708@yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 19, 2012 at 06:36:19PM +0100, Paul Parsons wrote:
+> When I reboot my iPAQ hx4700 in its cradle, the battery will not begin
+> to charge even though the AC supply is connected. Charging will start
+> only after the PDA power driver is tickled by some other power event,
+> such as reseating the iPAQ in its cradle or connecting the USB cable.
+> 
+> The problem lies in pda_power_probe(), where ac_draw is used by the call
+> to update_charger() before being set by the call to regulator_get().
+> 
+> Moving the regulator_get() call to before the update_charger() call
+> fixes the problem.
+> 
+> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+> Cc: Philipp Zabel <philipp.zabel@gmail.com>
+> ---
 
-Miklos Szeredi:
-> Aufs provides much better filesystem semantics than either unionmounts
-> or overlayfs.  But that does come at a price:
->
-> aufs:       98 files changed, 29893 insertions(+), 7 deletions(-)
-> overlayfs:  22 files changed, 2981 insertions(+), 10 deletions(-)
+Great to see that someone is still using hx4700. :-)
 
-Yes, I have to admit that aufs grew up very big.
-The fundamental (by design) difference between them is considering how
-important the filesystem semantics is. You may dislike a big module,
-but I am interested in how you (or someone else) will implement the
-missing overlayfs features to keep the semantics. One approach is
-implemented in aufs. I guess you will try another one. That is what I am
-interesed.
+Thanks for the patch, it is merged now!
 
+Cheers,
+Anton.
 
-J. R. Okajima
+p.s.
+The patch was mangled (word wrapped), but I fixed it up. Just fyi...
