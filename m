@@ -1,589 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2ITWPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 18:15:47 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38952 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932100Ab2ITWPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 18:15:39 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH 1/4] module: add syscall to load module from fd
-Date: Thu, 20 Sep 2012 15:14:57 -0700
-Message-Id: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-X-HELO: www.outflux.net
+	id S932315Ab2ITWPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 18:15:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57007 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756347Ab2ITWPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 18:15:41 -0400
+Date: Fri, 21 Sep 2012 08:15:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: David Miller <davem@davemloft.net>, mika.westerberg@linux.intel.com,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (net-next tree related)
+Message-Id: <20120921081531.67db8a7d0ac1b35426b22c45@canb.auug.org.au>
+In-Reply-To: <20120920.164558.2281417114805373564.davem@davemloft.net>
+References: <20120920173622.2aa7209cd241a3945f4384d4@canb.auug.org.au>
+	<20120920091013.GV15548@intel.com>
+	<20120920.164558.2281417114805373564.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Sep_2012_08_15_31_+1000_T+/kma/tBQb0KTQc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the effort to create a stronger boundary between root and
-kernel, Chrome OS wants to be able to enforce that kernel modules are
-being loaded only from our read-only crypto-hash verified (dm_verity)
-root filesystem. Since the init_module syscall hands the kernel a module
-as a memory blob, no reasoning about the origin of the blob can be made.
+--Signature=_Fri__21_Sep_2012_08_15_31_+1000_T+/kma/tBQb0KTQc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Earlier proposals for appending signatures to kernel modules would not be
-useful in Chrome OS, since it would involve adding an additional set of
-keys to our kernel and builds for no good reason: we already trust the
-contents of our root filesystem. We don't need to verify those kernel
-modules a second time. Having to do signature checking on module loading
-would slow us down and be redundant. All we need to know is where a
-module is coming from so we can say yes/no to loading it.
+[Just bring this to the attention of the PowerPC folks ...]
 
-If a file descriptor is used as the source of a kernel module, many more
-things can be reasoned about. In Chrome OS's case, we could enforce that
-the module lives on the filesystem we expect it to live on.  In the case
-of IMA (or other LSMs), it would be possible, for example, to examine
-extended attributes that may contain signatures over the contents of
-the module.
+On Thu, 20 Sep 2012 16:45:58 -0400 (EDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Date: Thu, 20 Sep 2012 12:10:14 +0300
+>=20
+> > On Thu, Sep 20, 2012 at 05:36:22PM +1000, Stephen Rothwell wrote:
+> >> Hi all,
+> >>=20
+> >> After merging the final tree, today's linux-next build (powerpc
+> >> allyesconfig) failed like this:
+> >>=20
+> >> drivers/net/ethernet/i825xx/znet.c: In function 'hardware_init':
+> >> drivers/net/ethernet/i825xx/znet.c:868:2: error: implicit declaration =
+of function 'isa_virt_to_bus' [-Werror=3Dimplicit-function-declaration]
+> >>=20
+> >> Caused by commit 1d3ff76759b7 ("i825xx: znet: fix compiler warnings wh=
+en
+> >> building a 64-bit kernel").  Is there some Kconfig dependency missing =
+(CONFIG_ISA)?
+> >=20
+> > If we make it dependent on CONFIG_ISA then the driver cannot be built w=
+ith
+> > 64-bit kernel. Then again is there someone running 64-bit kernel on Zen=
+ith
+> > Z-note notebook? From the pictures it looks like very ancient "laptop".
+> >=20
+> > An alternative is to make it depend on X86 like this:
+>=20
+> I think the powerpc port is at fault here.
+>=20
+> Part of being able to advertise ISA_DMA_API is providing isa_virt_to_bus(=
+).
 
-This introduces a new syscall (on x86), similar to init_module, that has
-only two arguments. The first argument is used as a file descriptor to
-the module and the second argument is a pointer to the NULL terminated
-string of module arguments.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v3:
- - fix ret from copy_from_user, thanks to Fengguang Wu.
- - rename to finit_module, suggested by Peter Anvin.
- - various cleanups, suggested from Andrew Morton.
-v2:
- - various cleanups, thanks to Rusty Russell.
----
- arch/x86/syscalls/syscall_32.tbl |    1 +
- arch/x86/syscalls/syscall_64.tbl |    1 +
- include/linux/syscalls.h         |    1 +
- kernel/module.c                  |  343 +++++++++++++++++++++++--------------
- kernel/sys_ni.c                  |    1 +
- 5 files changed, 217 insertions(+), 130 deletions(-)
+--Signature=_Fri__21_Sep_2012_08_15_31_+1000_T+/kma/tBQb0KTQc
+Content-Type: application/pgp-signature
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index 7a35a6e..74ccf44 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -356,3 +356,4 @@
- 347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
- 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
- 349	i386	kcmp			sys_kcmp
-+350	i386	finit_module		sys_finit_module
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index a582bfe..7c58c84 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -319,6 +319,7 @@
- 310	64	process_vm_readv	sys_process_vm_readv
- 311	64	process_vm_writev	sys_process_vm_writev
- 312	common	kcmp			sys_kcmp
-+313	common	finit_module		sys_finit_module
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 19439c7..a377796 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -860,4 +860,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
- 
- asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
- 			 unsigned long idx1, unsigned long idx2);
-+asmlinkage long sys_finit_module(int fd, const char __user *uargs);
- #endif
-diff --git a/kernel/module.c b/kernel/module.c
-index 4edbd9c..afe2f69 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -21,6 +21,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/init.h>
- #include <linux/kallsyms.h>
-+#include <linux/file.h>
- #include <linux/fs.h>
- #include <linux/sysfs.h>
- #include <linux/kernel.h>
-@@ -2399,48 +2400,105 @@ static inline void kmemleak_load_module(const struct module *mod,
- }
- #endif
- 
-+/* Sanity checks against invalid binaries, wrong arch, weird elf version. */
-+static int check_info(struct load_info *info)
-+{
-+	if (info->len < sizeof(*(info->hdr)))
-+		return -ENOEXEC;
-+
-+	if (memcmp(info->hdr->e_ident, ELFMAG, SELFMAG) != 0
-+	    || info->hdr->e_type != ET_REL
-+	    || !elf_check_arch(info->hdr)
-+	    || info->hdr->e_shentsize != sizeof(Elf_Shdr))
-+		return -ENOEXEC;
-+
-+	if (info->hdr->e_shoff >= info->len
-+	    || (info->hdr->e_shnum * sizeof(Elf_Shdr) >
-+		info->len - info->hdr->e_shoff))
-+		return -ENOEXEC;
-+
-+	return 0;
-+}
-+
- /* Sets info->hdr and info->len. */
--static int copy_and_check(struct load_info *info,
--			  const void __user *umod, unsigned long len,
--			  const char __user *uargs)
-+static int copy_module_from_user(const void __user *umod, unsigned long len,
-+				  struct load_info *info)
- {
- 	int err;
--	Elf_Ehdr *hdr;
- 
--	if (len < sizeof(*hdr))
-+	info->len = len;
-+	if (info->len < sizeof(*(info->hdr)))
- 		return -ENOEXEC;
- 
- 	/* Suck in entire file: we'll want most of it. */
--	if ((hdr = vmalloc(len)) == NULL)
-+	info->hdr = vmalloc(info->len);
-+	if (!info->hdr)
- 		return -ENOMEM;
- 
--	if (copy_from_user(hdr, umod, len) != 0) {
-+	if (copy_from_user(info->hdr, umod, info->len) != 0) {
- 		err = -EFAULT;
- 		goto free_hdr;
- 	}
- 
--	/* Sanity checks against insmoding binaries or wrong arch,
--	   weird elf version */
--	if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0
--	    || hdr->e_type != ET_REL
--	    || !elf_check_arch(hdr)
--	    || hdr->e_shentsize != sizeof(Elf_Shdr)) {
--		err = -ENOEXEC;
-+	err = check_info(info);
-+	if (err)
- 		goto free_hdr;
-+
-+	return err;
-+
-+free_hdr:
-+	vfree(info->hdr);
-+	return err;
-+}
-+
-+/* Sets info->hdr and info->len. */
-+static int copy_module_from_fd(int fd, struct load_info *info)
-+{
-+	struct file *file;
-+	int err;
-+	struct kstat stat;
-+	loff_t pos;
-+	ssize_t bytes = 0;
-+
-+	file = fget(fd);
-+	if (!file)
-+		return -ENOEXEC;
-+
-+	err = vfs_getattr(file->f_vfsmnt, file->f_dentry, &stat);
-+	if (err)
-+		goto out;
-+
-+	if (stat.size > INT_MAX) {
-+		err = -EFBIG;
-+		goto out;
-+	}
-+	info->hdr = vmalloc(stat.size);
-+	if (!info->hdr) {
-+		err = -ENOMEM;
-+		goto out;
- 	}
- 
--	if (hdr->e_shoff >= len ||
--	    hdr->e_shnum * sizeof(Elf_Shdr) > len - hdr->e_shoff) {
--		err = -ENOEXEC;
--		goto free_hdr;
-+	pos = 0;
-+	while (pos < stat.size) {
-+		bytes = kernel_read(file, pos, (char *)(info->hdr) + pos,
-+				    stat.size - pos);
-+		if (bytes < 0) {
-+			vfree(info->hdr);
-+			err = bytes;
-+			goto out;
-+		}
-+		if (bytes == 0)
-+			break;
-+		pos += bytes;
- 	}
-+	info->len = pos;
- 
--	info->hdr = hdr;
--	info->len = len;
--	return 0;
-+	err = check_info(info);
-+	if (err)
-+		vfree(info->hdr);
- 
--free_hdr:
--	vfree(hdr);
-+out:
-+	fput(file);
- 	return err;
- }
- 
-@@ -2861,26 +2919,100 @@ static int post_relocation(struct module *mod, const struct load_info *info)
- 	return module_finalize(info->hdr, info->sechdrs, mod);
- }
- 
-+/* Call module constructors. */
-+static void do_mod_ctors(struct module *mod)
-+{
-+#ifdef CONFIG_CONSTRUCTORS
-+	unsigned long i;
-+
-+	for (i = 0; i < mod->num_ctors; i++)
-+		mod->ctors[i]();
-+#endif
-+}
-+
-+/* This is where the real work happens */
-+static int do_init_module(struct module *mod)
-+{
-+	int ret = 0;
-+
-+	blocking_notifier_call_chain(&module_notify_list,
-+			MODULE_STATE_COMING, mod);
-+
-+	/* Set RO and NX regions for core */
-+	set_section_ro_nx(mod->module_core,
-+				mod->core_text_size,
-+				mod->core_ro_size,
-+				mod->core_size);
-+
-+	/* Set RO and NX regions for init */
-+	set_section_ro_nx(mod->module_init,
-+				mod->init_text_size,
-+				mod->init_ro_size,
-+				mod->init_size);
-+
-+	do_mod_ctors(mod);
-+	/* Start the module */
-+	if (mod->init != NULL)
-+		ret = do_one_initcall(mod->init);
-+	if (ret < 0) {
-+		/* Init routine failed: abort.  Try to protect us from
-+                   buggy refcounters. */
-+		mod->state = MODULE_STATE_GOING;
-+		synchronize_sched();
-+		module_put(mod);
-+		blocking_notifier_call_chain(&module_notify_list,
-+					     MODULE_STATE_GOING, mod);
-+		free_module(mod);
-+		wake_up(&module_wq);
-+		return ret;
-+	}
-+	if (ret > 0) {
-+		printk(KERN_WARNING
-+"%s: '%s'->init suspiciously returned %d, it should follow 0/-E convention\n"
-+"%s: loading module anyway...\n",
-+		       __func__, mod->name, ret,
-+		       __func__);
-+		dump_stack();
-+	}
-+
-+	/* Now it's a first class citizen!  Wake up anyone waiting for it. */
-+	mod->state = MODULE_STATE_LIVE;
-+	wake_up(&module_wq);
-+	blocking_notifier_call_chain(&module_notify_list,
-+				     MODULE_STATE_LIVE, mod);
-+
-+	/* We need to finish all async code before the module init sequence is done */
-+	async_synchronize_full();
-+
-+	mutex_lock(&module_mutex);
-+	/* Drop initial reference. */
-+	module_put(mod);
-+	trim_init_extable(mod);
-+#ifdef CONFIG_KALLSYMS
-+	mod->num_symtab = mod->core_num_syms;
-+	mod->symtab = mod->core_symtab;
-+	mod->strtab = mod->core_strtab;
-+#endif
-+	unset_module_init_ro_nx(mod);
-+	module_free(mod, mod->module_init);
-+	mod->module_init = NULL;
-+	mod->init_size = 0;
-+	mod->init_ro_size = 0;
-+	mod->init_text_size = 0;
-+	mutex_unlock(&module_mutex);
-+
-+	return 0;
-+}
-+
- /* Allocate and load the module: note that size of section 0 is always
-    zero, and we rely on this for optional sections. */
--static struct module *load_module(void __user *umod,
--				  unsigned long len,
--				  const char __user *uargs)
-+static int load_module(struct load_info *info, const char __user *uargs)
- {
--	struct load_info info = { NULL, };
- 	struct module *mod;
- 	long err;
- 
--	pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
--	       umod, len, uargs);
--
--	/* Copy in the blobs from userspace, check they are vaguely sane. */
--	err = copy_and_check(&info, umod, len, uargs);
--	if (err)
--		return ERR_PTR(err);
--
- 	/* Figure out module layout, and allocate all the memory. */
--	mod = layout_and_allocate(&info);
-+	mod = layout_and_allocate(info);
- 	if (IS_ERR(mod)) {
- 		err = PTR_ERR(mod);
- 		goto free_copy;
-@@ -2893,25 +3025,25 @@ static struct module *load_module(void __user *umod,
- 
- 	/* Now we've got everything in the final locations, we can
- 	 * find optional sections. */
--	find_module_sections(mod, &info);
-+	find_module_sections(mod, info);
- 
- 	err = check_module_license_and_versions(mod);
- 	if (err)
- 		goto free_unload;
- 
- 	/* Set up MODINFO_ATTR fields */
--	setup_modinfo(mod, &info);
-+	setup_modinfo(mod, info);
- 
- 	/* Fix up syms, so that st_value is a pointer to location. */
--	err = simplify_symbols(mod, &info);
-+	err = simplify_symbols(mod, info);
- 	if (err < 0)
- 		goto free_modinfo;
- 
--	err = apply_relocations(mod, &info);
-+	err = apply_relocations(mod, info);
- 	if (err < 0)
- 		goto free_modinfo;
- 
--	err = post_relocation(mod, &info);
-+	err = post_relocation(mod, info);
- 	if (err < 0)
- 		goto free_modinfo;
- 
-@@ -2941,14 +3073,14 @@ static struct module *load_module(void __user *umod,
- 	}
- 
- 	/* This has to be done once we're sure module name is unique. */
--	dynamic_debug_setup(info.debug, info.num_debug);
-+	dynamic_debug_setup(info->debug, info->num_debug);
- 
- 	/* Find duplicate symbols */
- 	err = verify_export_symbols(mod);
- 	if (err < 0)
- 		goto ddebug;
- 
--	module_bug_finalize(info.hdr, info.sechdrs, mod);
-+	module_bug_finalize(info->hdr, info->sechdrs, mod);
- 	list_add_rcu(&mod->list, &modules);
- 	mutex_unlock(&module_mutex);
- 
-@@ -2959,16 +3091,17 @@ static struct module *load_module(void __user *umod,
- 		goto unlink;
- 
- 	/* Link in to syfs. */
--	err = mod_sysfs_setup(mod, &info, mod->kp, mod->num_kp);
-+	err = mod_sysfs_setup(mod, info, mod->kp, mod->num_kp);
- 	if (err < 0)
- 		goto unlink;
- 
- 	/* Get rid of temporary copy. */
--	free_copy(&info);
-+	free_copy(info);
- 
- 	/* Done! */
- 	trace_module_load(mod);
--	return mod;
-+
-+	return do_init_module(mod);
- 
-  unlink:
- 	mutex_lock(&module_mutex);
-@@ -2977,7 +3110,7 @@ static struct module *load_module(void __user *umod,
- 	module_bug_cleanup(mod);
- 
-  ddebug:
--	dynamic_debug_remove(info.debug);
-+	dynamic_debug_remove(info->debug);
-  unlock:
- 	mutex_unlock(&module_mutex);
- 	synchronize_sched();
-@@ -2989,106 +3122,56 @@ static struct module *load_module(void __user *umod,
-  free_unload:
- 	module_unload_free(mod);
-  free_module:
--	module_deallocate(mod, &info);
-+	module_deallocate(mod, info);
-  free_copy:
--	free_copy(&info);
--	return ERR_PTR(err);
-+	free_copy(info);
-+	return err;
- }
- 
--/* Call module constructors. */
--static void do_mod_ctors(struct module *mod)
-+static int may_init_module(void)
- {
--#ifdef CONFIG_CONSTRUCTORS
--	unsigned long i;
-+	if (!capable(CAP_SYS_MODULE) || modules_disabled)
-+		return -EPERM;
- 
--	for (i = 0; i < mod->num_ctors; i++)
--		mod->ctors[i]();
--#endif
-+	return 0;
- }
- 
--/* This is where the real work happens */
--SYSCALL_DEFINE3(init_module, void __user *, umod,
--		unsigned long, len, const char __user *, uargs)
-+SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
- {
--	struct module *mod;
--	int ret = 0;
-+	int err;
-+	struct load_info info = { };
- 
--	/* Must have permission */
--	if (!capable(CAP_SYS_MODULE) || modules_disabled)
--		return -EPERM;
-+	err = may_init_module();
-+	if (err)
-+		return err;
- 
--	/* Do all the hard work */
--	mod = load_module(umod, len, uargs);
--	if (IS_ERR(mod))
--		return PTR_ERR(mod);
-+	pr_debug("finit_module: fd=%d, uargs=%p\n", fd, uargs);
- 
--	blocking_notifier_call_chain(&module_notify_list,
--			MODULE_STATE_COMING, mod);
--
--	/* Set RO and NX regions for core */
--	set_section_ro_nx(mod->module_core,
--				mod->core_text_size,
--				mod->core_ro_size,
--				mod->core_size);
-+	err = copy_module_from_fd(fd, &info);
-+	if (err)
-+		return err;
- 
--	/* Set RO and NX regions for init */
--	set_section_ro_nx(mod->module_init,
--				mod->init_text_size,
--				mod->init_ro_size,
--				mod->init_size);
-+	return load_module(&info, uargs);
-+}
- 
--	do_mod_ctors(mod);
--	/* Start the module */
--	if (mod->init != NULL)
--		ret = do_one_initcall(mod->init);
--	if (ret < 0) {
--		/* Init routine failed: abort.  Try to protect us from
--                   buggy refcounters. */
--		mod->state = MODULE_STATE_GOING;
--		synchronize_sched();
--		module_put(mod);
--		blocking_notifier_call_chain(&module_notify_list,
--					     MODULE_STATE_GOING, mod);
--		free_module(mod);
--		wake_up(&module_wq);
--		return ret;
--	}
--	if (ret > 0) {
--		printk(KERN_WARNING
--"%s: '%s'->init suspiciously returned %d, it should follow 0/-E convention\n"
--"%s: loading module anyway...\n",
--		       __func__, mod->name, ret,
--		       __func__);
--		dump_stack();
--	}
-+SYSCALL_DEFINE3(init_module, void __user *, umod,
-+		unsigned long, len, const char __user *, uargs)
-+{
-+	int err;
-+	struct load_info info = { };
- 
--	/* Now it's a first class citizen!  Wake up anyone waiting for it. */
--	mod->state = MODULE_STATE_LIVE;
--	wake_up(&module_wq);
--	blocking_notifier_call_chain(&module_notify_list,
--				     MODULE_STATE_LIVE, mod);
-+	err = may_init_module();
-+	if (err)
-+		return err;
- 
--	/* We need to finish all async code before the module init sequence is done */
--	async_synchronize_full();
-+	pr_debug("init_module: umod=%p, len=%lu, uargs=%p\n",
-+	       umod, len, uargs);
- 
--	mutex_lock(&module_mutex);
--	/* Drop initial reference. */
--	module_put(mod);
--	trim_init_extable(mod);
--#ifdef CONFIG_KALLSYMS
--	mod->num_symtab = mod->core_num_syms;
--	mod->symtab = mod->core_symtab;
--	mod->strtab = mod->core_strtab;
--#endif
--	unset_module_init_ro_nx(mod);
--	module_free(mod, mod->module_init);
--	mod->module_init = NULL;
--	mod->init_size = 0;
--	mod->init_ro_size = 0;
--	mod->init_text_size = 0;
--	mutex_unlock(&module_mutex);
-+	err = copy_module_from_user(umod, len, &info);
-+	if (err)
-+		return err;
- 
--	return 0;
-+	return load_module(&info, uargs);
- }
- 
- static inline int within(unsigned long addr, void *start, unsigned long size)
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index dbff751..395084d 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -25,6 +25,7 @@ cond_syscall(sys_swapoff);
- cond_syscall(sys_kexec_load);
- cond_syscall(compat_sys_kexec_load);
- cond_syscall(sys_init_module);
-+cond_syscall(sys_finit_module);
- cond_syscall(sys_delete_module);
- cond_syscall(sys_socketpair);
- cond_syscall(sys_bind);
--- 
-1.7.0.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQW5WDAAoJEECxmPOUX5FEfUAP+wVDkkqTUK3PovWOuIcr4Rfm
+e8QLESS1lmjcsG0chwzDedjRfvGsI3F7s5lEqfCYunbBpN8iYMvmNdgsG81UKeO0
+BccfUKFazdNzwwTYI6ylueJ3iAokuxfgoEIYDYitaXx/xiWEcPc1Sm6O+uZgN6o4
+3riifaSjuUjPADLPaN21HqPVBWQwWU78lVLChaS4hazWNk4uXBxmLgFQeidzBW9r
+LDJple2qC5WCv40hzFH4Y+DAnFyUxKowjg9Zj4I2YXKkvNT/2sSYpLIFhlWwaVWC
+kSvNxa9It2KaUa5Q/qMzI8w2rJ/OUG7GeEQCFB2fcVqrK2d0tUbbELvxzf96SPzF
+ScwNfxJZZg/FOhVa1VLsrQ/qb6wYVal7aO/KMH9vnutiBxciIQ1UCRUN4s0Ji9Qq
+0uH2LwA1tFdVELQVn7lpB6grrR5DlZhr3l8XDfn7MNEUEnNeCnMQ8qNbgfgn0YMf
+2fcFg44aZ75Upq3Pl1e3p1Utl3qcnbN5+OkJaFDwXRku2rBZwuxgQLQ3PB39jUG1
+zCcrchLm0QZcvPNSlvyK8KYRMg5RegL9tj6VCGwPdbSzOa1pSxCtQjbvGVG2Noj3
+ytP+Jyjw1fYbnkt+YtO/D4YBIkFI4FTtJausblpOIsXJqqM13I3G/VSCZYIZbtVG
+26umyeOvJA0YGvqatENU
+=Rw0G
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Sep_2012_08_15_31_+1000_T+/kma/tBQb0KTQc--
