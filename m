@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab2ITSNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:13:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49469 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab2ITSNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:13:02 -0400
-Date: Thu, 20 Sep 2012 20:12:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: kernel BUG at kernel/sched/core.c:1465!
-Message-ID: <20120920181258.GA17181@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-	Michael Wang <wangyun@linux.vnet.ibm.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Akinobu Mita <akinobu.mita@gmail.com>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20120919091230.GA25576@liondog.tnic>
- <505AB9F7.6030605@linux.vnet.ibm.com>
- <20120920125801.GA15045@x1.osrc.amd.com>
- <20120920171045.GC28934@google.com>
+	id S1753726Ab2ITS05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:26:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36831 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab2ITS04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:26:56 -0400
+Date: Thu, 20 Sep 2012 11:26:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.org>, Michal Hocko <mhocko@suse.cz>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        serge.hallyn@canonical.com
+Subject: Re: [RFC] cgroup TODOs
+Message-ID: <20120920182651.GH28934@google.com>
+References: <20120913205827.GO7677@google.com>
+ <505A725B.2080901@amacapital.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120920171045.GC28934@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <505A725B.2080901@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 10:10:45AM -0700, Tejun Heo wrote:
-> Yeah, it's powernow-k8 migrating kworker to a different CPU. It's
-> really curious that there are multiple reports of this in this cycle.
-> Nothing on workqueue side has changed and powernow-k8 has been
-> broken for very long time. The only way this can get triggered is by
-> contending on fidvid_mutex in powernow-k8. I suppose something changed
-> in such way that this happens with some regularity. Have no specific
-> idea what. Anyways, mainline should be okay now.
+Hello,
 
-Yep, it is. I'm running with it for a couple of hours already and no
-issues.
+On Wed, Sep 19, 2012 at 06:33:15PM -0700, Andy Lutomirski wrote:
+> [grr.  why does gmane scramble addresses?]
 
-Btw, we'd normally investigate why powernow-k8 b0rkage appears now
-but after the next merge window, that functionality is moving to
-acpi-cpufreq so powernow-k8 should really be only for K8s then.
+You can append /raw to the message url and see the raw mssage.
 
-We'll see how that whole thing pans out as late as 3.7-rc cycle.
+  http://article.gmane.org/gmane.linux.kernel.containers/23802/raw
+
+> >   I think this level of flexibility should be enough for most use
+> >   cases.  If someone disagrees, please voice your objections now.
+> 
+> OK, I'll bite.
+> 
+> I have a server that has a whole bunch of cores.  A small fraction of
+> those cores are general purpose and run whatever they like.  The rest
+> are tightly controlled.
+> 
+> For simplicity, we have two cpusets that we use.  The root allows all
+> cpus.  The other one only allows the general purpose cpus.  We shove
+> everything into the general-purpose-only cpuset, and then we move
+> special stuff back to root.  (We also shove some kernel threads into a
+> non-root cpuset using the 'cset' tool.)
+
+Using root for special stuff probably isn't a good idea and moving
+bound kthreads into !root cgroups is already disallowed.
+
+> Enter systemd, which wants a hierarchy corresponding to services.  If we
+> were to use it, we might end up violating its hierarchy.
+> 
+> Alternatively, if we started using memcg, then we might have some tasks
+> to have more restrictive memory usage but less restrictive cpu usage.
+> 
+> As long as we can still pull this off, I'm happy.
+
+IIUC, you basically want just two groups w/ cpuset and use it for
+loose cpu ioslation for high priority jobs.  Structure-wise, I don't
+think it's gonna be a problem although using root for special stuff
+would need to change.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
+tejun
