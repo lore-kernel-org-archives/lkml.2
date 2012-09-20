@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab2ITHit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 03:38:49 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:58825 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab2ITHir (ORCPT
+	id S1753649Ab2ITHnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 03:43:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58766 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab2ITHny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 03:38:47 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Huang Ying <ying.huang@intel.com>, linux-pm@vger.kernel.org,
-        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <1347872076-5260-1-git-send-email-ying.huang@intel.com>
-	<1347872076-5260-2-git-send-email-ying.huang@intel.com>
-	<CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
-Date: Thu, 20 Sep 2012 00:38:33 -0700
-In-Reply-To: <CAErSpo5fVbN2vD5Omc7dGJFWUccYZoCOVRF4YmXPe2Oxm81u5g@mail.gmail.com>
-	(Bjorn Helgaas's message of "Mon, 17 Sep 2012 14:54:16 -0600")
-Message-ID: <877grpywhy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+4S/W06aARsWl36j2Ib0hZgg66j6UfDQM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: infradead.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Bjorn Helgaas <bhelgaas@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC 1/3] PCI/PM: Fix kexec for D3cold and bridge suspending
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Thu, 20 Sep 2012 03:43:54 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] ARM: pci: Prepare for Tegra PCIe controller driver
+Date: Thu, 20 Sep 2012 09:43:43 +0200
+Message-Id: <1348127025-29461-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:3xe897AM9jxzLM+UA2Qyu+7wUqUCQvue4g2G7e7glFp
+ 4l3ZZ5smuUHsu1aSM1CyBWfH/XX2XD/FOz0M34kVt+ynKxaoCE
+ y9XES596QijtDXnJzrL31KpA6LwVGTxqGEqxgMzr2dzSVZQPIp
+ f9E1Ftrs5Fzn7TbzOT/v1p1WJ3BF5zVA3IcJ01DQ45gRcC20RP
+ XC16D1RlW9Py4UvsRCKrZL+a0WCEdD1YZKSzCJmvJnoSjAATXi
+ nUTSXsPeXidYoP2cS/NsZ0nx4B1VJQinJiCHvuKN5WDUBKrQLp
+ 7KNv22rUt4NEcUTaFPQw31Y8y7J1ZVVuQmbNckZzowOop448g2
+ DW5FYtyX61S8rDH0OHl/rvU8MkrCJMQui6tM8bc8g1Jc++6Mgw
+ 8QHj9W+N/74AXUawKyraQk/ysB+2ZNTku9KNsFpwYY2I3UUGWS
+ iwSpM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas <bhelgaas@google.com> writes:
+Hi Russell,
 
-> +cc Eric and kexec list
->
-> On Mon, Sep 17, 2012 at 2:54 AM, Huang Ying <ying.huang@intel.com> wrote:
->> If PCI devices are put into D3cold before kexec, because the
->> configuration registers of PCI devices in D3cold are not accessible.
->>
->> And if PCI bridges are put into low power state before kexec,
->> configuration registers of PCI devices underneath the PCI bridges are
->> not accessible too.
->>
->> These will make some PCI devices can not be scanned after kexec, so
->> resume the PCI devices in D3cold or PCI bridges in low power state
->> before kexec.
->
-> Don't we need to resume the device even without the kexec issue?  And
-> even if it's in D1 or D2?
+These are two patches I've been carrying in a larger series that
+converts the Tegra PCIe controller driver to a proper platform driver.
+Since the complete series didn't get much feedback, I've begun to post
+smaller subsets in an effort to get them merged more easily.
 
-The basic requirement is that the device needs to be visible so we can
-auto discover it.  As I recall most sleep states don't make the device
-invisible and we can handle the rest in the device initializatoin code.
+The first patch in this series removes the __init annotations from the
+pci_common_init() function (and pcibios_init_hw(), pcibios_swizzle() as
+well as pcibios_init_resources() because they end up being called from
+the former) to make sure that they stay around after the init stage.
+This is required because the Tegra driver depends on regulators that
+become available only very late during boot and uses deferred probing to
+handle this situation. It turned out that this postpones the PCI bus
+initialization until after init, thus this patch.
 
-> It looks to me like pci_msi_shutdown() (and probably drv->shutdown())
-> depend on the device being in D0.
+The second patch is used to pass per-controller or per-host-bridge data
+to the driver, such that it can be associated with the corresponding
+bus. This is also required by the Tegra driver in order to pass a
+driver-private structure to the PCI bus (or more precisely the
+pci_sys_data structure associated with a bus). It is subsequently used
+to obtain the root port private data given the corresponding PCI bus.
 
-There is certainly a depenency on the config registers being visible.
-Although I don't know if much will go wrong if they aren't.
+Note that v3 is pretty much the same as v2, except that it is rebased on
+linux-next and contains the removal of the __init annotation from the
+pcibios_init_resources() function which is only in linux-next.
 
-Ceratinly pci_msi_shutdown doesn't have anything to do if the device has
-had so much power removed that the device is not even exectuing.
+Thierry
 
-Eric
+Thierry Reding (2):
+  ARM: pci: Keep pci_common_init() around after init
+  ARM: pci: Allow passing per-controller private data
 
->> Signed-off-by: Huang Ying <ying.huang@intel.com>
->> ---
->>  drivers/pci/pci-driver.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> --- a/drivers/pci/pci-driver.c
->> +++ b/drivers/pci/pci-driver.c
->> @@ -421,6 +421,10 @@ static void pci_device_shutdown(struct d
->>         struct pci_dev *pci_dev = to_pci_dev(dev);
->>         struct pci_driver *drv = pci_dev->driver;
->>
->> +       /* Resume bridges and devices in D3cold for kexec to work properly */
->> +       if (pci_dev->current_state == PCI_D3cold || pci_dev->subordinate)
->> +               pm_runtime_resume(dev);
->> +
->>         if (drv && drv->shutdown)
->>                 drv->shutdown(pci_dev);
->>         pci_msi_shutdown(pci_dev);
->
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+ arch/arm/include/asm/mach/pci.h |  1 +
+ arch/arm/kernel/bios32.c        | 11 +++++++----
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+-- 
+1.7.12
+
