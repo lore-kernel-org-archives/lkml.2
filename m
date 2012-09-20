@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab2ITBdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 21:33:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33820 "EHLO
+	id S1752592Ab2ITBdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 21:33:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58086 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2ITBdD (ORCPT
+	with ESMTP id S1752184Ab2ITBda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 21:33:03 -0400
-Message-ID: <1348104773.18148.2.camel@phoenix>
-Subject: [PATCH RFT] memory: tegra{20,30}-mc: Fix reading incorrect register
- in mc_readl()
-From: Axel Lin <axel.lin@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Hiroshi DOYU <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Sep 2012 09:32:53 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 19 Sep 2012 21:33:30 -0400
+Message-ID: <505A725B.2080901@amacapital.net>
+Date: Wed, 19 Sep 2012 18:33:15 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.org>, Michal Hocko <mhocko@suse.cz>,
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@elte.hu>,
+        serge.hallyn@canonical.com
+Subject: Re: [RFC] cgroup TODOs
+References: <20120913205827.GO7677@google.com>
+In-Reply-To: <20120913205827.GO7677@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code reading the register does not match the code writing to the register,
-fix it.
+[grr.  why does gmane scramble addresses?]
 
-Also fix the coding style in mc_writel() for better readability.
+On 09/13/2012 01:58 PM, Tejun Heo wrote:
+> 
+> 6. Multiple hierarchies
+> 
+>   Apart from the apparent wheeeeeeeeness of it (I think I talked about
+>   that enough the last time[1]), there's a basic problem when more
+>   than one controllers interact - it's impossible to define a resource
+>   group when more than two controllers are involved because the
+>   intersection of different controllers is only defined in terms of
+>   tasks.
+> 
+>   IOW, if an entity X is of interest to two controllers, there's no
+>   way to map X to the cgroups of the two controllers.  X may belong to
+>   A and B when viewed by one task but A' and B when viewed by another.
+>   This already is a head scratcher in writeback where blkcg and memcg
+>   have to interact.
+> 
+>   While I am pushing for unified hierarchy, I think it's necessary to
+>   have different levels of granularities depending on controllers
+>   given that nesting involves significant overhead and noticeable
+>   controller-dependent behavior changes.
+> 
+> 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/memory/tegra20-mc.c |   10 +++-------
- drivers/memory/tegra30-mc.c |   22 +++++++---------------
- 2 files changed, 10 insertions(+), 22 deletions(-)
+> ...
 
-diff --git a/drivers/memory/tegra20-mc.c b/drivers/memory/tegra20-mc.c
-index 3ed49c1..e6764bb 100644
---- a/drivers/memory/tegra20-mc.c
-+++ b/drivers/memory/tegra20-mc.c
-@@ -57,7 +57,7 @@ static inline u32 mc_readl(struct tegra20_mc *mc, u32 offs)
- 
- 	if (offs < 0x24)
- 		val = readl(mc->regs[0] + offs);
--	if (offs < 0x400)
-+	else if (offs < 0x400)
- 		val = readl(mc->regs[1] + offs - 0x3c);
- 
- 	return val;
-@@ -65,14 +65,10 @@ static inline u32 mc_readl(struct tegra20_mc *mc, u32 offs)
- 
- static inline void mc_writel(struct tegra20_mc *mc, u32 val, u32 offs)
- {
--	if (offs < 0x24) {
-+	if (offs < 0x24)
- 		writel(val, mc->regs[0] + offs);
--		return;
--	}
--	if (offs < 0x400) {
-+	else if (offs < 0x400)
- 		writel(val, mc->regs[1] + offs - 0x3c);
--		return;
--	}
- }
- 
- static const char * const tegra20_mc_client[] = {
-diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
-index e56ff04..802b9ea 100644
---- a/drivers/memory/tegra30-mc.c
-+++ b/drivers/memory/tegra30-mc.c
-@@ -95,11 +95,11 @@ static inline u32 mc_readl(struct tegra30_mc *mc, u32 offs)
- 
- 	if (offs < 0x10)
- 		val = readl(mc->regs[0] + offs);
--	if (offs < 0x1f0)
-+	else if (offs < 0x1f0)
- 		val = readl(mc->regs[1] + offs - 0x3c);
--	if (offs < 0x228)
-+	else if (offs < 0x228)
- 		val = readl(mc->regs[2] + offs - 0x200);
--	if (offs < 0x400)
-+	else if (offs < 0x400)
- 		val = readl(mc->regs[3] + offs - 0x284);
- 
- 	return val;
-@@ -107,22 +107,14 @@ static inline u32 mc_readl(struct tegra30_mc *mc, u32 offs)
- 
- static inline void mc_writel(struct tegra30_mc *mc, u32 val, u32 offs)
- {
--	if (offs < 0x10) {
-+	if (offs < 0x10)
- 		writel(val, mc->regs[0] + offs);
--		return;
--	}
--	if (offs < 0x1f0) {
-+	else if (offs < 0x1f0)
- 		writel(val, mc->regs[1] + offs - 0x3c);
--		return;
--	}
--	if (offs < 0x228) {
-+	else if (offs < 0x228)
- 		writel(val, mc->regs[2] + offs - 0x200);
--		return;
--	}
--	if (offs < 0x400) {
-+	else if (offs < 0x400)
- 		writel(val, mc->regs[3] + offs - 0x284);
--		return;
--	}
- }
- 
- static const char * const tegra30_mc_client[] = {
--- 
-1.7.9.5
+>   I think this level of flexibility should be enough for most use
+>   cases.  If someone disagrees, please voice your objections now.
+> 
 
+OK, I'll bite.
 
+I have a server that has a whole bunch of cores.  A small fraction of
+those cores are general purpose and run whatever they like.  The rest
+are tightly controlled.
 
+For simplicity, we have two cpusets that we use.  The root allows all
+cpus.  The other one only allows the general purpose cpus.  We shove
+everything into the general-purpose-only cpuset, and then we move
+special stuff back to root.  (We also shove some kernel threads into a
+non-root cpuset using the 'cset' tool.)
+
+Enter systemd, which wants a hierarchy corresponding to services.  If we
+were to use it, we might end up violating its hierarchy.
+
+Alternatively, if we started using memcg, then we might have some tasks
+to have more restrictive memory usage but less restrictive cpu usage.
+
+As long as we can still pull this off, I'm happy.
+
+--Andy
+
+P.S.  I'm sure you can guess why based on my email address :)
