@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab2ITOrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:47:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58812 "EHLO mx1.redhat.com"
+	id S1755937Ab2ITOsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:48:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61407 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332Ab2ITOl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:29 -0400
+	id S1755547Ab2ITOl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:41:27 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 03/10] x86: Lock down IO port access in secure boot environments
-Date: Thu, 20 Sep 2012 10:40:58 -0400
-Message-Id: <1348152065-31353-4-git-send-email-mjg@redhat.com>
+Subject: [PATCH V2 02/10] PCI: Lock down BAR access in secure boot environments
+Date: Thu, 20 Sep 2012 10:40:57 -0400
+Message-Id: <1348152065-31353-3-git-send-email-mjg@redhat.com>
 In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,53 +23,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IO port access would permit users to gain access to PCI configuration
-registers, which in turn (on a lot of hardware) give access to MMIO register
-space. This would potentially permit root to trigger arbitrary DMA, so lock
-it down by default.
+Any hardware that can potentially generate DMA has to be locked down from
+userspace in order to avoid it being possible for an attacker to cause
+arbitrary kernel behaviour. Default to paranoid - in future we can
+potentially relax this for sufficiently IOMMU-isolated devices.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- arch/x86/kernel/ioport.c | 4 ++--
- drivers/char/mem.c       | 3 +++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/pci/pci-sysfs.c | 9 +++++++++
+ drivers/pci/proc.c      | 8 +++++++-
+ drivers/pci/syscall.c   | 2 +-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
-index 8c96897..a2578c4 100644
---- a/arch/x86/kernel/ioport.c
-+++ b/arch/x86/kernel/ioport.c
-@@ -28,7 +28,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
- 
- 	if ((from + num <= from) || (from + num > IO_BITMAP_BITS))
- 		return -EINVAL;
--	if (turn_on && !capable(CAP_SYS_RAWIO))
-+	if (turn_on && (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL)))
- 		return -EPERM;
- 
- 	/*
-@@ -102,7 +102,7 @@ long sys_iopl(unsigned int level, struct pt_regs *regs)
- 		return -EINVAL;
- 	/* Trying to gain more privileges? */
- 	if (level > old) {
--		if (!capable(CAP_SYS_RAWIO))
-+		if (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL))
- 			return -EPERM;
- 	}
- 	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index e5eedfa2..1e0a660 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -597,6 +597,9 @@ static ssize_t write_port(struct file *file, const char __user *buf,
- 	unsigned long i = *ppos;
- 	const char __user * tmp = buf;
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 02d107b..c31b4be 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -580,6 +580,9 @@ pci_write_config(struct file* filp, struct kobject *kobj,
+ 	loff_t init_off = off;
+ 	u8 *data = (u8*) buf;
  
 +	if (!capable(CAP_COMPROMISE_KERNEL))
 +		return -EPERM;
 +
- 	if (!access_ok(VERIFY_READ, buf, count))
- 		return -EFAULT;
- 	while (count-- > 0 && i < 65536) {
+ 	if (off > dev->cfg_size)
+ 		return 0;
+ 	if (off + count > dev->cfg_size) {
+@@ -886,6 +889,9 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
+ 	resource_size_t start, end;
+ 	int i;
+ 
++	if (!capable(CAP_COMPROMISE_KERNEL))
++		return -EPERM;
++
+ 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
+ 		if (res == &pdev->resource[i])
+ 			break;
+@@ -993,6 +999,9 @@ pci_write_resource_io(struct file *filp, struct kobject *kobj,
+ 		      struct bin_attribute *attr, char *buf,
+ 		      loff_t off, size_t count)
+ {
++	if (!capable(CAP_COMPROMISE_KERNEL))
++		return -EPERM;
++
+ 	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
+ }
+ 
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index 27911b5..ac8c9a5 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -135,6 +135,9 @@ proc_bus_pci_write(struct file *file, const char __user *buf, size_t nbytes, lof
+ 	int size = dp->size;
+ 	int cnt;
+ 
++	if (!capable(CAP_COMPROMISE_KERNEL))
++		return -EPERM;
++
+ 	if (pos >= size)
+ 		return 0;
+ 	if (nbytes >= size)
+@@ -211,6 +214,9 @@ static long proc_bus_pci_ioctl(struct file *file, unsigned int cmd,
+ #endif /* HAVE_PCI_MMAP */
+ 	int ret = 0;
+ 
++	if (!capable(CAP_COMPROMISE_KERNEL))
++		return -EPERM;
++
+ 	switch (cmd) {
+ 	case PCIIOC_CONTROLLER:
+ 		ret = pci_domain_nr(dev->bus);
+@@ -251,7 +257,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct pci_filp_private *fpriv = file->private_data;
+ 	int i, ret;
+ 
+-	if (!capable(CAP_SYS_RAWIO))
++	if (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL))
+ 		return -EPERM;
+ 
+ 	/* Make sure the caller is mapping a real resource for this device */
+diff --git a/drivers/pci/syscall.c b/drivers/pci/syscall.c
+index e1c1ec5..97e785f 100644
+--- a/drivers/pci/syscall.c
++++ b/drivers/pci/syscall.c
+@@ -92,7 +92,7 @@ SYSCALL_DEFINE5(pciconfig_write, unsigned long, bus, unsigned long, dfn,
+ 	u32 dword;
+ 	int err = 0;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_COMPROMISE_KERNEL))
+ 		return -EPERM;
+ 
+ 	dev = pci_get_bus_and_slot(bus, dfn);
 -- 
 1.7.11.4
 
