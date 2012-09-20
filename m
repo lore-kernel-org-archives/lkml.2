@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2ITNT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:19:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:33323 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab2ITNT1 (ORCPT
+	id S1755198Ab2ITNTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:19:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55940 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533Ab2ITNTb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:19:27 -0400
-Date: Thu, 20 Sep 2012 09:19:10 -0400
-From: Bob Copeland <me@bobcopeland.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 20/25] userns: Convert omfs to use kuid and kgid where
- appropriate
-Message-ID: <20120920131910.GE19648@localhost>
-References: <877grox6ql.fsf@xmission.com>
- <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
- <1348141326-23355-20-git-send-email-ebiederm@xmission.com>
- <20120920125020.GD19648@localhost>
- <87obl0vnu7.fsf@xmission.com>
-MIME-Version: 1.0
+	Thu, 20 Sep 2012 09:19:31 -0400
+Subject: Re: [RFC][PATCH 2/3] iommu/fsl: Add iommu domain attributes required by fsl PAMU driver.
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87obl0vnu7.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D1A49A2@039-SN2MPN1-013.039d.mgd.msft.net>
+Date: Thu, 20 Sep 2012 08:19:13 -0500
+Cc: Wood Scott-B07421 <B07421@freescale.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <84F4C3DA-4B61-4D1D-9FB3-B3F520BFE022@kernel.crashing.org>
+References: <1348060632-12997-1-git-send-email-b16395@freescale.com> <1348060632-12997-3-git-send-email-b16395@freescale.com> <6B8A3365-C97E-4742-A0DD-D8FD6BA358EB@kernel.crashing.org> <1348099936.22800.21@snotra> <C5ECD7A89D1DC44195F34B25E172658D1A49A2@039-SN2MPN1-013.039d.mgd.msft.net>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 06:13:52AM -0700, Eric W. Biederman wrote:
-> Bob Copeland <me@bobcopeland.com> writes:
+
+On Sep 20, 2012, at 4:46 AM, Sethi Varun-B16395 wrote:
+
 > 
-> > On Thu, Sep 20, 2012 at 04:42:01AM -0700, Eric W. Biederman wrote:
-> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> >> 
-> >> Cc: Bob Copeland <me@bobcopeland.com>
-> >> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> >> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> >
-> > Thanks, looks good to me.
 > 
-> Then I will take that as an Acked-by. ;)
+>> -----Original Message-----
+>> From: Wood Scott-B07421
+>> Sent: Thursday, September 20, 2012 5:42 AM
+>> To: Kumar Gala
+>> Cc: Sethi Varun-B16395; joerg.roedel@amd.com; iommu@lists.linux-
+>> foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
+>> kernel@vger.kernel.org; Sethi Varun-B16395
+>> Subject: Re: [RFC][PATCH 2/3] iommu/fsl: Add iommu domain attributes
+>> required by fsl PAMU driver.
+>> 
+>> On 09/19/2012 08:52:27 AM, Kumar Gala wrote:
+>>> 
+>>> On Sep 19, 2012, at 8:17 AM, <b16395@freescale.com>
+>>> <b16395@freescale.com> wrote:
+>>> 
+>>>> From: Varun Sethi <Varun.Sethi@freescale.com>
+>>>> 
+>>>> Added the following domain attributes required by FSL PAMU driver:
+>>>> 1. Subwindows field added to the iommu domain geometry attribute.
+>>>> 2. Added new iommu stash attribute, which allows setting of the
+>>>>  LIODN specific stash id parameter through IOMMU API.
+>>>> 3. Added an attribute for enabling/disabling DMA to a particular
+>>>>  memory window.
+>>>> 
+>>>> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+>>>> ---
+>>>> include/linux/iommu.h |   30 ++++++++++++++++++++++++++++++
+>>>> 1 files changed, 30 insertions(+), 0 deletions(-)
+>>>> 
+>>>> diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
+>>>> 7e83370..eaa40c6 100644
+>>>> --- a/include/linux/iommu.h
+>>>> +++ b/include/linux/iommu.h
+>>>> @@ -44,6 +44,28 @@ struct iommu_domain_geometry {
+>>>> 	dma_addr_t aperture_start; /* First address that can be
+>>> mapped    */
+>>>> 	dma_addr_t aperture_end;   /* Last address that can be
+>>> mapped     */
+>>>> 	bool force_aperture;       /* DMA only allowed in mappable
+>>> range? */
+>>>> +
+>>>> +	/* The subwindows field indicates number of DMA subwindows
+>>> supported
+>>>> +	 * by the geometry. Following is the interpretation of
+>>>> +	 * values for this field:
+>>>> +	 * 0 : This implies that the supported geometry size is 1 MB
+>>>> +         * with each subwindow size being 4KB. Thus number of
+>>> subwindows
+>>>> +	 * being = 1MB/4KB = 256.
+>>>> +	 * 1 : Only one DMA window i.e. no subwindows.
+>>>> +	 * value other than 0 or 1 would indicate actual number of
+>>> subwindows.
+>>>> +	 */
+>>>> +	u32 subwindows;
+>>>> +};
+>>>> +
+>>>> +/* This attribute corresponds to IOMMUs capable of generating
+>>>> + * a stash transaction. A stash transaction is typically a
+>>>> + * hardware initiated prefetch of data from memory to cache.
+>>>> + * This attribute allows configuring stashig specific parameters
+>>>> + * in the IOMMU hardware.
+>>>> + */
+>>>> +struct iommu_stash_attribute {
+>>>> +	u32 	cpu;	/* cpu number */
+>>>> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
+>>> 
+>>> seems like this should be enum instead of u32 for cache
+>>> 
+>>> With enum being something like:
+>>> 
+>>> enum iommu_attr_stash_cache {
+>>> 	IOMMU_ATTR_CACHE_L1,
+>>> 	IOMMU_ATTR_CACHE_L2,
+>>> 	IOMMU_ATTR_CACHE_L3,
+>>> };
+>> 
+>> Don't we want these structs to be usable via some VFIO ioctl?  In that
+>> case they need to use fixed size types.
+>> 
+> Yes, this would be usable via vfio ioctl. But, then the caller should be
+> aware of supported stash targets. May be I should add an interface for the caller,
+> to query supported stash targets.
 
-Sure, or here's one you can copy :)
+Guess the caller probably knows, but thinking we should move the #defines for valid values into this file out of pamu specific files.
 
-Acked-by: Bob Copeland <me@bobcopeland.com>
-
--- 
-Bob Copeland %% www.bobcopeland.com
+- k
