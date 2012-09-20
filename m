@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab2ITKqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 06:46:01 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14175 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab2ITKqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 06:46:00 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="38465895"
-Message-ID: <505AF3E5.1050306@citrix.com>
-Date: Thu, 20 Sep 2012 11:45:57 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <Ian.Campbell@citrix.com>, Pawel Moll <pawel.moll@arm.com>,
-        <konrad.wilk@oracle.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH] arm: introduce a DTS for Xen unprivileged
- virtual machines
-References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753598Ab2ITKup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 06:50:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49865 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab2ITKuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 06:50:44 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arun Murthy <arun.murthy@stericsson.com>,
+        Matthew Garrett <mjg@redhat.com>, Robert Morell <rmorell@nvidia.com>,
+        Dilan Lee <dilee@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH] pwm-backlight: Take over maintenance
+Date: Thu, 20 Sep 2012 12:50:35 +0200
+Message-Id: <1348138235-3625-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.12
+X-Provags-ID: V02:K0:Mz93vq/CV6DzW40Xb5z10vCsGxIOT1VAmleOlDXuGw1
+ KJ97a39P/riPed/w8NJBxlPG1wmALk1UTdXjR624dj+c84YEGz
+ 5XLMef00p4UfkKn84RfW5cl4ikLBBYopKr5r5cUSJJn5rVHe8y
+ FDo8Objlw2x9cpPbEETRTEXy9mUgb+Dlbz5a6t5KsSKT5QuQhX
+ 6NlRNlwYOQACPbFxXIf0/aFa/3uSP6/TeB4E4no2MOUcSRXdYy
+ hicnxgTiint5HSWqJSBn76wOOo51hiXGr9AtLqr2BX6MOOkchU
+ X7pP6w5zHk7CaB59gZl/zqJo7fjmodh3PTxn07/3P4d0SrHJuF
+ BLGOANnMrt0OxCPuoksBQd9zA/1K4gozYjhvbwGNrwVWP11hec
+ BHKvJMJiliy+/fVqFqZwU0YVa6jVa0LkVTOFswQ2j7EcSlkeJT
+ Je9Vq
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/09/12 18:44, Stefano Stabellini wrote:
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/vexpress-xenvm-4.2.dts
+Since the pwm-backlight driver is lacking a proper maintainer and is the
+heaviest user of the PWM framework I'm taking over maintenance.
 
-Does this make sense?  There is no fixed configuration for VMs.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arun Murthy <arun.murthy@stericsson.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Robert Morell <rmorell@nvidia.com>
+Cc: Dilan Lee <dilee@nvidia.com>
+Cc: Axel Lin <axel.lin@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+Andrew: As previously discussed this patch makes me the new maintainer
+for the pwm-backlight driver. I contacted Richard Purdie and requested
+his Acked-by for this because he's the backlight subsystem maintainer.
+Unfortunately he hasn't answered yet. Looking at the commit log, every
+commit in the last 2+ years has gone through your tree, which seems to
+be reason enough for me to take over this driver but I still wanted to
+get an Acked-by at least from you so that this doesn't look like
+hijacking. I've also Cc'ed a couple of people that have done work on
+the driver in the past to give them a chance to object or send their
+Acked-by.
 
-Is the intention to pass a DTS to the toolstack for it to create the VM
-with the appropriate amount of memory and peripheral mapped to the right
-place etc?  Or is the toolstack going to create the VM and generate the
-DTB from (e.g.,) an xl VM configuration file.
+Obviously I will take this patch through my tree so this is not a
+request to include it in your tree.
 
-> +
-> +	hypervisor {
-> +		compatible = "xen,xen-4.2", "xen,xen";
-> +		reg = <0xb0000000 0x20000>;
-> +		interrupts = <1 15 0xf08>;
-> +	};
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
 
-This node needs to be generated by the toolstack as only it knows what
-ABI the hypervisor has.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 61ad79e..a6f023e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5543,6 +5543,8 @@ F:	Documentation/devicetree/bindings/pwm/
+ F:	include/linux/pwm.h
+ F:	include/linux/of_pwm.h
+ F:	drivers/pwm/
++F:	drivers/video/backlight/pwm_bl.c
++F:	include/linux/pwm_backlight.h
+ 
+ PXA2xx/PXA3xx SUPPORT
+ M:	Eric Miao <eric.y.miao@gmail.com>
+-- 
+1.7.12
 
-David
