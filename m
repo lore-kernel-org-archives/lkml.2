@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2ITSyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 14:54:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754592Ab2ITSyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 14:54:12 -0400
-Message-ID: <505B6647.1080005@redhat.com>
-Date: Thu, 20 Sep 2012 14:53:59 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Richard Davies <richard@arachsys.com>, Shaohua Li <shli@kernel.org>,
-        Avi Kivity <avi@redhat.com>, QEMU-devel <qemu-devel@nongnu.org>,
-        KVM <kvm@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] mm: compaction: Abort compaction loop if lock is
- contended or run too long
-References: <1348149875-29678-1-git-send-email-mgorman@suse.de> <1348149875-29678-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1348149875-29678-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755273Ab2ITSyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 14:54:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58505 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab2ITSyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 14:54:17 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, dhowells@redhat.com, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: [PATCH 03/13] vfs: introduce clone_private_mount()
+Date: Thu, 20 Sep 2012 20:55:20 +0200
+Message-Id: <1348167330-30288-4-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
+References: <1348167330-30288-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2012 10:04 AM, Mel Gorman wrote:
-> From: Shaohua Li <shli@fusionio.com>
->
-> Changelog since V2
-> o Fix BUG_ON triggered due to pages left on cc.migratepages
-> o Make compact_zone_order() require non-NULL arg `contended'
->
-> Changelog since V1
-> o only abort the compaction if lock is contended or run too long
-> o Rearranged the code by Andrea Arcangeli.
->
-> isolate_migratepages_range() might isolate no pages if for example when
-> zone->lru_lock is contended and running asynchronous compaction. In this
-> case, we should abort compaction, otherwise, compact_zone will run a
-> useless loop and make zone->lru_lock is even contended.
->
-> [minchan@kernel.org: Putback pages isolated for migration if aborting]
-> [akpm@linux-foundation.org: compact_zone_order requires non-NULL arg contended]
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Overlayfs needs a private clone of the mount, so create a function for
+this and export to modules.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/namespace.c        |   18 ++++++++++++++++++
+ include/linux/mount.h |    3 +++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 4d31f73..b4712ea 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1387,6 +1387,24 @@ void drop_collected_mounts(struct vfsmount *mnt)
+ 	release_mounts(&umount_list);
+ }
+ 
++struct vfsmount *clone_private_mount(struct path *path)
++{
++	struct mount *old_mnt = real_mount(path->mnt);
++	struct mount *new_mnt;
++
++	if (IS_MNT_UNBINDABLE(old_mnt))
++		return ERR_PTR(-EINVAL);
++
++	down_read(&namespace_sem);
++	new_mnt = clone_mnt(old_mnt, path->dentry, CL_PRIVATE);
++	up_read(&namespace_sem);
++	if (!new_mnt)
++		return ERR_PTR(-ENOMEM);
++
++	return &new_mnt->mnt;
++}
++EXPORT_SYMBOL_GPL(clone_private_mount);
++
+ int iterate_mounts(int (*f)(struct vfsmount *, void *), void *arg,
+ 		   struct vfsmount *root)
+ {
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index d7029f4..344a262 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -66,6 +66,9 @@ extern void mnt_pin(struct vfsmount *mnt);
+ extern void mnt_unpin(struct vfsmount *mnt);
+ extern int __mnt_is_readonly(struct vfsmount *mnt);
+ 
++struct path;
++extern struct vfsmount *clone_private_mount(struct path *path);
++
+ struct file_system_type;
+ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
+ 				      int flags, const char *name,
+-- 
+1.7.7
 
