@@ -1,151 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2ITPvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:51:51 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:48928 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab2ITPvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:51:50 -0400
-X-IronPort-AV: E=Sophos;i="4.80,454,1344211200"; 
-   d="scan'208";a="208767663"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: linux-kernel@vger.kernel.org
-CC: Stefano.Stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        pawel.moll@arm.com, linux-arm-kernel@lists.infradead.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2] arm: introduce a DTS for Xen unprivileged virtual machines
-Date: Thu, 20 Sep 2012 16:47:42 +0100
-Message-ID: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755981Ab2ITPzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:55:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48049 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221Ab2ITPzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:55:51 -0400
+Date: Thu, 20 Sep 2012 17:55:43 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Jiri Engelthaler <engycz@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Roel Kluin <roel.kluin@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Fix bug in end absolute address in drivers/mtd/devices/slram.c
+In-Reply-To: <CAHODtZTFP=KJh1VmBvCcYLWD=M41vBnf_nyoEbvHKW1UzYx8dQ@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1209201754450.31786@twin.jikos.cz>
+References: <CAHODtZTFP=KJh1VmBvCcYLWD=M41vBnf_nyoEbvHKW1UzYx8dQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given that the xenvm machine is based on vexpress but with an extremely
-limited selection of peripherals (the guest is supposed to use virtual
-devices instead), add "xen,xenvm" to the list of compatible machines in
-mach-vexpress.
+On Thu, 20 Sep 2012, Jiri Engelthaler wrote:
 
+> Hello.
+>   I found a bug in parsing end absolute address in
+> drivers/mtd/devices/slram.c. There is checking for startaddress <
+> endaddress and endaddress subtracted by startaddress before check. The
+> bug is there from commit 3afd522de8d8ec446efe957b86e4f63e3dd8ce9d Mon,
+> 19 Jan 2009 01:24:21 +0000
+> 
+> Here is the patch
+> 
+> Signed-off-by: Jiri Engelthaler <engycz@gmail.com>
+> 
+> --- linux-3.2.28/drivers/mtd/devices/slram.c	2012-08-19 19:15:38.000000000 +0200
+> +++ linux-3.2.28.mod/drivers/mtd/devices/slram.c	2012-09-19
+> 18:29:28.012740703 +0200
+> @@ -266,7 +266,7 @@ static int parse_cmdline(char *devname,
+> 
+>  	if (*(szlength) != '+') {
+>  		devlength = simple_strtoul(szlength, &buffer, 0);
+> -		devlength = handle_unit(devlength, buffer) - devstart;
+> +		devlength = handle_unit(devlength, buffer);
+>  		if (devlength < devstart)
+>  			goto err_out;
 
-Changes in v2:
+... adding the suspects to CC so that they are aware of this.
 
-- remove include skeleton;
-- use #address-cells = <2> and #size-cells = <2>;
-- remove the debug bootargs;
-- use memory@80000000 instead of memory;
-- remove the ranges and interrupt-map from the motherboard node;
-- set the machine compatible to "xen,xenvm-4.2", "xen,xenvm";
-- rename the dts file to xenvm-4.2.dts;
-- add "xen,xenvm" to the list of compatible DT strings to mach-vexpress.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/boot/dts/xenvm-4.2.dts      |   64 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-vexpress/Makefile.boot |    3 +-
- arch/arm/mach-vexpress/v2m.c         |    1 +
- 3 files changed, 67 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
-
-diff --git a/arch/arm/boot/dts/xenvm-4.2.dts b/arch/arm/boot/dts/xenvm-4.2.dts
-new file mode 100644
-index 0000000..03d7c84
---- /dev/null
-+++ b/arch/arm/boot/dts/xenvm-4.2.dts
-@@ -0,0 +1,64 @@
-+/*
-+ * Xen Virtual Machine for unprivileged guests
-+ *
-+ * Based on ARM Ltd. Versatile Express CoreTile Express (single CPU)
-+ * Cortex-A15 MPCore (V2P-CA15)
-+ *
-+ */
-+
-+/dts-v1/;
-+
-+/ {
-+	model = "XENVM-4.2";
-+	compatible = "xen,xenvm-4.2", "xen,xenvm";
-+	interrupt-parent = <&gic>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+
-+	chosen {
-+		bootargs = "console=hvc0 root=/dev/xvda";
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <0>;
-+		};
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		reg = <0 0x80000000 0 0x08000000>;
-+	};
-+
-+	gic: interrupt-controller@2c001000 {
-+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		#address-cells = <0>;
-+		interrupt-controller;
-+		reg = <0 0x2c001000 0 0x1000>,
-+		      <0 0x2c002000 0 0x100>;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 13 0xf08>,
-+			     <1 14 0xf08>,
-+			     <1 11 0xf08>,
-+			     <1 10 0xf08>;
-+	};
-+
-+	hypervisor {
-+		compatible = "xen,xen-4.2", "xen,xen";
-+		reg = <0 0xb0000000 0 0x20000>;
-+		interrupts = <1 15 0xf08>;
-+	};
-+
-+	motherboard {
-+		arm,v2m-memory-map = "rs1";
-+	};
-+};
-diff --git a/arch/arm/mach-vexpress/Makefile.boot b/arch/arm/mach-vexpress/Makefile.boot
-index 318d308..38dbaac 100644
---- a/arch/arm/mach-vexpress/Makefile.boot
-+++ b/arch/arm/mach-vexpress/Makefile.boot
-@@ -7,4 +7,5 @@ initrd_phys-y	:= 0x60800000
- dtb-$(CONFIG_ARCH_VEXPRESS_DT)	+= vexpress-v2p-ca5s.dtb \
- 				   vexpress-v2p-ca9.dtb \
- 				   vexpress-v2p-ca15-tc1.dtb \
--				   vexpress-v2p-ca15_a7.dtb
-+				   vexpress-v2p-ca15_a7.dtb \
-+				   xenvm-4.2.dtb
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index 4e567f7..9545b70 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -659,6 +659,7 @@ static void __init v2m_dt_init(void)
- 
- const static char *v2m_dt_match[] __initconst = {
- 	"arm,vexpress",
-+	"xen,xenvm",
- 	NULL,
- };
- 
 -- 
-1.7.2.5
+Jiri Kosina
+SUSE Labs
 
