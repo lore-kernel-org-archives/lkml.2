@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab2ITMxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:53:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36592 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab2ITMxF (ORCPT
+	id S1752147Ab2ITM41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:56:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47448 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751221Ab2ITM40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:53:05 -0400
-Date: Thu, 20 Sep 2012 14:52:59 +0200
-From: Lee Jones <lee.jones@linaro.org>
-To: Ola Lilja <ola.o.lilja@stericsson.com>
-Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [RESENDING] [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP
- probe rather than as a device
-Message-ID: <20120920125259.GA2755@gmail.com>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
- <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
- <CACRpkdbc6bGC4Yp7Bcdfev=Uc=1h4L1v+Lj9RbmJV3F+knQOZQ@mail.gmail.com>
- <20120919133343.GH25694@gmail.com>
- <505ADBE6.6080509@stericsson.com>
+	Thu, 20 Sep 2012 08:56:26 -0400
+Date: Thu, 20 Sep 2012 08:56:19 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, ola.o.lilja@stericsson.com, alsa-devel@alsa-project.org
+Subject: Re: [GIT PULL] MOP500 Audio patches due for ASoC
+Message-ID: <20120920125618.GP17666@opensource.wolfsonmicro.com>
+References: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <505ADBE6.6080509@stericsson.com>
+In-Reply-To: <1348142956-1872-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Blow it out your ear.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Can we have some closure on this patch please, as it's blocking the
-> > patch-set? I'm fairly sure the patch is doing the correct thing, as
-> > seconded by Mark.
+On Thu, Sep 20, 2012 at 02:09:09PM +0200, Lee Jones wrote:
+> The following changes since commit 5698bd757d55b1bb87edd1a9744ab09c142abfc2:
 > 
-> I still don't like this. It is the dai_link-struct that bothers me. We have
-> "ux500-msp-i2s.1" as name of the platform AND the cpu_dai. The MSP I2S-block is
-> not the platform and it is certainly not both platform and cpu-DAI at the same time.
-> Mark: Did you have a solution for this? Couldn't we just put NULL on the
-> platform_name instead?
+>   Linux 3.6-rc6 (2012-09-16 14:58:51 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/ljones/linux-3.0-ux500.git for-asoc-next
 
-There are other drivers which do this already. 
-
-I don't think it's an issue to do this.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Pulled, thanks.
