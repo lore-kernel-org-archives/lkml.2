@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab2ITNTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 09:19:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55940 "EHLO gate.crashing.org"
+	id S1755216Ab2ITNYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 09:24:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60449 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab2ITNTb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 09:19:31 -0400
-Subject: Re: [RFC][PATCH 2/3] iommu/fsl: Add iommu domain attributes required by fsl PAMU driver.
-Mime-Version: 1.0 (Apple Message framework v1278)
+	id S1753501Ab2ITNYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 09:24:10 -0400
+Date: Thu, 20 Sep 2012 15:24:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Thomas Graf <tgraf@suug.ch>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH 2.6.32] memcg: warn on deeper hierarchies with
+ use_hierarchy==0
+Message-ID: <20120920132400.GC23872@dhcp22.suse.cz>
+References: <20120913205827.GO7677@google.com>
+ <20120914150306.GQ28039@dhcp22.suse.cz>
+ <20120919140203.GA5398@dhcp22.suse.cz>
+ <20120919140308.GB5398@dhcp22.suse.cz>
+ <alpine.DEB.2.00.1209191237020.749@chino.kir.corp.google.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D1A49A2@039-SN2MPN1-013.039d.mgd.msft.net>
-Date: Thu, 20 Sep 2012 08:19:13 -0500
-Cc: Wood Scott-B07421 <B07421@freescale.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <84F4C3DA-4B61-4D1D-9FB3-B3F520BFE022@kernel.crashing.org>
-References: <1348060632-12997-1-git-send-email-b16395@freescale.com> <1348060632-12997-3-git-send-email-b16395@freescale.com> <6B8A3365-C97E-4742-A0DD-D8FD6BA358EB@kernel.crashing.org> <1348099936.22800.21@snotra> <C5ECD7A89D1DC44195F34B25E172658D1A49A2@039-SN2MPN1-013.039d.mgd.msft.net>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1209191237020.749@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 20, 2012, at 4:46 AM, Sethi Varun-B16395 wrote:
-
+On Wed 19-09-12 12:38:18, David Rientjes wrote:
+> On Wed, 19 Sep 2012, Michal Hocko wrote:
 > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index f99f599..b61c34b 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -3106,6 +3106,11 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+> >  	} else {
+> >  		parent = mem_cgroup_from_cont(cont->parent);
+> >  		mem->use_hierarchy = parent->use_hierarchy;
+> > +		WARN_ONCE(!mem->use_hierarchy && parent != root_mem_cgroup,
+> > +				"Creating hierarchies with use_hierarchy==0 "
+> > +				"(flat hierarchy) is considered deprecated. "
+> > +				"If you believe that your setup is correct, "
+> > +				"we kindly ask you to contact linux-mm@kvack.org and let us know");
 > 
->> -----Original Message-----
->> From: Wood Scott-B07421
->> Sent: Thursday, September 20, 2012 5:42 AM
->> To: Kumar Gala
->> Cc: Sethi Varun-B16395; joerg.roedel@amd.com; iommu@lists.linux-
->> foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
->> kernel@vger.kernel.org; Sethi Varun-B16395
->> Subject: Re: [RFC][PATCH 2/3] iommu/fsl: Add iommu domain attributes
->> required by fsl PAMU driver.
->> 
->> On 09/19/2012 08:52:27 AM, Kumar Gala wrote:
->>> 
->>> On Sep 19, 2012, at 8:17 AM, <b16395@freescale.com>
->>> <b16395@freescale.com> wrote:
->>> 
->>>> From: Varun Sethi <Varun.Sethi@freescale.com>
->>>> 
->>>> Added the following domain attributes required by FSL PAMU driver:
->>>> 1. Subwindows field added to the iommu domain geometry attribute.
->>>> 2. Added new iommu stash attribute, which allows setting of the
->>>>  LIODN specific stash id parameter through IOMMU API.
->>>> 3. Added an attribute for enabling/disabling DMA to a particular
->>>>  memory window.
->>>> 
->>>> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
->>>> ---
->>>> include/linux/iommu.h |   30 ++++++++++++++++++++++++++++++
->>>> 1 files changed, 30 insertions(+), 0 deletions(-)
->>>> 
->>>> diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
->>>> 7e83370..eaa40c6 100644
->>>> --- a/include/linux/iommu.h
->>>> +++ b/include/linux/iommu.h
->>>> @@ -44,6 +44,28 @@ struct iommu_domain_geometry {
->>>> 	dma_addr_t aperture_start; /* First address that can be
->>> mapped    */
->>>> 	dma_addr_t aperture_end;   /* Last address that can be
->>> mapped     */
->>>> 	bool force_aperture;       /* DMA only allowed in mappable
->>> range? */
->>>> +
->>>> +	/* The subwindows field indicates number of DMA subwindows
->>> supported
->>>> +	 * by the geometry. Following is the interpretation of
->>>> +	 * values for this field:
->>>> +	 * 0 : This implies that the supported geometry size is 1 MB
->>>> +         * with each subwindow size being 4KB. Thus number of
->>> subwindows
->>>> +	 * being = 1MB/4KB = 256.
->>>> +	 * 1 : Only one DMA window i.e. no subwindows.
->>>> +	 * value other than 0 or 1 would indicate actual number of
->>> subwindows.
->>>> +	 */
->>>> +	u32 subwindows;
->>>> +};
->>>> +
->>>> +/* This attribute corresponds to IOMMUs capable of generating
->>>> + * a stash transaction. A stash transaction is typically a
->>>> + * hardware initiated prefetch of data from memory to cache.
->>>> + * This attribute allows configuring stashig specific parameters
->>>> + * in the IOMMU hardware.
->>>> + */
->>>> +struct iommu_stash_attribute {
->>>> +	u32 	cpu;	/* cpu number */
->>>> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
->>> 
->>> seems like this should be enum instead of u32 for cache
->>> 
->>> With enum being something like:
->>> 
->>> enum iommu_attr_stash_cache {
->>> 	IOMMU_ATTR_CACHE_L1,
->>> 	IOMMU_ATTR_CACHE_L2,
->>> 	IOMMU_ATTR_CACHE_L3,
->>> };
->> 
->> Don't we want these structs to be usable via some VFIO ioctl?  In that
->> case they need to use fixed size types.
->> 
-> Yes, this would be usable via vfio ioctl. But, then the caller should be
-> aware of supported stash targets. May be I should add an interface for the caller,
-> to query supported stash targets.
+> When I deprecated /proc/pid/oom_adj (now removed), we did a WARN_ONCE() 
+> and others complained that this unnecessarily alters userspace scripts 
+> that a serious issue has occurred and Linus agreed that we shouldn't do 
+> deprecation in this way.  The alternative is to use printk_once() instead.
 
-Guess the caller probably knows, but thinking we should move the #defines for valid values into this file out of pamu specific files.
+Yes printk_once is an alternative but I really wanted to have this as
+much visible as possible. People tend to react to stack traceces more
+and this one will trigger only if somebody is either doing something
+wrong or the configuration is the one we are looking for.
 
-- k
+Comparing to oom_adj, that one was used much more often so the WARN_ONCE
+was too verbose especially when you usually had to wait for an userspace
+update which is not the case here.
+-- 
+Michal Hocko
+SUSE Labs
