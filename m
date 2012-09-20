@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2ITOpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:45:43 -0400
+	id S1755938Ab2ITOpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:45:40 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:51869 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2ITOmS (ORCPT
+	with ESMTP id S1755567Ab2ITOmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:42:18 -0400
+	Thu, 20 Sep 2012 10:42:23 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH 02/13] ARM: edma: remove unused transfer controller handlers
-Date: Thu, 20 Sep 2012 10:43:35 -0400
-Message-Id: <1348152226-13588-3-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 04/13] dmaengine: edma: enable build for AM335x
+Date: Thu, 20 Sep 2012 10:43:37 -0400
+Message-Id: <1348152226-13588-5-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348152226-13588-1-git-send-email-mporter@ti.com>
 References: <1348152226-13588-1-git-send-email-mporter@ti.com>
@@ -37,70 +37,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build on OMAP, the irqs are undefined on AM33xx.
-These error interrupt handlers were hardcoded as disabled
-so since they are unused code, simply remove them.
+Enable config option on OMAP and adjust the
+private EDMA API header to match the move
+of the private EDMA API out of mach-davinci/
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/common/edma.c |   37 -------------------------------------
- 1 file changed, 37 deletions(-)
+ drivers/dma/Kconfig |    2 +-
+ drivers/dma/edma.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index cecc50e..001d268 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -494,26 +494,6 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
- 	return IRQ_HANDLED;
- }
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 0351719..24cd403 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -210,7 +210,7 @@ config SIRF_DMA
  
--/******************************************************************************
-- *
-- * Transfer controller error interrupt handlers
-- *
-- *****************************************************************************/
--
--#define tc_errs_handled	false	/* disabled as long as they're NOPs */
--
--static irqreturn_t dma_tc0err_handler(int irq, void *data)
--{
--	dev_dbg(data, "dma_tc0err_handler\n");
--	return IRQ_HANDLED;
--}
--
--static irqreturn_t dma_tc1err_handler(int irq, void *data)
--{
--	dev_dbg(data, "dma_tc1err_handler\n");
--	return IRQ_HANDLED;
--}
--
- static int reserve_contiguous_slots(int ctlr, unsigned int id,
- 				     unsigned int num_slots,
- 				     unsigned int start_slot)
-@@ -1538,23 +1518,6 @@ static int __init edma_probe(struct platform_device *pdev)
- 		arch_num_cc++;
- 	}
+ config TI_EDMA
+ 	tristate "TI EDMA support"
+-	depends on ARCH_DAVINCI
++	depends on ARCH_DAVINCI || ARCH_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 	default n
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index fdcf079..9f8f2fa 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -24,7 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
  
--	if (tc_errs_handled) {
--		status = request_irq(IRQ_TCERRINT0, dma_tc0err_handler, 0,
--					"edma_tc0", &pdev->dev);
--		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
--				IRQ_TCERRINT0, status);
--			return status;
--		}
--		status = request_irq(IRQ_TCERRINT, dma_tc1err_handler, 0,
--					"edma_tc1", &pdev->dev);
--		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d --> %d\n",
--				IRQ_TCERRINT, status);
--			return status;
--		}
--	}
--
- 	return 0;
+-#include <mach/edma.h>
++#include <asm/mach/edma.h>
  
- fail:
+ #include "dmaengine.h"
+ #include "virt-dma.h"
 -- 
 1.7.9.5
 
