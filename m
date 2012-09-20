@@ -1,120 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2ITOsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:48:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61407 "EHLO mx1.redhat.com"
+	id S1755687Ab2ITOto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:49:44 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:41760 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755547Ab2ITOl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:27 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 02/10] PCI: Lock down BAR access in secure boot environments
-Date: Thu, 20 Sep 2012 10:40:57 -0400
-Message-Id: <1348152065-31353-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753295Ab2ITOtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:49:42 -0400
+Date: Thu, 20 Sep 2012 20:13:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/5] uprobes: Fix UPROBE_SKIP_SSTEP checks in
+ handle_swbp()
+Message-ID: <20120920144311.GF27880@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120914171513.GA29599@redhat.com>
+ <20120914171557.GA29642@redhat.com>
+ <20120915073957.GD7588@in.ibm.com>
+ <20120915150120.GA20608@redhat.com>
+ <20120917172052.GK28033@linux.vnet.ibm.com>
+ <20120918160738.GA22995@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120918160738.GA22995@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12092014-8974-0000-0000-00000E183B7C
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00175765; UDB=6.00039797; UTC=2012-09-20
+ 14:49:40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any hardware that can potentially generate DMA has to be locked down from
-userspace in order to avoid it being possible for an attacker to cause
-arbitrary kernel behaviour. Default to paranoid - in future we can
-potentially relax this for sufficiently IOMMU-isolated devices.
+* Oleg Nesterov <oleg@redhat.com> [2012-09-18 18:07:38]:
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/pci/pci-sysfs.c | 9 +++++++++
- drivers/pci/proc.c      | 8 +++++++-
- drivers/pci/syscall.c   | 2 +-
- 3 files changed, 17 insertions(+), 2 deletions(-)
+> >
+> > > Probably this is fine, at least this is
+> > > fine if it finds "nop" eventually. But I can't undestand what
+> > > "0x66* { 0x90 | 0x0f 0x1f | 0x0f 0x19 | 0x87 0xc0 }" means.
+> > > OK, 0x66 and 0x90 are clear. But, say, 0x0f 0x1f ?
+> >
+> > we skip is 0x66 ..0x66 0x0f 0x1f
+> >
+> > So we have a check
+> > if (i == (MAX_UINSN_BYTES - 1))
+> >
+> > so this ensures that we are consider 0x0f 0x1f as nop if and only if
+> > they are at the end and preceeded by 0x66.
+> 
+> Hmm. How so? The code does
+> 
+> 	if (i == (MAX_UINSN_BYTES - 1))
+> 		break;
+> 
+> 	if ((auprobe->insn[i] == 0x0f) && (auprobe->insn[i+1] == 0x1f))
+> 		return true;
+> 
+> 
+> So, afaics, if the intent was to skip 1f0f at the end only, it should do
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 02d107b..c31b4be 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -580,6 +580,9 @@ pci_write_config(struct file* filp, struct kobject *kobj,
- 	loff_t init_off = off;
- 	u8 *data = (u8*) buf;
- 
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	if (off > dev->cfg_size)
- 		return 0;
- 	if (off + count > dev->cfg_size) {
-@@ -886,6 +889,9 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
- 	resource_size_t start, end;
- 	int i;
- 
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
- 		if (res == &pdev->resource[i])
- 			break;
-@@ -993,6 +999,9 @@ pci_write_resource_io(struct file *filp, struct kobject *kobj,
- 		      struct bin_attribute *attr, char *buf,
- 		      loff_t off, size_t count)
- {
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
- }
- 
-diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
-index 27911b5..ac8c9a5 100644
---- a/drivers/pci/proc.c
-+++ b/drivers/pci/proc.c
-@@ -135,6 +135,9 @@ proc_bus_pci_write(struct file *file, const char __user *buf, size_t nbytes, lof
- 	int size = dp->size;
- 	int cnt;
- 
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	if (pos >= size)
- 		return 0;
- 	if (nbytes >= size)
-@@ -211,6 +214,9 @@ static long proc_bus_pci_ioctl(struct file *file, unsigned int cmd,
- #endif /* HAVE_PCI_MMAP */
- 	int ret = 0;
- 
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
-+
- 	switch (cmd) {
- 	case PCIIOC_CONTROLLER:
- 		ret = pci_domain_nr(dev->bus);
-@@ -251,7 +257,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
- 	struct pci_filp_private *fpriv = file->private_data;
- 	int i, ret;
- 
--	if (!capable(CAP_SYS_RAWIO))
-+	if (!capable(CAP_SYS_RAWIO) || !capable(CAP_COMPROMISE_KERNEL))
- 		return -EPERM;
- 
- 	/* Make sure the caller is mapping a real resource for this device */
-diff --git a/drivers/pci/syscall.c b/drivers/pci/syscall.c
-index e1c1ec5..97e785f 100644
---- a/drivers/pci/syscall.c
-+++ b/drivers/pci/syscall.c
-@@ -92,7 +92,7 @@ SYSCALL_DEFINE5(pciconfig_write, unsigned long, bus, unsigned long, dfn,
- 	u32 dword;
- 	int err = 0;
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_ADMIN) || !capable(CAP_COMPROMISE_KERNEL))
- 		return -EPERM;
- 
- 	dev = pci_get_bus_and_slot(bus, dfn);
--- 
-1.7.11.4
+Its 0f1f and not 1f0f
+
+> 
+> 	if (i == (MAX_UINSN_BYTES - 1)) {
+> 		if ((auprobe->insn[i] == 0x0f) && (auprobe->insn[i+1] == 0x1f))
+> 			return true;
+> 		...
+> 	}
+> 
+> "and preceeded by 0x66" above doesn't look true too, perhaps you
+> meant "may be preceeded by 0x66".
+> 
+
+Yup, as always you are right. We expect 0x0f 0x1f preceeded by 0x66 to
+be nop instructions.
+
+> > So are you suggesting extending the list of nops or is it that we are
+> > considering non nop instructions as nops?
+> 
+> No, I am trying to understand which insns arch_skip tries to skip.
+> In particular, what "0x0f 0x1f" means.
+> 
+> > > I compiled this program
+> > >
+> > > 	int main(void)
+> > > 	{
+> > > 		asm volatile (".word 0x1f0f");
+> > > 		return 0;
+> > > 	}
+> > >
+> > > and objdump reports:
+> > >
+> > > 	000000000040047c <main>:
+> > > 	  40047c:       0f 1f 31                nopl   (%rcx)
+> >
+> > Current uprobes code wouldnt skip the above insn because it has 31
+> > following it.
+> 
+> See above.
+> 
+> And again, could you explain which insn has 1f0f (at the end or not) ?
+> IOW, what we are trying to skip?
+
+Again its 0f1f and not 1f0f
+
+for example 
+0f 1f 40 00
+0f 1f 44 00 00
+66 0f 1f 44 00 00
+
+I referred arch/x86/include/asm/nops.h, arch/x86/lib/x86-opcode-map.txt
+and disassembly of libc.  And ofcourse Jim Keniston helped me in most of
+the x86 stuff.
+
+--
+thanks and regards
+Srikar
 
