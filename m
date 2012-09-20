@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2ITGvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 02:51:10 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:37425 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2ITGvH (ORCPT
+	id S1753105Ab2ITGvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 02:51:40 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51228 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab2ITGvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 02:51:07 -0400
-From: Nix <nix@esperi.org.uk>
-To: stan@hardwarefreak.com
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Areca hardware RAID / first-ever SCSI bus reset: am I about to lose this disk controller?
-References: <87mx0lsv4d.fsf@spindle.srvr.nix>
-	<505A47A0.1060709@hardwarefreak.com>
-Emacs: because editing your files should be a traumatic experience.
-Date: Thu, 20 Sep 2012 07:51:01 +0100
-In-Reply-To: <505A47A0.1060709@hardwarefreak.com> (Stan Hoeppner's message of
-	"Wed, 19 Sep 2012 17:30:56 -0500")
-Message-ID: <87r4pxqjai.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Thu, 20 Sep 2012 02:51:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=3 Fuz1=3 Fuz2=3
+In-Reply-To: <20120914084729.GG3374@gmail.com>
+References: <1347016499-29354-1-git-send-email-lee.jones@linaro.org>
+	<1347016499-29354-12-git-send-email-lee.jones@linaro.org>
+	<CACRpkdY+t9MwWewtZzpD7i4eeTxVHNk+NxSZ1E=T-k4a0mveHg@mail.gmail.com>
+	<20120914084729.GG3374@gmail.com>
+Date: Thu, 20 Sep 2012 08:51:37 +0200
+Message-ID: <CACRpkdakOF6gmckrn0apynGippb2Z-oa82eYtv6tBoKH8pKrYA@mail.gmail.com>
+Subject: Re: [PATCH 11/19] ARM: ux500: Add all known I2C sub-device nodes to
+ the HREF DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 Sep 2012, Stan Hoeppner stated:
-
-> On 9/19/2012 1:52 PM, Nix wrote:
->> So I have this x86-64 server running Linux 3.5.1 
+On Fri, Sep 14, 2012 at 10:47 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, Sep 10, 2012 at 04:34:15AM -0700, Linus Walleij wrote:
+>> On Fri, Sep 7, 2012 at 1:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > Here we add the skeleton nodes for each of the known I2C sub-devices
+>> > currently registered on ST-Ericsson's HREF Development Platform. We
+>> > will fill these nodes in turn as the drivers are enabled for Device
+>> > Tree.
+>> >
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Can't we have it the other way around (discussing patch ordering
+>> with Arnd simultaneously), so you first add the DT support to the
+>> subdevices, then add the more complete nodes to the device tree?
+>>
+>> And if you put in a device tree like this, will these devices
+>> not collide with the ones that are currently supplied from
+>> the boardfiles? I'm a bit confused here, maybe I'm not smart
+>> enough to understand this...
 >
-> When did you install 3.5.1 on this machine?
+> Okay, I've reordered the patch-set to address these possible issues.
 
-Forty days ago.
+OK sorry for delay, I've been patch-swamped...
 
->                                              If fairly recently, does it
-> run without these errors when booted into the previous kernel?
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Well, since this error happened only once, and after thirty-nine days of
-uptime at that, I'm not sure how I can find out. :)
-
->> with a SATA-on-PCIe
->> Areca 1210 hardware RAID-5 controller driven by libata which has been
->> humming along happily for years -- but suddenly, today, the entire
->> machine froze for a couple of minutes (or at least fs access froze),
->> followed by this in the logs:
->> 
->> Sep 19 16:55:47 spindle notice: [3447524.381843] arcmsr0: abort device command of scsi id = 0 lun = 1 
->> [... repeated a few times at intervals over the next five minutes,
->>  followed by a mass of them at 16:59:29, and...]
->> Sep 19 16:59:25 spindle err: [3447657.821450] arcmsr: executing bus reset eh.....num_resets = 0, num_aborts = 33 
->> Sep 19 16:59:25 spindle notice: [3447697.878386] arcmsr0: wait 'abort all outstanding command' timeout 
->> Sep 19 16:59:25 spindle notice: [3447697.878628] arcmsr0: executing hw bus reset .....
->> Sep 19 16:59:25 spindle err: [3447698.287054] irq 16: nobody cared (try booting with the "irqpoll" option)
->> Sep 19 16:59:25 spindle warning: [3447698.287291] Pid: 0, comm: swapper/4 Not tainted 3.5.1-dirty #1
->> Sep 19 16:59:25 spindle warning: [3447698.287522] Call Trace:
->> Sep 19 16:59:25 spindle warning: [3447698.287754]  <IRQ>  [<ffffffff810af5ba>] __report_bad_irq+0x31/0xc2
->> Sep 19 16:59:25 spindle warning: [3447698.288031]  [<ffffffff810af84e>] note_interrupt+0x16a/0x1e8
->> Sep 19 16:59:25 spindle warning: [3447698.288263]  [<ffffffff810ad9d5>] handle_irq_event_percpu+0x163/0x1a5
->> Sep 19 16:59:25 spindle warning: [3447698.288497]  [<ffffffff810ada4f>] handle_irq_event+0x38/0x55
->> Sep 19 16:59:25 spindle warning: [3447698.288727]  [<ffffffff810b01a0>] handle_fasteoi_irq+0x78/0xab
->> Sep 19 16:59:25 spindle warning: [3447698.288960]  [<ffffffff8103631c>] handle_irq+0x24/0x2a
->> Sep 19 16:59:25 spindle warning: [3447698.289189]  [<ffffffff81036229>] do_IRQ+0x4d/0xb4
->> Sep 19 16:59:25 spindle warning: [3447698.289419]  [<ffffffff815070e7>] common_interrupt+0x67/0x67
->> Sep 19 16:59:25 spindle warning: [3447698.289648]  <EOI>  [<ffffffff812ab174>] ? acpi_idle_enter_c1+0xcb/0xf2
->> Sep 19 16:59:25 spindle warning: [3447698.289919]  [<ffffffff812ab152>] ? acpi_idle_enter_c1+0xa9/0xf2
->> Sep 19 16:59:25 spindle warning: [3447698.290152]  [<ffffffff813c1446>] cpuidle_enter+0x12/0x14
->> Sep 19 16:59:25 spindle warning: [3447698.290382]  [<ffffffff813c1902>] cpuidle_idle_call+0xc5/0x175
->> Sep 19 16:59:25 spindle warning: [3447698.290614]  [<ffffffff8103c2da>] cpu_idle+0x5b/0xa5
->> Sep 19 16:59:25 spindle warning: [3447698.290844]  [<ffffffff81ad4fcb>] start_secondary+0x1a2/0x1a6
->> Sep 19 16:59:25 spindle err: [3447698.291074] handlers:
->> Sep 19 16:59:25 spindle err: [3447698.291294] [<ffffffff8133b9a3>] usb_hcd_irq
->> Sep 19 16:59:25 spindle emerg: [3447698.291553] Disabling IRQ #16
->> Sep 19 16:59:25 spindle err: [3447710.888187] arcmsr0: waiting for hw bus reset return, retry=0
->> Sep 19 16:59:25 spindle err: [3447720.882155] arcmsr0: waiting for hw bus reset return, retry=1
->> Sep 19 16:59:25 spindle notice: [3447730.896410] Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
->> Sep 19 16:59:25 spindle err: [3447730.916348] arcmsr: scsi  bus reset eh returns with success
-
--- 
-NULL && (void)
+Yours,
+Linus Walleij
