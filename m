@@ -1,100 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab2ITC2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Sep 2012 22:28:17 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51969 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2ITC2P (ORCPT
+	id S1753958Ab2ITCcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Sep 2012 22:32:53 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37468 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab2ITCcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Sep 2012 22:28:15 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-86-505a7f3c02ec
-Date: Thu, 20 Sep 2012 11:30:53 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Shaohua Li <shli@fusionio.com>
-Subject: Re: [PATCH] memory-hotplug: fix zone stat mismatch
-Message-ID: <20120920023053.GD13234@bbox>
-References: <1348039748-32111-1-git-send-email-minchan@kernel.org>
- <CAHGf_=oSSsJEeh7eN+R6P3n0vq2h5+3DPmogpXqDiu1jJyKmpg@mail.gmail.com>
- <20120919201738.GA2425@barrios>
- <505A6EB7.5070305@cn.fujitsu.com>
+	Wed, 19 Sep 2012 22:32:51 -0400
+Message-ID: <505A7F75.8000405@linux.vnet.ibm.com>
+Date: Thu, 20 Sep 2012 07:59:09 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505A6EB7.5070305@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: David Rientjes <rientjes@google.com>
+CC: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>
+Subject: Re: 3.6rc6 slab corruption.
+References: <20120918143504.GA30585@redhat.com> <CA+55aFxd08idQXqm+JJ6xD+uzX_f7Qa25zFHb-eWBRQcEDPhkg@mail.gmail.com> <20120918192338.GA25845@phenom.dumpdata.com> <CA+55aFy6=1vW4CN0_g8BgSKKdxZNZj9Yd2WG=0BFKjish=Vw=g@mail.gmail.com> <20120918203713.GB19300@phenom.dumpdata.com> <CA+55aFzZvFeCLF8fw=NYFN7C_8ObwJMeK13bN8xRodKQ0QJkTQ@mail.gmail.com> <20120919191652.GA14631@phenom.dumpdata.com> <alpine.DEB.2.00.1209191427460.6273@chino.kir.corp.google.com> <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1209191438200.21378@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092002-7014-0000-0000-000001EB8BB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 09:17:43AM +0800, Wen Congyang wrote:
-> At 09/20/2012 04:17 AM, Minchan Kim Wrote:
-> > Hi KOSAKI,
-> > 
-> > On Wed, Sep 19, 2012 at 02:05:20PM -0400, KOSAKI Motohiro wrote:
-> >> On Wed, Sep 19, 2012 at 3:29 AM, Minchan Kim <minchan@kernel.org> wrote:
-> >>> During memory-hotplug stress test, I found NR_ISOLATED_[ANON|FILE]
-> >>> are increasing so that kernel are hang out.
-> >>>
-> >>> The cause is that when we do memory-hotadd after memory-remove,
-> >>> __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
-> >>> without draining vm_stat_diff of all CPU.
-> >>>
-> >>> This patch fixes it.
-> >>
-> >> zone_pcp_update() is called from online pages path. but IMHO,
-> >> the statistics should be drained offline path. isn't it?
-> > 
-> > It isn't necessary because statistics is right until we reset it to zero
-> > in online path.
-> > Do you have something on your mind that we have to drain it in offline path?
-> 
-> When a node is offlined and onlined again. We create node_data[i] in the
+On 09/20/2012 03:19 AM, David Rientjes wrote:
+> On Wed, 19 Sep 2012, David Rientjes wrote:
+>
+>>>  From 0806b133b5b28081adf23d0d04a99636ed3b861b Mon Sep 17 00:00:00 2001
+>>> From: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>>> Date: Wed, 19 Sep 2012 11:23:01 -0400
+>>> Subject: [PATCH 1/2] debugfs: Add lock for u32_array_read
+>>>
+>>> Dave Jones spotted that the u32_array_read was doing something funny:
+>>>
+>>> =============================================================================
+>>> BUG kmalloc-64 (Not tainted): Redzone overwritten
+>>> -----------------------------------------------------------------------------
+>>>
+>>> INFO: 0xffff88001f4b4970-0xffff88001f4b4977. First byte 0xbb instead of 0xcc
+>>> INFO: Allocated in u32_array_read+0xd1/0x110 age=0 cpu=6 pid=32767
+>>>          __slab_alloc+0x516/0x5a5
+>>>          __kmalloc+0x213/0x2c0
+>>>          u32_array_read+0xd1/0x110
+>>> .. snip..
+>>> INFO: Freed in u32_array_read+0x99/0x110 age=0 cpu=0 pid=32749
+>>>          __slab_free+0x3f/0x3bf
+>>>          kfree+0x2d5/0x310
+>>>          u32_array_read+0x99/0x110
+>>>
+>>> Linus tracked it down and found out that "debugfs is racy for that case
+>>> [read calls in parallel on the debugfs]. At least the file->private_data
+>>> accesses are, for the case of that "u32_array" case.
+>>>
+>>> In fact it is racy in ...  the whole "file->private_data" access ..
+>>> If you have multiple readers on the same file, the whole
+>>>
+>>> 	if (file->private_data) {
+>>> 		kfree(file->private_data);
+>>> 		file->private_data = NULL;
+>>> 	}
+>>>
+>>> 	file->private_data = format_array_alloc("%u", data->array,
+>>>                                                                data->elements);
+>>>
+>>> thing is just a disaster waiting to happen." He suggested
+>>> putting a lock which this patch does.
+>>>
+>>
+>> Since these are non-seekable files, it must also race to find *ppos == 0.
+>>
+>>> The consequence of this is that it will trigger more spinlock usage,
+>>> as this particular debugfs is used to provide a histogram of spinlock
+>>> contention. But memory corruption is a worst offender then that.
+>>>
+>>> Reported-by: Dave Jones<davej@redhat.com>
+>>> Suggested-by: Linus Torvalds<torvalds@linux-foundation.org>
+>>
+>> Tested-by: David Rientjes<rientjes@google.com>
+>>
+>
+> An alternative to this, though, might be to never test for *ppos == 0 in
+> u32_array_read() and do the format_array_alloc() in u32_array_open() to
+> initialize file->private_data.  If that allocation fails, just return
+> -ENOMEM.  Then you never need to add a mutex in the read path.
+>
+> Any reason we can't do this?
+> ---
+>   fs/debugfs/file.c |   33 +++++++++++----------------------
+>   1 file changed, 11 insertions(+), 22 deletions(-)
+>
+> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+> --- a/fs/debugfs/file.c
+> +++ b/fs/debugfs/file.c
+> @@ -526,12 +526,6 @@ struct array_data {
+>   	u32 elements;
+>   };
+>
+> -static int u32_array_open(struct inode *inode, struct file *file)
+> -{
+> -	file->private_data = NULL;
+> -	return nonseekable_open(inode, file);
+> -}
+> -
+>   static size_t format_array(char *buf, size_t bufsize, const char *fmt,
+>   			   u32 *array, u32 array_size)
+>   {
+> @@ -573,26 +567,21 @@ static char *format_array_alloc(const char *fmt, u32 *array,
+>   	return ret;
+>   }
+>
+> -static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+> -			      loff_t *ppos)
+> +static int u32_array_open(struct inode *inode, struct file *file)
+>   {
+> -	struct inode *inode = file->f_path.dentry->d_inode;
+>   	struct array_data *data = inode->i_private;
+> -	size_t size;
+>
+> -	if (*ppos == 0) {
+> -		if (file->private_data) {
+> -			kfree(file->private_data);
+> -			file->private_data = NULL;
+> -		}
+> -
+> -		file->private_data = format_array_alloc("%u", data->array,
+> -							      data->elements);
+> -	}
+> +	file->private_data = format_array_alloc("%u", data->array,
+> +						      data->elements);
+> +	if (!file->private_data)
+> +		return -ENOMEM;
+> +	return nonseekable_open(inode, file);
+> +}
+>
+> -	size = 0;
+> -	if (file->private_data)
+> -		size = strlen(file->private_data);
+> +static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+> +			      loff_t *ppos)
+> +{
+> +	size_t size = strlen(file->private_data);
+>
+>   	return simple_read_from_buffer(buf, len, ppos,
+>   					file->private_data, size);
+>
+>
 
-I would like to clarify your word.
-Create or recreate?
-Why I have a question is as I look over the source code, hotadd_new_pgdat
-seem to be called if we do hotadd *new* memory. It's not the case for
-offline and online again you mentioned. If you're right, I should find 
-arch_free_nodedata to free pgdat when node is disappear but I can't find it.
-Do I miss something?
+Only problem, I find is histogram data expands dynamically (because it
+changes). I think having static allocation of 352 bytes as suggested
+Linus is a good idea.
 
-
-> function hotadd_new_pgdat(), and we will lost the statistics stored in
-> zone->pageset. So we should drain it in offline path.
-
-Even we drain in offline patch, it still has a problem.
-
-1. offline
-2. drain -> OKAY 
-3. schedule
-4. Process A increase zone stat
-5. Process B increase zone stat
-6. online
-7. reset it -> we ends up lost zone stat counter which is modified between 2-6
-
-
-> 
-> Thanks
-> Wen Congyang
-> 
-> > 
-> >>
-> >> thanks.
-> > 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
