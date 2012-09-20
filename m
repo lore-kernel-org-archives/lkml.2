@@ -1,76 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab2ITQdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 12:33:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34576 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab2ITQdu (ORCPT
+	id S1752009Ab2ITQe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 12:34:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48928 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab2ITQez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 12:33:50 -0400
-Message-ID: <505B455D.2040603@gmail.com>
-Date: Thu, 20 Sep 2012 18:33:33 +0200
-From: Andrzej Giniewicz <gginiu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120910 Thunderbird/15.0.1
+	Thu, 20 Sep 2012 12:34:55 -0400
+From: sjur.brandeland@stericsson.com
+To: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
+Cc: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        virtualization@lists.linux-foundation.org,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCHv3] virtio_console: Add support for remoteproc serial
+Date: Thu, 20 Sep 2012 18:34:46 +0200
+Message-Id: <1348158887-23979-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Sound got mute in kernel 3.5.4 (Fast Track Pro USB Sound Card), found
- commit that causes it - how to proceed?
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6828E5B967850DFFD3A67D5C"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6828E5B967850DFFD3A67D5C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Hello,
+Add a simple serial connection driver called
+VIRTIO_ID_RPROC_SERIAL (11) for communicating with a
+remote processor in an asymmetric multi-processing
+configuration.
 
-today I updated kernel to 3.5.4 and noticed, that all my sound from Fast
-Track Pro USB Sound Card got mute. I haven't noticed any error reports
-or messages, all seems to work, the card is just silent. I downgraded to
-3.5.3 and applied patched from usb sound module one by one and found
-out, that 3.5.4 minus " ALSA: snd-usb: fix calls to next_packet_size "
-works fine:
+This implementation reuses the existing virtio_console
+implementation, and adds support for DMA allocation
+of data buffers and disables use of tty console and
+the virtio control queue.
 
-http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dc=
-ommitdiff;h=3Dca150f7ade5973c3bce19261bca6174d5c3cc342
+This enables use of the exising virtio_console code in
+the remoteproc framework.
 
-Does this change require some update of configuration I missed?
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+cc: Rusty Russell <rusty@rustcorp.com.au>
+cc: Michael S. Tsirkin <mst@redhat.com>
+cc: Amit Shah <amit.shah@redhat.com>
+cc: Ohad Ben-Cohen <ohad@wizery.com>
+cc: Linus Walleij <linus.walleij@linaro.org>
+cc: virtualization@lists.linux-foundation.org
+---
+Hi Amit,
 
-There are some informations about device from lsusb:
-http://pastie.org/private/odiuw0ve3iszdat9mwpa
-My system runs 64 bit Arch Linux, there is config used by it:
-https://projects.archlinux.org/svntogit/packages.git/plain/trunk/config.x=
-86_64?h=3Dpackages/linux&id=3D59ae346478ff01f0d2dc47b04a3a1297046b1900
+Changes since v2: Fixes for Rustys review comments. The only
+"unresolved" issue (unless I missed something) is the quirky
+handling of finding device grandparent when doing dma_alloc.
 
-How can I proceed with this issue? Any more information I can provide to
-help in solving this?
+[Rusty wrote:]
+>OK, I'll let Amit comment on the console changes, but some minor style
+>comments below.
 
-Thank you,
-Andrzej Giniewicz.
+Amit, any chance that you might find time to review this?
 
+Note: This patch is based on v3.6 so this patch is will conflict
+with "virtio: console: fix error handling in init() function".
+Get back to me if you want me to rebase to another baseline.
 
---------------enig6828E5B967850DFFD3A67D5C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Thanks,
+Sjur
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+ drivers/char/virtio_console.c |  185 ++++++++++++++++++++++++++++++++++------
+ include/linux/virtio_ids.h    |    1 +
+ 2 files changed, 158 insertions(+), 28 deletions(-)
 
-iQEcBAEBAgAGBQJQW0VpAAoJEED1V7cxSWEG0BoIAL3Mq5GMVwsEi7YwiEG7YkKo
-on+LU4FnMNtQyD4Qzve3goI2TanPpfgWwS1w2zx8v2pSzxtJtUjJ4BxJz6UkFNCc
-drYY+h03AIk73J/okQhkYNFDMruc/Gr1zcI/okLX8O/vfEZK4nYEI9epsCwc0DXe
-VyV67kOobVCx4e1ZxwY7XX7dt4TLHM1+nwZAZF899x0BK4xY8XyL8fEhi/cA5rly
-SpkvX6pbP2N5DcDixf0pvVPMBi8QqHgbMlLhbQZc6HFD4hmt5G0VnP7TexN6vLNJ
-gJTHNcEFUCgRuC6aiXEpko7KiJgVAoqL7mgcRvu84ek2WBorTmBVsY8Nx2D8leQ=
-=p5HG
------END PGP SIGNATURE-----
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index cdf2f54..4f2f74e 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -35,6 +35,8 @@
+ #include <linux/wait.h>
+ #include <linux/workqueue.h>
+ #include <linux/module.h>
++#include <linux/dma-mapping.h>
++#include <linux/kconfig.h>
+ #include "../tty/hvc/hvc_console.h"
+ 
+ /*
+@@ -323,6 +325,55 @@ static bool is_console_port(struct port *port)
+ 	return false;
+ }
+ 
++#if IS_ENABLED(CONFIG_REMOTEPROC)
++static bool is_rproc_serial(const struct virtio_device *vdev)
++{
++	return vdev->id.device == VIRTIO_ID_RPROC_SERIAL;
++}
++#else
++static bool is_rproc_serial(const struct virtio_device *vdev)
++{
++	return false;
++}
++#endif
++
++/* Allocate data buffer from DMA memory if requested */
++static void *alloc_databuf(struct virtio_device *vdev, size_t size, gfp_t flag)
++{
++	if (is_rproc_serial(vdev)) {
++		dma_addr_t dma_addr;
++		struct device *dev = &vdev->dev;
++		/*
++		 * Allocate DMA memory from ancestor. When a virtio
++		 * device is created by remoteproc, the DMA memory is
++		 * associated with the grandparent device:
++		 * vdev => rproc => platform-dev.
++		 * The code here would have been less quirky if
++		 * DMA_MEMORY_INCLUDES_CHILDREN had been supported
++		 * in dma-coherent.c
++		 */
++		dev = dev->parent ? dev->parent : dev;
++		dev = dev->parent ? dev->parent : dev;
++		return dma_alloc_coherent(dev, size, &dma_addr, flag);
++	}
++	return kmalloc(size, flag);
++}
++
++static void free_databuf(struct virtio_device *vdev, size_t size, void *vaddr)
++{
++	if (is_rproc_serial(vdev)) {
++		struct device *dev = &vdev->dev;
++		dma_addr_t dma_addr;
++
++		dev = dev->parent ? dev->parent : dev;
++		dev = dev->parent ? dev->parent : dev;
++		dma_addr = virt_to_bus(vaddr);
++		dma_free_coherent(dev, size, vaddr, dma_addr);
++		return;
++	}
++	kfree(vaddr);
++}
++
+ static inline bool use_multiport(struct ports_device *portdev)
+ {
+ 	/*
+@@ -334,22 +385,24 @@ static inline bool use_multiport(struct ports_device *portdev)
+ 	return portdev->vdev->features[0] & (1 << VIRTIO_CONSOLE_F_MULTIPORT);
+ }
+ 
+-static void free_buf(struct port_buffer *buf)
++static void free_buf(struct virtqueue *vq, struct port_buffer *buf,
++		     size_t buf_size)
+ {
+-	kfree(buf->buf);
++	free_databuf(vq->vdev, buf_size, buf->buf);
+ 	kfree(buf);
+ }
+ 
+-static struct port_buffer *alloc_buf(size_t buf_size)
++static struct port_buffer *alloc_buf(struct virtqueue *vq, size_t buf_size)
+ {
+ 	struct port_buffer *buf;
+ 
+ 	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
+ 	if (!buf)
+ 		goto fail;
+-	buf->buf = kzalloc(buf_size, GFP_KERNEL);
++	buf->buf = alloc_databuf(vq->vdev, buf_size, GFP_KERNEL);
+ 	if (!buf->buf)
+ 		goto free_buf;
++	memset(buf->buf, 0, buf_size);
+ 	buf->len = 0;
+ 	buf->offset = 0;
+ 	buf->size = buf_size;
+@@ -414,7 +467,7 @@ static void discard_port_data(struct port *port)
+ 		port->stats.bytes_discarded += buf->len - buf->offset;
+ 		if (add_inbuf(port->in_vq, buf) < 0) {
+ 			err++;
+-			free_buf(buf);
++			free_buf(port->in_vq, buf, PAGE_SIZE);
+ 		}
+ 		port->inbuf = NULL;
+ 		buf = get_inbuf(port);
+@@ -485,7 +538,7 @@ static void reclaim_consumed_buffers(struct port *port)
+ 		return;
+ 	}
+ 	while ((buf = virtqueue_get_buf(port->out_vq, &len))) {
+-		kfree(buf);
++		free_databuf(port->portdev->vdev, PAGE_SIZE, buf);
+ 		port->outvq_full = false;
+ 	}
+ }
+@@ -672,6 +725,8 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
+ 	char *buf;
+ 	ssize_t ret;
+ 	bool nonblock;
++	struct virtio_device *vdev;
++	size_t buf_size;
+ 
+ 	/* Userspace could be out to fool us */
+ 	if (!count)
+@@ -694,9 +749,17 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 
+-	count = min((size_t)(32 * 1024), count);
++	vdev = port->portdev->vdev;
++
++	if (is_rproc_serial(vdev)) {
++		count = min_t(size_t, PAGE_SIZE, count);
++		buf_size = PAGE_SIZE;
++	} else {
++		count = min_t(size_t, (32 * 1024), count);
++		buf_size = count;
++	}
+ 
+-	buf = kmalloc(count, GFP_KERNEL);
++	buf = alloc_databuf(vdev, buf_size, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+@@ -720,7 +783,7 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
+ 		goto out;
+ 
+ free_buf:
+-	kfree(buf);
++	free_databuf(vdev, buf_size, buf);
+ out:
+ 	return ret;
+ }
+@@ -918,7 +981,8 @@ static void resize_console(struct port *port)
+ 		return;
+ 
+ 	vdev = port->portdev->vdev;
+-	if (virtio_has_feature(vdev, VIRTIO_CONSOLE_F_SIZE))
++	if (!is_rproc_serial(vdev) &&
++	    virtio_has_feature(vdev, VIRTIO_CONSOLE_F_SIZE))
+ 		hvc_resize(port->cons.hvc, port->cons.ws);
+ }
+ 
+@@ -1102,7 +1166,7 @@ static unsigned int fill_queue(struct virtqueue *vq, spinlock_t *lock)
+ 
+ 	nr_added_bufs = 0;
+ 	do {
+-		buf = alloc_buf(PAGE_SIZE);
++		buf = alloc_buf(vq, PAGE_SIZE);
+ 		if (!buf)
+ 			break;
+ 
+@@ -1110,7 +1174,7 @@ static unsigned int fill_queue(struct virtqueue *vq, spinlock_t *lock)
+ 		ret = add_inbuf(vq, buf);
+ 		if (ret < 0) {
+ 			spin_unlock_irq(lock);
+-			free_buf(buf);
++			free_buf(vq, buf, PAGE_SIZE);
+ 			break;
+ 		}
+ 		nr_added_bufs++;
+@@ -1198,10 +1262,18 @@ static int add_port(struct ports_device *portdev, u32 id)
+ 		goto free_device;
+ 	}
+ 
+-	/*
+-	 * If we're not using multiport support, this has to be a console port
+-	 */
+-	if (!use_multiport(port->portdev)) {
++	if (is_rproc_serial(port->portdev->vdev))
++		/*
++		 * For rproc_serial assume remote processor is connected.
++		 * rproc_serial does not want the console port, but
++		 * the generic port implementation.
++		 */
++		port->host_connected = true;
++	else if (!use_multiport(port->portdev)) {
++		/*
++		 * If we're not using multiport support,
++		 * this has to be a console port.
++		 */
+ 		err = init_port_console(port);
+ 		if (err)
+ 			goto free_inbufs;
+@@ -1234,7 +1306,7 @@ static int add_port(struct ports_device *portdev, u32 id)
+ 
+ free_inbufs:
+ 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+-		free_buf(buf);
++		free_buf(port->in_vq, buf, PAGE_SIZE);
+ free_device:
+ 	device_destroy(pdrvdata.class, port->dev->devt);
+ free_cdev:
+@@ -1276,7 +1348,17 @@ static void remove_port_data(struct port *port)
+ 
+ 	/* Remove buffers we queued up for the Host to send us data in. */
+ 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+-		free_buf(buf);
++		free_buf(port->in_vq, buf, PAGE_SIZE);
++
++	/*
++	 * Remove buffers from out queue for rproc-serial. We cannot afford
++	 * to leak any DMA mem, so reclaim this memory even if this might be
++	 * racy for the remote processor.
++	 */
++	if (is_rproc_serial(port->portdev->vdev)) {
++		while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
++			free_databuf(port->portdev->vdev, PAGE_SIZE, buf);
++	}
+ }
+ 
+ /*
+@@ -1478,7 +1560,7 @@ static void control_work_handler(struct work_struct *work)
+ 		if (add_inbuf(portdev->c_ivq, buf) < 0) {
+ 			dev_warn(&portdev->vdev->dev,
+ 				 "Error adding buffer to queue\n");
+-			free_buf(buf);
++			free_buf(portdev->c_ivq, buf, PAGE_SIZE);
+ 		}
+ 	}
+ 	spin_unlock(&portdev->cvq_lock);
+@@ -1674,10 +1756,10 @@ static void remove_controlq_data(struct ports_device *portdev)
+ 		return;
+ 
+ 	while ((buf = virtqueue_get_buf(portdev->c_ivq, &len)))
+-		free_buf(buf);
++		free_buf(portdev->c_ivq, buf, PAGE_SIZE);
+ 
+ 	while ((buf = virtqueue_detach_unused_buf(portdev->c_ivq)))
+-		free_buf(buf);
++		free_buf(portdev->c_ivq, buf, PAGE_SIZE);
+ }
+ 
+ /*
+@@ -1722,13 +1804,17 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
+ 		goto free;
+ 	}
+ 
+-	multiport = false;
+-	portdev->config.max_nr_ports = 1;
+-	if (virtio_config_val(vdev, VIRTIO_CONSOLE_F_MULTIPORT,
+-			      offsetof(struct virtio_console_config,
+-				       max_nr_ports),
+-			      &portdev->config.max_nr_ports) == 0)
++	/* Don't test MULTIPORT at all if we're rproc: not a valid feature! */
++	if (!is_rproc_serial(vdev) &&
++	    virtio_config_val(vdev, VIRTIO_CONSOLE_F_MULTIPORT,
++				  offsetof(struct virtio_console_config,
++					   max_nr_ports),
++				  &portdev->config.max_nr_ports) == 0) {
+ 		multiport = true;
++	} else {
++		multiport = false;
++		portdev->config.max_nr_ports = 1;
++	}
+ 
+ 	err = init_vqs(portdev);
+ 	if (err < 0) {
+@@ -1838,6 +1924,16 @@ static unsigned int features[] = {
+ 	VIRTIO_CONSOLE_F_MULTIPORT,
+ };
+ 
++static struct virtio_device_id rproc_serial_id_table[] = {
++#if IS_ENABLED(CONFIG_REMOTEPROC)
++	{ VIRTIO_ID_RPROC_SERIAL, VIRTIO_DEV_ANY_ID },
++#endif
++	{ 0 },
++};
++
++static unsigned int rproc_serial_features[] = {
++};
++
+ #ifdef CONFIG_PM
+ static int virtcons_freeze(struct virtio_device *vdev)
+ {
+@@ -1922,6 +2018,20 @@ static struct virtio_driver virtio_console = {
+ #endif
+ };
+ 
++/*
++ * virtio_rproc_serial refers to __devinit function which causes
++ * section mismatch warnings. So use __refdata to silence warnings.
++ */
++static struct virtio_driver __refdata virtio_rproc_serial = {
++	.feature_table = rproc_serial_features,
++	.feature_table_size = ARRAY_SIZE(rproc_serial_features),
++	.driver.name =	"virtio_rproc_serial",
++	.driver.owner =	THIS_MODULE,
++	.id_table =	rproc_serial_id_table,
++	.probe =	virtcons_probe,
++	.remove =	virtcons_remove,
++};
++
+ static int __init init(void)
+ {
+ 	int err;
+@@ -1941,12 +2051,31 @@ static int __init init(void)
+ 	INIT_LIST_HEAD(&pdrvdata.consoles);
+ 	INIT_LIST_HEAD(&pdrvdata.portdevs);
+ 
+-	return register_virtio_driver(&virtio_console);
++	err = register_virtio_driver(&virtio_console);
++	if (err < 0) {
++		pr_err("Error %d registering virtio driver\n", err);
++		goto free;
++	}
++	err = register_virtio_driver(&virtio_rproc_serial);
++	if (err < 0) {
++		pr_err("Error %d registering virtio rproc serial driver\n",
++		       err);
++		goto unregister;
++	}
++	return 0;
++unregister:
++	unregister_virtio_driver(&virtio_console);
++free:
++	if (pdrvdata.debugfs_dir)
++		debugfs_remove_recursive(pdrvdata.debugfs_dir);
++	class_destroy(pdrvdata.class);
++	return err;
+ }
+ 
+ static void __exit fini(void)
+ {
+ 	unregister_virtio_driver(&virtio_console);
++	unregister_virtio_driver(&virtio_rproc_serial);
+ 
+ 	class_destroy(pdrvdata.class);
+ 	if (pdrvdata.debugfs_dir)
+diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
+index 270fb22..cb28b52 100644
+--- a/include/linux/virtio_ids.h
++++ b/include/linux/virtio_ids.h
+@@ -37,5 +37,6 @@
+ #define VIRTIO_ID_RPMSG		7 /* virtio remote processor messaging */
+ #define VIRTIO_ID_SCSI		8 /* virtio scsi */
+ #define VIRTIO_ID_9P		9 /* 9p virtio console */
++#define VIRTIO_ID_RPROC_SERIAL	11 /* virtio remoteproc serial link */
+ 
+ #endif /* _LINUX_VIRTIO_IDS_H */
+-- 
+1.7.5.4
 
---------------enig6828E5B967850DFFD3A67D5C--
