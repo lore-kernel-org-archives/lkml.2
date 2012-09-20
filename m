@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab2ITXwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:52:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61875 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab2ITXwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:52:04 -0400
-Date: Thu, 20 Sep 2012 16:51:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
-Subject: Re: [PATCH v2 09/26] block: Remove some unnecessary bi_vcnt usage
-Message-ID: <20120920235159.GP7264@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-10-git-send-email-koverstreet@google.com>
+	id S1756498Ab2ITXxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:53:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754607Ab2ITXxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 19:53:04 -0400
+Message-ID: <505BAC5D.9020909@redhat.com>
+Date: Thu, 20 Sep 2012 18:53:01 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1347322957-25260-10-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: kernel list <linux-kernel@vger.kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf: Fix parallel build
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 10, 2012 at 05:22:20PM -0700, Kent Overstreet wrote:
-> More prep work for immutable bvecs/effecient bio splitting - usage of
-> bi_vcnt has to be auditing, so getting rid of all the unnecessary usage
-> makes that easier.
-> 
-> Plus, bio_segments() is really what this code wanted, as it respects the
-> current value of bi_idx.
+Parallel builds of perf were failing for me on a 32p box, with:
 
-Looks good to me but definitely need reviews from SCSI people.
+    * new build flags or prefix
+util/pmu.l:7:23: error: pmu-bison.h: No such file or directory
 
-Thanks.
+...
 
--- 
-tejun
+make: *** [util/pmu-flex.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+This can pretty quickly be seen by adding a sleep in front of
+the bison call in tools/perf/Makefile and running make -j4 on a
+smaller box:
+
+	sleep 10; $(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+
+Adding the following dependency fixes it for me:
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+---
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bad726a..6c389d9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -219,7 +219,7 @@ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l
+ $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+ 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
+ 
+-$(OUTPUT)util/pmu-flex.c: util/pmu.l
++$(OUTPUT)util/pmu-flex.c: util/pmu.l util/pmu-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+
