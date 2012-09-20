@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab2ITXdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:33:54 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53018 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408Ab2ITXdw (ORCPT
+	id S932593Ab2ITXfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:35:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46164 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932408Ab2ITXfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:33:52 -0400
-X-AuditID: 9c93016f-b7c19ae000000e6d-1a-505ba7dedcda
-Date: Fri, 21 Sep 2012 08:36:35 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3] memory-hotplug: fix zone stat mismatch
-Message-ID: <20120920233635.GJ13234@bbox>
-References: <1348123405-30641-1-git-send-email-minchan@kernel.org>
- <20120920144232.a3e8b60f.akpm@linux-foundation.org>
+	Thu, 20 Sep 2012 19:35:23 -0400
+Date: Thu, 20 Sep 2012 16:32:46 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] power_supply: add new lp8788 charger driver
+Message-ID: <20120920233245.GC8209@lizard>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF2227@DQHE02.ent.ti.com>
+ <20120920221638.GF18223@lizard>
+ <A874F61F95741C4A9BA573A70FE3998F41EF5B1C@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120920144232.a3e8b60f.akpm@linux-foundation.org>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF5B1C@DQHE02.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 02:42:32PM -0700, Andrew Morton wrote:
-> On Thu, 20 Sep 2012 15:43:25 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > During memory-hotplug, I found NR_ISOLATED_[ANON|FILE]
-> > are increasing so that kernel are hang out.
+On Thu, Sep 20, 2012 at 11:19:07PM +0000, Kim, Milo wrote:
+[...]
+> > Had to fix a bunch of checkpatch complaints:
 > > 
-> > The cause is that when we do memory-hotadd after memory-remove,
-> > __zone_pcp_update clear out zone's ZONE_STAT_ITEMS in setup_pageset
-> > although vm_stat_diff of all CPU still have value.
+> > CHECK: space prohibited before semicolon
+> > #478: FILE: drivers/power/lp8788-charger.c:396:
+> > +       for (i = 0 ; i < pdata->num_chg_params ; i++) {
 > > 
-> > In addtion, when we offline all pages of the zone, we reset them
-> > in zone_pcp_reset without drain so that we lost zone stat item.
+> > CHECK: space prohibited before semicolon
+> > #541: FILE: drivers/power/lp8788-charger.c:459:
+> > +       for (i = 0 ; i < pchg->num_irqs ; i++) {
+> 
+> Thanks a lot for this review.
+> 
+> It seems like the result of running checkpatch script with --strict option.
+> Should I keep this option whenever submitting the file?
+> I used to run w/o strict option.
+
+It's up to you. But be aware that checkpach sometimes reports
+false-positives, and --strict options makes signal/noise ratio even
+worse.
+
+So, checkpatch warnings (and especially with --strict options) are
+just hints, sometimes very bogus. CodingStyle rules have a higer
+priorty than automated stuff like checkpatch. :-)
+
+> > But other than this, it looks really good, this is now applied.
 > > 
+> > Obviously, I couldn't compile-test it, but hopefully it will work
+> > once MFD part is also in. :-) If not, you can just send a follow-up
+> > fix.
 > 
-> Here's what I ended up with for a changelog:
-> 
-> : During memory-hotplug, I found NR_ISOLATED_[ANON|FILE] are increasing,
-> : causing the kernel to hang.  When the system doesn't have enough free
-> : pages, it enters reclaim but never reclaim any pages due to
-> : too_many_isolated()==true and loops forever.
-> : 
-> : The cause is that when we do memory-hotadd after memory-remove,
-> : __zone_pcp_update() clears a zone's ZONE_STAT_ITEMS in setup_pageset()
-> : although the vm_stat_diff of all CPUs still have values.
-> : 
-> : In addtion, when we offline all pages of the zone, we reset them in
-> : zone_pcp_reset without draining so we loss some zone stat item.
-> 
+> Additionally, lp8788-charger depends on lp8788-adc driver.
+> I've found wrong calculation on getting the battery voltage and temperature.
+> I would submit this patch later.
 
-Thanks for clarifying the description, Andrew!
+Sure thing.
 
-> 
-> As memory hotplug seems fairly immature and broken, I'm thinking
-> there's no point in backporting this into -stable.  And I don't *think*
-
-I have no idea usecase of memory-hotplug in real practice.
-If they do a ton of memory-hotadd/delete without rebooting
-zone stat could be wrong. And it could turn for the worse
-in case of using many CPUs.
-
-Other zone stat items are not critical other than NR_ISOLATED
-which could make system hang when VM start to reclaim heavily.
-Anyway, If fujitsu guys don't yell, I'm okay. :)
-
-> we really need it in 3.6 either?  (It doesn't apply cleanly to current
-> mainline anyway - I didn't check why).
-
-At least, it works in my side.
-
-barrios@bbox:~/linux-2.6$ git log -n 1
-commit c46de2263f42fb4bbde411b9126f471e9343cb22
-Merge: 077fee0 2453f5f
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Wed Sep 19 11:04:34 2012 -0700
-
-    Merge branch 'for-linus' of git://git.kernel.dk/linux-block
-    
-    Pull block fixes from Jens Axboe:
-     "A small collection of driver fixes/updates and a core fix for 3.6.  It
-      contains:
-    
-       - Bug fixes for mtip32xx, and support for new hardware (just addition
-         of IDs).  They have been queued up for 3.7 for a few weeks as well.
-    
-       - rate-limit a failing command error message in block core.
-    
-       - A fix for an old cciss bug from Stephen.
-    
-       - Prevent overflow of partition count from Alan."
-    
-    * 'for-linus' of git://git.kernel.dk/linux-block:
-      cciss: fix handling of protocol error
-      blk: add an upper sanity check on partition adding
-      mtip32xx: fix user_buffer check in exec_drive_command
-      mtip32xx: Remove dead code
-      mtip32xx: Change printk to pr_xxxx
-      mtip32xx: Proper reporting of write protect status on big-endian
-      mtip32xx: Increase timeout for standby command
-      mtip32xx: Handle NCQ commands during the security locked state
-      mtip32xx: Add support for new devices
-      block: rate-limit the error message from failing commands
-
-barrios@bbox:~/linux-2.6$ patch -p1 < ../linux-mmotm/0001-memory-hotplug-fix-zone-stat-mismatch.patch --dry-run
-patching file include/linux/vmstat.h
-patching file mm/page_alloc.c
-Hunk #1 succeeded at 5874 (offset -30 lines).
-Hunk #2 succeeded at 5891 (offset -30 lines).
-patching file mm/vmstat.c
-
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Anton.
