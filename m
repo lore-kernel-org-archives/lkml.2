@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2ITI7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:59:08 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46516 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab2ITI7E (ORCPT
+	id S1751186Ab2ITJBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 05:01:36 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51959 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab2ITJBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:59:04 -0400
-Date: Thu, 20 Sep 2012 10:58:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] microcode fix for 3.6-rc7
-Message-ID: <20120920085859.GA3611@gmail.com>
-References: <20120919171610.GM4577@aftab.osrc.amd.com>
+	Thu, 20 Sep 2012 05:01:34 -0400
+X-AuditID: b753bd60-94360ba000007c38-16-505adb6c2ffc
+X-AuditID: b753bd60-94360ba000007c38-16-505adb6c2ffc
+Message-ID: <505ADB6B.3070706@hitachi.com>
+Date: Thu, 20 Sep 2012 18:01:31 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919171610.GM4577@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86, kprobes: Hide skip_singlestep forward declaration
+ properly
+References: <1348062414-6578-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1348062414-6578-1-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/09/19 22:46), Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> I get
+> 
+> arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined [-Wunused-function]
+> 
+> on tip/auto-latest.
+> 
+> Hide the forward declaration in the KPROBES_CAN_USE_FTRACE as it
+> is done in its callsites.
 
-* Borislav Petkov <borislav.petkov@amd.com> wrote:
+Thank you for reporting and fixing :)
 
-> Hi guys,
-> 
-> please pull this fix from Dan Carpenter which goes ontop of
-> tip/x86/microcode. It would be best if it goes in during the upcoming
-> merge window along with the rest from tip/x86/microcode so that we don't
-> have any breakages.
-> 
-> Thanks.
-> 
-> The following changes since commit 2efb05e8e9fa3510044e007b90263c73b6a83f84:
-> 
->   x86, microcode, AMD: Rewrite patch application procedure (2012-08-22 16:16:29 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_fix_3.7
-> 
-> for you to fetch changes up to 2d297480037e1d9100ca504737820c1bf65db6c0:
-> 
->   x86, microcode, AMD: Fix use after free in free_cache() (2012-09-19 18:06:25 +0200)
-> 
-> ----------------------------------------------------------------
-> A small list usage correction from Dan Carpenter.
-> 
-> ----------------------------------------------------------------
-> Dan Carpenter (1):
->       x86, microcode, AMD: Fix use after free in free_cache()
-> 
->  arch/x86/kernel/microcode_amd.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Pulled, thanks Boris!
+Ingo, please pull this.
 
-	Ingo
+Thank you,
+
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/kernel/kprobes.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index b7c2a85d1926..ac4188368fdf 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -541,8 +541,11 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+>  	return 1;
+>  }
+>  
+> +#ifdef KPROBES_CAN_USE_FTRACE
+>  static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+>  				      struct kprobe_ctlblk *kcb);
+> +#endif
+> +
+>  /*
+>   * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+>   * remain disabled throughout this function.
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
