@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2ITVwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 17:52:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64523 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab2ITVwo (ORCPT
+	id S1755336Ab2ITVxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 17:53:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53175 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2ITVxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 17:52:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] module: add finit_module syscall to asm-generic
-Date: Thu, 20 Sep 2012 21:52:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-References: <20120920200702.GA18807@www.outflux.net>
-In-Reply-To: <20120920200702.GA18807@www.outflux.net>
+	Thu, 20 Sep 2012 17:53:18 -0400
+Date: Thu, 20 Sep 2012 14:53:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2 01/26] block: Convert integrity to bvec_alloc_bs(),
+ and a bugfix
+Message-ID: <20120920215313.GE7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-2-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201209202152.38630.arnd@arndb.de>
-X-Provags-ID: V02:K0:8cK7RUPedAEeScR0HAPeASRyxXn6XrnJrbsdMmXXoqz
- 0gGQazhc7kjWQ3/3cBECdJ7rvmNR5PLWw6wDN5tyQhLYMxr3Uj
- Szz9+0gqgXi4QLwRClpuKS+MwvT6ocORvTcUlPD1g+ybxGP9Ua
- vXiL03+RpYZOmQg05jKWHMNN2Mg6BBgb27SWsawRwkiNe4cdQJ
- XTeHNlc3L3AnAM6u1b7JGGRL2fQ/4J9p4l2KoO/bt4jFbBs8Vf
- aKyx0hkwpjfcdXx+yb0SRC6QvgnNBha5St0GwaOXwX22781oOy
- WyteS+qRlX8//sBOJRU88GhDAOQjNIrmpn2UBagGXtsMQlv/Eq
- h5Ar2K/uWIbSD8IRBb04=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1347322957-25260-2-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 September 2012, Kees Cook wrote:
-> 
-> This adds the finit_module syscall to the generic syscall list.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> This depends on the finit_module patchset in Rusty's tree, based on
-> https://lkml.org/lkml/2012/9/7/559
+Hello,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, Sep 10, 2012 at 05:22:12PM -0700, Kent Overstreet wrote:
+> This adds a pointer to the bvec array to struct bio_integrity_payload,
+> instead of the bvecs always being inline; then the bvecs are allocated
+> with bvec_alloc_bs().
+> 
+> This is needed eventually for immutable bio vecs - immutable bvecs
+> aren't useful if we still have to copy them, hence the need for the
+> pointer. Less code is always nice too, though.
+> 
+> Also fix an amusing bug in bio_integrity_split() - struct bio_pair
+> doesn't have the integrity bvecs after the bio_integrity_payloads, so
+> there was a buffer overrun. The code was confusing pointers with arrays.
 
-Please queue this along with the other patches.
+Aside from what Martin and Vivek already pointed out, it generally
+looks okay to me but here are some thoughts.
+
+I'm quite doubtful how much we're gaining by this complex set of slabs
+and mempools approach compared to just using kmalloc + one mempool for
+the largest size.  I can't think of anything to be gained in terms of
+cacheline hotness.  In terms of memory usage too, we're proabably
+introducing more fragmentation with all the different slabs.
+
+Jens, what are you thoughts?  For forward progress guarantee, single
+mempool per bioset serving the largest one is enough and we can
+significantly simplify the whole bioset thing.
+
+Thanks.
+
+-- 
+tejun
