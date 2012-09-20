@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab2ITIuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:50:54 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54216 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab2ITIuv (ORCPT
+	id S1753533Ab2ITIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 04:51:58 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:32554 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2ITIv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:50:51 -0400
-X-Greylist: delayed 85574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Sep 2012 04:50:51 EDT
-X-AuditID: b753bd60-97c52ba000002f78-55-505ad8e84f31
-X-AuditID: b753bd60-97c52ba000002f78-55-505ad8e84f31
-Subject: Re: [PATCH] x86: Distinguish TLB shootdown interrupts from other
- functions call interrupts
-To: x86@kernel.org
-From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Cc: Alex Shi <alex.shi@intel.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 20 Sep 2012 17:50:33 +0900
-Message-ID: <20120920085033.14512.98190.stgit@hpxw>
-In-Reply-To: <505A6EFD.4070802@intel.com>
-References: <505A6EFD.4070802@intel.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Sep 2012 04:51:56 -0400
+X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
+   d="scan'208";a="14648494"
+Message-ID: <1348131088.24539.2.camel@oliverchick-Precision-WorkStation-T3400>
+Subject: Re: [Xen-devel] [PATCH] Persistent grant maps for xen blk drivers
+From: Oliver Chick <oliver.chick@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Sep 2012 09:51:28 +0100
+In-Reply-To: <5059D0C8020000780009C4CF@nat28.tlf.novell.com>
+References: <1348051887-21885-1-git-send-email-oliver.chick@citrix.com>
+	 <5059D0C8020000780009C4CF@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+Ah yes, you're right - rings can accomodate 64 requests. ijc, and myself
+got muddled. It also explains the comment in my summary that we only use
+the first 60-ish persistent grants!
 
-thank you for the review.
+With multipage rings, this will probably become a function, rather than
+a constant. Does that sound sensible?
 
->>     sum += irq_stats(cpu)->irq_call_count;
->> -   sum += irq_stats(cpu)->irq_tlb_count;
->> +   /* irq_tlb_count is already added to irq_call_count */
->
->redundant comments here?
+On Wed, 2012-09-19 at 13:03 +0100, Jan Beulich wrote:
+> >>> On 19.09.12 at 12:51, Oliver Chick <oliver.chick@citrix.com> wrote:
+> > +/*
+> > + * Maximum number of persistent grants that can be mapped by Dom0 for each
+> > + * interface. This is set to be the size of the ring, as this is a limit on
+> > + * the number of requests that can be inflight at any one time. 256 imposes
+> > + * an overhead of 11MB of mapped kernel space per interface.
+> > + */
+> > +#define BLKIF_MAX_PERS_REQUESTS_PER_DEV 256
+> 
+> How can this be a fixed number, especially in the context of ring
+> size extensions? Iirc, single page rings can accommodate 64
+> requests, so I'd guess the number above was observed with a
+> 4-page (order 2) ring...
+> 
+> Jan
+> 
 
->> @@ -98,6 +98,9 @@ static void flush_tlb_func(void *info)
->>  {
->>	struct flush_tlb_info *f = info;
->>
->> +	/* irq_call_cnt is also incremented; be subtracted on display */
->
->If is it better to move above explanation to irq_call_cnt definition place: harirq.h?
-
-Agreed.
-
-In the patch below, I reduced the redundant comments.
-
---
-As TLB shootdown requests to other CPU cores are now using function call
-interrupts, TLB shootdowns entry in /proc/interrupts is always shown as 0.
-
-This behavior change was introduced by commit 52aec3308db8 ("x86/tlb:
-replace INVALIDATE_TLB_VECTOR by CALL_FUNCTION_VECTOR").
-
-This patch reverts TLB shootdowns entry in /proc/interrupts to count TLB
-shootdowns separately from the other function call interrupts.
-
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/hardirq.h |    2 ++
- arch/x86/kernel/irq.c          |    4 ++--
- arch/x86/mm/tlb.c              |    2 ++
- 3 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
-index d3895db..e34b252 100644
---- a/arch/x86/include/asm/hardirq.h
-+++ b/arch/x86/include/asm/hardirq.h
-@@ -18,6 +18,8 @@ typedef struct {
- #ifdef CONFIG_SMP
- 	unsigned int irq_resched_count;
- 	unsigned int irq_call_count;
-+	/* irq_tlb_count is double-counted in irq_call_count, so it must be
-+	   subtracted from irq_call_count when displaying irq_call_count */
- 	unsigned int irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index d44f782..e4595f1 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -92,7 +92,8 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count);
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
-+					irq_stats(j)->irq_tlb_count);
- 	seq_printf(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
-@@ -147,7 +148,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- #ifdef CONFIG_SMP
- 	sum += irq_stats(cpu)->irq_resched_count;
- 	sum += irq_stats(cpu)->irq_call_count;
--	sum += irq_stats(cpu)->irq_tlb_count;
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	sum += irq_stats(cpu)->irq_thermal_count;
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 613cd83..2d6d8ed 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -98,6 +98,8 @@ static void flush_tlb_func(void *info)
- {
- 	struct flush_tlb_info *f = info;
- 
-+	inc_irq_stat(irq_tlb_count);
-+
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
- 
 
