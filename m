@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2ITOld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:41:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21622 "EHLO mx1.redhat.com"
+	id S1755805Ab2ITOlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:41:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755635Ab2ITOla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:41:30 -0400
+	id S1755661Ab2ITOld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 10:41:33 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V2 04/10] ACPI: Limit access to custom_method
-Date: Thu, 20 Sep 2012 10:40:59 -0400
-Message-Id: <1348152065-31353-5-git-send-email-mjg@redhat.com>
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [PATCH V2 07/10] Secure boot: Add a dummy kernel parameter that will switch on Secure Boot mode
+Date: Thu, 20 Sep 2012 10:41:02 -0400
+Message-Id: <1348152065-31353-8-git-send-email-mjg@redhat.com>
 In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,29 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It must be impossible for even root to get code executed in kernel context
-under a secure boot environment. custom_method effectively allows arbitrary
-access to system memory, so it needs to have a capability check here.
+From: Josh Boyer <jwboyer@redhat.com>
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+This forcibly drops CAP_COMPROMISE_KERNEL from both cap_permitted and cap_bset
+in the init_cred struct, which everything else inherits from.  This works on
+any machine and can be used to develop even if the box doesn't have UEFI.
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 ---
- drivers/acpi/custom_method.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/cred.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/acpi/custom_method.c b/drivers/acpi/custom_method.c
-index 5d42c24..247d58b 100644
---- a/drivers/acpi/custom_method.c
-+++ b/drivers/acpi/custom_method.c
-@@ -29,6 +29,9 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
- 	struct acpi_table_header table;
- 	acpi_status status;
+diff --git a/kernel/cred.c b/kernel/cred.c
+index de728ac..7e6e83f 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -623,6 +623,23 @@ void __init cred_init(void)
+ 				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+ }
  
-+	if (!capable(CAP_COMPROMISE_KERNEL))
-+		return -EPERM;
++void __init secureboot_enable()
++{
++	pr_info("Secure boot enabled\n");
++	cap_lower((&init_cred)->cap_bset, CAP_COMPROMISE_KERNEL);
++	cap_lower((&init_cred)->cap_permitted, CAP_COMPROMISE_KERNEL);
++}
 +
- 	if (!(*ppos)) {
- 		/* parse the table header to get the table length */
- 		if (count <= sizeof(struct acpi_table_header))
++/* Dummy Secure Boot enable option to fake out UEFI SB=1 */
++static int __init secureboot_enable_opt(char *str)
++{
++	int sb_enable = !!simple_strtol(str, NULL, 0);
++	if (sb_enable)
++		secureboot_enable();
++	return 1;
++}
++__setup("secureboot_enable=", secureboot_enable_opt);
++
+ /**
+  * prepare_kernel_cred - Prepare a set of credentials for a kernel service
+  * @daemon: A userspace daemon to be used as a reference
 -- 
 1.7.11.4
 
