@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2ITQFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 12:05:50 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:45487 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab2ITQFs (ORCPT
+	id S1756038Ab2ITQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 12:08:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:59093 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab2ITQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 12:05:48 -0400
+	Thu, 20 Sep 2012 12:08:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6841"; a="236905564"
+Date: Thu, 20 Sep 2012 09:08:53 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Subject: Re: [PATCH 4/5] gpio: Make gpio-msm-v1 into a platform driver
+Message-ID: <20120920160852.GA6907@codeaurora.org>
+References: <1348038044-1790-1-git-send-email-sboyd@codeaurora.org>
+ <1348038044-1790-5-git-send-email-sboyd@codeaurora.org>
+ <CACRpkdZZ4y2TpkDAgxp38hLbsvxV3hqQ0PRjEQ1s+CXuq8TVQg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1347977050-29476-7-git-send-email-glommer@parallels.com>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
-	<1347977050-29476-7-git-send-email-glommer@parallels.com>
-Date: Fri, 21 Sep 2012 01:05:47 +0900
-Message-ID: <CAAmzW4ONnc7n3kZbYnE6n2Cg0ZyPXW0QU2NMr0uRkyTxnGpNqQ@mail.gmail.com>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-From: JoonSoo Kim <js1304@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZZ4y2TpkDAgxp38hLbsvxV3hqQ0PRjEQ1s+CXuq8TVQg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Glauber.
+On Thu, Sep 20, 2012 at 08:45:50AM +0200, Linus Walleij wrote:
+> On Wed, Sep 19, 2012 at 9:00 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> 
+> > Doing this removes the dependence of this driver on the
+> > msm_iomap.h and cpu.h mach include headers provied by MSM. This
+> > is necessary to support single zImage work in the future and
+> > allows us to remove cpu.h entirely and brings us closer to
+> > removing msm_iomap.h.
+> >
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Rohit Vaswani <rvaswani@codeaurora.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> This must be encouraged:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Stephen, do you have a mainline-based kernel tree that can boot
+> on my DragonBoard? It's just sitting idle here... I pushed David
+> in the past, just naggin'...
 
-2012/9/18 Glauber Costa <glommer@parallels.com>:
-> +/*
-> + * We need to verify if the allocation against current->mm->owner's memcg is
-> + * possible for the given order. But the page is not allocated yet, so we'll
-> + * need a further commit step to do the final arrangements.
-> + *
-> + * It is possible for the task to switch cgroups in this mean time, so at
-> + * commit time, we can't rely on task conversion any longer.  We'll then use
-> + * the handle argument to return to the caller which cgroup we should commit
-> + * against. We could also return the memcg directly and avoid the pointer
-> + * passing, but a boolean return value gives better semantics considering
-> + * the compiled-out case as well.
-> + *
-> + * Returning true means the allocation is possible.
-> + */
-> +bool
-> +__memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       bool ret;
-> +       struct task_struct *p;
-> +
-> +       *_memcg = NULL;
-> +       rcu_read_lock();
-> +       p = rcu_dereference(current->mm->owner);
-> +       memcg = mem_cgroup_from_task(p);
-> +       rcu_read_unlock();
-> +
-> +       if (!memcg_can_account_kmem(memcg))
-> +               return true;
-> +
-> +       mem_cgroup_get(memcg);
-> +
-> +       ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order) == 0;
-> +       if (ret)
-> +               *_memcg = memcg;
-> +       else
-> +               mem_cgroup_put(memcg);
-> +
-> +       return ret;
-> +}
+We're working on it :-)
 
-"*_memcg = memcg" should be executed when "memcg_charge_kmem" is success.
-"memcg_charge_kmem" return 0 if success in charging.
-Therefore, I think this code is wrong.
-If I am right, it is a serious bug that affect behavior of all the patchset.
+The main thing coming that's needed are clocks.  There are some more
+things (such as regulators) that will be needed to get things like
+SD/MMC working, and that'll be next.
 
-> +void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
-> +                             int order)
-> +{
-> +       struct page_cgroup *pc;
-> +
-> +       WARN_ON(mem_cgroup_is_root(memcg));
-> +
-> +       /* The page allocation failed. Revert */
-> +       if (!page) {
-> +               memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-> +               return;
-> +       }
+David
 
-In case of "!page ", mem_cgroup_put(memcg) is needed,
-because we already call "mem_cgroup_get(memcg)" in
-__memcg_kmem_newpage_charge().
-I know that mem_cgroup_put()/get() will be removed in later patch, but
-it is important that every patch works fine.
-
-Thanks.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
