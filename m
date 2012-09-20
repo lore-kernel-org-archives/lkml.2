@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab2ITXfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:35:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46164 "EHLO
+	id S932600Ab2ITXgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:36:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42487 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408Ab2ITXfX (ORCPT
+	with ESMTP id S932489Ab2ITXgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:35:23 -0400
-Date: Thu, 20 Sep 2012 16:32:46 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] power_supply: add new lp8788 charger driver
-Message-ID: <20120920233245.GC8209@lizard>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF2227@DQHE02.ent.ti.com>
- <20120920221638.GF18223@lizard>
- <A874F61F95741C4A9BA573A70FE3998F41EF5B1C@DQHE02.ent.ti.com>
+	Thu, 20 Sep 2012 19:36:22 -0400
+Date: Thu, 20 Sep 2012 16:36:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de
+Subject: Re: [PATCH v2 06/26] block: Use bio_sectors() more consistently
+Message-ID: <20120920233618.GL7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-7-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF5B1C@DQHE02.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347322957-25260-7-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 11:19:07PM +0000, Kim, Milo wrote:
-[...]
-> > Had to fix a bunch of checkpatch complaints:
-> > 
-> > CHECK: space prohibited before semicolon
-> > #478: FILE: drivers/power/lp8788-charger.c:396:
-> > +       for (i = 0 ; i < pdata->num_chg_params ; i++) {
-> > 
-> > CHECK: space prohibited before semicolon
-> > #541: FILE: drivers/power/lp8788-charger.c:459:
-> > +       for (i = 0 ; i < pchg->num_irqs ; i++) {
-> 
-> Thanks a lot for this review.
-> 
-> It seems like the result of running checkpatch script with --strict option.
-> Should I keep this option whenever submitting the file?
-> I used to run w/o strict option.
+On Mon, Sep 10, 2012 at 05:22:17PM -0700, Kent Overstreet wrote:
+> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+> index 321de7b..6e4420a 100644
+> --- a/drivers/block/aoe/aoeblk.c
+> +++ b/drivers/block/aoe/aoeblk.c
+> @@ -199,7 +199,7 @@ aoeblk_make_request(struct request_queue *q, struct bio *bio)
+>  	buf->bio = bio;
+>  	buf->resid = bio->bi_size;
+>  	buf->sector = bio->bi_sector;
+> -	buf->bv = &bio->bi_io_vec[bio->bi_idx];
+> +	buf->bv = bio_iovec(bio);
 
-It's up to you. But be aware that checkpach sometimes reports
-false-positives, and --strict options makes signal/noise ratio even
-worse.
+Contamination?
 
-So, checkpatch warnings (and especially with --strict options) are
-just hints, sometimes very bogus. CodingStyle rules have a higer
-priorty than automated stuff like checkpatch. :-)
+Also, in general, please cc at least the maintainers of the files that
+you modify.
 
-> > But other than this, it looks really good, this is now applied.
-> > 
-> > Obviously, I couldn't compile-test it, but hopefully it will work
-> > once MFD part is also in. :-) If not, you can just send a follow-up
-> > fix.
-> 
-> Additionally, lp8788-charger depends on lp8788-adc driver.
-> I've found wrong calculation on getting the battery voltage and temperature.
-> I would submit this patch later.
+Thanks.
 
-Sure thing.
-
-Thanks,
-Anton.
+-- 
+tejun
