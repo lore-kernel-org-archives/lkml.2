@@ -1,112 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2ITIOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 04:14:36 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:44628 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751633Ab2ITIOb (ORCPT
+	id S1752021Ab2ITIPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 04:15:06 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37577 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2ITIO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 04:14:31 -0400
-Date: Thu, 20 Sep 2012 10:14:29 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [GIT PULL REQUEST] watchdog - v3.6-rc5 Fixes
-Message-ID: <20120920081429.GC16482@spo001.leaseweb.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	Thu, 20 Sep 2012 04:14:58 -0400
+Message-ID: <505AD07B.9040600@linux.vnet.ibm.com>
+Date: Thu, 20 Sep 2012 16:14:51 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: paulmck@linux.vnet.ibm.com, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+References: <5050CCE0.4090403@gmail.com> <20120919153934.GB2455@linux.vnet.ibm.com> <5059F458.3000407@gmail.com> <20120919170648.GF2455@linux.vnet.ibm.com> <505AC6C8.9060706@linux.vnet.ibm.com> <505AC979.7000008@gmail.com>
+In-Reply-To: <505AC979.7000008@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12092008-2674-0000-0000-0000060C3743
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 09/20/2012 03:44 PM, Sasha Levin wrote:
+> On 09/20/2012 09:33 AM, Michael Wang wrote:
+>> On 09/20/2012 01:06 AM, Paul E. McKenney wrote:
+>>> On Wed, Sep 19, 2012 at 06:35:36PM +0200, Sasha Levin wrote:
+>>>> On 09/19/2012 05:39 PM, Paul E. McKenney wrote:
+>>>>> On Wed, Sep 12, 2012 at 07:56:48PM +0200, Sasha Levin wrote:
+>>>>>>> Hi Paul,
+>>>>>>>
+>>>>>>> While fuzzing using trinity inside a KVM tools guest, I've managed to trigger
+>>>>>>> "RCU used illegally from idle CPU!" warnings several times.
+>>>>>>>
+>>>>>>> There are a bunch of traces which seem to pop exactly at the same time and from
+>>>>>>> different places around the kernel. Here are several of them:
+>>>>> Hello, Sasha,
+>>>>>
+>>>>> OK, interesting.  Could you please try reproducing with the diagnostic
+>>>>> patch shown below?
+>>>>
+>>>> Sure - here are the results (btw, it reproduces very easily):
+>>>>
+>>>> [ 13.525119] ================================================
+>>>> [ 13.527165] [ BUG: lock held when returning to user space! ]
+>>>> [ 13.528752] 3.6.0-rc6-next-20120918-sasha-00002-g190c311-dirty #362 Tainted: GW
+>>>> [ 13.531314] ------------------------------------------------
+>>>> [ 13.532918] init/1 is leaving the kernel with locks still held!
+>>>> [ 13.534574] 1 lock held by init/1:
+>>>> [ 13.535533] #0: (rcu_idle){.+.+..}, at: [<ffffffff811c36d0>]
+>>>> rcu_eqs_enter_common+0x1a0/0x9a0
+>>>>
+>>>> I'm basically seeing lots of the above, so I can't even get to the point where I
+>>>> get the previous lockdep warnings.
+>>>
+>>> OK, that diagnostic patch was unhelpful.  Back to the drawing board...
+>>
+>> May be we could first make sure the cpu_idle() behave properly?
+>>
+>> Since according to the log, rcu think cpu is idle while current pid
+>> is not 0, that could happen if things broken in cpu_idle() which
+>> is very dependent on platform.
+>>
+>> So check it when idle thread was switched out may could be the first
+>> step? some thing like below.
+>>
+>> Regards,
+>> Michael Wang
+>>
+>> diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+>> index b6baf37..f8c7354 100644
+>> --- a/kernel/sched/idle_task.c
+>> +++ b/kernel/sched/idle_task.c
+>> @@ -43,6 +43,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
+>>  
+>>  static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
+>>  {
+>> +       WARN_ON(rcu_is_cpu_idle());
+>>  }
+>>  
+>>  static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
+> 
+> Looks like you're on to something, with the small patch above applied:
 
-Please pull from 'master' branch of
-	git://www.linux-watchdog.org/linux-watchdog.git
+Thanks for the test.
 
-It will fix a kdump issue in hpwdt and a possible NULL dereference.
+So, looks like some thing 'illegal' happened in cpu_idle().
 
-This will update the following files:
+Could I know what's the platform we are focus on now?
 
- hpwdt.c         |    3 +++
- watchdog_core.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+Another possibility is that the dynaticks is wrong before enter
+cpu_idle(), I think we could make a formal patch later for diagnosis.
 
-with these Changes:
+And we need suggestions on that from Paul.
 
-commit b232a70a1735c004f9ee6fdf363def527b9234b6
-Author: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Date:   Mon Sep 10 12:41:15 2012 +0800
+Regards,
+Michael Wang
 
-    watchdog: move the dereference below the NULL test
-    
-    The dereference should be moved below the NULL test.
-    
-    spatch with a semantic match is used to found this.
-    (http://coccinelle.lip6.fr/)
-    
-    Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> 
+> [   23.514223] ------------[ cut here ]------------
+> [   23.515496] WARNING: at kernel/sched/idle_task.c:46
+> put_prev_task_idle+0x1e/0x30()
+> [   23.517498] Pid: 0, comm: swapper/0 Tainted: G        W
+> 3.6.0-rc6-next-20120919-sasha-00001-gb54aafe-dirty #366
+> [   23.520393] Call Trace:
+> [   23.521882]  [<ffffffff8115167e>] ? put_prev_task_idle+0x1e/0x30
+> [   23.524220]  [<ffffffff81106736>] warn_slowpath_common+0x86/0xb0
+> [   23.524220]  [<ffffffff81106825>] warn_slowpath_null+0x15/0x20
+> [   23.524220]  [<ffffffff8115167e>] put_prev_task_idle+0x1e/0x30
+> [   23.524220]  [<ffffffff839ea61e>] __schedule+0x25e/0x8f0
+> [   23.524220]  [<ffffffff81175ebd>] ? tick_nohz_idle_exit+0x18d/0x1c0
+> [   23.524220]  [<ffffffff839ead05>] schedule+0x55/0x60
+> [   23.524220]  [<ffffffff81078540>] cpu_idle+0x90/0x160
+> [   23.524220]  [<ffffffff8383043c>] rest_init+0x130/0x144
+> [   23.524220]  [<ffffffff8383030c>] ? csum_partial_copy_generic+0x16c/0x16c
+> [   23.524220]  [<ffffffff858acc18>] start_kernel+0x38d/0x39a
+> [   23.524220]  [<ffffffff858ac5fe>] ? repair_env_string+0x5e/0x5e
+> [   23.524220]  [<ffffffff858ac326>] x86_64_start_reservations+0x101/0x105
+> [   23.524220]  [<ffffffff858ac472>] x86_64_start_kernel+0x148/0x157
+> [   23.524220] ---[ end trace 2c3061ab727afec2 ]---
+> 
 
-commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c
-Author: Toshi Kani <toshi.kani@hp.com>
-Date:   Mon Aug 27 12:52:24 2012 -0600
-
-    hpwdt: Fix kdump issue in hpwdt
-    
-    kdump can be interrupted by watchdog timer when the timer is left
-    activated on the crash kernel. Changed the hpwdt driver to disable
-    watchdog timer at boot-time. This assures that watchdog timer is
-    disabled until /dev/watchdog is opened, and prevents watchdog timer
-    to be left running on the crash kernel.
-    
-    Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-    Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
-    Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-    Cc: stable <stable@vger.kernel.org>
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 1eff743..ae60406 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
- 	hpwdt_timer_reg = pci_mem_addr + 0x70;
- 	hpwdt_timer_con = pci_mem_addr + 0x72;
- 
-+	/* Make sure that timer is disabled until /dev/watchdog is opened */
-+	hpwdt_stop();
-+
- 	/* Make sure that we have a valid soft_margin */
- 	if (hpwdt_change_timer(soft_margin))
- 		hpwdt_change_timer(DEFAULT_MARGIN);
-diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-index 6aa46a9..3796434 100644
---- a/drivers/watchdog/watchdog_core.c
-+++ b/drivers/watchdog/watchdog_core.c
-@@ -128,11 +128,12 @@ EXPORT_SYMBOL_GPL(watchdog_register_device);
- void watchdog_unregister_device(struct watchdog_device *wdd)
- {
- 	int ret;
--	int devno = wdd->cdev.dev;
-+	int devno;
- 
- 	if (wdd == NULL)
- 		return;
- 
-+	devno = wdd->cdev.dev;
- 	ret = watchdog_dev_unregister(wdd);
- 	if (ret)
- 		pr_err("error unregistering /dev/watchdog (err=%d)\n", ret);
