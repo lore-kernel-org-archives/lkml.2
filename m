@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2ITPl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:41:29 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57952 "EHLO zene.cmpxchg.org"
+	id S1755996Ab2ITPls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:41:48 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52332 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab2ITPl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:41:28 -0400
-Date: Thu, 20 Sep 2012 11:41:11 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
-Message-ID: <20120920154111.GT1560@cmpxchg.org>
-References: <20120919235156.GC13234@bbox>
+	id S932070Ab2ITPlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:41:46 -0400
+Date: Thu, 20 Sep 2012 08:23:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RCU idle CPU detection is broken in linux-next
+Message-ID: <20120920152341.GE2449@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5050CCE0.4090403@gmail.com>
+ <20120919153934.GB2455@linux.vnet.ibm.com>
+ <5059F458.3000407@gmail.com>
+ <20120919170648.GF2455@linux.vnet.ibm.com>
+ <505AC6C8.9060706@linux.vnet.ibm.com>
+ <505AC979.7000008@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120919235156.GC13234@bbox>
+In-Reply-To: <505AC979.7000008@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12092015-6078-0000-0000-00000FCACA0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 08:51:56AM +0900, Minchan Kim wrote:
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Thu, 20 Sep 2012 08:39:52 +0900
-> Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
->  check_range
+On Thu, Sep 20, 2012 at 09:44:57AM +0200, Sasha Levin wrote:
+> On 09/20/2012 09:33 AM, Michael Wang wrote:
+> > On 09/20/2012 01:06 AM, Paul E. McKenney wrote:
+> >> On Wed, Sep 19, 2012 at 06:35:36PM +0200, Sasha Levin wrote:
+> >>> On 09/19/2012 05:39 PM, Paul E. McKenney wrote:
+> >>>> On Wed, Sep 12, 2012 at 07:56:48PM +0200, Sasha Levin wrote:
+> >>>>>> Hi Paul,
+> >>>>>>
+> >>>>>> While fuzzing using trinity inside a KVM tools guest, I've managed to trigger
+> >>>>>> "RCU used illegally from idle CPU!" warnings several times.
+> >>>>>>
+> >>>>>> There are a bunch of traces which seem to pop exactly at the same time and from
+> >>>>>> different places around the kernel. Here are several of them:
+> >>>> Hello, Sasha,
+> >>>>
+> >>>> OK, interesting.  Could you please try reproducing with the diagnostic
+> >>>> patch shown below?
+> >>>
+> >>> Sure - here are the results (btw, it reproduces very easily):
+> >>>
+> >>> [ 13.525119] ================================================
+> >>> [ 13.527165] [ BUG: lock held when returning to user space! ]
+> >>> [ 13.528752] 3.6.0-rc6-next-20120918-sasha-00002-g190c311-dirty #362 Tainted: GW
+> >>> [ 13.531314] ------------------------------------------------
+> >>> [ 13.532918] init/1 is leaving the kernel with locks still held!
+> >>> [ 13.534574] 1 lock held by init/1:
+> >>> [ 13.535533] #0: (rcu_idle){.+.+..}, at: [<ffffffff811c36d0>]
+> >>> rcu_eqs_enter_common+0x1a0/0x9a0
+> >>>
+> >>> I'm basically seeing lots of the above, so I can't even get to the point where I
+> >>> get the previous lockdep warnings.
+> >>
+> >> OK, that diagnostic patch was unhelpful.  Back to the drawing board...
+> > 
+> > May be we could first make sure the cpu_idle() behave properly?
+> > 
+> > Since according to the log, rcu think cpu is idle while current pid
+> > is not 0, that could happen if things broken in cpu_idle() which
+> > is very dependent on platform.
+> > 
+> > So check it when idle thread was switched out may could be the first
+> > step? some thing like below.
+> > 
+> > Regards,
+> > Michael Wang
+> > 
+> > diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+> > index b6baf37..f8c7354 100644
+> > --- a/kernel/sched/idle_task.c
+> > +++ b/kernel/sched/idle_task.c
+> > @@ -43,6 +43,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
+> >  
+> >  static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
+> >  {
+> > +       WARN_ON(rcu_is_cpu_idle());
+> >  }
+> >  
+> >  static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
 > 
-> This patch reverts 0def08e3 because check_range can't fail in
-> migrate_to_node with considering current usecases.
+> Looks like you're on to something, with the small patch above applied:
 > 
-> Quote from Johannes
-> "
-> I think it makes sense to revert.  Not because of the semantics, but I
-> just don't see how check_range() could even fail for this callsite:
-> 
-> 1. we pass mm->mmap->vm_start in there, so we should not fail due to
->    find_vma()
-> 
-> 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
->    and so can not fail
-> 
-> 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
->    continue until addr == end, so we never fail with -EIO
-> "
-> 
-> And I add new VM_BUG_ON for checking migrate_to_node's future usecase
-> which might pass to MPOL_MF_STRICT.
-> 
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Vasiliy Kulikov <segooon@gmail.com>
-> Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/mempolicy.c |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 3d64b36..9ec87bd 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->  	nodemask_t nmask;
->  	LIST_HEAD(pagelist);
->  	int err = 0;
-> -	struct vm_area_struct *vma;
->  
->  	nodes_clear(nmask);
->  	node_set(source, nmask);
->  
-> -	vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
-> +	/*
-> +	 * Collect migrate pages and it shoudn't be failed.
-> +	 */
-> +	VM_BUG_ON(flags & MPOL_MF_STRICT);
+> [   23.514223] ------------[ cut here ]------------
+> [   23.515496] WARNING: at kernel/sched/idle_task.c:46
+> put_prev_task_idle+0x1e/0x30()
+> [   23.517498] Pid: 0, comm: swapper/0 Tainted: G        W
+> 3.6.0-rc6-next-20120919-sasha-00001-gb54aafe-dirty #366
+> [   23.520393] Call Trace:
+> [   23.521882]  [<ffffffff8115167e>] ? put_prev_task_idle+0x1e/0x30
+> [   23.524220]  [<ffffffff81106736>] warn_slowpath_common+0x86/0xb0
+> [   23.524220]  [<ffffffff81106825>] warn_slowpath_null+0x15/0x20
+> [   23.524220]  [<ffffffff8115167e>] put_prev_task_idle+0x1e/0x30
+> [   23.524220]  [<ffffffff839ea61e>] __schedule+0x25e/0x8f0
+> [   23.524220]  [<ffffffff81175ebd>] ? tick_nohz_idle_exit+0x18d/0x1c0
+> [   23.524220]  [<ffffffff839ead05>] schedule+0x55/0x60
+> [   23.524220]  [<ffffffff81078540>] cpu_idle+0x90/0x160
+> [   23.524220]  [<ffffffff8383043c>] rest_init+0x130/0x144
+> [   23.524220]  [<ffffffff8383030c>] ? csum_partial_copy_generic+0x16c/0x16c
+> [   23.524220]  [<ffffffff858acc18>] start_kernel+0x38d/0x39a
+> [   23.524220]  [<ffffffff858ac5fe>] ? repair_env_string+0x5e/0x5e
+> [   23.524220]  [<ffffffff858ac326>] x86_64_start_reservations+0x101/0x105
+> [   23.524220]  [<ffffffff858ac472>] x86_64_start_kernel+0x148/0x157
+> [   23.524220] ---[ end trace 2c3061ab727afec2 ]---
 
-Adding a check and a comment is a good idea, but I'm not a big fan of
-checking for MPOL_MF_STRICT in particular because it's one of the
-invalid inputs, and so you need to extend this check when somebody
-extends the spectrum of invalid inputs.  I would much prefer checking
-directly for !(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) instead, which
-would also make the possible inputs apparent without having to chase
-up the call chain to find out what is usually passed in.
+It looks like someone is exiting the idle loop without telling RCU
+about it.  Architectures are supposed to invoke rcu_idle_exit() before
+they leave the idle loop.  This was in fact my guess yesterday, which is
+why I tried to enlist lockdep's help, forgetting that lockdep complains
+about holding a lock when entering the idle loop.
 
-And how about
+A couple of possible things to try:
 
-/*
- * This does not "check" the range but isolates all pages that
- * need migration.  Between passing in the full user address
- * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
- */
+1.	Inspect the idle loop to see if it can invoke schedule() without
+	invoking rcu_idle_exit().  This might happen indirectly, for
+	example, by calling mutex_lock().
 
-?
+2.	Bisect to see what caused the warning to appear -- perhaps when
+	someone put a mutex_lock() or some such into the idle loop
+	without protecting it with rcu_idle_exit() or RCU_NONIDLE().
 
-> +	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
->  			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
-> -	if (IS_ERR(vma))
-> -		return PTR_ERR(vma);
->  
->  	if (!list_empty(&pagelist)) {
->  		err = migrate_pages(&pagelist, new_node_page, dest,
-> -- 
-> 1.7.9.5
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
+Seem reasonable?
+
+							Thanx, Paul
+
