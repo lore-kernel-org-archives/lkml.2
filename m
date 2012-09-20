@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab2ITTCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 15:02:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61039 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab2ITTCg (ORCPT
+	id S1755378Ab2ITTEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 15:04:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56243 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab2ITTEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 15:02:36 -0400
+	Thu, 20 Sep 2012 15:04:05 -0400
+Date: Thu, 20 Sep 2012 20:03:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Beno??t Th??baudeau <benoit.thebaudeau@advansee.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
+Message-ID: <20120920190342.GA13264@sirena.org.uk>
+References: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
+ <50366464.4070801@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <505B5C11.1050503@asyr.hopto.org>
-References: <505B522F.9090808@asyr.hopto.org> <CAErSpo4ydsZzrQJCO73mvTEn8TBDVRxg2D0UaHY0XgdyPxJaLQ@mail.gmail.com>
- <505B5C11.1050503@asyr.hopto.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 20 Sep 2012 13:02:15 -0600
-Message-ID: <CAErSpo6W0zy+HkRWW9bE=Ma--9vwgjrOWin8d5QNvUJWQtwM0w@mail.gmail.com>
-Subject: Re: RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-To: Thanasis <thanasis@asyr.hopto.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, nic_swsd@realtek.com,
-        Francois Romieu <romieu@fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50366464.4070801@metafoo.de>
+X-Cookie: Use extra care when cleaning on stairs.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 12:10 PM, Thanasis <thanasis@asyr.hopto.org> wrote:
-> on 09/20/2012 08:47 PM Bjorn Helgaas wrote the following:
->> On Thu, Sep 20, 2012 at 11:28 AM, Thanasis <thanasis@asyr.hopto.org> wrote:
->>> I have an Acer Aspire One notebook, and it has a NIC as shown below:
->>>
->>> # lspci |grep -i Realtek
->>> 02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
->>> RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
->>>
->>> The driver module that I use is r8169. It works with 2.6 series of
->>> kernels, but it does *not* with the recent 3.x of kernels.
->>> Question: Should I stick with 2.6 kernels, or are there any directions
->>> on how to make the NIC work with recent 3.x kernels?
->>
->> Can you collect the complete dmesg logs from both 2.6.38 and the 3.x
->> kernel?  This should just work, so maybe something got broken.
->
-> Attached are the dmesg outputs from 2.6.38 and 3.5.4 kernels (file
-> dmesg.tar.bz2)
+On Thu, Aug 23, 2012 at 07:12:04PM +0200, Lars-Peter Clausen wrote:
+> On 08/23/2012 06:57 PM, Beno??t Th??baudeau wrote:
 
-Thanks.  I don't see anything wrong from the PCI core point of view.
-But searching for "r8169 transmit queue timed out" found lots of
-similar reports.
+> > exists with several other PWM drivers.
 
-+cc 8169 driver folks
+> Since this seems to be a common pattern in a number of PWM drivers it might
+> make sense to simply add support for enabling/disabling a clk to the pwm core.
+> Or maybe just use the runtime pm API for this. This probably makes even more
+> sense and grab a reference to the pm context when the enable() is called,
+> release it when disable() is called and also grab it before calling the
+> device's config callback and release it afterward.
+
+It's a problem with IPs in general, a good proportion of modern SoCs
+need a clock supplying in order to interact with the registers on most
+of their IPs.  runtime PM is the normal way forwards, Tegra recently
+started using regmap's cache code to handle this transparently in the
+driver.
