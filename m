@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2ITMNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:13:06 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:54187 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2ITMLc (ORCPT
+	id S1754728Ab2ITMVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:21:46 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49890 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab2ITMNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:11:32 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <linux-fsdevel@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Serge Hallyn <serge@hallyn.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kai Bankett <chaosman@ontika.net>
-Date: Thu, 20 Sep 2012 04:42:03 -0700
-Message-Id: <1348141326-23355-22-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
-References: <877grox6ql.fsf@xmission.com>
- <1348141326-23355-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18clg9Rd0IuhE5nb/2875TB3H+uoPUfGaE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0047]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
-X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 22/25] userns: Convert the qnx6 filesystem to use kuid/kgid where appropriate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Thu, 20 Sep 2012 08:13:05 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, olof.johansson@gmail.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 02/32] ARM: ux500: Clean-up temporary Device Tree enablement helpers
+Date: Thu, 20 Sep 2012 14:12:20 +0200
+Message-Id: <1348143170-2130-3-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
+References: <1348143170-2130-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+Here we remove some of the extra overhead we introduced to make
+DT:ing the Snowball platform easier.
 
-Cc: Kai Bankett <chaosman@ontika.net>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- fs/qnx6/inode.c |    4 ++--
- init/Kconfig    |    1 -
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/mach-ux500/cpu-db8500.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/fs/qnx6/inode.c b/fs/qnx6/inode.c
-index 2049c81..f4eef0b 100644
---- a/fs/qnx6/inode.c
-+++ b/fs/qnx6/inode.c
-@@ -574,8 +574,8 @@ struct inode *qnx6_iget(struct super_block *sb, unsigned ino)
- 	raw_inode = ((struct qnx6_inode_entry *)page_address(page)) + offs;
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index db3c52d..38b7f9c 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -138,10 +138,6 @@ static struct platform_device *platform_devs[] __initdata = {
+ 	&db8500_prcmu_device,
+ };
  
- 	inode->i_mode    = fs16_to_cpu(sbi, raw_inode->di_mode);
--	inode->i_uid     = (uid_t)fs32_to_cpu(sbi, raw_inode->di_uid);
--	inode->i_gid     = (gid_t)fs32_to_cpu(sbi, raw_inode->di_gid);
-+	i_uid_write(inode, (uid_t)fs32_to_cpu(sbi, raw_inode->di_uid));
-+	i_gid_write(inode, (gid_t)fs32_to_cpu(sbi, raw_inode->di_gid));
- 	inode->i_size    = fs64_to_cpu(sbi, raw_inode->di_size);
- 	inode->i_mtime.tv_sec   = fs32_to_cpu(sbi, raw_inode->di_mtime);
- 	inode->i_mtime.tv_nsec = 0;
-diff --git a/init/Kconfig b/init/Kconfig
-index b9d6be5..1ff9f41 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -950,7 +950,6 @@ config UIDGID_CONVERTED
- 	depends on NFSD = n
- 	depends on NFS_FS = n
- 	depends on OCFS2_FS = n
--	depends on QNX6FS_FS = n
- 	depends on REISERFS_FS = n
- 	depends on SQUASHFS = n
- 	depends on SYSV_FS = n
+-static struct platform_device *of_platform_devs[] __initdata = {
+-	&u8500_dma40_device,
+-};
+-
+ static resource_size_t __initdata db8500_gpio_base[] = {
+ 	U8500_GPIOBANK0_BASE,
+ 	U8500_GPIOBANK1_BASE,
+@@ -235,7 +231,6 @@ struct device * __init u8500_init_devices(struct ab8500_platform_data *ab8500)
+ struct device * __init u8500_of_init_devices(void)
+ {
+ 	struct device *parent;
+-	int i;
+ 
+ 	parent = db8500_soc_device_init();
+ 
+@@ -244,8 +239,7 @@ struct device * __init u8500_of_init_devices(void)
+ 	platform_device_register_data(parent,
+ 		"cpufreq-u8500", -1, NULL, 0);
+ 
+-	for (i = 0; i < ARRAY_SIZE(of_platform_devs); i++)
+-		of_platform_devs[i]->dev.parent = parent;
++	u8500_dma40_device.dev.parent = parent;
+ 
+ 	/*
+ 	 * Devices to be DT:ed:
+@@ -253,7 +247,7 @@ struct device * __init u8500_of_init_devices(void)
+ 	 *   db8500_pmu_device   = done
+ 	 *   db8500_prcmu_device = done
+ 	 */
+-	platform_add_devices(of_platform_devs, ARRAY_SIZE(of_platform_devs));
++	platform_device_register(&u8500_dma40_device);
+ 
+ 	return parent;
+ }
 -- 
-1.7.5.4
+1.7.9.5
 
