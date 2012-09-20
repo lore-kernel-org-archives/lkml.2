@@ -1,135 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab2ITPls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 11:41:48 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:52332 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070Ab2ITPlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 11:41:46 -0400
-Date: Thu, 20 Sep 2012 08:23:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RCU idle CPU detection is broken in linux-next
-Message-ID: <20120920152341.GE2449@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5050CCE0.4090403@gmail.com>
- <20120919153934.GB2455@linux.vnet.ibm.com>
- <5059F458.3000407@gmail.com>
- <20120919170648.GF2455@linux.vnet.ibm.com>
- <505AC6C8.9060706@linux.vnet.ibm.com>
- <505AC979.7000008@gmail.com>
+	id S1755991Ab2ITPvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 11:51:51 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:48928 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab2ITPvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 11:51:50 -0400
+X-IronPort-AV: E=Sophos;i="4.80,454,1344211200"; 
+   d="scan'208";a="208767663"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Stefano.Stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        pawel.moll@arm.com, linux-arm-kernel@lists.infradead.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v2] arm: introduce a DTS for Xen unprivileged virtual machines
+Date: Thu, 20 Sep 2012 16:47:42 +0100
+Message-ID: <1348156062-11476-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <505AC979.7000008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12092015-6078-0000-0000-00000FCACA0C
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 09:44:57AM +0200, Sasha Levin wrote:
-> On 09/20/2012 09:33 AM, Michael Wang wrote:
-> > On 09/20/2012 01:06 AM, Paul E. McKenney wrote:
-> >> On Wed, Sep 19, 2012 at 06:35:36PM +0200, Sasha Levin wrote:
-> >>> On 09/19/2012 05:39 PM, Paul E. McKenney wrote:
-> >>>> On Wed, Sep 12, 2012 at 07:56:48PM +0200, Sasha Levin wrote:
-> >>>>>> Hi Paul,
-> >>>>>>
-> >>>>>> While fuzzing using trinity inside a KVM tools guest, I've managed to trigger
-> >>>>>> "RCU used illegally from idle CPU!" warnings several times.
-> >>>>>>
-> >>>>>> There are a bunch of traces which seem to pop exactly at the same time and from
-> >>>>>> different places around the kernel. Here are several of them:
-> >>>> Hello, Sasha,
-> >>>>
-> >>>> OK, interesting.  Could you please try reproducing with the diagnostic
-> >>>> patch shown below?
-> >>>
-> >>> Sure - here are the results (btw, it reproduces very easily):
-> >>>
-> >>> [ 13.525119] ================================================
-> >>> [ 13.527165] [ BUG: lock held when returning to user space! ]
-> >>> [ 13.528752] 3.6.0-rc6-next-20120918-sasha-00002-g190c311-dirty #362 Tainted: GW
-> >>> [ 13.531314] ------------------------------------------------
-> >>> [ 13.532918] init/1 is leaving the kernel with locks still held!
-> >>> [ 13.534574] 1 lock held by init/1:
-> >>> [ 13.535533] #0: (rcu_idle){.+.+..}, at: [<ffffffff811c36d0>]
-> >>> rcu_eqs_enter_common+0x1a0/0x9a0
-> >>>
-> >>> I'm basically seeing lots of the above, so I can't even get to the point where I
-> >>> get the previous lockdep warnings.
-> >>
-> >> OK, that diagnostic patch was unhelpful.  Back to the drawing board...
-> > 
-> > May be we could first make sure the cpu_idle() behave properly?
-> > 
-> > Since according to the log, rcu think cpu is idle while current pid
-> > is not 0, that could happen if things broken in cpu_idle() which
-> > is very dependent on platform.
-> > 
-> > So check it when idle thread was switched out may could be the first
-> > step? some thing like below.
-> > 
-> > Regards,
-> > Michael Wang
-> > 
-> > diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-> > index b6baf37..f8c7354 100644
-> > --- a/kernel/sched/idle_task.c
-> > +++ b/kernel/sched/idle_task.c
-> > @@ -43,6 +43,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
-> >  
-> >  static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
-> >  {
-> > +       WARN_ON(rcu_is_cpu_idle());
-> >  }
-> >  
-> >  static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
-> 
-> Looks like you're on to something, with the small patch above applied:
-> 
-> [   23.514223] ------------[ cut here ]------------
-> [   23.515496] WARNING: at kernel/sched/idle_task.c:46
-> put_prev_task_idle+0x1e/0x30()
-> [   23.517498] Pid: 0, comm: swapper/0 Tainted: G        W
-> 3.6.0-rc6-next-20120919-sasha-00001-gb54aafe-dirty #366
-> [   23.520393] Call Trace:
-> [   23.521882]  [<ffffffff8115167e>] ? put_prev_task_idle+0x1e/0x30
-> [   23.524220]  [<ffffffff81106736>] warn_slowpath_common+0x86/0xb0
-> [   23.524220]  [<ffffffff81106825>] warn_slowpath_null+0x15/0x20
-> [   23.524220]  [<ffffffff8115167e>] put_prev_task_idle+0x1e/0x30
-> [   23.524220]  [<ffffffff839ea61e>] __schedule+0x25e/0x8f0
-> [   23.524220]  [<ffffffff81175ebd>] ? tick_nohz_idle_exit+0x18d/0x1c0
-> [   23.524220]  [<ffffffff839ead05>] schedule+0x55/0x60
-> [   23.524220]  [<ffffffff81078540>] cpu_idle+0x90/0x160
-> [   23.524220]  [<ffffffff8383043c>] rest_init+0x130/0x144
-> [   23.524220]  [<ffffffff8383030c>] ? csum_partial_copy_generic+0x16c/0x16c
-> [   23.524220]  [<ffffffff858acc18>] start_kernel+0x38d/0x39a
-> [   23.524220]  [<ffffffff858ac5fe>] ? repair_env_string+0x5e/0x5e
-> [   23.524220]  [<ffffffff858ac326>] x86_64_start_reservations+0x101/0x105
-> [   23.524220]  [<ffffffff858ac472>] x86_64_start_kernel+0x148/0x157
-> [   23.524220] ---[ end trace 2c3061ab727afec2 ]---
+Given that the xenvm machine is based on vexpress but with an extremely
+limited selection of peripherals (the guest is supposed to use virtual
+devices instead), add "xen,xenvm" to the list of compatible machines in
+mach-vexpress.
 
-It looks like someone is exiting the idle loop without telling RCU
-about it.  Architectures are supposed to invoke rcu_idle_exit() before
-they leave the idle loop.  This was in fact my guess yesterday, which is
-why I tried to enlist lockdep's help, forgetting that lockdep complains
-about holding a lock when entering the idle loop.
 
-A couple of possible things to try:
+Changes in v2:
 
-1.	Inspect the idle loop to see if it can invoke schedule() without
-	invoking rcu_idle_exit().  This might happen indirectly, for
-	example, by calling mutex_lock().
+- remove include skeleton;
+- use #address-cells = <2> and #size-cells = <2>;
+- remove the debug bootargs;
+- use memory@80000000 instead of memory;
+- remove the ranges and interrupt-map from the motherboard node;
+- set the machine compatible to "xen,xenvm-4.2", "xen,xenvm";
+- rename the dts file to xenvm-4.2.dts;
+- add "xen,xenvm" to the list of compatible DT strings to mach-vexpress.
 
-2.	Bisect to see what caused the warning to appear -- perhaps when
-	someone put a mutex_lock() or some such into the idle loop
-	without protecting it with rcu_idle_exit() or RCU_NONIDLE().
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Pawel Moll <pawel.moll@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/boot/dts/xenvm-4.2.dts      |   64 ++++++++++++++++++++++++++++++++++
+ arch/arm/mach-vexpress/Makefile.boot |    3 +-
+ arch/arm/mach-vexpress/v2m.c         |    1 +
+ 3 files changed, 67 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
 
-Seem reasonable?
-
-							Thanx, Paul
+diff --git a/arch/arm/boot/dts/xenvm-4.2.dts b/arch/arm/boot/dts/xenvm-4.2.dts
+new file mode 100644
+index 0000000..03d7c84
+--- /dev/null
++++ b/arch/arm/boot/dts/xenvm-4.2.dts
+@@ -0,0 +1,64 @@
++/*
++ * Xen Virtual Machine for unprivileged guests
++ *
++ * Based on ARM Ltd. Versatile Express CoreTile Express (single CPU)
++ * Cortex-A15 MPCore (V2P-CA15)
++ *
++ */
++
++/dts-v1/;
++
++/ {
++	model = "XENVM-4.2";
++	compatible = "xen,xenvm-4.2", "xen,xenvm";
++	interrupt-parent = <&gic>;
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	chosen {
++		bootargs = "console=hvc0 root=/dev/xvda";
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0>;
++		};
++	};
++
++	memory@80000000 {
++		device_type = "memory";
++		reg = <0 0x80000000 0 0x08000000>;
++	};
++
++	gic: interrupt-controller@2c001000 {
++		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <0>;
++		interrupt-controller;
++		reg = <0 0x2c001000 0 0x1000>,
++		      <0 0x2c002000 0 0x100>;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 13 0xf08>,
++			     <1 14 0xf08>,
++			     <1 11 0xf08>,
++			     <1 10 0xf08>;
++	};
++
++	hypervisor {
++		compatible = "xen,xen-4.2", "xen,xen";
++		reg = <0 0xb0000000 0 0x20000>;
++		interrupts = <1 15 0xf08>;
++	};
++
++	motherboard {
++		arm,v2m-memory-map = "rs1";
++	};
++};
+diff --git a/arch/arm/mach-vexpress/Makefile.boot b/arch/arm/mach-vexpress/Makefile.boot
+index 318d308..38dbaac 100644
+--- a/arch/arm/mach-vexpress/Makefile.boot
++++ b/arch/arm/mach-vexpress/Makefile.boot
+@@ -7,4 +7,5 @@ initrd_phys-y	:= 0x60800000
+ dtb-$(CONFIG_ARCH_VEXPRESS_DT)	+= vexpress-v2p-ca5s.dtb \
+ 				   vexpress-v2p-ca9.dtb \
+ 				   vexpress-v2p-ca15-tc1.dtb \
+-				   vexpress-v2p-ca15_a7.dtb
++				   vexpress-v2p-ca15_a7.dtb \
++				   xenvm-4.2.dtb
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index 4e567f7..9545b70 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -659,6 +659,7 @@ static void __init v2m_dt_init(void)
+ 
+ const static char *v2m_dt_match[] __initconst = {
+ 	"arm,vexpress",
++	"xen,xenvm",
+ 	NULL,
+ };
+ 
+-- 
+1.7.2.5
 
