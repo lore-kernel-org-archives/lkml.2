@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab2ITOoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 10:44:46 -0400
+	id S1755916Ab2ITOpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 10:45:15 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:52363 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab2ITOmc (ORCPT
+	with ESMTP id S1755754Ab2ITOmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 10:42:32 -0400
+	Thu, 20 Sep 2012 10:42:25 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
-Date: Thu, 20 Sep 2012 10:43:41 -0400
-Message-Id: <1348152226-13588-9-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH 05/13] dma: Add TI EDMA device tree binding
+Date: Thu, 20 Sep 2012 10:43:38 -0400
+Message-Id: <1348152226-13588-6-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1348152226-13588-1-git-send-email-mporter@ti.com>
 References: <1348152226-13588-1-git-send-email-mporter@ti.com>
@@ -37,40 +37,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EDMA DMAC has a hardware limitation that prevents supporting
-scatter gather lists with any number of segments. Since the EDMA
-DMA Engine driver sets the maximum segments to 16, we do the
-same.
-
-Note: this can be removed once the DMA Engine API supports an
-API to query the DMAC's segment limitations.
+The binding definition is based on the generic DMA controller
+binding.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index c82d0ab..61b54ee 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1885,6 +1885,16 @@ static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
- 	 * as we want. */
- 	mmc->max_segs = 1024;
- 
-+	/* Eventually we should get our max_segs limitation for EDMA by
-+	 * querying the dmaengine API */
-+	if (pdev->dev.of_node) {
-+		struct device_node *parent = pdev->dev.of_node->parent;
-+		struct device_node *node;
-+		node = of_find_node_by_name(parent, "edma");
-+		if (node)
-+			mmc->max_segs = 16;
-+	}
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+new file mode 100644
+index 0000000..06402eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -0,0 +1,49 @@
++TI EDMA
 +
- 	mmc->max_blk_size = 512;       /* Block Length at max can be 1024 */
- 	mmc->max_blk_count = 0xFFFF;    /* No. of Blocks is 16 bits */
- 	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
++Required properties:
++- compatible : "ti,edma3"
++- ti,hwmods: Name of the hwmods associated to the EDMA
++- ti,edma-regions: Number of regions
++- ti,edma-slots: Number of slots
++- ti,edma-queue-tc-map: List of transfer control to queue mappings
++- ti,edma-queue-priority-map: List of queue priority mappings
++- ti,edma-default-queue: Default queue value
++
++Optional properties:
++- ti,edma-reserved-channels: List of reserved channel regions
++- ti,edma-reserved-slots: List of reserved slot regions
++
++Example:
++
++edma: edma@49000000 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	reg = <0x49000000 0x10000>;
++	interrupt-parent = <&intc>;
++	interrupts = <12 13 14>;
++	compatible = "ti,edma3";
++	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++	#dma-cells = <1>;
++	dma-channels = <64>;
++	ti,edma-regions = <4>;
++	ti,edma-slots = <256>;
++	ti,edma-reserved-channels = <0  2
++				     14 2
++				     26 6
++				     48 4
++				     56 8>;
++	ti,edma-reserved-slots = <0  2
++				  14 2
++				  26 6
++				  48 4
++				  56 8
++				  64 127>;
++	ti,edma-queue-tc-map = <0 0
++				1 1
++				2 2>;
++	ti,edma-queue-priority-map = <0 0
++				      1 1
++				      2 2>;
++	ti,edma-default-queue = <0>;
++};
++
 -- 
 1.7.9.5
 
