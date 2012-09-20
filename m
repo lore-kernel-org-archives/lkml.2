@@ -1,61 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab2ITXUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 19:20:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49294 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932451Ab2ITXUF (ORCPT
+	id S932514Ab2ITXV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 19:21:27 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52790 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455Ab2ITXVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 19:20:05 -0400
-Date: Thu, 20 Sep 2012 16:20:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v2 03/26] block: Refactor blk_update_request()
-Message-ID: <20120920232000.GG7264@google.com>
-References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
- <1347322957-25260-4-git-send-email-koverstreet@google.com>
+	Thu, 20 Sep 2012 19:21:25 -0400
+X-AuditID: 9c930179-b7bfcae0000020b4-d9-505ba4f2ea21
+Date: Fri, 21 Sep 2012 08:24:08 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Subject: Re: [PATCH] mm: fix NR_ISOLATED_[ANON|FILE] mismatch
+Message-ID: <20120920232408.GI13234@bbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1347322957-25260-4-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 20, 2012 at 11:41:11AM -0400, Johannes Weiner wrote:
+> On Thu, Sep 20, 2012 at 08:51:56AM +0900, Minchan Kim wrote:
+> > From: Minchan Kim <minchan@kernel.org>
+> > Date: Thu, 20 Sep 2012 08:39:52 +0900
+> > Subject: [PATCH] mm: revert 0def08e3, mm/mempolicy.c: check return code of
+> >  check_range
+> > 
+> > This patch reverts 0def08e3 because check_range can't fail in
+> > migrate_to_node with considering current usecases.
+> > 
+> > Quote from Johannes
+> > "
+> > I think it makes sense to revert.  Not because of the semantics, but I
+> > just don't see how check_range() could even fail for this callsite:
+> > 
+> > 1. we pass mm->mmap->vm_start in there, so we should not fail due to
+> >    find_vma()
+> > 
+> > 2. we pass MPOL_MF_DISCONTIG_OK, so the discontig checks do not apply
+> >    and so can not fail
+> > 
+> > 3. we pass MPOL_MF_MOVE | MPOL_MF_MOVE_ALL, the page table loops will
+> >    continue until addr == end, so we never fail with -EIO
+> > "
+> > 
+> > And I add new VM_BUG_ON for checking migrate_to_node's future usecase
+> > which might pass to MPOL_MF_STRICT.
+> > 
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Christoph Lameter <cl@linux.com>
+> > Cc: David Rientjes <rientjes@google.com>
+> > Cc: Vasiliy Kulikov <segooon@gmail.com>
+> > Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  mm/mempolicy.c |    9 +++++----
+> >  1 file changed, 5 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> > index 3d64b36..9ec87bd 100644
+> > --- a/mm/mempolicy.c
+> > +++ b/mm/mempolicy.c
+> > @@ -946,15 +946,16 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+> >  	nodemask_t nmask;
+> >  	LIST_HEAD(pagelist);
+> >  	int err = 0;
+> > -	struct vm_area_struct *vma;
+> >  
+> >  	nodes_clear(nmask);
+> >  	node_set(source, nmask);
+> >  
+> > -	vma = check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+> > +	/*
+> > +	 * Collect migrate pages and it shoudn't be failed.
+> > +	 */
+> > +	VM_BUG_ON(flags & MPOL_MF_STRICT);
+> 
+> Adding a check and a comment is a good idea, but I'm not a big fan of
+> checking for MPOL_MF_STRICT in particular because it's one of the
+> invalid inputs, and so you need to extend this check when somebody
+> extends the spectrum of invalid inputs.  I would much prefer checking
+> directly for !(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) instead, which
+> would also make the possible inputs apparent without having to chase
+> up the call chain to find out what is usually passed in.
+> 
+> And how about
+> 
+> /*
+>  * This does not "check" the range but isolates all pages that
+>  * need migration.  Between passing in the full user address
+>  * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
+>  */
+> 
+> ?
 
-On Mon, Sep 10, 2012 at 05:22:14PM -0700, Kent Overstreet wrote:
->  static void req_bio_endio(struct request *rq, struct bio *bio,
->  			  unsigned int nbytes, int error)
->  {
-> +	/*
-> +	 * XXX: bio_endio() does this. only need this because of the weird
-> +	 * flush seq thing.
-> +	 */
->  	if (error)
->  		clear_bit(BIO_UPTODATE, &bio->bi_flags);
->  	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
->  		error = -EIO;
+Good idea. Thanks Hannes,
 
-Isn't this also necessary to record errors on partial completions?
+>From 13ae84083ac1f057eafbeae49efba862aa7a470e Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Fri, 21 Sep 2012 08:17:37 +0900
+Subject: [PATCH] mm: enhance comment and bug check
 
-Other than that, I definitely like this.  It would be nice to note
-that the custom partial bio advancing in blk_update_request() is
-replaced with multiple calls to req_bio_endio().  I don't think it has
-any meaningful performance implications.  It's just nice to future
-readers of the commit.
+This patch updates comment and bug check.
+It can be fold into [1].
 
-Also, it would be really nice if you can verify this actually works
-with partial blk_update_request().  sector update bug in the previous
-patch scares me a bit.  Implementing some debug hacks in the
-completion path might be the easiest way to verify.  A subtle bug here
-could be pretty painful.
+[1] mm-revert-0def08e3-mm-mempolicyc-check-return-code-of-check_range.patch
 
-Thanks.
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Suggested-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/mempolicy.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 9ec87bd..0b78fb9 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -951,9 +951,11 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+ 	node_set(source, nmask);
+ 
+ 	/*
+-	 * Collect migrate pages and it shoudn't be failed.
++	 * This does not "check" the range but isolates all pages that
++	 * need migration.  Between passing in the full user address
++	 * space range and MPOL_MF_DISCONTIG_OK, this call can not fail.
+ 	 */
+-	VM_BUG_ON(flags & MPOL_MF_STRICT);
++	VM_BUG_ON(!(flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)));
+ 	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+ 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+ 
+-- 
+1.7.9.5
 
 -- 
-tejun
+Kind regards,
+Minchan Kim
