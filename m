@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab2ITMku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 08:40:50 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:29165 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab2ITMkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 08:40:49 -0400
-X-IronPort-AV: E=Sophos;i="4.80,453,1344211200"; 
-   d="scan'208";a="14655854"
-Date: Thu, 20 Sep 2012 13:39:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: introduce a DTS for Xen unprivileged virtual
- machines
-In-Reply-To: <1348143533.26501.28.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1209201333460.29232@kaball.uk.xensource.com>
-References: <1348076658-4511-1-git-send-email-stefano.stabellini@eu.citrix.com>  <1348136222.26501.19.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1209201240110.29232@kaball.uk.xensource.com> <1348143533.26501.28.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755151Ab2ITMoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 08:44:05 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:43384 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754629Ab2ITMoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Sep 2012 08:44:03 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH -v2] x86, kprobes: Move skip_singlestep up
+Date: Thu, 20 Sep 2012 14:43:54 +0200
+Message-Id: <1348145034-16603-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
+In-Reply-To: <20120920110515.GA5996@gmail.com>
+References: <20120920110515.GA5996@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Sep 2012, Ian Campbell wrote:
-> > Versatile Express is flexible enough to be a good base for our own
-> > virtual machine platform, especially if the maintainers keep an eye on
-> > getting everything through DT and not expecting devices just to be there
-> > ;-)
-> 
-> Perhaps what we want is a stricter subset of the stuff in mach-vexpress
-> then. But if so then this should be expressed both in the DT and in the
-> code, not just papered over by declaring things compatible when they are
-> not.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-But it is already expressed in the DT, by removing all the device nodes
-we don't emulated. And it is already expressed in the code, by fully
-discovering peripherals via DT, therefore not trying to initialize
-non-present devices.
+I get
 
+arch/x86/kernel/kprobes.c:544:23: warning: ‘skip_singlestep’ declared ‘static’ but never defined [-Wunused-function]
 
-> > > > +	gic: interrupt-controller@2c001000 {
-> > > > +		compatible = "arm,cortex-a9-gic";
-> > > 
-> > > Don't we mean "arm,cortex-a15-gic" here? That's what we actually
-> > > provide. I'm not sure how the a9 and a15 differ.
-> > 
-> > The GIC that comes with vexpress is a9 compatible.
-> 
-> The GIC which Xen emulates is the one which matters here though, and
-> that is an a15.
+on tip/auto-latest.
 
-The a15 gic is still a9 compatible. OK to be precise I am going to add
-"arm,cortex-a15-gic", but I cannot really remove "arm,cortex-a9-gic".
+Put the skip_singlestep function declaration up, in KPROBES_CAN_USE_FTRACE
+and drop the superfluous forward declaration.
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/kprobes.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index b7c2a85d1926..57916c0d3cf6 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -541,8 +541,23 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+ 	return 1;
+ }
+ 
++#ifdef KPROBES_CAN_USE_FTRACE
+ static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+-				      struct kprobe_ctlblk *kcb);
++				      struct kprobe_ctlblk *kcb)
++{
++	/*
++	 * Emulate singlestep (and also recover regs->ip)
++	 * as if there is a 5byte nop
++	 */
++	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
++	if (unlikely(p->post_handler)) {
++		kcb->kprobe_status = KPROBE_HIT_SSDONE;
++		p->post_handler(p, regs, 0);
++	}
++	__this_cpu_write(current_kprobe, NULL);
++}
++#endif
++
+ /*
+  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+  * remain disabled throughout this function.
+@@ -1061,21 +1076,6 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ }
+ 
+ #ifdef KPROBES_CAN_USE_FTRACE
+-static void __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+-				      struct kprobe_ctlblk *kcb)
+-{
+-	/*
+-	 * Emulate singlestep (and also recover regs->ip)
+-	 * as if there is a 5byte nop
+-	 */
+-	regs->ip = (unsigned long)p->addr + MCOUNT_INSN_SIZE;
+-	if (unlikely(p->post_handler)) {
+-		kcb->kprobe_status = KPROBE_HIT_SSDONE;
+-		p->post_handler(p, regs, 0);
+-	}
+-	__this_cpu_write(current_kprobe, NULL);
+-}
+-
+ /* Ftrace callback handler for kprobes */
+ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 				     struct ftrace_ops *ops, struct pt_regs *regs)
+-- 
+1.7.11.rc1
+
