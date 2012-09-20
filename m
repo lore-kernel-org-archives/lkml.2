@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab2ITF1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Sep 2012 01:27:47 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:55112 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751442Ab2ITF1p (ORCPT
+	id S1752014Ab2ITFjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Sep 2012 01:39:23 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55695 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2ITFjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Sep 2012 01:27:45 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18Ldt5LUGcLNonwCLdr3dr3tbbO9aicab06NdEYGm
-	4S5OyPGw0H0+Cr
-Message-ID: <1348118846.7061.88.camel@marge.simpson.net>
-Subject: Re: Processes in D state / development of real-time apps
-From: Mike Galbraith <efault@gmx.de>
-To: Andrew Athan <linux_kernel_aathan@memeplex.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 20 Sep 2012 07:27:26 +0200
-In-Reply-To: <505A8E40.5080202@memeplex.com>
-References: <505A8E40.5080202@memeplex.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 20 Sep 2012 01:39:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120920052217.GG413@1wt.eu>
+References: <1348083460-7920-1-git-send-email-mujeeb.adil@gmail.com>
+	<1348083898.2055.8.camel@joe2Laptop>
+	<20120919203942.GB413@1wt.eu>
+	<CANBXnMmuPs7gvT5h4959Pq1aGrCA2jaSdqZnymQGNzJUVXqixg@mail.gmail.com>
+	<20120920052217.GG413@1wt.eu>
+Date: Thu, 20 Sep 2012 11:09:20 +0530
+Message-ID: <CANBXnMn4TvdJGNAL-4OLw8hawrPWN2rL5nvAQYpWYH73ob_ThQ@mail.gmail.com>
+Subject: Re: [PATCH] Staging: panel: Fixed a macro coding style issue
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Joe Perches <joe@perches.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-09-19 at 20:32 -0700, Andrew Athan wrote: 
-> All:
-> 
-> I am simply not sure whether this is the right list to post this 
-> question to.  Please redirect me if not.
-> 
-> I chose to post here based on some indications that the problem may 
-> involve some aspects of the kernel given the involvement of tty/sshd/and 
-> a process stuck in "D" state waiting on flush_work.
+Hi,
 
-Yeah, when workqueues can't run, box stops working.
+On Thu, Sep 20, 2012 at 10:52 AM, Willy Tarreau <w@1wt.eu> wrote:
+> On Thu, Sep 20, 2012 at 09:19:42AM +0530, Adil Mujeeb wrote:
+>> On Thu, Sep 20, 2012 at 2:09 AM, Willy Tarreau <w@1wt.eu> wrote:
+>> > On Wed, Sep 19, 2012 at 12:44:58PM -0700, Joe Perches wrote:
+>> >> On Thu, 2012-09-20 at 01:07 +0530, Adil Mujeeb wrote:
+>> >> > Removed do {} while (0) loop for a single statement macros
+>> >> >
+>> >> > Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
+>> >> > ---
+>> >> >  linux-3.6-rc6/drivers/staging/panel/panel.c |    4 ++--
+>> >> >  1 files changed, 2 insertions(+), 2 deletions(-)
+>> >> >
+>> >> > diff --git a/linux-3.6-rc6/drivers/staging/panel/panel.c b/linux-3.6-rc6/drivers/staging/panel/panel.c
+>> >> > index 39f9982..d9fec5b 100644
+>> >> > --- a/linux-3.6-rc6/drivers/staging/panel/panel.c
+>> >> > +++ b/linux-3.6-rc6/drivers/staging/panel/panel.c
+>> >> > @@ -137,8 +137,8 @@
+>> >> >  #define r_ctr(x)        (parport_read_control((x)->port))
+>> >> >  #define r_dtr(x)        (parport_read_data((x)->port))
+>> >> >  #define r_str(x)        (parport_read_status((x)->port))
+>> >> > -#define w_ctr(x, y)     do { parport_write_control((x)->port, (y)); } while (0)
+>> >> > -#define w_dtr(x, y)     do { parport_write_data((x)->port, (y)); } while (0)
+>> >> > +#define w_ctr(x, y)     (parport_write_control((x)->port, (y)))
+>> >> > +#define w_dtr(x, y)     (parport_write_data((x)->port, (y)))
+>> >>
+>> >> Unnecessary parentheses too.
+>> >> It might be better to use static inlines instead.
+>>
+>> I just did this change only as per checkpatch script warning. Also the
+>> parentheses is added similar to other macros.
+>> So should i removed all the macros and convert it to static inlines ?
+>>
+>> > Agreed. We already got bugs in the cyrix register manipulation for
+>> > years because of the use of macros which caused registers to be set
+>> > in the wrong order, let's not redo that mistake again.
+>>
+>> hmmm macros seems too dangerous but does it mean we should not use
+>> macros altogether?
+>
+> As long as we can easily replace them with static inline, we should
+> avoid them. They're pretty useful for many things (eg: type-agnostic
+> data manipulation) but what you see above does not provide much value
+> in my opinion. And I wrote this something like 10 years ago but since
+> then I learned from my mistakes :-)
 
-> I am developing an application where many threads are spin-waiting on 
-> input--i.e., they are pegged at 100%.  One thread per CPU.  The spin is 
-> on a memory location, and does not involve interruptible/preemtable 
-> system calls.  The threads are priority=99 SCHED_FIFO.  In this run, the 
-> kernel is not a preemtable kernel and the application runs as root to 
-> allow setting of priority and scheduler.
+Thanks for sharing :)
 
-It doesn't matter if the kernel is preemptible or not, as soon as a
-SCHED_FIFO:99 task starts spinning, it's game over if anything needs to
-happen on a CPU that GOD is using as a toaster.  Either you give
-workqueues a break, or you ensure that you don't need them, else they
-sink their teeth in godly behinds :)
+>> So should i create a single patch which replaces all macros of this
+>> file into inline function?
+>
+> It might be possible, but what are you trying to do ? If it's just a
+> minor cleanup patch, there is always the risk of breaking something
+> for zero value added. This driver needs a major lifting, it needs to
+> be cut into smaller functions for example. Maybe this is something
+> you should try to do instead of just changing a few defines ?
 
-> It appears that emacs enters the "D" and or "S" states despite what I 
-> think are all of the relevant processes (including emacs itself) being 
-> on CPU 15.  Once the process is interrupted (SIGINT) and it drops back 
-> into gdb, resulting in the various CPUs it is using quiescing,  then a 
-> bunch of output that has been buffered somewhere is sent down the ssh 
-> connection.  Emacs/the tty becomes responsive again.
+Yes I was just doing minor cleanup and one of TODO item.
 
-If worker thread is waiting on a spinners CPU, you are toast.
+> Also, do you have such a device to test your changes ?
 
-<ponder>  In 2.6.32, if you disable AFFINE_WAKEUPS scheduler feature,
-and enable SD_BALANCE_WAKE scheduler domain flag in all domains, you may
-receive some salvation.  If a worker thread is awakened (one that is not
-pinned to a pegged CPU that is) or trying to be born via kthreadd who
-was previously on a now pegged CPU, wakeup balancing may put things that
-need to happen someplace where they _can_ happen.  If OTOH an RT task
-preempts then spins, you'll need help from periodic load balancing,
-because we don't evict SCHED_OTHER class upon RT class arrival.
-> It does not appear that the high priority process itself is blocked in 
-> write() while the session is hung.  However, it's hard to say since I 
-> can't access it within the debugger.  However, there are other signs of 
-> life that lead me to believe it is not hung.  Also, it's possible that 
-> it would eventually hang, and it simply hasn't output enough to get to 
-> that point by the time I interrupt it.  It is also possible that one 
-> thread is hung while others are showing signs of life.  I cannot 
-> determine which is the case.
+No I dont have.
 
-If you use the RT throttle, and backport fixes such that it will really
-stop an RT spinfest, you should be able to debug it.  The throttle will
-yank the CPU away from spinners, worker threads and whatnot can then
-run, and the world starts spinning again, though a bit raggedly with the
-default 95% CPU reserved for RT.
+>> This is my first effort in submitting a patch :)
+>
+> You're welcome in this effort, but you should be very careful.
+> Playing with driver code is fun and addictive, but that breaks much
+> faster than you can imagine and it becomes frustrating to see your
+> cleanup patch reverted two days after its inclusion.
 
--Mike
+Thanks for advice, I'll keep this in mind while doing the changes next time :)
 
+Regards,
+Adil
+
+>
+> Regards,
+> Willy
+>
